@@ -20,6 +20,8 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
@@ -59,8 +61,54 @@ public class ThreadingFixCore {
 		Pattern threadRunPattern = new Pattern("$thread.run()", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> threadRunMatches = ENGINE.findMatches(compilationUnit, threadRunPattern);
 		for (Match match : threadRunMatches) {
-			operations.add(new ThreadRunToStartOperation(match));
+			if (isThreadType(match)) {
+				operations.add(new ThreadRunToStartOperation(match));
+			}
 		}
+	}
+
+	/**
+	 * Checks whether the matched {@code $thread.run()} call is on a {@code java.lang.Thread}
+	 * receiver, to avoid rewriting unrelated {@code run()} calls (e.g., {@code Runnable.run()}).
+	 */
+	private static boolean isThreadType(Match match) {
+		ASTNode matchedNode = match.getMatchedNode();
+		if (!(matchedNode instanceof MethodInvocation)) {
+			return false;
+		}
+		MethodInvocation invocation = (MethodInvocation) matchedNode;
+
+		// Preferred: check the declaring class of the resolved method binding
+		IMethodBinding methodBinding = invocation.resolveMethodBinding();
+		if (methodBinding != null) {
+			ITypeBinding declaringClass = methodBinding.getDeclaringClass();
+			if (declaringClass != null) {
+				return isThreadOrSubtype(declaringClass);
+			}
+		}
+
+		// Fallback: check the receiver expression type
+		Expression receiver = invocation.getExpression();
+		if (receiver != null) {
+			ITypeBinding receiverType = receiver.resolveTypeBinding();
+			if (receiverType != null) {
+				return isThreadOrSubtype(receiverType);
+			}
+		}
+
+		// Skip when bindings are unavailable to avoid incorrect rewrites
+		return false;
+	}
+
+	private static boolean isThreadOrSubtype(ITypeBinding type) {
+		ITypeBinding current = type;
+		while (current != null) {
+			if ("java.lang.Thread".equals(current.getQualifiedName())) { //$NON-NLS-1$
+				return true;
+			}
+			current = current.getSuperclass();
+		}
+		return false;
 	}
 
 	/**

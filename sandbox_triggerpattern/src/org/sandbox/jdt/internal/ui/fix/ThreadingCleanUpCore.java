@@ -83,7 +83,7 @@ public class ThreadingCleanUpCore extends AbstractCleanUp {
 		CompilationUnitRewriteOperation[] array = operations.toArray(
 				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
 		return new CompilationUnitRewriteOperationsFixCore(
-				"Fix threading anti-patterns", //$NON-NLS-1$
+				MultiFixMessages.ThreadingCleanUpFix_refactor,
 				compilationUnit,
 				array);
 	}

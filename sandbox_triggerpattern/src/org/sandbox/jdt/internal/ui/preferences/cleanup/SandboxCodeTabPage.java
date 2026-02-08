@@ -25,7 +25,8 @@ import org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp;
 import org.sandbox.jdt.internal.ui.fix.ThreadingCleanUp;
 
 /**
- * Preference tab page for string simplification cleanup options.
+ * Preference tab page for TriggerPattern-based cleanup options
+ * (string simplification, threading, etc.).
  * 
  * @since 1.2.2
  */

@@ -350,9 +350,8 @@ public class MYCleanUpConstants {
 	/**
 	 * Enable threading cleanup using TriggerPattern hints.
 	 * <p>
-	 * Detects threading anti-patterns such as calling {@code Thread.run()} directly
-	 * instead of {@code Thread.start()}, usage of deprecated thread methods, and
-	 * questionable {@code Thread.yield()} calls.
+	 * Currently detects threading anti-patterns where {@code Thread.run()} is called
+	 * directly instead of {@code Thread.start()}.
 	 * <p>
 	 * Inspired by NetBeans' threading hints (Tiny.java).
 	 * <p>

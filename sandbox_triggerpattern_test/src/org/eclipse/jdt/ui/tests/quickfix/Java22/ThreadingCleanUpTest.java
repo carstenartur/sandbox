@@ -187,4 +187,56 @@ public class ThreadingCleanUpTest {
 		context.enable(MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
+
+	// ========== Non-Thread run() Regression Tests ==========
+
+	/**
+	 * Regression test: {@code Runnable.run()} must NOT be rewritten to {@code .start()}.
+	 * Only {@code java.lang.Thread.run()} should be transformed.
+	 */
+	@Test
+	public void testNoChangeForRunnableRun() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+			package test1;
+
+			public class E1 {
+			    void method(Runnable r) {
+			        r.run();
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	/**
+	 * Regression test: a custom class with a {@code run()} method must NOT be rewritten.
+	 */
+	@Test
+	public void testNoChangeForCustomRunMethod() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+			package test1;
+
+			public class E1 {
+			    static class MyTask {
+			        void run() { }
+			    }
+
+			    void method() {
+			        MyTask task = new MyTask();
+			        task.run();
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
 }
