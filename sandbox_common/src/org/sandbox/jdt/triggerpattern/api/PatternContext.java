@@ -105,7 +105,9 @@ public class PatternContext {
      * @return map of placeholder names to matched AST nodes
      */
     public Map<String, ASTNode> getBindings() {
-        return match.getBindings();
+        @SuppressWarnings("unchecked")
+        Map<String, ASTNode> bindings = (Map<String, ASTNode>) (Map<String, ?>) match.getBindings();
+        return bindings;
     }
     
     /**
@@ -115,7 +117,8 @@ public class PatternContext {
      * @return the matched AST node, or null if not found
      */
     public ASTNode getBinding(String placeholder) {
-        return match.getBindings().get(placeholder);
+        Object binding = match.getBindings().get(placeholder);
+        return binding instanceof ASTNode ? (ASTNode) binding : null;
     }
     
     /**

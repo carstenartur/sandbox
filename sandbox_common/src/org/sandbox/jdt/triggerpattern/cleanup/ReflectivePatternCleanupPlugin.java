@@ -28,7 +28,6 @@ import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternContext;
 import org.sandbox.jdt.triggerpattern.api.PatternHandler;
-import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Base class for reflective pattern cleanup plugins.
