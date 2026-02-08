@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -25,9 +26,14 @@ import org.sandbox.functional.core.model.LoopMetadata;
 import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.transformer.LoopModelTransformer;
+import org.sandbox.functional.core.tree.ConversionDecision;
+import org.sandbox.functional.core.tree.LoopKind;
+import org.sandbox.functional.core.tree.LoopTree;
+import org.sandbox.functional.core.tree.LoopTreeNode;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
 
 /**
  * V2 implementation using the Unified Loop Representation (ULR) architecture.
@@ -47,32 +53,191 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
     public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
                      Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
         
+        // PHASE 8: Pre-process to detect consecutive loops adding to same collection
+        // This must happen before individual loop processing to avoid incorrect overwrites
+        detectAndProcessConsecutiveLoops(fixcore, compilationUnit, operations, nodesprocessed);
+        
+        // PHASE 9: Use LoopTree for nested loop analysis
+        // Continue with individual loop processing for non-grouped loops using LoopTree
+        ReferenceHolder<String, Object> treeHolder = ReferenceHolder.create();
+        
+        // Initialize the LoopTree in the shared holder
+        LoopTree tree = new LoopTree();
+        treeHolder.put("tree", tree);
+        
+        // Use BiPredicate (visit) and BiConsumer (endVisit) for tree-based analysis
         ReferenceHolder<ASTNode, Object> dataHolder = ReferenceHolder.create();
         HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
-                (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, holder),
-                (visited, holder) -> {});
+                // Visit (BiPredicate): pushLoop and continue traversal
+                (visited, holder) -> visitLoop(visited, treeHolder, nodesprocessed, holder),
+                // EndVisit (BiConsumer): popLoop and make conversion decision
+                (visited, holder) -> endVisitLoop(visited, treeHolder, compilationUnit));
+        
+        // After traversal, collect convertible nodes and add operations
+        List<LoopTreeNode> convertibleNodes = tree.getConvertibleNodes();
+        for (LoopTreeNode node : convertibleNodes) {
+            EnhancedForStatement loopStatement = (EnhancedForStatement) node.getAstNodeReference();
+            if (loopStatement != null && !nodesprocessed.contains(loopStatement)) {
+                // Extract LoopModel AND original body from AST
+                JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(loopStatement);
+                
+                // Store extracted loop (model + body) for later rewrite
+                dataHolder.put(loopStatement, extracted);
+                operations.add(fixcore.rewrite(loopStatement, dataHolder));
+                nodesprocessed.add(loopStatement);
+            }
+        }
     }
     
-    private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
-                                      Set<CompilationUnitRewriteOperation> operations,
-                                      Set<ASTNode> nodesprocessed,
-                                      EnhancedForStatement visited,
-                                      ReferenceHolder<ASTNode, Object> holder) {
+    /**
+     * Detects and processes consecutive loops that add to the same collection.
+     * 
+     * <p>Phase 8 feature: Multiple consecutive for-loops adding to the same list
+     * are converted to Stream.concat() instead of being converted individually
+     * (which would cause overwrites).</p>
+     * 
+     * @param fixcore the fix core instance
+     * @param compilationUnit the compilation unit to scan
+     * @param operations the set to add operations to
+     * @param nodesprocessed the set of already processed nodes
+     */
+    private void detectAndProcessConsecutiveLoops(UseFunctionalCallFixCore fixcore, 
+            CompilationUnit compilationUnit,
+            Set<CompilationUnitRewriteOperation> operations, 
+            Set<ASTNode> nodesprocessed) {
         
-        // Extract LoopModel AND original body from AST
-        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(visited);
+        // Visit all blocks to find consecutive loop groups
+        compilationUnit.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(Block block) {
+                List<ConsecutiveLoopGroup> groups = ConsecutiveLoopGroupDetector.detectGroups(block);
+                
+                for (ConsecutiveLoopGroup group : groups) {
+                    // Create a rewrite operation for this group
+                    operations.add(fixcore.rewriteConsecutiveLoops(group));
+                    
+                    // Mark all loops in the group as processed to prevent individual conversion
+                    for (EnhancedForStatement loop : group.getLoops()) {
+                        nodesprocessed.add(loop);
+                    }
+                }
+                
+                return true; // Continue visiting nested blocks
+            }
+        });
+    }
+
+    /**
+     * Visit handler for entering a loop node.
+     * 
+     * <p>PHASE 9: This method is called when visiting an EnhancedForStatement.
+     * It pushes a new node onto the LoopTree and sets the AST reference.</p>
+     * 
+     * @param visited the EnhancedForStatement being visited
+     * @param treeHolder the holder containing the LoopTree
+     * @param nodesprocessed the set of already processed nodes
+     * @param holder the data holder for storing extracted loops
+     * @return true to continue visiting children, false to skip
+     */
+    private boolean visitLoop(EnhancedForStatement visited, 
+            ReferenceHolder<String, Object> treeHolder,
+            Set<ASTNode> nodesprocessed,
+            ReferenceHolder<ASTNode, Object> holder) {
+        // Skip loops that have already been processed (e.g., as part of a consecutive loop group)
+        if (nodesprocessed.contains(visited)) {
+            return false; // Don't visit children of already-processed loops
+        }
         
-        // Check if convertible using the model's metadata
-        if (!isConvertible(extracted.model)) {
+        // Get the LoopTree from the holder
+        LoopTree tree = (LoopTree) treeHolder.get("tree");
+        if (tree == null) {
             return false;
         }
         
-        // Store extracted loop (model + body) for later rewrite in the shared holder
-        holder.put(visited, extracted);
-        operations.add(fixcore.rewrite(visited, holder));
-        nodesprocessed.add(visited);
+        // Push a new loop node onto the tree
+        LoopTreeNode node = tree.pushLoop(LoopKind.ENHANCED_FOR);
         
-        return false;
+        // Set the AST node reference for later rewriting
+        node.setAstNodeReference(visited);
+        
+        // Populate ScopeInfo by scanning the loop body (similar to V1)
+        LoopBodyScopeScanner scanner = new LoopBodyScopeScanner(visited);
+        scanner.scan();
+        scanner.populateScopeInfo(node.getScopeInfo());
+        
+        // Store the scanner for access in endVisitLoop (to check referenced variables)
+        treeHolder.put("scanner_" + System.identityHashCode(visited), scanner);
+        
+        // Continue visiting children (nested loops)
+        return true;
+    }
+    
+    /**
+     * EndVisit handler for exiting a loop node.
+     * 
+     * <p>PHASE 9: This method is called when exiting an EnhancedForStatement.
+     * It pops the node from the tree and makes a conversion decision based on
+     * preconditions and whether any descendant loops are convertible.</p>
+     * 
+     * <p>The conversion decision uses ULR-based convertibility checks instead of
+     * PreconditionsChecker, as V2 uses the LoopModel for analysis.</p>
+     * 
+     * @param visited the EnhancedForStatement being exited
+     * @param treeHolder the holder containing the LoopTree
+     * @param compilationUnit the compilation unit for analysis
+     */
+    private void endVisitLoop(EnhancedForStatement visited,
+            ReferenceHolder<String, Object> treeHolder,
+            CompilationUnit compilationUnit) {
+        // Get the LoopTree from the holder
+        LoopTree tree = (LoopTree) treeHolder.get("tree");
+        if (tree == null || !tree.isInsideLoop()) {
+            return;
+        }
+        
+        // Verify this is the correct node to pop (guard against stack corruption)
+        LoopTreeNode currentNode = tree.current();
+        if (currentNode == null || currentNode.getAstNodeReference() != visited) {
+            return; // Stack mismatch - visitLoop must have returned false, so no pushLoop occurred
+        }
+        
+        // Pop the current loop node
+        LoopTreeNode node = tree.popLoop();
+        
+        // Make conversion decision based on bottom-up analysis
+        // If any descendant is convertible, skip this loop
+        if (node.hasConvertibleDescendant()) {
+            node.setDecision(ConversionDecision.SKIPPED_INNER_CONVERTED);
+            return;
+        }
+        
+        // Check ScopeInfo: if this loop references variables that are modified
+        // in an ANCESTOR loop's scope, it cannot be converted (lambda capture requires
+        // effectively final variables).
+        LoopBodyScopeScanner scanner = (LoopBodyScopeScanner) treeHolder.get("scanner_" + System.identityHashCode(visited));
+        if (scanner != null && node.getParent() != null) {
+            // Walk up the tree and check if any referenced variable is modified in ancestor scopes
+            LoopTreeNode parent = node.getParent();
+            while (parent != null) {
+                for (String referencedVar : scanner.getReferencedVariables()) {
+                    if (parent.getScopeInfo().getModifiedVariables().contains(referencedVar)) {
+                        node.setDecision(ConversionDecision.NOT_CONVERTIBLE);
+                        return;
+                    }
+                }
+                parent = parent.getParent();
+            }
+        }
+        
+        // Extract LoopModel and check if convertible using V2's ULR-based analysis
+        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(visited);
+        if (!isConvertible(extracted.model)) {
+            node.setDecision(ConversionDecision.NOT_CONVERTIBLE);
+            return;
+        }
+        
+        // Loop is convertible
+        node.setDecision(ConversionDecision.CONVERTIBLE);
     }
     
     @Override
