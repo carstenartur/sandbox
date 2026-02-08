@@ -77,7 +77,7 @@ mvn install -pl sandbox-functional-converter-core,sandbox-ast-api,sandbox-ast-ap
 
 This installs the Maven modules into your local Maven repository (`~/.m2/repository`), allowing Tycho to resolve them as OSGi bundles when building the Eclipse plugins.
 
-**Note**: This is also documented in the main [README.md](../README.md#development-environment-setup) and handled automatically by the Oomph setup if you use Eclipse Installer.
+**Note**: This is also documented in the main [README.md](../README.md#development-environment-setup), and the Oomph setup creates an instruction file prompting you to run this command if you use Eclipse Installer.
 
 ## Development Status
 
