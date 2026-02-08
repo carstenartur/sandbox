@@ -5,99 +5,54 @@
 ## Overview
 The functional loop converter transforms imperative enhanced for-loops into functional Java 8 Stream pipelines. This document describes the architecture and implementation details of the `StreamPipelineBuilder` approach.
 
-## V2 Parallel Implementation Strategy (Phase 1 - January 2026)
+## V2 Parallel Implementation Strategy → Unified Implementation (February 2026)
 
-**Status**: 🆕 Phase 1 Complete - ULR infrastructure established
+**Status**: ✅ V1/V2 Consolidated — Single unified implementation
 
 ### Background
 Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the Unified Loop Representation (ULR) to enable:
 - AST-independent loop modeling for easier testing and maintenance
-- Parallel V1/V2 implementations for gradual migration
 - Better separation of concerns between AST parsing and transformation logic
 
-### Phase 1: Infrastructure Setup (COMPLETED)
-**Goal**: Establish V2 infrastructure without changing V1 behavior
+The V1/V2 parallel strategy was completed through multiple phases and has been consolidated
+into a single implementation (see Phase 7.6 in TODO.md).
 
-**Completed Deliverables**:
-1. **Core Module** (`sandbox-functional-converter-core`):
-   - Pure Java 17 module with **zero Eclipse/JDT dependencies**
-   - ULR model classes: `LoopModel`, `SourceDescriptor`, `ElementDescriptor`, `LoopMetadata`
-   - Standalone Maven module (not part of Tycho build)
-   - Tests run independently: `mvn test`
+### Current Architecture (Post-Consolidation)
 
-2. **V2 Cleanup Infrastructure**:
-   - `LOOP_V2` enum entry in `UseFunctionalCallFixCore`
-   - `UseFunctionalCallCleanUpV2` class (mirrors V1 structure)
-   - `LoopToFunctionalV2` helper (delegates to V1 for feature parity)
-   - `USEFUNCTIONALLOOP_CLEANUP_V2` constant in `MYCleanUpConstants`
+The unified `LoopToFunctionalV2` uses a **two-path strategy**:
 
-3. **Delegation Pattern**:
-   - Phase 1 uses **delegation**: V2 delegates to existing V1 implementation
-   - Ensures identical behavior between V1 and V2
-   - `FeatureParityTest` validates both produce same output
+1. **ULR path** (for simple forEach patterns):
+   - `JdtLoopExtractor` → `LoopModel` → `ASTStreamRenderer` → direct `collection.forEach(...)` 
+   - Used when: no intermediate operations, ForEachTerminal, COLLECTION/ITERABLE source
 
-4. **V1 Isolation**:
-   - Modified `UseFunctionalCallCleanUpCore.computeFixSet()` to explicitly add only `LOOP`
-   - Prevents V1 from inadvertently running V2 conversions
-   - V1 and V2 operate independently based on which cleanup is enabled
+2. **Refactorer fallback** (for complex patterns):
+   - `PreconditionsChecker` → `StreamPipelineBuilder` → `Refactorer`
+   - Used for: filter, map, collect, reduce, match patterns
 
-### Phase 2: ULR-Native Implementation (PLANNED)
-**Goal**: Gradually switch individual loop patterns to ULR-based implementations
+**Key Files**:
+- `LoopToFunctionalV2.java` — Unified loop-to-functional converter
+- `JdtLoopExtractor.java` — Bridges JDT AST to abstract ULR LoopModel
+- `ASTStreamRenderer.java` — Renders ULR to JDT AST nodes
+- `PreconditionsChecker.java` — Safety validation for stream conversion
+- `StreamPipelineBuilder.java` — Analyzes loop body into stream pipeline
+- `Refactorer.java` — Performs the actual AST rewriting for complex patterns
 
-**Planned Activities**:
-1. Implement ULR extraction from AST in `LoopToFunctionalV2`
-2. Create ULR → Stream transformation logic independent of AST
-3. Migrate simple patterns first (forEach, basic map/filter)
+**Removed Classes** (Phase 7.6):
+- `LoopToFunctional.java` — Old V1 helper (replaced by LoopToFunctionalV2)
+- `UseFunctionalCallCleanUpCoreV2.java` — V2-specific cleanup core
+- `UseFunctionalCallCleanUpV2.java` — V2-specific cleanup wrapper
+- `LOOP_V2` enum value — Merged into `LOOP`
 
-### Phase 3: Operation Model (PLANNED)
-**Goal**: Enhance ULR with stream operation models
+### Phase History (Completed)
 
-### Phase 4: Transformation Engine (PLANNED)
-**Goal**: Implement ULR-to-Stream transformer with callback pattern
+The following phases were completed during the V1/V2 parallel development:
 
-### Phase 5: JDT AST Renderer (IN PROGRESS - January 2026)
-**Goal**: Create AST-based renderer for JDT integration
-
-**Status**: 🆕 Implementation started
-
-**Completed Deliverables**:
-1. **ASTStreamRenderer** (`org.sandbox.jdt.internal.corext.fix.helper`):
-   - Implements `StreamPipelineRenderer<Expression>` interface
-   - Generates JDT AST nodes instead of string concatenation
-   - Supports all source types (COLLECTION, ARRAY, ITERABLE, INT_RANGE, STREAM)
-   - Implements 14 render methods:
-     - **Source**: `renderSource()` - creates stream from various sources
-     - **Intermediate ops**: `renderFilter()`, `renderMap()`, `renderFlatMap()`, `renderPeek()`, `renderDistinct()`, `renderSorted()`, `renderLimit()`, `renderSkip()`
-     - **Terminal ops**: `renderForEach()`, `renderCollect()`, `renderReduce()`, `renderCount()`, `renderFind()`, `renderMatch()`
-   - Helper methods for AST node creation with proper validation
-   - Uses ASTParser for complex expression parsing
-
-2. **Integration with core module**:
-   - Added `org.sandbox.functional.core` as OSGi bundle dependency
-   - Exports helper package for test access
-   - Core module added to reactor build (parent pom.xml)
-
-3. **Test suite** (`ASTStreamRendererTest`):
-   - 25 test methods covering all operations
-   - Tests for all source types and terminal operations
-   - Complex pipeline construction validation
-   - Tests for edge cases (with/without identity in reduce, ordered forEach, etc.)
-
-**Implementation Notes**:
-- Uses Java's `Character.isJavaIdentifierStart/Part()` for robust identifier validation
-- Fails fast with descriptive errors instead of silent transformations
-- INT_RANGE parsing includes validation for format "start,end"
-- English comments for maintainability and Eclipse JDT contribution readiness
-
-**Next Steps for Phase 5**:
-- [x] Integrate ASTStreamRenderer with LoopToFunctionalV2
-- [x] Add end-to-end tests with actual loop transformations
-- [x] Validate AST node correctness beyond toString() comparisons
-
-**Success Criteria**:
-- All `FeatureParityTest` cases pass with ULR implementation
-- No regressions in existing V1 functionality
-- Code coverage maintained or improved
+1. **Phase 1**: Infrastructure Setup — V2 infrastructure alongside V1
+2. **Phase 2/6**: ULR-Native Implementation — JdtLoopExtractor + ASTStreamRenderer
+3. **Phase 5**: JDT AST Renderer — ASTStreamRenderer for JDT integration
+4. **Phase 7**: Iterator Loop Support — Iterator-based loop conversion
+5. **Phase 7.5**: Direct forEach Optimization — Idiomatic `collection.forEach(...)`
+6. **Phase 7.6**: V1/V2 Consolidation — Unified implementation with Refactorer fallback
 
 ### Phase 6: Complete ULR Integration (COMPLETED - January 2026)
 **Goal**: Remove V1 delegation and implement native ULR pipeline in LoopToFunctionalV2
@@ -312,12 +267,12 @@ else
 ### Phase 8: V1 Deprecation and Cleanup (FUTURE)
 **Goal**: Make ULR the primary implementation and retire legacy code
 
-**Planned Activities**:
-1. Mark V1 (`LOOP`) as deprecated
-2. Migrate all users to V2 (`LOOP_V2`)
-3. Remove V1 implementation and cleanup
-4. Remove delegation pattern from V2
-5. Consolidate documentation
+**Completed** (Phase 7.6 - February 2026):
+1. ✅ V1 (`LoopToFunctional`) removed and V2 (`LoopToFunctionalV2`) is now the unified implementation
+2. ✅ `LOOP` enum uses V2's `LoopToFunctionalV2`, `LOOP_V2` removed
+3. ✅ V2-specific cleanup classes removed
+4. ✅ Refactorer fallback ensures full feature parity
+5. ✅ Documentation consolidated
 
 ### Architecture Benefits
 - **Testability**: ULR model can be tested without Eclipse runtime

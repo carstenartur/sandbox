@@ -202,6 +202,42 @@ Arrays.stream(array).forEach(item -> System.out.println(item));
 - No unused imports for direct forEach (e.g., no StreamSupport for ITERABLE)
 - Array handling correctly uses stream fallback
 
+### Phase 7.6: V1/V2 Consolidation ✅ COMPLETED (February 2026)
+
+**Objective**: Achieve full feature parity between V1 and V2, then consolidate into a single implementation
+
+**Problem Statement**:
+V1 (`LoopToFunctional`) and V2 (`LoopToFunctionalV2`) existed as separate implementations:
+- V1 used `PreconditionsChecker` + `StreamPipelineBuilder` + `Refactorer` for all patterns
+- V2 used ULR-based `JdtLoopExtractor` + `ASTStreamRenderer` for simple forEach only
+- V2 lacked support for filter, map, collect, reduce, and match patterns
+- Both had separate cleanup classes and plugin registrations
+
+**Completed Tasks**:
+- ✅ Enhanced `LoopToFunctionalV2.endVisitLoop()` to use `PreconditionsChecker` + `StreamPipelineBuilder` for convertibility checks
+- ✅ Added `Refactorer` fallback in `LoopToFunctionalV2.rewrite()` for complex patterns
+- ✅ Changed `LOOP` enum to use `LoopToFunctionalV2` (unified implementation)
+- ✅ Removed `LOOP_V2` enum value (no longer needed)
+- ✅ Updated `UseFunctionalCallCleanUpCore` to handle both `USEFUNCTIONALLOOP_CLEANUP` and `USEFUNCTIONALLOOP_CLEANUP_V2` constants
+- ✅ Removed `UseFunctionalCallCleanUpCoreV2` and `UseFunctionalCallCleanUpV2`
+- ✅ Removed old `LoopToFunctional.java` (V1 helper)
+- ✅ Updated `plugin.xml` to remove V2-specific cleanup registration
+- ✅ Enabled `parity_FilterPattern` test in `FeatureParityTest`
+- ✅ Updated all tests to use unified constant
+
+**Architecture Decision**:
+The unified `LoopToFunctionalV2` uses a **two-path strategy**:
+1. **ULR path** (preferred): For simple forEach patterns, uses `JdtLoopExtractor` + `ASTStreamRenderer` for idiomatic `collection.forEach(...)` output
+2. **Refactorer fallback**: For complex patterns (filter, map, collect, reduce), falls back to the proven `PreconditionsChecker` + `Refactorer` pipeline
+
+This approach preserves the ULR infrastructure for future enhancement while immediately achieving full feature parity.
+
+**Success Criteria** ✅:
+- All V1 tests pass with the unified implementation
+- `FeatureParityTest.parity_FilterPattern` passes (was previously disabled)
+- Both `USEFUNCTIONALLOOP_CLEANUP` and `USEFUNCTIONALLOOP_CLEANUP_V2` constants produce identical output
+- No regression in existing test suite
+
 ### Phase 8: Multiple Loops to Stream.concat() (PLANNED)
 
 **Objective**: Support conversion of multiple consecutive for-loops adding to the same list
@@ -274,7 +310,9 @@ List<RuleEntry> entries = Stream.concat(
 
 
 
-### Phase 8: V1 Deprecation (FUTURE)
+### Phase 8: V1 Deprecation ✅ COMPLETED (February 2026)
+
+**Completed**: V1 has been removed and V2 is now the only implementation. See Phase 7.6 above.
 
 
 ### Phase 9: Bidirectional Loop Transformations (IN PROGRESS - January 2026)
