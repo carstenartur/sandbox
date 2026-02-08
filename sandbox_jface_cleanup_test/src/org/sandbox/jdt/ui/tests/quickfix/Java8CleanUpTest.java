@@ -431,4 +431,198 @@ public class Test {
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
+
+	enum ViewerSorterCleanupCases {
+		BasicViewerSorter(
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerSorter;
+public class Test extends ViewerSorter {
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerComparator;
+public class Test extends ViewerComparator {
+}
+"""),
+		TreePathViewerSorter(
+"""
+package test;
+import org.eclipse.ui.navigator.TreePathViewerSorter;
+public class Test extends TreePathViewerSorter {
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.TreePathViewerComparator;
+public class Test extends TreePathViewerComparator {
+}
+"""),
+		CommonViewerSorter(
+"""
+package test;
+import org.eclipse.ui.navigator.CommonViewerSorter;
+public class Test extends CommonViewerSorter {
+}
+""",
+"""
+package test;
+import org.eclipse.ui.navigator.CommonViewerComparator;
+public class Test extends CommonViewerComparator {
+}
+"""),
+		FieldDeclaration(
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerSorter;
+public class Test {
+	private ViewerSorter sorter;
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerComparator;
+public class Test {
+	private ViewerComparator sorter;
+}
+"""),
+		LocalVariableDeclaration(
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerSorter;
+public class Test {
+	public void method() {
+		ViewerSorter sorter = new ViewerSorter();
+	}
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerComparator;
+public class Test {
+	public void method() {
+		ViewerComparator sorter = new ViewerComparator();
+	}
+}
+"""),
+		MethodReturnType(
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerSorter;
+public class Test {
+	public ViewerSorter getSorter() {
+		return new ViewerSorter();
+	}
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerComparator;
+public class Test {
+	public ViewerComparator getSorter() {
+		return new ViewerComparator();
+	}
+}
+"""),
+		MethodParameter(
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerSorter;
+public class Test {
+	public void setSorter(ViewerSorter sorter) {
+	}
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerComparator;
+public class Test {
+	public void setSorter(ViewerComparator sorter) {
+	}
+}
+"""),
+		CastExpression(
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerSorter;
+public class Test {
+	public void method(Object obj) {
+		ViewerSorter sorter = (ViewerSorter) obj;
+	}
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.ViewerComparator;
+public class Test {
+	public void method(Object obj) {
+		ViewerComparator sorter = (ViewerComparator) obj;
+	}
+}
+"""),
+		GetSorterMethodCall(
+"""
+package test;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.ViewerSorter;
+public class Test {
+	public void method(TableViewer viewer) {
+		ViewerSorter sorter = (ViewerSorter) viewer.getSorter();
+	}
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.ViewerComparator;
+public class Test {
+	public void method(TableViewer viewer) {
+		ViewerComparator sorter = (ViewerComparator) viewer.getComparator();
+	}
+}
+"""),
+		MultipleTransformations(
+"""
+package test;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.ViewerSorter;
+public class Test {
+	private ViewerSorter sorter;
+	public void configure(TableViewer viewer) {
+		viewer.setSorter(new ViewerSorter());
+		ViewerSorter s = (ViewerSorter) viewer.getSorter();
+	}
+}
+""",
+"""
+package test;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.ViewerComparator;
+public class Test {
+	private ViewerComparator sorter;
+	public void configure(TableViewer viewer) {
+		viewer.setComparator(new ViewerComparator());
+		ViewerComparator s = (ViewerComparator) viewer.getComparator();
+	}
+}
+""");
+
+		String given;
+		String expected;
+
+		ViewerSorterCleanupCases(String given, String expected) {
+			this.given = given;
+			this.expected = expected;
+		}
+	}
+
+	@ParameterizedTest
+	@EnumSource(ViewerSorterCleanupCases.class)
+	public void testViewerSorterCleanup(ViewerSorterCleanupCases test) throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+	}
 }
