@@ -10,6 +10,9 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
+# Oomph-generated instruction files
+BUILD_CORE_MODULES_FIRST.txt
+
 # Eclipse IDE files
 .metadata
 bin/

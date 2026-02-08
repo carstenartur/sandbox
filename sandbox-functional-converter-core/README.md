@@ -61,6 +61,24 @@ This module is built as an OSGi bundle using the bnd-maven-plugin. After buildin
 - **Bundle-SymbolicName:** org.sandbox.functional.core
 - **Export-Package:** org.sandbox.functional.core.*
 
+### ⚠️ Important: Required Pre-Build for Eclipse Workspace
+
+**This module MUST be built with `mvn install` before opening the Eclipse workspace** or importing projects. The Eclipse plugin `sandbox_functional_converter` depends on this module as an OSGi bundle (`org.sandbox.functional.core`).
+
+If you open the Eclipse workspace without building this module first, you will see errors:
+- `Bundle 'org.sandbox.functional.core' cannot be resolved` in MANIFEST.MF
+- `The import org.sandbox.functional cannot be resolved` in Java files
+- Various types like `LoopModel`, `SourceDescriptor`, etc. cannot be resolved
+
+**Solution**: Run this command from the repository root before opening Eclipse:
+```bash
+mvn install -pl sandbox-functional-converter-core,sandbox-ast-api,sandbox-ast-api-jdt -am -DskipTests
+```
+
+This installs the Maven modules into your local Maven repository (`~/.m2/repository`), allowing Tycho to resolve them as OSGi bundles when building the Eclipse plugins.
+
+**Note**: This is also documented in the main [README.md](../README.md#development-environment-setup) and handled automatically by the Oomph setup if you use Eclipse Installer.
+
 ## Development Status
 
 **Phase 1 (Current)**: Module structure and basic infrastructure

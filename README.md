@@ -113,6 +113,23 @@ This repository includes a **composite GitHub Action** for automated code cleanu
 
 **Note**: Building with Java 17 or earlier will fail. This project requires Java 21.
 
+### Development Environment Setup
+
+If you're setting up an Eclipse development workspace (e.g., via Oomph or manually importing projects), you must **build the core Maven modules first** before opening the workspace:
+
+```bash
+cd /path/to/sandbox
+mvn install -pl sandbox-functional-converter-core,sandbox-ast-api,sandbox-ast-api-jdt -am -DskipTests
+```
+
+**Why is this needed?** These modules (`sandbox-functional-converter-core`, `sandbox-ast-api`, `sandbox-ast-api-jdt`) are pure Maven projects (not Eclipse plugins) that are built as OSGi bundles. Eclipse plugins like `sandbox_functional_converter` depend on them, so they must be installed in your local Maven repository before Eclipse can resolve the bundle dependencies.
+
+**Without this step**, you will see errors like:
+- `Bundle 'org.sandbox.functional.core' cannot be resolved`
+- `The import org.sandbox.functional cannot be resolved`
+
+See also: [sandbox-functional-converter-core/README.md](sandbox-functional-converter-core/README.md)
+
 ---
 
 ## Quickstart

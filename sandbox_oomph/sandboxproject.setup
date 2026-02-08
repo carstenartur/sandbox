@@ -104,6 +104,39 @@
       checkoutBranch="main">
     <description>Clone the ${scope.project.label} repository from GitHub</description>
   </setupTask>
+  <!-- Create instructions for building core Maven modules -->
+  <setupTask
+      xsi:type="setup:ResourceCreationTask"
+      excludedTriggers="STARTUP MANUAL"
+      targetURL="${git.clone.sandbox.location|uri}/BUILD_CORE_MODULES_FIRST.txt"
+      encoding="UTF-8">
+    <description>Create instructions for building core Maven modules that must be built before importing projects</description>
+    <content>
+================================================================================
+IMPORTANT: Build Core Maven Modules First
+================================================================================
+
+Before opening the Eclipse workspace, you must build the core Maven modules
+so that Eclipse can resolve the OSGi bundle dependencies.
+
+Run this command in the repository root:
+
+  cd ${git.clone.sandbox.location}
+  mvn install -pl sandbox-functional-converter-core,sandbox-ast-api,sandbox-ast-api-jdt -am -DskipTests
+
+This builds the pure Maven modules (sandbox-functional-converter-core, etc.) 
+that are used as OSGi bundle dependencies by Eclipse plugins.
+
+Without this step, you will see errors like:
+- Bundle 'org.sandbox.functional.core' cannot be resolved
+- The import org.sandbox.functional cannot be resolved
+
+After running this command, you can delete this file and proceed with the
+Eclipse workspace setup.
+
+================================================================================
+    </content>
+  </setupTask>
   <!-- Import all Eclipse projects from the cloned repository -->
   <setupTask
       xsi:type="projects:ProjectsImportTask">
