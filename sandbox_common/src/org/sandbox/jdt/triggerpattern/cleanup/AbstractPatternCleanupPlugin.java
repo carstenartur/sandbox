@@ -343,7 +343,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
                 processAnnotationRewriteWithRule(group, rewriter, ast, importRewriter, holder, rewriteRule);
                 return;
             }
-        } catch (Exception e) {
+        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
             // Not an annotation pattern, continue to check for getMinv()
         }
         
