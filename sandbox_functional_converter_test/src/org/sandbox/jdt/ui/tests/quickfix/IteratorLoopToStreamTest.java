@@ -152,8 +152,7 @@ public class IteratorLoopToStreamTest {
 	 * <p><b>Expected:</b> Block lambda with multiple statements</p>
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
-	// Temporarily disabled: iterator conversion for multi-statement blocks not yet fully implemented
-	@Disabled("Iterator multi-statement block lambda not yet fully implemented; re-enable when block handling is complete")
+	// Multi-statement blocks are now supported (Feb 2026)
 	@Test
 	@DisplayName("forEach with block lambda for multiple statements")
 	public void testIterator_forEachWithMultipleStatements() throws CoreException {

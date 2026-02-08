@@ -14,9 +14,6 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_ENABLED;
-import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR;
-import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE;
-import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE;
@@ -46,6 +43,7 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
+	
 	public UseFunctionalCallCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
@@ -123,51 +121,12 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 			fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
 		}
 		
-		// Bidirectional Loop Conversion (Phase 9)
-		if (isEnabled(LOOP_CONVERSION_ENABLED)) {
-			// Determine target format by checking which format options are enabled
-			// Default to stream if none specified
-			String targetFormat = "stream";
-			// Note: In the current implementation, the combo box stores the value directly in the option
-			// but we can't access it here. For now, we'll use a simpler approach based on enabled flags.
-			// TODO: Once we have access to the options map, use: options.get(LOOP_CONVERSION_TARGET_FORMAT)
-			
-			// For now, default to "stream" until we can properly access the combo value
-			// The UI combo box will work, but the transformation logic defaults to stream
-			
-			// Add appropriate transformers based on source/target combination
-			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {
-				if ("stream".equals(targetFormat)) {
-					fixSet.add(UseFunctionalCallFixCore.LOOP); // existing: enhanced-for → stream
-				} else if ("iterator_while".equals(targetFormat)) {
-					fixSet.add(UseFunctionalCallFixCore.FOR_TO_ITERATOR); // new: enhanced-for → iterator-while
-				}
-				// enhanced-for → enhanced-for is no-op, skip
-			}
-			
-			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {
-				if ("stream".equals(targetFormat)) {
-					fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP); // existing: iterator-while → stream
-				} else if ("enhanced_for".equals(targetFormat)) {
-					fixSet.add(UseFunctionalCallFixCore.ITERATOR_TO_FOR); // new: iterator-while → enhanced-for
-				}
-				// iterator-while → iterator-while is no-op, skip
-			}
-			
-			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {
-				if ("enhanced_for".equals(targetFormat)) {
-					fixSet.add(UseFunctionalCallFixCore.STREAM_TO_FOR); // new: stream → enhanced-for
-				} else if ("iterator_while".equals(targetFormat)) {
-					fixSet.add(UseFunctionalCallFixCore.STREAM_TO_ITERATOR); // new: stream → iterator-while
-				}
-				// stream → stream is no-op, skip
-			}
-			
-			// Classic for-loop conversion (experimental, not yet implemented)
-			// if (isEnabled(LOOP_CONVERSION_FROM_CLASSIC_FOR)) {
-			//     // TODO: Implement in future phase
-			// }
-		}
+		// Bidirectional Loop Conversion (Phase 9) - Currently disabled
+		// The LOOP_CONVERSION_* options are defined but the infrastructure to properly
+		// read the target format from CleanUpOptions is not yet working correctly.
+		// For now, these bidirectional transformations remain disabled.
+		// TODO: Implement proper CleanUpOptions value reading for non-boolean options
+		// See: https://github.com/carstenartur/sandbox/issues/XXX
 		
 		return fixSet;
 	}

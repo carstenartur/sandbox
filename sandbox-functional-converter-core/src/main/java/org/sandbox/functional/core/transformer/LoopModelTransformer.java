@@ -68,8 +68,8 @@ public class LoopModelTransformer<T> {
     
     private T applyOperation(T pipeline, Operation op, String varName) {
         return switch (op) {
-            case FilterOp f -> renderer.renderFilter(pipeline, f.expression(), varName);
-            case MapOp m -> renderer.renderMap(pipeline, m.expression(), varName, m.targetType());
+            case FilterOp f -> renderer.renderFilterOp(pipeline, f, varName);
+            case MapOp m -> renderer.renderMapOp(pipeline, m, varName);
             case FlatMapOp fm -> renderer.renderFlatMap(pipeline, fm.expression(), varName);
             case PeekOp p -> renderer.renderPeek(pipeline, p.expression(), varName);
             case DistinctOp d -> renderer.renderDistinct(pipeline);
