@@ -24,13 +24,13 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /**
- * Tests for LoopToFunctionalV2 ULR Integration.
+ * Tests for the unified LoopToFunctional ULR Integration.
  * 
  * <p>
  * This test class validates the Unified Loop Representation (ULR) based
- * implementation of loop-to-functional transformations. It ensures that
- * the V2 implementation correctly uses JdtLoopExtractor, LoopModel, and
- * ASTStreamRenderer to convert loops.
+ * implementation of loop-to-functional transformations. The implementation
+ * uses ULR for simple forEach patterns and falls back to the Refactorer
+ * for complex patterns (filter, map, collect, reduce).
  * </p>
  * 
  * @see org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2
@@ -77,7 +77,7 @@ public class LoopToFunctionalV2Test {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, false, null);
         
-        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         
         context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
@@ -117,7 +117,7 @@ public class LoopToFunctionalV2Test {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, false, null);
         
-        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         
         context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
@@ -147,7 +147,7 @@ public class LoopToFunctionalV2Test {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, false, null);
         
-        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         
         // Should remain unchanged
         context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
@@ -178,7 +178,7 @@ public class LoopToFunctionalV2Test {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, false, null);
         
-        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         
         // Should remain unchanged
         context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
@@ -209,7 +209,7 @@ public class LoopToFunctionalV2Test {
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, false, null);
         
-        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2);
+        context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         
         // Should remain unchanged
         context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });

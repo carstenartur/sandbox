@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_ENABLED;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUpFix_refactor;
@@ -57,7 +58,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	}
 
 	public boolean requireAST() {
-		return isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(LOOP_CONVERSION_ENABLED);
+		return isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2) || isEnabled(LOOP_CONVERSION_ENABLED);
 	}
 
 	@Override
@@ -67,7 +68,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 		EnumSet<UseFunctionalCallFixCore> computeFixSet = computeFixSet();
-		if ((!isEnabled(USEFUNCTIONALLOOP_CLEANUP) && !isEnabled(LOOP_CONVERSION_ENABLED)) || computeFixSet.isEmpty()) {
+		if ((!isEnabled(USEFUNCTIONALLOOP_CLEANUP) && !isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2) && !isEnabled(LOOP_CONVERSION_ENABLED)) || computeFixSet.isEmpty()) {
 			return null;
 		}
 		
@@ -93,7 +94,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	@Override
 	public String[] getStepDescriptions() {
 		List<String> result = new ArrayList<>();
-		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP)) {
+		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2)) {
 			result.add(Messages.format(FunctionalCallCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
 					computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())) }));
 		}
@@ -114,9 +115,9 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
 		EnumSet<UseFunctionalCallFixCore> fixSet = EnumSet.noneOf(UseFunctionalCallFixCore.class);
 
-		// Legacy functional loop cleanup (backward compatibility)
-		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP)) {
-			// Add LOOP (V1) and ITERATOR_LOOP (Phase 7) for comprehensive loop conversions
+		// Functional loop cleanup (handles both V1 and V2 constants for backward compatibility)
+		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2)) {
+			// LOOP now uses the unified V2 implementation (ULR + Refactorer fallback)
 			fixSet.add(UseFunctionalCallFixCore.LOOP);
 			fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
 		}
