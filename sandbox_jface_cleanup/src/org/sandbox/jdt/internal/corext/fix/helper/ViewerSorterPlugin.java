@@ -121,6 +121,105 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 	}
 
 	/**
+	 * Checks if a type is one of the deprecated ViewerSorter types based on the Type node.
+	 * This method handles both cases: when type binding is available and when it's not.
+	 * 
+	 * @param type the Type AST node to check
+	 * @return {@code true} if it's a ViewerSorter type, {@code false} otherwise
+	 */
+	private static boolean isViewerSorterType(Type type) {
+		if (type == null) {
+			return false;
+		}
+		
+		// First try to resolve the binding (most reliable)
+		ITypeBinding typeBinding = type.resolveBinding();
+		if (typeBinding != null && !typeBinding.isRecovered()) {
+			// Only trust the binding if it's fully resolved
+			return isViewerSorterType(typeBinding);
+		}
+		
+		// Fallback: check by type name string (for when bindings aren't available or are recovered/incomplete)
+		String typeName = getTypeName(type);
+		return isViewerSorterTypeName(typeName);
+	}
+
+	/**
+	 * Extracts the type name from a Type AST node.
+	 * 
+	 * @param type the Type AST node
+	 * @return the simple or qualified type name, or null if not determinable
+	 */
+	private static String getTypeName(Type type) {
+		if (type == null) {
+			return null;
+		}
+		if (type.isSimpleType()) {
+			return ((org.eclipse.jdt.core.dom.SimpleType) type).getName().getFullyQualifiedName();
+		}
+		if (type.isQualifiedType()) {
+			return ((org.eclipse.jdt.core.dom.QualifiedType) type).getName().getFullyQualifiedName();
+		}
+		if (type.isNameQualifiedType()) {
+			return ((org.eclipse.jdt.core.dom.NameQualifiedType) type).getName().getFullyQualifiedName();
+		}
+		return type.toString();
+	}
+
+	/**
+	 * Checks if a type name (simple or qualified) matches a ViewerSorter type.
+	 * 
+	 * @param typeName the type name to check
+	 * @return {@code true} if it matches a ViewerSorter type, {@code false} otherwise
+	 */
+	private static boolean isViewerSorterTypeName(String typeName) {
+		if (typeName == null) {
+			return false;
+		}
+		// Check both simple and qualified names
+		return "ViewerSorter".equals(typeName) //$NON-NLS-1$
+				|| VIEWER_SORTER.equals(typeName)
+				|| "TreePathViewerSorter".equals(typeName) //$NON-NLS-1$
+				|| TREEPATH_VIEWER_SORTER.equals(typeName)
+				|| "CommonViewerSorter".equals(typeName) //$NON-NLS-1$
+				|| COMMON_VIEWER_SORTER.equals(typeName);
+	}
+
+	/**
+	 * Gets the replacement type name for a given ViewerSorter type.
+	 * Works with both resolved bindings and type name strings.
+	 * 
+	 * @param type the Type AST node
+	 * @return the replacement qualified type name, or null if not a ViewerSorter type
+	 */
+	private static String getReplacementTypeName(Type type) {
+		if (type == null) {
+			return null;
+		}
+		
+		// First try to resolve the binding (only if fully resolved)
+		ITypeBinding typeBinding = type.resolveBinding();
+		if (typeBinding != null && !typeBinding.isRecovered()) {
+			return getReplacementQualifiedTypeName(typeBinding);
+		}
+		
+		// Fallback: determine replacement based on type name string
+		String typeName = getTypeName(type);
+		if (typeName == null) {
+			return null;
+		}
+		
+		if ("ViewerSorter".equals(typeName) || VIEWER_SORTER.equals(typeName)) { //$NON-NLS-1$
+			return VIEWER_COMPARATOR;
+		} else if ("TreePathViewerSorter".equals(typeName) || TREEPATH_VIEWER_SORTER.equals(typeName)) { //$NON-NLS-1$
+			return TREEPATH_VIEWER_COMPARATOR;
+		} else if ("CommonViewerSorter".equals(typeName) || COMMON_VIEWER_SORTER.equals(typeName)) { //$NON-NLS-1$
+			return COMMON_VIEWER_COMPARATOR;
+		}
+		return null;
+	}
+
+	/**
 	 * Gets the fully qualified replacement type name for a deprecated ViewerSorter type.
 	 * 
 	 * @param typeBinding the type binding of the deprecated type
@@ -177,6 +276,48 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 		
 		// Check if declaring class or any of its supertypes is a JFace viewer
 		return isJFaceViewer(declaringClass);
+	}
+
+	/**
+	 * Checks if a method invocation is a JFace viewer getSorter() or setSorter() method
+	 * based on the expression type name (fallback when bindings are not available).
+	 * 
+	 * @param node the method invocation to check
+	 * @return {@code true} if it appears to be a JFace viewer sorter method, {@code false} otherwise
+	 */
+	private static boolean isJFaceViewerSorterMethodByName(MethodInvocation node) {
+		if (node == null || node.getExpression() == null) {
+			return false;
+		}
+		
+		// Try to get the type of the expression
+		org.eclipse.jdt.core.dom.Expression expr = node.getExpression();
+		ITypeBinding exprType = expr.resolveTypeBinding();
+		
+		// Only trust fully resolved bindings
+		if (exprType != null && !exprType.isRecovered()) {
+			return isJFaceViewer(exprType);
+		}
+		
+		// Fallback: check by variable name or type name
+		if (expr instanceof SimpleName simpleName) {
+			String name = simpleName.getIdentifier();
+			// Heuristic: if the variable name contains "viewer" (case-insensitive),
+			// it's likely a viewer
+			if (name.toLowerCase().contains("viewer")) { //$NON-NLS-1$
+				return true;
+			}
+		}
+		
+		// Additional fallback: check if the type name (from recovered binding) contains "Viewer"
+		if (exprType != null && exprType.isRecovered()) {
+			String typeName = exprType.getName();
+			if (typeName != null && typeName.contains("Viewer")) { //$NON-NLS-1$
+				return true;
+			}
+		}
+		
+		return false;
 	}
 
 	/**
@@ -249,11 +390,8 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			public boolean visit(TypeDeclaration node) {
 				// Check extends clause
 				Type superclassType = node.getSuperclassType();
-				if (superclassType != null) {
-					ITypeBinding typeBinding = superclassType.resolveBinding();
-					if (isViewerSorterType(typeBinding)) {
-						holder.typesToReplace.add(superclassType);
-					}
+				if (superclassType != null && isViewerSorterType(superclassType)) {
+					holder.typesToReplace.add(superclassType);
 				}
 				return true;
 			}
@@ -261,11 +399,8 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			@Override
 			public boolean visit(FieldDeclaration node) {
 				Type fieldType = node.getType();
-				if (fieldType != null) {
-					ITypeBinding typeBinding = fieldType.resolveBinding();
-					if (isViewerSorterType(typeBinding)) {
-						holder.typesToReplace.add(fieldType);
-					}
+				if (fieldType != null && isViewerSorterType(fieldType)) {
+					holder.typesToReplace.add(fieldType);
 				}
 				return true;
 			}
@@ -273,11 +408,8 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			@Override
 			public boolean visit(VariableDeclarationStatement node) {
 				Type variableType = node.getType();
-				if (variableType != null) {
-					ITypeBinding typeBinding = variableType.resolveBinding();
-					if (isViewerSorterType(typeBinding)) {
-						holder.typesToReplace.add(variableType);
-					}
+				if (variableType != null && isViewerSorterType(variableType)) {
+					holder.typesToReplace.add(variableType);
 				}
 				return true;
 			}
@@ -286,11 +418,8 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			public boolean visit(MethodDeclaration node) {
 				// Check return type
 				Type returnType = node.getReturnType2();
-				if (returnType != null) {
-					ITypeBinding typeBinding = returnType.resolveBinding();
-					if (isViewerSorterType(typeBinding)) {
-						holder.typesToReplace.add(returnType);
-					}
+				if (returnType != null && isViewerSorterType(returnType)) {
+					holder.typesToReplace.add(returnType);
 				}
 				return true;
 			}
@@ -299,11 +428,8 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			public boolean visit(SingleVariableDeclaration node) {
 				// Check parameter type
 				Type paramType = node.getType();
-				if (paramType != null) {
-					ITypeBinding typeBinding = paramType.resolveBinding();
-					if (isViewerSorterType(typeBinding)) {
-						holder.typesToReplace.add(paramType);
-					}
+				if (paramType != null && isViewerSorterType(paramType)) {
+					holder.typesToReplace.add(paramType);
 				}
 				return true;
 			}
@@ -311,11 +437,8 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			@Override
 			public boolean visit(ClassInstanceCreation node) {
 				Type instanceType = node.getType();
-				if (instanceType != null) {
-					ITypeBinding typeBinding = instanceType.resolveBinding();
-					if (isViewerSorterType(typeBinding)) {
-						holder.typesToReplace.add(instanceType);
-					}
+				if (instanceType != null && isViewerSorterType(instanceType)) {
+					holder.typesToReplace.add(instanceType);
 				}
 				return true;
 			}
@@ -323,11 +446,8 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			@Override
 			public boolean visit(CastExpression node) {
 				Type castType = node.getType();
-				if (castType != null) {
-					ITypeBinding typeBinding = castType.resolveBinding();
-					if (isViewerSorterType(typeBinding)) {
-						holder.typesToReplace.add(castType);
-					}
+				if (castType != null && isViewerSorterType(castType)) {
+					holder.typesToReplace.add(castType);
 				}
 				return true;
 			}
@@ -338,8 +458,9 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 				if (methodName != null) {
 					String name = methodName.getIdentifier();
 					if ("getSorter".equals(name) || "setSorter".equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$
+						// Check if this is a JFace viewer method - first try binding, then fallback to name-based check
 						IMethodBinding methodBinding = node.resolveMethodBinding();
-						if (isJFaceViewerSorterMethod(methodBinding)) {
+						if (isJFaceViewerSorterMethod(methodBinding) || isJFaceViewerSorterMethodByName(node)) {
 							holder.methodNamesToReplace.add(methodName);
 						}
 					}
@@ -394,8 +515,8 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 			if (!holder.nodesprocessed.contains(typeToReplace)) {
 				holder.nodesprocessed.add(typeToReplace);
 				
-				ITypeBinding typeBinding = typeToReplace.resolveBinding();
-				String replacementQualifiedName = getReplacementQualifiedTypeName(typeBinding);
+				// Use the new helper that handles null bindings
+				String replacementQualifiedName = getReplacementTypeName(typeToReplace);
 				
 				if (replacementQualifiedName != null) {
 					// Create new type with proper import
@@ -405,9 +526,28 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 					// Replace the type
 					rewrite.replace(typeToReplace, newType, group);
 					
-					// Remove old import
-					String oldQualifiedName = typeBinding.getQualifiedName();
-					importRewrite.removeImport(oldQualifiedName);
+					// Remove old import (if binding is available and fully resolved)
+					ITypeBinding typeBinding = typeToReplace.resolveBinding();
+					if (typeBinding != null && !typeBinding.isRecovered()) {
+						String oldQualifiedName = typeBinding.getQualifiedName();
+						importRewrite.removeImport(oldQualifiedName);
+					} else {
+						// Fallback: remove import based on type name
+						String typeName = getTypeName(typeToReplace);
+						if (typeName != null) {
+							// Try to remove both simple and qualified versions
+							if ("ViewerSorter".equals(typeName)) { //$NON-NLS-1$
+								importRewrite.removeImport(VIEWER_SORTER);
+							} else if ("TreePathViewerSorter".equals(typeName)) { //$NON-NLS-1$
+								importRewrite.removeImport(TREEPATH_VIEWER_SORTER);
+							} else if ("CommonViewerSorter".equals(typeName)) { //$NON-NLS-1$
+								importRewrite.removeImport(COMMON_VIEWER_SORTER);
+							} else {
+								// Already qualified name
+								importRewrite.removeImport(typeName);
+							}
+						}
+					}
 				}
 			}
 		}
