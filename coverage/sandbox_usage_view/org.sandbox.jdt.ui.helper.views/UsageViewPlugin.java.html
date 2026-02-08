@@ -26,6 +26,9 @@ public class UsageViewPlugin extends AbstractUIPlugin {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = &quot;sandbox_usage_view&quot;; //$NON-NLS-1$
+	
+	// The view ID for the JavaHelper View
+	public static final String VIEW_ID = &quot;org.eclipse.jdt.ui.helper.views.JavaHelperView&quot;; //$NON-NLS-1$
 
 	// The shared instance
 	private static UsageViewPlugin plugin;
@@ -33,21 +36,21 @@ public class UsageViewPlugin extends AbstractUIPlugin {
 	/**
 	 * The constructor
 	 */
-<span class="fc" id="L36">	public UsageViewPlugin() {</span>
+<span class="fc" id="L39">	public UsageViewPlugin() {</span>
 		// default constructor
-<span class="fc" id="L38">	}</span>
+<span class="fc" id="L41">	}</span>
 
 	@Override
 	public void start(BundleContext context) throws Exception {
-<span class="fc" id="L42">		super.start(context);</span>
-<span class="fc" id="L43">		plugin = this;</span>
-<span class="fc" id="L44">	}</span>
+<span class="fc" id="L45">		super.start(context);</span>
+<span class="fc" id="L46">		plugin = this;</span>
+<span class="fc" id="L47">	}</span>
 
 	@Override
 	public void stop(BundleContext context) throws Exception {
-<span class="fc" id="L48">		plugin = null;</span>
-<span class="fc" id="L49">		super.stop(context);</span>
-<span class="fc" id="L50">	}</span>
+<span class="fc" id="L51">		plugin = null;</span>
+<span class="fc" id="L52">		super.stop(context);</span>
+<span class="fc" id="L53">	}</span>
 
 	/**
 	 * Returns the shared instance
@@ -55,7 +58,7 @@ public class UsageViewPlugin extends AbstractUIPlugin {
 	 * @return the shared instance
 	 */
 	public static UsageViewPlugin getDefault() {
-<span class="fc" id="L58">		return plugin;</span>
+<span class="fc" id="L61">		return plugin;</span>
 	}
 
 	/**
@@ -66,13 +69,13 @@ public class UsageViewPlugin extends AbstractUIPlugin {
 	 * @return the image descriptor
 	 */
 	public static ImageDescriptor getImageDescriptor(String path) {
-<span class="nc" id="L69">		return imageDescriptorFromPlugin(PLUGIN_ID, path);</span>
+<span class="nc" id="L72">		return imageDescriptorFromPlugin(PLUGIN_ID, path);</span>
 	}
 
 	@Override
 	protected void initializeDefaultPreferences(IPreferenceStore store) {
 		// Set default value for show at startup preference
-<span class="fc" id="L75">		store.setDefault(UsageViewPreferenceConstants.SHOW_VIEW_AT_STARTUP, true);</span>
-<span class="fc" id="L76">	}</span>
+<span class="fc" id="L78">		store.setDefault(UsageViewPreferenceConstants.SHOW_VIEW_AT_STARTUP, true);</span>
+<span class="fc" id="L79">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

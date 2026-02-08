@@ -95,7 +95,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 <span class="fc" id="L95">		ITypeBinding binding = fragment.resolveBinding().getType();</span>
 <span class="pc bpc" id="L96" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; getRuleType().equals(binding.getQualifiedName())) {</span>
 <span class="fc" id="L97">			JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L98">			mh.minv = node;</span>
+<span class="fc" id="L98">			mh.setMinv(node);</span>
 <span class="fc" id="L99">			dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L100">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}

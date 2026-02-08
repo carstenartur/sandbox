@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>VariableNameSuggester.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_usage_view</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.helper.views</a> &gt; <span class="el_source">VariableNameSuggester.java</span></div><h1>VariableNameSuggester.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2020 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.ui.helper.views;
+
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+
+/**
+ * Helper class for generating suggested variable names based on existing name and type.
+ * This is useful for renaming variables to include type information in their names.
+ */
+public class VariableNameSuggester {
+
+	private VariableNameSuggester() {
+		// Utility class
+	}
+
+	/**
+	 * Generates a suggested name for a variable based on its current name and type.
+	 * The suggestion follows common Java naming conventions.
+	 * 
+	 * Examples:
+	 * - &quot;value&quot; + String -&gt; &quot;stringValue&quot;
+	 * - &quot;result&quot; + Integer -&gt; &quot;integerResult&quot;
+	 * - &quot;item&quot; + List&lt;String&gt; -&gt; &quot;stringListItem&quot;
+	 * - &quot;data&quot; + byte[] -&gt; &quot;byteArrayData&quot;
+	 * 
+	 * @param variableBinding the variable binding to generate a name for
+	 * @return a suggested name incorporating the type
+	 */
+	public static String suggestName(IVariableBinding variableBinding) {
+<span class="nc" id="L43">		String currentName = variableBinding.getName();</span>
+<span class="nc" id="L44">		ITypeBinding typeBinding = variableBinding.getType();</span>
+		
+<span class="nc bnc" id="L46" title="All 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L47">			return currentName;</span>
+		}
+		
+<span class="nc" id="L50">		String typePrefix = getTypePrefix(typeBinding);</span>
+		
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		if (typePrefix.isEmpty()) {</span>
+<span class="nc" id="L53">			return currentName;</span>
+		}
+		
+		// Combine type prefix with existing name using camelCase
+<span class="nc" id="L57">		return typePrefix + capitalizeFirst(currentName);</span>
+	}
+
+	/**
+	 * Gets a prefix string based on the type binding.
+	 * 
+	 * @param typeBinding the type binding
+	 * @return a lowercase prefix string representing the type
+	 */
+	private static String getTypePrefix(ITypeBinding typeBinding) {
+<span class="nc bnc" id="L67" title="All 2 branches missed.">		if (typeBinding.isArray()) {</span>
+			// Handle array types: int[] -&gt; &quot;intArray&quot;, String[] -&gt; &quot;stringArray&quot;
+<span class="nc" id="L69">			ITypeBinding elementType = typeBinding.getElementType();</span>
+<span class="nc" id="L70">			String elementName = getSimpleTypeName(elementType);</span>
+<span class="nc" id="L71">			return lowercaseFirst(elementName) + &quot;Array&quot;; //$NON-NLS-1$</span>
+		}
+		
+<span class="nc bnc" id="L74" title="All 2 branches missed.">		if (typeBinding.isParameterizedType()) {</span>
+			// Handle generic types: List&lt;String&gt; -&gt; &quot;stringList&quot;
+<span class="nc" id="L76">			ITypeBinding[] typeArguments = typeBinding.getTypeArguments();</span>
+<span class="nc" id="L77">			String baseName = getSimpleTypeName(typeBinding);</span>
+			
+<span class="nc bnc" id="L79" title="All 4 branches missed.">			if (typeArguments != null &amp;&amp; typeArguments.length &gt; 0) {</span>
+<span class="nc" id="L80">				String argName = getSimpleTypeName(typeArguments[0]);</span>
+<span class="nc" id="L81">				return lowercaseFirst(argName) + baseName;</span>
+			}
+<span class="nc" id="L83">			return lowercaseFirst(baseName);</span>
+		}
+		
+		// Simple type
+<span class="nc" id="L87">		String typeName = getSimpleTypeName(typeBinding);</span>
+<span class="nc" id="L88">		return lowercaseFirst(typeName);</span>
+	}
+
+	/**
+	 * Gets the simple name of a type (without package).
+	 * 
+	 * @param typeBinding the type binding
+	 * @return the simple type name
+	 */
+	private static String getSimpleTypeName(ITypeBinding typeBinding) {
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (typeBinding.isPrimitive()) {</span>
+			// Capitalize primitives for better readability
+<span class="nc" id="L100">			return capitalizeFirst(typeBinding.getName());</span>
+		}
+		
+		// Use simple name for reference types
+<span class="nc" id="L104">		String name = typeBinding.getName();</span>
+		
+		// Remove generic parameters if present (e.g., &quot;List&lt;E&gt;&quot; -&gt; &quot;List&quot;)
+<span class="nc" id="L107">		int genericStart = name.indexOf('&lt;');</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">		if (genericStart &gt; 0) {</span>
+<span class="nc" id="L109">			name = name.substring(0, genericStart);</span>
+		}
+		
+<span class="nc" id="L112">		return name;</span>
+	}
+
+	/**
+	 * Capitalizes the first character of a string.
+	 * 
+	 * @param str the string to capitalize
+	 * @return the string with first character capitalized
+	 */
+	private static String capitalizeFirst(String str) {
+<span class="nc bnc" id="L122" title="All 4 branches missed.">		if (str == null || str.isEmpty()) {</span>
+<span class="nc" id="L123">			return str;</span>
+		}
+<span class="nc" id="L125">		return Character.toUpperCase(str.charAt(0)) + str.substring(1);</span>
+	}
+
+	/**
+	 * Lowercases the first character of a string.
+	 * 
+	 * @param str the string to lowercase
+	 * @return the string with first character lowercased
+	 */
+	private static String lowercaseFirst(String str) {
+<span class="nc bnc" id="L135" title="All 4 branches missed.">		if (str == null || str.isEmpty()) {</span>
+<span class="nc" id="L136">			return str;</span>
+		}
+<span class="nc" id="L138">		return Character.toLowerCase(str.charAt(0)) + str.substring(1);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

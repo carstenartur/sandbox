@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>FixUtilities.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">FixUtilities.java</span></div><h1>FixUtilities.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.sandbox.jdt.triggerpattern.internal.PatternParser;
+
+/**
+ * Utilities for creating declarative fix templates.
+ * 
+ * &lt;p&gt;This class provides methods to create fixes using pattern-based
+ * replacement templates, similar to NetBeans' JavaFixUtilities.&lt;/p&gt;
+ * 
+ * @since 1.2.2
+ */
+public final class FixUtilities {
+	
+	private FixUtilities() {
+		// Utility class, no instances
+	}
+	
+	/**
+	 * Creates a declarative rewrite fix from a replacement template.
+	 * 
+	 * &lt;p&gt;Placeholders from the match are substituted into the replacement template.
+	 * The matched node is replaced with the result.&lt;/p&gt;
+	 * 
+	 * &lt;p&gt;Example:&lt;/p&gt;
+	 * &lt;pre&gt;
+	 * Match pattern:    &quot;$x + 1&quot;
+	 * Replacement:      &quot;++$x&quot;
+	 * For code &quot;count + 1&quot;, produces &quot;++count&quot;
+	 * &lt;/pre&gt;
+	 * 
+	 * &lt;p&gt;Supports both single placeholders ($x) and multi-placeholders ($args$).
+	 * The replacement pattern is parsed using the same syntax as trigger patterns.&lt;/p&gt;
+	 * 
+	 * @param ctx the hint context containing the match and rewrite
+	 * @param replacementPattern the replacement pattern with placeholders
+	 * @throws IllegalArgumentException if the replacement pattern cannot be parsed
+	 */
+	public static void rewriteFix(HintContext ctx, String replacementPattern) {
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">		if (ctx == null || replacementPattern == null) {</span>
+<span class="nc" id="L68">			throw new IllegalArgumentException(&quot;Context and replacement pattern must not be null&quot;); //$NON-NLS-1$</span>
+		}
+		
+<span class="fc" id="L71">		Match match = ctx.getMatch();</span>
+<span class="fc" id="L72">		ASTRewrite rewrite = ctx.getASTRewrite();</span>
+<span class="fc" id="L73">		ASTNode matchedNode = match.getMatchedNode();</span>
+		
+		// Determine pattern kind from matched node type
+<span class="fc" id="L76">		PatternKind kind = determinePatternKind(matchedNode);</span>
+		
+		// Parse the replacement pattern
+<span class="fc" id="L79">		PatternParser parser = new PatternParser();</span>
+<span class="fc" id="L80">		Pattern pattern = new Pattern(replacementPattern, kind, null, null);</span>
+<span class="fc" id="L81">		ASTNode replacementNode = parser.parse(pattern);</span>
+		
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (replacementNode == null) {</span>
+<span class="fc" id="L84">			throw new IllegalArgumentException(&quot;Could not parse replacement pattern: &quot; + replacementPattern); //$NON-NLS-1$</span>
+		}
+		
+		// Substitute placeholders with actual bindings
+<span class="fc" id="L88">		ASTNode substituted = substitutePlaceholders(replacementNode, match.getBindings(), rewrite.getAST());</span>
+		
+		// Replace the matched node with the substituted replacement
+<span class="fc" id="L91">		rewrite.replace(matchedNode, substituted, null);</span>
+<span class="fc" id="L92">	}</span>
+	
+	/**
+	 * Determines the PatternKind from a matched node type.
+	 * 
+	 * @param node the matched node
+	 * @return the appropriate PatternKind
+	 */
+	private static PatternKind determinePatternKind(ASTNode node) {
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">		if (node instanceof Expression) {</span>
+<span class="fc" id="L102">			return PatternKind.EXPRESSION;</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">		} else if (node instanceof Annotation) {</span>
+<span class="nc" id="L104">			return PatternKind.ANNOTATION;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">		} else if (node instanceof MethodInvocation) {</span>
+<span class="nc" id="L106">			return PatternKind.METHOD_CALL;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">		} else if (node instanceof ImportDeclaration) {</span>
+<span class="nc" id="L108">			return PatternKind.IMPORT;</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">		} else if (node instanceof FieldDeclaration) {</span>
+<span class="nc" id="L110">			return PatternKind.FIELD;</span>
+		}
+<span class="nc" id="L112">		return PatternKind.STATEMENT;</span>
+	}
+	
+	/**
+	 * Substitutes placeholders in a template node with actual bindings.
+	 * 
+	 * @param template the template node with placeholders
+	 * @param bindings the placeholder bindings from the match
+	 * @param ast the AST for creating new nodes
+	 * @return a new node with placeholders replaced
+	 */
+	private static ASTNode substitutePlaceholders(ASTNode template, Map&lt;String, Object&gt; bindings, AST ast) {
+		// For simple cases, if the entire template is a placeholder, return its binding directly
+<span class="fc" id="L125">		String placeholderName = extractPlaceholderName(template);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		if (placeholderName != null) {</span>
+<span class="fc" id="L127">			Object binding = bindings.get(placeholderName);</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">			if (binding instanceof ASTNode) {</span>
+<span class="fc" id="L129">				return ASTNode.copySubtree(ast, (ASTNode) binding);</span>
+			}
+		}
+		
+		// For complex templates, perform a recursive substitution
+<span class="fc" id="L134">		ASTNode copy = ASTNode.copySubtree(ast, template);</span>
+		
+		// Build a map of placeholder SimpleNames to their replacements
+<span class="fc" id="L137">		Map&lt;SimpleName, ASTNode&gt; replacements = new HashMap&lt;&gt;();</span>
+		
+<span class="fc" id="L139">		copy.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName node) {
+<span class="fc" id="L142">				String name = node.getIdentifier();</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">				if (name.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L144">					Object binding = bindings.get(name);</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">					if (binding instanceof ASTNode) {</span>
+<span class="fc" id="L146">						replacements.put(node, (ASTNode) binding);</span>
+					}
+					// Multi-placeholders are handled separately as they need list context
+				}
+<span class="fc" id="L150">				return true;</span>
+			}
+		});
+		
+		// Apply replacements using structural replace
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		for (Map.Entry&lt;SimpleName, ASTNode&gt; entry : replacements.entrySet()) {</span>
+<span class="fc" id="L156">			SimpleName placeholder = entry.getKey();</span>
+<span class="fc" id="L157">			ASTNode replacement = entry.getValue();</span>
+<span class="fc" id="L158">			ASTNode parent = placeholder.getParent();</span>
+			
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">			if (parent != null) {</span>
+<span class="fc" id="L161">				StructuralPropertyDescriptor location = placeholder.getLocationInParent();</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">				if (location.isChildProperty()) {</span>
+<span class="fc" id="L163">					parent.setStructuralProperty(location, ASTNode.copySubtree(ast, replacement));</span>
+				}
+			}
+		}
+		
+<span class="fc" id="L168">		return copy;</span>
+	}
+	
+	/**
+	 * Extracts the placeholder name from a node if it is a simple placeholder.
+	 * 
+	 * @param node the node to check
+	 * @return the placeholder name (e.g., &quot;$x&quot;), or null if not a placeholder
+	 */
+	private static String extractPlaceholderName(ASTNode node) {
+		// SimpleName nodes with names starting with $ are placeholders
+<span class="fc bfc" id="L179" title="All 2 branches covered.">		if (node.getNodeType() == ASTNode.SIMPLE_NAME) {</span>
+<span class="fc" id="L180">			String name = node.toString();</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">			if (name.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L182">				return name;</span>
+			}
+		}
+<span class="fc" id="L185">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

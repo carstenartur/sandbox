@@ -14,28 +14,57 @@
 package org.sandbox.jdt.ui.helper.views.colum;
 
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jface.layout.TableColumnLayout;
+import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
 
-<span class="fc" id="L19">public class NameColumn extends AbstractColumn {</span>
+/**
+ * Column displaying the variable name.
+ */
+<span class="fc" id="L25">public class NameColumn extends AbstractColumn {</span>
 
-	private static final int bounds= 100;
-	private static final String title= &quot;Variable name&quot;; //$NON-NLS-1$
+	private static final int MINIMUM_WIDTH = 100;
+	private static final String TITLE = &quot;Variable name&quot;; //$NON-NLS-1$
+	private static final int COLUMN_WEIGHT = 2;
 
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
-		// First column is for the variable name
-<span class="fc" id="L27">		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {</span>
+<span class="nc" id="L33">		createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos).setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
 			@Override
 			public String getText(Object element) {
-<span class="nc" id="L30">				IVariableBinding p= (IVariableBinding) element;</span>
-<span class="nc" id="L31">				return p.getName();</span>
+<span class="nc" id="L36">				IVariableBinding binding = (IVariableBinding) element;</span>
+<span class="nc" id="L37">				return binding.getName();</span>
 			}
 		});
-<span class="fc" id="L34">	}</span>
+<span class="nc" id="L40">	}</span>
+	
+	@Override
+	public void createColumn(TableViewer viewer, int pos, TableColumnLayout tableColumnLayout) {
+<span class="fc" id="L44">		TableViewerColumn viewerColumn = createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos);</span>
+<span class="fc" id="L45">		viewerColumn.setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
+			@Override
+			public String getText(Object element) {
+<span class="nc" id="L48">				IVariableBinding binding = (IVariableBinding) element;</span>
+<span class="nc" id="L49">				return binding.getName();</span>
+			}
+		});
+<span class="fc" id="L52">		tableColumnLayout.setColumnData(viewerColumn.getColumn(), new ColumnWeightData(COLUMN_WEIGHT, MINIMUM_WIDTH, true));</span>
+<span class="fc" id="L53">	}</span>
+	
+	@Override
+	public int getColumnWeight() {
+<span class="nc" id="L57">		return COLUMN_WEIGHT;</span>
+	}
+	
+	@Override
+	public int getMinimumWidth() {
+<span class="nc" id="L62">		return MINIMUM_WIDTH;</span>
+	}
 
 	@Override
 	protected int compare(IVariableBinding p1, IVariableBinding p2) {
-<span class="nc" id="L38">		return p1.getName().compareTo(p2.getName());</span>
+<span class="nc" id="L67">		return p1.getName().compareTo(p2.getName());</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

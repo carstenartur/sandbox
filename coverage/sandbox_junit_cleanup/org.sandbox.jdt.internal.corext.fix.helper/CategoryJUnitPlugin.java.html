@@ -92,14 +92,14 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Annotation node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 <span class="fc" id="L94">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L95">		mh.minv= node;</span>
-<span class="fc" id="L96">		mh.minvname= node.getTypeName().getFullyQualifiedName();</span>
+<span class="fc" id="L95">		mh.setMinv(node);</span>
+<span class="fc" id="L96">		mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
 		
 <span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (node instanceof SingleMemberAnnotation mynode) {</span>
 <span class="fc" id="L99">			Expression value= mynode.getValue();</span>
 <span class="fc" id="L100">			List&lt;String&gt; categoryNames= extractCategoryNames(value);</span>
 <span class="pc bpc" id="L101" title="1 of 2 branches missed.">			if (!categoryNames.isEmpty()) {</span>
-<span class="fc" id="L102">				mh.value= String.join(&quot;,&quot;, categoryNames);</span>
+<span class="fc" id="L102">				mh.setValue(String.join(&quot;,&quot;, categoryNames));</span>
 <span class="fc" id="L103">				dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L104">				operations.add(fixcore.rewrite(dataHolder));</span>
 			}
@@ -159,7 +159,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 <span class="fc" id="L161">		Annotation minv= junitHolder.getAnnotation();</span>
-<span class="fc" id="L162">		String[] categoryNames= junitHolder.value.split(&quot;,&quot;);</span>
+<span class="fc" id="L162">		String[] categoryNames= junitHolder.getValue().split(&quot;,&quot;);</span>
 		
 		// Determine if annotation is on a method or class and get the appropriate ListRewrite
 <span class="fc" id="L165">		ListRewrite listRewrite= null;</span>

@@ -99,9 +99,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="fc bfc" id="L99" title="All 2 branches covered.">						if (ORG_JUNIT_RUNNERS_PARAMETERIZED.equals(runnerQualifiedName)) {</span>
 							// Found a parameterized test class
 <span class="fc" id="L101">							JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L102">							mh.minv = node;</span>
-<span class="fc" id="L103">							mh.minvname = node.getTypeName().getFullyQualifiedName();</span>
-<span class="fc" id="L104">							mh.value = ORG_JUNIT_RUNNERS_PARAMETERIZED;</span>
+<span class="fc" id="L102">							mh.setMinv(node);</span>
+<span class="fc" id="L103">							mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
+<span class="fc" id="L104">							mh.setValue(ORG_JUNIT_RUNNERS_PARAMETERIZED);</span>
 							
 							// Get the containing type declaration to store for processing
 <span class="fc" id="L107">							ASTNode parent = node.getParent();</span>
@@ -109,7 +109,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="nc" id="L109">								parent = parent.getParent();</span>
 							}
 <span class="pc bpc" id="L111" title="1 of 2 branches missed.">							if (parent != null) {</span>
-<span class="fc" id="L112">								mh.additionalInfo = parent;</span>
+<span class="fc" id="L112">								mh.setAdditionalInfo(parent);</span>
 							}
 							
 <span class="fc" id="L115">							dataHolder.put(dataHolder.size(), mh);</span>
@@ -130,7 +130,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			JunitHolder junitHolder) {
 		
 <span class="fc" id="L132">		Annotation runWithAnnotation = junitHolder.getAnnotation();</span>
-<span class="fc" id="L133">		TypeDeclaration typeDecl = (TypeDeclaration) junitHolder.additionalInfo;</span>
+<span class="fc" id="L133">		TypeDeclaration typeDecl = (TypeDeclaration) junitHolder.getAdditionalInfo();</span>
 		
 <span class="pc bpc" id="L135" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
 <span class="nc" id="L136">			return; // Cannot proceed without type declaration</span>

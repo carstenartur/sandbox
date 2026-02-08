@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>VariableBindingVisitor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_usage_view</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.helper.views</a> &gt; <span class="el_source">VariableBindingVisitor.java</span></div><h1>VariableBindingVisitor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2020 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.ui.helper.views;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+
+/**
+ * Visitor class that collects all variable bindings from SimpleName nodes
+ * using the AstProcessorBuilder API for cleaner and more maintainable code.
+ */
+<span class="fc" id="L29">public final class VariableBindingVisitor {</span>
+<span class="fc" id="L30">	private Set&lt;IVariableBinding&gt; collectedVariableBindings = new HashSet&lt;&gt;();</span>
+
+	/**
+	 * Process the AST node and collect all variable bindings.
+	 * Uses AstProcessorBuilder API for processing SimpleName nodes.
+	 * 
+	 * @param astNode the AST node to process
+	 */
+	public void process(ASTNode astNode) {
+<span class="fc" id="L39">		AstProcessorBuilder.with(new ReferenceHolder&lt;String, Object&gt;())</span>
+<span class="fc" id="L40">			.onSimpleName((simpleName, dataHolder) -&gt; {</span>
+<span class="fc" id="L41">				IBinding binding = simpleName.resolveBinding();</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">				if (binding instanceof IVariableBinding variableBinding) {</span>
+<span class="fc" id="L43">					collectedVariableBindings.add(variableBinding);</span>
+				}
+<span class="fc" id="L45">				return true;</span>
+			})
+<span class="fc" id="L47">			.build(astNode);</span>
+<span class="fc" id="L48">	}</span>
+
+	/**
+	 * Returns the set of collected variable bindings.
+	 * 
+	 * @return set of IVariableBinding instances found during processing
+	 */
+	public Set&lt;IVariableBinding&gt; getVariableBindings() {
+<span class="fc" id="L56">		return collectedVariableBindings;</span>
+	}
+	
+	/**
+	 * Returns the set of collected variable bindings.
+	 * Alias for {@link #getVariableBindings()} for convenience.
+	 * 
+	 * @return set of IVariableBinding instances found during processing
+	 */
+	public Set&lt;IVariableBinding&gt; getVars() {
+<span class="fc" id="L66">		return collectedVariableBindings;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

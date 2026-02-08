@@ -130,9 +130,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 		// Found @RunWith(Enclosed.class), mark it for transformation
 <span class="fc" id="L131">		nodesprocessed.add(node);</span>
 <span class="fc" id="L132">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L133">		mh.minv= node;</span>
-<span class="fc" id="L134">		mh.minvname= node.getTypeName().getFullyQualifiedName();</span>
-<span class="fc" id="L135">		mh.value= ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED;</span>
+<span class="fc" id="L133">		mh.setMinv(node);</span>
+<span class="fc" id="L134">		mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
+<span class="fc" id="L135">		mh.setValue(ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED);</span>
 <span class="fc" id="L136">		dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L137">		operations.add(fixcore.rewrite(dataHolder));</span>
 		

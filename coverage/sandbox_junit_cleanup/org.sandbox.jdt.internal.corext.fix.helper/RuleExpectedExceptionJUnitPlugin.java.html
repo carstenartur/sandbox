@@ -96,7 +96,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 		}
 <span class="fc" id="L97">		ITypeBinding binding = fragment.resolveBinding().getType();</span>
 <span class="pc bpc" id="L98" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L99">			mh.minv = node;</span>
+<span class="fc" id="L99">			mh.setMinv(node);</span>
 <span class="fc" id="L100">			dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L101">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}

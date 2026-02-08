@@ -103,9 +103,9 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		}
 		
 <span class="fc" id="L105">		JunitHolder holder = new JunitHolder();</span>
-<span class="fc" id="L106">		holder.minv = fieldDecl;</span>
-<span class="fc" id="L107">		holder.value = String.valueOf(info.value);</span>
-<span class="fc" id="L108">		holder.minvname = info.unit;</span>
+<span class="fc" id="L106">		holder.setMinv(fieldDecl);</span>
+<span class="fc" id="L107">		holder.setValue(String.valueOf(info.value));</span>
+<span class="fc" id="L108">		holder.setMinvname(info.unit);</span>
 <span class="fc" id="L109">		return holder;</span>
 	}
 
@@ -202,8 +202,8 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		long timeoutValue;
 		String timeUnit;
 		try {
-<span class="fc" id="L205">			timeoutValue = Long.parseLong(junitHolder.value);</span>
-<span class="fc" id="L206">			timeUnit = junitHolder.minvname;</span>
+<span class="fc" id="L205">			timeoutValue = Long.parseLong(junitHolder.getValue());</span>
+<span class="fc" id="L206">			timeUnit = junitHolder.getMinvname();</span>
 <span class="pc" id="L207">		} catch (NumberFormatException e) {</span>
 			// Cannot determine timeout value, skip refactoring
 <span class="nc" id="L209">			return;</span>

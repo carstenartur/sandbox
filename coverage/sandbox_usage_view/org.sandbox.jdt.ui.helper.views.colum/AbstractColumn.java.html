@@ -14,6 +14,7 @@
 package org.sandbox.jdt.ui.helper.views.colum;
 
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jface.layout.TableColumnLayout;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
@@ -21,46 +22,93 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.TableColumn;
 
-<span class="fc" id="L24">public abstract class AbstractColumn {</span>
-<span class="fc" id="L25">	static int i= 0;</span>
-<span class="fc" id="L26">	private static final ColumnViewerComparator comparator= new ColumnViewerComparator();</span>
+/**
+ * Abstract base class for table columns displaying variable binding information.
+ * Supports both fixed-width columns and weighted columns via TableColumnLayout.
+ */
+<span class="fc" id="L29">public abstract class AbstractColumn {</span>
+<span class="fc" id="L30">	static int columnIndex = 0;</span>
+<span class="fc" id="L31">	private static final ColumnViewerComparator comparator = new ColumnViewerComparator();</span>
 
-	protected TableViewerColumn createTableViewerColumn(TableViewer viewer, String title, int bound,
+	protected TableViewerColumn createTableViewerColumn(TableViewer viewer, String title, int minimumWidth,
 			final int colNumber) {
-		//		TableColumn column = WidgetFactory.tableColumn(SWT.NONE).create(table);
-<span class="fc" id="L31">		final TableViewerColumn viewerColumn= new TableViewerColumn(viewer, SWT.NONE);</span>
-<span class="fc" id="L32">		final TableColumn column= viewerColumn.getColumn();</span>
-<span class="fc" id="L33">		column.setText(title);</span>
-<span class="fc" id="L34">		column.setWidth(bound);</span>
-<span class="fc" id="L35">		column.setResizable(true);</span>
-<span class="fc" id="L36">		column.setMoveable(true);</span>
-<span class="fc" id="L37">		column.addSelectionListener(getSelectionAdapter(column, colNumber, viewer));</span>
-<span class="fc" id="L38">		return viewerColumn;</span>
+<span class="fc" id="L35">		final TableViewerColumn viewerColumn = new TableViewerColumn(viewer, SWT.NONE);</span>
+<span class="fc" id="L36">		final TableColumn column = viewerColumn.getColumn();</span>
+<span class="fc" id="L37">		column.setText(title);</span>
+<span class="fc" id="L38">		column.setWidth(minimumWidth);</span>
+<span class="fc" id="L39">		column.setResizable(true);</span>
+<span class="fc" id="L40">		column.setMoveable(true);</span>
+<span class="fc" id="L41">		column.addSelectionListener(getSelectionAdapter(column, colNumber, viewer));</span>
+<span class="fc" id="L42">		return viewerColumn;</span>
 	}
 
+	/**
+	 * Creates the column with a fixed width.
+	 * @param viewer the table viewer
+	 * @param pos the column position
+	 */
 	public abstract void createColumn(TableViewer viewer, int pos);
+	
+	/**
+	 * Creates the column with weighted layout support.
+	 * @param viewer the table viewer
+	 * @param pos the column position
+	 * @param tableColumnLayout the table column layout for weighted sizing
+	 */
+	public abstract void createColumn(TableViewer viewer, int pos, TableColumnLayout tableColumnLayout);
+	
+	/**
+	 * Returns the weight for this column when using TableColumnLayout.
+	 * Override in subclasses to customize column width distribution.
+	 * @return the column weight (default is 1)
+	 */
+	public int getColumnWeight() {
+<span class="nc" id="L66">		return 1;</span>
+	}
+	
+	/**
+	 * Returns the minimum width for this column.
+	 * @return the minimum width in pixels
+	 */
+	public abstract int getMinimumWidth();
 
 	private SelectionAdapter getSelectionAdapter(final TableColumn column, final int index, TableViewer viewer) {
-<span class="fc" id="L44">		return new SelectionAdapter() {</span>
+<span class="fc" id="L76">		return new SelectionAdapter() {</span>
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-<span class="nc" id="L47">				comparator.setColumn(index);</span>
-<span class="nc" id="L48">				int dir= comparator.getDirection();</span>
-<span class="nc" id="L49">				viewer.getTable().setSortDirection(dir);</span>
-<span class="nc" id="L50">				viewer.getTable().setSortColumn(column);</span>
-<span class="nc" id="L51">				viewer.refresh();</span>
-<span class="nc" id="L52">			}</span>
+<span class="nc" id="L79">				comparator.setColumn(index);</span>
+<span class="nc" id="L80">				int dir = comparator.getDirection();</span>
+<span class="nc" id="L81">				viewer.getTable().setSortDirection(dir);</span>
+<span class="nc" id="L82">				viewer.getTable().setSortColumn(column);</span>
+<span class="nc" id="L83">				viewer.refresh();</span>
+<span class="nc" id="L84">			}</span>
 		};
 	}
 
 	public static ColumnViewerComparator getComparator() {
-<span class="fc" id="L57">		return comparator;</span>
+<span class="fc" id="L89">		return comparator;</span>
 	}
 
+	/**
+	 * Adds a column to the table viewer with fixed width.
+	 * @param viewer the table viewer
+	 * @param column the column to add
+	 */
 	public static void addColumn(TableViewer viewer, AbstractColumn column) {
-<span class="fc" id="L61">		ColumnViewerComparator.addColumn(column);</span>
-<span class="fc" id="L62">		column.createColumn(viewer, i++);</span>
-<span class="fc" id="L63">	}</span>
+<span class="nc" id="L98">		ColumnViewerComparator.addColumn(column);</span>
+<span class="nc" id="L99">		column.createColumn(viewer, columnIndex++);</span>
+<span class="nc" id="L100">	}</span>
+	
+	/**
+	 * Adds a column to the table viewer with weighted layout.
+	 * @param viewer the table viewer
+	 * @param column the column to add
+	 * @param tableColumnLayout the table column layout for weighted sizing
+	 */
+	public static void addColumn(TableViewer viewer, AbstractColumn column, TableColumnLayout tableColumnLayout) {
+<span class="fc" id="L109">		ColumnViewerComparator.addColumn(column);</span>
+<span class="fc" id="L110">		column.createColumn(viewer, columnIndex++, tableColumnLayout);</span>
+<span class="fc" id="L111">	}</span>
 
 	protected abstract int compare(IVariableBinding p1, IVariableBinding p2);
 }

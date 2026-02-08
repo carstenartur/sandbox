@@ -18,11 +18,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.PlatformUI;
 import org.osgi.framework.FrameworkUtil;
 
 public class JHPluginImages {
 
-<span class="fc" id="L25">	private static final URL fgIconBaseURL= FrameworkUtil.getBundle(JHPluginImages.class).getEntry(&quot;/icons/&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L27">	private static final URL fgIconBaseURL= FrameworkUtil.getBundle(JHPluginImages.class).getEntry(&quot;/icons/&quot;); //$NON-NLS-1$</span>
 
 	public static final String CHILDREN= &quot;children.png&quot;; //$NON-NLS-1$
 	public static final String INFO= &quot;info.png&quot;; //$NON-NLS-1$
@@ -30,20 +32,38 @@ public class JHPluginImages {
 	public static final String REFRESH= &quot;refresh.png&quot;; //$NON-NLS-1$
 	public static final String SET_FOCUS= &quot;setfocus.png&quot;; //$NON-NLS-1$
 	public static final String CODE_SELECT= &quot;codeSelect.png&quot;; //$NON-NLS-1$
+	public static final String FILTER_CONFLICTS= &quot;filterConflicts.png&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L34">	public static final ImageDescriptor IMG_CHILDREN= create(CHILDREN);</span>
-<span class="fc" id="L35">	public static final ImageDescriptor IMG_INFO= create(INFO);</span>
+<span class="fc" id="L37">	public static final ImageDescriptor IMG_CHILDREN= create(CHILDREN);</span>
+<span class="fc" id="L38">	public static final ImageDescriptor IMG_INFO= create(INFO);</span>
 
-<span class="fc" id="L37">	public static final ImageDescriptor IMG_PROPERTIES= create(PROPERTIES);</span>
-<span class="fc" id="L38">	public static final ImageDescriptor IMG_REFRESH= create(REFRESH);</span>
-<span class="fc" id="L39">	public static final ImageDescriptor IMG_SET_FOCUS= create(SET_FOCUS);</span>
-<span class="fc" id="L40">	public static final ImageDescriptor IMG_SET_FOCUS_CODE_SELECT= create(CODE_SELECT);</span>
+<span class="fc" id="L40">	public static final ImageDescriptor IMG_PROPERTIES= create(PROPERTIES);</span>
+<span class="fc" id="L41">	public static final ImageDescriptor IMG_REFRESH= create(REFRESH);</span>
+<span class="fc" id="L42">	public static final ImageDescriptor IMG_SET_FOCUS= create(SET_FOCUS);</span>
+<span class="fc" id="L43">	public static final ImageDescriptor IMG_SET_FOCUS_CODE_SELECT= create(CODE_SELECT);</span>
+<span class="fc" id="L44">	public static final ImageDescriptor IMG_FILTER_CONFLICTS= createFilterConflictsIcon();</span>
 
 	private static ImageDescriptor create(String name) {
 		try {
-<span class="fc" id="L44">			return ImageDescriptor.createFromURL(new URL(fgIconBaseURL, name));</span>
-<span class="nc" id="L45">		} catch (MalformedURLException e) {</span>
-<span class="nc" id="L46">			return ImageDescriptor.getMissingImageDescriptor();</span>
+<span class="fc" id="L48">			return ImageDescriptor.createFromURL(new URL(fgIconBaseURL, name));</span>
+<span class="nc" id="L49">		} catch (MalformedURLException e) {</span>
+<span class="nc" id="L50">			return ImageDescriptor.getMissingImageDescriptor();</span>
+		}
+	}
+
+	/**
+	 * Creates the filter conflicts icon descriptor.
+	 * Falls back to a platform warning icon if custom icon is not available.
+	 */
+	private static ImageDescriptor createFilterConflictsIcon() {
+		try {
+<span class="fc" id="L60">			URL iconURL = new URL(fgIconBaseURL, FILTER_CONFLICTS);</span>
+			// Check if file exists by trying to open it
+<span class="nc" id="L62">			iconURL.openStream().close();</span>
+<span class="nc" id="L63">			return ImageDescriptor.createFromURL(iconURL);</span>
+<span class="fc" id="L64">		} catch (Exception e) {</span>
+			// Fall back to platform warning icon
+<span class="fc" id="L66">			return PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(ISharedImages.IMG_OBJS_WARN_TSK);</span>
 		}
 	}
 

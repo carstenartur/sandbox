@@ -13,7 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.api;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -32,6 +39,7 @@ public final class HintContext {
 	private final Match match;
 	private final ASTRewrite rewrite;
 	private ImportRewrite importRewrite;
+	private final AtomicBoolean cancel;
 	
 	/**
 	 * Creates a new hint context.
@@ -41,12 +49,26 @@ public final class HintContext {
 	 * @param match the pattern match result
 	 * @param rewrite the AST rewrite for making changes
 	 */
-<span class="nc" id="L44">	public HintContext(CompilationUnit cu, ICompilationUnit icu, Match match, ASTRewrite rewrite) {</span>
-<span class="nc" id="L45">		this.cu = cu;</span>
-<span class="nc" id="L46">		this.icu = icu;</span>
-<span class="nc" id="L47">		this.match = match;</span>
-<span class="nc" id="L48">		this.rewrite = rewrite;</span>
-<span class="nc" id="L49">	}</span>
+	public HintContext(CompilationUnit cu, ICompilationUnit icu, Match match, ASTRewrite rewrite) {
+<span class="fc" id="L53">		this(cu, icu, match, rewrite, new AtomicBoolean(false));</span>
+<span class="fc" id="L54">	}</span>
+	
+	/**
+	 * Creates a new hint context with cancellation support.
+	 * 
+	 * @param cu the parsed compilation unit
+	 * @param icu the ICompilationUnit (workspace model)
+	 * @param match the pattern match result
+	 * @param rewrite the AST rewrite for making changes
+	 * @param cancel atomic boolean for cancellation signaling
+	 */
+<span class="fc" id="L65">	public HintContext(CompilationUnit cu, ICompilationUnit icu, Match match, ASTRewrite rewrite, AtomicBoolean cancel) {</span>
+<span class="fc" id="L66">		this.cu = cu;</span>
+<span class="fc" id="L67">		this.icu = icu;</span>
+<span class="fc" id="L68">		this.match = match;</span>
+<span class="fc" id="L69">		this.rewrite = rewrite;</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		this.cancel = cancel != null ? cancel : new AtomicBoolean(false);</span>
+<span class="fc" id="L71">	}</span>
 	
 	/**
 	 * Returns the parsed compilation unit.
@@ -54,7 +76,7 @@ public final class HintContext {
 	 * @return the compilation unit
 	 */
 	public CompilationUnit getCompilationUnit() {
-<span class="nc" id="L57">		return cu;</span>
+<span class="nc" id="L79">		return cu;</span>
 	}
 	
 	/**
@@ -63,7 +85,7 @@ public final class HintContext {
 	 * @return the ICompilationUnit
 	 */
 	public ICompilationUnit getICompilationUnit() {
-<span class="nc" id="L66">		return icu;</span>
+<span class="nc" id="L88">		return icu;</span>
 	}
 	
 	/**
@@ -72,7 +94,7 @@ public final class HintContext {
 	 * @return the match
 	 */
 	public Match getMatch() {
-<span class="nc" id="L75">		return match;</span>
+<span class="fc" id="L97">		return match;</span>
 	}
 	
 	/**
@@ -81,7 +103,7 @@ public final class HintContext {
 	 * @return the AST rewrite
 	 */
 	public ASTRewrite getASTRewrite() {
-<span class="nc" id="L84">		return rewrite;</span>
+<span class="fc" id="L106">		return rewrite;</span>
 	}
 	
 	/**
@@ -91,15 +113,15 @@ public final class HintContext {
 	 * @return the import rewrite
 	 */
 	public ImportRewrite getImportRewrite() {
-<span class="nc bnc" id="L94" title="All 2 branches missed.">		if (importRewrite == null) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">		if (importRewrite == null) {</span>
 			try {
-<span class="nc" id="L96">				importRewrite = ImportRewrite.create(cu, true);</span>
-<span class="nc" id="L97">			} catch (Exception e) {</span>
+<span class="nc" id="L118">				importRewrite = ImportRewrite.create(cu, true);</span>
+<span class="nc" id="L119">			} catch (Exception e) {</span>
 				// Return null if creation fails
-<span class="nc" id="L99">				return null;</span>
+<span class="nc" id="L121">				return null;</span>
 			}
 		}
-<span class="nc" id="L102">		return importRewrite;</span>
+<span class="nc" id="L124">		return importRewrite;</span>
 	}
 	
 	/**
@@ -108,7 +130,79 @@ public final class HintContext {
 	 * @param importRewrite the import rewrite to use
 	 */
 	public void setImportRewrite(ImportRewrite importRewrite) {
-<span class="nc" id="L111">		this.importRewrite = importRewrite;</span>
-<span class="nc" id="L112">	}</span>
+<span class="nc" id="L133">		this.importRewrite = importRewrite;</span>
+<span class="nc" id="L134">	}</span>
+	
+	/**
+	 * Checks if the operation has been canceled.
+	 * 
+	 * @return true if canceled
+	 */
+	public boolean isCanceled() {
+<span class="fc" id="L142">		return cancel.get();</span>
+	}
+	
+	/**
+	 * Returns single-placeholder bindings only.
+	 * 
+	 * &lt;p&gt;Filters out multi-placeholder bindings (those with values that are lists).&lt;/p&gt;
+	 * 
+	 * @return map of placeholder names to their bound AST nodes
+	 */
+	public Map&lt;String, ASTNode&gt; getVariables() {
+<span class="fc" id="L153">		Map&lt;String, ASTNode&gt; result = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">		for (Map.Entry&lt;String, Object&gt; entry : match.getBindings().entrySet()) {</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">			if (entry.getValue() instanceof ASTNode) {</span>
+<span class="fc" id="L156">				result.put(entry.getKey(), (ASTNode) entry.getValue());</span>
+			}
+		}
+<span class="fc" id="L159">		return result;</span>
+	}
+	
+	/**
+	 * Returns multi-placeholder bindings only.
+	 * 
+	 * &lt;p&gt;Filters out single-placeholder bindings (those with ASTNode values).&lt;/p&gt;
+	 * 
+	 * @return map of placeholder names to their lists of bound AST nodes
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	public Map&lt;String, List&lt;ASTNode&gt;&gt; getMultiVariables() {
+<span class="nc" id="L171">		Map&lt;String, List&lt;ASTNode&gt;&gt; result = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">		for (Map.Entry&lt;String, Object&gt; entry : match.getBindings().entrySet()) {</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">			if (entry.getValue() instanceof List&lt;?&gt;) {</span>
+<span class="nc" id="L174">				result.put(entry.getKey(), (List&lt;ASTNode&gt;) entry.getValue());</span>
+			}
+		}
+<span class="nc" id="L177">		return result;</span>
+	}
+	
+	/**
+	 * Returns a map of placeholder names to their source text representations.
+	 * 
+	 * &lt;p&gt;For single placeholders, returns the toString() of the bound node.
+	 * For multi-placeholders, returns a comma-separated string of all nodes.&lt;/p&gt;
+	 * 
+	 * @return map of placeholder names to source text
+	 */
+	public Map&lt;String, String&gt; getVariableNames() {
+<span class="fc" id="L189">		Map&lt;String, String&gt; result = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">		for (Map.Entry&lt;String, Object&gt; entry : match.getBindings().entrySet()) {</span>
+<span class="fc" id="L191">			String name = entry.getKey();</span>
+<span class="fc" id="L192">			Object value = entry.getValue();</span>
+			
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			if (value instanceof ASTNode) {</span>
+<span class="fc" id="L195">				result.put(name, value.toString());</span>
+<span class="pc bnc" id="L196" title="All 2 branches missed.">			} else if (value instanceof List&lt;?&gt;) {</span>
+				@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L198">				List&lt;ASTNode&gt; nodes = (List&lt;ASTNode&gt;) value;</span>
+<span class="nc" id="L199">				String text = nodes.stream()</span>
+<span class="nc" id="L200">					.map(Object::toString)</span>
+<span class="nc" id="L201">					.collect(Collectors.joining(&quot;, &quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L202">				result.put(name, text);</span>
+			}
+		}
+<span class="fc" id="L205">		return result;</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

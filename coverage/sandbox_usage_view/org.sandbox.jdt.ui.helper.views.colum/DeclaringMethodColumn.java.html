@@ -15,37 +15,68 @@ package org.sandbox.jdt.ui.helper.views.colum;
 
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jface.layout.TableColumnLayout;
+import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
 
-<span class="fc" id="L20">public class DeclaringMethodColumn extends AbstractColumn {</span>
+/**
+ * Column displaying the declaring method of a variable (for local variables).
+ */
+<span class="fc" id="L26">public class DeclaringMethodColumn extends AbstractColumn {</span>
 
-	private static final int bounds= 100;
-	private static final String title= &quot;DeclaringMethod&quot;; //$NON-NLS-1$
+	private static final int MINIMUM_WIDTH = 100;
+	private static final String TITLE = &quot;Declaring Method&quot;; //$NON-NLS-1$
+	private static final int COLUMN_WEIGHT = 2;
 
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
-		// now the DeclaringMethod
-<span class="fc" id="L28">		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {</span>
+<span class="nc" id="L34">		createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos).setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
 			@Override
 			public String getText(Object element) {
-<span class="nc" id="L31">				IVariableBinding p= (IVariableBinding) element;</span>
-<span class="nc" id="L32">				IMethodBinding declaringMethod= p.getDeclaringMethod();</span>
-<span class="nc bnc" id="L33" title="All 2 branches missed.">				if (declaringMethod != null) {</span>
-<span class="nc" id="L34">					return declaringMethod.getName();</span>
-				}
-<span class="nc" id="L36">				return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L37">				return getDisplayText((IVariableBinding) element);</span>
 			}
 		});
-<span class="fc" id="L39">	}</span>
+<span class="nc" id="L40">	}</span>
+	
+	@Override
+	public void createColumn(TableViewer viewer, int pos, TableColumnLayout tableColumnLayout) {
+<span class="fc" id="L44">		TableViewerColumn viewerColumn = createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos);</span>
+<span class="fc" id="L45">		viewerColumn.setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
+			@Override
+			public String getText(Object element) {
+<span class="nc" id="L48">				return getDisplayText((IVariableBinding) element);</span>
+			}
+		});
+<span class="fc" id="L51">		tableColumnLayout.setColumnData(viewerColumn.getColumn(), new ColumnWeightData(COLUMN_WEIGHT, MINIMUM_WIDTH, true));</span>
+<span class="fc" id="L52">	}</span>
+	
+	private String getDisplayText(IVariableBinding binding) {
+<span class="nc" id="L55">		IMethodBinding declaringMethod = binding.getDeclaringMethod();</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">		if (declaringMethod != null) {</span>
+<span class="nc" id="L57">			return declaringMethod.getName();</span>
+		}
+<span class="nc" id="L59">		return &quot;&quot;; //$NON-NLS-1$</span>
+	}
+	
+	@Override
+	public int getColumnWeight() {
+<span class="nc" id="L64">		return COLUMN_WEIGHT;</span>
+	}
+	
+	@Override
+	public int getMinimumWidth() {
+<span class="nc" id="L69">		return MINIMUM_WIDTH;</span>
+	}
 
 	@Override
 	protected int compare(IVariableBinding p1, IVariableBinding p2) {
-<span class="nc" id="L43">		IMethodBinding declaringMethod1= p1.getDeclaringMethod();</span>
-<span class="nc" id="L44">		IMethodBinding declaringMethod2= p2.getDeclaringMethod();</span>
-<span class="nc bnc" id="L45" title="All 4 branches missed.">		if (declaringMethod1 != null &amp;&amp; declaringMethod2 != null) {</span>
-<span class="nc" id="L46">			return declaringMethod1.getName().compareTo(declaringMethod2.getName());</span>
+<span class="nc" id="L74">		IMethodBinding declaringMethod1 = p1.getDeclaringMethod();</span>
+<span class="nc" id="L75">		IMethodBinding declaringMethod2 = p2.getDeclaringMethod();</span>
+<span class="nc bnc" id="L76" title="All 4 branches missed.">		if (declaringMethod1 != null &amp;&amp; declaringMethod2 != null) {</span>
+<span class="nc" id="L77">			return declaringMethod1.getName().compareTo(declaringMethod2.getName());</span>
 		}
-<span class="nc" id="L48">		return 0;</span>
+<span class="nc" id="L79">		return 0;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

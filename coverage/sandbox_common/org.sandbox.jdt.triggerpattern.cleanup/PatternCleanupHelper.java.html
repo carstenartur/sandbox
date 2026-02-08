@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PatternCleanupHelper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.cleanup</a> &gt; <span class="el_source">PatternCleanupHelper.java</span></div><h1>PatternCleanupHelper.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.cleanup;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
+
+/**
+ * Helper class that provides TriggerPattern cleanup functionality via composition.
+ * This is the delegate used by cleanup plugins that need to maintain their own inheritance hierarchy
+ * (e.g., JUnit plugins extending AbstractTool) but want to use TriggerPattern features.
+ * 
+ * &lt;p&gt;For cleanup plugins that don't have inheritance constraints, consider using
+ * {@link AbstractPatternCleanupPlugin} directly via inheritance instead.&lt;/p&gt;
+ * 
+ * @since 1.3.0
+ */
+public class PatternCleanupHelper {
+    
+<span class="fc" id="L38">    private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();</span>
+    
+    private final Class&lt;?&gt; pluginClass;
+    
+    /**
+     * Creates a helper for the given plugin class.
+     * 
+     * @param pluginClass the plugin class (used to read @CleanupPattern annotation)
+     */
+<span class="fc" id="L47">    public PatternCleanupHelper(Class&lt;?&gt; pluginClass) {</span>
+<span class="fc" id="L48">        this.pluginClass = pluginClass;</span>
+<span class="fc" id="L49">    }</span>
+    
+    /**
+     * Returns the Pattern extracted from the @CleanupPattern annotation.
+     * 
+     * @return the pattern for matching, or null if no @CleanupPattern annotation is present
+     */
+    public Pattern getPattern() {
+<span class="fc" id="L57">        CleanupPattern annotation = pluginClass.getAnnotation(CleanupPattern.class);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (annotation == null) {</span>
+<span class="fc" id="L59">            return null;</span>
+        }
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();</span>
+<span class="fc" id="L62">        return new Pattern(annotation.value(), annotation.kind(), qualifiedType);</span>
+    }
+    
+    /**
+     * Returns the patterns to match in the compilation unit.
+     * Default implementation returns a single pattern from @CleanupPattern annotation.
+     * 
+     * @return list of patterns to match, or empty list if no pattern is configured
+     */
+    public List&lt;Pattern&gt; getPatterns() {
+<span class="fc" id="L72">        Pattern pattern = getPattern();</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (pattern != null) {</span>
+<span class="fc" id="L74">            return List.of(pattern);</span>
+        }
+<span class="nc" id="L76">        return List.of();</span>
+    }
+    
+    /**
+     * Returns the cleanup ID from the @CleanupPattern annotation.
+     * 
+     * @return the cleanup ID, or empty string if annotation is not present or cleanupId is not set
+     */
+    public String getCleanupId() {
+<span class="fc" id="L85">        CleanupPattern annotation = pluginClass.getAnnotation(CleanupPattern.class);</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        return annotation != null ? annotation.cleanupId() : &quot;&quot;; //$NON-NLS-1$</span>
+    }
+    
+    /**
+     * Returns the description from the @CleanupPattern annotation.
+     * 
+     * @return the description, or empty string if annotation is not present or description is not set
+     */
+    public String getDescription() {
+<span class="fc" id="L95">        CleanupPattern annotation = pluginClass.getAnnotation(CleanupPattern.class);</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        return annotation != null ? annotation.description() : &quot;&quot;; //$NON-NLS-1$</span>
+    }
+    
+    /**
+     * Finds all matches using TriggerPatternEngine.
+     * 
+     * @param compilationUnit the compilation unit to search
+     * @param patterns the patterns to match
+     * @return list of all matches
+     */
+    public List&lt;Match&gt; findAllMatches(org.eclipse.jdt.core.dom.CompilationUnit compilationUnit, List&lt;Pattern&gt; patterns) {
+<span class="nc" id="L107">        java.util.List&lt;Match&gt; allMatches = new java.util.ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        for (Pattern pattern : patterns) {</span>
+<span class="nc" id="L109">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
+<span class="nc" id="L110">            allMatches.addAll(matches);</span>
+        }
+<span class="nc" id="L112">        return allMatches;</span>
+    }
+    
+    /**
+     * Validates that the node's type binding matches the expected qualified type.
+     * 
+     * @param node the AST node to validate
+     * @param qualifiedType the expected fully qualified type name
+     * @return true if types match, false otherwise
+     */
+    public boolean validateQualifiedType(ASTNode node, String qualifiedType) {
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (node instanceof Annotation) {</span>
+<span class="fc" id="L124">            Annotation annotation = (Annotation) node;</span>
+<span class="fc" id="L125">            ITypeBinding binding = annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">            if (binding != null) {</span>
+<span class="fc" id="L127">                return qualifiedType.equals(binding.getQualifiedName());</span>
+            }
+            // Fallback: check simple name
+<span class="nc" id="L130">            return annotation.getTypeName().getFullyQualifiedName().equals(</span>
+<span class="nc" id="L131">                    qualifiedType.substring(qualifiedType.lastIndexOf('.') + 1));</span>
+        }
+        // Add more type checks as needed
+<span class="fc" id="L134">        return true;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

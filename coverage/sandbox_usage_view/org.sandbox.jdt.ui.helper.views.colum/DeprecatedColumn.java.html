@@ -15,33 +15,62 @@ package org.sandbox.jdt.ui.helper.views.colum;
 
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jface.layout.TableColumnLayout;
+import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
 
-<span class="fc" id="L20">public class DeprecatedColumn extends AbstractColumn {</span>
+/**
+ * Column displaying whether a variable is deprecated.
+ */
+<span class="fc" id="L26">public class DeprecatedColumn extends AbstractColumn {</span>
 
-	private static final int bounds= 100;
-	private static final String title= &quot;Deprecated&quot;; //$NON-NLS-1$
+	private static final int MINIMUM_WIDTH = 70;
+	private static final String TITLE = &quot;Deprecated&quot;; //$NON-NLS-1$
+	private static final int COLUMN_WEIGHT = 1; // Smaller weight - less space needed
 
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
-		// now the deprecated or not checkbox
-<span class="fc" id="L28">		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {</span>
+<span class="nc" id="L34">		createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos).setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
 			@Override
 			public String getText(Object element) {
-<span class="nc" id="L31">				IVariableBinding p= (IVariableBinding) element;</span>
-<span class="nc" id="L32">				return String.valueOf(p.isDeprecated());</span>
+<span class="nc" id="L37">				IVariableBinding binding = (IVariableBinding) element;</span>
+<span class="nc" id="L38">				return String.valueOf(binding.isDeprecated());</span>
 			}
 		});
-<span class="fc" id="L35">	}</span>
+<span class="nc" id="L41">	}</span>
+	
+	@Override
+	public void createColumn(TableViewer viewer, int pos, TableColumnLayout tableColumnLayout) {
+<span class="fc" id="L45">		TableViewerColumn viewerColumn = createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos);</span>
+<span class="fc" id="L46">		viewerColumn.setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
+			@Override
+			public String getText(Object element) {
+<span class="nc" id="L49">				IVariableBinding binding = (IVariableBinding) element;</span>
+<span class="nc" id="L50">				return String.valueOf(binding.isDeprecated());</span>
+			}
+		});
+<span class="fc" id="L53">		tableColumnLayout.setColumnData(viewerColumn.getColumn(), new ColumnWeightData(COLUMN_WEIGHT, MINIMUM_WIDTH, true));</span>
+<span class="fc" id="L54">	}</span>
+	
+	@Override
+	public int getColumnWeight() {
+<span class="nc" id="L58">		return COLUMN_WEIGHT;</span>
+	}
+	
+	@Override
+	public int getMinimumWidth() {
+<span class="nc" id="L63">		return MINIMUM_WIDTH;</span>
+	}
 
 	@Override
 	protected int compare(IVariableBinding p1, IVariableBinding p2) {
-<span class="nc" id="L39">		ITypeBinding declaringClass1= p1.getDeclaringClass();</span>
-<span class="nc" id="L40">		ITypeBinding declaringClass2= p2.getDeclaringClass();</span>
-<span class="nc bnc" id="L41" title="All 4 branches missed.">		if (declaringClass1 != null &amp;&amp; declaringClass2 != null) {</span>
-<span class="nc" id="L42">			return Boolean.compare(declaringClass1.isDeprecated(), declaringClass2.isDeprecated());</span>
+<span class="nc" id="L68">		ITypeBinding declaringClass1 = p1.getDeclaringClass();</span>
+<span class="nc" id="L69">		ITypeBinding declaringClass2 = p2.getDeclaringClass();</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">		if (declaringClass1 != null &amp;&amp; declaringClass2 != null) {</span>
+<span class="nc" id="L71">			return Boolean.compare(declaringClass1.isDeprecated(), declaringClass2.isDeprecated());</span>
 		}
-<span class="nc" id="L44">		return 0;</span>
+<span class="nc" id="L73">		return 0;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

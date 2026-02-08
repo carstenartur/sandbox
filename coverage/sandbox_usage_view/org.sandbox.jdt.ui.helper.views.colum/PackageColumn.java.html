@@ -16,41 +16,72 @@ package org.sandbox.jdt.ui.helper.views.colum;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jface.layout.TableColumnLayout;
+import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
 
-<span class="fc" id="L21">public class PackageColumn extends AbstractColumn {</span>
+/**
+ * Column displaying the declaring class and package of a variable.
+ */
+<span class="fc" id="L27">public class PackageColumn extends AbstractColumn {</span>
 
-	private static final int bounds= 100;
-	private static final String title= &quot;Class and Package&quot;; //$NON-NLS-1$
+	private static final int MINIMUM_WIDTH = 120;
+	private static final String TITLE = &quot;Class and Package&quot;; //$NON-NLS-1$
+	private static final int COLUMN_WEIGHT = 2;
 
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
-		// now the class you find the variable
-<span class="fc" id="L29">		createTableViewerColumn(viewer, title, bounds, pos).setLabelProvider(new AlternatingColumnLabelProvider() {</span>
+<span class="nc" id="L35">		createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos).setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
 			@Override
 			public String getText(Object element) {
-<span class="nc" id="L32">				IVariableBinding p= (IVariableBinding) element;</span>
-<span class="nc" id="L33">				ITypeBinding declaringClass= p.getDeclaringClass();</span>
-<span class="nc bnc" id="L34" title="All 2 branches missed.">				if (declaringClass != null) {</span>
-<span class="nc" id="L35">					return declaringClass.getQualifiedName();</span>
-				}
-<span class="nc" id="L37">				IJavaElement javaElement= p.getJavaElement();</span>
-<span class="nc bnc" id="L38" title="All 2 branches missed.">				if (javaElement != null) {</span>
-<span class="nc" id="L39">					return javaElement.getElementName();</span>
-				}
-<span class="nc" id="L41">				return null;</span>
+<span class="nc" id="L38">				return getDisplayText((IVariableBinding) element);</span>
 			}
 		});
-<span class="fc" id="L44">	}</span>
+<span class="nc" id="L41">	}</span>
+	
+	@Override
+	public void createColumn(TableViewer viewer, int pos, TableColumnLayout tableColumnLayout) {
+<span class="fc" id="L45">		TableViewerColumn viewerColumn = createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos);</span>
+<span class="fc" id="L46">		viewerColumn.setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
+			@Override
+			public String getText(Object element) {
+<span class="nc" id="L49">				return getDisplayText((IVariableBinding) element);</span>
+			}
+		});
+<span class="fc" id="L52">		tableColumnLayout.setColumnData(viewerColumn.getColumn(), new ColumnWeightData(COLUMN_WEIGHT, MINIMUM_WIDTH, true));</span>
+<span class="fc" id="L53">	}</span>
+	
+	private String getDisplayText(IVariableBinding binding) {
+<span class="nc" id="L56">		ITypeBinding declaringClass = binding.getDeclaringClass();</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		if (declaringClass != null) {</span>
+<span class="nc" id="L58">			return declaringClass.getQualifiedName();</span>
+		}
+<span class="nc" id="L60">		IJavaElement javaElement = binding.getJavaElement();</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		if (javaElement != null) {</span>
+<span class="nc" id="L62">			return javaElement.getElementName();</span>
+		}
+<span class="nc" id="L64">		return null;</span>
+	}
+	
+	@Override
+	public int getColumnWeight() {
+<span class="nc" id="L69">		return COLUMN_WEIGHT;</span>
+	}
+	
+	@Override
+	public int getMinimumWidth() {
+<span class="nc" id="L74">		return MINIMUM_WIDTH;</span>
+	}
 
 	@Override
 	protected int compare(IVariableBinding p1, IVariableBinding p2) {
-<span class="nc" id="L48">		ITypeBinding declaringClass1= p1.getDeclaringClass();</span>
-<span class="nc" id="L49">		ITypeBinding declaringClass2= p2.getDeclaringClass();</span>
-<span class="nc bnc" id="L50" title="All 4 branches missed.">		if (declaringClass1 != null &amp;&amp; declaringClass2 != null) {</span>
-<span class="nc" id="L51">			return declaringClass1.getQualifiedName().compareTo(declaringClass2.getQualifiedName());</span>
+<span class="nc" id="L79">		ITypeBinding declaringClass1 = p1.getDeclaringClass();</span>
+<span class="nc" id="L80">		ITypeBinding declaringClass2 = p2.getDeclaringClass();</span>
+<span class="nc bnc" id="L81" title="All 4 branches missed.">		if (declaringClass1 != null &amp;&amp; declaringClass2 != null) {</span>
+<span class="nc" id="L82">			return declaringClass1.getQualifiedName().compareTo(declaringClass2.getQualifiedName());</span>
 		}
-<span class="nc" id="L53">		return 0;</span>
+<span class="nc" id="L84">		return 0;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

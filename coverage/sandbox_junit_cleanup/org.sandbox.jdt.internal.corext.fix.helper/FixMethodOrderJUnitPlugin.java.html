@@ -66,14 +66,14 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 		
 <span class="fc" id="L68">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L69">		mh.minv= node;</span>
-<span class="fc" id="L70">		mh.minvname= node.getTypeName().getFullyQualifiedName();</span>
+<span class="fc" id="L69">		mh.setMinv(node);</span>
+<span class="fc" id="L70">		mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
 		
 		// Extract MethodSorter value from the annotation
 <span class="fc" id="L73">		Expression value= node.getValue();</span>
 <span class="pc bpc" id="L74" title="1 of 2 branches missed.">		if (value instanceof QualifiedName qn) {</span>
 <span class="fc" id="L75">			String methodSorter= qn.getName().getIdentifier(); // &quot;NAME_ASCENDING&quot;, &quot;JVM&quot;, &quot;DEFAULT&quot;</span>
-<span class="fc" id="L76">			mh.additionalInfo= methodSorter;</span>
+<span class="fc" id="L76">			mh.setAdditionalInfo(methodSorter);</span>
 			
 <span class="fc" id="L78">			dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L79">			operations.add(fixcore.rewrite(dataHolder));</span>
@@ -90,7 +90,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			JunitHolder junitHolder) {
 		
 <span class="fc" id="L92">		Annotation oldAnnotation= junitHolder.getAnnotation();</span>
-<span class="fc" id="L93">		String methodSorter= (String) junitHolder.additionalInfo;</span>
+<span class="fc" id="L93">		String methodSorter= (String) junitHolder.getAdditionalInfo();</span>
 		
 		// Validate methodSorter is not null
 <span class="pc bpc" id="L96" title="1 of 2 branches missed.">		if (methodSorter == null) {</span>

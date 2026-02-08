@@ -45,7 +45,7 @@ import org.sandbox.jdt.ui.helper.views.preferences.UsageViewPreferenceConstants;
 <span class="fc" id="L45">					IWorkbenchPage page = window.getActivePage();</span>
 <span class="pc bpc" id="L46" title="1 of 2 branches missed.">					if (page != null) {</span>
 						try {
-<span class="fc" id="L48">							page.showView(&quot;org.eclipse.jdt.ui.helper.views.JavaHelperView&quot;);</span>
+<span class="fc" id="L48">							page.showView(UsageViewPlugin.VIEW_ID);</span>
 <span class="pc" id="L49">						} catch (PartInitException e) {</span>
 							// Log error but don't fail startup
 <span class="nc" id="L51">							plugin.getLog().error(&quot;Failed to show JavaHelper View at startup&quot;, e);</span>

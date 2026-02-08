@@ -148,10 +148,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 		}
 		
 <span class="fc" id="L150">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L151">		mh.minv= node;</span>
-<span class="fc" id="L152">		mh.minvname= node.getTypeName().getFullyQualifiedName();</span>
-<span class="fc" id="L153">		mh.value= ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES;</span>
-<span class="fc" id="L154">		mh.additionalInfo= categoriesData;</span>
+<span class="fc" id="L151">		mh.setMinv(node);</span>
+<span class="fc" id="L152">		mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
+<span class="fc" id="L153">		mh.setValue(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES);</span>
+<span class="fc" id="L154">		mh.setAdditionalInfo(categoriesData);</span>
 <span class="fc" id="L155">		dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L156">		operations.add(fixcore.rewrite(dataHolder));</span>
 		
@@ -217,7 +217,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L220">		CategoriesData categoriesData = (CategoriesData) junitHolder.additionalInfo;</span>
+<span class="fc" id="L220">		CategoriesData categoriesData = (CategoriesData) junitHolder.getAdditionalInfo();</span>
 <span class="fc" id="L221">		TypeDeclaration typeDecl = categoriesData.typeDeclaration;</span>
 <span class="fc" id="L222">		ListRewrite modifiersRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
 		

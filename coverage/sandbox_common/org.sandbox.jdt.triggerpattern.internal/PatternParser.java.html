@@ -99,8 +99,8 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		}
 		
 <span class="fc" id="L101">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
-<span class="pc bpc" id="L102" title="2 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
-<span class="nc" id="L103">			return null;</span>
+<span class="pc bpc" id="L102" title="1 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
+<span class="fc" id="L103">			return null;</span>
 		}
 		
 <span class="fc" id="L106">		Statement stmt = (Statement) method.getBody().statements().get(0);</span>

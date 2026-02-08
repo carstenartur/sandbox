@@ -78,8 +78,8 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 		
 <span class="pc bpc" id="L79" title="2 of 4 branches missed.">		if (targetPair != null &amp;&amp; validateParameter(targetPair)) {</span>
 <span class="fc" id="L80">			JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L81">			mh.minv = node;</span>
-<span class="fc" id="L82">			mh.additionalInfo = targetPair;</span>
+<span class="fc" id="L81">			mh.setMinv(node);</span>
+<span class="fc" id="L82">			mh.setAdditionalInfo(targetPair);</span>
 <span class="fc" id="L83">			dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L84">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}

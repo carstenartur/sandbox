@@ -18,9 +18,6 @@ import java.util.List;
 
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.jdt.core.IJavaElement;
-//import org.eclipse.jdt.jeview.views.JEAttribute;
-//import org.eclipse.jdt.jeview.views.JEResource;
-//import org.eclipse.jdt.jeview.views.JavaElement;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
@@ -29,93 +26,80 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 
+/**
+ * Selection provider for the variable table viewer that bridges the internal
+ * table selection to the workbench selection mechanism.
+ */
 class JHViewSelectionProvider implements ISelectionProvider {
-	private final TableViewer fViewer;
+	private final TableViewer tableViewer;
 
-<span class="fc" id="L35">	ListenerList&lt;ISelectionChangedListener&gt; fSelectionChangedListeners= new ListenerList&lt;&gt;();</span>
-	private IStructuredSelection fLastSelection;
+<span class="fc" id="L36">	ListenerList&lt;ISelectionChangedListener&gt; selectionChangedListeners = new ListenerList&lt;&gt;();</span>
+	private IStructuredSelection lastSelection;
 
-<span class="fc" id="L38">	public JHViewSelectionProvider(TableViewer viewer) {</span>
-<span class="fc" id="L39">		fViewer= viewer;</span>
-<span class="pc" id="L40">		fViewer.addSelectionChangedListener(event -&gt; fireSelectionChanged());</span>
-<span class="fc" id="L41">	}</span>
+<span class="fc" id="L39">	public JHViewSelectionProvider(TableViewer tableViewer) {</span>
+<span class="fc" id="L40">		this.tableViewer = tableViewer;</span>
+<span class="pc" id="L41">		this.tableViewer.addSelectionChangedListener(event -&gt; fireSelectionChanged());</span>
+<span class="fc" id="L42">	}</span>
 
 	void fireSelectionChanged() {
-<span class="nc bnc" id="L44" title="All 2 branches missed.">		if (fSelectionChangedListeners != null) {</span>
-<span class="nc" id="L45">			IStructuredSelection selection= getSelection();</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">		if (selectionChangedListeners != null) {</span>
+<span class="nc" id="L46">			IStructuredSelection selection = getSelection();</span>
 
-<span class="nc bnc" id="L47" title="All 2 branches missed.">			if (fLastSelection != null) {</span>
-<span class="nc" id="L48">				List&lt;?&gt; newSelection= selection.toList();</span>
-<span class="nc" id="L49">				List&lt;?&gt; oldSelection= fLastSelection.toList();</span>
-<span class="nc" id="L50">				int size= newSelection.size();</span>
-<span class="nc bnc" id="L51" title="All 2 branches missed.">				if (size == oldSelection.size()) {</span>
-<span class="nc bnc" id="L52" title="All 2 branches missed.">					for (int i= 0; i &lt; size; i++) {</span>
-<span class="nc" id="L53">						Object newElement= newSelection.get(i);</span>
-<span class="nc" id="L54">						Object oldElement= oldSelection.get(i);</span>
-<span class="nc bnc" id="L55" title="All 4 branches missed.">						if (newElement != oldElement &amp;&amp; newElement.equals(oldElement)</span>
-<span class="nc bnc" id="L56" title="All 2 branches missed.">								&amp;&amp; newElement instanceof IJavaElement) {</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">			if (lastSelection != null) {</span>
+<span class="nc" id="L49">				List&lt;?&gt; newSelection = selection.toList();</span>
+<span class="nc" id="L50">				List&lt;?&gt; oldSelection = lastSelection.toList();</span>
+<span class="nc" id="L51">				int size = newSelection.size();</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">				if (size == oldSelection.size()) {</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">					for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc" id="L54">						Object newElement = newSelection.get(i);</span>
+<span class="nc" id="L55">						Object oldElement = oldSelection.get(i);</span>
+<span class="nc bnc" id="L56" title="All 4 branches missed.">						if (newElement != oldElement &amp;&amp; newElement.equals(oldElement)</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">								&amp;&amp; newElement instanceof IJavaElement) {</span>
 							// send out a fake selection event to make the Properties view update getKey():
-<span class="nc" id="L58">							SelectionChangedEvent event= new SelectionChangedEvent(this, StructuredSelection.EMPTY);</span>
-<span class="nc bnc" id="L59" title="All 2 branches missed.">							for (ISelectionChangedListener listener : fSelectionChangedListeners) {</span>
-<span class="nc" id="L60">								listener.selectionChanged(event);</span>
+<span class="nc" id="L59">							SelectionChangedEvent event = new SelectionChangedEvent(this, StructuredSelection.EMPTY);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">							for (ISelectionChangedListener listener : selectionChangedListeners) {</span>
+<span class="nc" id="L61">								listener.selectionChanged(event);</span>
 							}
-<span class="nc" id="L62">							break;</span>
+<span class="nc" id="L63">							break;</span>
 						}
 					}
 				}
 			}
-<span class="nc" id="L67">			fLastSelection= selection;</span>
+<span class="nc" id="L68">			lastSelection = selection;</span>
 
-<span class="nc" id="L69">			SelectionChangedEvent event= new SelectionChangedEvent(this, selection);</span>
+<span class="nc" id="L70">			SelectionChangedEvent event = new SelectionChangedEvent(this, selection);</span>
 
-<span class="nc bnc" id="L71" title="All 2 branches missed.">			for (ISelectionChangedListener listener : fSelectionChangedListeners) {</span>
-<span class="nc" id="L72">				listener.selectionChanged(event);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">			for (ISelectionChangedListener listener : selectionChangedListeners) {</span>
+<span class="nc" id="L73">				listener.selectionChanged(event);</span>
 			}
 		}
-<span class="nc" id="L75">	}</span>
+<span class="nc" id="L76">	}</span>
 
 	@Override
 	public void addSelectionChangedListener(ISelectionChangedListener listener) {
-<span class="fc" id="L79">		fSelectionChangedListeners.add(listener);</span>
-<span class="fc" id="L80">	}</span>
+<span class="fc" id="L80">		selectionChangedListeners.add(listener);</span>
+<span class="fc" id="L81">	}</span>
 
 	@Override
 	public IStructuredSelection getSelection() {
-<span class="fc" id="L84">		IStructuredSelection selection= (IStructuredSelection) fViewer.getSelection();</span>
-<span class="fc" id="L85">		System.out.println(&quot;out:&quot; + selection); //$NON-NLS-1$</span>
-<span class="fc" id="L86">		ArrayList&lt;Object&gt; externalSelection= new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L87" title="1 of 2 branches missed.">		for (Object element : selection) {</span>
-			//			if (element instanceof JavaElement) {
-			//				IJavaElement javaElement = ((JavaElement) element).getJavaElement();
-			//				if (javaElement != null &amp;&amp; !(javaElement instanceof IJavaModel)) {
-			//					// assume getJavaProject() is
-			//					// non-null
-			//					externalSelection.add(javaElement);
-			//				}
-			//			} else if (element instanceof JEResource) {
-			//				IResource resource = ((JEResource) element).getResource();
-			//				if (resource != null &amp;&amp; !(resource instanceof IWorkspaceRoot)) {
-			//					// getProject() is non-null
-			//					externalSelection.add(resource);
-			//				}
-			//			} else if (element instanceof JEAttribute) {
-			//				Object wrappedObject = ((JEAttribute) element).getWrappedObject();
-			//				if (wrappedObject != null) {
-			//					externalSelection.add(wrappedObject);
-			//				}
-			//			}
+<span class="fc" id="L85">		IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();</span>
+		// Debug logging removed - uncomment if needed: logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Selection: &quot; + selection));
+<span class="fc" id="L87">		ArrayList&lt;Object&gt; externalSelection = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		for (Object element : selection) {</span>
+			// Variable bindings from the table can be added to external selection
+			// if needed for integration with other views
 		}
-<span class="fc" id="L108">		return new StructuredSelection(externalSelection);</span>
+<span class="fc" id="L92">		return new StructuredSelection(externalSelection);</span>
 	}
 
 	@Override
 	public void removeSelectionChangedListener(ISelectionChangedListener listener) {
-<span class="fc" id="L113">		fSelectionChangedListeners.remove(listener);</span>
-<span class="fc" id="L114">	}</span>
+<span class="fc" id="L97">		selectionChangedListeners.remove(listener);</span>
+<span class="fc" id="L98">	}</span>
 
 	@Override
 	public void setSelection(ISelection selection) {
 		// not supported
-<span class="nc" id="L119">	}</span>
+<span class="nc" id="L103">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

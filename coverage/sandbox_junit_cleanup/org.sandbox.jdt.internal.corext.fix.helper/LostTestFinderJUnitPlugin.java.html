@@ -149,7 +149,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 				
 <span class="fc" id="L150">				ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
 <span class="fc" id="L151">				JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L152">				mh.minv = method;</span>
+<span class="fc" id="L152">				mh.setMinv(method);</span>
 <span class="fc" id="L153">				dataHolder.put(0, mh);</span>
 <span class="fc" id="L154">				operations.add(fixcore.rewrite(dataHolder));</span>
 			}
@@ -267,7 +267,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L270">		MethodDeclaration method = (MethodDeclaration) junitHolder.minv;</span>
+<span class="fc" id="L270">		MethodDeclaration method = (MethodDeclaration) junitHolder.getMinv();</span>
 <span class="fc" id="L271">		CompilationUnit cu = (CompilationUnit) method.getRoot();</span>
 		
 		// Determine which @Test to use

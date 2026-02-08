@@ -175,7 +175,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
 		
-<span class="fc" id="L178">		ASTNode node = junitHolder.minv;</span>
+<span class="fc" id="L178">		ASTNode node = junitHolder.getMinv();</span>
 		
 <span class="fc bfc" id="L180" title="All 2 branches covered.">		if (node instanceof ImportDeclaration) {</span>
 <span class="fc" id="L181">			processImportDeclaration(importRewriter, (ImportDeclaration) node);</span>

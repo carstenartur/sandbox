@@ -22,14 +22,11 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
@@ -39,7 +36,6 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 import org.sandbox.jdt.internal.corext.util.NamingUtils;
 
 /**
@@ -49,7 +45,7 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
  * 
  * @param &lt;T&gt; Type found in Visitor
  */
-<span class="fc" id="L52">public abstract class AbstractTool&lt;T&gt; {</span>
+<span class="fc" id="L48">public abstract class AbstractTool&lt;T&gt; {</span>
 
 	/**
 	 * Gets all variable names used in the scope of the given AST node.
@@ -58,8 +54,8 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 * @return collection of variable names used in the node's scope
 	 */
 	public static Collection&lt;String&gt; getUsedVariableNames(ASTNode node) {
-<span class="fc" id="L61">		CompilationUnit root = (CompilationUnit) node.getRoot();</span>
-<span class="fc" id="L62">		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L57">		CompilationUnit root = (CompilationUnit) node.getRoot();</span>
+<span class="fc" id="L58">		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
 	}
 
 	/**
@@ -70,7 +66,7 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 * @return the class name, or null if not found
 	 */
 	public String extractClassNameFromField(FieldDeclaration field) {
-<span class="fc" id="L73">		return NamingUtils.extractClassNameFromField(field);</span>
+<span class="fc" id="L69">		return NamingUtils.extractClassNameFromField(field);</span>
 	}
 
 	/**
@@ -95,99 +91,6 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	public abstract String getPreview(boolean afterRefactoring);
 
 	/**
-	 * Finds the type definition (TypeDeclaration or AnonymousClassDeclaration) for a field.
-	 * Checks the field's initializer and type binding to locate the definition.
-	 * 
-	 * @param fieldDeclaration the field declaration to analyze
-	 * @param cu the compilation unit containing the field
-	 * @return the type definition node, or null if not found
-	 */
-	protected ASTNode getTypeDefinitionForField(FieldDeclaration fieldDeclaration, CompilationUnit cu) {
-<span class="fc" id="L106">		return (ASTNode) fieldDeclaration.fragments().stream()</span>
-<span class="fc" id="L107">				.filter(VariableDeclarationFragment.class::isInstance)</span>
-<span class="fc" id="L108">				.map(VariableDeclarationFragment.class::cast)</span>
-<span class="fc" id="L109">				.map(fragment -&gt; getTypeDefinitionFromFragment((VariableDeclarationFragment) fragment, cu))</span>
-<span class="fc" id="L110">				.filter(java.util.Objects::nonNull)</span>
-<span class="fc" id="L111">				.findFirst()</span>
-<span class="fc" id="L112">				.orElse(null);</span>
-	}
-
-	private ASTNode getTypeDefinitionFromFragment(VariableDeclarationFragment fragment, CompilationUnit cu) {
-		// Check initializer
-<span class="fc" id="L117">		Expression initializer = fragment.getInitializer();</span>
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		if (initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
-<span class="fc" id="L119">			org.eclipse.jdt.core.dom.ClassInstanceCreation classInstanceCreation = (org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer;</span>
-
-			// Check for anonymous class
-<span class="fc" id="L122">			AnonymousClassDeclaration anonymousClass = classInstanceCreation.getAnonymousClassDeclaration();</span>
-<span class="fc bfc" id="L123" title="All 2 branches covered.">			if (anonymousClass != null) {</span>
-<span class="fc" id="L124">				return anonymousClass;</span>
-			}
-
-			// Check type binding
-<span class="fc" id="L128">			ITypeBinding typeBinding = classInstanceCreation.resolveTypeBinding();</span>
-<span class="fc" id="L129">			return ASTNavigationUtils.findTypeDeclarationForBinding(typeBinding, cu);</span>
-		}
-
-		// Check field type if no initialization is present
-<span class="nc" id="L133">		IVariableBinding fieldBinding = fragment.resolveBinding();</span>
-<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (fieldBinding != null) {</span>
-<span class="nc" id="L135">			ITypeBinding fieldTypeBinding = fieldBinding.getType();</span>
-<span class="nc" id="L136">			return ASTNavigationUtils.findTypeDeclarationForBinding(fieldTypeBinding, cu);</span>
-		}
-
-<span class="nc" id="L139">		return null;</span>
-	}
-
-	/**
-	 * Checks if a class has either a default constructor or no constructors at all.
-	 * Used to determine if ExternalResource subclasses can be easily migrated.
-	 * 
-	 * @param classNode the class to check
-	 * @return true if the class has a default constructor or no constructors
-	 */
-	protected boolean hasDefaultConstructorOrNoConstructor(TypeDeclaration classNode) {
-<span class="nc" id="L150">		boolean hasConstructor = false;</span>
-
-<span class="nc bnc" id="L152" title="All 2 branches missed.">		for (Object bodyDecl : classNode.bodyDeclarations()) {</span>
-<span class="nc bnc" id="L153" title="All 2 branches missed.">			if (bodyDecl instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {</span>
-<span class="nc" id="L154">				org.eclipse.jdt.core.dom.MethodDeclaration method = (org.eclipse.jdt.core.dom.MethodDeclaration) bodyDecl;</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">				if (method.isConstructor()) {</span>
-<span class="nc" id="L156">					hasConstructor = true;</span>
-<span class="nc bnc" id="L157" title="All 4 branches missed.">					if (method.parameters().isEmpty() &amp;&amp; method.getBody() != null</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">							&amp;&amp; method.getBody().statements().isEmpty()) {</span>
-<span class="nc" id="L159">						return true;</span>
-					}
-				}
-			}
-		}
-<span class="nc bnc" id="L164" title="All 2 branches missed.">		return !hasConstructor;</span>
-	}
-
-	/**
-	 * Checks if a variable declaration fragment represents an anonymous class.
-	 * 
-	 * @param fragment the variable declaration fragment to check
-	 * @return true if the fragment's initializer is an anonymous class
-	 */
-	public boolean isAnonymousClass(VariableDeclarationFragment fragment) {
-<span class="nc" id="L174">		Expression initializer = fragment.getInitializer();</span>
-<span class="nc bnc" id="L175" title="All 2 branches missed.">		return initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation</span>
-<span class="nc bnc" id="L176" title="All 2 branches missed.">				&amp;&amp; ((org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer).getAnonymousClassDeclaration() != null;</span>
-	}
-
-	/**
-	 * Checks if the given type binding directly extends ExternalResource.
-	 * 
-	 * @param binding the type binding to check
-	 * @return true if the type's superclass is ExternalResource
-	 */
-	protected boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
-<span class="fc" id="L186">		ITypeBinding superclass = binding.getSuperclass();</span>
-<span class="pc bpc" id="L187" title="1 of 4 branches missed.">		return superclass != null &amp;&amp; ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());</span>
-	}
-
-	/**
 	 * Checks if a field is annotated with the specified annotation.
 	 * 
 	 * @param field the field declaration to check
@@ -195,7 +98,7 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 * @return true if the field has the annotation
 	 */
 	protected boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
-<span class="fc" id="L198">		return AnnotationUtils.isFieldAnnotatedWith(field, annotationClass);</span>
+<span class="fc" id="L101">		return AnnotationUtils.isFieldAnnotatedWith(field, annotationClass);</span>
 	}
 
 	/**
@@ -212,9 +115,9 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	protected void modifyExternalResourceClass(TypeDeclaration node, FieldDeclaration field, boolean fieldStatic,
 			ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
-<span class="fc" id="L215">		ExternalResourceRefactorer.modifyExternalResourceClass(node, field, fieldStatic, rewriter, ast, group,</span>
-<span class="fc" id="L216">				importRewriter);</span>
-<span class="fc" id="L217">	}</span>
+<span class="nc" id="L118">		ExternalResourceRefactorer.modifyExternalResourceClass(node, field, fieldStatic, rewriter, ast, group,</span>
+<span class="nc" id="L119">				importRewriter);</span>
+<span class="nc" id="L120">	}</span>
 
 
 	/**
@@ -245,9 +148,9 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	protected void refactorAnonymousClassToImplementCallbacks(AnonymousClassDeclaration anonymousClass,
 			FieldDeclaration fieldDeclaration, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter) {
-<span class="fc" id="L248">		ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(anonymousClass, fieldDeclaration,</span>
-<span class="fc" id="L249">				fieldStatic, rewriter, ast, group, importRewriter);</span>
-<span class="fc" id="L250">	}</span>
+<span class="nc" id="L151">		ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(anonymousClass, fieldDeclaration,</span>
+<span class="nc" id="L152">				fieldStatic, rewriter, ast, group, importRewriter);</span>
+<span class="nc" id="L153">	}</span>
 
 	/**
 	 * Refactors TestName field usage in a class and all its subclasses.
@@ -261,8 +164,8 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	protected void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewrite, FieldDeclaration node) {
-<span class="fc" id="L264">		TestNameRefactorer.refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewrite, node);</span>
-<span class="fc" id="L265">	}</span>
+<span class="fc" id="L167">		TestNameRefactorer.refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewrite, node);</span>
+<span class="fc" id="L168">	}</span>
 
 	/**
 	 * Reorders parameters in a method invocation to match JUnit 5 assertion parameter order.
@@ -276,8 +179,8 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	public void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group, Set&lt;String&gt; oneparam,
 			Set&lt;String&gt; twoparam) {
-<span class="fc" id="L279">		AssertionRefactorer.reorderParameters(node, rewriter, group, oneparam, twoparam);</span>
-<span class="fc" id="L280">	}</span>
+<span class="fc" id="L182">		AssertionRefactorer.reorderParameters(node, rewriter, group, oneparam, twoparam);</span>
+<span class="fc" id="L183">	}</span>
 
 	/**
 	 * Standard helper for processing found nodes in the common pattern.
@@ -293,11 +196,11 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	protected boolean addStandardRewriteOperation(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L296">		JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L297">		mh.minv = node;</span>
-<span class="fc" id="L298">		dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L299">		operations.add(fixcore.rewrite(dataHolder));</span>
-<span class="fc" id="L300">		return true;</span>
+<span class="fc" id="L199">		JunitHolder mh = new JunitHolder();</span>
+<span class="fc" id="L200">		mh.setMinv(node);</span>
+<span class="fc" id="L201">		dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L202">		operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L203">		return true;</span>
 	}
 
 	/**
@@ -311,8 +214,8 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	protected void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, String sourceClass,
 			String targetClass) {
-<span class="nc" id="L314">		ImportHelper.changeImportDeclaration(node, importRewriter, sourceClass, targetClass);</span>
-<span class="nc" id="L315">	}</span>
+<span class="nc" id="L217">		ImportHelper.changeImportDeclaration(node, importRewriter, sourceClass, targetClass);</span>
+<span class="nc" id="L218">	}</span>
 
 	/**
 	 * Applies the JUnit migration rewrite to the compilation unit.
@@ -325,12 +228,12 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	public void rewrite(JUnitCleanUpFixCore upp, ReferenceHolder&lt;Integer, JunitHolder&gt; hit,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-<span class="fc" id="L328">		ASTRewrite rewriter = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L329">		AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L330">		ImportRewrite importRewriter = cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L331">		JunitHolder junitHolder = hit.get(hit.size() - 1);</span>
-<span class="fc" id="L332">		process2Rewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
-<span class="fc" id="L333">		hit.remove(hit.size() - 1);</span>
-<span class="fc" id="L334">	}</span>
+<span class="fc" id="L231">		ASTRewrite rewriter = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L232">		AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L233">		ImportRewrite importRewriter = cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L234">		JunitHolder junitHolder = hit.get(hit.size() - 1);</span>
+<span class="fc" id="L235">		process2Rewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
+<span class="fc" id="L236">		hit.remove(hit.size() - 1);</span>
+<span class="fc" id="L237">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

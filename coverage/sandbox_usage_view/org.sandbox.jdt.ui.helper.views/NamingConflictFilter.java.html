@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>NamingConflictFilter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_usage_view</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.helper.views</a> &gt; <span class="el_source">NamingConflictFilter.java</span></div><h1>NamingConflictFilter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2020 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.ui.helper.views;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.ViewerFilter;
+
+/**
+ * A filter that shows only variables with naming conflicts - 
+ * variables that have the same name but different types.
+ * This helps identify potential naming inconsistencies in the codebase.
+ */
+<span class="fc" id="L31">public class NamingConflictFilter extends ViewerFilter {</span>
+
+<span class="fc" id="L33">	private Set&lt;String&gt; conflictingNames = new HashSet&lt;&gt;();</span>
+
+	/**
+	 * Analyzes all elements to find which variable names have type conflicts.
+	 * Must be called before the filter is applied.
+	 * 
+	 * @param elements the elements to analyze
+	 */
+	public void analyzeElements(Object[] elements) {
+		// Map: variable name -&gt; set of type qualified names
+<span class="fc" id="L43">		Map&lt;String, Set&lt;String&gt;&gt; nameToTypes = new HashMap&lt;&gt;();</span>
+		
+<span class="fc bfc" id="L45" title="All 2 branches covered.">		for (Object element : elements) {</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">			if (element instanceof IVariableBinding variableBinding) {</span>
+<span class="fc" id="L47">				String name = variableBinding.getName();</span>
+<span class="fc" id="L48">				ITypeBinding typeBinding = variableBinding.getType();</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">				String typeName = typeBinding != null ? typeBinding.getQualifiedName() : &quot;unknown&quot;; //$NON-NLS-1$</span>
+				
+<span class="fc" id="L51">				nameToTypes.computeIfAbsent(name, k -&gt; new HashSet&lt;&gt;()).add(typeName);</span>
+			}
+		}
+		
+		// Find names that have more than one type
+<span class="fc" id="L56">		conflictingNames.clear();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">		for (Map.Entry&lt;String, Set&lt;String&gt;&gt; entry : nameToTypes.entrySet()) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">			if (entry.getValue().size() &gt; 1) {</span>
+<span class="fc" id="L59">				conflictingNames.add(entry.getKey());</span>
+			}
+		}
+<span class="fc" id="L62">	}</span>
+
+	/**
+	 * Returns the set of variable names that have type conflicts.
+	 * 
+	 * @return set of conflicting variable names
+	 */
+	public Set&lt;String&gt; getConflictingNames() {
+<span class="fc" id="L70">		return new HashSet&lt;&gt;(conflictingNames);</span>
+	}
+
+	/**
+	 * Returns true if there are any naming conflicts in the analyzed elements.
+	 * 
+	 * @return true if conflicts exist
+	 */
+	public boolean hasConflicts() {
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		return !conflictingNames.isEmpty();</span>
+	}
+
+	@Override
+	public boolean select(Viewer viewer, Object parentElement, Object element) {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">		if (element instanceof IVariableBinding variableBinding) {</span>
+<span class="nc" id="L85">			return conflictingNames.contains(variableBinding.getName());</span>
+		}
+<span class="nc" id="L87">		return false;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

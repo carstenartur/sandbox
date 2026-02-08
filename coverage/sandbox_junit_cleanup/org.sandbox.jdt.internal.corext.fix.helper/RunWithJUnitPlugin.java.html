@@ -74,8 +74,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Annotation node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 <span class="fc" id="L76">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L77">		mh.minv= node;</span>
-<span class="fc" id="L78">		mh.minvname= node.getTypeName().getFullyQualifiedName();</span>
+<span class="fc" id="L77">		mh.setMinv(node);</span>
+<span class="fc" id="L78">		mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
 <span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (node instanceof SingleMemberAnnotation mynode) {</span>
 <span class="fc" id="L80">			Expression value= mynode.getValue();</span>
 <span class="pc bpc" id="L81" title="1 of 2 branches missed.">			if (value instanceof TypeLiteral myvalue) {</span>
@@ -115,7 +115,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 				
 				// Handle Suite runner
 <span class="fc bfc" id="L117" title="All 2 branches covered.">				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {</span>
-<span class="fc" id="L118">					mh.value= ORG_JUNIT_RUNWITH;</span>
+<span class="fc" id="L118">					mh.setValue(ORG_JUNIT_RUNWITH);</span>
 <span class="fc" id="L119">					dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L120">					operations.add(fixcore.rewrite(dataHolder));</span>
 <span class="fc" id="L121">					return true; // Continue processing other annotations</span>
@@ -124,7 +124,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 				// Handle Mockito runners - only check qualified names to avoid false positives
 <span class="pc bpc" id="L125" title="1 of 2 branches missed.">				if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||</span>
 <span class="pc bpc" id="L126" title="1 of 2 branches missed.">						ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)) {</span>
-<span class="nc" id="L127">					mh.value= ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER;</span>
+<span class="nc" id="L127">					mh.setValue(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);</span>
 <span class="nc" id="L128">					dataHolder.put(dataHolder.size(), mh);</span>
 <span class="nc" id="L129">					operations.add(fixcore.rewrite(dataHolder));</span>
 <span class="nc" id="L130">					return true; // Continue processing other annotations</span>
@@ -133,7 +133,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 				// Handle Spring runners - only check qualified names to avoid false positives
 <span class="pc bpc" id="L134" title="1 of 2 branches missed.">				if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName) ||</span>
 <span class="pc bpc" id="L135" title="1 of 2 branches missed.">						ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName)) {</span>
-<span class="nc" id="L136">					mh.value= ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER;</span>
+<span class="nc" id="L136">					mh.setValue(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER);</span>
 <span class="nc" id="L137">					dataHolder.put(dataHolder.size(), mh);</span>
 <span class="nc" id="L138">					operations.add(fixcore.rewrite(dataHolder));</span>
 <span class="nc" id="L139">					return true; // Continue processing other annotations</span>
@@ -148,9 +148,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Annotation node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 <span class="fc" id="L150">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L151">		mh.minv= node;</span>
-<span class="fc" id="L152">		mh.minvname= node.getTypeName().getFullyQualifiedName();</span>
-<span class="fc" id="L153">		mh.value= ORG_JUNIT_SUITE_SUITECLASSES;</span>
+<span class="fc" id="L151">		mh.setMinv(node);</span>
+<span class="fc" id="L152">		mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
+<span class="fc" id="L153">		mh.setValue(ORG_JUNIT_SUITE_SUITECLASSES);</span>
 <span class="fc" id="L154">		dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L155">		operations.add(fixcore.rewrite(dataHolder));</span>
 		// Return true to continue processing other annotations
@@ -164,7 +164,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="fc" id="L164">		Annotation minv= junitHolder.getAnnotation();</span>
 <span class="fc" id="L165">		Annotation newAnnotation= null;</span>
 		
-<span class="fc bfc" id="L167" title="All 2 branches covered.">		if (ORG_JUNIT_SUITE_SUITECLASSES.equals(junitHolder.value)) {</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		if (ORG_JUNIT_SUITE_SUITECLASSES.equals(junitHolder.getValue())) {</span>
 			// Handle @Suite.SuiteClasses migration
 <span class="fc" id="L169">			SingleMemberAnnotation mynode= (SingleMemberAnnotation) minv;</span>
 <span class="fc" id="L170">			newAnnotation= ast.newSingleMemberAnnotation();</span>
@@ -174,7 +174,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="fc" id="L174">			importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);</span>
 <span class="fc" id="L175">			importRewriter.removeImport(ORG_JUNIT_SUITE_SUITECLASSES);</span>
 <span class="fc" id="L176">			importRewriter.removeImport(ORG_JUNIT_SUITE);</span>
-<span class="pc bpc" id="L177" title="1 of 2 branches missed.">		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.value)) {</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.getValue())) {</span>
 			// Handle @RunWith(Suite.class) migration
 <span class="fc" id="L179">			newAnnotation= ast.newMarkerAnnotation();</span>
 <span class="fc" id="L180">			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));</span>
@@ -182,7 +182,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="fc" id="L182">			importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);</span>
 <span class="fc" id="L183">			importRewriter.removeImport(ORG_JUNIT_SUITE);</span>
 <span class="fc" id="L184">			importRewriter.removeImport(ORG_JUNIT_RUNWITH);</span>
-<span class="pc bnc" id="L185" title="All 2 branches missed.">		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.value)) {</span>
+<span class="pc bnc" id="L185" title="All 2 branches missed.">		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.getValue())) {</span>
 			// Handle @RunWith(MockitoJUnitRunner.class) migration
 <span class="nc" id="L187">			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();</span>
 <span class="nc" id="L188">			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));</span>
@@ -194,7 +194,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="nc" id="L194">			importRewriter.addImport(ORG_MOCKITO_JUNIT_JUPITER_MOCKITO_EXTENSION);</span>
 <span class="nc" id="L195">			importRewriter.removeImport(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);</span>
 <span class="nc" id="L196">			importRewriter.removeImport(ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER);</span>
-<span class="nc bnc" id="L197" title="All 2 branches missed.">		} else if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(junitHolder.value)) {</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">		} else if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(junitHolder.getValue())) {</span>
 			// Handle @RunWith(SpringRunner.class) migration
 <span class="nc" id="L199">			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();</span>
 <span class="nc" id="L200">			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));</span>

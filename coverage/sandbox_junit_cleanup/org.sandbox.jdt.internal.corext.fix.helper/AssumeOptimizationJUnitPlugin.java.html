@@ -105,7 +105,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (!(junitHolder.minv instanceof MethodInvocation)) {</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (!(junitHolder.getMinv() instanceof MethodInvocation)) {</span>
 <span class="nc" id="L109">			return;</span>
 		}
 		

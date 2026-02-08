@@ -52,76 +52,77 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
  * Plugin to migrate JUnit 4 ExternalResource rules to JUnit 5 extensions.
  */
-<span class="fc" id="L60">public class RuleExternalResourceJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L61">public class RuleExternalResourceJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L65">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L66">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
 		
 		// Find @Rule fields with ExternalResource type
-<span class="fc" id="L68">		HelperVisitor.forField()</span>
-<span class="fc" id="L69">			.withAnnotation(ORG_JUNIT_RULE)</span>
-<span class="fc" id="L70">			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)</span>
-<span class="fc" id="L71">			.in(compilationUnit)</span>
-<span class="fc" id="L72">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L73">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
+<span class="fc" id="L69">		HelperVisitor.forField()</span>
+<span class="fc" id="L70">			.withAnnotation(ORG_JUNIT_RULE)</span>
+<span class="fc" id="L71">			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)</span>
+<span class="fc" id="L72">			.in(compilationUnit)</span>
+<span class="fc" id="L73">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L74">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
 		
 		// Find @ClassRule fields with ExternalResource type
-<span class="fc" id="L76">		HelperVisitor.forField()</span>
-<span class="fc" id="L77">			.withAnnotation(ORG_JUNIT_CLASS_RULE)</span>
-<span class="fc" id="L78">			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)</span>
-<span class="fc" id="L79">			.in(compilationUnit)</span>
-<span class="fc" id="L80">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L81">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
-<span class="fc" id="L82">	}</span>
+<span class="fc" id="L77">		HelperVisitor.forField()</span>
+<span class="fc" id="L78">			.withAnnotation(ORG_JUNIT_CLASS_RULE)</span>
+<span class="fc" id="L79">			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)</span>
+<span class="fc" id="L80">			.in(compilationUnit)</span>
+<span class="fc" id="L81">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L82">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
+<span class="fc" id="L83">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, FieldDeclaration node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L87">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L88">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);</span>
-<span class="fc" id="L89">		ITypeBinding binding= fragment.resolveBinding().getType();</span>
+<span class="fc" id="L88">		JunitHolder mh= new JunitHolder();</span>
+<span class="fc" id="L89">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="fc" id="L90">		ITypeBinding binding= fragment.resolveBinding().getType();</span>
 		if (
-<span class="pc bpc" id="L91" title="2 of 4 branches missed.">		(binding == null) || ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L93">			return true; // Continue processing other fields</span>
+<span class="pc bpc" id="L92" title="2 of 4 branches missed.">		(binding == null) || ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L94">			return true; // Continue processing other fields</span>
 		}
-<span class="fc" id="L95">		mh.minv= node;</span>
-<span class="fc" id="L96">		dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L97">		operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L96">		mh.setMinv(node);</span>
+<span class="fc" id="L97">		dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L98">		operations.add(fixcore.rewrite(dataHolder));</span>
 		// Return true to continue processing other fields
-<span class="fc" id="L99">		return true;</span>
+<span class="fc" id="L100">		return true;</span>
 	}
 
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L104">		FieldDeclaration fieldDeclaration= junitHolder.getFieldDeclaration();</span>
-<span class="fc" id="L105">		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);</span>
-<span class="fc" id="L106">		CompilationUnit cu= (CompilationUnit) fieldDeclaration.getRoot();</span>
-<span class="fc" id="L107">		String classNameFromField= extractClassNameFromField(fieldDeclaration);</span>
+<span class="fc" id="L105">		FieldDeclaration fieldDeclaration= junitHolder.getFieldDeclaration();</span>
+<span class="fc" id="L106">		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);</span>
+<span class="fc" id="L107">		CompilationUnit cu= (CompilationUnit) fieldDeclaration.getRoot();</span>
+<span class="fc" id="L108">		String classNameFromField= extractClassNameFromField(fieldDeclaration);</span>
 
-<span class="fc" id="L109">		ASTNode node2= getTypeDefinitionForField(fieldDeclaration, cu);</span>
+<span class="fc" id="L110">		ASTNode node2= ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);</span>
 
-<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (node2 instanceof TypeDeclaration) {</span>
-<span class="fc" id="L112">			modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,</span>
-<span class="fc" id="L113">					importRewriter);</span>
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {</span>
-<span class="fc" id="L115">			refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,</span>
-<span class="fc" id="L116">					importRewriter);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (node2 instanceof TypeDeclaration) {</span>
+<span class="fc" id="L113">			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,</span>
+<span class="fc" id="L114">					importRewriter);</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {</span>
+<span class="fc" id="L116">			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,</span>
+<span class="fc" id="L117">					importRewriter);</span>
 		}
 		// If no matching type definition found, no action needed
-<span class="fc" id="L119">	}</span>
+<span class="fc" id="L120">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L123" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L124">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L125">			return &quot;&quot;&quot;</span>
 					ExtendWith(MyTest.MyExternalResource.class)
 					public class MyTest {
 
@@ -136,7 +137,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 						}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L139">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L140">		return &quot;&quot;&quot;</span>
 				public class MyTest {
 
 					final class MyExternalResource extends ExternalResource {
@@ -156,7 +157,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L159">		return &quot;RuleExternalResource&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L160">		return &quot;RuleExternalResource&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

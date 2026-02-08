@@ -64,7 +64,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 <span class="fc" id="L66">		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();</span>
-<span class="fc" id="L67">		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.additionalInfo;</span>
+<span class="fc" id="L67">		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.getAdditionalInfo();</span>
 		
 <span class="pc bpc" id="L69" title="1 of 2 branches missed.">		if (timeoutPair == null) {</span>
 <span class="nc" id="L70">			return;</span>

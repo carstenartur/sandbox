@@ -126,10 +126,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="fc" id="L126">		nodesprocessed.add(theoriesData.theoryMethod);</span>
 		
 <span class="fc" id="L128">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L129">		mh.minv= node;</span>
-<span class="fc" id="L130">		mh.minvname= node.getTypeName().getFullyQualifiedName();</span>
-<span class="fc" id="L131">		mh.value= ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES;</span>
-<span class="fc" id="L132">		mh.additionalInfo= theoriesData;</span>
+<span class="fc" id="L129">		mh.setMinv(node);</span>
+<span class="fc" id="L130">		mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
+<span class="fc" id="L131">		mh.setValue(ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES);</span>
+<span class="fc" id="L132">		mh.setAdditionalInfo(theoriesData);</span>
 <span class="fc" id="L133">		dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L134">		operations.add(fixcore.rewrite(dataHolder));</span>
 		
@@ -205,7 +205,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L208">		TheoriesData theoriesData = (TheoriesData) junitHolder.additionalInfo;</span>
+<span class="fc" id="L208">		TheoriesData theoriesData = (TheoriesData) junitHolder.getAdditionalInfo();</span>
 		
 		// Remove @RunWith(Theories.class) annotation
 <span class="fc" id="L211">		rewriter.remove(theoriesData.runWithAnnotation, group);</span>

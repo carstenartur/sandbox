@@ -93,7 +93,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 <span class="nc" id="L94">			nodesprocessed.add(node);</span>
 <span class="nc" id="L95">			JunitHolder mh= new JunitHolder();</span>
-<span class="nc" id="L96">			mh.minv= node;</span>
+<span class="nc" id="L96">			mh.setMinv(node);</span>
 <span class="nc" id="L97">			dataHolder.put(dataHolder.size(), mh);</span>
 <span class="nc" id="L98">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}
