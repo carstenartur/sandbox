@@ -67,7 +67,6 @@ public abstract class AbstractTestAnnotationParameterPlugin extends AbstractTool
 		
 		MemberValuePair targetPair = null;
 		
-		@SuppressWarnings("unchecked")
 		List<MemberValuePair> values = node.values();
 		for (MemberValuePair pair : values) {
 			if (getParameterName().equals(pair.getName().getIdentifier())) {

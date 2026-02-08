@@ -187,9 +187,6 @@ See README.md for more information.
 				<configuration>
 					<source>${java-version}</source>
 					<target>${java-version}</target>
-          <targetPlatformConfiguration>
-          <pomDependencies>wrapAsBundle</pomDependencies>
-          </targetPlatformConfiguration>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -197,6 +194,7 @@ See README.md for more information.
 				<artifactId>target-platform-configuration</artifactId>
 				<version>${tycho-version}</version>
 				<configuration>
+					<pomDependencies>consider</pomDependencies>
 					<executionEnvironment>${java-execenv}</executionEnvironment>
 					<target>
 						<artifact>

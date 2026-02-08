@@ -24,7 +24,6 @@ import org.sandbox.ast.api.info.TypeInfo;
 class ForLoopStmtTest {
 	
 	private final TypeInfo booleanType = TypeInfo.Builder.of("boolean").primitive().build();
-	private final TypeInfo intType = TypeInfo.Builder.of("int").primitive().build();
 	
 	@Test
 	void testBasicConstruction() {

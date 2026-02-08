@@ -228,9 +228,8 @@ public final class VariableResolver {
 			ITypeBinding binding = simpleType.resolveBinding();
 			if (binding != null) {
 				return binding.getName();
-			} else {
-				return simpleType.getName().getFullyQualifiedName();
 			}
+			return simpleType.getName().getFullyQualifiedName();
 		} else if (type.isArrayType()) {
 			ArrayType arrayType = (ArrayType) type;
 			Type elementType = arrayType.getElementType();
@@ -353,12 +352,12 @@ public final class VariableResolver {
 	 * </ul>
 	 * 
 	 * <p><b>Example:</b></p>
-	 * <pre>{@code
-	 * @NotNull String result = "";
+	 * <pre>
+	 * &#64;NotNull String result = "";
 	 * for (String s : strings) {
 	 *     result += s;  // Can use String::concat safely
 	 * }
-	 * }</pre>
+	 * </pre>
 	 * 
 	 * @param startNode the starting node for the search (must not be null)
 	 * @param varName   the variable name to check (must not be null)

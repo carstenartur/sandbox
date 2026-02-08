@@ -203,7 +203,6 @@ public class StreamToIteratorWhile extends AbstractFunctionalCall<ASTNode> {
 		
 		if (parent instanceof Block) {
 			Block parentBlock = (Block) parent;
-			int index = parentBlock.statements().indexOf(forEachStmt);
 			
 			org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
 			listRewrite.insertBefore(iteratorDecl, forEachStmt, group);

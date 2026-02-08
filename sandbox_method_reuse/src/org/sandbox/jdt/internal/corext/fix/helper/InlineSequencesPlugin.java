@@ -90,9 +90,6 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 	public void rewrite(Object fixcore, ReferenceHolder<?, ?> holder,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
 		
-		// Cast to the correct types
-		MethodReuseCleanUpFixCore fixCore = (MethodReuseCleanUpFixCore) fixcore;
-		
 		// Get the method declaration and match from the holder
 		MethodDeclaration targetMethod = (MethodDeclaration) holder.get(0);
 		InlineSequenceMatch match = (InlineSequenceMatch) holder.get(1);
@@ -135,7 +132,6 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 	 * Replace the inline code sequence with a method call
 	 * Handles both return statements and variable declarations
 	 */
-	@SuppressWarnings("unchecked")
 	private void replaceStatementsWithMethodCall(ASTRewrite rewrite, AST ast, 
 			MethodDeclaration targetMethod, MethodInvocation methodCall,
 			List<Statement> statementsToReplace, TextEditGroup group) {
@@ -213,7 +209,6 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 	/**
 	 * Check if a method returns a value (has a return statement with an expression)
 	 */
-	@SuppressWarnings("unchecked")
 	private boolean methodReturnsValue(MethodDeclaration method) {
 		if (method.getBody() == null) {
 			return false;

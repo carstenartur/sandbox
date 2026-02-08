@@ -59,7 +59,6 @@ private static CompilationUnit parseSource(String source) {
 ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 parser.setSource(source.toCharArray());
 parser.setKind(ASTParser.K_COMPILATION_UNIT);
-@SuppressWarnings("unchecked")
 Map<String, String> options = JavaCore.getOptions();
 JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
 parser.setCompilerOptions(options);
@@ -491,13 +490,11 @@ HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach(holder, (node, h) -> {
-@SuppressWarnings("unchecked")
 List<String> data = (List<String>) h.get(0);
 data.add(node.toString());
 return true;
 });
 
-@SuppressWarnings("unchecked")
 List<String> collected = (List<String>) holder.get(0);
 assertEquals(2, collected.size(), "Should have collected 2 annotations"); //$NON-NLS-1$
 }

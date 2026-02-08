@@ -25,11 +25,11 @@ import java.lang.annotation.Target;
  * 
  * <p>Example usage:</p>
  * <pre>
- * {@code @TriggerPatterns({
- *     @TriggerPattern(value = "$x + 1", kind = PatternKind.EXPRESSION),
- *     @TriggerPattern(value = "$x + 1L", kind = PatternKind.EXPRESSION)
- * })}
- * {@code @Hint(displayName = "Replace with increment")}
+ * &#64;TriggerPatterns({
+ *     &#64;TriggerPattern(value = "$x + 1", kind = PatternKind.EXPRESSION),
+ *     &#64;TriggerPattern(value = "$x + 1L", kind = PatternKind.EXPRESSION)
+ * })
+ * &#64;Hint(displayName = "Replace with increment")
  * public static IJavaCompletionProposal simplifyIncrement(HintContext ctx) {
  *     // Implementation
  * }

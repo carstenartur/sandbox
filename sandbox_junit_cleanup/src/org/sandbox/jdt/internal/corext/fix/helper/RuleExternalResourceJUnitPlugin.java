@@ -105,7 +105,6 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		FieldDeclaration fieldDeclaration= junitHolder.getFieldDeclaration();
 		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);
 		CompilationUnit cu= (CompilationUnit) fieldDeclaration.getRoot();
-		String classNameFromField= extractClassNameFromField(fieldDeclaration);
 
 		ASTNode node2= ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);
 

@@ -97,7 +97,6 @@ public class ConsecutiveLoopGroupDetector {
 		}
 
 		List<ConsecutiveLoopGroup> groups = new ArrayList<>();
-		@SuppressWarnings("unchecked")
 		List<Statement> statements = block.statements();
 
 		int i = 0;
@@ -171,7 +170,6 @@ public class ConsecutiveLoopGroupDetector {
 		// Handle both Block and single statement
 		List<Statement> bodyStatements = new ArrayList<>();
 		if (body instanceof Block) {
-			@SuppressWarnings("unchecked")
 			List<Statement> stmts = ((Block) body).statements();
 			bodyStatements.addAll(stmts);
 		} else {

@@ -87,34 +87,26 @@ public class NodeExecutor {
 		pb.redirectErrorStream(false);
 
 		Process process = pb.start();
+		try {
+			// Use StreamGobbler to read streams concurrently and avoid deadlock
+			StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream());
+			StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream());
+			
+			outputGobbler.start();
+			errorGobbler.start();
 
-		// Use StreamGobbler to read streams concurrently and avoid deadlock
-		StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream());
-		StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream());
-		
-		outputGobbler.start();
-		errorGobbler.start();
-
-		boolean finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-		if (!finished) {
-			process.destroyForcibly();
-			throw new IOException("Process timed out after " + TIMEOUT_SECONDS + " seconds"); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-
-		outputGobbler.join(1000);
-		errorGobbler.join(1000);
-
-		return new ExecutionResult(process.exitValue(), outputGobbler.getOutput(), errorGobbler.getOutput());
-	}
-
-	private static String readStream(InputStream is) throws IOException {
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-			StringBuilder sb = new StringBuilder();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				sb.append(line).append("\n"); //$NON-NLS-1$
+			boolean finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+			if (!finished) {
+				process.destroyForcibly();
+				throw new IOException("Process timed out after " + TIMEOUT_SECONDS + " seconds"); //$NON-NLS-1$ //$NON-NLS-2$
 			}
-			return sb.toString();
+
+			outputGobbler.join(1000);
+			errorGobbler.join(1000);
+
+			return new ExecutionResult(process.exitValue(), outputGobbler.getOutput(), errorGobbler.getOutput());
+		} finally {
+			process.destroy();
 		}
 	}
 

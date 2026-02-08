@@ -124,7 +124,6 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 			}
 		} else if (value instanceof ArrayInitializer arrayInit) {
 			// Multiple categories: @Category({Fast.class, Slow.class})
-			@SuppressWarnings("unchecked")
 			List<Expression> expressions= arrayInit.expressions();
 			for (Expression expr : expressions) {
 				if (expr instanceof TypeLiteral typeLiteral) {

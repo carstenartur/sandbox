@@ -15,26 +15,100 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_encoding_quickfix_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_extra_search_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_jface_cleanup_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_junit_cleanup_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_platform_helper_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_usage_view_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_tools_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_functional_converter_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_triggerpattern_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_xml_cleanup_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_css_cleanup_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_method_reuse_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_int_to_enum_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_cleanup_application_feature</artifactId>
+			<version>${project.version}</version>
+			<type>eclipse-feature</type>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
@@ -58,7 +132,7 @@
 				<executions>
 					<execution>
 						<id>copy</id>
-						<?m2e execute?>
+						<?m2e ignore?>
 						<phase>compile</phase>
 						<goals>
 							<goal>unpack-dependencies</goal>
