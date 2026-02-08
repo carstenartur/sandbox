@@ -686,14 +686,12 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // Create block body
         Block block = ast.newBlock();
         
-        // Add comments as block comments
-        for (String comment : filterOp.getComments()) {
-            BlockComment blockComment = ast.newBlockComment();
-            // Note: The actual comment text needs to be set via the compilation unit source
-            // For now, we'll add it as a placeholder
-            // In practice, comments should be inserted via ASTRewrite
-            block.statements().add(ast.newEmptyStatement()); // Placeholder
-        }
+        // TODO: Full comment insertion requires ASTRewrite integration to properly
+        // insert comment text into the source. For now, we just generate a block lambda
+        // to show the structure is in place. When ASTRewrite is available:
+        // 1. Create LineComment or BlockComment nodes
+        // 2. Use ASTRewrite to insert comment text at the correct position
+        // 3. Attach comments before the return statement
         
         // Add return statement with the filter expression
         ReturnStatement returnStmt = ast.newReturnStatement();
@@ -730,14 +728,12 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // Create block body
         Block block = ast.newBlock();
         
-        // Add comments as block comments
-        for (String comment : mapOp.getComments()) {
-            BlockComment blockComment = ast.newBlockComment();
-            // Note: The actual comment text needs to be set via the compilation unit source
-            // For now, we'll add it as a placeholder
-            // In practice, comments should be inserted via ASTRewrite
-            block.statements().add(ast.newEmptyStatement()); // Placeholder
-        }
+        // TODO: Full comment insertion requires ASTRewrite integration to properly
+        // insert comment text into the source. For now, we just generate a block lambda
+        // to show the structure is in place. When ASTRewrite is available:
+        // 1. Create LineComment or BlockComment nodes
+        // 2. Use ASTRewrite to insert comment text at the correct position
+        // 3. Attach comments before the return statement
         
         // Add return statement with the map expression
         ReturnStatement returnStmt = ast.newReturnStatement();

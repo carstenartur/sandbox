@@ -153,6 +153,10 @@ public class JdtLoopExtractor {
         }
         
         builder.forEach(bodyStatements, false); // unordered for simple enhanced for
+        
+        // Note: Comment extraction is implemented but not yet wired up to specific operations
+        // This would require more sophisticated loop body analysis to detect filter/map patterns
+        // For now, extractComments() is available for future use when operation detection is added
     }
     
     /**
@@ -177,16 +181,22 @@ public class JdtLoopExtractor {
         
         int nodeStart = node.getStartPosition();
         int nodeEnd = nodeStart + node.getLength();
+        int nodeStartLine = cu.getLineNumber(nodeStart);
         
         for (Comment comment : commentList) {
             int commentStart = comment.getStartPosition();
             int commentEnd = commentStart + comment.getLength();
+            int commentEndLine = cu.getLineNumber(commentEnd);
             
-            // Check if comment is immediately before the node (within 2 positions)
-            // or on the same line as the node
-            if ((commentEnd <= nodeStart && nodeStart - commentEnd <= 2) ||
-                (commentStart >= nodeStart && commentEnd <= nodeEnd)) {
-                
+            // Associate comments that are:
+            // 1. On the line immediately before the node, OR
+            // 2. On the same line as the node (trailing comment), OR
+            // 3. Within the node's span (embedded comment)
+            boolean isLeadingComment = commentEndLine == nodeStartLine - 1 || 
+                                       (commentEndLine == nodeStartLine && commentEnd <= nodeStart);
+            boolean isEmbeddedComment = commentStart >= nodeStart && commentEnd <= nodeEnd;
+            
+            if (isLeadingComment || isEmbeddedComment) {
                 String commentText = extractCommentText(comment, cu);
                 if (commentText != null && !commentText.isEmpty()) {
                     comments.add(commentText);
@@ -206,7 +216,18 @@ public class JdtLoopExtractor {
      */
     private String extractCommentText(Comment comment, CompilationUnit cu) {
         try {
-            String source = cu.toString();
+            // Get the original source from the compilation unit's type root
+            org.eclipse.jdt.core.ICompilationUnit javaElement = 
+                (org.eclipse.jdt.core.ICompilationUnit) cu.getJavaElement();
+            if (javaElement == null) {
+                return null;
+            }
+            
+            String source = javaElement.getSource();
+            if (source == null) {
+                return null;
+            }
+            
             int start = comment.getStartPosition();
             int length = comment.getLength();
             
