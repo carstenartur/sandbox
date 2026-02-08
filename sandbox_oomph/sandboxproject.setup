@@ -121,7 +121,7 @@ so that Eclipse can resolve the OSGi bundle dependencies.
 
 Run this command in the repository root:
 
-  cd ${git.clone.sandbox.location}
+  cd "${git.clone.sandbox.location}"
   mvn install -pl sandbox-functional-converter-core,sandbox-ast-api,sandbox-ast-api-jdt -am -DskipTests
 
 This builds the pure Maven modules (sandbox-functional-converter-core, etc.) 
