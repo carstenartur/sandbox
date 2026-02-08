@@ -87,6 +87,7 @@ public class MethodSignatureAnalyzer {
 	 * @param method The method
 	 * @return Array of parameter type names
 	 */
+	@SuppressWarnings("unused") // Helper method for suggestRefactoring TODO implementation
 	private static String[] getParameterTypes(MethodDeclaration method) {
 		List<?> params = method.parameters();
 		List<String> types = new ArrayList<>();

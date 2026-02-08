@@ -362,6 +362,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		return null;
 	}
 
+	@SuppressWarnings("unused") // Helper method kept for potential future use (alternative to extractExceptionType)
 	private String extractExceptionTypeName(MethodInvocation expectCall) {
 		// The argument is typically a TypeLiteral like IllegalArgumentException.class
 		if (!expectCall.arguments().isEmpty()) {

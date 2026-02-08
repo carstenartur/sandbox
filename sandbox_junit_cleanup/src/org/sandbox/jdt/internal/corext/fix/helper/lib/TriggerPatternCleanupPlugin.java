@@ -301,6 +301,10 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         @Override
         protected RewriteRule getRewriteRule() {
             return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(RewriteRule.class);
+          
+        @SuppressWarnings("unused") // Intended for future multi-placeholder pattern support
+        boolean isMultiPlaceholder() {
+            return placeholderName != null && placeholderName.startsWith("$") && placeholderName.endsWith("$"); //$NON-NLS-1$ //$NON-NLS-2$
         }
     }
     

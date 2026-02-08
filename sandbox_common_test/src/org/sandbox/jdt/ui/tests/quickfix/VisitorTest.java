@@ -172,11 +172,9 @@ public class VisitorTest {
 						pernodemap.put("init", svd_initializer); //$NON-NLS-1$
 						break;
 					case VariableDeclarationExpression:
-						VariableDeclarationExpression vde=(VariableDeclarationExpression) node;
 						ASTNodes.getTypedAncestor(node, Statement.class);
 						break;
 					case VariableDeclarationStatement:
-						VariableDeclarationStatement vds=(VariableDeclarationStatement) node;
 						break;
 					case VariableDeclarationFragment:
 						VariableDeclarationFragment vdf=(VariableDeclarationFragment) node;

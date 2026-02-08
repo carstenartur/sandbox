@@ -84,7 +84,6 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 		 * <p><b>Future enhancement:</b> See TODO.md for nested loop conversion roadmap.</p>
 		 */
 		@Test
-		@Disabled("Inner loop conversion in nested context not yet implemented - requires multi-pass cleanup execution")
 		@DisplayName("Nested for-each loops should convert inner loop only")
 		void test_NestedForEach_ShouldConvertInnerOnly() throws CoreException {
 			String sourceCode = """
@@ -117,6 +116,7 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 					}""";
 
 			IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+			@SuppressWarnings("unused")
 			ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
 			context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);

@@ -267,7 +267,6 @@ public class ReferenceHolderTest {
 						pernodemap.put("name", svd.getName().getIdentifier()); //$NON-NLS-1$
 						break;
 					case VariableDeclarationExpression:
-						VariableDeclarationExpression vde = (VariableDeclarationExpression) node;
 						Statement parent = ASTNodes.getTypedAncestor(node, Statement.class);
 						pernodemap.put("parent", parent); //$NON-NLS-1$
 						break;

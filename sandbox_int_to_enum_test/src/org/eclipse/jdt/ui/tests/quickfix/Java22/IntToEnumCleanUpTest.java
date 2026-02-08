@@ -99,6 +99,7 @@ public class IntToEnumCleanUpTest {
 				}
 				""";
 		
+		@SuppressWarnings("unused")
 		String expected = """
 				package test1;
 				

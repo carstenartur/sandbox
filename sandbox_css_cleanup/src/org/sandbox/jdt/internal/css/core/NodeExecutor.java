@@ -87,11 +87,9 @@ public class NodeExecutor {
 		pb.redirectErrorStream(false);
 
 		Process process = pb.start();
-		try {
+		try (StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream());
+			 StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream())) {
 			// Use StreamGobbler to read streams concurrently and avoid deadlock
-			StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream());
-			StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream());
-			
 			outputGobbler.start();
 			errorGobbler.start();
 
@@ -112,10 +110,12 @@ public class NodeExecutor {
 
 	/**
 	 * Helper class to read stream output in a separate thread to avoid deadlock.
+	 * Implements AutoCloseable to ensure the input stream is closed even if the thread doesn't run.
 	 */
-	private static class StreamGobbler extends Thread {
+	private static class StreamGobbler extends Thread implements AutoCloseable {
 		private final InputStream inputStream;
 		private final StringBuilder output = new StringBuilder();
+		private volatile boolean streamConsumed = false;
 
 		StreamGobbler(InputStream inputStream) {
 			this.inputStream = inputStream;
@@ -124,6 +124,7 @@ public class NodeExecutor {
 		@Override
 		public void run() {
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+				streamConsumed = true;
 				String line;
 				while ((line = reader.readLine()) != null) {
 					output.append(line).append("\n"); //$NON-NLS-1$
@@ -131,6 +132,18 @@ public class NodeExecutor {
 			} catch (IOException e) {
 				LOG.log(new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, 
 						"sandbox_css_cleanup", "Error reading stream", e)); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		}
+
+		@Override
+		public void close() {
+			// If run() was never called or didn't complete, close the stream explicitly
+			if (!streamConsumed) {
+				try {
+					inputStream.close();
+				} catch (IOException e) {
+					// Ignore close errors - stream will be closed when process is destroyed anyway
+				}
 			}
 		}
 
