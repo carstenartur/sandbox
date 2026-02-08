@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.concurrency;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.IfStatement;
@@ -231,7 +232,7 @@ public class DoubleCheckLockingHintProvider {
 				|| !(infix2.getRightOperand() instanceof NullLiteral)) {
 			return false;
 		}
-		// Compare the left operand (the field being checked) by their string representation
-		return infix1.getLeftOperand().toString().equals(infix2.getLeftOperand().toString());
+		// Compare the left operand (the field being checked) using structural comparison
+		return infix1.getLeftOperand().subtreeMatch(new ASTMatcher(), infix2.getLeftOperand());
 	}
 }
