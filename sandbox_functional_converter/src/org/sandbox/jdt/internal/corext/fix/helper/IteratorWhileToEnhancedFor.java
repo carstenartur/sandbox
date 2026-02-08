@@ -76,7 +76,7 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 				nodesprocessed.add(previousStmt);
 				nodesprocessed.add(node);
 				
-				ReferenceHolder<ASTNode, Object> holder = new ReferenceHolder<>();
+				ReferenceHolder<ASTNode, Object> holder = ReferenceHolder.create();
 				holder.put(node, pattern);
 				holder.put(previousStmt, pattern); // Store pattern for both nodes
 				

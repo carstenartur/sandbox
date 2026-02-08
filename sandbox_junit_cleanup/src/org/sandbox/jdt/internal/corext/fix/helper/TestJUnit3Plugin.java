@@ -70,7 +70,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= new ReferenceHolder<>();
+		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
 		HelperVisitor.callTypeDeclarationVisitor("junit.framework.TestCase", compilationUnit, dataHolder,
 				nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder, nodesprocessed));

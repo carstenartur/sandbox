@@ -76,8 +76,10 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> holder= new ReferenceHolder<>();
-		HelperVisitor.callMethodInvocationVisitor(ByteArrayOutputStream.class, METHOD_TOSTRING, compilationUnit, holder, nodesprocessed,
-				(visited, aholder) -> processFoundNode(fixcore, operations, cb, visited, aholder));
+		HelperVisitor.forMethodCall(ByteArrayOutputStream.class, METHOD_TOSTRING)
+			.in(compilationUnit)
+			.excluding(nodesprocessed)
+			.processEach(holder, (visited, aholder) -> processFoundNode(fixcore, operations, cb, visited, aholder));
 	}
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,

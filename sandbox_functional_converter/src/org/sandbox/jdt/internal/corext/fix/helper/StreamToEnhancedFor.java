@@ -52,7 +52,7 @@ public class StreamToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, Object> dataHolder = new ReferenceHolder<>();
+		ReferenceHolder<Integer, Object> dataHolder = ReferenceHolder.create();
 		
 		// Find forEach method calls
 		HelperVisitor.callMethodInvocationVisitor("forEach", compilationUnit, dataHolder, nodesprocessed, //$NON-NLS-1$

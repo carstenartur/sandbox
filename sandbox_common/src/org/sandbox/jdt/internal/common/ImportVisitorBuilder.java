@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.common;
 
 import java.util.function.BiPredicate;
 
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 
 /**
@@ -48,8 +47,8 @@ public class ImportVisitorBuilder extends HelperVisitorBuilder<ImportDeclaration
     
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
-            BiPredicate<ASTNode, ReferenceHolder<V, H>> processor) {
+            BiPredicate<ImportDeclaration, ReferenceHolder<V, H>> processor) {
         HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
-                holder, nodesprocessed, (node, h) -> processor.test(node, h));
+                holder, nodesprocessed, processor);
     }
 }

@@ -106,8 +106,8 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		
 		// PHASE 9: Use LoopTree for nested loop analysis
 		// Continue with individual loop processing for non-grouped loops using LoopTree
-		ReferenceHolder<Integer, FunctionalHolder> dataHolder = new ReferenceHolder<>();
-		ReferenceHolder<String, Object> treeHolder = new ReferenceHolder<>();
+		ReferenceHolder<Integer, FunctionalHolder> dataHolder = ReferenceHolder.create();
+		ReferenceHolder<String, Object> treeHolder = ReferenceHolder.create();
 		
 		// Initialize the LoopTree in the shared holder
 		LoopTree tree = new LoopTree();
@@ -125,7 +125,7 @@ public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatemen
 		for (LoopTreeNode node : convertibleNodes) {
 			EnhancedForStatement loopStatement = (EnhancedForStatement) node.getAstNodeReference();
 			if (loopStatement != null && !nodesprocessed.contains(loopStatement)) {
-				ReferenceHolder<ASTNode, Object> sharedDataHolder = new ReferenceHolder<>();
+				ReferenceHolder<ASTNode, Object> sharedDataHolder = ReferenceHolder.create();
 				operations.add(fixcore.rewrite(loopStatement, sharedDataHolder));
 				nodesprocessed.add(loopStatement);
 			}

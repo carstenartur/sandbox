@@ -26,6 +26,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jdt.core.dom.ASTNode;
+
 /**
  * A thread-safe reference holder that extends ConcurrentHashMap for storing AST node references.
  * This class is used by cleanup visitors to track and store references to AST nodes during traversal.
@@ -51,6 +53,73 @@ public class ReferenceHolder<V,T> extends ConcurrentHashMap<V,T> implements Help
 	 * The associated helper visitor for processing AST nodes.
 	 */
 	HelperVisitor<ReferenceHolder<V,T>,V,T> hv;
+	
+	/**
+	 * Creates a new empty ReferenceHolder.
+	 * This is a convenience factory method to reduce verbosity in plugin code.
+	 * 
+	 * @param <V> the type of keys
+	 * @param <T> the type of values
+	 * @return a new ReferenceHolder instance
+	 * @since 1.16
+	 */
+	public static <V,T> ReferenceHolder<V,T> create() {
+		return new ReferenceHolder<>();
+	}
+	
+	/**
+	 * Creates a new ReferenceHolder for storing AST nodes as keys with Object values.
+	 * This is the most common usage pattern across plugins.
+	 * 
+	 * @return a new ReferenceHolder&lt;ASTNode, Object&gt; instance
+	 * @since 1.16
+	 */
+	public static ReferenceHolder<ASTNode, Object> createForNodes() {
+		return new ReferenceHolder<>();
+	}
+	
+	/**
+	 * Creates a new ReferenceHolder with Integer keys and typed values.
+	 * This pattern is commonly used for collecting results by index.
+	 * 
+	 * @param <T> the type of values to store
+	 * @return a new ReferenceHolder&lt;Integer, T&gt; instance
+	 * @since 1.16
+	 */
+	public static <T> ReferenceHolder<Integer, T> createIndexed() {
+		return new ReferenceHolder<>();
+	}
+	
+	/**
+	 * Type-safe getter that casts the value to the specified type.
+	 * 
+	 * @param <R> the expected return type
+	 * @param key the key whose associated value is to be returned
+	 * @param clazz the class of the expected return type
+	 * @return the value cast to type R, or null if not present or wrong type
+	 * @since 1.16
+	 */
+	@SuppressWarnings("unchecked")
+	public <R> R getAs(V key, Class<R> clazz) {
+		T value = get(key);
+		if (value != null && clazz.isInstance(value)) {
+			return (R) value;
+		}
+		return null;
+	}
+	
+	/**
+	 * Type-safe put that enforces the value type at compile time.
+	 * This is just an alias for put() but with clearer intent.
+	 * 
+	 * @param key the key with which the value is to be associated
+	 * @param value the value to be associated with the key
+	 * @return the previous value associated with key, or null
+	 * @since 1.16
+	 */
+	public T putTyped(V key, T value) {
+		return put(key, value);
+	}
 
 	/**
 	 * Gets the helper visitor associated with this reference holder.

@@ -47,7 +47,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
     public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
                      Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
         
-        ReferenceHolder<ASTNode, Object> dataHolder = new ReferenceHolder<>();
+        ReferenceHolder<ASTNode, Object> dataHolder = ReferenceHolder.create();
         HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
                 (visited, holder) -> processFoundNode(fixcore, operations, nodesprocessed, visited, holder),
                 (visited, holder) -> {});

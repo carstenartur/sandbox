@@ -75,7 +75,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean preservePluginId) throws CoreException {
 		try {
-			ReferenceHolder<ASTNode, Object> dataholder= new ReferenceHolder<>();
+			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
 			HelperVisitor.callClassInstanceCreationVisitor(Status.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
 				if (nodesprocessed.contains(visited) || (visited.arguments().size() != 5)) {
 					return false;
