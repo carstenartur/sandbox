@@ -117,6 +117,7 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 					}""";
 
 			IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+			@SuppressWarnings("unused")
 			ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
 			context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);

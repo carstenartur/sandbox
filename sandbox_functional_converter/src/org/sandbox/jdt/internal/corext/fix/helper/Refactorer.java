@@ -240,8 +240,6 @@ public class Refactorer {
 		
 		// We have a match! Create a merged VariableDeclarationStatement
 		VariableDeclarationStatement originalDecl = (VariableDeclarationStatement) precedingStmt;
-		VariableDeclarationFragment originalFragment = 
-				(VariableDeclarationFragment) originalDecl.fragments().get(0);
 		
 		AST ast = forLoop.getAST();
 		

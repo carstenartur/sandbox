@@ -525,10 +525,12 @@ public class TriggerPatternCleanupFrameworkTest {
 				}
 				""";
 
+			@SuppressWarnings("unused")
 			CompilationUnit cu = parseSource(source);
 			ReferenceHolder<Integer, JunitHolder> dataHolder = new ReferenceHolder<>();
 
 			// Simulate what the plugin does
+			@SuppressWarnings("unused")
 			BeforeJUnitPlugin plugin = new BeforeJUnitPlugin();
 			// The find method would populate dataHolder in a real scenario
 			// Here we're verifying the holder can store data correctly

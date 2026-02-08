@@ -39,7 +39,6 @@ public enum JfaceCleanUpFixCore {
 
 	AbstractTool<?> jfacefound;
 
-	@SuppressWarnings("unchecked")
 	JfaceCleanUpFixCore(AbstractTool<?> xmlsimplify) {
 		this.jfacefound= xmlsimplify;
 	}

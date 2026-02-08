@@ -58,6 +58,7 @@ public class JavaHelperViewTest {
 	@BeforeEach
 	public void setUp() throws Exception {
 		// Create test project
+		@SuppressWarnings("unused")
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		testProject = createJavaProject("TestProject", new String[] {"src"});
 		sourceFolder = testProject.getPackageFragmentRoot(testProject.getProject().getFolder("src"));

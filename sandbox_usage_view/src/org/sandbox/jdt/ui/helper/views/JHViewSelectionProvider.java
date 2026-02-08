@@ -85,10 +85,9 @@ class JHViewSelectionProvider implements ISelectionProvider {
 		IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();
 		// Debug logging removed - uncomment if needed: logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, "Selection: " + selection));
 		ArrayList<Object> externalSelection = new ArrayList<>();
-		for (Object element : selection) {
-			// Variable bindings from the table can be added to external selection
-			// if needed for integration with other views
-		}
+		// Variable bindings from the table can be added to external selection
+		// if needed for integration with other views
+		// Currently returns empty selection - extend if needed
 		return new StructuredSelection(externalSelection);
 	}
 

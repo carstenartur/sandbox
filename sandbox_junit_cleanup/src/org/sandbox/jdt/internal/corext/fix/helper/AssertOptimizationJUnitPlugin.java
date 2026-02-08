@@ -127,7 +127,6 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		
 		// Get the condition expression (may be first or second argument depending on whether message is present)
 		Expression condition = null;
-		Expression message = null;
 		
 		if (arguments.size() == 1) {
 			condition = (Expression) arguments.get(0);
@@ -136,11 +135,10 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			Expression firstArg = (Expression) arguments.get(0);
 			ITypeBinding firstArgType = firstArg.resolveTypeBinding();
 			if (firstArgType != null && "java.lang.String".equals(firstArgType.getQualifiedName())) {
-				message = firstArg;
+				// First arg is message, second is condition
 				condition = (Expression) arguments.get(1);
 			} else {
 				condition = firstArg;
-				message = (Expression) arguments.get(1);
 			}
 		}
 		
