@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.cleanup;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -257,22 +256,79 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      *   <li>NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.</li>
      * </ul>
      * 
-     * <p><b>Required holder methods:</b></p>
-     * <ul>
-     *   <li>For ANNOTATION patterns: {@code getAnnotation()}, {@code getBindingAsExpression(String)} (when using placeholders)</li>
-     *   <li>For non-ANNOTATION patterns: {@code getMinv()}, {@code getBindings()}</li>
-     * </ul>
+     * <p><b>Type-safe version:</b> This overload accepts a {@link MatchHolder} interface,
+     * avoiding reflection. For legacy holders that don't implement the interface, use
+     * {@link #processRewriteWithRule(TextEditGroup, ASTRewrite, AST, ImportRewrite, Object)}.</p>
+     * 
+     * @param group the text edit group for tracking changes
+     * @param rewriter the AST rewriter
+     * @param ast the AST instance
+     * @param importRewriter the import rewriter
+     * @param holder the holder containing transformation information (must implement {@link MatchHolder})
+     */
+    protected void processRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, MatchHolder holder) {
+        
+        RewriteRule rewriteRule = getRewriteRule();
+        if (rewriteRule == null) {
+            throw new UnsupportedOperationException(
+                "Plugin " + getClass().getSimpleName() +  //$NON-NLS-1$
+                " must be annotated with @RewriteRule because it does not override processRewrite()"); //$NON-NLS-1$
+        }
+        
+        // Check if this is an annotation pattern
+        Annotation annotation = holder.getAnnotation();
+        if (annotation != null) {
+            processAnnotationRewriteWithRuleTypeSafe(group, rewriter, ast, importRewriter, holder, rewriteRule);
+            return;
+        }
+        
+        // For non-annotation patterns, get the matched node
+        ASTNode matchedNode = holder.getMinv();
+        
+        // Determine the pattern kind from the matched node type
+        PatternKind patternKind = org.sandbox.jdt.triggerpattern.api.FixUtilities.determinePatternKindFromNode(matchedNode);
+        
+        // For ANNOTATION patterns detected via node type, use the annotation replacement logic
+        if (patternKind == PatternKind.ANNOTATION) {
+            processAnnotationRewriteWithRuleTypeSafe(group, rewriter, ast, importRewriter, holder, rewriteRule);
+        } else {
+            // For all other patterns (EXPRESSION, METHOD_CALL, CONSTRUCTOR, STATEMENT, FIELD),
+            // delegate to FixUtilities.rewriteFix()
+            processGenericRewriteWithRuleTypeSafe(group, rewriter, ast, importRewriter, holder, rewriteRule, matchedNode);
+        }
+    }
+    
+    /**
+     * Returns the RewriteRule annotation for this plugin.
+     * 
+     * <p>Subclasses can override this method to provide a RewriteRule from a different source
+     * (e.g., when using composition/delegation patterns where the annotation is on
+     * an outer class).</p>
+     * 
+     * @return the RewriteRule annotation, or null if not present
+     */
+    protected RewriteRule getRewriteRule() {
+        return this.getClass().getAnnotation(RewriteRule.class);
+    }
+    
+    /**
+     * Legacy version of processRewriteWithRule that uses reflection.
+     * 
+     * <p><b>Deprecated:</b> Use the type-safe version with {@link MatchHolder} instead.</p>
      * 
      * @param group the text edit group for tracking changes
      * @param rewriter the AST rewriter
      * @param ast the AST instance
      * @param importRewriter the import rewriter
      * @param holder the holder containing transformation information
+     * @deprecated Use {@link #processRewriteWithRule(TextEditGroup, ASTRewrite, AST, ImportRewrite, MatchHolder)} instead
      */
-    protected void processRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
+    @Deprecated
+    protected void processRewriteWithRuleLegacy(TextEditGroup group, ASTRewrite rewriter, AST ast,
             ImportRewrite importRewriter, Object holder) {
         
-        RewriteRule rewriteRule = this.getClass().getAnnotation(RewriteRule.class);
+        RewriteRule rewriteRule = getRewriteRule();
         if (rewriteRule == null) {
             throw new UnsupportedOperationException(
                 "Plugin " + getClass().getSimpleName() +  //$NON-NLS-1$
@@ -280,13 +336,10 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         }
         
         // Try to detect if this is an annotation pattern by checking for getAnnotation() method
-        // This allows annotation-only holders to work without requiring getMinv()
-        boolean isAnnotationPattern = false;
         try {
             java.lang.reflect.Method method = holder.getClass().getMethod("getAnnotation"); //$NON-NLS-1$
             Annotation annotation = (Annotation) method.invoke(holder);
             if (annotation != null) {
-                isAnnotationPattern = true;
                 processAnnotationRewriteWithRule(group, rewriter, ast, importRewriter, holder, rewriteRule);
                 return;
             }
@@ -361,6 +414,56 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     }
     
     /**
+     * Type-safe version of processAnnotationRewriteWithRule using MatchHolder interface.
+     */
+    private void processAnnotationRewriteWithRuleTypeSafe(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, MatchHolder holder, RewriteRule rewriteRule) {
+        
+        // Process the replacement pattern
+        String replaceWith = rewriteRule.replaceWith();
+        
+        // Get annotation directly from holder
+        Annotation oldAnnotation = holder.getAnnotation();
+        
+        // Parse the replacement pattern to extract annotation name and placeholders
+        AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);
+        
+        // Create the new annotation based on whether placeholders are present
+        Annotation newAnnotation;
+        if (replacementInfo.hasPlaceholders()) {
+            // Create SingleMemberAnnotation with the placeholder value
+            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
+            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+            
+            // Get the placeholder value from bindings
+            String placeholder = replacementInfo.placeholderName;
+            Expression value = holder.getBindingAsExpression("$" + placeholder); //$NON-NLS-1$
+            
+            // Fallback: if no binding is found, reuse the value from existing annotation
+            if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
+                value = ((SingleMemberAnnotation) oldAnnotation).getValue();
+            }
+            
+            if (value != null) {
+                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
+            }
+            
+            newAnnotation = singleMemberAnnotation;
+        } else {
+            // Create MarkerAnnotation (no parameters)
+            MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
+            markerAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+            newAnnotation = markerAnnotation;
+        }
+        
+        // Replace the old annotation with the new one
+        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
+        
+        // Handle imports
+        processImports(importRewriter, rewriteRule);
+    }
+    
+    /**
      * Processes generic pattern rewrite by delegating to FixUtilities.rewriteFix().
      */
     private void processGenericRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
@@ -368,6 +471,31 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         
         // Get bindings from holder
         Map<String, Object> bindings = getBindingsFromHolder(holder);
+        
+        // Create a Match from the holder data
+        Match match = new Match(matchedNode, bindings, matchedNode.getStartPosition(), matchedNode.getLength());
+        
+        // Create a HintContext for FixUtilities.rewriteFix()
+        CompilationUnit cu = (CompilationUnit) matchedNode.getRoot();
+        HintContext ctx = new HintContext(cu, null, match, rewriter);
+        ctx.setImportRewrite(importRewriter);
+        
+        // Use FixUtilities.rewriteFix() to perform the replacement
+        String replacementPattern = rewriteRule.replaceWith();
+        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(ctx, replacementPattern);
+        
+        // Handle imports
+        processImports(importRewriter, rewriteRule);
+    }
+    
+    /**
+     * Type-safe version of processGenericRewriteWithRule using MatchHolder interface.
+     */
+    private void processGenericRewriteWithRuleTypeSafe(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, MatchHolder holder, RewriteRule rewriteRule, ASTNode matchedNode) {
+        
+        // Get bindings directly from holder
+        Map<String, Object> bindings = holder.getBindings();
         
         // Create a Match from the holder data
         Match match = new Match(matchedNode, bindings, matchedNode.getStartPosition(), matchedNode.getLength());

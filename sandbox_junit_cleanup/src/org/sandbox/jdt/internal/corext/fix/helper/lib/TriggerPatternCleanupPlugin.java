@@ -20,9 +20,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
-import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
@@ -31,12 +29,11 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
-import org.sandbox.jdt.triggerpattern.api.HintContext;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
-import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
+import org.sandbox.jdt.triggerpattern.cleanup.AbstractPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
 
 /**
@@ -221,12 +218,11 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         return helper.validateQualifiedType(node, qualifiedType);
     }
     
-    // Regex pattern for parsing replacement patterns (compiled once for performance)
-    // Supports:
-    // - @AnnotationName or @AnnotationName($placeholder) or @AnnotationName($placeholder$)
-    // - MethodName.method($args) or MethodName.method($args$)
-    private static final java.util.regex.Pattern REPLACEMENT_PATTERN = 
-        java.util.regex.Pattern.compile("@?([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(?:\\((.*)\\))?");
+    /**
+     * Helper delegate for rewrite rule processing.
+     * Provides access to AbstractPatternCleanupPlugin's consolidated rewrite logic.
+     */
+    private final RewriteRuleDelegate rewriteRuleDelegate = new RewriteRuleDelegate();
     
     /**
      * Provides default implementation of process2Rewrite using @RewriteRule annotation.
@@ -258,193 +254,53 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
     protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
             ImportRewrite importRewriter, JunitHolder junitHolder) {
         
-        RewriteRule rewriteRule = this.getClass().getAnnotation(RewriteRule.class);
-        if (rewriteRule == null) {
-            throw new UnsupportedOperationException(
-                "Plugin " + getClass().getSimpleName() + 
-                " must be annotated with @RewriteRule because it does not override process2Rewrite()");
-        }
-        
-        // Get the matched node
-        ASTNode matchedNode = junitHolder.getMinv();
-        
-        // Determine the pattern kind from the matched node type
-        PatternKind patternKind = org.sandbox.jdt.triggerpattern.api.FixUtilities.determinePatternKindFromNode(matchedNode);
-        
-        // For ANNOTATION patterns, use the legacy annotation replacement logic
-        if (patternKind == PatternKind.ANNOTATION) {
-            processAnnotationRewriteWithRule(group, rewriter, ast, importRewriter, junitHolder, rewriteRule);
-        } else {
-            // For all other patterns (EXPRESSION, METHOD_CALL, CONSTRUCTOR, STATEMENT, FIELD),
-            // delegate to FixUtilities.rewriteFix()
-            processGenericRewriteWithRule(group, rewriter, ast, importRewriter, junitHolder, rewriteRule, matchedNode);
-        }
+        // Delegate to the consolidated rewrite logic in AbstractPatternCleanupPlugin
+        // JunitHolder now implements MatchHolder, enabling type-safe delegation
+        rewriteRuleDelegate.doRewrite(group, rewriter, ast, importRewriter, junitHolder);
     }
     
     /**
-     * Processes annotation rewrite using the legacy annotation replacement logic.
+     * Inner class that provides access to AbstractPatternCleanupPlugin's processRewriteWithRule.
+     * Uses composition to leverage the consolidated rewrite logic without requiring
+     * TriggerPatternCleanupPlugin to extend AbstractPatternCleanupPlugin (which would
+     * break the existing AbstractTool inheritance).
      */
-    private void processAnnotationRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
-            ImportRewrite importRewriter, JunitHolder junitHolder, RewriteRule rewriteRule) {
+    private class RewriteRuleDelegate extends AbstractPatternCleanupPlugin<JunitHolder> {
         
-        // Process the replacement pattern
-        String replaceWith = rewriteRule.replaceWith();
-        Annotation oldAnnotation = junitHolder.getAnnotation();
-        
-        // Parse the replacement pattern to extract annotation name and placeholders
-        AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);
-        
-        // Create the new annotation based on whether placeholders are present
-        Annotation newAnnotation;
-        if (replacementInfo.hasPlaceholders()) {
-            // Create SingleMemberAnnotation with the placeholder value
-            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
-            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-            
-            // Get the placeholder value from bindings
-            // TriggerPattern stores placeholders with $ prefix in the bindings map
-            String placeholder = replacementInfo.placeholderName;
-            Expression value = junitHolder.getBindingAsExpression("$" + placeholder);
-            
-            /*
-             * Fallback: if no binding is found for the placeholder, reuse the value from the
-             * existing annotation when it is a SingleMemberAnnotation.
-             *
-             * This is a defensive, last-resort mechanism to preserve the original annotation
-             * value so that the cleanup does not silently drop semantics.
-             *
-             * NOTE / TODO:
-             * - In normal operation, placeholder lookup via junitHolder.getBindingAsExpression(...)
-             *   should succeed and this block should not be relied upon.
-             * - If placeholder names or bindings are misconfigured, this fallback can mask the
-             *   underlying bug by making the transformation appear to succeed.
-             * - Once placeholder lookup is reliable, consider removing this fallback (or replacing
-             *   it with a more visible failure mechanism) so that binding errors surface during
-             *   development and testing.
-             */
-            if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
-                value = ((SingleMemberAnnotation) oldAnnotation).getValue();
-            }
-            
-            if (value != null) {
-                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
-            }
-            
-            newAnnotation = singleMemberAnnotation;
-        } else {
-            // Create MarkerAnnotation (no parameters)
-            MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
-            markerAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-            newAnnotation = markerAnnotation;
+        /**
+         * Public method to invoke the protected processRewriteWithRule.
+         * This is needed because the outer class cannot directly call the protected method.
+         */
+        public void doRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+                ImportRewrite importRewriter, JunitHolder holder) {
+            processRewriteWithRule(group, rewriter, ast, importRewriter, holder);
         }
         
-        // Replace the old annotation with the new one
-        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
-        
-        // Handle imports
-        processImports(importRewriter, rewriteRule);
-    }
-    
-    /**
-     * Processes generic pattern rewrite by delegating to FixUtilities.rewriteFix().
-     */
-    private void processGenericRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
-            ImportRewrite importRewriter, JunitHolder junitHolder, RewriteRule rewriteRule, ASTNode matchedNode) {
-        
-        // Get bindings from holder
-        java.util.Map<String, Object> bindings = junitHolder.getBindings();
-        
-        // Create a Match from the holder data
-        Match match = new Match(matchedNode, bindings, matchedNode.getStartPosition(), matchedNode.getLength());
-        
-        // Create a HintContext for FixUtilities.rewriteFix()
-        CompilationUnit cu = (CompilationUnit) matchedNode.getRoot();
-        HintContext ctx = new HintContext(cu, null, match, rewriter);
-        ctx.setImportRewrite(importRewriter);
-        
-        // Use FixUtilities.rewriteFix() to perform the replacement
-        String replacementPattern = rewriteRule.replaceWith();
-        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(ctx, replacementPattern);
-        
-        // Handle imports
-        processImports(importRewriter, rewriteRule);
-    }
-    
-    /**
-     * Processes import additions and removals from RewriteRule.
-     */
-    private void processImports(ImportRewrite importRewriter, RewriteRule rewriteRule) {
-        for (String importToRemove : rewriteRule.removeImports()) {
-            importRewriter.removeImport(importToRemove);
-        }
-        for (String importToAdd : rewriteRule.addImports()) {
-            importRewriter.addImport(importToAdd);
-        }
-        for (String staticImportToRemove : rewriteRule.removeStaticImports()) {
-            importRewriter.removeStaticImport(staticImportToRemove);
-        }
-        for (String staticImportToAdd : rewriteRule.addStaticImports()) {
-            // Parse static import: "org.junit.Assert.assertEquals" -> class="org.junit.Assert", method="assertEquals"
-            int lastDot = staticImportToAdd.lastIndexOf('.');
-            if (lastDot > 0) {
-                String className = staticImportToAdd.substring(0, lastDot);
-                String methodName = staticImportToAdd.substring(lastDot + 1);
-                // Handle wildcard imports (*)
-                if ("*".equals(methodName)) {
-                    importRewriter.addStaticImport(className, "*", false);
-                } else {
-                    importRewriter.addStaticImport(className, methodName, false);
-                }
-            }
-        }
-    }
-    
-    /**
-     * Parses a replacement pattern to extract annotation name and placeholder information.
-     * 
-     * <p><b>Pattern format:</b></p>
-     * <ul>
-     *   <li>{@code @AnnotationName} - marker annotation</li>
-     *   <li>{@code @AnnotationName($placeholder)} - single value annotation</li>
-     *   <li>{@code @AnnotationName($placeholder$)} - annotation with multi-placeholder</li>
-     *   <li>{@code ClassName.method($args$)} - method call with multi-placeholder</li>
-     * </ul>
-     * 
-     * <p><b>Note:</b> Now supports both simple and qualified names (e.g., "Assertions.assertEquals").</p>
-     * 
-     * @param pattern the replacement pattern (e.g., "@BeforeEach", "@Disabled($value)", "Assertions.assertEquals($args$)")
-     * @return parsed annotation replacement information
-     */
-    private AnnotationReplacementInfo parseReplacementPattern(String pattern) {
-        java.util.regex.Matcher matcher = REPLACEMENT_PATTERN.matcher(pattern.trim());
-        
-        if (matcher.matches()) {
-            String name = matcher.group(1);
-            String placeholderPart = matcher.group(2); // null if no parentheses
-            return new AnnotationReplacementInfo(name, placeholderPart);
+        @Override
+        protected JunitHolder createHolder(Match match) {
+            // Not used - delegation only for processRewriteWithRule
+            return null;
         }
         
-        throw new IllegalArgumentException("Invalid replacement pattern: " + pattern);
-    }
-    
-    /**
-     * Holds parsed information about an annotation replacement.
-     */
-    private static class AnnotationReplacementInfo {
-        final String annotationName;
-        final String placeholderName; // null if no placeholder, or could be "$args$" for multi-placeholders
-        
-        AnnotationReplacementInfo(String annotationName, String placeholderName) {
-            this.annotationName = annotationName;
-            this.placeholderName = placeholderName;
+        @Override
+        protected void processRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+                ImportRewrite importRewriter, JunitHolder holder) {
+            // Not used - we call processRewriteWithRule directly
         }
         
-        boolean hasPlaceholders() {
-            return placeholderName != null && !placeholderName.isEmpty();
+        @Override
+        public String getPreview(boolean afterRefactoring) {
+            // Delegate to the outer class's getPreview method
+            return TriggerPatternCleanupPlugin.this.getPreview(afterRefactoring);
         }
         
-        boolean isMultiPlaceholder() {
-            return placeholderName != null && placeholderName.startsWith("$") && placeholderName.endsWith("$"); //$NON-NLS-1$ //$NON-NLS-2$
+        /**
+         * Override to get the RewriteRule annotation from the outer plugin class
+         * rather than this delegate class.
+         */
+        @Override
+        protected RewriteRule getRewriteRule() {
+            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(RewriteRule.class);
         }
     }
     
