@@ -8,6 +8,8 @@
       </hintProvider>
       <hintProvider
             class="org.sandbox.jdt.triggerpattern.shift.ShiftOutOfRangeHintProvider">
+           </hintProvider>
+      <hintProvider class="org.sandbox.jdt.triggerpattern.concurrency.DoubleCheckLockingHintProvider">
       </hintProvider>
    </extension>
    

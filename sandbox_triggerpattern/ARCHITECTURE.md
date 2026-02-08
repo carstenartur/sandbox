@@ -72,6 +72,39 @@ String result = String.valueOf(value);
 String message = String.valueOf(count);
 ```
 
+### Double-Checked Locking (Concurrency)
+
+**Trigger Pattern**: `$field == null` (expression-level)
+
+**Detection**: Uses the expression pattern as an entry point, then walks up the AST tree
+to verify the full double-checked locking structure — an outer `if` wrapping a `synchronized`
+block containing an inner `if` with the same null check condition.
+
+**Before**:
+```java
+if (instance == null) {
+    synchronized (MyClass.class) {
+        if (instance == null) {
+            instance = new MyClass();
+        }
+    }
+}
+```
+
+**After** (fix removes outer null check):
+```java
+synchronized (MyClass.class) {
+    if (instance == null) {
+        instance = new MyClass();
+    }
+}
+```
+
+**Benefits**:
+- Eliminates double-checked locking idiom
+- Ensures thread-safe lazy initialization
+- Inspired by [NetBeans DoubleCheck hint](https://github.com/apache/netbeans/blob/master/java/java.hints/src/org/netbeans/modules/java/hints/DoubleCheck.java)
+
 ## Core Components
 
 ### StringSimplificationHintProvider
@@ -90,6 +123,21 @@ Each method:
 3. Creates a replacement using `ASTRewrite`
 4. Returns an `IJavaCompletionProposal`
 
+### DoubleCheckLockingHintProvider
+
+**Location**: `org.sandbox.jdt.triggerpattern.concurrency.DoubleCheckLockingHintProvider`
+
+**Purpose**: Detects the double-checked locking anti-pattern using an expression-level
+TriggerPattern as the entry point, with manual AST tree walking for structural validation
+
+**Key Methods**:
+- `detectDoubleCheckLocking(HintContext)` - Detects the double-checked locking pattern and suggests removing the outer null check
+
+This demonstrates a hybrid approach where TriggerPattern's expression matching is
+combined with manual AST tree walking to detect complex structural patterns.
+The expression pattern `$field == null` triggers on null checks, then the method
+validates the enclosing if/synchronized/if structure.
+
 ### Pattern Registration
 
 Patterns are registered via plugin.xml:
@@ -97,16 +145,20 @@ Patterns are registered via plugin.xml:
 ```xml
 <extension point="org.sandbox.jdt.triggerpattern.hints">
    <hintProvider class="org.sandbox.jdt.triggerpattern.string.StringSimplificationHintProvider"/>
+   <hintProvider class="org.sandbox.jdt.triggerpattern.concurrency.DoubleCheckLockingHintProvider"/>
 </extension>
 ```
 
-This registers all methods annotated with `@TriggerPattern` in the provider class.
+This registers all methods annotated with `@TriggerPattern` in the provider classes.
 
 ## Package Structure
 
 ```
 org.sandbox.jdt.triggerpattern.string
 ├── StringSimplificationHintProvider.java  (Quick Assist hints)
+
+org.sandbox.jdt.triggerpattern.concurrency
+├── DoubleCheckLockingHintProvider.java    (Double-checked locking detection)
 
 org.sandbox.jdt.internal.corext.fix
 └── StringSimplificationFixCore.java  (Cleanup operations)
