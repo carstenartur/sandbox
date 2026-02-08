@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.common.TestLogger;
 import org.sandbox.jdt.internal.common.VisitorEnum;
 
 /**
@@ -171,8 +172,8 @@ public class VisitorApiDocumentationTest {
 	 */
 	@Test
 	public void testApiOverview() {
-		System.out.println("=== API Overview ===");
-		System.out.println("See class documentation for details");
+		TestLogger.println("=== API Overview ===");
+		TestLogger.println("See class documentation for details");
 		
 		// Example: Complete workflow
 		ReferenceHolder<String, Integer> data = new ReferenceHolder<>();
@@ -185,7 +186,7 @@ public class VisitorApiDocumentationTest {
 		});
 		
 		hv.build(cunit);
-		System.out.println("Found " + data.get("count") + " method invocations"); //$NON-NLS-1$ //$NON-NLS-2$
+		TestLogger.println("Found " + data.get("count") + " method invocations"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	/**
@@ -227,7 +228,7 @@ public class VisitorApiDocumentationTest {
 	 */
 	@Test
 	public void testBasicUsagePattern() {
-		System.out.println("=== Basic Usage Pattern ===");
+		TestLogger.println("=== Basic Usage Pattern ===");
 		
 		// Step 1
 		ReferenceHolder<String, Object> data = new ReferenceHolder<>();
@@ -239,7 +240,7 @@ public class VisitorApiDocumentationTest {
 		// Step 3
 		hv.addFieldDeclaration((node, holder) -> {
 			holder.put("field_found", true); //$NON-NLS-1$
-			System.out.println("Found field: " + node);
+			TestLogger.println("Found field: " + node);
 			return true;
 		});
 		
@@ -247,7 +248,7 @@ public class VisitorApiDocumentationTest {
 		hv.build(cunit);
 		
 		// Step 5
-		System.out.println("Field found: " + data.get("field_found")); //$NON-NLS-1$
+		TestLogger.println("Field found: " + data.get("field_found")); //$NON-NLS-1$
 	}
 
 	/**
@@ -284,7 +285,7 @@ public class VisitorApiDocumentationTest {
 	 */
 	@Test
 	public void testVisitorRegistration() {
-		System.out.println("=== Visitor Registration Methods ===");
+		TestLogger.println("=== Visitor Registration Methods ===");
 		
 		ReferenceHolder<String, Integer> data = new ReferenceHolder<>();
 		HelperVisitor<ReferenceHolder<String, Integer>, String, Integer> hv = 
@@ -310,9 +311,9 @@ public class VisitorApiDocumentationTest {
 		
 		hv.build(cunit);
 		
-		System.out.println("Method 1 count: " + data.getOrDefault("method1", 0)); //$NON-NLS-1$ //$NON-NLS-2$
-		System.out.println("Method 2 count: " + data.getOrDefault("method2", 0)); //$NON-NLS-1$ //$NON-NLS-2$
-		System.out.println("Method 3 count: " + data.getOrDefault("method3", 0)); //$NON-NLS-1$ //$NON-NLS-2$
+		TestLogger.println("Method 1 count: " + data.getOrDefault("method1", 0)); //$NON-NLS-1$ //$NON-NLS-2$
+		TestLogger.println("Method 2 count: " + data.getOrDefault("method2", 0)); //$NON-NLS-1$ //$NON-NLS-2$
+		TestLogger.println("Method 3 count: " + data.getOrDefault("method3", 0)); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	/**
@@ -348,7 +349,7 @@ public class VisitorApiDocumentationTest {
 	 */
 	@Test
 	public void testDataSharingPatterns() {
-		System.out.println("=== Data Sharing Patterns ===");
+		TestLogger.println("=== Data Sharing Patterns ===");
 		
 		ReferenceHolder<String, Object> data = new ReferenceHolder<>();
 		HelperVisitor<ReferenceHolder<String, Object>, String, Object> hv = 
@@ -364,7 +365,7 @@ public class VisitorApiDocumentationTest {
 		hv.addFieldDeclaration((node, holder) -> {
 			boolean found = (Boolean) holder.getOrDefault("firstField", false); //$NON-NLS-1$
 			if (!found) {
-				System.out.println("First field: " + node);
+				TestLogger.println("First field: " + node);
 				holder.put("firstField", true); //$NON-NLS-1$
 			}
 			return true;
@@ -372,8 +373,8 @@ public class VisitorApiDocumentationTest {
 		
 		hv.build(cunit);
 		
-		System.out.println("Total method invocations: " + data.get("count")); //$NON-NLS-1$
-		System.out.println("Found first field: " + data.get("firstField")); //$NON-NLS-1$
+		TestLogger.println("Total method invocations: " + data.get("count")); //$NON-NLS-1$
+		TestLogger.println("Found first field: " + data.get("firstField")); //$NON-NLS-1$
 	}
 
 	/**
@@ -411,7 +412,7 @@ public class VisitorApiDocumentationTest {
 	 */
 	@Test
 	public void testCallbackSignatures() {
-		System.out.println("=== Callback Signatures ===");
+		TestLogger.println("=== Callback Signatures ===");
 		
 		ReferenceHolder<String, Object> data = new ReferenceHolder<>();
 		HelperVisitor<ReferenceHolder<String, Object>, String, Object> hv = 
@@ -419,7 +420,7 @@ public class VisitorApiDocumentationTest {
 		
 		// Lambda expression
 		hv.addMethodInvocation((node, holder) -> {
-			System.out.println("Lambda: " + node.getName());
+			TestLogger.println("Lambda: " + node.getName());
 			return true;
 		});
 		
@@ -432,7 +433,7 @@ public class VisitorApiDocumentationTest {
 	private boolean handleFieldDeclaration(
 			org.eclipse.jdt.core.dom.FieldDeclaration node, 
 			ReferenceHolder<String, Object> holder) {
-		System.out.println("Method reference: " + node);
+		TestLogger.println("Method reference: " + node);
 		return true;
 	}
 
@@ -465,7 +466,7 @@ public class VisitorApiDocumentationTest {
 	 */
 	@Test
 	public void testVisitEndCallbacks() {
-		System.out.println("=== Visit and VisitEnd Callbacks ===");
+		TestLogger.println("=== Visit and VisitEnd Callbacks ===");
 		
 		ReferenceHolder<String, Integer> data = new ReferenceHolder<>();
 		HelperVisitor<ReferenceHolder<String, Integer>, String, Integer> hv = 
@@ -473,12 +474,12 @@ public class VisitorApiDocumentationTest {
 		
 		hv.add(VisitorEnum.MethodDeclaration,
 			(node, holder) -> {
-				System.out.println("Entering method: " + node);
+				TestLogger.println("Entering method: " + node);
 				holder.put("depth", holder.getOrDefault("depth", 0) + 1); //$NON-NLS-1$ //$NON-NLS-2$
 				return true;
 			},
 			(node, holder) -> {
-				System.out.println("Leaving method: " + node);
+				TestLogger.println("Leaving method: " + node);
 				holder.put("depth", holder.get("depth") - 1); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		);
@@ -519,7 +520,7 @@ public class VisitorApiDocumentationTest {
 	 */
 	@Test
 	public void testStaticHelperMethods() {
-		System.out.println("=== Static Helper Methods ===");
+		TestLogger.println("=== Static Helper Methods ===");
 		
 		ReferenceHolder<String, Integer> data = new ReferenceHolder<>();
 		
@@ -534,6 +535,6 @@ public class VisitorApiDocumentationTest {
 			}
 		);
 		
-		System.out.println("Found " + data.get("count") + " nodes using static method"); //$NON-NLS-1$ //$NON-NLS-2$
+		TestLogger.println("Found " + data.get("count") + " nodes using static method"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }

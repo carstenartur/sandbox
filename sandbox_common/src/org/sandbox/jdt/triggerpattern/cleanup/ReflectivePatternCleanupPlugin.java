@@ -132,7 +132,7 @@ public abstract class ReflectivePatternCleanupPlugin extends AbstractPatternClea
      * @return list of patterns to match
      */
     @Override
-    protected List<Pattern> getPatterns() {
+	public List<Pattern> getPatterns() {
         discoverHandlers();
         return handlerInfos.stream()
             .map(h -> h.pattern)

@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.ASTProcessor;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.common.TestLogger;
 import org.sandbox.jdt.internal.common.VisitorEnum;
 
 /**
@@ -193,9 +194,9 @@ public class VisitorTest {
 		 * Verify results
 		 */
 		dataholder.entrySet().stream().forEach(entry->{
-			System.out.println(entry.getKey()+"\t"+ASTNode.nodeClassForType(entry.getKey().getNodeType())); //$NON-NLS-1$
-			System.out.println("===>"+entry.getValue().get("init")); //$NON-NLS-1$ //$NON-NLS-2$
-			System.out.println();
+			TestLogger.println(entry.getKey()+"\t"+ASTNode.nodeClassForType(entry.getKey().getNodeType())); //$NON-NLS-1$
+			TestLogger.println("===>"+entry.getValue().get("init")); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println();
 		});
 	}
 
@@ -239,15 +240,15 @@ public class VisitorTest {
 		/**
 		 * Verify results
 		 */
-		System.out.println("#################"); //$NON-NLS-1$
+		TestLogger.println("#################"); //$NON-NLS-1$
 		dataholder.entrySet().stream().forEach(entry->{
-			System.out.println("============="); //$NON-NLS-1$
-			System.out.println(entry.getKey());
-			System.out.println("init ===>"+entry.getValue().get("init")); //$NON-NLS-1$ //$NON-NLS-2$
-			System.out.println("while ===>"+entry.getValue().get("while")); //$NON-NLS-1$ //$NON-NLS-2$
-			System.out.println("next ===>"+entry.getValue().get("next")); //$NON-NLS-1$ //$NON-NLS-2$
-			System.out.println("name ===>"+entry.getValue().get("name")); //$NON-NLS-1$ //$NON-NLS-2$
-			System.out.println();
+			TestLogger.println("============="); //$NON-NLS-1$
+			TestLogger.println(entry.getKey());
+			TestLogger.println("init ===>"+entry.getValue().get("init")); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println("while ===>"+entry.getValue().get("while")); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println("next ===>"+entry.getValue().get("next")); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println("name ===>"+entry.getValue().get("name")); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println();
 		});
 	}
 
@@ -328,10 +329,10 @@ public class VisitorTest {
 					return true;
 				}
 				if(name.equals(holder.get("whilevarname"))) { //$NON-NLS-1$
-					System.out.println("====================="); //$NON-NLS-1$
-					System.out.println("iterator: "+holder.get("init").toString().trim()); //$NON-NLS-1$ //$NON-NLS-2$
-					System.out.println("while: "+holder.get("while").toString().trim()); //$NON-NLS-1$ //$NON-NLS-2$
-					System.out.println("next: "+node.toString().trim()); //$NON-NLS-1$
+					TestLogger.println("====================="); //$NON-NLS-1$
+					TestLogger.println("iterator: "+holder.get("init").toString().trim()); //$NON-NLS-1$ //$NON-NLS-2$
+					TestLogger.println("while: "+holder.get("while").toString().trim()); //$NON-NLS-1$ //$NON-NLS-2$
+					TestLogger.println("next: "+node.toString().trim()); //$NON-NLS-1$
 				}
 			}
 			return true;
@@ -351,7 +352,7 @@ public class VisitorTest {
 			holder.put("init", node); //$NON-NLS-1$
 			List<String> computeVarName = computeVarName((VariableDeclarationStatement)node);
 			holder.put("initvarname", computeVarName.get(0)); //$NON-NLS-1$
-			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
 			return true;
 		}).build(cunit2);
 	}
@@ -367,11 +368,11 @@ public class VisitorTest {
 		Set<ASTNode> nodesprocessed = null;
 		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
 		hv.addMethodInvocation("println",(node, holder) -> { //$NON-NLS-1$
-			System.out.println("Start "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println("Start "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
 			return true;
 		});
 		hv.addMethodInvocation((node, holder) -> {
-			System.out.println("End "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println("End "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
 			holder.getHelperVisitor().removeVisitor(VisitorEnum.MethodInvocation);
 		});
 		hv.build(cunit1);
@@ -407,11 +408,11 @@ public class VisitorTest {
 		hv.addWhileStatement((node, holder) -> {
 			nodes.remove(node);
 			Collection<String> usedVarNames= getUsedVariableNames(node.getBody());
-			System.out.println(usedVarNames);
+			TestLogger.println(usedVarNames);
 		});
 		hv.addMethodInvocation("next",(methodinvocationnode, myholder) -> { //$NON-NLS-1$
 			String x = "Start "+methodinvocationnode.getNodeType() + " :" + methodinvocationnode; //$NON-NLS-1$ //$NON-NLS-2$
-			System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(methodinvocationnode.getNodeType())); //$NON-NLS-1$
+			TestLogger.printf("%-40s %s%n",x,ASTNode.nodeClassForType(methodinvocationnode.getNodeType())); //$NON-NLS-1$
 			return true;
 		});
 		hv.build(cunit2);
@@ -429,7 +430,7 @@ public class VisitorTest {
 		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
 		hv.addMethodInvocation(IProgressMonitor.class, "beginTask", (methodinvocationnode, myholder)->{ //$NON-NLS-1$
 			String x = "Start "+methodinvocationnode.getNodeType() + " :" + methodinvocationnode; //$NON-NLS-1$ //$NON-NLS-2$
-			System.out.printf("%-40s %s%n",x,ASTNode.nodeClassForType(methodinvocationnode.getNodeType())); //$NON-NLS-1$
+			TestLogger.printf("%-40s %s%n",x,ASTNode.nodeClassForType(methodinvocationnode.getNodeType())); //$NON-NLS-1$
 			return true;
 		});
 		hv.build(cunit3);
@@ -447,11 +448,11 @@ public class VisitorTest {
 		ASTProcessor<ReferenceHolder<String, Object>,String,Object> astp=new ASTProcessor<>(dataholder, null);
 		astp
 		.callMethodInvocationVisitor(IProgressMonitor.class,"beginTask",(node,holder) -> { //$NON-NLS-1$
-			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
 			return true;
 		},s -> ASTNodes.getTypedAncestor(s, Block.class))
 		.callClassInstanceCreationVisitor((node,holder) -> {
-			System.out.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
+			TestLogger.println("init "+node.getNodeType() + " :" + node); //$NON-NLS-1$ //$NON-NLS-2$
 			return true;
 		}).build(cunit3);
 	}

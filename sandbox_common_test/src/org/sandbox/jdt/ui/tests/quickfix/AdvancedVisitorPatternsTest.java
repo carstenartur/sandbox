@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.common.TestLogger;
 import org.sandbox.jdt.internal.common.VisitorEnum;
 
 /**
@@ -174,13 +175,13 @@ public class AdvancedVisitorPatternsTest {
 		
 		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> firstVisitor = 
 			(node, holder) -> {
-				System.out.println("First visitor: " + node);
+				TestLogger.println("First visitor: " + node);
 				return true;
 			};
 		
 		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> secondVisitor = 
 			(node, holder) -> {
-				System.out.println("Second visitor: " + node);
+				TestLogger.println("Second visitor: " + node);
 				return true;
 			};
 		
@@ -216,13 +217,13 @@ public class AdvancedVisitorPatternsTest {
 			(node, holder) -> {
 				// Only process if method name starts with 'p'
 				boolean passes = node.getName().getIdentifier().startsWith("p");
-				System.out.println("Filter " + (passes ? "passed" : "failed") + " for: " + node.getName());
+				TestLogger.println("Filter " + (passes ? "passed" : "failed") + " for: " + node.getName());
 				return passes;
 			};
 		
 		BiPredicate<MethodInvocation, ReferenceHolder<String, NodeFound>> processor = 
 			(node, holder) -> {
-				System.out.println("Processing: " + node);
+				TestLogger.println("Processing: " + node);
 				return true;
 			};
 		
@@ -252,13 +253,13 @@ public class AdvancedVisitorPatternsTest {
 		
 		// First callback processes first method invocation
 		hv.addMethodInvocation("println", (node, holder) -> { //$NON-NLS-1$
-			System.out.println("Processing first println: " + node);
+			TestLogger.println("Processing first println: " + node);
 			return true;
 		});
 		
 		// Second callback removes the visitor after first invocation
 		hv.addMethodInvocation((node, holder) -> {
-			System.out.println("Removing MethodInvocation visitor after: " + node);
+			TestLogger.println("Removing MethodInvocation visitor after: " + node);
 			holder.getHelperVisitor().removeVisitor(VisitorEnum.MethodInvocation);
 		});
 		
@@ -296,20 +297,20 @@ public class AdvancedVisitorPatternsTest {
 		// Phase 1: Collect variable names
 		hv.addSingleVariableDeclaration((node, holder) -> {
 			names.add(node.getName());
-			System.out.println("Phase 1: Collected variable name: " + node.getName());
+			TestLogger.println("Phase 1: Collected variable name: " + node.getName());
 			return true;
 		});
 		
 		hv.addVariableDeclarationFragment((node, holder) -> {
 			names.add(node.getName());
-			System.out.println("Phase 1: Collected fragment name: " + node.getName());
+			TestLogger.println("Phase 1: Collected fragment name: " + node.getName());
 			return true;
 		});
 		
 		// Phase 2: Collect while statement nodes
 		hv.addWhileStatement((node, holder) -> {
 			nodes.add(node);
-			System.out.println("Phase 2: Collected while statement");
+			TestLogger.println("Phase 2: Collected while statement");
 			return true;
 		});
 		
@@ -317,12 +318,12 @@ public class AdvancedVisitorPatternsTest {
 		hv.addWhileStatement((node, holder) -> {
 			nodes.remove(node);
 			Collection<String> usedVarNames = getUsedVariableNames(node.getBody());
-			System.out.println("Phase 3: Used variables in while: " + usedVarNames);
-			System.out.println("Phase 3: Collected " + names.size() + " variable names");
+			TestLogger.println("Phase 3: Used variables in while: " + usedVarNames);
+			TestLogger.println("Phase 3: Collected " + names.size() + " variable names");
 			// Check if any collected names are used in the while body
 			for (SimpleName name : names) {
 				if (usedVarNames.contains(name.getIdentifier())) {
-					System.out.println("Phase 3: Variable '" + name.getIdentifier() + "' is used in while body");
+					TestLogger.println("Phase 3: Variable '" + name.getIdentifier() + "' is used in while body");
 				}
 			}
 		});
@@ -354,9 +355,9 @@ public class AdvancedVisitorPatternsTest {
 		
 		hv.addMethodInvocation((node, holder) -> {
 			if (processed.contains(node)) {
-				System.out.println("Already processed: " + node);
+				TestLogger.println("Already processed: " + node);
 			} else {
-				System.out.println("Processing: " + node);
+				TestLogger.println("Processing: " + node);
 				processed.add(node);
 			}
 			return true;
@@ -364,7 +365,7 @@ public class AdvancedVisitorPatternsTest {
 		
 		hv.build(cunit1);
 		
-		System.out.println("Total processed nodes: " + processed.size());
+		TestLogger.println("Total processed nodes: " + processed.size());
 	}
 
 	/**
@@ -398,18 +399,18 @@ public class AdvancedVisitorPatternsTest {
 			int count = (Integer) holder.getOrDefault("count", 0); //$NON-NLS-1$
 			
 			if (count >= 3) {
-				System.out.println("Stopping after 3 invocations");
+				TestLogger.println("Stopping after 3 invocations");
 				return false; // Stop visiting children
 			}
 			
-			System.out.println("Processing invocation #" + (count + 1) + ": " + node);
+			TestLogger.println("Processing invocation #" + (count + 1) + ": " + node);
 			holder.put("count", count + 1); //$NON-NLS-1$
 			return true;
 		});
 		
 		hv.build(cunit1);
 		
-		System.out.println("Total processed: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		TestLogger.println("Total processed: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
 	}
 
 	/**
@@ -439,7 +440,7 @@ public class AdvancedVisitorPatternsTest {
 			isPrintln.negate();
 		
 		hv.addMethodInvocation(isNotPrintln.and((node, holder) -> {
-			System.out.println("Processing non-println: " + node.getName());
+			TestLogger.println("Processing non-println: " + node.getName());
 			return true;
 		}));
 		

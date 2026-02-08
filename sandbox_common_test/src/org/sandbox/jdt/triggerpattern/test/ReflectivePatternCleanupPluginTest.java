@@ -138,7 +138,7 @@ public class ReflectivePatternCleanupPluginTest {
 		
 		assertNotNull(patterns);
 		assertEquals(1, patterns.size());
-		assertEquals("$x + $y", patterns.get(0).getPatternString());
+		assertEquals("$x + $y", patterns.get(0).getValue());
 		assertEquals(PatternKind.EXPRESSION, patterns.get(0).getKind());
 	}
 	
@@ -151,8 +151,8 @@ public class ReflectivePatternCleanupPluginTest {
 		assertEquals(2, patterns.size());
 		// Handlers should be sorted by priority (ascending)
 		// Priority 1 should come before priority 2
-		assertEquals("$x - $y", patterns.get(0).getPatternString());
-		assertEquals("$x + $y", patterns.get(1).getPatternString());
+		assertEquals("$x - $y", patterns.get(0).getValue());
+		assertEquals("$x + $y", patterns.get(1).getValue());
 	}
 	
 	@Test

@@ -29,4 +29,5 @@ Require-Bundle: org.eclipse.jdt.ui,
  org.eclipse.jdt.junit.core;visibility:=reexport,
  org.eclipse.jdt.junit.runtime
 Export-Package: org.eclipse.jdt.testplugin,
+ org.sandbox.jdt.internal.common,
  org.sandbox.jdt.ui.tests.quickfix.rules

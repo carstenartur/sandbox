@@ -7,6 +7,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.internal.common.TestLogger;
 
 public class MatcherTest {
 
@@ -30,6 +31,6 @@ public class MatcherTest {
 		JavaCore.setComplianceOptions(JavaCore.VERSION_11, options);
 		parser.setCompilerOptions(options);
 		CompilationUnit result = (CompilationUnit) parser.createAST(null);
-		System.out.println(result.toString());
+		TestLogger.println(result.toString());
 	}
 }

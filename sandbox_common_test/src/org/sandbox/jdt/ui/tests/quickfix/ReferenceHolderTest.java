@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.common.TestLogger;
 import org.sandbox.jdt.internal.common.VisitorEnum;
 
 /**
@@ -159,9 +160,9 @@ public class ReferenceHolderTest {
 		hv.build(cunit1);
 		
 		// Print results
-		System.out.println("=== Node Count Statistics ===");
+		TestLogger.println("=== Node Count Statistics ===");
 		for (VisitorEnum ve : dataholder.keySet()) {
-			System.out.println(ve.name() + ": " + dataholder.get(ve));
+			TestLogger.println(ve.name() + ": " + dataholder.get(ve));
 		}
 	}
 
@@ -184,9 +185,9 @@ public class ReferenceHolderTest {
 		HelperVisitor.callVisitor(cunit1, EnumSet.allOf(VisitorEnum.class), dataholder, null, this::countVisits);
 
 		// Print results
-		System.out.println("=== Node Count Statistics (Static Method) ===");
+		TestLogger.println("=== Node Count Statistics (Static Method) ===");
 		dataholder.entrySet().stream().forEach(entry -> {
-			System.out.println(entry.getKey().name() + ": " + entry.getValue());
+			TestLogger.println(entry.getKey().name() + ": " + entry.getValue());
 		});
 	}
 
@@ -226,9 +227,9 @@ public class ReferenceHolderTest {
 			});
 
 		// Print results
-		System.out.println("=== Variable Declaration Positions ===");
+		TestLogger.println("=== Variable Declaration Positions ===");
 		dataholder.entrySet().stream().forEach(entry -> {
-			System.out.println("Position " + entry.getValue() + ": " + 
+			TestLogger.println("Position " + entry.getValue() + ": " + 
 				ASTNode.nodeClassForType(entry.getKey().getNodeType()));
 		});
 	}
@@ -288,10 +289,10 @@ public class ReferenceHolderTest {
 			});
 
 		// Print results
-		System.out.println("=== Complex Node Data ===");
+		TestLogger.println("=== Complex Node Data ===");
 		dataholder.entrySet().stream().forEach(entry -> {
-			System.out.println(ASTNode.nodeClassForType(entry.getKey().getNodeType()));
-			System.out.println("  Data: " + entry.getValue());
+			TestLogger.println(ASTNode.nodeClassForType(entry.getKey().getNodeType()));
+			TestLogger.println("  Data: " + entry.getValue());
 		});
 	}
 
@@ -333,9 +334,9 @@ public class ReferenceHolderTest {
 		hv.build(cunit1);
 
 		// Print combined results
-		System.out.println("=== Combined Statistics ===");
-		System.out.println("Methods: " + dataholder.getOrDefault("methodCount", 0)); //$NON-NLS-1$
-		System.out.println("Variables: " + dataholder.getOrDefault("variableCount", 0)); //$NON-NLS-1$
+		TestLogger.println("=== Combined Statistics ===");
+		TestLogger.println("Methods: " + dataholder.getOrDefault("methodCount", 0)); //$NON-NLS-1$
+		TestLogger.println("Variables: " + dataholder.getOrDefault("variableCount", 0)); //$NON-NLS-1$
 	}
 
 	/**
@@ -363,9 +364,9 @@ public class ReferenceHolderTest {
 		});
 
 		// Print results
-		System.out.println("=== Nodes Grouped by Type ===");
+		TestLogger.println("=== Nodes Grouped by Type ===");
 		dataholder.forEach((category, nodes) -> {
-			System.out.println(category + ": " + nodes.size() + " nodes");
+			TestLogger.println(category + ": " + nodes.size() + " nodes");
 		});
 	}
 }

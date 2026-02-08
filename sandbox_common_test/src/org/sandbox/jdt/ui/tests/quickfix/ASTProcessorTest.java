@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.ASTProcessor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.common.TestLogger;
 
 /**
  * Tests demonstrating the ASTProcessor fluent API for chaining visitor operations.
@@ -179,12 +180,12 @@ public class ASTProcessorTest {
 		
 		astp.callVariableDeclarationStatementVisitor(Iterator.class, (node, holder) -> {
 			holder.put("found_iterator_declaration", node); //$NON-NLS-1$
-			System.out.println("Found Iterator declaration: " + node);
+			TestLogger.println("Found Iterator declaration: " + node);
 			return true;
 		}).build(cunit2);
 
-		System.out.println("=== Results ===");
-		System.out.println("Found: " + dataholder.containsKey("found_iterator_declaration")); //$NON-NLS-1$
+		TestLogger.println("=== Results ===");
+		TestLogger.println("Found: " + dataholder.containsKey("found_iterator_declaration")); //$NON-NLS-1$
 	}
 
 	/**
@@ -221,7 +222,7 @@ public class ASTProcessorTest {
 			holder.put("init", node); //$NON-NLS-1$
 			List<String> varName = computeVarName((VariableDeclarationStatement) node);
 			holder.put("initvarname", varName.get(0)); //$NON-NLS-1$
-			System.out.println("Step 1: Found Iterator: " + varName.get(0));
+			TestLogger.println("Step 1: Found Iterator: " + varName.get(0));
 			return true;
 		}, ASTNode::getParent)  // Navigate to parent for next search
 		.callWhileStatementVisitor((node, holder) -> {
@@ -231,7 +232,7 @@ public class ASTProcessorTest {
 			holder.put("while", node); //$NON-NLS-1$
 			String name = computeNextVarname((WhileStatement) node);
 			holder.put("whilevarname", name); //$NON-NLS-1$
-			System.out.println("Step 2: Found WhileStatement with variable: " + name);
+			TestLogger.println("Step 2: Found WhileStatement with variable: " + name);
 			return true;
 		}, s -> ((WhileStatement) s).getBody())  // Navigate to body for next search
 		.callMethodInvocationVisitor("next", (node, holder) -> { //$NON-NLS-1$
@@ -246,11 +247,11 @@ public class ASTProcessorTest {
 			if (sn != null) {
 				String identifier = sn.getIdentifier();
 				if (initVarName.equals(identifier) && initVarName.equals(whileVarName)) {
-					System.out.println("Step 3: Found matching next() call: " + node);
-					System.out.println("=== Complete pattern found! ===");
-					System.out.println("Iterator: " + holder.get("init")); //$NON-NLS-1$
-					System.out.println("While: " + holder.get("while")); //$NON-NLS-1$
-					System.out.println("Next: " + node);
+					TestLogger.println("Step 3: Found matching next() call: " + node);
+					TestLogger.println("=== Complete pattern found! ===");
+					TestLogger.println("Iterator: " + holder.get("init")); //$NON-NLS-1$
+					TestLogger.println("While: " + holder.get("while")); //$NON-NLS-1$
+					TestLogger.println("Next: " + node);
 				}
 			}
 			return true;
@@ -278,13 +279,13 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callMethodInvocationVisitor(IProgressMonitor.class, "beginTask", (node, holder) -> { //$NON-NLS-1$
-			System.out.println("Found IProgressMonitor.beginTask() call: " + node);
+			TestLogger.println("Found IProgressMonitor.beginTask() call: " + node);
 			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 			return true;
 		}).build(cunit3);
 
-		System.out.println("=== Results ===");
-		System.out.println("Total beginTask calls: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		TestLogger.println("=== Results ===");
+		TestLogger.println("Total beginTask calls: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
 	}
 
 	/**
@@ -312,19 +313,19 @@ public class ASTProcessorTest {
 		
 		astp
 		.callMethodInvocationVisitor(IProgressMonitor.class, "beginTask", (node, holder) -> { //$NON-NLS-1$
-			System.out.println("Found method invocation: " + node);
+			TestLogger.println("Found method invocation: " + node);
 			holder.put("method", node); //$NON-NLS-1$
 			return true;
 		}, s -> ASTNodes.getTypedAncestor(s, Block.class))  // Navigate to enclosing block
 		.callClassInstanceCreationVisitor((node, holder) -> {
-			System.out.println("Found class instance creation in same block: " + node);
+			TestLogger.println("Found class instance creation in same block: " + node);
 			holder.put("creation", node); //$NON-NLS-1$
 			return true;
 		}).build(cunit3);
 
-		System.out.println("=== Results ===");
-		System.out.println("Found method: " + dataholder.containsKey("method")); //$NON-NLS-1$
-		System.out.println("Found creation: " + dataholder.containsKey("creation")); //$NON-NLS-1$
+		TestLogger.println("=== Results ===");
+		TestLogger.println("Found method: " + dataholder.containsKey("method")); //$NON-NLS-1$
+		TestLogger.println("Found creation: " + dataholder.containsKey("creation")); //$NON-NLS-1$
 	}
 
 	/**
@@ -347,12 +348,12 @@ public class ASTProcessorTest {
 			new ASTProcessor<>(dataholder, null);
 		
 		astp.callVariableDeclarationStatementVisitor(Iterator.class, (node, holder) -> {
-			System.out.println("Found: " + node);
+			TestLogger.println("Found: " + node);
 			holder.merge("count", 1, (a, b) -> (Integer) a + (Integer) b); //$NON-NLS-1$
 			return true;
 		}).build(cunit2);
 
-		System.out.println("Total found: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
+		TestLogger.println("Total found: " + dataholder.getOrDefault("count", 0)); //$NON-NLS-1$
 	}
 
 	/**

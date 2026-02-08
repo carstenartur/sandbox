@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.common.TestLogger;
 import org.sandbox.jdt.internal.common.VisitorEnum;
 
 /**
@@ -137,7 +138,7 @@ public class BasicVisitorUsageTest {
 	 * @return true to continue visiting child nodes, false to skip them
 	 */
 	private boolean handleMethodInvocation(MethodInvocation invocation, ReferenceHolder<String, NodeFound> holder) {
-		System.out.println("Found method invocation: " + invocation);
+		TestLogger.println("Found method invocation: " + invocation);
 		return true;
 	}
 
@@ -261,7 +262,7 @@ public class BasicVisitorUsageTest {
 		HelperVisitor<ReferenceHolder<String,NodeFound>,String,NodeFound> hv = 
 			new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
 		hv.addMethodInvocation((node, holder) -> {
-			System.out.println("Lambda found: " + node);
+			TestLogger.println("Lambda found: " + node);
 			return true;
 		});
 		hv.build(cunit1);
@@ -299,7 +300,7 @@ public class BasicVisitorUsageTest {
 		
 		nodeTypes.forEach(ve -> {
 			hv.add(ve, (node, holder) -> {
-				System.out.println("Processing " + ve.name() + ": " + node);
+				TestLogger.println("Processing " + ve.name() + ": " + node);
 				return true;
 			});
 		});
@@ -330,11 +331,11 @@ public class BasicVisitorUsageTest {
 		
 		hv.add(VisitorEnum.MethodInvocation,
 			(node, holder) -> {
-				System.out.println("Visiting: " + node.getNodeType());
+				TestLogger.println("Visiting: " + node.getNodeType());
 				return true;
 			},
 			(node, holder) -> {
-				System.out.println("End visiting: " + node.getNodeType());
+				TestLogger.println("End visiting: " + node.getNodeType());
 			});
 		
 		hv.build(cunit1);
@@ -364,7 +365,7 @@ public class BasicVisitorUsageTest {
 			new HelperVisitor<>(nodesprocessed, new ReferenceHolder<>());
 		
 		hv.addMethodInvocation((node, holder) -> {
-			System.out.println("Processing method, but not its children");
+			TestLogger.println("Processing method, but not its children");
 			return false; // Skip children
 		});
 		
