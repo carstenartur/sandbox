@@ -76,46 +76,49 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			boolean preservePluginId) throws CoreException {
 		try {
 			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
-			HelperVisitor.callClassInstanceCreationVisitor(Status.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
-				if (nodesprocessed.contains(visited) || (visited.arguments().size() != 5)) {
-					return false;
-				}
-				/**
-				 * Expected pattern: new Status(severity, pluginId, IStatus.OK, message, throwable)
-				 * Where:
-				 *   - severity is IStatus.INFO, IStatus.WARNING, or IStatus.ERROR
-				 *   - pluginId is a String
-				 *   - code is IStatus.OK (mandatory for this transformation)
-				 *   - message is a String
-				 *   - throwable is a Throwable or null
-				 *
-				 * Transforms to: Status.info(message, throwable) / Status.warning(message, throwable) / Status.error(message, throwable)
-				 */
-				List<Expression> arguments= visited.arguments();
-				
-				// Safely check if argument at index 2 (code) is IStatus.OK
-				Expression codeArg= arguments.get(2);
-				if (!(codeArg instanceof QualifiedName)) {
-					return false;
-				}
-				QualifiedName codeQualifiedName= (QualifiedName) codeArg;
-				if (!"IStatus.OK".equals(codeQualifiedName.toString())) { //$NON-NLS-1$
-					return false;
-				}
-				
-				// Safely check if argument at index 0 (severity) matches expected status literal
-				Expression severityArg= arguments.get(0);
-				if (!(severityArg instanceof QualifiedName)) {
-					return false;
-				}
-				QualifiedName severityQualifiedName= (QualifiedName) severityArg;
-				if (expectedStatusLiteral.equals(severityQualifiedName.toString())) {
-					operations.add(fixcore.rewrite(visited, holder, preservePluginId));
-					nodesprocessed.add(visited);
-					return false;
-				}
-				return true;
-			});
+			HelperVisitor.forClassInstanceCreation(Status.class)
+				.in(compilationUnit)
+				.excluding(nodesprocessed)
+				.processEach(dataholder, (visited, holder) -> {
+					if (nodesprocessed.contains(visited) || (visited.arguments().size() != 5)) {
+						return false;
+					}
+					/**
+					 * Expected pattern: new Status(severity, pluginId, IStatus.OK, message, throwable)
+					 * Where:
+					 *   - severity is IStatus.INFO, IStatus.WARNING, or IStatus.ERROR
+					 *   - pluginId is a String
+					 *   - code is IStatus.OK (mandatory for this transformation)
+					 *   - message is a String
+					 *   - throwable is a Throwable or null
+					 *
+					 * Transforms to: Status.info(message, throwable) / Status.warning(message, throwable) / Status.error(message, throwable)
+					 */
+					List<Expression> arguments= visited.arguments();
+					
+					// Safely check if argument at index 2 (code) is IStatus.OK
+					Expression codeArg= arguments.get(2);
+					if (!(codeArg instanceof QualifiedName)) {
+						return false;
+					}
+					QualifiedName codeQualifiedName= (QualifiedName) codeArg;
+					if (!"IStatus.OK".equals(codeQualifiedName.toString())) { //$NON-NLS-1$
+						return false;
+					}
+					
+					// Safely check if argument at index 0 (severity) matches expected status literal
+					Expression severityArg= arguments.get(0);
+					if (!(severityArg instanceof QualifiedName)) {
+						return false;
+					}
+					QualifiedName severityQualifiedName= (QualifiedName) severityArg;
+					if (expectedStatusLiteral.equals(severityQualifiedName.toString())) {
+						operations.add(fixcore.rewrite(visited, holder, preservePluginId));
+						nodesprocessed.add(visited);
+						return false;
+					}
+					return true;
+				});
 		} catch (Exception e) {
 			throw new CoreException(Status.error("Problem in find", e)); //$NON-NLS-1$
 		}

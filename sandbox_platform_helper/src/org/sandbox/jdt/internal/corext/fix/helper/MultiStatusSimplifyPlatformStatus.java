@@ -83,34 +83,37 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 			boolean preservePluginId) throws CoreException {
 		try {
 			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
-			HelperVisitor.callClassInstanceCreationVisitor(MultiStatus.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -> {
-				if (nodesprocessed.contains(visited)) {
-					return false;
-				}
-				
-				// MultiStatus has a 4-argument constructor:
-				// MultiStatus(String pluginId, int code, String message, Throwable exception)
-				if (visited.arguments().size() != 4) {
-					return false;
-				}
-				
-				List<Expression> arguments= visited.arguments();
-				
-				// Check if argument at index 1 (code) is NOT already IStatus.OK
-				Expression codeArg= arguments.get(1);
-				if (codeArg instanceof QualifiedName) {
-					QualifiedName codeQualifiedName= (QualifiedName) codeArg;
-					if (ISTATUS_OK.equals(codeQualifiedName.toString())) {
-						// Already using IStatus.OK, no transformation needed
+			HelperVisitor.forClassInstanceCreation(MultiStatus.class)
+				.in(compilationUnit)
+				.excluding(nodesprocessed)
+				.processEach(dataholder, (visited, holder) -> {
+					if (nodesprocessed.contains(visited)) {
 						return false;
 					}
-				}
-				
-				// Found a MultiStatus that could be simplified to use IStatus.OK
-				operations.add(fixcore.rewrite(visited, holder, preservePluginId));
-				nodesprocessed.add(visited);
-				return false;
-			});
+					
+					// MultiStatus has a 4-argument constructor:
+					// MultiStatus(String pluginId, int code, String message, Throwable exception)
+					if (visited.arguments().size() != 4) {
+						return false;
+					}
+					
+					List<Expression> arguments= visited.arguments();
+					
+					// Check if argument at index 1 (code) is NOT already IStatus.OK
+					Expression codeArg= arguments.get(1);
+					if (codeArg instanceof QualifiedName) {
+						QualifiedName codeQualifiedName= (QualifiedName) codeArg;
+						if (ISTATUS_OK.equals(codeQualifiedName.toString())) {
+							// Already using IStatus.OK, no transformation needed
+							return false;
+						}
+					}
+					
+					// Found a MultiStatus that could be simplified to use IStatus.OK
+					operations.add(fixcore.rewrite(visited, holder, preservePluginId));
+					nodesprocessed.add(visited);
+					return false;
+				});
 		} catch (Exception e) {
 			throw new CoreException(Status.error("Problem in find MultiStatus", e)); //$NON-NLS-1$
 		}
