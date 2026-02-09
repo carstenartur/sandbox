@@ -59,21 +59,32 @@ public class JdtLoopExtractor {
         String varName = parameter.getName().getIdentifier();
         boolean isFinal = Modifier.isFinal(parameter.getModifiers());
         
-        // Analyze metadata — only track truly unconvertible control flow.
-        // continue/return/add() are potentially convertible as filter/match/collect
-        // patterns and are handled by analyzeAndAddOperations().
+        // Analyze metadata — track truly unconvertible control flow and patterns.
         LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer();
         body.accept(analyzer);
         
-        // Build model — only hasBreak and hasLabeledContinue are always unconvertible
+        // If the body contains unconvertible patterns, don't even try to build operations
+        // Note: external variable modifications (for reduce) and if-statements (for filter/match)
+        // are handled by analyzeAndAddOperations() and should NOT be blocked here
+        boolean hasUnconvertiblePatterns = analyzer.hasBreak() 
+                || analyzer.hasLabeledContinue()
+                || analyzer.hasTryCatch()
+                || analyzer.hasSynchronized()
+                || analyzer.hasNestedLoop()
+                || analyzer.hasVoidReturn();
+        
+        // Build model — mark as unconvertible if any patterns detected
         LoopModelBuilder builder = new LoopModelBuilder()
             .source(sourceType, sourceExpression, elementType)
             .element(varName, elementType, isFinal)
             .metadata(analyzer.hasBreak(), analyzer.hasLabeledContinue(), 
                       false, false, true);
         
-        // Analyze body and add operations/terminal
-        analyzeAndAddOperations(body, builder, varName, compilationUnit);
+        // Only analyze body and add operations/terminal if no unconvertible patterns
+        if (!hasUnconvertiblePatterns) {
+            analyzeAndAddOperations(body, builder, varName, compilationUnit);
+        }
+        // If hasUnconvertiblePatterns, no terminal is set → NOT_CONVERTIBLE
         
         LoopModel model = builder.build();
         return new ExtractedLoop(model, body);
@@ -168,8 +179,63 @@ public class JdtLoopExtractor {
             return; // No terminal → NOT_CONVERTIBLE
         }
         
+        // Guard: if body has multiple variable declarations, use simple forEach
+        // instead of trying to decompose into map chains (which can be incorrect)
+        int varDeclCount = countVariableDeclarations(statements);
+        if (varDeclCount > 1) {
+            // Convert directly to simple forEach with body as-is
+            addSimpleForEachTerminal(statements, builder);
+            return;
+        }
+        
+        // Guard: if body has multiple side-effect statements (e.g., multiple println),
+        // use simple forEach instead of trying to chain as map operations
+        if (statements.size() > 1 && allSideEffects(statements)) {
+            addSimpleForEachTerminal(statements, builder);
+            return;
+        }
+        
         // Try to analyze the statements into operations + terminal
         analyzeStatements(statements, builder, varName, compilationUnit, false);
+    }
+    
+    /**
+     * Checks if all statements are simple side effects (method calls).
+     */
+    private boolean allSideEffects(java.util.List<Statement> statements) {
+        for (Statement stmt : statements) {
+            if (!isSimpleSideEffect(stmt)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Counts the number of variable declaration statements in the list.
+     */
+    private int countVariableDeclarations(java.util.List<Statement> statements) {
+        int count = 0;
+        for (Statement stmt : statements) {
+            if (stmt instanceof VariableDeclarationStatement) {
+                count++;
+            }
+        }
+        return count;
+    }
+    
+    /**
+     * Adds a simple forEach terminal with all statements in the body.
+     * Used when the body is too complex to decompose into map/filter chains.
+     */
+    private void addSimpleForEachTerminal(java.util.List<Statement> statements, LoopModelBuilder builder) {
+        java.util.List<String> bodyStmts = new java.util.ArrayList<>();
+        for (Statement stmt : statements) {
+            String stmtStr = stmt.toString();
+            // Don't remove trailing semicolons for block statements
+            bodyStmts.add(stmtStr);
+        }
+        builder.forEach(bodyStmts, false);
     }
     
     /**
@@ -722,14 +788,35 @@ public class JdtLoopExtractor {
         InfixExpression.Operator op = infix.getOperator();
         String accumType = resolveReducerType(infix.getLeftOperand());
         
-        // Add a MAP operation before the reduce for the value expression
+        // Only add a MAP operation if the right operand is NOT the identity (loop variable)
         // e.g., count = count + 1 → .map(item -> 1).reduce(count, Integer::sum)
-        builder.map(rightOperand, null);
+        // but result = result + item → .reduce(result, (a, b) -> a + b) [no map needed]
+        if (!rightOperand.equals(varName)) {
+            builder.map(rightOperand, null);
+        }
         
         if (op == InfixExpression.Operator.PLUS) {
-            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                accumVar, accumType + "::sum", null,
-                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));
+            // For String types, check @NotNull annotation to decide between String::concat and lambda
+            if ("String".equals(accumType)) {
+                // Check if the accumulator variable has @NotNull annotation
+                boolean isNullSafe = org.sandbox.jdt.internal.corext.util.VariableResolver
+                    .hasNotNullAnnotation(infix, accumVar);
+                if (isNullSafe) {
+                    // @NotNull present: safe to use String::concat method reference
+                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                        accumVar, "String::concat", null,
+                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.STRING_CONCAT, accumVar));
+                } else {
+                    // No @NotNull: use null-safe lambda (a, b) -> a + b
+                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                        accumVar, "(a, b) -> a + b", null,
+                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
+                }
+            } else {
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    accumVar, accumType + "::sum", null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));
+            }
         } else if (op == InfixExpression.Operator.TIMES) {
             builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                 accumVar, "(a, b) -> a * b", null,
@@ -869,8 +956,17 @@ public class JdtLoopExtractor {
     /**
      * Visitor to analyze loop body for truly unconvertible control flow.
      * 
-     * <p>Only tracks patterns that CANNOT be converted to stream operations:
-     * break statements and labeled continue statements.</p>
+     * <p>Tracks patterns that CANNOT be converted to stream operations:
+     * <ul>
+     *   <li>break statements</li>
+     *   <li>labeled continue statements</li>
+     *   <li>try-catch statements (checked exceptions require Try-with-resources or explicit handling)</li>
+     *   <li>synchronized statements (synchronization semantics differ in streams)</li>
+     *   <li>traditional for loops (complex control flow)</li>
+     *   <li>while loops (complex control flow)</li>
+     *   <li>do-while loops (complex control flow)</li>
+     * </ul>
+     * </p>
      * 
      * <p>Note: unlabeled continue, return, and add() calls are potentially
      * convertible as filter, match, and collect patterns respectively.
@@ -879,6 +975,11 @@ public class JdtLoopExtractor {
     private static class LoopBodyAnalyzer extends ASTVisitor {
         private boolean hasBreak = false;
         private boolean hasLabeledContinue = false;
+        private boolean hasTryCatch = false;
+        private boolean hasSynchronized = false;
+        private boolean hasNestedLoop = false;
+        private boolean hasVoidReturn = false;
+        private boolean hasIfElse = false;
         
         @Override
         public boolean visit(BreakStatement node) {
@@ -896,7 +997,71 @@ public class JdtLoopExtractor {
             return false;
         }
         
+        @Override
+        public boolean visit(IfStatement node) {
+            // If-else patterns don't map cleanly to stream operations
+            // e.g., if (cond) list1.add(x) else list2.add(x)
+            if (node.getElseStatement() != null) {
+                hasIfElse = true;
+            }
+            return true; // Continue visiting to detect nested patterns
+        }
+        
+        @Override
+        public boolean visit(ReturnStatement node) {
+            // Void return exits the enclosing method, not the loop
+            // This cannot be converted to stream operations
+            if (node.getExpression() == null) {
+                hasVoidReturn = true;
+            }
+            // Note: boolean returns (return true/false) are potentially convertible
+            // as match patterns — handled separately in analyzeStatements()
+            return false;
+        }
+        
+        @Override
+        public boolean visit(TryStatement node) {
+            // Try-catch cannot be easily converted to stream operations
+            // due to checked exception handling requirements
+            hasTryCatch = true;
+            return false;
+        }
+        
+        @Override
+        public boolean visit(SynchronizedStatement node) {
+            // Synchronized blocks have different semantics in streams
+            // (parallelStream vs sequential processing)
+            hasSynchronized = true;
+            return false;
+        }
+        
+        @Override
+        public boolean visit(ForStatement node) {
+            // Traditional for loops inside the body → unconvertible
+            hasNestedLoop = true;
+            return false;
+        }
+        
+        @Override
+        public boolean visit(WhileStatement node) {
+            // While loops inside the body → unconvertible
+            hasNestedLoop = true;
+            return false;
+        }
+        
+        @Override
+        public boolean visit(DoStatement node) {
+            // Do-while loops inside the body → unconvertible
+            hasNestedLoop = true;
+            return false;
+        }
+        
         public boolean hasBreak() { return hasBreak; }
         public boolean hasLabeledContinue() { return hasLabeledContinue; }
+        public boolean hasTryCatch() { return hasTryCatch; }
+        public boolean hasSynchronized() { return hasSynchronized; }
+        public boolean hasNestedLoop() { return hasNestedLoop; }
+        public boolean hasVoidReturn() { return hasVoidReturn; }
+        public boolean hasIfElse() { return hasIfElse; }
     }
 }

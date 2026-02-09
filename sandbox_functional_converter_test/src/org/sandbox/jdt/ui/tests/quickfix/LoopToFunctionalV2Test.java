@@ -157,10 +157,10 @@ public class LoopToFunctionalV2Test {
      * Tests that loops with continue statements are NOT converted.
      * 
      * <p>This validates that the LoopMetadata correctly identifies continue
-     * statements and prevents conversion.</p>
+     * statements and converts them to filter().</p>
      */
     @Test
-    @DisplayName("Loop with continue should NOT be converted by V2")
+    @DisplayName("Loop with continue should be converted to filter by V2")
     void test_LoopWithContinue_NotConverted_V2() throws CoreException {
         String input = """
             package test;
@@ -175,13 +175,23 @@ public class LoopToFunctionalV2Test {
             }
             """;
         
+        String expected = """
+            package test;
+            import java.util.List;
+            public class Test {
+                public void method(List<String> items) {
+                    items.stream().filter(item -> !(item == null)).forEachOrdered(item -> System.out.println(item));
+                }
+            }
+            """;
+        
         IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
         ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, false, null);
         
         context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
         
-        // Should remain unchanged
-        context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+        // Continue is converted to filter()
+        context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
     }
     
     /**

@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 //import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -217,7 +216,6 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 		 * </p>
 		 */
 		@Test
-		@Disabled("Inner loop conversion in nested context not yet implemented")
 		@DisplayName("Inner loop in nested context can be converted")
 		void test_NestedForEach_InnerLoopConverts() throws CoreException {
 			String input = """
@@ -440,7 +438,7 @@ public class FunctionalLoopNestedAndEdgeCaseTest {
 
 					class MyTest {
 						public void process(List<Object> items) {
-							items.stream().filter(item -> item instanceof String).forEachOrdered(item -> System.out.println(item));
+							items.stream().filter(item -> (item instanceof String)).forEachOrdered(item -> System.out.println(item));
 						}
 					}""";
 

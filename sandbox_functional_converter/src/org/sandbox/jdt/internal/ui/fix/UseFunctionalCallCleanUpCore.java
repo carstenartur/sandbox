@@ -20,6 +20,8 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVE
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUp_description;
 import static org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages.LoopConversion_Description;
@@ -123,9 +125,18 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 
 		// Functional loop cleanup (handles both V1 and V2 constants for backward compatibility)
 		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2)) {
-			// LOOP now uses the unified V2 implementation (ULR + Refactorer fallback)
-			fixSet.add(UseFunctionalCallFixCore.LOOP);
-			fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
+			// Check if a non-stream target format is selected
+			// If FOR or WHILE format is explicitly enabled, skip stream conversion
+			boolean isForFormat = isEnabled(USEFUNCTIONALLOOP_FORMAT_FOR);
+			boolean isWhileFormat = isEnabled(USEFUNCTIONALLOOP_FORMAT_WHILE);
+			
+			if (!isForFormat && !isWhileFormat) {
+				// LOOP now uses the unified V2 implementation (ULR + Refactorer fallback)
+				fixSet.add(UseFunctionalCallFixCore.LOOP);
+				fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
+			}
+			// Note: FOR and WHILE format conversions are not yet implemented
+			// When they are, add the appropriate converters here
 		}
 		
 		// Bidirectional Loop Conversion (Phase 9)

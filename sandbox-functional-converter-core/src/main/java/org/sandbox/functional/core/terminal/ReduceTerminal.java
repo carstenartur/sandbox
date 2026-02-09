@@ -44,7 +44,9 @@ public record ReduceTerminal(
         /** Maximum reduction */
         MAX, 
         /** Product reduction */
-        PRODUCT, 
+        PRODUCT,
+        /** String concatenation reduction */
+        STRING_CONCAT,
         /** Custom reduction */
         CUSTOM
     }

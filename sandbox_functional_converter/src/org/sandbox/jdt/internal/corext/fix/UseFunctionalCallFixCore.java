@@ -30,7 +30,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.C
 import org.sandbox.jdt.internal.corext.fix.helper.EnhancedForToIteratorWhile;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorWhileToEnhancedFor;
-import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamConcatRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToIteratorWhile;
@@ -38,7 +38,7 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
 
-	LOOP(new LoopToFunctionalV2()),
+	LOOP(new LoopToFunctional()),
 	// ITERATOR_LOOP - Iterator-based loop conversion (from PR #449)
 	// Converts while-iterator and for-loop-iterator patterns to stream operations.
 	// Activated January 2026 - Phase 7: Iterator pattern support

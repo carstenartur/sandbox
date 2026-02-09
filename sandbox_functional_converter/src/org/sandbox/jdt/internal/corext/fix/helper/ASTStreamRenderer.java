@@ -271,55 +271,18 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // For single parameter without type annotation, don't use parentheses
         lambda.setParentheses(false);
         
-        // Use original body if available (production), otherwise fall back to string parsing (tests)
-        if (originalBody != null) {
-            // Production path: Use copySubtree from original body to preserve binding information
-            if (originalBody instanceof Block) {
-                Block block = (Block) originalBody;
-                if (block.statements().size() == 1) {
-                    // Single statement - extract as expression
-                    Statement stmt = (Statement) block.statements().get(0);
-                    if (stmt instanceof ExpressionStatement) {
-                        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-                        lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
-                    } else {
-                        // Not an expression statement, copy the whole statement as block
-                        Block lambdaBlock = ast.newBlock();
-                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
-                        lambda.setBody(lambdaBlock);
-                    }
-                } else {
-                    // Multiple statements - copy all into a block
-                    Block lambdaBlock = ast.newBlock();
-                    for (Object stmt : block.statements()) {
-                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
-                    }
-                    lambda.setBody(lambdaBlock);
-                }
-            } else {
-                // Body is a single statement (not a block)
-                if (originalBody instanceof ExpressionStatement) {
-                    ExpressionStatement exprStmt = (ExpressionStatement) originalBody;
-                    lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
-                } else {
-                    // Not an expression statement, wrap in block
-                    Block lambdaBlock = ast.newBlock();
-                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, originalBody));
-                    lambda.setBody(lambdaBlock);
-                }
-            }
+        // Always use bodyStatements - this contains only the terminal body statements,
+        // not the full original loop body (which would include statements already converted
+        // to filter/map operations, causing duplication)
+        if (bodyStatements.size() == 1) {
+            Expression bodyExpr = createExpression(bodyStatements.get(0));
+            lambda.setBody(bodyExpr);
         } else {
-            // Test/fallback path: Use bodyStatements strings (for unit tests)
-            if (bodyStatements.size() == 1) {
-                Expression bodyExpr = createExpression(bodyStatements.get(0));
-                lambda.setBody(bodyExpr);
-            } else {
-                Block lambdaBlock = ast.newBlock();
-                for (String stmt : bodyStatements) {
-                    lambdaBlock.statements().add(createStatement(stmt));
-                }
-                lambda.setBody(lambdaBlock);
+            Block lambdaBlock = ast.newBlock();
+            for (String stmt : bodyStatements) {
+                lambdaBlock.statements().add(createStatement(stmt));
             }
+            lambda.setBody(lambdaBlock);
         }
         
         forEachCall.arguments().add(lambda);
@@ -609,6 +572,8 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
         param.setName(ast.newSimpleName(paramName));
         lambda.parameters().add(param);
+        // For single parameter without type annotation, don't use parentheses
+        lambda.setParentheses(false);
         lambda.setBody(createExpression(bodyExpression));
         return lambda;
     }

@@ -39,7 +39,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
 
 /**
- * V2 loop-to-functional converter using the Unified Loop Representation (ULR).
+ * Loop-to-functional converter using the Unified Loop Representation (ULR).
  * 
  * <p>This class implements the complete loop-to-functional conversion using the ULR pipeline:
  * {@code JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer}.</p>
@@ -57,7 +57,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.C
  * @see ASTStreamRenderer
  * @see LoopModelTransformer
  */
-public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatement> {
+public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatement> {
     
     private final JdtLoopExtractor extractor = new JdtLoopExtractor();
     
@@ -178,7 +178,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         // Set the AST node reference for later rewriting
         node.setAstNodeReference(visited);
         
-        // Populate ScopeInfo by scanning the loop body (similar to V1)
+        // Populate ScopeInfo by scanning the loop body 
         LoopBodyScopeScanner scanner = new LoopBodyScopeScanner(visited);
         scanner.scan();
         scanner.populateScopeInfo(node.getScopeInfo());
@@ -198,7 +198,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
      * preconditions and whether any descendant loops are convertible.</p>
      * 
      * <p>The conversion decision uses ULR-based convertibility checks instead of
-     * PreconditionsChecker, as V2 uses the LoopModel for analysis.</p>
+     * PreconditionsChecker since this implementation uses the LoopModel for analysis.</p>
      * 
      * @param visited the EnhancedForStatement being exited
      * @param treeHolder the holder containing the LoopTree
@@ -372,7 +372,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         }
         
         if (model.getTerminal() instanceof org.sandbox.functional.core.terminal.MatchTerminal matchTerminal) {
-            // For match: wrap in if-statement matching V1 behavior
+            // For match: wrap in if-statement matching original behavior
             // anyMatch: if (stream.anyMatch(...)) { return true; }
             // noneMatch: if (!stream.noneMatch(...)) { return false; }
             // allMatch: if (!stream.allMatch(...)) { return false; }
@@ -384,7 +384,7 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
     }
     
     /**
-     * Creates an IfStatement wrapping a match expression, matching V1's behavior.
+     * Creates an IfStatement wrapping a match expression, matching standard behavior.
      * 
      * <p>For anyMatch: {@code if (stream.anyMatch(...)) { return true; }}</p>
      * <p>For noneMatch: {@code if (!stream.noneMatch(...)) { return false; }}</p>

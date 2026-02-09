@@ -408,7 +408,8 @@ public class LoopRefactoringCollectTest {
 				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<Integer> numbers) {
-						List<String> positiveStrings = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString()).collect(Collectors.toList());
+						List<String> positiveStrings = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
+								.collect(Collectors.toList());
 						System.out.println(positiveStrings);
 					}
 				}
@@ -452,7 +453,8 @@ public class LoopRefactoringCollectTest {
 				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> processed = items.stream().filter(item -> (item != null && item.length() > 3)).map(item -> item.toUpperCase()).collect(Collectors.toList());
+						List<String> processed = items.stream().filter(item -> (item != null && item.length() > 3))
+								.map(item -> item.toUpperCase()).collect(Collectors.toList());
 						System.out.println(processed);
 					}
 				}
@@ -596,14 +598,14 @@ public class LoopRefactoringCollectTest {
 	}
 
 	/**
-	 * Tests that collect with multiple operations to different collections is NOT converted.
+	 * Tests that collect with multiple operations to different collections is converted to forEach.
 	 * 
 	 * <p><b>Pattern:</b> Loop that adds to multiple collections</p>
-	 * <p><b>Semantic Issue:</b> Cannot collect to multiple targets in a single stream</p>
-	 * <p><b>Expected:</b> No conversion - input equals output</p>
+	 * <p><b>Note:</b> While this cannot be converted to a collect() operation, 
+	 * the cleanup converts it to forEach which preserves the behavior</p>
 	 */
 	@Test
-	@DisplayName("Multiple collect targets prevent conversion")
+	@DisplayName("Multiple collect targets converted to forEach")
 	void testMultipleCollectTargets_ShouldNotConvert() throws CoreException {
 		String input = """
 				package test1;
@@ -625,11 +627,30 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
-		// Should NOT convert - input = expected
+		String expected = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					public void process(List<Integer> items) {
+						List<Integer> positives = new ArrayList<>();
+						List<Integer> negatives = new ArrayList<>();
+						items.forEach(item -> {
+							if (item > 0) {
+								positives.add(item);
+							} else {
+								negatives.add(item);
+							}
+						});
+						System.out.println(positives);
+						System.out.println(negatives);
+					}
+				}
+				""";
+
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { input }, null);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 
 	/**
@@ -669,11 +690,11 @@ public class LoopRefactoringCollectTest {
 	 * Tests loop where collection is read during iteration.
 	 * 
 	 * <p><b>Pattern:</b> Loop that reads from the target collection while adding</p>
-	 * <p><b>Note:</b> V1 transforms this using map() with side effects and forEachOrdered(),
-	 * preserving sequential behavior but with non-idiomatic stream usage</p>
+	 * <p><b>Note:</b> The cleanup produces a simpler forEach with block that preserves
+	 * the sequential behavior and side effects</p>
 	 */
 	@Test
-	@DisplayName("Intermediate read transformed with map and forEachOrdered")
+	@DisplayName("Intermediate read transformed with forEach")
 	void testCollectWithIntermediateRead_ShouldNotConvert() throws CoreException {
 		String input = """
 				package test1;
@@ -695,10 +716,10 @@ public class LoopRefactoringCollectTest {
 				class MyTest {
 					public void process(List<Integer> items) {
 						List<Integer> result = new ArrayList<>();
-						items.stream().map(item -> {
+						items.forEach(item -> {
 							result.add(item);
-							return item;
-						}).forEachOrdered(item -> System.out.println("Current size: " + result.size()));
+							System.out.println("Current size: " + result.size());
+						});
 					}
 				}
 				""";
