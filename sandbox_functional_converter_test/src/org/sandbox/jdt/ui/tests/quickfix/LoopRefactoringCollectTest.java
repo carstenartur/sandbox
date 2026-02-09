@@ -156,7 +156,7 @@ public class LoopRefactoringCollectTest {
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(transform(item));}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().map(item -> transform(item)).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use map() for transformations before collecting</p>
-	 * <p><b>Note:</b> V2 uses .toList() (Java 16+) instead of Collectors.toList()</p>
+	 * <p><b>Note:</b> Uses Collectors.toList() for consistency with existing test suite</p>
 	 */
 	@Test
 	@DisplayName("Map+collect: stream().map(transform).collect(Collectors.toList())")
@@ -199,7 +199,7 @@ public class LoopRefactoringCollectTest {
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(item.method());}</p>
 	 * <p><b>Current V1:</b> {@code collection.stream().map(item -> item.method()).collect(Collectors.toList())}</p>
 	 * <p><b>Future V2:</b> Could optimize to {@code collection.stream().map(T::method).toList()}</p>
-	 * <p><b>Note:</b> V2 uses .toList() (Java 16+) instead of Collectors.toList()</p>
+	 * <p><b>Note:</b> Uses Collectors.toList() for consistency with existing test suite</p>
 	 */
 	@Test
 	@DisplayName("Map with lambda (method reference candidate): stream().map(item -> item.toUpperCase())")
@@ -241,7 +241,7 @@ public class LoopRefactoringCollectTest {
 	 * 
 	 * <p><b>Pattern:</b> {@code for (T item : collection) result.add(complex(item));}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().map(item -> complex(item)).collect(Collectors.toList())}</p>
-	 * <p><b>Note:</b> V2 uses .toList() (Java 16+) instead of Collectors.toList()</p>
+	 * <p><b>Note:</b> Uses Collectors.toList() for consistency with existing test suite</p>
 	 */
 	@Test
 	@DisplayName("Map with complex expression: stream().map(x -> x * 2)")
