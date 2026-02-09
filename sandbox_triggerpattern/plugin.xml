@@ -7,7 +7,9 @@
             class="org.sandbox.jdt.triggerpattern.string.StringSimplificationHintProvider">
       </hintProvider>
       <hintProvider
-            class="org.sandbox.jdt.triggerpattern.concurrency.DoubleCheckLockingHintProvider">
+            class="org.sandbox.jdt.triggerpattern.shift.ShiftOutOfRangeHintProvider">
+           </hintProvider>
+      <hintProvider class="org.sandbox.jdt.triggerpattern.concurrency.DoubleCheckLockingHintProvider">
       </hintProvider>
    </extension>
    
@@ -29,5 +31,8 @@
       <cleanUp 
             class="org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp" 
             id="org.eclipse.jdt.ui.cleanup.stringsimplification" />
+      <cleanUp 
+            class="org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp" 
+            id="org.eclipse.jdt.ui.cleanup.shift_out_of_range" />
    </extension>
 </plugin>
