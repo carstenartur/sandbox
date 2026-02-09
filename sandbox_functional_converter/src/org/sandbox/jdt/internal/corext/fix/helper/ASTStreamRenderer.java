@@ -708,39 +708,51 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     /**
      * Renders a filter operation with comments using a block lambda.
+     * Comments are inserted before the return statement in the block lambda body.
      * 
      * @param pipeline the current pipeline
      * @param filterOp the filter operation with comments
      * @param variableName the variable name for the lambda
      * @return the pipeline with filter appended
      */
+    @SuppressWarnings("unchecked")
     private Expression renderFilterWithComments(Expression pipeline, FilterOp filterOp, String variableName) {
-        // Create: pipeline.filter(var -> { /* comment */ return expression; })
+        // Build a block body string that includes comments, then parse it.
+        // JDT AST doesn't support direct comment node creation, so we use
+        // the same string-parsing technique as renderSideEffectMap.
+        StringBuilder bodyStr = new StringBuilder();
+        for (String comment : filterOp.getComments()) {
+            bodyStr.append("// ").append(comment).append("\n");
+        }
+        bodyStr.append("return ").append(filterOp.expression()).append(";");
+        
         MethodInvocation filterCall = ast.newMethodInvocation();
         filterCall.setExpression(pipeline);
         filterCall.setName(ast.newSimpleName("filter"));
         
-        // Create block lambda with comments
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
         param.setName(ast.newSimpleName(variableName));
         lambda.parameters().add(param);
-        lambda.setParentheses(false); // Single parameter without type
+        lambda.setParentheses(false);
         
-        // Create block body
         Block block = ast.newBlock();
         
-        // TODO: Full comment insertion requires ASTRewrite integration to properly
-        // insert comment text into the source. For now, we just generate a block lambda
-        // to show the structure is in place. When ASTRewrite is available:
-        // 1. Create LineComment or BlockComment nodes
-        // 2. Use ASTRewrite to insert comment text at the correct position
-        // 3. Attach comments before the return statement
-        
-        // Add return statement with the filter expression
-        ReturnStatement returnStmt = ast.newReturnStatement();
-        returnStmt.setExpression(createExpression(filterOp.expression()));
-        block.statements().add(returnStmt);
+        // Parse the body string (comments + return) into AST statements
+        org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
+        parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_STATEMENTS);
+        parser.setSource(bodyStr.toString().toCharArray());
+        ASTNode parsed = parser.createAST(null);
+        if (parsed instanceof Block parsedBlock) {
+            for (Object s : parsedBlock.statements()) {
+                block.statements().add(ASTNode.copySubtree(ast, (ASTNode) s));
+            }
+        } else {
+            // Fallback: just add return statement without comments
+            ReturnStatement returnStmt = ast.newReturnStatement();
+            returnStmt.setExpression(createExpression(filterOp.expression()));
+            block.statements().add(returnStmt);
+        }
         
         lambda.setBody(block);
         filterCall.arguments().add(lambda);
@@ -750,39 +762,49 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     /**
      * Renders a map operation with comments using a block lambda.
+     * Comments are inserted before the return statement in the block lambda body.
      * 
      * @param pipeline the current pipeline
      * @param mapOp the map operation with comments
      * @param variableName the variable name for the lambda
      * @return the pipeline with map appended
      */
+    @SuppressWarnings("unchecked")
     private Expression renderMapWithComments(Expression pipeline, MapOp mapOp, String variableName) {
-        // Create: pipeline.map(var -> { /* comment */ return expression; })
+        // Build a block body string that includes comments, then parse it.
+        StringBuilder bodyStr = new StringBuilder();
+        for (String comment : mapOp.getComments()) {
+            bodyStr.append("// ").append(comment).append("\n");
+        }
+        bodyStr.append("return ").append(mapOp.expression()).append(";");
+        
         MethodInvocation mapCall = ast.newMethodInvocation();
         mapCall.setExpression(pipeline);
         mapCall.setName(ast.newSimpleName("map"));
         
-        // Create block lambda with comments
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
         param.setName(ast.newSimpleName(variableName));
         lambda.parameters().add(param);
-        lambda.setParentheses(false); // Single parameter without type
+        lambda.setParentheses(false);
         
-        // Create block body
         Block block = ast.newBlock();
         
-        // TODO: Full comment insertion requires ASTRewrite integration to properly
-        // insert comment text into the source. For now, we just generate a block lambda
-        // to show the structure is in place. When ASTRewrite is available:
-        // 1. Create LineComment or BlockComment nodes
-        // 2. Use ASTRewrite to insert comment text at the correct position
-        // 3. Attach comments before the return statement
-        
-        // Add return statement with the map expression
-        ReturnStatement returnStmt = ast.newReturnStatement();
-        returnStmt.setExpression(createExpression(mapOp.expression()));
-        block.statements().add(returnStmt);
+        // Parse the body string (comments + return) into AST statements
+        org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
+        parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_STATEMENTS);
+        parser.setSource(bodyStr.toString().toCharArray());
+        ASTNode parsed = parser.createAST(null);
+        if (parsed instanceof Block parsedBlock) {
+            for (Object s : parsedBlock.statements()) {
+                block.statements().add(ASTNode.copySubtree(ast, (ASTNode) s));
+            }
+        } else {
+            // Fallback: just add return statement without comments
+            ReturnStatement returnStmt = ast.newReturnStatement();
+            returnStmt.setExpression(createExpression(mapOp.expression()));
+            block.statements().add(returnStmt);
+        }
         
         lambda.setBody(block);
         mapCall.arguments().add(lambda);

@@ -198,6 +198,7 @@ public class JdtLoopExtractor {
                 if (isContinueStatement(thenStmt)) {
                     String condition = ifStmt.getExpression().toString();
                     builder.filter("!(" + condition + ")");
+                    attachComments(builder.getLastOperation(), stmt, compilationUnit);
                     hasOperations = true;
                     continue;
                 }
@@ -212,6 +213,7 @@ public class JdtLoopExtractor {
                 if (isLast) {
                     String condition = ifStmt.getExpression().toString();
                     builder.filter("(" + condition + ")");
+                    attachComments(builder.getLastOperation(), stmt, compilationUnit);
                     hasOperations = true;
                     analyzeAndAddOperations(ifStmt.getThenStatement(), builder, currentVarName, compilationUnit);
                     return; // terminal set by recursion
@@ -220,6 +222,7 @@ public class JdtLoopExtractor {
                 // Pattern: if (cond) { ... } (NOT last) → side-effect MAP that wraps the if
                 // V1 NON_TERMINAL: wrap intermediate if-statements as map(var -> { if(...){...} return var; })
                 builder.sideEffectMap(stmt.toString(), currentVarName);
+                attachComments(builder.getLastOperation(), stmt, compilationUnit);
                 hasOperations = true;
                 continue;
             }
@@ -240,6 +243,7 @@ public class JdtLoopExtractor {
                         // (V1 VARIABLE_DECLARATION.shouldWrapRemaining pattern)
                         if (shouldWrapRemainingInMap(statements, i, newVarName)) {
                             builder.map(mapExpr, varDecl.getType().toString(), newVarName);
+                            attachComments(builder.getLastOperation(), stmt, compilationUnit);
                             currentVarName = newVarName;
                             hasOperations = true;
                             // Wrap remaining non-terminal statements as a single side-effect MAP
@@ -249,6 +253,7 @@ public class JdtLoopExtractor {
                         }
                         
                         builder.map(mapExpr, varDecl.getType().toString(), newVarName);
+                        attachComments(builder.getLastOperation(), stmt, compilationUnit);
                         currentVarName = newVarName;
                         hasOperations = true;
                         continue;
@@ -267,6 +272,7 @@ public class JdtLoopExtractor {
                             && name.getIdentifier().equals(currentVarName)) {
                         String mapExpr = assign.getRightHandSide().toString();
                         builder.map(mapExpr, null, currentVarName);
+                        attachComments(builder.getLastOperation(), stmt, compilationUnit);
                         hasOperations = true;
                         continue;
                     }
@@ -304,6 +310,7 @@ public class JdtLoopExtractor {
             // This is the V1 NON_TERMINAL handler equivalent
             if (isCollectPattern(stmt) || isReducePattern(stmt) || isSimpleSideEffect(stmt)) {
                 builder.sideEffectMap(stmt.toString(), currentVarName);
+                attachComments(builder.getLastOperation(), stmt, compilationUnit);
                 hasOperations = true;
                 continue;
             }
@@ -731,6 +738,32 @@ public class JdtLoopExtractor {
             builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                 accumVar, "(a, b) -> a - b", null,
                 org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
+        }
+    }
+    
+    /**
+     * Attaches extracted comments from an AST node to an Operation.
+     * If the operation is a FilterOp or MapOp and has associated comments
+     * in the source, they are stored in the operation for preservation
+     * during rendering.
+     * 
+     * @param operation the operation to attach comments to (can be null)
+     * @param node the AST node to extract comments from
+     * @param cu the compilation unit (can be null)
+     */
+    private void attachComments(org.sandbox.functional.core.operation.Operation operation, 
+                                 ASTNode node, CompilationUnit cu) {
+        if (operation == null || cu == null) {
+            return;
+        }
+        java.util.List<String> comments = extractComments(node, cu);
+        if (comments.isEmpty()) {
+            return;
+        }
+        if (operation instanceof org.sandbox.functional.core.operation.FilterOp filterOp) {
+            filterOp.addComments(comments);
+        } else if (operation instanceof org.sandbox.functional.core.operation.MapOp mapOp) {
+            mapOp.addComments(comments);
         }
     }
     

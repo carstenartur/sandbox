@@ -163,6 +163,18 @@ public class LoopModelBuilder {
     }
     
     /**
+     * Returns the last added operation, or null if no operations have been added.
+     * Useful for attaching comments to the most recently created operation.
+     * @return the last added Operation, or null
+     */
+    public Operation getLastOperation() {
+        if (this.operations.isEmpty()) {
+            return null;
+        }
+        return this.operations.get(this.operations.size() - 1);
+    }
+    
+    /**
      * Returns whether any intermediate operations (filter, map, etc.) have been added.
      * @return true if operations exist
      */
