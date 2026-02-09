@@ -258,14 +258,14 @@ public class JdtLoopExtractor {
             
             // === ASSIGNMENT MAP pattern ===
             // x = expr; where x is the current pipeline variable → map(x -> expr)
-            if (stmt instanceof ExpressionStatement exprStmt5 && !isLast) {
-                Expression expr5 = exprStmt5.getExpression();
-                if (expr5 instanceof Assignment assign5
-                        && assign5.getOperator() == Assignment.Operator.ASSIGN) {
-                    Expression lhs5 = assign5.getLeftHandSide();
-                    if (lhs5 instanceof SimpleName name5 
-                            && name5.getIdentifier().equals(currentVarName)) {
-                        String mapExpr = assign5.getRightHandSide().toString();
+            if (stmt instanceof ExpressionStatement assignExprStmt && !isLast) {
+                Expression assignExpr = assignExprStmt.getExpression();
+                if (assignExpr instanceof Assignment assign
+                        && assign.getOperator() == Assignment.Operator.ASSIGN) {
+                    Expression lhs = assign.getLeftHandSide();
+                    if (lhs instanceof SimpleName name 
+                            && name.getIdentifier().equals(currentVarName)) {
+                        String mapExpr = assign.getRightHandSide().toString();
                         builder.map(mapExpr, null, currentVarName);
                         hasOperations = true;
                         continue;
@@ -713,6 +713,7 @@ public class JdtLoopExtractor {
                                          String varName, String accumVar) {
         String rightOperand = infix.getRightOperand().toString();
         InfixExpression.Operator op = infix.getOperator();
+        String accumType = resolveReducerType(infix.getLeftOperand());
         
         // Add a MAP operation before the reduce for the value expression
         // e.g., count = count + 1 → .map(item -> 1).reduce(count, Integer::sum)
@@ -720,7 +721,7 @@ public class JdtLoopExtractor {
         
         if (op == InfixExpression.Operator.PLUS) {
             builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                accumVar, "Integer::sum", null,
+                accumVar, accumType + "::sum", null,
                 org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));
         } else if (op == InfixExpression.Operator.TIMES) {
             builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(

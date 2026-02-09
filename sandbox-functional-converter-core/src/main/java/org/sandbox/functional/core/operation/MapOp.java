@@ -142,14 +142,15 @@ public final class MapOp implements Operation {
         if (this == o) return true;
         if (!(o instanceof MapOp)) return false;
         MapOp mapOp = (MapOp) o;
-        return expression.equals(mapOp.expression) && 
+        return sideEffect == mapOp.sideEffect &&
+               expression.equals(mapOp.expression) && 
                Objects.equals(targetType, mapOp.targetType) &&
                Objects.equals(outputVariableName, mapOp.outputVariableName);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(expression, targetType, outputVariableName);
+        return Objects.hash(expression, targetType, outputVariableName, sideEffect);
     }
     
     @Override
