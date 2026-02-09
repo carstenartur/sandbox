@@ -45,7 +45,7 @@ jobs:
 
     - name: Set up Node.js
       if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: '20'
 
