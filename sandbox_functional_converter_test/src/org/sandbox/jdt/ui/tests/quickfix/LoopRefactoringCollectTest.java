@@ -673,11 +673,9 @@ public class LoopRefactoringCollectTest {
 	 * preserving sequential behavior but with non-idiomatic stream usage</p>
 	 */
 	@Test
-	@DisplayName("Intermediate read after add - not converted")
+	@DisplayName("Intermediate read transformed with map and forEachOrdered")
 	void testCollectWithIntermediateRead_ShouldNotConvert() throws CoreException {
-		// V2: Cannot handle collect followed by side effects.
-		// The add() is not the last statement — println follows.
-		String sourceCode = """
+		String input = """
 				package test1;
 				import java.util.*;
 				class MyTest {
@@ -691,9 +689,23 @@ public class LoopRefactoringCollectTest {
 				}
 				""";
 
+		String expected = """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					public void process(List<Integer> items) {
+						List<Integer> result = new ArrayList<>();
+						items.stream().map(item -> {
+							result.add(item);
+							return item;
+						}).forEachOrdered(item -> System.out.println("Current size: " + result.size()));
+					}
+				}
+				""";
+
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", sourceCode, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 }

@@ -174,6 +174,7 @@ public class JdtLoopExtractor {
     
     /**
      * Recursively analyzes a list of statements, building operations and setting the terminal.
+     * Implements V1-equivalent pattern detection for all supported transformations.
      * 
      * @param statements     the statements to analyze
      * @param builder        the model builder
@@ -189,9 +190,11 @@ public class JdtLoopExtractor {
             Statement stmt = statements.get(i);
             boolean isLast = (i == statements.size() - 1);
             
-            // Pattern 1: if (cond) continue; → filter(x -> !(cond))
+            // === IF STATEMENT patterns ===
             if (stmt instanceof IfStatement ifStmt && ifStmt.getElseStatement() == null) {
                 Statement thenStmt = ifStmt.getThenStatement();
+                
+                // Pattern: if (cond) continue; → filter(x -> !(cond))
                 if (isContinueStatement(thenStmt)) {
                     String condition = ifStmt.getExpression().toString();
                     builder.filter("!(" + condition + ")");
@@ -199,26 +202,30 @@ public class JdtLoopExtractor {
                     continue;
                 }
                 
-                // Pattern 2: Early return match patterns: if (cond) return true/false;
+                // Pattern: if (cond) return true/false; (last stmt) → MatchTerminal
                 if (isLast && isEarlyReturnIf(ifStmt, statements)) {
                     addMatchTerminal(ifStmt, builder, currentVarName);
                     return; // terminal set
                 }
                 
-                // Pattern 3: if (cond) { body } → filter(x -> cond) + body operations
-                // Only at the last position and only if no else branch
+                // Pattern: if (cond) { body } (last stmt) → filter(cond) + body operations
                 if (isLast) {
                     String condition = ifStmt.getExpression().toString();
                     builder.filter("(" + condition + ")");
                     hasOperations = true;
-                    // Recurse into then-block
                     analyzeAndAddOperations(ifStmt.getThenStatement(), builder, currentVarName, compilationUnit);
-                    return; // terminal set by recursion (or not, if body is unconvertible)
+                    return; // terminal set by recursion
                 }
+                
+                // Pattern: if (cond) { ... } (NOT last) → side-effect MAP that wraps the if
+                // V1 NON_TERMINAL: wrap intermediate if-statements as map(var -> { if(...){...} return var; })
+                builder.sideEffectMap(stmt.toString(), currentVarName);
+                hasOperations = true;
+                continue;
             }
             
-            // Pattern 4: Variable declaration: Type x = expr; → map(var -> expr)
-            // Only if not the last statement (there must be a consumer after)
+            // === VARIABLE DECLARATION pattern ===
+            // Type x = expr; → map(var -> expr) with renamed pipeline variable
             if (stmt instanceof VariableDeclarationStatement varDecl && !isLast) {
                 @SuppressWarnings("unchecked")
                 java.util.List<VariableDeclarationFragment> fragments = varDecl.fragments();
@@ -228,7 +235,19 @@ public class JdtLoopExtractor {
                     if (init != null) {
                         String newVarName = frag.getName().getIdentifier();
                         String mapExpr = init.toString();
-                        // Pass outputVariableName so chained maps use the correct lambda parameter
+                        
+                        // Check if remaining non-terminal statements need wrapping
+                        // (V1 VARIABLE_DECLARATION.shouldWrapRemaining pattern)
+                        if (shouldWrapRemainingInMap(statements, i, newVarName)) {
+                            builder.map(mapExpr, varDecl.getType().toString(), newVarName);
+                            currentVarName = newVarName;
+                            hasOperations = true;
+                            // Wrap remaining non-terminal statements as a single side-effect MAP
+                            i = wrapRemainingNonTerminals(statements, i + 1, builder, currentVarName);
+                            // Now i points to the last statement (terminal) — continue loop to process it
+                            continue;
+                        }
+                        
                         builder.map(mapExpr, varDecl.getType().toString(), newVarName);
                         currentVarName = newVarName;
                         hasOperations = true;
@@ -237,10 +256,8 @@ public class JdtLoopExtractor {
                 }
             }
             
-            // Pattern 5: Reassignment of pipeline variable: x = expr; → map(x -> expr)
-            // Only matches when the assigned variable is the CURRENT pipeline variable
-            // (i.e., was introduced by a previous variable declaration/map or is the loop variable).
-            // Does NOT match external variable assignments (e.g., lastItem = item).
+            // === ASSIGNMENT MAP pattern ===
+            // x = expr; where x is the current pipeline variable → map(x -> expr)
             if (stmt instanceof ExpressionStatement exprStmt5 && !isLast) {
                 Expression expr5 = exprStmt5.getExpression();
                 if (expr5 instanceof Assignment assign5
@@ -249,7 +266,6 @@ public class JdtLoopExtractor {
                     if (lhs5 instanceof SimpleName name5 
                             && name5.getIdentifier().equals(currentVarName)) {
                         String mapExpr = assign5.getRightHandSide().toString();
-                        // Reassignment keeps the same variable name
                         builder.map(mapExpr, null, currentVarName);
                         hasOperations = true;
                         continue;
@@ -257,51 +273,103 @@ public class JdtLoopExtractor {
                 }
             }
             
-            // Pattern 5: collection.add(expr) → CollectTerminal (only at the last position)
-            if (isLast && isCollectPattern(stmt)) {
-                addCollectTerminal(stmt, builder, currentVarName);
-                return; // terminal set
-            }
-            
-            // Pattern 6: Accumulator pattern (+=, ++, etc.) → ReduceTerminal (only at the last position)
-            if (isLast && isReducePattern(stmt)) {
-                addReduceTerminal(stmt, builder, currentVarName);
-                return; // terminal set
-            }
-            
-            // Pattern 7: Simple forEach — all remaining statements become the body
-            // This matches when current stmt is the start of a "side-effect only" tail
-            if (isLast || isSimpleSideEffect(stmt)) {
-                // Collect all remaining statements as forEach body
-                java.util.List<String> bodyStmts = new java.util.ArrayList<>();
-                for (int j = i; j < statements.size(); j++) {
-                    String stmtStr = statements.get(j).toString();
-                    if (stmtStr.endsWith(";\n") || stmtStr.endsWith(";")) {
-                        stmtStr = stmtStr.replaceAll(";\\s*$", "").trim();
-                    }
-                    bodyStmts.add(stmtStr);
+            // === TERMINAL patterns (last statement only) ===
+            if (isLast) {
+                // Collect: collection.add(expr)
+                if (isCollectPattern(stmt)) {
+                    addCollectTerminal(stmt, builder, currentVarName);
+                    return; // terminal set
                 }
-                // Use forEachOrdered when there are ANY operations in the pipeline
-                // (not just local hasOperations, since operations may have been added in outer scope)
+                
+                // Reduce: += , ++, *=, count = count + 1, etc.
+                if (isReducePattern(stmt)) {
+                    addReduceTerminal(stmt, builder, currentVarName);
+                    return; // terminal set
+                }
+                
+                // ForEach: everything else at the end
+                java.util.List<String> bodyStmts = new java.util.ArrayList<>();
+                String stmtStr = stmt.toString();
+                if (stmtStr.endsWith(";\n") || stmtStr.endsWith(";")) {
+                    stmtStr = stmtStr.replaceAll(";\\s*$", "").trim();
+                }
+                bodyStmts.add(stmtStr);
                 builder.forEach(bodyStmts, hasOperations || builder.hasOperations());
                 return; // terminal set
             }
             
-            // If we reach here, the statement doesn't match any pattern
-            // and is not a simple side-effect → give up (no terminal)
-            return;
+            // === NON-TERMINAL side-effect pattern ===
+            // Intermediate statements that don't match any pattern above are wrapped as 
+            // side-effect MAP: map(var -> { stmt; return var; })
+            // This is the V1 NON_TERMINAL handler equivalent
+            if (isCollectPattern(stmt) || isReducePattern(stmt) || isSimpleSideEffect(stmt)) {
+                builder.sideEffectMap(stmt.toString(), currentVarName);
+                hasOperations = true;
+                continue;
+            }
+            
+            // Unknown intermediate statement → cannot convert
+            return; // No terminal → NOT_CONVERTIBLE
+        }
+    }
+    
+    /**
+     * Checks if remaining non-terminal statements after a variable declaration
+     * should be wrapped in a single MAP block.
+     * 
+     * <p>V1 wraps remaining statements when they contain intermediate if-statements
+     * or other side-effect patterns that need to be combined into a single map block.</p>
+     */
+    private boolean shouldWrapRemainingInMap(java.util.List<Statement> statements, int currentIndex, String newVarName) {
+        // Look through remaining non-terminal statements
+        for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
+            Statement stmt = statements.get(j);
+            
+            // If there's an intermediate if-statement (not continue, not return), wrap
+            if (stmt instanceof IfStatement ifStmt && ifStmt.getElseStatement() == null) {
+                Statement thenStmt = ifStmt.getThenStatement();
+                if (!isContinueStatement(thenStmt) && !isEarlyReturnIf(ifStmt, statements)) {
+                    return true;
+                }
+            }
+            
+            // Don't wrap if the statement is an assignment to the produced variable 
+            // (handled by ASSIGNMENT_MAP pattern)
+            if (stmt instanceof ExpressionStatement es) {
+                Expression expr = es.getExpression();
+                if (expr instanceof Assignment assign 
+                        && assign.getOperator() == Assignment.Operator.ASSIGN
+                        && assign.getLeftHandSide() instanceof SimpleName sn
+                        && sn.getIdentifier().equals(newVarName)) {
+                    return false;
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Wraps remaining non-terminal statements (from startIndex to size-2) in a single
+     * side-effect MAP operation, then returns the index of the last statement (terminal).
+     * 
+     * @return the index of the last statement (for the caller to process as terminal)
+     */
+    private int wrapRemainingNonTerminals(java.util.List<Statement> statements, int startIndex, 
+                                           LoopModelBuilder builder, String currentVarName) {
+        int lastIndex = statements.size() - 1;
+        
+        // Collect non-terminal statements into a block string
+        StringBuilder blockStr = new StringBuilder();
+        for (int j = startIndex; j < lastIndex; j++) {
+            blockStr.append(statements.get(j).toString());
         }
         
-        // Fallback: treat entire body as forEach if we somehow get here
-        java.util.List<String> bodyStmts = new java.util.ArrayList<>();
-        for (Statement stmt : statements) {
-            String stmtStr = stmt.toString();
-            if (stmtStr.endsWith(";\n") || stmtStr.endsWith(";")) {
-                stmtStr = stmtStr.replaceAll(";\\s*$", "").trim();
-            }
-            bodyStmts.add(stmtStr);
+        if (blockStr.length() > 0) {
+            builder.sideEffectMap(blockStr.toString(), currentVarName);
         }
-        builder.forEach(bodyStmts, hasOperations);
+        
+        // Return the index right before the last statement so the loop will process it next
+        return lastIndex - 1;
     }
     
     /**
@@ -449,7 +517,7 @@ public class JdtLoopExtractor {
     }
     
     /**
-     * Detects accumulator patterns like sum += x, count++, etc.
+     * Detects accumulator patterns like sum += x, count++, count = count + 1, etc.
      */
     private boolean isReducePattern(Statement stmt) {
         if (stmt instanceof ExpressionStatement exprStmt) {
@@ -457,9 +525,15 @@ public class JdtLoopExtractor {
             // Compound assignment: sum += x, product *= x
             if (expr instanceof Assignment assign) {
                 Assignment.Operator op = assign.getOperator();
-                return op == Assignment.Operator.PLUS_ASSIGN 
+                if (op == Assignment.Operator.PLUS_ASSIGN 
                     || op == Assignment.Operator.MINUS_ASSIGN
-                    || op == Assignment.Operator.TIMES_ASSIGN;
+                    || op == Assignment.Operator.TIMES_ASSIGN) {
+                    return true;
+                }
+                // Plain assignment with infix accumulator: count = count + 1
+                if (op == Assignment.Operator.ASSIGN && assign.getLeftHandSide() instanceof SimpleName) {
+                    return isInfixAccumulator(assign);
+                }
             }
             // Postfix: count++, count--
             if (expr instanceof PostfixExpression) {
@@ -470,6 +544,25 @@ public class JdtLoopExtractor {
                 PrefixExpression.Operator op = prefix.getOperator();
                 return op == PrefixExpression.Operator.INCREMENT 
                     || op == PrefixExpression.Operator.DECREMENT;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Checks if a plain assignment is an infix accumulator pattern:
+     * count = count + 1, result = result * value, etc.
+     */
+    private boolean isInfixAccumulator(Assignment assign) {
+        String varName = ((SimpleName) assign.getLeftHandSide()).getIdentifier();
+        Expression rhs = assign.getRightHandSide();
+        if (rhs instanceof InfixExpression infix) {
+            Expression left = infix.getLeftOperand();
+            if (left instanceof SimpleName sn && sn.getIdentifier().equals(varName)) {
+                InfixExpression.Operator op = infix.getOperator();
+                return op == InfixExpression.Operator.PLUS
+                    || op == InfixExpression.Operator.MINUS
+                    || op == InfixExpression.Operator.TIMES;
             }
         }
         return false;
@@ -492,10 +585,13 @@ public class JdtLoopExtractor {
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                     "1", "(" + accumVar + ", " + varName + ") -> " + accumVar + " * " + valueExpr, null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT, accumVar));
-            } else {
+            } else if (op == Assignment.Operator.MINUS_ASSIGN) {
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                     "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - " + valueExpr, null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
+            } else if (op == Assignment.Operator.ASSIGN && assign.getRightHandSide() instanceof InfixExpression infix) {
+                // Plain assignment with infix: count = count + 1
+                addInfixReduceTerminal(infix, builder, varName, accumVar);
             }
         } else if (expr instanceof PostfixExpression postfix) {
             String accumVar = postfix.getOperand().toString();
@@ -513,6 +609,30 @@ public class JdtLoopExtractor {
                     "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - 1", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
             }
+        }
+    }
+    
+    private void addInfixReduceTerminal(InfixExpression infix, LoopModelBuilder builder, 
+                                         String varName, String accumVar) {
+        String rightOperand = infix.getRightOperand().toString();
+        InfixExpression.Operator op = infix.getOperator();
+        
+        // Add a MAP operation before the reduce for the value expression
+        // e.g., count = count + 1 → .map(item -> 1).reduce(count, Integer::sum)
+        builder.map(rightOperand, null);
+        
+        if (op == InfixExpression.Operator.PLUS) {
+            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                accumVar, "Integer::sum", null,
+                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));
+        } else if (op == InfixExpression.Operator.TIMES) {
+            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                accumVar, "(a, b) -> a * b", null,
+                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT, accumVar));
+        } else {
+            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                accumVar, "(a, b) -> a - b", null,
+                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
         }
     }
     

@@ -111,6 +111,17 @@ public class LoopModelBuilder {
         return this;
     }
     
+    /**
+     * Adds a side-effect MAP operation that wraps a statement block and returns the current variable.
+     * Renders as: {@code .map(var -> { statements; return var; })}
+     * @param statementsBlock the side-effect statements
+     * @param outputVariableName the variable to return from the map
+     */
+    public LoopModelBuilder sideEffectMap(String statementsBlock, String outputVariableName) {
+        this.operations.add(new MapOp(statementsBlock, null, outputVariableName, true));
+        return this;
+    }
+    
     public LoopModelBuilder flatMap(String expression) {
         this.operations.add(new FlatMapOp(expression));
         return this;

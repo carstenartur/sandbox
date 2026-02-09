@@ -142,12 +142,56 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     @Override
     public Expression renderMapOp(Expression pipeline, MapOp mapOp, String variableName) {
+        // Side-effect maps: map(var -> { statements; return var; })
+        if (mapOp.isSideEffect()) {
+            return renderSideEffectMap(pipeline, mapOp.expression(), variableName);
+        }
         // Check if operation has comments - if so, use block lambda
         if (mapOp.hasComments()) {
             return renderMapWithComments(pipeline, mapOp, variableName);
         }
         // Otherwise use simple expression lambda
         return renderMap(pipeline, mapOp.expression(), variableName, mapOp.targetType());
+    }
+    
+    /**
+     * Renders a side-effect MAP operation as: pipeline.map(var -> { statements; return var; })
+     */
+    @SuppressWarnings("unchecked")
+    private Expression renderSideEffectMap(Expression pipeline, String statementsText, String variableName) {
+        MethodInvocation mapCall = ast.newMethodInvocation();
+        mapCall.setExpression(pipeline);
+        mapCall.setName(ast.newSimpleName("map"));
+        
+        // Create block lambda: var -> { statements; return var; }
+        LambdaExpression lambda = ast.newLambdaExpression();
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(variableName));
+        lambda.parameters().add(param);
+        
+        Block block = ast.newBlock();
+        
+        // Parse the side-effect statements from text
+        org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
+        parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_STATEMENTS);
+        parser.setSource(statementsText.toCharArray());
+        ASTNode parsed = parser.createAST(null);
+        if (parsed instanceof Block parsedBlock) {
+            for (Object s : parsedBlock.statements()) {
+                block.statements().add(ASTNode.copySubtree(ast, (ASTNode) s));
+            }
+        }
+        
+        // Add return statement: return var;
+        ReturnStatement returnStmt = ast.newReturnStatement();
+        returnStmt.setExpression(ast.newSimpleName(variableName));
+        block.statements().add(returnStmt);
+        
+        lambda.setBody(block);
+        lambda.setParentheses(false);
+        
+        mapCall.arguments().add(lambda);
+        return mapCall;
     }
     
     @Override

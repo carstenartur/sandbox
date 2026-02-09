@@ -229,17 +229,17 @@ context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
 /**
- * Tests that loops with external variable modification AND side-effects are NOT converted.
+ * Tests that loops with external variable modification AND side-effects ARE converted.
  * 
  * <p>
- * V2 cannot safely convert this complex pattern: mixed side-effects with
- * plain assignment accumulation ({@code count = count + 1} is NOT a compound
- * assignment pattern like {@code count += 1}). The loop is left unchanged.
+ * When a loop has both side-effects (like println) and a reducer pattern (like count++),
+ * the conversion preserves both behaviors by using map operations for side-effects
+ * followed by the reduce operation.
  * </p>
  */
 @Test
-void test_External_variable_modification_with_side_effects_not_converted() throws CoreException {
-String sourceCode = """
+void test_External_variable_modification_with_side_effects_converts() throws CoreException {
+String input = """
 			package test1;
 
 			import java.util.List;
@@ -255,10 +255,26 @@ String sourceCode = """
 				}
 					}""";
 
+String expected = """
+			package test1;
+
+			import java.util.List;
+
+			class MyTest {
+				public void processWithExternalModification(List<String> items) {
+					int count = 0;
+					count = items.stream().map(item -> {
+						System.out.println(item);
+						return item;
+					}).map(item -> 1).reduce(count, Integer::sum);
+					System.out.println(count);
+				}
+					}""";
+
 IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, true, null);
 context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 }
 
 /**
