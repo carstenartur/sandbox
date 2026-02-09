@@ -59,16 +59,18 @@ public class JdtLoopExtractor {
         String varName = parameter.getName().getIdentifier();
         boolean isFinal = Modifier.isFinal(parameter.getModifiers());
         
-        // Analyze metadata
+        // Analyze metadata — only track truly unconvertible control flow.
+        // continue/return/add() are potentially convertible as filter/match/collect
+        // patterns and are handled by analyzeAndAddOperations().
         LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer();
         body.accept(analyzer);
         
-        // Build model
+        // Build model — only hasBreak and hasLabeledContinue are always unconvertible
         LoopModelBuilder builder = new LoopModelBuilder()
             .source(sourceType, sourceExpression, elementType)
             .element(varName, elementType, isFinal)
-            .metadata(analyzer.hasBreak(), analyzer.hasContinue(), 
-                      analyzer.hasReturn(), analyzer.modifiesCollection(), true);
+            .metadata(analyzer.hasBreak(), analyzer.hasLabeledContinue(), 
+                      false, false, true);
         
         // Analyze body and add operations/terminal
         analyzeAndAddOperations(body, builder, varName, compilationUnit);
@@ -129,17 +131,21 @@ public class JdtLoopExtractor {
     /**
      * Analyzes the loop body and populates the builder with operations and terminal.
      * 
-     * <p>Detects the following patterns:</p>
+     * <p>Detects the following patterns (conservatively — if no pattern matches,
+     * the builder gets no terminal, and the loop will NOT be converted):</p>
      * <ul>
-     *   <li>IF with continue → negated FilterOp</li>
-     *   <li>IF guard (no else) → FilterOp + nested body</li>
-     *   <li>Variable declaration with assignment → MapOp</li>
-     *   <li>Variable reassignment → MapOp</li>
-     *   <li>collection.add(expr) → CollectTerminal (TO_LIST or TO_SET)</li>
-     *   <li>accumulator patterns (+=, ++, etc.) → ReduceTerminal</li>
-     *   <li>if (cond) return true/false → MatchTerminal</li>
-     *   <li>Everything else → ForEachTerminal</li>
+     *   <li>Simple body (single method call, no control flow) → ForEachTerminal</li>
+     *   <li>IF with continue + remaining body → FilterOp + remaining patterns</li>
+     *   <li>IF guard (no else, last statement) → FilterOp + nested body</li>
+     *   <li>Variable declaration + remaining → MapOp + remaining patterns</li>
+     *   <li>collection.add(expr) → CollectTerminal</li>
+     *   <li>Accumulator patterns (+=, ++, etc.) → ReduceTerminal</li>
+     *   <li>if (cond) return true/false (last) → MatchTerminal</li>
      * </ul>
+     * 
+     * <p>If the body contains unconvertible patterns (bare return, throw, 
+     * assignments to external variables, etc.), no terminal is set and the
+     * loop is left unchanged.</p>
      */
     private void analyzeAndAddOperations(Statement body, LoopModelBuilder builder, String varName, CompilationUnit compilationUnit) {
         java.util.List<Statement> statements = new java.util.ArrayList<>();
@@ -152,9 +158,32 @@ public class JdtLoopExtractor {
             statements.add(body);
         }
         
-        // Analyze statements and build operations/terminal
+        // Guard: empty body → no conversion
+        if (statements.isEmpty()) {
+            return; // No terminal → NOT_CONVERTIBLE
+        }
+        
+        // Guard: reject bodies with throw statements or bare returns (not boolean returns)
+        if (containsUnconvertibleStatements(statements)) {
+            return; // No terminal → NOT_CONVERTIBLE
+        }
+        
+        // Try to analyze the statements into operations + terminal
+        analyzeStatements(statements, builder, varName, compilationUnit, false);
+    }
+    
+    /**
+     * Recursively analyzes a list of statements, building operations and setting the terminal.
+     * 
+     * @param statements     the statements to analyze
+     * @param builder        the model builder
+     * @param varName        the current loop/pipeline variable name
+     * @param compilationUnit the compilation unit (for type resolution)
+     * @param hasOperations  whether any intermediate operations (filter/map) have been added
+     */
+    private void analyzeStatements(java.util.List<Statement> statements, LoopModelBuilder builder, 
+                                    String varName, CompilationUnit compilationUnit, boolean hasOperations) {
         String currentVarName = varName;
-        boolean hasOperations = false;
         
         for (int i = 0; i < statements.size(); i++) {
             Statement stmt = statements.get(i);
@@ -171,24 +200,25 @@ public class JdtLoopExtractor {
                 }
                 
                 // Pattern 2: Early return match patterns: if (cond) return true/false;
-                //   followed by return false/true at end of method
                 if (isLast && isEarlyReturnIf(ifStmt, statements)) {
                     addMatchTerminal(ifStmt, builder, currentVarName);
-                    return; // terminal set, done
+                    return; // terminal set
                 }
                 
                 // Pattern 3: if (cond) { body } → filter(x -> cond) + body operations
+                // Only at the last position and only if no else branch
                 if (isLast) {
                     String condition = ifStmt.getExpression().toString();
                     builder.filter("(" + condition + ")");
                     hasOperations = true;
                     // Recurse into then-block
                     analyzeAndAddOperations(ifStmt.getThenStatement(), builder, currentVarName, compilationUnit);
-                    return; // terminal already set by recursion
+                    return; // terminal set by recursion (or not, if body is unconvertible)
                 }
             }
             
-            // Pattern 4: Variable declaration: Type x = expr; → map(var -> expr) with renamed var
+            // Pattern 4: Variable declaration: Type x = expr; → map(var -> expr)
+            // Only if not the last statement (there must be a consumer after)
             if (stmt instanceof VariableDeclarationStatement varDecl && !isLast) {
                 @SuppressWarnings("unchecked")
                 java.util.List<VariableDeclarationFragment> fragments = varDecl.fragments();
@@ -206,39 +236,23 @@ public class JdtLoopExtractor {
                 }
             }
             
-            // Pattern 5: Variable reassignment: x = expr; → map(x -> expr)
-            if (stmt instanceof ExpressionStatement exprStmt && !isLast) {
-                Expression expr = exprStmt.getExpression();
-                if (expr instanceof Assignment assign) {
-                    Expression lhs = assign.getLeftHandSide();
-                    if (lhs instanceof SimpleName name 
-                            && assign.getOperator() == Assignment.Operator.ASSIGN) {
-                        String assignedVar = name.getIdentifier();
-                        String mapExpr = assign.getRightHandSide().toString();
-                        builder.map(mapExpr, null);
-                        currentVarName = assignedVar;
-                        hasOperations = true;
-                        continue;
-                    }
-                }
-            }
-            
-            // Pattern 6: collection.add(expr) → CollectTerminal
+            // Pattern 5: collection.add(expr) → CollectTerminal
             if (isCollectPattern(stmt)) {
                 addCollectTerminal(stmt, builder, currentVarName);
-                return; // terminal set, done
+                return; // terminal set
             }
             
-            // Pattern 7: Accumulator pattern (+=, ++, etc.) → ReduceTerminal
+            // Pattern 6: Accumulator pattern (+=, ++, etc.) → ReduceTerminal
             if (isReducePattern(stmt)) {
                 addReduceTerminal(stmt, builder, currentVarName);
-                return; // terminal set, done
+                return; // terminal set
             }
             
-            // Pattern 8: Everything else at the end → ForEachTerminal
-            if (isLast) {
+            // Pattern 7: Simple forEach — all remaining statements become the body
+            // This matches when current stmt is the start of a "side-effect only" tail
+            if (isLast || isSimpleSideEffect(stmt)) {
+                // Collect all remaining statements as forEach body
                 java.util.List<String> bodyStmts = new java.util.ArrayList<>();
-                // Collect remaining statements from current position onward
                 for (int j = i; j < statements.size(); j++) {
                     String stmtStr = statements.get(j).toString();
                     if (stmtStr.endsWith(";\n") || stmtStr.endsWith(";")) {
@@ -246,14 +260,16 @@ public class JdtLoopExtractor {
                     }
                     bodyStmts.add(stmtStr);
                 }
-                // Use forEachOrdered when there are intermediate operations (filter/map)
-                // to preserve encounter order, just like V1
                 builder.forEach(bodyStmts, hasOperations);
-                return; // terminal set, done
+                return; // terminal set
             }
+            
+            // If we reach here, the statement doesn't match any pattern
+            // and is not a simple side-effect → give up (no terminal)
+            return;
         }
         
-        // Fallback: treat entire body as forEach if nothing matched
+        // Fallback: treat entire body as forEach if we somehow get here
         java.util.List<String> bodyStmts = new java.util.ArrayList<>();
         for (Statement stmt : statements) {
             String stmtStr = stmt.toString();
@@ -263,6 +279,43 @@ public class JdtLoopExtractor {
             bodyStmts.add(stmtStr);
         }
         builder.forEach(bodyStmts, hasOperations);
+    }
+    
+    /**
+     * Checks if the statements contain patterns that are always unconvertible.
+     */
+    private boolean containsUnconvertibleStatements(java.util.List<Statement> statements) {
+        for (Statement stmt : statements) {
+            // Bare return (not inside an if-return-boolean pattern) → unconvertible
+            if (stmt instanceof ReturnStatement returnStmt) {
+                Expression expr = returnStmt.getExpression();
+                // return; (void) → unconvertible
+                if (expr == null) return true;
+                // return someExpr; (not boolean literal) → unconvertible
+                // Note: if-return-boolean inside an IfStatement is handled as a match pattern
+                if (!(expr instanceof BooleanLiteral)) return true;
+            }
+            // Throw → unconvertible
+            if (stmt instanceof ThrowStatement) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Checks if a statement is a simple side effect (method call, etc.)
+     * that can be safely included in a forEach body.
+     */
+    private boolean isSimpleSideEffect(Statement stmt) {
+        if (stmt instanceof ExpressionStatement exprStmt) {
+            Expression expr = exprStmt.getExpression();
+            // Method invocations like System.out.println(x) are simple side effects
+            if (expr instanceof MethodInvocation) {
+                return true;
+            }
+        }
+        return false;
     }
     
     private boolean isContinueStatement(Statement stmt) {
@@ -540,13 +593,18 @@ public class JdtLoopExtractor {
     }
     
     /**
-     * Visitor to analyze loop body for control flow.
+     * Visitor to analyze loop body for truly unconvertible control flow.
+     * 
+     * <p>Only tracks patterns that CANNOT be converted to stream operations:
+     * break statements and labeled continue statements.</p>
+     * 
+     * <p>Note: unlabeled continue, return, and add() calls are potentially
+     * convertible as filter, match, and collect patterns respectively.
+     * Those are handled by analyzeAndAddOperations().</p>
      */
     private static class LoopBodyAnalyzer extends ASTVisitor {
         private boolean hasBreak = false;
-        private boolean hasContinue = false;
-        private boolean hasReturn = false;
-        private boolean modifiesCollection = false;
+        private boolean hasLabeledContinue = false;
         
         @Override
         public boolean visit(BreakStatement node) {
@@ -556,29 +614,15 @@ public class JdtLoopExtractor {
         
         @Override
         public boolean visit(ContinueStatement node) {
-            hasContinue = true;
-            return false;
-        }
-        
-        @Override
-        public boolean visit(ReturnStatement node) {
-            hasReturn = true;
-            return false;
-        }
-        
-        @Override
-        public boolean visit(MethodInvocation node) {
-            String name = node.getName().getIdentifier();
-            if ("add".equals(name) || "remove".equals(name) || 
-                "clear".equals(name) || "set".equals(name)) {
-                modifiesCollection = true;
+            // Only labeled continue is truly unconvertible
+            // Unlabeled continue can be converted to a negated filter
+            if (node.getLabel() != null) {
+                hasLabeledContinue = true;
             }
-            return true;
+            return false;
         }
         
         public boolean hasBreak() { return hasBreak; }
-        public boolean hasContinue() { return hasContinue; }
-        public boolean hasReturn() { return hasReturn; }
-        public boolean modifiesCollection() { return modifiesCollection; }
+        public boolean hasLabeledContinue() { return hasLabeledContinue; }
     }
 }

@@ -447,11 +447,12 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         LoopMetadata metadata = model.getMetadata();
         if (metadata == null) return true; // No metadata = assume convertible
         
-        // Don't convert if has break, continue, or return
-        return !metadata.hasBreak() && 
-               !metadata.hasContinue() && 
-               !metadata.hasReturn() &&
-               !metadata.modifiesCollection();
+        // Only reject truly unconvertible patterns:
+        // - break: cannot be expressed in stream operations
+        // - labeled continue (stored in hasContinue): cannot be expressed in stream operations
+        // Note: unlabeled continue → filter, return → match, add() → collect
+        // are all convertible and handled by JdtLoopExtractor.analyzeAndAddOperations()
+        return !metadata.hasBreak() && !metadata.hasContinue();
     }
     
     @Override
