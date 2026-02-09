@@ -7,41 +7,47 @@ The functional loop converter transforms imperative enhanced for-loops into func
 
 ## V2 Parallel Implementation Strategy → Unified Implementation (February 2026)
 
-**Status**: ✅ V1/V2 Consolidated — Single unified implementation
+**Status**: ✅ V2 is the complete implementation — All patterns via ULR pipeline
 
 ### Background
 Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the Unified Loop Representation (ULR) to enable:
 - AST-independent loop modeling for easier testing and maintenance
 - Better separation of concerns between AST parsing and transformation logic
 
-The V1/V2 parallel strategy was completed through multiple phases and has been consolidated
-into a single implementation (see Phase 7.6 in TODO.md).
+### Current Architecture
 
-### Current Architecture (Post-Consolidation)
+`LoopToFunctionalV2` uses the clean ULR pipeline for **all** patterns:
 
-The unified `LoopToFunctionalV2` uses a **two-path strategy**:
+```
+JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
+```
 
-1. **ULR path** (for simple forEach patterns):
-   - `JdtLoopExtractor` → `LoopModel` → `ASTStreamRenderer` → direct `collection.forEach(...)` 
-   - Used when: no intermediate operations, ForEachTerminal, COLLECTION/ITERABLE source
+**`JdtLoopExtractor`** bridges JDT AST to the abstract `LoopModel`, detecting:
+- `if (cond) continue;` → `FilterOp` (negated)
+- `if (cond) { body }` → `FilterOp` + nested body operations
+- Variable declaration `Type x = expr;` → `MapOp`
+- `collection.add(expr)` → `CollectTerminal` (TO_LIST or TO_SET)
+- Accumulator patterns (`+=`, `++`, `*=`) → `ReduceTerminal`
+- `if (cond) return true/false;` → `MatchTerminal` (anyMatch/noneMatch)
+- Simple side effects → `ForEachTerminal`
 
-2. **Refactorer fallback** (for complex patterns):
-   - `PreconditionsChecker` → `StreamPipelineBuilder` → `Refactorer`
-   - Used for: filter, map, collect, reduce, match patterns
+**`LoopModelTransformer`** drives the `ASTStreamRenderer` to produce JDT AST nodes.
+
+**Direct forEach optimization**: For simple forEach without operations on COLLECTION/ITERABLE sources, generates idiomatic `collection.forEach(...)` instead of `collection.stream().forEach(...)`.
 
 **Key Files**:
-- `LoopToFunctionalV2.java` — Unified loop-to-functional converter
-- `JdtLoopExtractor.java` — Bridges JDT AST to abstract ULR LoopModel
-- `ASTStreamRenderer.java` — Renders ULR to JDT AST nodes
-- `PreconditionsChecker.java` — Safety validation for stream conversion
-- `StreamPipelineBuilder.java` — Analyzes loop body into stream pipeline
-- `Refactorer.java` — Performs the actual AST rewriting for complex patterns
+- `LoopToFunctionalV2.java` — Loop-to-functional converter (orchestrator)
+- `JdtLoopExtractor.java` — JDT AST → LoopModel (pattern detection)
+- `ASTStreamRenderer.java` — LoopModel → JDT AST nodes (code generation)
+- `LoopModelTransformer.java` — Drives renderer through model operations
 
-**Removed Classes** (Phase 7.6):
-- `LoopToFunctional.java` — Old V1 helper (replaced by LoopToFunctionalV2)
-- `UseFunctionalCallCleanUpCoreV2.java` — V2-specific cleanup core
-- `UseFunctionalCallCleanUpV2.java` — V2-specific cleanup wrapper
-- `LOOP_V2` enum value — Merged into `LOOP`
+**Core Module** (`sandbox-functional-converter-core`):
+- `LoopModel`, `SourceDescriptor`, `ElementDescriptor`, `LoopMetadata` — ULR data model
+- `FilterOp`, `MapOp`, `CollectTerminal`, `ReduceTerminal`, `MatchTerminal` — Operations/terminals
+- `LoopModelBuilder` — Fluent builder for constructing models
+- `StringRenderer` — Test renderer producing Java code strings (no OSGi needed)
+- `LoopModelTransformer` — Transformation engine (drives any renderer)
+- All testable without Eclipse/OSGi via `mvn test`
 
 ### Phase History (Completed)
 
@@ -52,7 +58,8 @@ The following phases were completed during the V1/V2 parallel development:
 3. **Phase 5**: JDT AST Renderer — ASTStreamRenderer for JDT integration
 4. **Phase 7**: Iterator Loop Support — Iterator-based loop conversion
 5. **Phase 7.5**: Direct forEach Optimization — Idiomatic `collection.forEach(...)`
-6. **Phase 7.6**: V1/V2 Consolidation — Unified implementation with Refactorer fallback
+6. **Phase 7.6**: V1/V2 Consolidation — Removed V1 classes
+7. **Phase 7.7**: Full V2 Body Analysis — JdtLoopExtractor detects all patterns natively
 
 ### Phase 6: Complete ULR Integration (COMPLETED - January 2026)
 **Goal**: Remove V1 delegation and implement native ULR pipeline in LoopToFunctionalV2
@@ -264,15 +271,18 @@ else
 - No unused imports added for direct forEach path
 - Array handling correctly falls back to stream-based approach
 
-### Phase 8: V1 Deprecation and Cleanup (FUTURE)
-**Goal**: Make ULR the primary implementation and retire legacy code
+### Phase 8: V1 Deprecation and V2 Full Implementation ✅ COMPLETED (February 2026)
+**Goal**: Make ULR the sole implementation — no V1 fallback
 
-**Completed** (Phase 7.6 - February 2026):
-1. ✅ V1 (`LoopToFunctional`) removed and V2 (`LoopToFunctionalV2`) is now the unified implementation
-2. ✅ `LOOP` enum uses V2's `LoopToFunctionalV2`, `LOOP_V2` removed
+**Completed**:
+1. ✅ V1 (`LoopToFunctional`) removed, V2 (`LoopToFunctionalV2`) is the only implementation
+2. ✅ `LOOP` enum uses `LoopToFunctionalV2`, `LOOP_V2` removed
 3. ✅ V2-specific cleanup classes removed
-4. ✅ Refactorer fallback ensures full feature parity
-5. ✅ Documentation consolidated
+4. ✅ `JdtLoopExtractor.analyzeAndAddOperations()` detects all patterns natively
+   - Filter (if-continue, if-guard), Map, Collect, Reduce, Match, ForEach
+5. ✅ `LoopToFunctionalV2.rewrite()` uses `LoopModelTransformer` + `ASTStreamRenderer` for ALL patterns
+6. ✅ No dependency on V1's `Refactorer` / `PreconditionsChecker` / `StreamPipelineBuilder`
+7. ✅ 19 pattern transformation tests pass in core module without OSGi
 
 ### Architecture Benefits
 - **Testability**: ULR model can be tested without Eclipse runtime
