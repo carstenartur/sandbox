@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ViewerSorterPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_jface_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ViewerSorterPlugin.java</span></div><h1>ViewerSorterPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
+
+/**
+ * Cleanup transformation for migrating from deprecated ViewerSorter to ViewerComparator.
+ * 
+ * &lt;p&gt;This helper transforms ViewerSorter usage patterns in Eclipse JFace code:&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Converts {@code ViewerSorter} to {@code ViewerComparator}&lt;/li&gt;
+ * &lt;li&gt;Converts {@code TreePathViewerSorter} to {@code TreePathViewerComparator}&lt;/li&gt;
+ * &lt;li&gt;Converts {@code CommonViewerSorter} to {@code CommonViewerComparator}&lt;/li&gt;
+ * &lt;li&gt;Converts {@code getSorter()} and {@code setSorter()} method calls to {@code getComparator()} and {@code setComparator()} respectively (for JFace viewers only)&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Migration Pattern:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;
+ * // Before:
+ * public class MyViewer extends ViewerSorter {
+ *     viewer.setSorter(new ViewerSorter());
+ *     ViewerSorter sorter = viewer.getSorter();
+ * }
+ * 
+ * // After:
+ * public class MyViewer extends ViewerComparator {
+ *     viewer.setComparator(new ViewerComparator());
+ *     ViewerComparator comparator = viewer.getComparator();
+ * }
+ * &lt;/pre&gt;
+ * 
+ * @see org.eclipse.jface.viewers.ViewerSorter
+ * @see org.eclipse.jface.viewers.ViewerComparator
+ */
+<span class="fc" id="L73">public class ViewerSorterPlugin extends</span>
+AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&gt; {
+
+	/** Deprecated ViewerSorter class */
+	private static final String VIEWER_SORTER = &quot;org.eclipse.jface.viewers.ViewerSorter&quot;; //$NON-NLS-1$
+	
+	/** Replacement ViewerComparator class */
+	private static final String VIEWER_COMPARATOR = &quot;org.eclipse.jface.viewers.ViewerComparator&quot;; //$NON-NLS-1$
+	
+	/** Deprecated TreePathViewerSorter class */
+	private static final String TREEPATH_VIEWER_SORTER = &quot;org.eclipse.ui.navigator.TreePathViewerSorter&quot;; //$NON-NLS-1$
+	
+	/** Replacement TreePathViewerComparator class */
+	private static final String TREEPATH_VIEWER_COMPARATOR = &quot;org.eclipse.jface.viewers.TreePathViewerComparator&quot;; //$NON-NLS-1$
+	
+	/** Deprecated CommonViewerSorter class */
+	private static final String COMMON_VIEWER_SORTER = &quot;org.eclipse.ui.navigator.CommonViewerSorter&quot;; //$NON-NLS-1$
+	
+	/** Replacement CommonViewerComparator class */
+	private static final String COMMON_VIEWER_COMPARATOR = &quot;org.eclipse.ui.navigator.CommonViewerComparator&quot;; //$NON-NLS-1$
+
+	/**
+	 * Holder for ViewerSorter-related transformation data.
+	 * Tracks types and method names that need to be replaced.
+	 */
+<span class="fc" id="L98">	public static class SorterHolder {</span>
+		/** Types that need to be replaced */
+<span class="fc" id="L100">		public Set&lt;Type&gt; typesToReplace = new HashSet&lt;&gt;();</span>
+		/** Method names that need to be replaced (e.g. getSorter -&gt; getComparator, setSorter -&gt; setComparator) */
+<span class="fc" id="L102">		public Set&lt;Name&gt; methodNamesToReplace = new HashSet&lt;&gt;();</span>
+		/** Nodes that have been processed to avoid duplicate transformations */
+		public Set&lt;ASTNode&gt; nodesprocessed;
+	}
+
+	/**
+	 * Checks if a type is one of the deprecated ViewerSorter types.
+	 * 
+	 * @param typeBinding the type binding to check
+	 * @return {@code true} if it's a ViewerSorter type, {@code false} otherwise
+	 */
+	private static boolean isViewerSorterType(ITypeBinding typeBinding) {
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L115">			return false;</span>
+		}
+<span class="fc" id="L117">		String qualifiedName = typeBinding.getQualifiedName();</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		return VIEWER_SORTER.equals(qualifiedName) </span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">				|| TREEPATH_VIEWER_SORTER.equals(qualifiedName)</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">				|| COMMON_VIEWER_SORTER.equals(qualifiedName);</span>
+	}
+
+	/**
+	 * Checks if a type is one of the deprecated ViewerSorter types based on the Type node.
+	 * This method handles both cases: when type binding is available and when it's not.
+	 * 
+	 * @param type the Type AST node to check
+	 * @return {@code true} if it's a ViewerSorter type, {@code false} otherwise
+	 */
+	private static boolean isViewerSorterType(Type type) {
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L132">			return false;</span>
+		}
+		
+		// First try to resolve the binding (most reliable)
+<span class="fc" id="L136">		ITypeBinding typeBinding = type.resolveBinding();</span>
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">		if (typeBinding != null &amp;&amp; !typeBinding.isRecovered()) {</span>
+			// Only trust the binding if it's fully resolved
+<span class="fc" id="L139">			return isViewerSorterType(typeBinding);</span>
+		}
+		
+		// Fallback: check by type name string (for when bindings aren't available or are recovered/incomplete)
+<span class="fc" id="L143">		String typeName = getTypeName(type);</span>
+<span class="fc" id="L144">		return isViewerSorterTypeName(typeName);</span>
+	}
+
+	/**
+	 * Extracts the type name from a Type AST node.
+	 * 
+	 * @param type the Type AST node
+	 * @return the simple or qualified type name, or null if not determinable
+	 */
+	private static String getTypeName(Type type) {
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L155">			return null;</span>
+		}
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		if (type.isSimpleType()) {</span>
+<span class="fc" id="L158">			return ((org.eclipse.jdt.core.dom.SimpleType) type).getName().getFullyQualifiedName();</span>
+		}
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">		if (type.isQualifiedType()) {</span>
+<span class="nc" id="L161">			return ((org.eclipse.jdt.core.dom.QualifiedType) type).getName().getFullyQualifiedName();</span>
+		}
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		if (type.isNameQualifiedType()) {</span>
+<span class="nc" id="L164">			return ((org.eclipse.jdt.core.dom.NameQualifiedType) type).getName().getFullyQualifiedName();</span>
+		}
+<span class="fc" id="L166">		return type.toString();</span>
+	}
+
+	/**
+	 * Checks if a type name (simple or qualified) matches a ViewerSorter type.
+	 * 
+	 * @param typeName the type name to check
+	 * @return {@code true} if it matches a ViewerSorter type, {@code false} otherwise
+	 */
+	private static boolean isViewerSorterTypeName(String typeName) {
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">		if (typeName == null) {</span>
+<span class="nc" id="L177">			return false;</span>
+		}
+		// Check both simple and qualified names
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		return &quot;ViewerSorter&quot;.equals(typeName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">				|| VIEWER_SORTER.equals(typeName)</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">				|| &quot;TreePathViewerSorter&quot;.equals(typeName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">				|| TREEPATH_VIEWER_SORTER.equals(typeName)</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">				|| &quot;CommonViewerSorter&quot;.equals(typeName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">				|| COMMON_VIEWER_SORTER.equals(typeName);</span>
+	}
+
+	/**
+	 * Gets the replacement type name for a given ViewerSorter type.
+	 * Works with both resolved bindings and type name strings.
+	 * 
+	 * @param type the Type AST node
+	 * @return the replacement qualified type name, or null if not a ViewerSorter type
+	 */
+	private static String getReplacementTypeName(Type type) {
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L197">			return null;</span>
+		}
+		
+		// First try to resolve the binding (only if fully resolved)
+<span class="fc" id="L201">		ITypeBinding typeBinding = type.resolveBinding();</span>
+<span class="pc bpc" id="L202" title="2 of 4 branches missed.">		if (typeBinding != null &amp;&amp; !typeBinding.isRecovered()) {</span>
+<span class="nc" id="L203">			return getReplacementQualifiedTypeName(typeBinding);</span>
+		}
+		
+		// Fallback: determine replacement based on type name string
+<span class="fc" id="L207">		String typeName = getTypeName(type);</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">		if (typeName == null) {</span>
+<span class="nc" id="L209">			return null;</span>
+		}
+		
+<span class="pc bpc" id="L212" title="1 of 4 branches missed.">		if (&quot;ViewerSorter&quot;.equals(typeName) || VIEWER_SORTER.equals(typeName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L213">			return VIEWER_COMPARATOR;</span>
+<span class="pc bpc" id="L214" title="1 of 4 branches missed.">		} else if (&quot;TreePathViewerSorter&quot;.equals(typeName) || TREEPATH_VIEWER_SORTER.equals(typeName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L215">			return TREEPATH_VIEWER_COMPARATOR;</span>
+<span class="pc bpc" id="L216" title="3 of 4 branches missed.">		} else if (&quot;CommonViewerSorter&quot;.equals(typeName) || COMMON_VIEWER_SORTER.equals(typeName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L217">			return COMMON_VIEWER_COMPARATOR;</span>
+		}
+<span class="nc" id="L219">		return null;</span>
+	}
+
+	/**
+	 * Gets the fully qualified replacement type name for a deprecated ViewerSorter type.
+	 * 
+	 * @param typeBinding the type binding of the deprecated type
+	 * @return the fully qualified replacement type name
+	 */
+	private static String getReplacementQualifiedTypeName(ITypeBinding typeBinding) {
+<span class="nc bnc" id="L229" title="All 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L230">			return null;</span>
+		}
+<span class="nc" id="L232">		String qualifiedName = typeBinding.getQualifiedName();</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">		if (VIEWER_SORTER.equals(qualifiedName)) {</span>
+<span class="nc" id="L234">			return VIEWER_COMPARATOR;</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">		} else if (TREEPATH_VIEWER_SORTER.equals(qualifiedName)) {</span>
+<span class="nc" id="L236">			return TREEPATH_VIEWER_COMPARATOR;</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">		} else if (COMMON_VIEWER_SORTER.equals(qualifiedName)) {</span>
+<span class="nc" id="L238">			return COMMON_VIEWER_COMPARATOR;</span>
+		}
+<span class="nc" id="L240">		return null;</span>
+	}
+
+	/**
+	 * Checks if a method is a JFace viewer getSorter() or setSorter() method.
+	 * 
+	 * @param methodBinding the method binding to check
+	 * @return {@code true} if it's a JFace viewer getSorter() or setSorter() method, {@code false} otherwise
+	 */
+	private static boolean isJFaceViewerSorterMethod(IMethodBinding methodBinding) {
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">		if (methodBinding == null) {</span>
+<span class="fc" id="L251">			return false;</span>
+		}
+		
+<span class="nc" id="L254">		String methodName = methodBinding.getName();</span>
+		
+		// Check method name is getSorter or setSorter
+<span class="nc bnc" id="L257" title="All 2 branches missed.">		if (&quot;getSorter&quot;.equals(methodName)) { //$NON-NLS-1$</span>
+			// getSorter should have no parameters
+<span class="nc bnc" id="L259" title="All 2 branches missed.">			if (methodBinding.getParameterTypes().length != 0) {</span>
+<span class="nc" id="L260">				return false;</span>
+			}
+<span class="nc bnc" id="L262" title="All 2 branches missed.">		} else if (&quot;setSorter&quot;.equals(methodName)) { //$NON-NLS-1$</span>
+			// setSorter should have exactly one parameter
+<span class="nc bnc" id="L264" title="All 2 branches missed.">			if (methodBinding.getParameterTypes().length != 1) {</span>
+<span class="nc" id="L265">				return false;</span>
+			}
+		} else {
+<span class="nc" id="L268">			return false;</span>
+		}
+		
+		// Check declaring class is a JFace viewer
+<span class="nc" id="L272">		ITypeBinding declaringClass = methodBinding.getDeclaringClass();</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">		if (declaringClass == null) {</span>
+<span class="nc" id="L274">			return false;</span>
+		}
+		
+		// Check if declaring class or any of its supertypes is a JFace viewer
+<span class="nc" id="L278">		return isJFaceViewer(declaringClass);</span>
+	}
+
+	/**
+	 * Checks if a method invocation is a JFace viewer getSorter() or setSorter() method
+	 * based on the expression type name (fallback when bindings are not available).
+	 * 
+	 * @param node the method invocation to check
+	 * @return {@code true} if it appears to be a JFace viewer sorter method, {@code false} otherwise
+	 */
+	private static boolean isJFaceViewerSorterMethodByName(MethodInvocation node) {
+<span class="pc bpc" id="L289" title="2 of 4 branches missed.">		if (node == null || node.getExpression() == null) {</span>
+<span class="nc" id="L290">			return false;</span>
+		}
+		
+		// Try to get the type of the expression
+<span class="fc" id="L294">		org.eclipse.jdt.core.dom.Expression expr = node.getExpression();</span>
+<span class="fc" id="L295">		ITypeBinding exprType = expr.resolveTypeBinding();</span>
+		
+		// Only trust fully resolved bindings
+<span class="pc bpc" id="L298" title="2 of 4 branches missed.">		if (exprType != null &amp;&amp; !exprType.isRecovered()) {</span>
+<span class="nc" id="L299">			return isJFaceViewer(exprType);</span>
+		}
+		
+		// Fallback: check by variable name or type name
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">		if (expr instanceof SimpleName simpleName) {</span>
+<span class="fc" id="L304">			String name = simpleName.getIdentifier();</span>
+			// Heuristic: if the variable name contains &quot;viewer&quot; (case-insensitive),
+			// it's likely a viewer
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">			if (name.toLowerCase().contains(&quot;viewer&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L308">				return true;</span>
+			}
+		}
+		
+		// Additional fallback: check if the type name (from recovered binding) contains &quot;Viewer&quot;
+<span class="nc bnc" id="L313" title="All 4 branches missed.">		if (exprType != null &amp;&amp; exprType.isRecovered()) {</span>
+<span class="nc" id="L314">			String typeName = exprType.getName();</span>
+<span class="nc bnc" id="L315" title="All 4 branches missed.">			if (typeName != null &amp;&amp; typeName.contains(&quot;Viewer&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L316">				return true;</span>
+			}
+		}
+		
+<span class="nc" id="L320">		return false;</span>
+	}
+
+	/**
+	 * Checks if a type is a JFace viewer (or subtype).
+	 * 
+	 * @param typeBinding the type binding to check
+	 * @return {@code true} if it's a JFace viewer type, {@code false} otherwise
+	 */
+	private static boolean isJFaceViewer(ITypeBinding typeBinding) {
+<span class="nc bnc" id="L330" title="All 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L331">			return false;</span>
+		}
+		
+<span class="nc" id="L334">		String qualifiedName = typeBinding.getQualifiedName();</span>
+		
+		// Check common JFace viewer types
+<span class="nc bnc" id="L337" title="All 2 branches missed.">		if (qualifiedName.startsWith(&quot;org.eclipse.jface.viewers.&quot;)) { //$NON-NLS-1$</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">			if (qualifiedName.equals(&quot;org.eclipse.jface.viewers.StructuredViewer&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">					|| qualifiedName.equals(&quot;org.eclipse.jface.viewers.ContentViewer&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">					|| qualifiedName.equals(&quot;org.eclipse.jface.viewers.TableViewer&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">					|| qualifiedName.equals(&quot;org.eclipse.jface.viewers.TreeViewer&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">					|| qualifiedName.equals(&quot;org.eclipse.jface.viewers.ListViewer&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">					|| qualifiedName.equals(&quot;org.eclipse.jface.viewers.ComboViewer&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L344">				return true;</span>
+			}
+		}
+		
+		// Check superclass
+<span class="nc" id="L349">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
+<span class="nc bnc" id="L350" title="All 4 branches missed.">		if (superclass != null &amp;&amp; isJFaceViewer(superclass)) {</span>
+<span class="nc" id="L351">			return true;</span>
+		}
+		
+<span class="nc" id="L354">		return false;</span>
+	}
+
+	/**
+	 * Finds and identifies ViewerSorter usage patterns to be transformed.
+	 * 
+	 * &lt;p&gt;This method scans the compilation unit for:&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Type declarations extending ViewerSorter classes&lt;/li&gt;
+	 * &lt;li&gt;Field declarations using ViewerSorter types&lt;/li&gt;
+	 * &lt;li&gt;Variable declarations using ViewerSorter types&lt;/li&gt;
+	 * &lt;li&gt;Method return types and parameters using ViewerSorter types&lt;/li&gt;
+	 * &lt;li&gt;ClassInstanceCreation of ViewerSorter types&lt;/li&gt;
+	 * &lt;li&gt;Cast expressions to ViewerSorter types&lt;/li&gt;
+	 * &lt;li&gt;getSorter() and setSorter() method invocations on JFace viewers&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param fixcore the cleanup fix core instance
+	 * @param compilationUnit the compilation unit to analyze
+	 * @param operations set to collect identified cleanup operations
+	 * @param nodesprocessed set of nodes already processed to avoid duplicates
+	 * @param createForOnlyIfVarUsed flag to control when operations are created (unused in this implementation)
+	 */
+	@Override
+	public void find(JfaceCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed,
+			boolean createForOnlyIfVarUsed) {
+		
+<span class="fc" id="L382">		ReferenceHolder&lt;Integer, SorterHolder&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L383">		SorterHolder holder = new SorterHolder();</span>
+<span class="fc" id="L384">		holder.nodesprocessed = nodesprocessed;</span>
+<span class="fc" id="L385">		dataholder.put(0, holder);</span>
+		
+<span class="fc" id="L387">		compilationUnit.accept(new ASTVisitor() {</span>
+			
+			@Override
+			public boolean visit(TypeDeclaration node) {
+				// Check extends clause
+<span class="fc" id="L392">				Type superclassType = node.getSuperclassType();</span>
+<span class="fc bfc" id="L393" title="All 4 branches covered.">				if (superclassType != null &amp;&amp; isViewerSorterType(superclassType)) {</span>
+<span class="fc" id="L394">					holder.typesToReplace.add(superclassType);</span>
+				}
+<span class="fc" id="L396">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(FieldDeclaration node) {
+<span class="fc" id="L401">				Type fieldType = node.getType();</span>
+<span class="pc bpc" id="L402" title="2 of 4 branches missed.">				if (fieldType != null &amp;&amp; isViewerSorterType(fieldType)) {</span>
+<span class="fc" id="L403">					holder.typesToReplace.add(fieldType);</span>
+				}
+<span class="fc" id="L405">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(VariableDeclarationStatement node) {
+<span class="fc" id="L410">				Type variableType = node.getType();</span>
+<span class="pc bpc" id="L411" title="1 of 4 branches missed.">				if (variableType != null &amp;&amp; isViewerSorterType(variableType)) {</span>
+<span class="fc" id="L412">					holder.typesToReplace.add(variableType);</span>
+				}
+<span class="fc" id="L414">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(MethodDeclaration node) {
+				// Check return type
+<span class="fc" id="L420">				Type returnType = node.getReturnType2();</span>
+<span class="pc bpc" id="L421" title="1 of 4 branches missed.">				if (returnType != null &amp;&amp; isViewerSorterType(returnType)) {</span>
+<span class="fc" id="L422">					holder.typesToReplace.add(returnType);</span>
+				}
+<span class="fc" id="L424">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(SingleVariableDeclaration node) {
+				// Check parameter type
+<span class="fc" id="L430">				Type paramType = node.getType();</span>
+<span class="pc bpc" id="L431" title="1 of 4 branches missed.">				if (paramType != null &amp;&amp; isViewerSorterType(paramType)) {</span>
+<span class="fc" id="L432">					holder.typesToReplace.add(paramType);</span>
+				}
+<span class="fc" id="L434">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(ClassInstanceCreation node) {
+<span class="fc" id="L439">				Type instanceType = node.getType();</span>
+<span class="pc bpc" id="L440" title="1 of 4 branches missed.">				if (instanceType != null &amp;&amp; isViewerSorterType(instanceType)) {</span>
+<span class="fc" id="L441">					holder.typesToReplace.add(instanceType);</span>
+				}
+<span class="fc" id="L443">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(CastExpression node) {
+<span class="fc" id="L448">				Type castType = node.getType();</span>
+<span class="pc bpc" id="L449" title="1 of 4 branches missed.">				if (castType != null &amp;&amp; isViewerSorterType(castType)) {</span>
+<span class="fc" id="L450">					holder.typesToReplace.add(castType);</span>
+				}
+<span class="fc" id="L452">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(MethodInvocation node) {
+<span class="fc" id="L457">				SimpleName methodName = node.getName();</span>
+<span class="pc bpc" id="L458" title="1 of 2 branches missed.">				if (methodName != null) {</span>
+<span class="fc" id="L459">					String name = methodName.getIdentifier();</span>
+<span class="fc bfc" id="L460" title="All 4 branches covered.">					if (&quot;getSorter&quot;.equals(name) || &quot;setSorter&quot;.equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+						// Check if this is a JFace viewer method - first try binding, then fallback to name-based check
+<span class="fc" id="L462">						IMethodBinding methodBinding = node.resolveMethodBinding();</span>
+<span class="pc bpc" id="L463" title="2 of 4 branches missed.">						if (isJFaceViewerSorterMethod(methodBinding) || isJFaceViewerSorterMethodByName(node)) {</span>
+<span class="fc" id="L464">							holder.methodNamesToReplace.add(methodName);</span>
+						}
+					}
+				}
+<span class="fc" id="L468">				return true;</span>
+			}
+		});
+		
+		// If we found anything to replace, register the operation
+<span class="pc bpc" id="L473" title="1 of 4 branches missed.">		if (!holder.typesToReplace.isEmpty() || !holder.methodNamesToReplace.isEmpty()) {</span>
+<span class="fc" id="L474">			operations.add(fixcore.rewrite(dataholder));</span>
+		}
+<span class="fc" id="L476">	}</span>
+
+	/**
+	 * Rewrites AST nodes to transform ViewerSorter patterns to ViewerComparator.
+	 * 
+	 * &lt;p&gt;Performs transformations on:&lt;/p&gt;
+	 * &lt;ol&gt;
+	 * &lt;li&gt;All Type nodes that reference ViewerSorter classes&lt;/li&gt;
+	 * &lt;li&gt;All method names that are getSorter() or setSorter() calls on JFace viewers&lt;/li&gt;
+	 * &lt;/ol&gt;
+	 * 
+	 * &lt;p&gt;The transformation ensures:&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Correct type replacement based on the original type&lt;/li&gt;
+	 * &lt;li&gt;Removal of old imports&lt;/li&gt;
+	 * &lt;li&gt;Addition of new imports&lt;/li&gt;
+	 * &lt;li&gt;Method name changes (getSorter → getComparator, setSorter → setComparator)&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param upp the cleanup fix core instance
+	 * @param hit the holder containing identified ViewerSorter patterns to transform
+	 * @param cuRewrite the compilation unit rewrite context
+	 * @param group the text edit group for tracking changes
+	 */
+	@Override
+	public void rewrite(JfaceCleanUpFixCore upp, final ReferenceHolder&lt;Integer, SorterHolder&gt; hit,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+<span class="fc" id="L503">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L504">		AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L505">		ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
+		
+<span class="pc bpc" id="L507" title="1 of 2 branches missed.">		if (hit.isEmpty()) {</span>
+<span class="nc" id="L508">			return;</span>
+		}
+		
+<span class="fc" id="L511">		SorterHolder holder = hit.get(0);</span>
+		
+		// Replace all types
+<span class="fc bfc" id="L514" title="All 2 branches covered.">		for (Type typeToReplace : holder.typesToReplace) {</span>
+<span class="pc bpc" id="L515" title="1 of 2 branches missed.">			if (!holder.nodesprocessed.contains(typeToReplace)) {</span>
+<span class="fc" id="L516">				holder.nodesprocessed.add(typeToReplace);</span>
+				
+				// Use the new helper that handles null bindings
+<span class="fc" id="L519">				String replacementQualifiedName = getReplacementTypeName(typeToReplace);</span>
+				
+<span class="pc bpc" id="L521" title="1 of 2 branches missed.">				if (replacementQualifiedName != null) {</span>
+					// Create new type with proper import
+<span class="fc" id="L523">					Name newTypeName = addImport(replacementQualifiedName, cuRewrite, ast);</span>
+<span class="fc" id="L524">					Type newType = ast.newSimpleType(newTypeName);</span>
+					
+					// Replace the type
+<span class="fc" id="L527">					rewrite.replace(typeToReplace, newType, group);</span>
+					
+					// Remove old import (if binding is available and fully resolved)
+<span class="fc" id="L530">					ITypeBinding typeBinding = typeToReplace.resolveBinding();</span>
+<span class="pc bpc" id="L531" title="2 of 4 branches missed.">					if (typeBinding != null &amp;&amp; !typeBinding.isRecovered()) {</span>
+<span class="nc" id="L532">						String oldQualifiedName = typeBinding.getQualifiedName();</span>
+<span class="nc" id="L533">						importRewrite.removeImport(oldQualifiedName);</span>
+<span class="nc" id="L534">					} else {</span>
+						// Fallback: remove import based on type name
+<span class="fc" id="L536">						String typeName = getTypeName(typeToReplace);</span>
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">						if (typeName != null) {</span>
+							// Try to remove both simple and qualified versions
+<span class="fc bfc" id="L539" title="All 2 branches covered.">							if (&quot;ViewerSorter&quot;.equals(typeName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L540">								importRewrite.removeImport(VIEWER_SORTER);</span>
+<span class="fc bfc" id="L541" title="All 2 branches covered.">							} else if (&quot;TreePathViewerSorter&quot;.equals(typeName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L542">								importRewrite.removeImport(TREEPATH_VIEWER_SORTER);</span>
+<span class="pc bpc" id="L543" title="1 of 2 branches missed.">							} else if (&quot;CommonViewerSorter&quot;.equals(typeName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L544">								importRewrite.removeImport(COMMON_VIEWER_SORTER);</span>
+<span class="fc" id="L545">							} else {</span>
+								// Already qualified name
+<span class="nc" id="L547">								importRewrite.removeImport(typeName);</span>
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		// Replace all method names
+<span class="fc bfc" id="L556" title="All 2 branches covered.">		for (Name methodNameToReplace : holder.methodNamesToReplace) {</span>
+<span class="pc bpc" id="L557" title="1 of 2 branches missed.">			if (!holder.nodesprocessed.contains(methodNameToReplace)) {</span>
+<span class="fc" id="L558">				holder.nodesprocessed.add(methodNameToReplace);</span>
+				
+				// Determine the replacement method name based on the original
+<span class="fc" id="L561">				String originalName = methodNameToReplace.toString();</span>
+				String replacementName;
+<span class="fc bfc" id="L563" title="All 2 branches covered.">				if (&quot;getSorter&quot;.equals(originalName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L564">					replacementName = &quot;getComparator&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L565" title="1 of 2 branches missed.">				} else if (&quot;setSorter&quot;.equals(originalName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L566">					replacementName = &quot;setComparator&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L567">				} else {</span>
+					// Should not happen, but keep original name as fallback
+<span class="nc" id="L569">					replacementName = originalName;</span>
+				}
+				
+				// Create new method name
+<span class="fc" id="L573">				SimpleName newMethodName = ast.newSimpleName(replacementName);</span>
+				
+				// Replace the method name
+<span class="fc" id="L576">				rewrite.replace(methodNameToReplace, newMethodName, group);</span>
+			}
+		}
+<span class="fc" id="L579">	}</span>
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L583" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
+<span class="nc" id="L584">			return &quot;&quot;&quot;</span>
+					import org.eclipse.jface.viewers.ViewerSorter;
+					import org.eclipse.jface.viewers.TableViewer;
+					public class MyClass extends ViewerSorter {
+						private ViewerSorter sorter;
+						public void configure(TableViewer viewer) {
+							viewer.setSorter(new ViewerSorter());
+							ViewerSorter s = viewer.getSorter();
+						}
+					}
+				&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+<span class="nc" id="L596">		return &quot;&quot;&quot;</span>
+				import org.eclipse.jface.viewers.ViewerComparator;
+				import org.eclipse.jface.viewers.TableViewer;
+				public class MyClass extends ViewerComparator {
+					private ViewerComparator sorter;
+					public void configure(TableViewer viewer) {
+						viewer.setComparator(new ViewerComparator());
+						ViewerComparator s = viewer.getComparator();
+					}
+				}
+			&quot;&quot;&quot;; //$NON-NLS-1$
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

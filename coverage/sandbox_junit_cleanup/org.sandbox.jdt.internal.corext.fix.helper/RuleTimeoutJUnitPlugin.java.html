@@ -121,139 +121,137 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="fc" id="L121">			MethodInvocation mi = (MethodInvocation) initializer;</span>
 <span class="fc" id="L122">			String methodName = mi.getName().getIdentifier();</span>
 			
-			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L125">			List&lt;Expression&gt; args = mi.arguments();</span>
-<span class="pc bpc" id="L126" title="2 of 4 branches missed.">			if (args.size() == 1 &amp;&amp; args.get(0) instanceof NumberLiteral) {</span>
-<span class="fc" id="L127">				long value = parseLong((NumberLiteral) args.get(0));</span>
-<span class="fc bfc" id="L128" title="All 2 branches covered.">				if (&quot;seconds&quot;.equals(methodName)) {</span>
-<span class="fc" id="L129">					return new TimeoutInfo(value, &quot;SECONDS&quot;);</span>
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">				} else if (&quot;millis&quot;.equals(methodName)) {</span>
-<span class="fc" id="L131">					return new TimeoutInfo(value, &quot;MILLISECONDS&quot;);</span>
+<span class="fc" id="L124">			List&lt;Expression&gt; args = mi.arguments();</span>
+<span class="pc bpc" id="L125" title="2 of 4 branches missed.">			if (args.size() == 1 &amp;&amp; args.get(0) instanceof NumberLiteral) {</span>
+<span class="fc" id="L126">				long value = parseLong((NumberLiteral) args.get(0));</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">				if (&quot;seconds&quot;.equals(methodName)) {</span>
+<span class="fc" id="L128">					return new TimeoutInfo(value, &quot;SECONDS&quot;);</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">				} else if (&quot;millis&quot;.equals(methodName)) {</span>
+<span class="fc" id="L130">					return new TimeoutInfo(value, &quot;MILLISECONDS&quot;);</span>
 				}
 			}
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">		} else if (initializer instanceof ClassInstanceCreation) {</span>
-<span class="fc" id="L135">			ClassInstanceCreation cic = (ClassInstanceCreation) initializer;</span>
-			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L137">			List&lt;Expression&gt; args = cic.arguments();</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">		} else if (initializer instanceof ClassInstanceCreation) {</span>
+<span class="fc" id="L134">			ClassInstanceCreation cic = (ClassInstanceCreation) initializer;</span>
+<span class="fc" id="L135">			List&lt;Expression&gt; args = cic.arguments();</span>
 			
-<span class="pc bpc" id="L139" title="1 of 4 branches missed.">			if (args.size() == 1 &amp;&amp; args.get(0) instanceof NumberLiteral) {</span>
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">			if (args.size() == 1 &amp;&amp; args.get(0) instanceof NumberLiteral) {</span>
 				// new Timeout(n) - milliseconds
-<span class="fc" id="L141">				long value = parseLong((NumberLiteral) args.get(0));</span>
-<span class="fc" id="L142">				return new TimeoutInfo(value, &quot;MILLISECONDS&quot;);</span>
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">			} else if (args.size() == 2) {</span>
+<span class="fc" id="L139">				long value = parseLong((NumberLiteral) args.get(0));</span>
+<span class="fc" id="L140">				return new TimeoutInfo(value, &quot;MILLISECONDS&quot;);</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">			} else if (args.size() == 2) {</span>
 				// new Timeout(n, TimeUnit.X)
-<span class="fc" id="L145">				Expression arg0 = args.get(0);</span>
-<span class="fc" id="L146">				Expression arg1 = args.get(1);</span>
+<span class="fc" id="L143">				Expression arg0 = args.get(0);</span>
+<span class="fc" id="L144">				Expression arg1 = args.get(1);</span>
 				
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">				if (arg0 instanceof NumberLiteral) {</span>
-<span class="fc" id="L149">					long value = parseLong((NumberLiteral) arg0);</span>
-<span class="fc" id="L150">					String unit = extractTimeUnit(arg1);</span>
-<span class="pc bpc" id="L151" title="1 of 2 branches missed.">					if (unit != null) {</span>
-<span class="fc" id="L152">						return new TimeoutInfo(value, unit);</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">				if (arg0 instanceof NumberLiteral) {</span>
+<span class="fc" id="L147">					long value = parseLong((NumberLiteral) arg0);</span>
+<span class="fc" id="L148">					String unit = extractTimeUnit(arg1);</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">					if (unit != null) {</span>
+<span class="fc" id="L150">						return new TimeoutInfo(value, unit);</span>
 					}
 				}
 			}
 		}
-<span class="nc" id="L157">		return null;</span>
+<span class="nc" id="L155">		return null;</span>
 	}
 
 	/**
 	 * Extract TimeUnit constant from expression like TimeUnit.SECONDS
 	 */
 	private String extractTimeUnit(Expression expr) {
-<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		if (expr instanceof QualifiedName) {</span>
-<span class="fc" id="L165">			QualifiedName qn = (QualifiedName) expr;</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">		if (expr instanceof QualifiedName) {</span>
+<span class="fc" id="L163">			QualifiedName qn = (QualifiedName) expr;</span>
 			// Prefer type binding to reliably detect java.util.concurrent.TimeUnit
-<span class="fc" id="L167">			ITypeBinding qualifierBinding = qn.getQualifier().resolveTypeBinding();</span>
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">			if (qualifierBinding != null) {</span>
-<span class="fc" id="L169">				String qualifiedName = qualifierBinding.getQualifiedName();</span>
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">				if (&quot;java.util.concurrent.TimeUnit&quot;.equals(qualifiedName)) {</span>
-<span class="fc" id="L171">					return qn.getName().getIdentifier();</span>
+<span class="fc" id="L165">			ITypeBinding qualifierBinding = qn.getQualifier().resolveTypeBinding();</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">			if (qualifierBinding != null) {</span>
+<span class="fc" id="L167">				String qualifiedName = qualifierBinding.getQualifiedName();</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">				if (&quot;java.util.concurrent.TimeUnit&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L169">					return qn.getName().getIdentifier();</span>
 				}
-<span class="nc bnc" id="L173" title="All 2 branches missed.">			} else if (qn.getQualifier() instanceof SimpleName) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">			} else if (qn.getQualifier() instanceof SimpleName) {</span>
 				// Fallback when bindings are unavailable: check simple qualifier name
-<span class="nc" id="L175">				SimpleName qualifier = (SimpleName) qn.getQualifier();</span>
-<span class="nc bnc" id="L176" title="All 2 branches missed.">				if (&quot;TimeUnit&quot;.equals(qualifier.getIdentifier())) {</span>
-<span class="nc" id="L177">					return qn.getName().getIdentifier();</span>
+<span class="nc" id="L173">				SimpleName qualifier = (SimpleName) qn.getQualifier();</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">				if (&quot;TimeUnit&quot;.equals(qualifier.getIdentifier())) {</span>
+<span class="nc" id="L175">					return qn.getName().getIdentifier();</span>
 				}
 			}
-<span class="nc bnc" id="L180" title="All 2 branches missed.">		} else if (expr instanceof SimpleName) {</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">		} else if (expr instanceof SimpleName) {</span>
 			// Handle imported static TimeUnit constants
-<span class="nc" id="L182">			SimpleName sn = (SimpleName) expr;</span>
-<span class="nc" id="L183">			return sn.getIdentifier();</span>
+<span class="nc" id="L180">			SimpleName sn = (SimpleName) expr;</span>
+<span class="nc" id="L181">			return sn.getIdentifier();</span>
 		}
-<span class="nc" id="L185">		return null;</span>
+<span class="nc" id="L183">		return null;</span>
 	}
 
 	private long parseLong(NumberLiteral literal) {
 		try {
-<span class="fc" id="L190">			return Long.parseLong(literal.getToken());</span>
-<span class="nc" id="L191">		} catch (NumberFormatException e) {</span>
-<span class="nc" id="L192">			return 0;</span>
+<span class="fc" id="L188">			return Long.parseLong(literal.getToken());</span>
+<span class="nc" id="L189">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L190">			return 0;</span>
 		}
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L199">		FieldDeclaration fieldDecl = junitHolder.getFieldDeclaration();</span>
+<span class="fc" id="L197">		FieldDeclaration fieldDecl = junitHolder.getFieldDeclaration();</span>
 		
 		// Parse timeout info from holder
 		long timeoutValue;
 		String timeUnit;
 		try {
-<span class="fc" id="L205">			timeoutValue = Long.parseLong(junitHolder.getValue());</span>
-<span class="fc" id="L206">			timeUnit = junitHolder.getMinvname();</span>
-<span class="pc" id="L207">		} catch (NumberFormatException e) {</span>
+<span class="fc" id="L203">			timeoutValue = Long.parseLong(junitHolder.getValue());</span>
+<span class="fc" id="L204">			timeUnit = junitHolder.getMinvname();</span>
+<span class="pc" id="L205">		} catch (NumberFormatException e) {</span>
 			// Cannot determine timeout value, skip refactoring
-<span class="nc" id="L209">			return;</span>
+<span class="nc" id="L207">			return;</span>
 		}
 		
 		// Find the containing class
-<span class="fc" id="L213">		TypeDeclaration typeDecl = ASTNodes.getParent(fieldDecl, TypeDeclaration.class);</span>
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
-<span class="nc" id="L215">			return;</span>
+<span class="fc" id="L211">		TypeDeclaration typeDecl = ASTNodes.getParent(fieldDecl, TypeDeclaration.class);</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
+<span class="nc" id="L213">			return;</span>
 		}
 		
 		// Create @Timeout annotation
-<span class="fc" id="L219">		NormalAnnotation timeoutAnnotation = ast.newNormalAnnotation();</span>
-<span class="fc" id="L220">		timeoutAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TIMEOUT));</span>
+<span class="fc" id="L217">		NormalAnnotation timeoutAnnotation = ast.newNormalAnnotation();</span>
+<span class="fc" id="L218">		timeoutAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TIMEOUT));</span>
 		
 		// Add value parameter
-<span class="fc" id="L223">		MemberValuePair valuePair = ast.newMemberValuePair();</span>
-<span class="fc" id="L224">		valuePair.setName(ast.newSimpleName(&quot;value&quot;));</span>
-<span class="fc" id="L225">		valuePair.setValue(ast.newNumberLiteral(String.valueOf(timeoutValue)));</span>
-<span class="fc" id="L226">		timeoutAnnotation.values().add(valuePair);</span>
+<span class="fc" id="L221">		MemberValuePair valuePair = ast.newMemberValuePair();</span>
+<span class="fc" id="L222">		valuePair.setName(ast.newSimpleName(&quot;value&quot;));</span>
+<span class="fc" id="L223">		valuePair.setValue(ast.newNumberLiteral(String.valueOf(timeoutValue)));</span>
+<span class="fc" id="L224">		timeoutAnnotation.values().add(valuePair);</span>
 		
 		// Add unit parameter
-<span class="fc" id="L229">		MemberValuePair unitPair = ast.newMemberValuePair();</span>
-<span class="fc" id="L230">		unitPair.setName(ast.newSimpleName(&quot;unit&quot;));</span>
-<span class="fc" id="L231">		QualifiedName timeUnitName = ast.newQualifiedName(</span>
-<span class="fc" id="L232">			ast.newSimpleName(&quot;TimeUnit&quot;),</span>
-<span class="fc" id="L233">			ast.newSimpleName(timeUnit)</span>
+<span class="fc" id="L227">		MemberValuePair unitPair = ast.newMemberValuePair();</span>
+<span class="fc" id="L228">		unitPair.setName(ast.newSimpleName(&quot;unit&quot;));</span>
+<span class="fc" id="L229">		QualifiedName timeUnitName = ast.newQualifiedName(</span>
+<span class="fc" id="L230">			ast.newSimpleName(&quot;TimeUnit&quot;),</span>
+<span class="fc" id="L231">			ast.newSimpleName(timeUnit)</span>
 		);
-<span class="fc" id="L235">		unitPair.setValue(timeUnitName);</span>
-<span class="fc" id="L236">		timeoutAnnotation.values().add(unitPair);</span>
+<span class="fc" id="L233">		unitPair.setValue(timeUnitName);</span>
+<span class="fc" id="L234">		timeoutAnnotation.values().add(unitPair);</span>
 		
 		// Add @Timeout annotation to class
-<span class="fc" id="L239">		ListRewrite listRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="fc" id="L240">		listRewrite.insertFirst(timeoutAnnotation, group);</span>
+<span class="fc" id="L237">		ListRewrite listRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L238">		listRewrite.insertFirst(timeoutAnnotation, group);</span>
 		
 		// Remove the @Rule Timeout field
-<span class="fc" id="L243">		rewriter.remove(fieldDecl, group);</span>
+<span class="fc" id="L241">		rewriter.remove(fieldDecl, group);</span>
 		
 		// Update imports
-<span class="fc" id="L246">		importRewriter.removeImport(ORG_JUNIT_RULE);</span>
-<span class="fc" id="L247">		importRewriter.removeImport(ORG_JUNIT_CLASS_RULE);</span>
-<span class="fc" id="L248">		importRewriter.removeImport(ORG_JUNIT_RULES_TIMEOUT);</span>
-<span class="fc" id="L249">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TIMEOUT);</span>
-<span class="fc" id="L250">		importRewriter.addImport(&quot;java.util.concurrent.TimeUnit&quot;);</span>
-<span class="fc" id="L251">	}</span>
+<span class="fc" id="L244">		importRewriter.removeImport(ORG_JUNIT_RULE);</span>
+<span class="fc" id="L245">		importRewriter.removeImport(ORG_JUNIT_CLASS_RULE);</span>
+<span class="fc" id="L246">		importRewriter.removeImport(ORG_JUNIT_RULES_TIMEOUT);</span>
+<span class="fc" id="L247">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TIMEOUT);</span>
+<span class="fc" id="L248">		importRewriter.addImport(&quot;java.util.concurrent.TimeUnit&quot;);</span>
+<span class="fc" id="L249">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L255" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L256">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L254">			return &quot;&quot;&quot;</span>
 					import org.junit.jupiter.api.Test;
 					import org.junit.jupiter.api.Timeout;
 					import java.util.concurrent.TimeUnit;
@@ -267,7 +265,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L270">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L268">		return &quot;&quot;&quot;</span>
 				import org.junit.Rule;
 				import org.junit.Test;
 				import org.junit.rules.Timeout;
@@ -286,7 +284,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L289">		return &quot;RuleTimeout&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L287">		return &quot;RuleTimeout&quot;; //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -296,10 +294,10 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		final long value;
 		final String unit;
 
-<span class="fc" id="L299">		TimeoutInfo(long value, String unit) {</span>
-<span class="fc" id="L300">			this.value = value;</span>
-<span class="fc" id="L301">			this.unit = unit;</span>
-<span class="fc" id="L302">		}</span>
+<span class="fc" id="L297">		TimeoutInfo(long value, String unit) {</span>
+<span class="fc" id="L298">			this.value = value;</span>
+<span class="fc" id="L299">			this.unit = unit;</span>
+<span class="fc" id="L300">		}</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

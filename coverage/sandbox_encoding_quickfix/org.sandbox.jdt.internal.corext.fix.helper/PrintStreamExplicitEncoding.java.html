@@ -56,81 +56,84 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc" id="L59">		ReferenceHolder&lt;ASTNode, Object&gt; datah= new ReferenceHolder&lt;&gt;();</span>
-<span class="pc" id="L60">		HelperVisitor.callClassInstanceCreationVisitor(PrintStream.class, compilationUnit, datah, nodesprocessed, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L61">	}</span>
+<span class="fc" id="L59">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L60">		HelperVisitor.forClassInstanceCreation(PrintStream.class)</span>
+<span class="fc" id="L61">			.in(compilationUnit)</span>
+<span class="fc" id="L62">			.excluding(nodesprocessed)</span>
+<span class="pc" id="L63">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L64">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set&lt;CompilationUnitRewriteOperation&gt; operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="nc" id="L66">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
-<span class="nc bnc" id="L67" title="All 4 branches missed.">		switch (arguments.size()) {</span>
+<span class="nc" id="L69">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">		switch (arguments.size()) {</span>
 			case 1:
-<span class="nc" id="L69">				break;</span>
+<span class="nc" id="L72">				break;</span>
 			case 2:
-<span class="nc bnc" id="L71" title="All 2 branches missed.">				if (!(arguments.get(1) instanceof StringLiteral)) {</span>
-<span class="nc" id="L72">					return false;</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">				if (!(arguments.get(1) instanceof StringLiteral)) {</span>
+<span class="nc" id="L75">					return false;</span>
 				}
-<span class="nc" id="L74">				StringLiteral argstring3= (StringLiteral) arguments.get(1);</span>
-<span class="nc bnc" id="L75" title="All 2 branches missed.">				if (!ENCODINGS.contains(argstring3.getLiteralValue())) {</span>
-<span class="nc" id="L76">					return false;</span>
+<span class="nc" id="L77">				StringLiteral argstring3= (StringLiteral) arguments.get(1);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">				if (!ENCODINGS.contains(argstring3.getLiteralValue())) {</span>
+<span class="nc" id="L79">					return false;</span>
 				}
-<span class="nc" id="L78">				holder.put(argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));</span>
-<span class="nc" id="L79">				break;</span>
+<span class="nc" id="L81">				holder.put(argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));</span>
+<span class="nc" id="L82">				break;</span>
 			case 3:
-<span class="nc bnc" id="L81" title="All 2 branches missed.">				if (!(arguments.get(2) instanceof StringLiteral)) {</span>
-<span class="nc" id="L82">					return false;</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">				if (!(arguments.get(2) instanceof StringLiteral)) {</span>
+<span class="nc" id="L85">					return false;</span>
 				}
-<span class="nc" id="L84">				StringLiteral argstring4= (StringLiteral) arguments.get(2);</span>
-<span class="nc bnc" id="L85" title="All 2 branches missed.">				if (!ENCODINGS.contains(argstring4.getLiteralValue())) {</span>
-<span class="nc" id="L86">					return false;</span>
+<span class="nc" id="L87">				StringLiteral argstring4= (StringLiteral) arguments.get(2);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">				if (!ENCODINGS.contains(argstring4.getLiteralValue())) {</span>
+<span class="nc" id="L89">					return false;</span>
 				}
-<span class="nc" id="L88">				holder.put(argstring4, ENCODING_MAP.get(argstring4.getLiteralValue()));</span>
-<span class="nc" id="L89">				break;</span>
+<span class="nc" id="L91">				holder.put(argstring4, ENCODING_MAP.get(argstring4.getLiteralValue()));</span>
+<span class="nc" id="L92">				break;</span>
 			default:
-<span class="nc" id="L91">				return false;</span>
+<span class="nc" id="L94">				return false;</span>
 		}
-<span class="nc" id="L93">		operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="nc" id="L94">		return false;</span>
+<span class="nc" id="L96">		operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="nc" id="L97">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="nc" id="L100">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="nc" id="L101">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="nc" id="L102">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());</span>
+<span class="nc" id="L103">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="nc" id="L104">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="nc" id="L105">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());</span>
 		/**
 		 * new FileOutputStream(&lt;filename&gt;)
 		 */
-<span class="nc" id="L106">		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();</span>
-<span class="nc" id="L107">		fosclassInstance.setType(ast.newSimpleType(addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));</span>
-<span class="nc" id="L108">		fosclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));</span>
+<span class="nc" id="L109">		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L110">		fosclassInstance.setType(ast.newSimpleType(addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="nc" id="L111">		fosclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));</span>
 		/**
 		 * new OutputStreamWriter(new FileOutputStream(&lt;filename&gt;))
 		 */
-<span class="nc" id="L112">		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();</span>
-<span class="nc" id="L113">		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
-<span class="nc" id="L114">		oswclassInstance.arguments().add(fosclassInstance);</span>
-<span class="nc" id="L115">		oswclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
+<span class="nc" id="L115">		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L116">		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="nc" id="L117">		oswclassInstance.arguments().add(fosclassInstance);</span>
+<span class="nc" id="L118">		oswclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
 		/**
 		 * new BufferedWriter(new OutputStreamWriter(new FileOutputStream(&lt;filename&gt;)))
 		 */
-<span class="nc" id="L119">		ClassInstanceCreation bwclassInstance= ast.newClassInstanceCreation();</span>
-<span class="nc" id="L120">		bwclassInstance.setType(ast.newSimpleType(addImport(BufferedWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
-<span class="nc" id="L121">		bwclassInstance.arguments().add(oswclassInstance);</span>
+<span class="nc" id="L122">		ClassInstanceCreation bwclassInstance= ast.newClassInstanceCreation();</span>
+<span class="nc" id="L123">		bwclassInstance.setType(ast.newSimpleType(addImport(BufferedWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="nc" id="L124">		bwclassInstance.arguments().add(oswclassInstance);</span>
 
-<span class="nc" id="L123">		ASTNodes.replaceButKeepComment(rewrite, visited, bwclassInstance, group);</span>
-<span class="nc" id="L124">	}</span>
+<span class="nc" id="L126">		ASTNodes.replaceButKeepComment(rewrite, visited, bwclassInstance, group);</span>
+<span class="nc" id="L127">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L129">			return &quot;Stream w=new PrintStream(\&quot;out.txt\&quot;,&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L132">			return &quot;Stream w=new PrintStream(\&quot;out.txt\&quot;,&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$</span>
 					&quot;Stream w=new PrintStream(\&quot;out.txt\&quot;,StandardCharsets.UTF_8);\n&quot; + //$NON-NLS-1$
 					&quot;Stream w=new PrintStream(new File(\&quot;out.txt\&quot;),StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L133">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L136">		return &quot;&quot;&quot;</span>
 				Stream w=new PrintStream(&quot;out.txt&quot;);
 				Stream w=new PrintStream(&quot;out.txt&quot;,&quot;UTF-8&quot;);
 				Stream w=new PrintStream(new File(&quot;out.txt&quot;),&quot;UTF-8&quot;);
@@ -139,7 +142,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 	@Override
 	public String toString() {
-<span class="nc" id="L142">		return &quot;new PrintStream(\&quot;out.txt\&quot;)&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L145">		return &quot;new PrintStream(\&quot;out.txt\&quot;)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

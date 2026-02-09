@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.MethodInvocation;
 
 /**
  * Fluent builder for visiting method invocations.
@@ -54,23 +53,37 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
  * @author Carsten Hammer
  * @since 1.15
  */
-public class MethodCallVisitorBuilder extends HelperVisitorBuilder&lt;MethodInvocation&gt; {
+public class MethodCallVisitorBuilder extends HelperVisitorBuilder&lt;ASTNode&gt; {
     
     private final String typeFQN;
+    private final Class&lt;?&gt; typeClass;
     private final Set&lt;String&gt; methodNames;
     private String importFQN;
-<span class="fc" id="L62">    private boolean includeStaticImports = false;</span>
+<span class="pc" id="L62">    private boolean includeStaticImports = false;</span>
     
     /**
-     * Creates a new method call visitor builder.
+     * Creates a new method call visitor builder with a type name.
      * 
      * @param typeFQN the fully qualified name of the type containing the methods
      * @param methodNames the set of method names to find
      */
 <span class="fc" id="L70">    public MethodCallVisitorBuilder(String typeFQN, Set&lt;String&gt; methodNames) {</span>
 <span class="fc" id="L71">        this.typeFQN = typeFQN;</span>
-<span class="fc" id="L72">        this.methodNames = methodNames;</span>
-<span class="fc" id="L73">    }</span>
+<span class="fc" id="L72">        this.typeClass = null;</span>
+<span class="fc" id="L73">        this.methodNames = methodNames;</span>
+<span class="fc" id="L74">    }</span>
+    
+    /**
+     * Creates a new method call visitor builder with a Class object.
+     * 
+     * @param typeClass the class containing the methods
+     * @param methodNames the set of method names to find
+     */
+<span class="nc" id="L82">    public MethodCallVisitorBuilder(Class&lt;?&gt; typeClass, Set&lt;String&gt; methodNames) {</span>
+<span class="nc" id="L83">        this.typeFQN = null;</span>
+<span class="nc" id="L84">        this.typeClass = typeClass;</span>
+<span class="nc" id="L85">        this.methodNames = methodNames;</span>
+<span class="nc" id="L86">    }</span>
     
     /**
      * Configures the builder to also process static imports for each method.
@@ -79,8 +92,8 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder&lt;MethodInvo
      * @return this builder for chaining
      */
     public MethodCallVisitorBuilder andStaticImports() {
-<span class="fc" id="L82">        this.includeStaticImports = true;</span>
-<span class="fc" id="L83">        return this;</span>
+<span class="fc" id="L95">        this.includeStaticImports = true;</span>
+<span class="fc" id="L96">        return this;</span>
     }
     
     /**
@@ -90,32 +103,56 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder&lt;MethodInvo
      * @return this builder for chaining
      */
     public MethodCallVisitorBuilder andImportsOf(String importFQN) {
-<span class="fc" id="L93">        this.importFQN = importFQN;</span>
-<span class="fc" id="L94">        return this;</span>
+<span class="fc" id="L106">        this.importFQN = importFQN;</span>
+<span class="fc" id="L107">        return this;</span>
     }
     
     @Override
     protected &lt;V, H&gt; void executeVisitors(ReferenceHolder&lt;V, H&gt; holder, 
             BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor) {
         // Visit method invocations for each method name
-<span class="fc" id="L101">        methodNames.forEach(methodName -&gt; {</span>
-<span class="fc" id="L102">            HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,</span>
-<span class="fc" id="L103">                    holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
-<span class="fc" id="L104">        });</span>
-        
-        // Optionally include static imports for each method
-<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (includeStaticImports) {</span>
-<span class="fc" id="L108">            methodNames.forEach(methodName -&gt; {</span>
-<span class="fc" id="L109">                HelperVisitor.callImportDeclarationVisitor(typeFQN + &quot;.&quot; + methodName, //$NON-NLS-1$</span>
-<span class="fc" id="L110">                        compilationUnit, holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
-<span class="fc" id="L111">            });</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (typeFQN != null) {</span>
+<span class="fc" id="L115">            methodNames.forEach(methodName -&gt; {</span>
+<span class="fc" id="L116">                HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,</span>
+<span class="fc" id="L117">                        holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+<span class="fc" id="L118">            });</span>
+            
+            // Optionally include static imports for each method
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (includeStaticImports) {</span>
+<span class="fc" id="L122">                methodNames.forEach(methodName -&gt; {</span>
+<span class="fc" id="L123">                    HelperVisitor.callImportDeclarationVisitor(typeFQN + &quot;.&quot; + methodName, //$NON-NLS-1$</span>
+<span class="fc" id="L124">                            compilationUnit, holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+<span class="fc" id="L125">                });</span>
+            }
+            
+            // Optionally include the regular import
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            if (importFQN != null) {</span>
+<span class="fc" id="L130">                HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
+<span class="fc" id="L131">                        holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+            }
+<span class="pc bnc" id="L133" title="All 2 branches missed.">        } else if (typeClass != null) {</span>
+<span class="nc" id="L134">            methodNames.forEach(methodName -&gt; {</span>
+<span class="nc" id="L135">                HelperVisitor.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,</span>
+<span class="nc" id="L136">                        holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+<span class="nc" id="L137">            });</span>
+            
+            // For Class&lt;?&gt; variant, we can also support imports now using the FQN from Class
+<span class="nc bnc" id="L140" title="All 4 branches missed.">            if (includeStaticImports || importFQN != null) {</span>
+<span class="nc" id="L141">                String classFQN = typeClass.getName();</span>
+                
+<span class="nc bnc" id="L143" title="All 2 branches missed.">                if (includeStaticImports) {</span>
+<span class="nc" id="L144">                    methodNames.forEach(methodName -&gt; {</span>
+<span class="nc" id="L145">                        HelperVisitor.callImportDeclarationVisitor(classFQN + &quot;.&quot; + methodName, //$NON-NLS-1$</span>
+<span class="nc" id="L146">                                compilationUnit, holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+<span class="nc" id="L147">                    });</span>
+                }
+                
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                if (importFQN != null) {</span>
+<span class="nc" id="L151">                    HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
+<span class="nc" id="L152">                            holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
+                }
+            }
         }
-        
-        // Optionally include the regular import
-<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (importFQN != null) {</span>
-<span class="fc" id="L116">            HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
-<span class="fc" id="L117">                    holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
-        }
-<span class="fc" id="L119">    }</span>
+<span class="fc" id="L156">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -97,36 +97,35 @@ import org.eclipse.jdt.core.dom.Statement;
 		}
 
 <span class="fc" id="L99">		List&lt;ConsecutiveLoopGroup&gt; groups = new ArrayList&lt;&gt;();</span>
-		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L101">		List&lt;Statement&gt; statements = block.statements();</span>
+<span class="fc" id="L100">		List&lt;Statement&gt; statements = block.statements();</span>
 
-<span class="fc" id="L103">		int i = 0;</span>
-<span class="fc bfc" id="L104" title="All 2 branches covered.">		while (i &lt; statements.size()) {</span>
-<span class="fc" id="L105">			Statement stmt = statements.get(i);</span>
+<span class="fc" id="L102">		int i = 0;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">		while (i &lt; statements.size()) {</span>
+<span class="fc" id="L104">			Statement stmt = statements.get(i);</span>
 
 			// Check if this is an EnhancedForStatement with simple add pattern
-<span class="fc bfc" id="L108" title="All 2 branches covered.">			if (stmt instanceof EnhancedForStatement) {</span>
-<span class="fc" id="L109">				EnhancedForStatement firstLoop = (EnhancedForStatement) stmt;</span>
-<span class="fc" id="L110">				String targetVar = getTargetAddVariable(firstLoop);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">			if (stmt instanceof EnhancedForStatement) {</span>
+<span class="fc" id="L108">				EnhancedForStatement firstLoop = (EnhancedForStatement) stmt;</span>
+<span class="fc" id="L109">				String targetVar = getTargetAddVariable(firstLoop);</span>
 
-<span class="fc bfc" id="L112" title="All 2 branches covered.">				if (targetVar != null) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">				if (targetVar != null) {</span>
 					// Found a loop that adds to a variable - check for consecutive similar loops
-<span class="fc" id="L114">					List&lt;EnhancedForStatement&gt; group = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L115">					group.add(firstLoop);</span>
+<span class="fc" id="L113">					List&lt;EnhancedForStatement&gt; group = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L114">					group.add(firstLoop);</span>
 
 					// Scan forward for consecutive loops adding to same variable
-<span class="fc" id="L118">					int j = i + 1;</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">					while (j &lt; statements.size()) {</span>
-<span class="fc" id="L120">						Statement nextStmt = statements.get(j);</span>
+<span class="fc" id="L117">					int j = i + 1;</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">					while (j &lt; statements.size()) {</span>
+<span class="fc" id="L119">						Statement nextStmt = statements.get(j);</span>
 
-<span class="fc bfc" id="L122" title="All 2 branches covered.">						if (nextStmt instanceof EnhancedForStatement) {</span>
-<span class="fc" id="L123">							EnhancedForStatement nextLoop = (EnhancedForStatement) nextStmt;</span>
-<span class="fc" id="L124">							String nextTargetVar = getTargetAddVariable(nextLoop);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">						if (nextStmt instanceof EnhancedForStatement) {</span>
+<span class="fc" id="L122">							EnhancedForStatement nextLoop = (EnhancedForStatement) nextStmt;</span>
+<span class="fc" id="L123">							String nextTargetVar = getTargetAddVariable(nextLoop);</span>
 
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">							if (targetVar.equals(nextTargetVar)) {</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">							if (targetVar.equals(nextTargetVar)) {</span>
 								// Same target variable - add to group
-<span class="fc" id="L128">								group.add(nextLoop);</span>
-<span class="fc" id="L129">								j++;</span>
+<span class="fc" id="L127">								group.add(nextLoop);</span>
+<span class="fc" id="L128">								j++;</span>
 							} else {
 								// Different target or not an add pattern - stop group
 								break;
@@ -138,18 +137,18 @@ import org.eclipse.jdt.core.dom.Statement;
 					}
 
 					// Only create a group if we found 2+ consecutive loops
-<span class="fc bfc" id="L141" title="All 2 branches covered.">					if (group.size() &gt;= 2) {</span>
-<span class="fc" id="L142">						groups.add(new ConsecutiveLoopGroup(targetVar, group));</span>
-<span class="fc" id="L143">						i = j; // Skip past all loops in this group</span>
-<span class="fc" id="L144">						continue;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">					if (group.size() &gt;= 2) {</span>
+<span class="fc" id="L141">						groups.add(new ConsecutiveLoopGroup(targetVar, group));</span>
+<span class="fc" id="L142">						i = j; // Skip past all loops in this group</span>
+<span class="fc" id="L143">						continue;</span>
 					}
 				}
 			}
 
-<span class="fc" id="L149">			i++;</span>
+<span class="fc" id="L148">			i++;</span>
 		}
 
-<span class="fc" id="L152">		return groups;</span>
+<span class="fc" id="L151">		return groups;</span>
 	}
 
 	/**
@@ -166,47 +165,46 @@ import org.eclipse.jdt.core.dom.Statement;
 	 * @return the target variable name, or null if not a simple add pattern
 	 */
 	private static String getTargetAddVariable(EnhancedForStatement loop) {
-<span class="fc" id="L169">		Statement body = loop.getBody();</span>
+<span class="fc" id="L168">		Statement body = loop.getBody();</span>
 
 		// Handle both Block and single statement
-<span class="fc" id="L172">		List&lt;Statement&gt; bodyStatements = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L173" title="All 2 branches covered.">		if (body instanceof Block) {</span>
-			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L175">			List&lt;Statement&gt; stmts = ((Block) body).statements();</span>
-<span class="fc" id="L176">			bodyStatements.addAll(stmts);</span>
-<span class="fc" id="L177">		} else {</span>
-<span class="fc" id="L178">			bodyStatements.add(body);</span>
+<span class="fc" id="L171">		List&lt;Statement&gt; bodyStatements = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		if (body instanceof Block) {</span>
+<span class="fc" id="L173">			List&lt;Statement&gt; stmts = ((Block) body).statements();</span>
+<span class="fc" id="L174">			bodyStatements.addAll(stmts);</span>
+<span class="fc" id="L175">		} else {</span>
+<span class="fc" id="L176">			bodyStatements.add(body);</span>
 		}
 
 		// Must be exactly one statement
-<span class="fc bfc" id="L182" title="All 2 branches covered.">		if (bodyStatements.size() != 1) {</span>
-<span class="fc" id="L183">			return null;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		if (bodyStatements.size() != 1) {</span>
+<span class="fc" id="L181">			return null;</span>
 		}
 
-<span class="fc" id="L186">		Statement stmt = bodyStatements.get(0);</span>
-<span class="fc bfc" id="L187" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
-<span class="fc" id="L188">			return null;</span>
+<span class="fc" id="L184">		Statement stmt = bodyStatements.get(0);</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="fc" id="L186">			return null;</span>
 		}
 
-<span class="fc" id="L191">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">		if (!(exprStmt.getExpression() instanceof MethodInvocation)) {</span>
-<span class="fc" id="L193">			return null;</span>
+<span class="fc" id="L189">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">		if (!(exprStmt.getExpression() instanceof MethodInvocation)) {</span>
+<span class="fc" id="L191">			return null;</span>
 		}
 
-<span class="fc" id="L196">		MethodInvocation methodInv = (MethodInvocation) exprStmt.getExpression();</span>
+<span class="fc" id="L194">		MethodInvocation methodInv = (MethodInvocation) exprStmt.getExpression();</span>
 
 		// Check method name is &quot;add&quot;
-<span class="fc bfc" id="L199" title="All 2 branches covered.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
-<span class="fc" id="L200">			return null;</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="fc" id="L198">			return null;</span>
 		}
 
 		// Check invoked on a SimpleName (the collection variable)
-<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (!(methodInv.getExpression() instanceof SimpleName)) {</span>
-<span class="nc" id="L205">			return null;</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (!(methodInv.getExpression() instanceof SimpleName)) {</span>
+<span class="nc" id="L203">			return null;</span>
 		}
 
-<span class="fc" id="L208">		SimpleName receiver = (SimpleName) methodInv.getExpression();</span>
-<span class="fc" id="L209">		return receiver.getIdentifier();</span>
+<span class="fc" id="L206">		SimpleName receiver = (SimpleName) methodInv.getExpression();</span>
+<span class="fc" id="L207">		return receiver.getIdentifier();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

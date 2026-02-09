@@ -29,7 +29,6 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.internal.core.JavaElement;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
@@ -38,95 +37,95 @@ import org.eclipse.jface.viewers.Viewer;
  * Content provider for the variable table viewer that extracts variable bindings
  * from Java compilation units using AST parsing.
  */
-<span class="fc" id="L41">public class JHViewContentProvider implements IStructuredContentProvider {</span>
+<span class="fc" id="L40">public class JHViewContentProvider implements IStructuredContentProvider {</span>
 	
-<span class="fc" id="L43">	private static final ILog logger = UsageViewPlugin.getDefault().getLog();</span>
+<span class="fc" id="L42">	private static final ILog logger = UsageViewPlugin.getDefault().getLog();</span>
 
 	@Override
 	public Object[] getElements(Object inputElement) {
-<span class="fc" id="L47">		VariableBindingVisitor variableVisitor = new VariableBindingVisitor();</span>
+<span class="fc" id="L46">		VariableBindingVisitor variableVisitor = new VariableBindingVisitor();</span>
 		
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">		if (inputElement instanceof List list) {</span>
-<span class="pc bpc" id="L50" title="1 of 2 branches missed.">			if (list.size() == 1) {</span>
-<span class="fc" id="L51">				Object object = list.get(0);</span>
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">				if (object == null) {</span>
-<span class="nc" id="L53">					return new Object[0];</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">		if (inputElement instanceof List list) {</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">			if (list.size() == 1) {</span>
+<span class="fc" id="L50">				Object object = list.get(0);</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">				if (object == null) {</span>
+<span class="nc" id="L52">					return new Object[0];</span>
 				}
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">				if (object instanceof WorkspaceRoot root) {</span>
-<span class="nc" id="L56">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing workspace root: &quot; + root.getName()));</span>
-<span class="pc bfc" id="L57" title="All 2 branches covered.">				} else if (object instanceof File file) {</span>
-<span class="fc" id="L58">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing file: &quot; + file.getName()));</span>
-<span class="pc bpc" id="L59" title="1 of 2 branches missed.">				} else if (object instanceof JavaElement) {</span>
-<span class="fc" id="L60">					IJavaElement javaElement = (IJavaElement) object;</span>
-<span class="pc bpc" id="L61" title="1 of 2 branches missed.">					if (javaElement instanceof ICompilationUnit compilationUnit) {</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">				if (object instanceof WorkspaceRoot root) {</span>
+<span class="nc" id="L55">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing workspace root: &quot; + root.getName()));</span>
+<span class="pc bfc" id="L56" title="All 2 branches covered.">				} else if (object instanceof File file) {</span>
+<span class="fc" id="L57">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing file: &quot; + file.getName()));</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">				} else if (object instanceof JavaElement) {</span>
+<span class="fc" id="L59">					IJavaElement javaElement = (IJavaElement) object;</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">					if (javaElement instanceof ICompilationUnit compilationUnit) {</span>
 						// now create the AST for the ICompilationUnits
-<span class="fc" id="L63">						CompilationUnit astRoot = parseCompilationUnit(compilationUnit);</span>
-<span class="fc" id="L64">						variableVisitor.process(astRoot);</span>
-<span class="pc bnc" id="L65" title="All 2 branches missed.">					} else if (javaElement instanceof IJavaProject javaProject) {</span>
+<span class="fc" id="L62">						CompilationUnit astRoot = parseCompilationUnit(compilationUnit);</span>
+<span class="fc" id="L63">						variableVisitor.process(astRoot);</span>
+<span class="pc bnc" id="L64" title="All 2 branches missed.">					} else if (javaElement instanceof IJavaProject javaProject) {</span>
 						// now create the AST for the ICompilationUnits
 						try {
-<span class="nc" id="L68">							Arrays.asList(javaProject.getAllPackageFragmentRoots()).parallelStream().forEach(packageRoot -&gt; {</span>
-<span class="nc" id="L69">								processPackageFragmentRoot(variableVisitor, packageRoot);</span>
-<span class="nc" id="L70">							});</span>
-<span class="nc" id="L71">						} catch (JavaModelException e) {</span>
-<span class="nc" id="L72">							logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment roots&quot;, e));</span>
+<span class="nc" id="L67">							Arrays.asList(javaProject.getAllPackageFragmentRoots()).parallelStream().forEach(packageRoot -&gt; {</span>
+<span class="nc" id="L68">								processPackageFragmentRoot(variableVisitor, packageRoot);</span>
+<span class="nc" id="L69">							});</span>
+<span class="nc" id="L70">						} catch (JavaModelException e) {</span>
+<span class="nc" id="L71">							logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment roots&quot;, e));</span>
 						}
-<span class="nc bnc" id="L74" title="All 2 branches missed.">					} else if (javaElement instanceof IPackageFragment packageFragment) {</span>
-<span class="nc" id="L75">						processPackageFragment(variableVisitor, packageFragment);</span>
-<span class="nc bnc" id="L76" title="All 2 branches missed.">					} else if (javaElement instanceof IPackageFragmentRoot packageRoot) {</span>
-<span class="nc" id="L77">						processPackageFragmentRoot(variableVisitor, packageRoot);</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">					} else if (javaElement instanceof IPackageFragment packageFragment) {</span>
+<span class="nc" id="L74">						processPackageFragment(variableVisitor, packageFragment);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">					} else if (javaElement instanceof IPackageFragmentRoot packageRoot) {</span>
+<span class="nc" id="L76">						processPackageFragmentRoot(variableVisitor, packageRoot);</span>
 					}
 				}
 			}
 		}
 		// Debug logging removed - use Eclipse Logger for debugging if needed
-<span class="fc" id="L83">		return variableVisitor.getVariableBindings().toArray();</span>
+<span class="fc" id="L82">		return variableVisitor.getVariableBindings().toArray();</span>
 	}
 
 	private void processPackageFragmentRoot(VariableBindingVisitor variableVisitor, IPackageFragmentRoot packageRoot) {
 		try {
-<span class="nc" id="L88">			Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().forEach(packageFragment -&gt; {</span>
+<span class="nc" id="L87">			Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().forEach(packageFragment -&gt; {</span>
 				try {
-<span class="nc bnc" id="L90" title="All 2 branches missed.">					if (packageFragment.containsJavaResources()) {</span>
-<span class="nc" id="L91">						processPackageFragment(variableVisitor, packageFragment);</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">					if (packageFragment.containsJavaResources()) {</span>
+<span class="nc" id="L90">						processPackageFragment(variableVisitor, packageFragment);</span>
 					}
-<span class="nc" id="L93">				} catch (JavaModelException e) {</span>
-<span class="nc" id="L94">					logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment&quot;, e));</span>
+<span class="nc" id="L92">				} catch (JavaModelException e) {</span>
+<span class="nc" id="L93">					logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment&quot;, e));</span>
 				}
-<span class="nc" id="L96">			});</span>
-<span class="nc" id="L97">		} catch (JavaModelException e1) {</span>
-<span class="nc" id="L98">			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to get package fragments from root&quot;, e1));</span>
+<span class="nc" id="L95">			});</span>
+<span class="nc" id="L96">		} catch (JavaModelException e1) {</span>
+<span class="nc" id="L97">			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to get package fragments from root&quot;, e1));</span>
 		}
-<span class="nc" id="L100">	}</span>
+<span class="nc" id="L99">	}</span>
 
 	private void processPackageFragment(VariableBindingVisitor variableVisitor, IPackageFragment packageFragment) {
 		try {
-<span class="nc bnc" id="L104" title="All 2 branches missed.">			for (ICompilationUnit compilationUnit : packageFragment.getCompilationUnits()) {</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">			for (ICompilationUnit compilationUnit : packageFragment.getCompilationUnits()) {</span>
 				// now create the AST for the ICompilationUnits
-<span class="nc" id="L106">				CompilationUnit astRoot = parseCompilationUnit(compilationUnit);</span>
-<span class="nc" id="L107">				variableVisitor.process(astRoot);</span>
+<span class="nc" id="L105">				CompilationUnit astRoot = parseCompilationUnit(compilationUnit);</span>
+<span class="nc" id="L106">				variableVisitor.process(astRoot);</span>
 			}
-<span class="nc" id="L109">		} catch (JavaModelException e1) {</span>
-<span class="nc" id="L110">			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process compilation units&quot;, e1));</span>
+<span class="nc" id="L108">		} catch (JavaModelException e1) {</span>
+<span class="nc" id="L109">			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process compilation units&quot;, e1));</span>
 		}
-<span class="nc" id="L112">	}</span>
+<span class="nc" id="L111">	}</span>
 
 	private static CompilationUnit parseCompilationUnit(ICompilationUnit compilationUnit) {
-<span class="fc" id="L115">		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);</span>
-<span class="fc" id="L116">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L117">		parser.setSource(compilationUnit);</span>
-<span class="fc" id="L118">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L119">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L114">		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);</span>
+<span class="fc" id="L115">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L116">		parser.setSource(compilationUnit);</span>
+<span class="fc" id="L117">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L118">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	@Override
 	public void dispose() {
 		// do nothing
-<span class="fc" id="L125">	}</span>
+<span class="fc" id="L124">	}</span>
 
 	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		// do nothing
-<span class="fc" id="L130">	}</span>
+<span class="fc" id="L129">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

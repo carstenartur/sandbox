@@ -185,14 +185,30 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	}
 
 	/**
+	 * Registers a visitor for ClassInstanceCreation nodes with a specific class type by name.
+	 * 
+	 * &lt;p&gt;This overload accepts a String instead of a Class to avoid deprecation warnings
+	 * when the class being filtered is deprecated (e.g., SubProgressMonitor).&lt;/p&gt;
+	 *
+	 * @param qualifiedTypeName the fully qualified class name to match (e.g., &quot;org.eclipse.core.runtime.SubProgressMonitor&quot;)
+	 * @param predicate the predicate to test and process matching nodes
+	 * @return this builder for method chaining
+	 * @since 1.2.5
+	 */
+	public AstProcessorBuilder&lt;V, T&gt; onClassInstanceCreation(String qualifiedTypeName, BiPredicate&lt;ClassInstanceCreation, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
+<span class="nc" id="L199">		processor.callClassInstanceCreationVisitor(qualifiedTypeName, predicate);</span>
+<span class="nc" id="L200">		return this;</span>
+	}
+
+	/**
 	 * Registers a visitor for VariableDeclarationFragment nodes.
 	 *
 	 * @param predicate the predicate to test and process matching nodes
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onVariableDeclarationFragment(BiPredicate&lt;VariableDeclarationFragment, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L194">		processor.callVariableDeclarationFragmentVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((VariableDeclarationFragment) node, holder));</span>
-<span class="fc" id="L195">		return this;</span>
+<span class="fc" id="L210">		processor.callVariableDeclarationFragmentVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((VariableDeclarationFragment) node, holder));</span>
+<span class="fc" id="L211">		return this;</span>
 	}
 
 	/**
@@ -202,8 +218,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onAssignment(BiPredicate&lt;Assignment, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L205">		processor.callAssignmentVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Assignment) node, holder));</span>
-<span class="fc" id="L206">		return this;</span>
+<span class="fc" id="L221">		processor.callAssignmentVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Assignment) node, holder));</span>
+<span class="fc" id="L222">		return this;</span>
 	}
 
 	/**
@@ -213,8 +229,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onBreakStatement(BiPredicate&lt;BreakStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L216">		processor.callBreakStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((BreakStatement) node, holder));</span>
-<span class="fc" id="L217">		return this;</span>
+<span class="pc" id="L232">		processor.callBreakStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((BreakStatement) node, holder));</span>
+<span class="fc" id="L233">		return this;</span>
 	}
 
 	/**
@@ -224,8 +240,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onContinueStatement(BiPredicate&lt;ContinueStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L227">		processor.callContinueStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ContinueStatement) node, holder));</span>
-<span class="fc" id="L228">		return this;</span>
+<span class="pc" id="L243">		processor.callContinueStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ContinueStatement) node, holder));</span>
+<span class="fc" id="L244">		return this;</span>
 	}
 
 	/**
@@ -235,8 +251,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onReturnStatement(BiPredicate&lt;ReturnStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L238">		processor.callReturnStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ReturnStatement) node, holder));</span>
-<span class="fc" id="L239">		return this;</span>
+<span class="fc" id="L254">		processor.callReturnStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ReturnStatement) node, holder));</span>
+<span class="fc" id="L255">		return this;</span>
 	}
 
 	/**
@@ -246,8 +262,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onThrowStatement(BiPredicate&lt;ThrowStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L249">		processor.callThrowStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ThrowStatement) node, holder));</span>
-<span class="fc" id="L250">		return this;</span>
+<span class="pc" id="L265">		processor.callThrowStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ThrowStatement) node, holder));</span>
+<span class="fc" id="L266">		return this;</span>
 	}
 
 	/**
@@ -257,8 +273,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onEnhancedForStatement(BiPredicate&lt;EnhancedForStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L260">		processor.callEnhancedForStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((EnhancedForStatement) node, holder));</span>
-<span class="fc" id="L261">		return this;</span>
+<span class="fc" id="L276">		processor.callEnhancedForStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((EnhancedForStatement) node, holder));</span>
+<span class="fc" id="L277">		return this;</span>
 	}
 
 	/**
@@ -268,8 +284,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSimpleName(BiPredicate&lt;SimpleName, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L271">		processor.callSimpleNameVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SimpleName) node, holder));</span>
-<span class="fc" id="L272">		return this;</span>
+<span class="fc" id="L287">		processor.callSimpleNameVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SimpleName) node, holder));</span>
+<span class="fc" id="L288">		return this;</span>
 	}
 	/**
 	 * Registers a visitor for AnnotationTypeDeclaration nodes.
@@ -278,8 +294,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onAnnotationTypeDeclaration(BiPredicate&lt;AnnotationTypeDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L281">		processor.callAnnotationTypeDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((AnnotationTypeDeclaration) node, holder));</span>
-<span class="nc" id="L282">		return this;</span>
+<span class="nc" id="L297">		processor.callAnnotationTypeDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((AnnotationTypeDeclaration) node, holder));</span>
+<span class="nc" id="L298">		return this;</span>
 	}
 	
 	/**
@@ -289,8 +305,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onAnnotationTypeMemberDeclaration(BiPredicate&lt;AnnotationTypeMemberDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L292">		processor.callAnnotationTypeMemberDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((AnnotationTypeMemberDeclaration) node, holder));</span>
-<span class="nc" id="L293">		return this;</span>
+<span class="nc" id="L308">		processor.callAnnotationTypeMemberDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((AnnotationTypeMemberDeclaration) node, holder));</span>
+<span class="nc" id="L309">		return this;</span>
 	}
 	
 	/**
@@ -300,8 +316,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onAnonymousClassDeclaration(BiPredicate&lt;AnonymousClassDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L303">		processor.callAnonymousClassDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((AnonymousClassDeclaration) node, holder));</span>
-<span class="nc" id="L304">		return this;</span>
+<span class="nc" id="L319">		processor.callAnonymousClassDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((AnonymousClassDeclaration) node, holder));</span>
+<span class="nc" id="L320">		return this;</span>
 	}
 	
 	/**
@@ -311,8 +327,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onArrayAccess(BiPredicate&lt;ArrayAccess, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L314">		processor.callArrayAccessVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ArrayAccess) node, holder));</span>
-<span class="nc" id="L315">		return this;</span>
+<span class="nc" id="L330">		processor.callArrayAccessVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ArrayAccess) node, holder));</span>
+<span class="nc" id="L331">		return this;</span>
 	}
 	
 	/**
@@ -322,8 +338,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onArrayCreation(BiPredicate&lt;ArrayCreation, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L325">		processor.callArrayCreationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ArrayCreation) node, holder));</span>
-<span class="nc" id="L326">		return this;</span>
+<span class="nc" id="L341">		processor.callArrayCreationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ArrayCreation) node, holder));</span>
+<span class="nc" id="L342">		return this;</span>
 	}
 	
 	/**
@@ -333,8 +349,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onArrayInitializer(BiPredicate&lt;ArrayInitializer, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L336">		processor.callArrayInitializerVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ArrayInitializer) node, holder));</span>
-<span class="nc" id="L337">		return this;</span>
+<span class="nc" id="L352">		processor.callArrayInitializerVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ArrayInitializer) node, holder));</span>
+<span class="nc" id="L353">		return this;</span>
 	}
 	
 	/**
@@ -344,8 +360,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onArrayType(BiPredicate&lt;ArrayType, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L347">		processor.callArrayTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ArrayType) node, holder));</span>
-<span class="nc" id="L348">		return this;</span>
+<span class="nc" id="L363">		processor.callArrayTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ArrayType) node, holder));</span>
+<span class="nc" id="L364">		return this;</span>
 	}
 	
 	/**
@@ -355,8 +371,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onAssertStatement(BiPredicate&lt;AssertStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L358">		processor.callAssertStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((AssertStatement) node, holder));</span>
-<span class="nc" id="L359">		return this;</span>
+<span class="nc" id="L374">		processor.callAssertStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((AssertStatement) node, holder));</span>
+<span class="nc" id="L375">		return this;</span>
 	}
 	
 	/**
@@ -366,8 +382,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onBlock(BiPredicate&lt;Block, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L369">		processor.callBlockVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Block) node, holder));</span>
-<span class="nc" id="L370">		return this;</span>
+<span class="nc" id="L385">		processor.callBlockVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Block) node, holder));</span>
+<span class="nc" id="L386">		return this;</span>
 	}
 	
 	/**
@@ -377,8 +393,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onBlockComment(BiPredicate&lt;BlockComment, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L380">		processor.callBlockCommentVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((BlockComment) node, holder));</span>
-<span class="nc" id="L381">		return this;</span>
+<span class="nc" id="L396">		processor.callBlockCommentVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((BlockComment) node, holder));</span>
+<span class="nc" id="L397">		return this;</span>
 	}
 	
 	/**
@@ -388,8 +404,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onBooleanLiteral(BiPredicate&lt;BooleanLiteral, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L391">		processor.callBooleanLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((BooleanLiteral) node, holder));</span>
-<span class="nc" id="L392">		return this;</span>
+<span class="nc" id="L407">		processor.callBooleanLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((BooleanLiteral) node, holder));</span>
+<span class="nc" id="L408">		return this;</span>
 	}
 	
 	/**
@@ -399,8 +415,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onCastExpression(BiPredicate&lt;CastExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L402">		processor.callCastExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CastExpression) node, holder));</span>
-<span class="nc" id="L403">		return this;</span>
+<span class="nc" id="L418">		processor.callCastExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CastExpression) node, holder));</span>
+<span class="nc" id="L419">		return this;</span>
 	}
 	
 	/**
@@ -410,8 +426,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onCatchClause(BiPredicate&lt;CatchClause, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L413">		processor.callCatchClauseVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CatchClause) node, holder));</span>
-<span class="nc" id="L414">		return this;</span>
+<span class="nc" id="L429">		processor.callCatchClauseVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CatchClause) node, holder));</span>
+<span class="nc" id="L430">		return this;</span>
 	}
 	
 	/**
@@ -421,8 +437,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onCharacterLiteral(BiPredicate&lt;CharacterLiteral, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L424">		processor.callCharacterLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CharacterLiteral) node, holder));</span>
-<span class="nc" id="L425">		return this;</span>
+<span class="nc" id="L440">		processor.callCharacterLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CharacterLiteral) node, holder));</span>
+<span class="nc" id="L441">		return this;</span>
 	}
 	
 	/**
@@ -432,8 +448,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onCompilationUnit(BiPredicate&lt;CompilationUnit, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L435">		processor.callCompilationUnitVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CompilationUnit) node, holder));</span>
-<span class="nc" id="L436">		return this;</span>
+<span class="nc" id="L451">		processor.callCompilationUnitVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CompilationUnit) node, holder));</span>
+<span class="nc" id="L452">		return this;</span>
 	}
 	
 	/**
@@ -443,8 +459,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onConditionalExpression(BiPredicate&lt;ConditionalExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L446">		processor.callConditionalExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ConditionalExpression) node, holder));</span>
-<span class="nc" id="L447">		return this;</span>
+<span class="nc" id="L462">		processor.callConditionalExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ConditionalExpression) node, holder));</span>
+<span class="nc" id="L463">		return this;</span>
 	}
 	
 	/**
@@ -454,8 +470,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onConstructorInvocation(BiPredicate&lt;ConstructorInvocation, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L457">		processor.callConstructorInvocationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ConstructorInvocation) node, holder));</span>
-<span class="nc" id="L458">		return this;</span>
+<span class="nc" id="L473">		processor.callConstructorInvocationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ConstructorInvocation) node, holder));</span>
+<span class="nc" id="L474">		return this;</span>
 	}
 	
 	/**
@@ -465,8 +481,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onCreationReference(BiPredicate&lt;CreationReference, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L468">		processor.callCreationReferenceVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CreationReference) node, holder));</span>
-<span class="nc" id="L469">		return this;</span>
+<span class="nc" id="L484">		processor.callCreationReferenceVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((CreationReference) node, holder));</span>
+<span class="nc" id="L485">		return this;</span>
 	}
 	
 	/**
@@ -476,8 +492,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onDimension(BiPredicate&lt;Dimension, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L479">		processor.callDimensionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Dimension) node, holder));</span>
-<span class="nc" id="L480">		return this;</span>
+<span class="nc" id="L495">		processor.callDimensionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Dimension) node, holder));</span>
+<span class="nc" id="L496">		return this;</span>
 	}
 	
 	/**
@@ -487,8 +503,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onDoStatement(BiPredicate&lt;DoStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L490">		processor.callDoStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((DoStatement) node, holder));</span>
-<span class="fc" id="L491">		return this;</span>
+<span class="pc" id="L506">		processor.callDoStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((DoStatement) node, holder));</span>
+<span class="fc" id="L507">		return this;</span>
 	}
 	
 	/**
@@ -498,8 +514,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onEmptyStatement(BiPredicate&lt;EmptyStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L501">		processor.callEmptyStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((EmptyStatement) node, holder));</span>
-<span class="nc" id="L502">		return this;</span>
+<span class="nc" id="L517">		processor.callEmptyStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((EmptyStatement) node, holder));</span>
+<span class="nc" id="L518">		return this;</span>
 	}
 	
 	/**
@@ -509,8 +525,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onEnumConstantDeclaration(BiPredicate&lt;EnumConstantDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L512">		processor.callEnumConstantDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((EnumConstantDeclaration) node, holder));</span>
-<span class="nc" id="L513">		return this;</span>
+<span class="nc" id="L528">		processor.callEnumConstantDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((EnumConstantDeclaration) node, holder));</span>
+<span class="nc" id="L529">		return this;</span>
 	}
 	
 	/**
@@ -520,8 +536,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onEnumDeclaration(BiPredicate&lt;EnumDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L523">		processor.callEnumDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((EnumDeclaration) node, holder));</span>
-<span class="nc" id="L524">		return this;</span>
+<span class="nc" id="L539">		processor.callEnumDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((EnumDeclaration) node, holder));</span>
+<span class="nc" id="L540">		return this;</span>
 	}
 	
 	/**
@@ -531,8 +547,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onExportsDirective(BiPredicate&lt;ExportsDirective, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L534">		processor.callExportsDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ExportsDirective) node, holder));</span>
-<span class="nc" id="L535">		return this;</span>
+<span class="nc" id="L550">		processor.callExportsDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ExportsDirective) node, holder));</span>
+<span class="nc" id="L551">		return this;</span>
 	}
 	
 	/**
@@ -542,8 +558,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onExpressionMethodReference(BiPredicate&lt;ExpressionMethodReference, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L545">		processor.callExpressionMethodReferenceVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ExpressionMethodReference) node, holder));</span>
-<span class="nc" id="L546">		return this;</span>
+<span class="nc" id="L561">		processor.callExpressionMethodReferenceVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ExpressionMethodReference) node, holder));</span>
+<span class="nc" id="L562">		return this;</span>
 	}
 	
 	/**
@@ -553,8 +569,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onExpressionStatement(BiPredicate&lt;ExpressionStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L556">		processor.callExpressionStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ExpressionStatement) node, holder));</span>
-<span class="nc" id="L557">		return this;</span>
+<span class="nc" id="L572">		processor.callExpressionStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ExpressionStatement) node, holder));</span>
+<span class="nc" id="L573">		return this;</span>
 	}
 	
 	/**
@@ -564,8 +580,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onFieldAccess(BiPredicate&lt;FieldAccess, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L567">		processor.callFieldAccessVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((FieldAccess) node, holder));</span>
-<span class="nc" id="L568">		return this;</span>
+<span class="nc" id="L583">		processor.callFieldAccessVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((FieldAccess) node, holder));</span>
+<span class="nc" id="L584">		return this;</span>
 	}
 	
 	/**
@@ -575,8 +591,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onFieldDeclaration(BiPredicate&lt;FieldDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L578">		processor.callFieldDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((FieldDeclaration) node, holder));</span>
-<span class="nc" id="L579">		return this;</span>
+<span class="nc" id="L594">		processor.callFieldDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((FieldDeclaration) node, holder));</span>
+<span class="nc" id="L595">		return this;</span>
 	}
 	
 	/**
@@ -586,8 +602,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onForStatement(BiPredicate&lt;ForStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L589">		processor.callForStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ForStatement) node, holder));</span>
-<span class="fc" id="L590">		return this;</span>
+<span class="pc" id="L605">		processor.callForStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ForStatement) node, holder));</span>
+<span class="fc" id="L606">		return this;</span>
 	}
 	
 	/**
@@ -597,8 +613,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onIfStatement(BiPredicate&lt;IfStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L600">		processor.callIfStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((IfStatement) node, holder));</span>
-<span class="fc" id="L601">		return this;</span>
+<span class="fc" id="L616">		processor.callIfStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((IfStatement) node, holder));</span>
+<span class="fc" id="L617">		return this;</span>
 	}
 	
 	/**
@@ -608,8 +624,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onImportDeclaration(BiPredicate&lt;ImportDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L611">		processor.callImportDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ImportDeclaration) node, holder));</span>
-<span class="nc" id="L612">		return this;</span>
+<span class="nc" id="L627">		processor.callImportDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ImportDeclaration) node, holder));</span>
+<span class="nc" id="L628">		return this;</span>
 	}
 	
 	/**
@@ -619,8 +635,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onInfixExpression(BiPredicate&lt;InfixExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L622">		processor.callInfixExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((InfixExpression) node, holder));</span>
-<span class="nc" id="L623">		return this;</span>
+<span class="nc" id="L638">		processor.callInfixExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((InfixExpression) node, holder));</span>
+<span class="nc" id="L639">		return this;</span>
 	}
 	
 	/**
@@ -630,8 +646,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onInitializer(BiPredicate&lt;Initializer, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L633">		processor.callInitializerVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Initializer) node, holder));</span>
-<span class="nc" id="L634">		return this;</span>
+<span class="nc" id="L649">		processor.callInitializerVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Initializer) node, holder));</span>
+<span class="nc" id="L650">		return this;</span>
 	}
 	
 	/**
@@ -641,8 +657,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onInstanceofExpression(BiPredicate&lt;InstanceofExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L644">		processor.callInstanceofExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((InstanceofExpression) node, holder));</span>
-<span class="nc" id="L645">		return this;</span>
+<span class="nc" id="L660">		processor.callInstanceofExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((InstanceofExpression) node, holder));</span>
+<span class="nc" id="L661">		return this;</span>
 	}
 	
 	/**
@@ -652,8 +668,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onIntersectionType(BiPredicate&lt;IntersectionType, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L655">		processor.callIntersectionTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((IntersectionType) node, holder));</span>
-<span class="nc" id="L656">		return this;</span>
+<span class="nc" id="L671">		processor.callIntersectionTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((IntersectionType) node, holder));</span>
+<span class="nc" id="L672">		return this;</span>
 	}
 	
 	/**
@@ -663,8 +679,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onJavadoc(BiPredicate&lt;Javadoc, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L666">		processor.callJavadocVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Javadoc) node, holder));</span>
-<span class="nc" id="L667">		return this;</span>
+<span class="nc" id="L682">		processor.callJavadocVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Javadoc) node, holder));</span>
+<span class="nc" id="L683">		return this;</span>
 	}
 	
 	/**
@@ -674,8 +690,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onLabeledStatement(BiPredicate&lt;LabeledStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L677">		processor.callLabeledStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((LabeledStatement) node, holder));</span>
-<span class="nc" id="L678">		return this;</span>
+<span class="nc" id="L693">		processor.callLabeledStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((LabeledStatement) node, holder));</span>
+<span class="nc" id="L694">		return this;</span>
 	}
 	
 	/**
@@ -685,8 +701,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onLambdaExpression(BiPredicate&lt;LambdaExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L688">		processor.callLambdaExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((LambdaExpression) node, holder));</span>
-<span class="nc" id="L689">		return this;</span>
+<span class="nc" id="L704">		processor.callLambdaExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((LambdaExpression) node, holder));</span>
+<span class="nc" id="L705">		return this;</span>
 	}
 	
 	/**
@@ -696,8 +712,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onLineComment(BiPredicate&lt;LineComment, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L699">		processor.callLineCommentVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((LineComment) node, holder));</span>
-<span class="nc" id="L700">		return this;</span>
+<span class="nc" id="L715">		processor.callLineCommentVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((LineComment) node, holder));</span>
+<span class="nc" id="L716">		return this;</span>
 	}
 	
 	/**
@@ -707,8 +723,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onMarkerAnnotation(BiPredicate&lt;MarkerAnnotation, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L710">		processor.callMarkerAnnotationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MarkerAnnotation) node, holder));</span>
-<span class="nc" id="L711">		return this;</span>
+<span class="nc" id="L726">		processor.callMarkerAnnotationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MarkerAnnotation) node, holder));</span>
+<span class="nc" id="L727">		return this;</span>
 	}
 	
 	/**
@@ -718,8 +734,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onMemberRef(BiPredicate&lt;MemberRef, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L721">		processor.callMemberRefVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MemberRef) node, holder));</span>
-<span class="nc" id="L722">		return this;</span>
+<span class="nc" id="L737">		processor.callMemberRefVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MemberRef) node, holder));</span>
+<span class="nc" id="L738">		return this;</span>
 	}
 	
 	/**
@@ -729,8 +745,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onMemberValuePair(BiPredicate&lt;MemberValuePair, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L732">		processor.callMemberValuePairVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MemberValuePair) node, holder));</span>
-<span class="nc" id="L733">		return this;</span>
+<span class="nc" id="L748">		processor.callMemberValuePairVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MemberValuePair) node, holder));</span>
+<span class="nc" id="L749">		return this;</span>
 	}
 	
 	/**
@@ -740,8 +756,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onMethodRef(BiPredicate&lt;MethodRef, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L743">		processor.callMethodRefVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MethodRef) node, holder));</span>
-<span class="nc" id="L744">		return this;</span>
+<span class="nc" id="L759">		processor.callMethodRefVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MethodRef) node, holder));</span>
+<span class="nc" id="L760">		return this;</span>
 	}
 	
 	/**
@@ -751,8 +767,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onMethodRefParameter(BiPredicate&lt;MethodRefParameter, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L754">		processor.callMethodRefParameterVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MethodRefParameter) node, holder));</span>
-<span class="nc" id="L755">		return this;</span>
+<span class="nc" id="L770">		processor.callMethodRefParameterVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((MethodRefParameter) node, holder));</span>
+<span class="nc" id="L771">		return this;</span>
 	}
 	
 	/**
@@ -762,8 +778,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onModifier(BiPredicate&lt;Modifier, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L765">		processor.callModifierVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Modifier) node, holder));</span>
-<span class="nc" id="L766">		return this;</span>
+<span class="nc" id="L781">		processor.callModifierVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((Modifier) node, holder));</span>
+<span class="nc" id="L782">		return this;</span>
 	}
 	
 	/**
@@ -773,8 +789,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onModuleDeclaration(BiPredicate&lt;ModuleDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L776">		processor.callModuleDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ModuleDeclaration) node, holder));</span>
-<span class="nc" id="L777">		return this;</span>
+<span class="nc" id="L792">		processor.callModuleDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ModuleDeclaration) node, holder));</span>
+<span class="nc" id="L793">		return this;</span>
 	}
 	
 	/**
@@ -784,8 +800,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onModuleModifier(BiPredicate&lt;ModuleModifier, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L787">		processor.callModuleModifierVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ModuleModifier) node, holder));</span>
-<span class="nc" id="L788">		return this;</span>
+<span class="nc" id="L803">		processor.callModuleModifierVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ModuleModifier) node, holder));</span>
+<span class="nc" id="L804">		return this;</span>
 	}
 	
 	/**
@@ -795,8 +811,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onModuleQualifiedName(BiPredicate&lt;ModuleQualifiedName, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L798">		processor.callModuleQualifiedNameVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ModuleQualifiedName) node, holder));</span>
-<span class="nc" id="L799">		return this;</span>
+<span class="nc" id="L814">		processor.callModuleQualifiedNameVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ModuleQualifiedName) node, holder));</span>
+<span class="nc" id="L815">		return this;</span>
 	}
 	
 	/**
@@ -806,8 +822,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onNameQualifiedType(BiPredicate&lt;NameQualifiedType, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L809">		processor.callNameQualifiedTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((NameQualifiedType) node, holder));</span>
-<span class="nc" id="L810">		return this;</span>
+<span class="nc" id="L825">		processor.callNameQualifiedTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((NameQualifiedType) node, holder));</span>
+<span class="nc" id="L826">		return this;</span>
 	}
 	
 	/**
@@ -817,8 +833,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onNormalAnnotation(BiPredicate&lt;NormalAnnotation, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L820">		processor.callNormalAnnotationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((NormalAnnotation) node, holder));</span>
-<span class="nc" id="L821">		return this;</span>
+<span class="nc" id="L836">		processor.callNormalAnnotationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((NormalAnnotation) node, holder));</span>
+<span class="nc" id="L837">		return this;</span>
 	}
 	
 	/**
@@ -828,8 +844,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onNullLiteral(BiPredicate&lt;NullLiteral, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L831">		processor.callNullLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((NullLiteral) node, holder));</span>
-<span class="nc" id="L832">		return this;</span>
+<span class="nc" id="L847">		processor.callNullLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((NullLiteral) node, holder));</span>
+<span class="nc" id="L848">		return this;</span>
 	}
 	
 	/**
@@ -839,8 +855,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onNumberLiteral(BiPredicate&lt;NumberLiteral, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L842">		processor.callNumberLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((NumberLiteral) node, holder));</span>
-<span class="nc" id="L843">		return this;</span>
+<span class="nc" id="L858">		processor.callNumberLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((NumberLiteral) node, holder));</span>
+<span class="nc" id="L859">		return this;</span>
 	}
 	
 	/**
@@ -850,8 +866,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onOpensDirective(BiPredicate&lt;OpensDirective, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L853">		processor.callOpensDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((OpensDirective) node, holder));</span>
-<span class="nc" id="L854">		return this;</span>
+<span class="nc" id="L869">		processor.callOpensDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((OpensDirective) node, holder));</span>
+<span class="nc" id="L870">		return this;</span>
 	}
 	
 	/**
@@ -861,8 +877,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onPackageDeclaration(BiPredicate&lt;PackageDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L864">		processor.callPackageDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PackageDeclaration) node, holder));</span>
-<span class="nc" id="L865">		return this;</span>
+<span class="nc" id="L880">		processor.callPackageDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PackageDeclaration) node, holder));</span>
+<span class="nc" id="L881">		return this;</span>
 	}
 	
 	/**
@@ -872,8 +888,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onParameterizedType(BiPredicate&lt;ParameterizedType, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L875">		processor.callParameterizedTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ParameterizedType) node, holder));</span>
-<span class="nc" id="L876">		return this;</span>
+<span class="nc" id="L891">		processor.callParameterizedTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ParameterizedType) node, holder));</span>
+<span class="nc" id="L892">		return this;</span>
 	}
 	
 	/**
@@ -883,8 +899,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onParenthesizedExpression(BiPredicate&lt;ParenthesizedExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L886">		processor.callParenthesizedExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ParenthesizedExpression) node, holder));</span>
-<span class="nc" id="L887">		return this;</span>
+<span class="nc" id="L902">		processor.callParenthesizedExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ParenthesizedExpression) node, holder));</span>
+<span class="nc" id="L903">		return this;</span>
 	}
 	
 	/**
@@ -894,8 +910,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onPatternInstanceofExpression(BiPredicate&lt;PatternInstanceofExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L897">		processor.callPatternInstanceofExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PatternInstanceofExpression) node, holder));</span>
-<span class="nc" id="L898">		return this;</span>
+<span class="nc" id="L913">		processor.callPatternInstanceofExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PatternInstanceofExpression) node, holder));</span>
+<span class="nc" id="L914">		return this;</span>
 	}
 	
 	/**
@@ -905,8 +921,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onPostfixExpression(BiPredicate&lt;PostfixExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L908">		processor.callPostfixExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PostfixExpression) node, holder));</span>
-<span class="fc" id="L909">		return this;</span>
+<span class="pc" id="L924">		processor.callPostfixExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PostfixExpression) node, holder));</span>
+<span class="fc" id="L925">		return this;</span>
 	}
 	
 	/**
@@ -916,8 +932,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onPrefixExpression(BiPredicate&lt;PrefixExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L919">		processor.callPrefixExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PrefixExpression) node, holder));</span>
-<span class="fc" id="L920">		return this;</span>
+<span class="pc" id="L935">		processor.callPrefixExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PrefixExpression) node, holder));</span>
+<span class="fc" id="L936">		return this;</span>
 	}
 	
 	/**
@@ -927,8 +943,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onPrimitiveType(BiPredicate&lt;PrimitiveType, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L930">		processor.callPrimitiveTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PrimitiveType) node, holder));</span>
-<span class="nc" id="L931">		return this;</span>
+<span class="nc" id="L946">		processor.callPrimitiveTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((PrimitiveType) node, holder));</span>
+<span class="nc" id="L947">		return this;</span>
 	}
 	
 	/**
@@ -938,8 +954,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onProvidesDirective(BiPredicate&lt;ProvidesDirective, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L941">		processor.callProvidesDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ProvidesDirective) node, holder));</span>
-<span class="nc" id="L942">		return this;</span>
+<span class="nc" id="L957">		processor.callProvidesDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ProvidesDirective) node, holder));</span>
+<span class="nc" id="L958">		return this;</span>
 	}
 	
 	/**
@@ -949,8 +965,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onQualifiedName(BiPredicate&lt;QualifiedName, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L952">		processor.callQualifiedNameVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((QualifiedName) node, holder));</span>
-<span class="nc" id="L953">		return this;</span>
+<span class="nc" id="L968">		processor.callQualifiedNameVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((QualifiedName) node, holder));</span>
+<span class="nc" id="L969">		return this;</span>
 	}
 	
 	/**
@@ -960,8 +976,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onQualifiedType(BiPredicate&lt;QualifiedType, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L963">		processor.callQualifiedTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((QualifiedType) node, holder));</span>
-<span class="nc" id="L964">		return this;</span>
+<span class="nc" id="L979">		processor.callQualifiedTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((QualifiedType) node, holder));</span>
+<span class="nc" id="L980">		return this;</span>
 	}
 	
 	/**
@@ -971,8 +987,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onRecordDeclaration(BiPredicate&lt;RecordDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L974">		processor.callRecordDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((RecordDeclaration) node, holder));</span>
-<span class="nc" id="L975">		return this;</span>
+<span class="nc" id="L990">		processor.callRecordDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((RecordDeclaration) node, holder));</span>
+<span class="nc" id="L991">		return this;</span>
 	}
 	
 	/**
@@ -982,8 +998,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onRequiresDirective(BiPredicate&lt;RequiresDirective, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L985">		processor.callRequiresDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((RequiresDirective) node, holder));</span>
-<span class="nc" id="L986">		return this;</span>
+<span class="nc" id="L1001">		processor.callRequiresDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((RequiresDirective) node, holder));</span>
+<span class="nc" id="L1002">		return this;</span>
 	}
 	
 	/**
@@ -993,8 +1009,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSimpleType(BiPredicate&lt;SimpleType, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L996">		processor.callSimpleTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SimpleType) node, holder));</span>
-<span class="nc" id="L997">		return this;</span>
+<span class="nc" id="L1012">		processor.callSimpleTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SimpleType) node, holder));</span>
+<span class="nc" id="L1013">		return this;</span>
 	}
 	
 	/**
@@ -1004,8 +1020,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSingleMemberAnnotation(BiPredicate&lt;SingleMemberAnnotation, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1007">		processor.callSingleMemberAnnotationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SingleMemberAnnotation) node, holder));</span>
-<span class="nc" id="L1008">		return this;</span>
+<span class="nc" id="L1023">		processor.callSingleMemberAnnotationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SingleMemberAnnotation) node, holder));</span>
+<span class="nc" id="L1024">		return this;</span>
 	}
 	
 	/**
@@ -1015,8 +1031,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSingleVariableDeclaration(BiPredicate&lt;SingleVariableDeclaration, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1018">		processor.callSingleVariableDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SingleVariableDeclaration) node, holder));</span>
-<span class="nc" id="L1019">		return this;</span>
+<span class="nc" id="L1034">		processor.callSingleVariableDeclarationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SingleVariableDeclaration) node, holder));</span>
+<span class="nc" id="L1035">		return this;</span>
 	}
 	
 	/**
@@ -1026,8 +1042,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onStringLiteral(BiPredicate&lt;StringLiteral, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1029">		processor.callStringLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((StringLiteral) node, holder));</span>
-<span class="nc" id="L1030">		return this;</span>
+<span class="nc" id="L1045">		processor.callStringLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((StringLiteral) node, holder));</span>
+<span class="nc" id="L1046">		return this;</span>
 	}
 	
 	/**
@@ -1037,8 +1053,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSuperConstructorInvocation(BiPredicate&lt;SuperConstructorInvocation, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1040">		processor.callSuperConstructorInvocationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SuperConstructorInvocation) node, holder));</span>
-<span class="nc" id="L1041">		return this;</span>
+<span class="nc" id="L1056">		processor.callSuperConstructorInvocationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SuperConstructorInvocation) node, holder));</span>
+<span class="nc" id="L1057">		return this;</span>
 	}
 	
 	/**
@@ -1048,8 +1064,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSuperFieldAccess(BiPredicate&lt;SuperFieldAccess, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1051">		processor.callSuperFieldAccessVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SuperFieldAccess) node, holder));</span>
-<span class="nc" id="L1052">		return this;</span>
+<span class="nc" id="L1067">		processor.callSuperFieldAccessVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SuperFieldAccess) node, holder));</span>
+<span class="nc" id="L1068">		return this;</span>
 	}
 	
 	/**
@@ -1059,8 +1075,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSuperMethodInvocation(BiPredicate&lt;SuperMethodInvocation, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1062">		processor.callSuperMethodInvocationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SuperMethodInvocation) node, holder));</span>
-<span class="nc" id="L1063">		return this;</span>
+<span class="nc" id="L1078">		processor.callSuperMethodInvocationVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SuperMethodInvocation) node, holder));</span>
+<span class="nc" id="L1079">		return this;</span>
 	}
 	
 	/**
@@ -1070,8 +1086,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSuperMethodReference(BiPredicate&lt;SuperMethodReference, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1073">		processor.callSuperMethodReferenceVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SuperMethodReference) node, holder));</span>
-<span class="nc" id="L1074">		return this;</span>
+<span class="nc" id="L1089">		processor.callSuperMethodReferenceVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SuperMethodReference) node, holder));</span>
+<span class="nc" id="L1090">		return this;</span>
 	}
 	
 	/**
@@ -1081,8 +1097,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSwitchCase(BiPredicate&lt;SwitchCase, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1084">		processor.callSwitchCaseVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SwitchCase) node, holder));</span>
-<span class="nc" id="L1085">		return this;</span>
+<span class="nc" id="L1100">		processor.callSwitchCaseVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SwitchCase) node, holder));</span>
+<span class="nc" id="L1101">		return this;</span>
 	}
 	
 	/**
@@ -1092,8 +1108,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSwitchExpression(BiPredicate&lt;SwitchExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1095">		processor.callSwitchExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SwitchExpression) node, holder));</span>
-<span class="nc" id="L1096">		return this;</span>
+<span class="nc" id="L1111">		processor.callSwitchExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SwitchExpression) node, holder));</span>
+<span class="nc" id="L1112">		return this;</span>
 	}
 	
 	/**
@@ -1103,8 +1119,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSwitchStatement(BiPredicate&lt;SwitchStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L1106">		processor.callSwitchStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SwitchStatement) node, holder));</span>
-<span class="fc" id="L1107">		return this;</span>
+<span class="pc" id="L1122">		processor.callSwitchStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SwitchStatement) node, holder));</span>
+<span class="fc" id="L1123">		return this;</span>
 	}
 	
 	/**
@@ -1114,8 +1130,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onSynchronizedStatement(BiPredicate&lt;SynchronizedStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L1117">		processor.callSynchronizedStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SynchronizedStatement) node, holder));</span>
-<span class="fc" id="L1118">		return this;</span>
+<span class="pc" id="L1133">		processor.callSynchronizedStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((SynchronizedStatement) node, holder));</span>
+<span class="fc" id="L1134">		return this;</span>
 	}
 	
 	/**
@@ -1125,8 +1141,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onTagElement(BiPredicate&lt;TagElement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1128">		processor.callTagElementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TagElement) node, holder));</span>
-<span class="nc" id="L1129">		return this;</span>
+<span class="nc" id="L1144">		processor.callTagElementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TagElement) node, holder));</span>
+<span class="nc" id="L1145">		return this;</span>
 	}
 	
 	/**
@@ -1136,8 +1152,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onTextBlock(BiPredicate&lt;TextBlock, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1139">		processor.callTextBlockVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TextBlock) node, holder));</span>
-<span class="nc" id="L1140">		return this;</span>
+<span class="nc" id="L1155">		processor.callTextBlockVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TextBlock) node, holder));</span>
+<span class="nc" id="L1156">		return this;</span>
 	}
 	
 	/**
@@ -1147,8 +1163,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onTextElement(BiPredicate&lt;TextElement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1150">		processor.callTextElementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TextElement) node, holder));</span>
-<span class="nc" id="L1151">		return this;</span>
+<span class="nc" id="L1166">		processor.callTextElementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TextElement) node, holder));</span>
+<span class="nc" id="L1167">		return this;</span>
 	}
 	
 	/**
@@ -1158,8 +1174,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onThisExpression(BiPredicate&lt;ThisExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1161">		processor.callThisExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ThisExpression) node, holder));</span>
-<span class="nc" id="L1162">		return this;</span>
+<span class="nc" id="L1177">		processor.callThisExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((ThisExpression) node, holder));</span>
+<span class="nc" id="L1178">		return this;</span>
 	}
 	
 	/**
@@ -1169,8 +1185,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onTryStatement(BiPredicate&lt;TryStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L1172">		processor.callTryStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TryStatement) node, holder));</span>
-<span class="fc" id="L1173">		return this;</span>
+<span class="pc" id="L1188">		processor.callTryStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TryStatement) node, holder));</span>
+<span class="fc" id="L1189">		return this;</span>
 	}
 	
 	/**
@@ -1180,8 +1196,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onTypeDeclarationStatement(BiPredicate&lt;TypeDeclarationStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1183">		processor.callTypeDeclarationStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TypeDeclarationStatement) node, holder));</span>
-<span class="nc" id="L1184">		return this;</span>
+<span class="nc" id="L1199">		processor.callTypeDeclarationStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TypeDeclarationStatement) node, holder));</span>
+<span class="nc" id="L1200">		return this;</span>
 	}
 	
 	/**
@@ -1191,8 +1207,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onTypeLiteral(BiPredicate&lt;TypeLiteral, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1194">		processor.callTypeLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TypeLiteral) node, holder));</span>
-<span class="nc" id="L1195">		return this;</span>
+<span class="nc" id="L1210">		processor.callTypeLiteralVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TypeLiteral) node, holder));</span>
+<span class="nc" id="L1211">		return this;</span>
 	}
 	
 	/**
@@ -1202,8 +1218,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onTypeMethodReference(BiPredicate&lt;TypeMethodReference, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1205">		processor.callTypeMethodReferenceVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TypeMethodReference) node, holder));</span>
-<span class="nc" id="L1206">		return this;</span>
+<span class="nc" id="L1221">		processor.callTypeMethodReferenceVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TypeMethodReference) node, holder));</span>
+<span class="nc" id="L1222">		return this;</span>
 	}
 	
 	/**
@@ -1213,8 +1229,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onTypeParameter(BiPredicate&lt;TypeParameter, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1216">		processor.callTypeParameterVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TypeParameter) node, holder));</span>
-<span class="nc" id="L1217">		return this;</span>
+<span class="nc" id="L1232">		processor.callTypeParameterVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((TypeParameter) node, holder));</span>
+<span class="nc" id="L1233">		return this;</span>
 	}
 	
 	/**
@@ -1224,8 +1240,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onUnionType(BiPredicate&lt;UnionType, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1227">		processor.callUnionTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((UnionType) node, holder));</span>
-<span class="nc" id="L1228">		return this;</span>
+<span class="nc" id="L1243">		processor.callUnionTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((UnionType) node, holder));</span>
+<span class="nc" id="L1244">		return this;</span>
 	}
 	
 	/**
@@ -1235,8 +1251,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onUsesDirective(BiPredicate&lt;UsesDirective, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1238">		processor.callUsesDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((UsesDirective) node, holder));</span>
-<span class="nc" id="L1239">		return this;</span>
+<span class="nc" id="L1254">		processor.callUsesDirectiveVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((UsesDirective) node, holder));</span>
+<span class="nc" id="L1255">		return this;</span>
 	}
 	
 	/**
@@ -1246,8 +1262,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onVariableDeclarationExpression(BiPredicate&lt;VariableDeclarationExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1249">		processor.callVariableDeclarationExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((VariableDeclarationExpression) node, holder));</span>
-<span class="nc" id="L1250">		return this;</span>
+<span class="nc" id="L1265">		processor.callVariableDeclarationExpressionVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((VariableDeclarationExpression) node, holder));</span>
+<span class="nc" id="L1266">		return this;</span>
 	}
 	
 	/**
@@ -1257,8 +1273,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onVariableDeclarationStatement(BiPredicate&lt;VariableDeclarationStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1260">		processor.callVariableDeclarationStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((VariableDeclarationStatement) node, holder));</span>
-<span class="nc" id="L1261">		return this;</span>
+<span class="nc" id="L1276">		processor.callVariableDeclarationStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((VariableDeclarationStatement) node, holder));</span>
+<span class="nc" id="L1277">		return this;</span>
 	}
 	
 	/**
@@ -1268,8 +1284,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onWhileStatement(BiPredicate&lt;WhileStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="pc" id="L1271">		processor.callWhileStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((WhileStatement) node, holder));</span>
-<span class="fc" id="L1272">		return this;</span>
+<span class="pc" id="L1287">		processor.callWhileStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((WhileStatement) node, holder));</span>
+<span class="fc" id="L1288">		return this;</span>
 	}
 	
 	/**
@@ -1279,8 +1295,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onWildcardType(BiPredicate&lt;WildcardType, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1282">		processor.callWildcardTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((WildcardType) node, holder));</span>
-<span class="nc" id="L1283">		return this;</span>
+<span class="nc" id="L1298">		processor.callWildcardTypeVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((WildcardType) node, holder));</span>
+<span class="nc" id="L1299">		return this;</span>
 	}
 
 	/**
@@ -1290,8 +1306,8 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onYieldStatement(BiPredicate&lt;YieldStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1293">		processor.callYieldStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((YieldStatement) node, holder));</span>
-<span class="nc" id="L1294">		return this;</span>
+<span class="nc" id="L1309">		processor.callYieldStatementVisitor((BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, T&gt;&gt;) (node, holder) -&gt; predicate.test((YieldStatement) node, holder));</span>
+<span class="nc" id="L1310">		return this;</span>
 	}
 
 	// ========== Convenience Methods for Common Patterns ==========
@@ -1304,11 +1320,11 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onIfStatementWithoutElse(BiPredicate&lt;IfStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1307">		return onIfStatement((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1308" title="All 2 branches missed.">			if (node.getElseStatement() == null) {</span>
-<span class="nc" id="L1309">				return predicate.test(node, holder);</span>
+<span class="nc" id="L1323">		return onIfStatement((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1324" title="All 2 branches missed.">			if (node.getElseStatement() == null) {</span>
+<span class="nc" id="L1325">				return predicate.test(node, holder);</span>
 			}
-<span class="nc" id="L1311">			return true;</span>
+<span class="nc" id="L1327">			return true;</span>
 		});
 	}
 
@@ -1319,11 +1335,11 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onIfStatementWithElse(BiPredicate&lt;IfStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1322">		return onIfStatement((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1323" title="All 2 branches missed.">			if (node.getElseStatement() != null) {</span>
-<span class="nc" id="L1324">				return predicate.test(node, holder);</span>
+<span class="nc" id="L1338">		return onIfStatement((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1339" title="All 2 branches missed.">			if (node.getElseStatement() != null) {</span>
+<span class="nc" id="L1340">				return predicate.test(node, holder);</span>
 			}
-<span class="nc" id="L1326">			return true;</span>
+<span class="nc" id="L1342">			return true;</span>
 		});
 	}
 
@@ -1335,11 +1351,11 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onCompoundAssignment(BiPredicate&lt;Assignment, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L1338">		return onAssignment((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1339" title="All 2 branches missed.">			if (node.getOperator() != Assignment.Operator.ASSIGN) {</span>
-<span class="nc" id="L1340">				return predicate.test(node, holder);</span>
+<span class="fc" id="L1354">		return onAssignment((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1355" title="All 2 branches missed.">			if (node.getOperator() != Assignment.Operator.ASSIGN) {</span>
+<span class="nc" id="L1356">				return predicate.test(node, holder);</span>
 			}
-<span class="nc" id="L1342">			return true;</span>
+<span class="nc" id="L1358">			return true;</span>
 		});
 	}
 
@@ -1351,11 +1367,11 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onAssignmentWithOperator(Assignment.Operator operator, BiPredicate&lt;Assignment, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1354">		return onAssignment((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1355" title="All 2 branches missed.">			if (node.getOperator() == operator) {</span>
-<span class="nc" id="L1356">				return predicate.test(node, holder);</span>
+<span class="nc" id="L1370">		return onAssignment((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1371" title="All 2 branches missed.">			if (node.getOperator() == operator) {</span>
+<span class="nc" id="L1372">				return predicate.test(node, holder);</span>
 			}
-<span class="nc" id="L1358">			return true;</span>
+<span class="nc" id="L1374">			return true;</span>
 		});
 	}
 
@@ -1366,12 +1382,12 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onPostfixIncrementOrDecrement(BiPredicate&lt;PostfixExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L1369">		return onPostfixExpression((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1370" title="All 2 branches missed.">			if (node.getOperator() == PostfixExpression.Operator.INCREMENT</span>
-<span class="nc bnc" id="L1371" title="All 2 branches missed.">					|| node.getOperator() == PostfixExpression.Operator.DECREMENT) {</span>
-<span class="nc" id="L1372">				return predicate.test(node, holder);</span>
+<span class="fc" id="L1385">		return onPostfixExpression((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1386" title="All 2 branches missed.">			if (node.getOperator() == PostfixExpression.Operator.INCREMENT</span>
+<span class="nc bnc" id="L1387" title="All 2 branches missed.">					|| node.getOperator() == PostfixExpression.Operator.DECREMENT) {</span>
+<span class="nc" id="L1388">				return predicate.test(node, holder);</span>
 			}
-<span class="nc" id="L1374">			return true;</span>
+<span class="nc" id="L1390">			return true;</span>
 		});
 	}
 
@@ -1382,12 +1398,12 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onPrefixIncrementOrDecrement(BiPredicate&lt;PrefixExpression, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L1385">		return onPrefixExpression((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1386" title="All 2 branches missed.">			if (node.getOperator() == PrefixExpression.Operator.INCREMENT</span>
-<span class="nc bnc" id="L1387" title="All 2 branches missed.">					|| node.getOperator() == PrefixExpression.Operator.DECREMENT) {</span>
-<span class="nc" id="L1388">				return predicate.test(node, holder);</span>
+<span class="fc" id="L1401">		return onPrefixExpression((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1402" title="All 2 branches missed.">			if (node.getOperator() == PrefixExpression.Operator.INCREMENT</span>
+<span class="nc bnc" id="L1403" title="All 2 branches missed.">					|| node.getOperator() == PrefixExpression.Operator.DECREMENT) {</span>
+<span class="nc" id="L1404">				return predicate.test(node, holder);</span>
 			}
-<span class="nc" id="L1390">			return true;</span>
+<span class="nc" id="L1406">			return true;</span>
 		});
 	}
 
@@ -1398,11 +1414,11 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onUnlabeledContinue(BiPredicate&lt;ContinueStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1401">		return onContinueStatement((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1402" title="All 2 branches missed.">			if (node.getLabel() == null) {</span>
-<span class="nc" id="L1403">				return predicate.test(node, holder);</span>
+<span class="nc" id="L1417">		return onContinueStatement((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1418" title="All 2 branches missed.">			if (node.getLabel() == null) {</span>
+<span class="nc" id="L1419">				return predicate.test(node, holder);</span>
 			}
-<span class="nc" id="L1405">			return true;</span>
+<span class="nc" id="L1421">			return true;</span>
 		});
 	}
 
@@ -1413,11 +1429,11 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onLabeledContinue(BiPredicate&lt;ContinueStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="fc" id="L1416">		return onContinueStatement((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1417" title="All 2 branches missed.">			if (node.getLabel() != null) {</span>
-<span class="nc" id="L1418">				return predicate.test(node, holder);</span>
+<span class="fc" id="L1432">		return onContinueStatement((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1433" title="All 2 branches missed.">			if (node.getLabel() != null) {</span>
+<span class="nc" id="L1434">				return predicate.test(node, holder);</span>
 			}
-<span class="nc" id="L1420">			return true;</span>
+<span class="nc" id="L1436">			return true;</span>
 		});
 	}
 
@@ -1428,11 +1444,11 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onReturnBoolean(BiPredicate&lt;ReturnStatement, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1431">		return onReturnStatement((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1432" title="All 2 branches missed.">			if (node.getExpression() instanceof BooleanLiteral) {</span>
-<span class="nc" id="L1433">				return predicate.test(node, holder);</span>
+<span class="nc" id="L1447">		return onReturnStatement((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1448" title="All 2 branches missed.">			if (node.getExpression() instanceof BooleanLiteral) {</span>
+<span class="nc" id="L1449">				return predicate.test(node, holder);</span>
 			}
-<span class="nc" id="L1435">			return true;</span>
+<span class="nc" id="L1451">			return true;</span>
 		});
 	}
 
@@ -1445,16 +1461,16 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return this builder for method chaining
 	 */
 	public AstProcessorBuilder&lt;V, T&gt; onStaticMethodInvocation(String className, String methodName, BiPredicate&lt;MethodInvocation, ReferenceHolder&lt;V, T&gt;&gt; predicate) {
-<span class="nc" id="L1448">		return onMethodInvocation((node, holder) -&gt; {</span>
-<span class="nc bnc" id="L1449" title="All 2 branches missed.">			if (methodName.equals(node.getName().getIdentifier())) {</span>
-<span class="nc" id="L1450">				Expression expr = node.getExpression();</span>
-<span class="nc bnc" id="L1451" title="All 2 branches missed.">				if (expr instanceof SimpleName) {</span>
-<span class="nc bnc" id="L1452" title="All 2 branches missed.">					if (className.equals(((SimpleName) expr).getIdentifier())) {</span>
-<span class="nc" id="L1453">						return predicate.test(node, holder);</span>
+<span class="nc" id="L1464">		return onMethodInvocation((node, holder) -&gt; {</span>
+<span class="nc bnc" id="L1465" title="All 2 branches missed.">			if (methodName.equals(node.getName().getIdentifier())) {</span>
+<span class="nc" id="L1466">				Expression expr = node.getExpression();</span>
+<span class="nc bnc" id="L1467" title="All 2 branches missed.">				if (expr instanceof SimpleName) {</span>
+<span class="nc bnc" id="L1468" title="All 2 branches missed.">					if (className.equals(((SimpleName) expr).getIdentifier())) {</span>
+<span class="nc" id="L1469">						return predicate.test(node, holder);</span>
 					}
 				}
 			}
-<span class="nc" id="L1457">			return true;</span>
+<span class="nc" id="L1473">			return true;</span>
 		});
 	}
 
@@ -1465,7 +1481,7 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return the underlying ASTProcessor instance
 	 */
 	public ASTProcessor&lt;ReferenceHolder&lt;V, T&gt;, V, T&gt; processor() {
-<span class="fc" id="L1468">		return processor;</span>
+<span class="fc" id="L1484">		return processor;</span>
 	}
 
 	/**
@@ -1474,7 +1490,7 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return the reference holder
 	 */
 	public ReferenceHolder&lt;V, T&gt; getDataHolder() {
-<span class="nc" id="L1477">		return dataHolder;</span>
+<span class="nc" id="L1493">		return dataHolder;</span>
 	}
 
 	/**
@@ -1483,7 +1499,7 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @return the set of processed nodes
 	 */
 	public Set&lt;ASTNode&gt; getNodesProcessed() {
-<span class="nc" id="L1486">		return nodesProcessed;</span>
+<span class="nc" id="L1502">		return nodesProcessed;</span>
 	}
 
 	/**
@@ -1493,7 +1509,7 @@ public final class AstProcessorBuilder&lt;V, T&gt; {
 	 * @param node the AST node to process
 	 */
 	public void build(ASTNode node) {
-<span class="fc" id="L1496">		processor.build(node);</span>
-<span class="fc" id="L1497">	}</span>
+<span class="fc" id="L1512">		processor.build(node);</span>
+<span class="fc" id="L1513">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

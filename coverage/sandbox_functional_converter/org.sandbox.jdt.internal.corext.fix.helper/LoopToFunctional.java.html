@@ -31,6 +31,10 @@ import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
+import org.sandbox.functional.core.tree.ConversionDecision;
+import org.sandbox.functional.core.tree.LoopKind;
+import org.sandbox.functional.core.tree.LoopTree;
+import org.sandbox.functional.core.tree.LoopTreeNode;
 
 /**
  * Converts enhanced for-loops to functional stream operations.
@@ -90,7 +94,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.C
  * @see PreconditionsChecker
  * @see Refactorer
  */
-<span class="fc" id="L93">public class LoopToFunctional extends AbstractFunctionalCall&lt;EnhancedForStatement&gt; {</span>
+<span class="fc" id="L97">public class LoopToFunctional extends AbstractFunctionalCall&lt;EnhancedForStatement&gt; {</span>
 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
@@ -98,14 +102,35 @@ import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.C
 		
 		// PHASE 8: Pre-process to detect consecutive loops adding to same collection
 		// This must happen before individual loop processing to avoid incorrect overwrites
-<span class="fc" id="L101">		detectAndProcessConsecutiveLoops(fixcore, compilationUnit, operations, nodesprocessed);</span>
+<span class="fc" id="L105">		detectAndProcessConsecutiveLoops(fixcore, compilationUnit, operations, nodesprocessed);</span>
 		
-		// Continue with individual loop processing for non-grouped loops
-<span class="fc" id="L104">		ReferenceHolder&lt;Integer, FunctionalHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L105">		ReferenceHolder&lt;ASTNode, Object&gt; sharedDataHolder = new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L106">		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
-<span class="fc" id="L107">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, nodesprocessed, visited, aholder, sharedDataHolder),(visited, aholder) -&gt; {});</span>
-<span class="fc" id="L108">	}</span>
+		// PHASE 9: Use LoopTree for nested loop analysis
+		// Continue with individual loop processing for non-grouped loops using LoopTree
+<span class="fc" id="L109">		ReferenceHolder&lt;Integer, FunctionalHolder&gt; dataHolder = ReferenceHolder.create();</span>
+<span class="fc" id="L110">		ReferenceHolder&lt;String, Object&gt; treeHolder = ReferenceHolder.create();</span>
+		
+		// Initialize the LoopTree in the shared holder
+<span class="fc" id="L113">		LoopTree tree = new LoopTree();</span>
+<span class="fc" id="L114">		treeHolder.put(&quot;tree&quot;, tree);</span>
+		
+		// Use BiPredicate (visit) and BiConsumer (endVisit) for tree-based analysis
+<span class="fc" id="L117">		HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
+				// Visit (BiPredicate): pushLoop and continue traversal
+<span class="fc" id="L119">				(visited, aholder) -&gt; visitLoop(visited, treeHolder, nodesprocessed),</span>
+				// EndVisit (BiConsumer): popLoop and make conversion decision
+<span class="fc" id="L121">				(visited, aholder) -&gt; endVisitLoop(visited, treeHolder, compilationUnit));</span>
+		
+		// After traversal, collect convertible nodes and add operations
+<span class="fc" id="L124">		List&lt;LoopTreeNode&gt; convertibleNodes = tree.getConvertibleNodes();</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">		for (LoopTreeNode node : convertibleNodes) {</span>
+<span class="fc" id="L126">			EnhancedForStatement loopStatement = (EnhancedForStatement) node.getAstNodeReference();</span>
+<span class="pc bpc" id="L127" title="2 of 4 branches missed.">			if (loopStatement != null &amp;&amp; !nodesprocessed.contains(loopStatement)) {</span>
+<span class="fc" id="L128">				ReferenceHolder&lt;ASTNode, Object&gt; sharedDataHolder = ReferenceHolder.create();</span>
+<span class="fc" id="L129">				operations.add(fixcore.rewrite(loopStatement, sharedDataHolder));</span>
+<span class="fc" id="L130">				nodesprocessed.add(loopStatement);</span>
+			}
+		}
+<span class="fc" id="L133">	}</span>
 	
 	/**
 	 * Detects and processes consecutive loops that add to the same collection.
@@ -125,72 +150,194 @@ import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.C
 			Set&lt;ASTNode&gt; nodesprocessed) {
 		
 		// Visit all blocks to find consecutive loop groups
-<span class="fc" id="L128">		compilationUnit.accept(new ASTVisitor() {</span>
+<span class="fc" id="L153">		compilationUnit.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(Block block) {
-<span class="fc" id="L131">				List&lt;ConsecutiveLoopGroup&gt; groups = ConsecutiveLoopGroupDetector.detectGroups(block);</span>
+<span class="fc" id="L156">				List&lt;ConsecutiveLoopGroup&gt; groups = ConsecutiveLoopGroupDetector.detectGroups(block);</span>
 				
-<span class="fc bfc" id="L133" title="All 2 branches covered.">				for (ConsecutiveLoopGroup group : groups) {</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">				for (ConsecutiveLoopGroup group : groups) {</span>
 					// Create a rewrite operation for this group
-<span class="fc" id="L135">					operations.add(fixcore.rewriteConsecutiveLoops(group));</span>
+<span class="fc" id="L160">					operations.add(fixcore.rewriteConsecutiveLoops(group));</span>
 					
 					// Mark all loops in the group as processed to prevent individual conversion
-<span class="fc bfc" id="L138" title="All 2 branches covered.">					for (EnhancedForStatement loop : group.getLoops()) {</span>
-<span class="fc" id="L139">						nodesprocessed.add(loop);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">					for (EnhancedForStatement loop : group.getLoops()) {</span>
+<span class="fc" id="L164">						nodesprocessed.add(loop);</span>
 					}
 				}
 				
-<span class="fc" id="L143">				return true; // Continue visiting nested blocks</span>
+<span class="fc" id="L168">				return true; // Continue visiting nested blocks</span>
 			}
 		});
-<span class="fc" id="L146">	}</span>
+<span class="fc" id="L171">	}</span>
+
+	/**
+	 * Visit handler for entering a loop node.
+	 * 
+	 * &lt;p&gt;PHASE 9: This method is called when visiting an EnhancedForStatement.
+	 * It pushes a new node onto the LoopTree and sets the AST reference.&lt;/p&gt;
+	 * 
+	 * @param visited the EnhancedForStatement being visited
+	 * @param treeHolder the holder containing the LoopTree
+	 * @param nodesprocessed the set of already processed nodes
+	 * @return true to continue visiting children, false to skip
+	 */
+	private boolean visitLoop(EnhancedForStatement visited, 
+			ReferenceHolder&lt;String, Object&gt; treeHolder,
+			Set&lt;ASTNode&gt; nodesprocessed) {
+		// Skip loops that have already been processed (e.g., as part of a consecutive loop group)
+<span class="fc bfc" id="L188" title="All 2 branches covered.">		if (nodesprocessed.contains(visited)) {</span>
+<span class="fc" id="L189">			return false; // Don't visit children of already-processed loops</span>
+		}
+		
+		// Get the LoopTree from the holder
+<span class="fc" id="L193">		LoopTree tree = (LoopTree) treeHolder.get(&quot;tree&quot;);</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">		if (tree == null) {</span>
+<span class="nc" id="L195">			return false;</span>
+		}
+		
+		// Push a new loop node onto the tree
+<span class="fc" id="L199">		LoopTreeNode node = tree.pushLoop(LoopKind.ENHANCED_FOR);</span>
+		
+		// Set the AST node reference for later rewriting
+<span class="fc" id="L202">		node.setAstNodeReference(visited);</span>
+		
+		// Populate ScopeInfo by scanning the loop body
+<span class="fc" id="L205">		LoopBodyScopeScanner scanner = new LoopBodyScopeScanner(visited);</span>
+<span class="fc" id="L206">		scanner.scan();</span>
+<span class="fc" id="L207">		scanner.populateScopeInfo(node.getScopeInfo());</span>
+		
+		// Store the scanner for access in endVisitLoop (to check referenced variables)
+<span class="fc" id="L210">		treeHolder.put(&quot;scanner_&quot; + System.identityHashCode(visited), scanner);</span>
+		
+		// Continue visiting children (nested loops)
+<span class="fc" id="L213">		return true;</span>
+	}
+	
+	/**
+	 * EndVisit handler for exiting a loop node.
+	 * 
+	 * &lt;p&gt;PHASE 9: This method is called when exiting an EnhancedForStatement.
+	 * It pops the node from the tree and makes a conversion decision based on
+	 * preconditions and whether any descendant loops are convertible.&lt;/p&gt;
+	 * 
+	 * &lt;p&gt;The conversion decision now takes ScopeInfo into account: if an inner loop
+	 * uses variables that are modified in the current (outer) loop's scope, the
+	 * inner loop may need special handling.&lt;/p&gt;
+	 * 
+	 * @param visited the EnhancedForStatement being exited
+	 * @param treeHolder the holder containing the LoopTree
+	 * @param compilationUnit the compilation unit for analysis
+	 */
+	private void endVisitLoop(EnhancedForStatement visited,
+			ReferenceHolder&lt;String, Object&gt; treeHolder,
+			CompilationUnit compilationUnit) {
+		// Get the LoopTree from the holder
+<span class="fc" id="L235">		LoopTree tree = (LoopTree) treeHolder.get(&quot;tree&quot;);</span>
+<span class="pc bpc" id="L236" title="1 of 4 branches missed.">		if (tree == null || !tree.isInsideLoop()) {</span>
+<span class="fc" id="L237">			return;</span>
+		}
+		
+		// Verify this is the correct node to pop (guard against stack corruption)
+<span class="fc" id="L241">		LoopTreeNode currentNode = tree.current();</span>
+<span class="pc bpc" id="L242" title="2 of 4 branches missed.">		if (currentNode == null || currentNode.getAstNodeReference() != visited) {</span>
+<span class="nc" id="L243">			return; // Stack mismatch - visitLoop must have returned false, so no pushLoop occurred</span>
+		}
+		
+		// Pop the current loop node
+<span class="fc" id="L247">		LoopTreeNode node = tree.popLoop();</span>
+		
+		// Make conversion decision based on bottom-up analysis
+		// If any descendant is convertible, skip this loop
+<span class="fc bfc" id="L251" title="All 2 branches covered.">		if (node.hasConvertibleDescendant()) {</span>
+<span class="fc" id="L252">			node.setDecision(ConversionDecision.SKIPPED_INNER_CONVERTED);</span>
+<span class="fc" id="L253">			return;</span>
+		}
+		
+		// Check ScopeInfo: if this loop references variables that are modified
+		// in an ANCESTOR loop's scope, it cannot be converted (lambda capture requires
+		// effectively final variables).
+		// NOTE: We only check PARENT scopes, not the current loop's own scope.
+		// Reducer patterns (like sum += item) modify variables in their own scope,
+		// which is handled correctly by PreconditionsChecker and converted to .reduce().
+<span class="fc" id="L262">		LoopBodyScopeScanner scanner = (LoopBodyScopeScanner) treeHolder.get(&quot;scanner_&quot; + System.identityHashCode(visited));</span>
+<span class="pc bpc" id="L263" title="1 of 4 branches missed.">		if (scanner != null &amp;&amp; node.getParent() != null) {</span>
+			// Walk up the tree and check if any referenced variable is modified in ancestor scopes
+<span class="fc" id="L265">			LoopTreeNode parent = node.getParent();</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">			while (parent != null) {</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">				for (String referencedVar : scanner.getReferencedVariables()) {</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">					if (parent.getScopeInfo().getModifiedVariables().contains(referencedVar)) {</span>
+<span class="fc" id="L269">						node.setDecision(ConversionDecision.NOT_CONVERTIBLE);</span>
+<span class="fc" id="L270">						return;</span>
+					}
+				}
+<span class="fc" id="L273">				parent = parent.getParent();</span>
+			}
+		}
+		
+		// Check preconditions for conversion
+<span class="fc" id="L278">		PreconditionsChecker pc = new PreconditionsChecker(visited, compilationUnit);</span>
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">		if (!pc.isSafeToRefactor()) {</span>
+<span class="nc" id="L280">			node.setDecision(ConversionDecision.NOT_CONVERTIBLE);</span>
+<span class="nc" id="L281">			return;</span>
+		}
+		
+		// Check if the loop can be analyzed for stream conversion
+<span class="fc" id="L285">		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">		if (!builder.analyze()) {</span>
+<span class="fc" id="L287">			node.setDecision(ConversionDecision.NOT_CONVERTIBLE);</span>
+<span class="fc" id="L288">			return;</span>
+		}
+		
+		// Loop is convertible
+<span class="fc" id="L292">		node.setDecision(ConversionDecision.CONVERTIBLE);</span>
+<span class="fc" id="L293">	}</span>
 
 	private boolean processFoundNode(UseFunctionalCallFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, EnhancedForStatement visited,
 			ReferenceHolder&lt;Integer, FunctionalHolder&gt; dataHolder, ReferenceHolder&lt;ASTNode, Object&gt; sharedDataHolder) {
 		// Skip loops that have already been processed (e.g., as part of a consecutive loop group)
-<span class="fc bfc" id="L152" title="All 2 branches covered.">		if (nodesprocessed.contains(visited)) {</span>
-<span class="fc" id="L153">			return false; // Don't visit children of already-processed loops</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">		if (nodesprocessed.contains(visited)) {</span>
+<span class="nc" id="L300">			return false; // Don't visit children of already-processed loops</span>
 		}
 		
-<span class="fc" id="L156">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
-<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		if (!pc.isSafeToRefactor()) {</span>
+<span class="nc" id="L303">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">		if (!pc.isSafeToRefactor()) {</span>
 			// Loop cannot be safely refactored to functional style
 			// Return true to continue visiting children - inner loops may still be convertible
-<span class="nc" id="L160">			return false;</span>
+<span class="nc" id="L307">			return false;</span>
 		}
 		// Check if the loop can be analyzed for stream conversion
-<span class="fc" id="L163">		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);</span>
-<span class="fc bfc" id="L164" title="All 2 branches covered.">		if (!builder.analyze()) {</span>
+<span class="nc" id="L310">		StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">		if (!builder.analyze()) {</span>
 			// Cannot convert this loop to functional style
 			// Return true to continue visiting children - inner loops may still be convertible
-<span class="fc" id="L167">			return false;</span>
+<span class="nc" id="L314">			return false;</span>
 		}
 		// V1 doesn't need to store data in the holder, but we pass it to maintain signature compatibility
-<span class="fc" id="L170">		operations.add(fixcore.rewrite(visited, sharedDataHolder));</span>
-<span class="fc" id="L171">		nodesprocessed.add(visited);</span>
+<span class="nc" id="L317">		operations.add(fixcore.rewrite(visited, sharedDataHolder));</span>
+<span class="nc" id="L318">		nodesprocessed.add(visited);</span>
 		// Return false to prevent visiting children since this loop was converted
 		// (children are now part of the lambda expression)
-<span class="fc" id="L174">		return false;</span>
+<span class="nc" id="L321">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore upp, final EnhancedForStatement visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group, 
 			org.sandbox.jdt.internal.common.ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
-<span class="fc" id="L181">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L182">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
-<span class="fc" id="L183">		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group, cuRewrite);</span>
+<span class="fc" id="L328">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L329">		PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());</span>
+<span class="fc" id="L330">		Refactorer refactorer = new Refactorer(visited, rewrite, pc, group, cuRewrite);</span>
 		// Preconditions already checked in find(), but refactorer.refactor() handles edge cases
-<span class="fc" id="L185">		refactorer.refactor();</span>
-<span class="fc" id="L186">	}</span>
+<span class="fc" id="L332">		refactorer.refactor();</span>
+<span class="fc" id="L333">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L190" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L191">			return &quot;ls.forEach(l -&gt; {\n	System.out.println(l);\n});\n&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L338">			return &quot;ls.forEach(l -&gt; {\n	System.out.println(l);\n});\n&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L193">		return &quot;for (Integer l : ls)\n	System.out.println(l);\n\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L340">		return &quot;for (Integer l : ls)\n	System.out.println(l);\n\n&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

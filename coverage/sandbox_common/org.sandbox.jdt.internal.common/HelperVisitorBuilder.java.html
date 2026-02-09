@@ -79,7 +79,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
     
     /**
      * Terminal operation that processes each found node with the given processor.
-     * The processor accepts ASTNode to allow handling different node types polymorphically.
+     * The processor accepts the specific node type T (e.g., MethodInvocation, ClassInstanceCreation).
      * The processor returns a boolean - return false to stop visiting.
      * 
      * @param &lt;V&gt; the type of keys in the reference holder
@@ -87,7 +87,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @param processor the bi-predicate that processes each found node
      * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
      */
-    public &lt;V, H&gt; void processEach(BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor) {
+    public &lt;V, H&gt; void processEach(BiPredicate&lt;T, ReferenceHolder&lt;V, H&gt;&gt; processor) {
 <span class="fc" id="L91">        validateState();</span>
 <span class="fc" id="L92">        ReferenceHolder&lt;V, H&gt; holder = new ReferenceHolder&lt;&gt;();</span>
 <span class="fc" id="L93">        executeVisitors(holder, processor);</span>
@@ -96,7 +96,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
     /**
      * Terminal operation that processes each found node with the given processor,
      * using a pre-initialized ReferenceHolder for data collection.
-     * The processor accepts ASTNode to allow handling different node types polymorphically.
+     * The processor accepts the specific node type T (e.g., MethodInvocation, ClassInstanceCreation).
      * The processor returns a boolean - return false to stop visiting.
      * 
      * @param &lt;V&gt; the type of keys in the reference holder
@@ -105,7 +105,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @param processor the bi-predicate that processes each found node
      * @throws IllegalStateException if the compilation unit was not configured via {@code in(...)}
      */
-    public &lt;V, H&gt; void processEach(ReferenceHolder&lt;V, H&gt; holder, BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor) {
+    public &lt;V, H&gt; void processEach(ReferenceHolder&lt;V, H&gt; holder, BiPredicate&lt;T, ReferenceHolder&lt;V, H&gt;&gt; processor) {
 <span class="fc" id="L109">        validateState();</span>
 <span class="fc" id="L110">        executeVisitors(holder, processor);</span>
 <span class="fc" id="L111">    }</span>
@@ -150,6 +150,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
      * @param processor the processor to call for each found node
      */
     protected abstract &lt;V, H&gt; void executeVisitors(ReferenceHolder&lt;V, H&gt; holder, 
-            BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor);
+            BiPredicate&lt;T, ReferenceHolder&lt;V, H&gt;&gt; processor);
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

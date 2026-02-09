@@ -90,30 +90,29 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 <span class="fc" id="L90">			VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>
 <span class="fc" id="L91">			String currentVarName = context.getCurrentVariableName();</span>
 
-			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L94">			List&lt;VariableDeclarationFragment&gt; fragments = varDecl.fragments();</span>
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">			if (fragments.isEmpty()) {</span>
-<span class="nc" id="L96">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc" id="L93">			List&lt;VariableDeclarationFragment&gt; fragments = varDecl.fragments();</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			if (fragments.isEmpty()) {</span>
+<span class="nc" id="L95">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
-<span class="fc" id="L99">			VariableDeclarationFragment frag = fragments.get(0);</span>
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">			if (frag.getInitializer() == null) {</span>
-<span class="nc" id="L101">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc" id="L98">			VariableDeclarationFragment frag = fragments.get(0);</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">			if (frag.getInitializer() == null) {</span>
+<span class="nc" id="L100">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
-<span class="fc" id="L104">			String newVarName = frag.getName().getIdentifier();</span>
+<span class="fc" id="L103">			String newVarName = frag.getName().getIdentifier();</span>
 			
 			// Create MAP operation for the variable declaration
-<span class="fc" id="L107">			ProspectiveOperation mapOp = new ProspectiveOperation(frag.getInitializer(),</span>
-<span class="fc" id="L108">					OperationType.MAP, newVarName);</span>
-<span class="fc" id="L109">			ops.add(mapOp);</span>
+<span class="fc" id="L106">			ProspectiveOperation mapOp = new ProspectiveOperation(frag.getInitializer(),</span>
+<span class="fc" id="L107">					OperationType.MAP, newVarName);</span>
+<span class="fc" id="L108">			ops.add(mapOp);</span>
 
 			// Check if we need to wrap remaining non-terminal statements in a MAP
-<span class="fc bfc" id="L112" title="All 2 branches covered.">			if (shouldWrapRemaining(context, newVarName)) {</span>
-<span class="fc" id="L113">				return wrapRemainingStatements(context, ops, newVarName, handlerContext);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">			if (shouldWrapRemaining(context, newVarName)) {</span>
+<span class="fc" id="L112">				return wrapRemainingStatements(context, ops, newVarName, handlerContext);</span>
 			}
 
-<span class="fc" id="L116">			return new LoopBodyParser.ParseResult(newVarName);</span>
+<span class="fc" id="L115">			return new LoopBodyParser.ParseResult(newVarName);</span>
 		}
 		
 		/**
@@ -124,59 +123,59 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		 * @return true if remaining statements should be wrapped
 		 */
 		private boolean shouldWrapRemaining(StatementParsingContext context, String newVarName) {
-<span class="fc" id="L127">			List&lt;Statement&gt; statements = context.getAllStatements();</span>
-<span class="fc" id="L128">			int currentIndex = context.getCurrentIndex();</span>
+<span class="fc" id="L126">			List&lt;Statement&gt; statements = context.getAllStatements();</span>
+<span class="fc" id="L127">			int currentIndex = context.getCurrentIndex();</span>
 			
-<span class="pc bpc" id="L130" title="1 of 4 branches missed.">			if (statements == null || currentIndex &gt;= statements.size() - 2) {</span>
-<span class="fc" id="L131">				return false;</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">			if (statements == null || currentIndex &gt;= statements.size() - 2) {</span>
+<span class="fc" id="L130">				return false;</span>
 			}
 
-<span class="fc" id="L134">			IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();</span>
+<span class="fc" id="L133">			IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();</span>
 
 			// Look through remaining non-terminal statements
-<span class="fc bfc" id="L137" title="All 2 branches covered.">			for (int j = currentIndex + 1; j &lt; statements.size() - 1; j++) {</span>
-<span class="fc" id="L138">				Statement stmt = statements.get(j);</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">			for (int j = currentIndex + 1; j &lt; statements.size() - 1; j++) {</span>
+<span class="fc" id="L137">				Statement stmt = statements.get(j);</span>
 
-<span class="fc bfc" id="L140" title="All 2 branches covered.">				if (stmt instanceof IfStatement) {</span>
-<span class="fc" id="L141">					IfStatement ifStmt = (IfStatement) stmt;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">				if (stmt instanceof IfStatement) {</span>
+<span class="fc" id="L140">					IfStatement ifStmt = (IfStatement) stmt;</span>
 
 					// Don't wrap if this is an early return IF or continue IF
-<span class="fc" id="L144">					if (ifAnalyzer.isEarlyReturnIf(ifStmt, </span>
-<span class="fc" id="L145">							context.isAnyMatchPattern(), </span>
-<span class="fc" id="L146">							context.isNoneMatchPattern(), </span>
-<span class="pc bpc" id="L147" title="1 of 2 branches missed.">							context.isAllMatchPattern())) {</span>
-<span class="nc" id="L148">						return false;</span>
+<span class="fc" id="L143">					if (ifAnalyzer.isEarlyReturnIf(ifStmt, </span>
+<span class="fc" id="L144">							context.isAnyMatchPattern(), </span>
+<span class="fc" id="L145">							context.isNoneMatchPattern(), </span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">							context.isAllMatchPattern())) {</span>
+<span class="nc" id="L147">						return false;</span>
 					}
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">					if (ifAnalyzer.isIfWithContinue(ifStmt)) {</span>
-<span class="nc" id="L151">						return false;</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">					if (ifAnalyzer.isIfWithContinue(ifStmt)) {</span>
+<span class="nc" id="L150">						return false;</span>
 					}
-<span class="pc bpc" id="L153" title="1 of 2 branches missed.">					if (ifStmt.getElseStatement() == null) {</span>
-<span class="fc" id="L154">						return true;</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">					if (ifStmt.getElseStatement() == null) {</span>
+<span class="fc" id="L153">						return true;</span>
 					}
 				}
 				
 				// Don't wrap if the statement is an assignment to a variable that will be 
 				// handled by ASSIGNMENT_MAP (assignment to the produced variable)
-<span class="fc bfc" id="L160" title="All 2 branches covered.">				if (isAssignmentToProducedVariable(stmt, context, newVarName)) {</span>
-<span class="fc" id="L161">					return false;</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">				if (isAssignmentToProducedVariable(stmt, context, newVarName)) {</span>
+<span class="fc" id="L160">					return false;</span>
 				}
 			}
 
 			// Also wrap if there are multiple non-terminal side-effect statements
-<span class="fc" id="L166">			int nonTerminalCount = statements.size() - currentIndex - 2;</span>
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">			if (nonTerminalCount &gt; 0) {</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">				for (int j = currentIndex + 1; j &lt; statements.size() - 1; j++) {</span>
-<span class="fc" id="L169">					Statement stmt = statements.get(j);</span>
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">					if (!(stmt instanceof VariableDeclarationStatement)) {</span>
+<span class="fc" id="L165">			int nonTerminalCount = statements.size() - currentIndex - 2;</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">			if (nonTerminalCount &gt; 0) {</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">				for (int j = currentIndex + 1; j &lt; statements.size() - 1; j++) {</span>
+<span class="fc" id="L168">					Statement stmt = statements.get(j);</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">					if (!(stmt instanceof VariableDeclarationStatement)) {</span>
 						// Check if it's an assignment that will be handled by ASSIGNMENT_MAP
-<span class="nc bnc" id="L172" title="All 2 branches missed.">						if (!isAssignmentToProducedVariable(stmt, context, newVarName)) {</span>
-<span class="nc" id="L173">							return true;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">						if (!isAssignmentToProducedVariable(stmt, context, newVarName)) {</span>
+<span class="nc" id="L172">							return true;</span>
 						}
 					}
 				}
 			}
 
-<span class="fc" id="L179">			return false;</span>
+<span class="fc" id="L178">			return false;</span>
 		}
 		
 		/**
@@ -189,20 +188,20 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		 * @return true if the statement is an assignment to newVarName
 		 */
 		private boolean isAssignmentToProducedVariable(Statement stmt, StatementParsingContext context, String newVarName) {
-<span class="fc bfc" id="L192" title="All 2 branches covered.">			if (!(stmt instanceof ExpressionStatement)) {</span>
-<span class="fc" id="L193">				return false;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">			if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="fc" id="L192">				return false;</span>
 			}
-<span class="fc" id="L195">			Expression expr = ((ExpressionStatement) stmt).getExpression();</span>
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">			if (!(expr instanceof Assignment)) {</span>
-<span class="nc" id="L197">				return false;</span>
+<span class="fc" id="L194">			Expression expr = ((ExpressionStatement) stmt).getExpression();</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">			if (!(expr instanceof Assignment)) {</span>
+<span class="nc" id="L196">				return false;</span>
 			}
-<span class="fc" id="L199">			Assignment assignment = (Assignment) expr;</span>
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">			if (!(assignment.getLeftHandSide() instanceof SimpleName)) {</span>
-<span class="nc" id="L201">				return false;</span>
+<span class="fc" id="L198">			Assignment assignment = (Assignment) expr;</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">			if (!(assignment.getLeftHandSide() instanceof SimpleName)) {</span>
+<span class="nc" id="L200">				return false;</span>
 			}
 			// Check if the LHS is the new variable name (the one we just declared)
-<span class="fc" id="L204">			SimpleName lhs = (SimpleName) assignment.getLeftHandSide();</span>
-<span class="fc" id="L205">			return lhs.getIdentifier().equals(newVarName);</span>
+<span class="fc" id="L203">			SimpleName lhs = (SimpleName) assignment.getLeftHandSide();</span>
+<span class="fc" id="L204">			return lhs.getIdentifier().equals(newVarName);</span>
 		}
 
 		/**
@@ -211,44 +210,44 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		private LoopBodyParser.ParseResult wrapRemainingStatements(StatementParsingContext context,
 				List&lt;ProspectiveOperation&gt; ops, String newVarName, StatementHandlerContext handlerContext) {
 			
-<span class="fc" id="L214">			List&lt;Statement&gt; statements = context.getAllStatements();</span>
-<span class="fc" id="L215">			int currentIndex = context.getCurrentIndex();</span>
-<span class="fc" id="L216">			ReducePatternDetector reduceDetector = context.getReduceDetector();</span>
+<span class="fc" id="L213">			List&lt;Statement&gt; statements = context.getAllStatements();</span>
+<span class="fc" id="L214">			int currentIndex = context.getCurrentIndex();</span>
+<span class="fc" id="L215">			ReducePatternDetector reduceDetector = context.getReduceDetector();</span>
 
 			// Collect non-terminal statements to wrap
-<span class="fc" id="L219">			Block wrapBlock = context.getAst().newBlock();</span>
-<span class="fc bfc" id="L220" title="All 2 branches covered.">			for (int j = currentIndex + 1; j &lt; statements.size() - 1; j++) {</span>
-<span class="fc" id="L221">				Statement stmt = statements.get(j);</span>
-<span class="fc" id="L222">				wrapBlock.statements().add(ASTNode.copySubtree(context.getAst(), stmt));</span>
+<span class="fc" id="L218">			Block wrapBlock = context.getAst().newBlock();</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">			for (int j = currentIndex + 1; j &lt; statements.size() - 1; j++) {</span>
+<span class="fc" id="L220">				Statement stmt = statements.get(j);</span>
+<span class="fc" id="L221">				wrapBlock.statements().add(ASTNode.copySubtree(context.getAst(), stmt));</span>
 			}
 
 			// Create wrapped MAP operation
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">			if (wrapBlock.statements().size() &gt; 0) {</span>
-<span class="fc" id="L227">				ProspectiveOperation wrappedMapOp = new ProspectiveOperation(wrapBlock,</span>
-<span class="fc" id="L228">						OperationType.MAP, newVarName);</span>
-<span class="fc" id="L229">				ops.add(wrappedMapOp);</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">			if (wrapBlock.statements().size() &gt; 0) {</span>
+<span class="fc" id="L226">				ProspectiveOperation wrappedMapOp = new ProspectiveOperation(wrapBlock,</span>
+<span class="fc" id="L227">						OperationType.MAP, newVarName);</span>
+<span class="fc" id="L228">				ops.add(wrappedMapOp);</span>
 			}
 
 			// Process the terminal statement
-<span class="fc" id="L233">			Statement lastStmt = statements.get(statements.size() - 1);</span>
-<span class="fc" id="L234">			ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(lastStmt);</span>
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">			if (reduceOp != null) {</span>
-<span class="nc" id="L236">				reduceDetector.addMapBeforeReduce(ops, reduceOp, lastStmt, newVarName, context.getAst());</span>
-<span class="nc" id="L237">				ops.add(reduceOp);</span>
-<span class="nc" id="L238">			} else {</span>
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">				if (handlerContext.getSideEffectChecker().isSafeSideEffect(lastStmt, newVarName, ops)) {</span>
-<span class="fc" id="L240">					ProspectiveOperation forEachOp = new ProspectiveOperation(lastStmt,</span>
-<span class="fc" id="L241">							OperationType.FOREACH, newVarName);</span>
-<span class="fc" id="L242">					ops.add(forEachOp);</span>
+<span class="fc" id="L232">			Statement lastStmt = statements.get(statements.size() - 1);</span>
+<span class="fc" id="L233">			ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(lastStmt);</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">			if (reduceOp != null) {</span>
+<span class="nc" id="L235">				reduceDetector.addMapBeforeReduce(ops, reduceOp, lastStmt, newVarName, context.getAst());</span>
+<span class="nc" id="L236">				ops.add(reduceOp);</span>
+<span class="nc" id="L237">			} else {</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">				if (handlerContext.getSideEffectChecker().isSafeSideEffect(lastStmt, newVarName, ops)) {</span>
+<span class="fc" id="L239">					ProspectiveOperation forEachOp = new ProspectiveOperation(lastStmt,</span>
+<span class="fc" id="L240">							OperationType.FOREACH, newVarName);</span>
+<span class="fc" id="L241">					ops.add(forEachOp);</span>
 				}
 			}
 
 			// Skip to the end
-<span class="fc" id="L247">			return new LoopBodyParser.ParseResult(newVarName, statements.size() - 1);</span>
+<span class="fc" id="L246">			return new LoopBodyParser.ParseResult(newVarName, statements.size() - 1);</span>
 		}
 	},
 
-<span class="fc" id="L251">	/**</span>
+<span class="fc" id="L250">	/**</span>
 	 * Handles assignment statements that transform local variables into MAP operations.
 	 * 
 	 * &lt;p&gt;This handler recognizes patterns where a variable declared within the loop body
@@ -264,60 +263,60 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 	 * }
 	 * }&lt;/pre&gt;
 	 */
-<span class="fc" id="L267">	ASSIGNMENT_MAP {</span>
+<span class="fc" id="L266">	ASSIGNMENT_MAP {</span>
 		@Override
 		public boolean canHandle(Statement stmt, StatementParsingContext context) {
 			// Only handle non-last statements
-<span class="fc bfc" id="L271" title="All 2 branches covered.">			if (context.isLastStatement()) {</span>
-<span class="fc" id="L272">				return false;</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">			if (context.isLastStatement()) {</span>
+<span class="fc" id="L271">				return false;</span>
 			}
 			
 			// Must be an ExpressionStatement with an Assignment
-<span class="fc bfc" id="L276" title="All 2 branches covered.">			if (!(stmt instanceof ExpressionStatement)) {</span>
-<span class="fc" id="L277">				return false;</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">			if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="fc" id="L276">				return false;</span>
 			}
 			
-<span class="fc" id="L280">			Expression expr = ((ExpressionStatement) stmt).getExpression();</span>
-<span class="fc bfc" id="L281" title="All 2 branches covered.">			if (!(expr instanceof Assignment)) {</span>
-<span class="fc" id="L282">				return false;</span>
+<span class="fc" id="L279">			Expression expr = ((ExpressionStatement) stmt).getExpression();</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">			if (!(expr instanceof Assignment)) {</span>
+<span class="fc" id="L281">				return false;</span>
 			}
 			
-<span class="fc" id="L285">			Assignment assignment = (Assignment) expr;</span>
+<span class="fc" id="L284">			Assignment assignment = (Assignment) expr;</span>
 			
 			// LHS must be a SimpleName (simple variable assignment)
-<span class="pc bpc" id="L288" title="1 of 2 branches missed.">			if (!(assignment.getLeftHandSide() instanceof SimpleName)) {</span>
-<span class="nc" id="L289">				return false;</span>
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">			if (!(assignment.getLeftHandSide() instanceof SimpleName)) {</span>
+<span class="nc" id="L288">				return false;</span>
 			}
 			
-<span class="fc" id="L292">			SimpleName lhs = (SimpleName) assignment.getLeftHandSide();</span>
-<span class="fc" id="L293">			String varName = lhs.getIdentifier();</span>
+<span class="fc" id="L291">			SimpleName lhs = (SimpleName) assignment.getLeftHandSide();</span>
+<span class="fc" id="L292">			String varName = lhs.getIdentifier();</span>
 			
 			// The variable being assigned must be the current pipeline variable
-<span class="fc" id="L296">			return varName.equals(context.getCurrentVariableName());</span>
+<span class="fc" id="L295">			return varName.equals(context.getCurrentVariableName());</span>
 		}
 
 		@Override
 		public LoopBodyParser.ParseResult handle(Statement stmt, StatementParsingContext context,
 				List&lt;ProspectiveOperation&gt; ops, StatementHandlerContext handlerContext) {
 			
-<span class="fc" id="L303">			ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc" id="L304">			Assignment assignment = (Assignment) exprStmt.getExpression();</span>
-<span class="fc" id="L305">			SimpleName lhs = (SimpleName) assignment.getLeftHandSide();</span>
-<span class="fc" id="L306">			String varName = lhs.getIdentifier();</span>
+<span class="fc" id="L302">			ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L303">			Assignment assignment = (Assignment) exprStmt.getExpression();</span>
+<span class="fc" id="L304">			SimpleName lhs = (SimpleName) assignment.getLeftHandSide();</span>
+<span class="fc" id="L305">			String varName = lhs.getIdentifier();</span>
 			
 			// Create a MAP operation with the RHS as the transformation expression
-<span class="fc" id="L309">			Expression rhs = assignment.getRightHandSide();</span>
+<span class="fc" id="L308">			Expression rhs = assignment.getRightHandSide();</span>
 			
-<span class="fc" id="L311">			ProspectiveOperation mapOp = new ProspectiveOperation(rhs,</span>
-<span class="fc" id="L312">					OperationType.MAP, varName);</span>
-<span class="fc" id="L313">			ops.add(mapOp);</span>
+<span class="fc" id="L310">			ProspectiveOperation mapOp = new ProspectiveOperation(rhs,</span>
+<span class="fc" id="L311">					OperationType.MAP, varName);</span>
+<span class="fc" id="L312">			ops.add(mapOp);</span>
 			
 			// Return the same variable name since the assignment doesn't change the variable name
-<span class="fc" id="L316">			return new LoopBodyParser.ParseResult(varName);</span>
+<span class="fc" id="L315">			return new LoopBodyParser.ParseResult(varName);</span>
 		}
 	},
 
-<span class="fc" id="L320">	/**</span>
+<span class="fc" id="L319">	/**</span>
 	 * Handles IF statements during loop body parsing.
 	 * 
 	 * &lt;p&gt;This handler processes IF statements and converts them to appropriate
@@ -329,54 +328,54 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 	 * &lt;li&gt;&lt;b&gt;Regular IFs&lt;/b&gt;: Converted to filter operations with nested processing&lt;/li&gt;
 	 * &lt;/ul&gt;
 	 */
-<span class="fc" id="L332">	IF_STATEMENT {</span>
+<span class="fc" id="L331">	IF_STATEMENT {</span>
 		@Override
 		public boolean canHandle(Statement stmt, StatementParsingContext context) {
-<span class="fc" id="L335">			return stmt instanceof IfStatement;</span>
+<span class="fc" id="L334">			return stmt instanceof IfStatement;</span>
 		}
 
 		@Override
 		public LoopBodyParser.ParseResult handle(Statement stmt, StatementParsingContext context,
 				List&lt;ProspectiveOperation&gt; ops, StatementHandlerContext handlerContext) {
 			
-<span class="fc" id="L342">			IfStatement ifStmt = (IfStatement) stmt;</span>
-<span class="fc" id="L343">			IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();</span>
-<span class="fc" id="L344">			String currentVarName = context.getCurrentVariableName();</span>
-<span class="fc" id="L345">			String loopVarName = context.getLoopVariableName();</span>
+<span class="fc" id="L341">			IfStatement ifStmt = (IfStatement) stmt;</span>
+<span class="fc" id="L342">			IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();</span>
+<span class="fc" id="L343">			String currentVarName = context.getCurrentVariableName();</span>
+<span class="fc" id="L344">			String loopVarName = context.getLoopVariableName();</span>
 
 			// IF with else cannot be converted
-<span class="fc bfc" id="L348" title="All 2 branches covered.">			if (ifStmt.getElseStatement() != null) {</span>
-<span class="fc" id="L349">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">			if (ifStmt.getElseStatement() != null) {</span>
+<span class="fc" id="L348">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
 			// Check for unconvertible patterns first
-<span class="fc bfc" id="L353" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithLabeledContinue(ifStmt)) {</span>
-<span class="fc" id="L354">				return LoopBodyParser.ParseResult.abort();</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithLabeledContinue(ifStmt)) {</span>
+<span class="fc" id="L353">				return LoopBodyParser.ParseResult.abort();</span>
 			}
-<span class="fc bfc" id="L356" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithBreak(ifStmt)) {</span>
-<span class="fc" id="L357">				return LoopBodyParser.ParseResult.abort();</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithBreak(ifStmt)) {</span>
+<span class="fc" id="L356">				return LoopBodyParser.ParseResult.abort();</span>
 			}
 			// Check for return statements that can't be converted (return null, return someValue)
-<span class="fc bfc" id="L360" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithUnconvertibleReturn(ifStmt)) {</span>
-<span class="fc" id="L361">				return LoopBodyParser.ParseResult.abort();</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithUnconvertibleReturn(ifStmt)) {</span>
+<span class="fc" id="L360">				return LoopBodyParser.ParseResult.abort();</span>
 			}
 			// Check for assignments to external variables inside the IF body
-<span class="fc bfc" id="L364" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithExternalAssignment(ifStmt, loopVarName)) {</span>
-<span class="fc" id="L365">				return LoopBodyParser.ParseResult.abort();</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithExternalAssignment(ifStmt, loopVarName)) {</span>
+<span class="fc" id="L364">				return LoopBodyParser.ParseResult.abort();</span>
 			}
 
 			// Try early return pattern (anyMatch/noneMatch/allMatch)
-<span class="fc bfc" id="L369" title="All 2 branches covered.">			if (tryHandleEarlyReturn(ifStmt, context, ops)) {</span>
-<span class="fc" id="L370">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">			if (tryHandleEarlyReturn(ifStmt, context, ops)) {</span>
+<span class="fc" id="L369">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
 			// Try continue pattern (filter)
-<span class="fc bfc" id="L374" title="All 2 branches covered.">			if (tryHandleContinue(ifStmt, context, ops)) {</span>
-<span class="fc" id="L375">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">			if (tryHandleContinue(ifStmt, context, ops)) {</span>
+<span class="fc" id="L374">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
 			// Regular IF: convert to filter with nested processing
-<span class="fc" id="L379">			return handleRegularIf(ifStmt, context, ops, handlerContext);</span>
+<span class="fc" id="L378">			return handleRegularIf(ifStmt, context, ops, handlerContext);</span>
 		}
 		
 		/**
@@ -385,17 +384,17 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		private boolean tryHandleEarlyReturn(IfStatement ifStmt, StatementParsingContext context,
 				List&lt;ProspectiveOperation&gt; ops) {
 			
-<span class="fc" id="L388">			IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();</span>
+<span class="fc" id="L387">			IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();</span>
 			
-<span class="fc" id="L390">			if (ifAnalyzer.isEarlyReturnIf(ifStmt, </span>
-<span class="fc" id="L391">					context.isAnyMatchPattern(), </span>
-<span class="fc" id="L392">					context.isNoneMatchPattern(), </span>
-<span class="fc bfc" id="L393" title="All 2 branches covered.">					context.isAllMatchPattern())) {</span>
-<span class="fc" id="L394">				ProspectiveOperation matchOp = ifAnalyzer.createMatchOperation(ifStmt);</span>
-<span class="fc" id="L395">				ops.add(matchOp);</span>
-<span class="fc" id="L396">				return true;</span>
+<span class="fc" id="L389">			if (ifAnalyzer.isEarlyReturnIf(ifStmt, </span>
+<span class="fc" id="L390">					context.isAnyMatchPattern(), </span>
+<span class="fc" id="L391">					context.isNoneMatchPattern(), </span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">					context.isAllMatchPattern())) {</span>
+<span class="fc" id="L393">				ProspectiveOperation matchOp = ifAnalyzer.createMatchOperation(ifStmt);</span>
+<span class="fc" id="L394">				ops.add(matchOp);</span>
+<span class="fc" id="L395">				return true;</span>
 			}
-<span class="fc" id="L398">			return false;</span>
+<span class="fc" id="L397">			return false;</span>
 		}
 		
 		/**
@@ -404,19 +403,19 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		private boolean tryHandleContinue(IfStatement ifStmt, StatementParsingContext context,
 				List&lt;ProspectiveOperation&gt; ops) {
 			
-<span class="fc" id="L407">			IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();</span>
+<span class="fc" id="L406">			IfStatementAnalyzer ifAnalyzer = context.getIfAnalyzer();</span>
 			
-<span class="fc bfc" id="L409" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithContinue(ifStmt)) {</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">			if (ifAnalyzer.isIfWithContinue(ifStmt)) {</span>
 				// Negate the condition for the filter
-<span class="fc" id="L411">				Expression condition = ifStmt.getExpression();</span>
-<span class="fc" id="L412">				Expression negatedCondition = ExpressionHelper.createNegatedExpression(context.getAst(), condition);</span>
+<span class="fc" id="L410">				Expression condition = ifStmt.getExpression();</span>
+<span class="fc" id="L411">				Expression negatedCondition = ExpressionHelper.createNegatedExpression(context.getAst(), condition);</span>
 				
-<span class="fc" id="L414">				ProspectiveOperation filterOp = new ProspectiveOperation(negatedCondition,</span>
-<span class="fc" id="L415">						OperationType.FILTER);</span>
-<span class="fc" id="L416">				ops.add(filterOp);</span>
-<span class="fc" id="L417">				return true;</span>
+<span class="fc" id="L413">				ProspectiveOperation filterOp = new ProspectiveOperation(negatedCondition,</span>
+<span class="fc" id="L414">						OperationType.FILTER);</span>
+<span class="fc" id="L415">				ops.add(filterOp);</span>
+<span class="fc" id="L416">				return true;</span>
 			}
-<span class="fc" id="L419">			return false;</span>
+<span class="fc" id="L418">			return false;</span>
 		}
 		
 		/**
@@ -425,68 +424,68 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		private LoopBodyParser.ParseResult handleRegularIf(IfStatement ifStmt, StatementParsingContext context,
 				List&lt;ProspectiveOperation&gt; ops, StatementHandlerContext handlerContext) {
 			
-<span class="fc" id="L428">			String currentVarName = context.getCurrentVariableName();</span>
+<span class="fc" id="L427">			String currentVarName = context.getCurrentVariableName();</span>
 			
 			// Create filter operation
-<span class="fc" id="L431">			ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),</span>
-<span class="fc" id="L432">					OperationType.FILTER);</span>
-<span class="fc" id="L433">			ops.add(filterOp);</span>
+<span class="fc" id="L430">			ProspectiveOperation filterOp = new ProspectiveOperation(ifStmt.getExpression(),</span>
+<span class="fc" id="L431">					OperationType.FILTER);</span>
+<span class="fc" id="L432">			ops.add(filterOp);</span>
 
 			// Recursively parse the then-branch
-<span class="fc" id="L436">			List&lt;ProspectiveOperation&gt; nestedOps = handlerContext.getParser().parse(</span>
-<span class="fc" id="L437">					ifStmt.getThenStatement(), currentVarName);</span>
-<span class="fc" id="L438">			ops.addAll(nestedOps);</span>
+<span class="fc" id="L435">			List&lt;ProspectiveOperation&gt; nestedOps = handlerContext.getParser().parse(</span>
+<span class="fc" id="L436">					ifStmt.getThenStatement(), currentVarName);</span>
+<span class="fc" id="L437">			ops.addAll(nestedOps);</span>
 			
-<span class="fc" id="L440">			return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc" id="L439">			return new LoopBodyParser.ParseResult(currentVarName);</span>
 		}
 	},
 
-<span class="fc" id="L444">	/**</span>
+<span class="fc" id="L443">	/**</span>
 	 * Handles non-terminal statements (not the last statement in a block).
 	 * 
 	 * &lt;p&gt;Non-terminal statements that are not variable declarations or IF statements
 	 * are typically side-effect statements that need to be wrapped in a MAP operation
 	 * that returns the current variable.&lt;/p&gt;
 	 */
-<span class="fc" id="L451">	NON_TERMINAL {</span>
+<span class="fc" id="L450">	NON_TERMINAL {</span>
 		@Override
 		public boolean canHandle(Statement stmt, StatementParsingContext context) {
 			// This handler is for non-last statements that are not IF or VariableDeclaration
-<span class="fc bfc" id="L455" title="All 2 branches covered.">			return !context.isLastStatement() </span>
-<span class="pc bpc" id="L456" title="1 of 2 branches missed.">					&amp;&amp; !(stmt instanceof IfStatement)</span>
-<span class="pc bpc" id="L457" title="1 of 2 branches missed.">					&amp;&amp; !(stmt instanceof VariableDeclarationStatement);</span>
+<span class="fc bfc" id="L454" title="All 2 branches covered.">			return !context.isLastStatement() </span>
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">					&amp;&amp; !(stmt instanceof IfStatement)</span>
+<span class="pc bpc" id="L456" title="1 of 2 branches missed.">					&amp;&amp; !(stmt instanceof VariableDeclarationStatement);</span>
 		}
 
 		@Override
 		public LoopBodyParser.ParseResult handle(Statement stmt, StatementParsingContext context,
 				List&lt;ProspectiveOperation&gt; ops, StatementHandlerContext handlerContext) {
 			
-<span class="fc" id="L464">			ReducePatternDetector reduceDetector = context.getReduceDetector();</span>
-<span class="fc" id="L465">			String currentVarName = context.getCurrentVariableName();</span>
-<span class="fc" id="L466">			SideEffectChecker sideEffectChecker = handlerContext.getSideEffectChecker();</span>
+<span class="fc" id="L463">			ReducePatternDetector reduceDetector = context.getReduceDetector();</span>
+<span class="fc" id="L464">			String currentVarName = context.getCurrentVariableName();</span>
+<span class="fc" id="L465">			SideEffectChecker sideEffectChecker = handlerContext.getSideEffectChecker();</span>
 
 			// Check if this is a REDUCE operation (shouldn't be in middle of block, but check anyway)
-<span class="fc" id="L469">			ProspectiveOperation reduceCheck = reduceDetector.detectReduceOperation(stmt);</span>
-<span class="pc bpc" id="L470" title="1 of 2 branches missed.">			if (reduceCheck != null) {</span>
+<span class="fc" id="L468">			ProspectiveOperation reduceCheck = reduceDetector.detectReduceOperation(stmt);</span>
+<span class="pc bpc" id="L469" title="1 of 2 branches missed.">			if (reduceCheck != null) {</span>
 				// REDUCE in middle of block - just continue, don't add it
-<span class="nc" id="L472">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="nc" id="L471">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
 			// Check if this is a safe side-effect
-<span class="fc bfc" id="L476" title="All 2 branches covered.">			if (!sideEffectChecker.isSafeSideEffect(stmt, currentVarName, ops)) {</span>
-<span class="fc" id="L477">				return LoopBodyParser.ParseResult.abort();</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">			if (!sideEffectChecker.isSafeSideEffect(stmt, currentVarName, ops)) {</span>
+<span class="fc" id="L476">				return LoopBodyParser.ParseResult.abort();</span>
 			}
 
 			// Create a MAP operation with side effect that returns the current variable
-<span class="fc" id="L481">			ProspectiveOperation mapOp = new ProspectiveOperation(stmt,</span>
-<span class="fc" id="L482">					OperationType.MAP, currentVarName);</span>
-<span class="fc" id="L483">			ops.add(mapOp);</span>
+<span class="fc" id="L480">			ProspectiveOperation mapOp = new ProspectiveOperation(stmt,</span>
+<span class="fc" id="L481">					OperationType.MAP, currentVarName);</span>
+<span class="fc" id="L482">			ops.add(mapOp);</span>
 
-<span class="fc" id="L485">			return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc" id="L484">			return new LoopBodyParser.ParseResult(currentVarName);</span>
 		}
 	},
 
-<span class="fc" id="L489">	/**</span>
+<span class="fc" id="L488">	/**</span>
 	 * Handles terminal statements (last statement in a block).
 	 * 
 	 * &lt;p&gt;Terminal statements can be:&lt;/p&gt;
@@ -496,79 +495,79 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 	 * &lt;li&gt;&lt;b&gt;Unconvertible&lt;/b&gt;: Return, continue, throw statements&lt;/li&gt;
 	 * &lt;/ul&gt;
 	 */
-<span class="fc" id="L499">	TERMINAL {</span>
+<span class="fc" id="L498">	TERMINAL {</span>
 		@Override
 		public boolean canHandle(Statement stmt, StatementParsingContext context) {
 			// This handler is for last statements only
-<span class="fc" id="L503">			return context.isLastStatement();</span>
+<span class="fc" id="L502">			return context.isLastStatement();</span>
 		}
 
 		@Override
 		public LoopBodyParser.ParseResult handle(Statement stmt, StatementParsingContext context,
 				List&lt;ProspectiveOperation&gt; ops, StatementHandlerContext handlerContext) {
 			
-<span class="fc" id="L510">			CollectPatternDetector collectDetector = context.getCollectDetector();</span>
-<span class="fc" id="L511">			ReducePatternDetector reduceDetector = context.getReduceDetector();</span>
-<span class="fc" id="L512">			String currentVarName = context.getCurrentVariableName();</span>
-<span class="fc" id="L513">			SideEffectChecker sideEffectChecker = handlerContext.getSideEffectChecker();</span>
+<span class="fc" id="L509">			CollectPatternDetector collectDetector = context.getCollectDetector();</span>
+<span class="fc" id="L510">			ReducePatternDetector reduceDetector = context.getReduceDetector();</span>
+<span class="fc" id="L511">			String currentVarName = context.getCurrentVariableName();</span>
+<span class="fc" id="L512">			SideEffectChecker sideEffectChecker = handlerContext.getSideEffectChecker();</span>
 
 			// Try COLLECT pattern first
-<span class="fc" id="L516">			ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);</span>
-<span class="fc bfc" id="L517" title="All 2 branches covered.">			if (collectOp != null) {</span>
+<span class="fc" id="L515">			ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">			if (collectOp != null) {</span>
 				// For COLLECT, we might need a MAP operation before it if the added expression is not identity
-<span class="fc" id="L519">				Expression addedExpr = collectDetector.extractCollectExpression(stmt);</span>
-<span class="pc bpc" id="L520" title="1 of 4 branches missed.">				if (addedExpr != null &amp;&amp; !isIdentityMapping(addedExpr, currentVarName)) {</span>
+<span class="fc" id="L518">				Expression addedExpr = collectDetector.extractCollectExpression(stmt);</span>
+<span class="pc bpc" id="L519" title="1 of 4 branches missed.">				if (addedExpr != null &amp;&amp; !isIdentityMapping(addedExpr, currentVarName)) {</span>
 					// Create a MAP operation for the transformation
-<span class="fc" id="L522">					ProspectiveOperation mapOp = new ProspectiveOperation(addedExpr, OperationType.MAP, currentVarName);</span>
-<span class="fc" id="L523">					ops.add(mapOp);</span>
+<span class="fc" id="L521">					ProspectiveOperation mapOp = new ProspectiveOperation(addedExpr, OperationType.MAP, currentVarName);</span>
+<span class="fc" id="L522">					ops.add(mapOp);</span>
 				}
-<span class="fc" id="L525">				ops.add(collectOp);</span>
-<span class="fc" id="L526">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc" id="L524">				ops.add(collectOp);</span>
+<span class="fc" id="L525">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
 			// Try REDUCE pattern
-<span class="fc" id="L530">			ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);</span>
-<span class="fc bfc" id="L531" title="All 2 branches covered.">			if (reduceOp != null) {</span>
-<span class="fc" id="L532">				reduceDetector.addMapBeforeReduce(ops, reduceOp, stmt, currentVarName, context.getAst());</span>
-<span class="fc" id="L533">				ops.add(reduceOp);</span>
-<span class="fc" id="L534">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc" id="L529">			ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);</span>
+<span class="fc bfc" id="L530" title="All 2 branches covered.">			if (reduceOp != null) {</span>
+<span class="fc" id="L531">				reduceDetector.addMapBeforeReduce(ops, reduceOp, stmt, currentVarName, context.getAst());</span>
+<span class="fc" id="L532">				ops.add(reduceOp);</span>
+<span class="fc" id="L533">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
 			// Check for unconvertible statements
-<span class="fc bfc" id="L538" title="All 2 branches covered.">			if (isUnconvertibleStatement(stmt)) {</span>
-<span class="fc" id="L539">				return LoopBodyParser.ParseResult.abort();</span>
+<span class="fc bfc" id="L537" title="All 2 branches covered.">			if (isUnconvertibleStatement(stmt)) {</span>
+<span class="fc" id="L538">				return LoopBodyParser.ParseResult.abort();</span>
 			}
 
 			// Check for unsafe side effects
-<span class="fc bfc" id="L543" title="All 2 branches covered.">			if (!sideEffectChecker.isSafeSideEffect(stmt, currentVarName, ops)) {</span>
-<span class="fc" id="L544">				return LoopBodyParser.ParseResult.abort();</span>
+<span class="fc bfc" id="L542" title="All 2 branches covered.">			if (!sideEffectChecker.isSafeSideEffect(stmt, currentVarName, ops)) {</span>
+<span class="fc" id="L543">				return LoopBodyParser.ParseResult.abort();</span>
 			}
 
 			// Regular FOREACH operation
-<span class="fc" id="L548">			ProspectiveOperation forEachOp = new ProspectiveOperation(stmt,</span>
-<span class="fc" id="L549">					OperationType.FOREACH, currentVarName);</span>
-<span class="fc" id="L550">			ops.add(forEachOp);</span>
+<span class="fc" id="L547">			ProspectiveOperation forEachOp = new ProspectiveOperation(stmt,</span>
+<span class="fc" id="L548">					OperationType.FOREACH, currentVarName);</span>
+<span class="fc" id="L549">			ops.add(forEachOp);</span>
 			
-<span class="fc" id="L552">			return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="fc" id="L551">			return new LoopBodyParser.ParseResult(currentVarName);</span>
 		}
 		
 		/**
 		 * Checks if an expression is an identity mapping (just returns the variable unchanged).
 		 */
 		private boolean isIdentityMapping(Expression expr, String varName) {
-<span class="fc bfc" id="L559" title="All 2 branches covered.">			if (expr instanceof SimpleName) {</span>
-<span class="fc" id="L560">				return varName.equals(((SimpleName) expr).getIdentifier());</span>
+<span class="fc bfc" id="L558" title="All 2 branches covered.">			if (expr instanceof SimpleName) {</span>
+<span class="fc" id="L559">				return varName.equals(((SimpleName) expr).getIdentifier());</span>
 			}
-<span class="fc" id="L562">			return false;</span>
+<span class="fc" id="L561">			return false;</span>
 		}
 		
 		/**
 		 * Checks if a statement cannot be converted to stream operations.
 		 */
 		private boolean isUnconvertibleStatement(Statement stmt) {
-<span class="fc bfc" id="L569" title="All 2 branches covered.">			return stmt instanceof ReturnStatement </span>
-<span class="pc bpc" id="L570" title="1 of 2 branches missed.">					|| stmt instanceof ContinueStatement </span>
-<span class="fc bfc" id="L571" title="All 2 branches covered.">					|| stmt instanceof ThrowStatement;</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">			return stmt instanceof ReturnStatement </span>
+<span class="pc bpc" id="L569" title="1 of 2 branches missed.">					|| stmt instanceof ContinueStatement </span>
+<span class="fc bfc" id="L570" title="All 2 branches covered.">					|| stmt instanceof ThrowStatement;</span>
 		}
 	};
 
@@ -601,12 +600,12 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 	 * @return the handler type, or null if no handler can handle the statement
 	 */
 	public static StatementHandlerType findHandler(Statement stmt, StatementParsingContext context) {
-<span class="pc bpc" id="L604" title="1 of 2 branches missed.">		for (StatementHandlerType handler : values()) {</span>
-<span class="fc bfc" id="L605" title="All 2 branches covered.">			if (handler.canHandle(stmt, context)) {</span>
-<span class="fc" id="L606">				return handler;</span>
+<span class="pc bpc" id="L603" title="1 of 2 branches missed.">		for (StatementHandlerType handler : values()) {</span>
+<span class="fc bfc" id="L604" title="All 2 branches covered.">			if (handler.canHandle(stmt, context)) {</span>
+<span class="fc" id="L605">				return handler;</span>
 			}
 		}
-<span class="nc" id="L609">		return null;</span>
+<span class="nc" id="L608">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

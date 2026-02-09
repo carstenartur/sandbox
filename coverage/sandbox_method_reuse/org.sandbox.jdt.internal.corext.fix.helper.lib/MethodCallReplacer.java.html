@@ -42,70 +42,68 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 	 * @param variableMapping The mapping from method parameters to inline expressions
 	 * @return A method invocation node
 	 */
-	@SuppressWarnings(&quot;unchecked&quot;)
 	public static MethodInvocation createMethodCall(AST ast, MethodDeclaration targetMethod, VariableMapping variableMapping) {
-<span class="pc bpc" id="L47" title="3 of 6 branches missed.">		if (ast == null || targetMethod == null || variableMapping == null) {</span>
-<span class="nc" id="L48">			return null;</span>
+<span class="pc bpc" id="L46" title="3 of 6 branches missed.">		if (ast == null || targetMethod == null || variableMapping == null) {</span>
+<span class="nc" id="L47">			return null;</span>
 		}
 		
-<span class="fc" id="L51">		MethodInvocation methodCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L50">		MethodInvocation methodCall = ast.newMethodInvocation();</span>
 		
 		// Set method name
-<span class="fc" id="L54">		SimpleName methodName = ast.newSimpleName(targetMethod.getName().getIdentifier());</span>
-<span class="fc" id="L55">		methodCall.setName(methodName);</span>
+<span class="fc" id="L53">		SimpleName methodName = ast.newSimpleName(targetMethod.getName().getIdentifier());</span>
+<span class="fc" id="L54">		methodCall.setName(methodName);</span>
 		
 		// Create arguments based on parameter mapping
-<span class="fc" id="L58">		List&lt;Expression&gt; arguments = createArguments(ast, targetMethod, variableMapping);</span>
-<span class="fc" id="L59">		methodCall.arguments().addAll(arguments);</span>
+<span class="fc" id="L57">		List&lt;Expression&gt; arguments = createArguments(ast, targetMethod, variableMapping);</span>
+<span class="fc" id="L58">		methodCall.arguments().addAll(arguments);</span>
 		
-<span class="fc" id="L61">		return methodCall;</span>
+<span class="fc" id="L60">		return methodCall;</span>
 	}
 	
 	/**
 	 * Create the argument list for the method call
 	 */
-	@SuppressWarnings(&quot;unchecked&quot;)
 	private static List&lt;Expression&gt; createArguments(AST ast, MethodDeclaration targetMethod, VariableMapping variableMapping) {
-<span class="fc" id="L69">		List&lt;Expression&gt; arguments = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L70">		Map&lt;String, String&gt; nameMappings = variableMapping.getMappings();</span>
-<span class="fc" id="L71">		Map&lt;String, org.eclipse.jdt.core.dom.Expression&gt; exprMappings = variableMapping.getExpressionMappings();</span>
+<span class="fc" id="L67">		List&lt;Expression&gt; arguments = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L68">		Map&lt;String, String&gt; nameMappings = variableMapping.getMappings();</span>
+<span class="fc" id="L69">		Map&lt;String, org.eclipse.jdt.core.dom.Expression&gt; exprMappings = variableMapping.getExpressionMappings();</span>
 		
 		// For each parameter in the target method, find the corresponding inline expression
-<span class="fc" id="L74">		List&lt;SingleVariableDeclaration&gt; parameters = targetMethod.parameters();</span>
-<span class="fc bfc" id="L75" title="All 2 branches covered.">		for (SingleVariableDeclaration param : parameters) {</span>
-<span class="fc" id="L76">			String paramName = param.getName().getIdentifier();</span>
+<span class="fc" id="L72">		List&lt;SingleVariableDeclaration&gt; parameters = targetMethod.parameters();</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		for (SingleVariableDeclaration param : parameters) {</span>
+<span class="fc" id="L74">			String paramName = param.getName().getIdentifier();</span>
 			
 			// First check if there's an expression mapping (for complex expressions)
-<span class="fc bfc" id="L79" title="All 2 branches covered.">			if (variableMapping.hasExpressionMapping(paramName)) {</span>
-<span class="fc" id="L80">				org.eclipse.jdt.core.dom.Expression candidateExpr = exprMappings.get(paramName);</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">				if (candidateExpr != null) {</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">			if (variableMapping.hasExpressionMapping(paramName)) {</span>
+<span class="fc" id="L78">				org.eclipse.jdt.core.dom.Expression candidateExpr = exprMappings.get(paramName);</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">				if (candidateExpr != null) {</span>
 					// Copy the expression from the candidate code
-<span class="fc" id="L83">					Expression argExpr = (Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree(ast, candidateExpr);</span>
-<span class="fc" id="L84">					arguments.add(argExpr);</span>
-<span class="fc" id="L85">					continue;</span>
-<span class="nc bnc" id="L86" title="All 4 branches missed.">				} else if (exprMappings != null &amp;&amp; exprMappings.containsKey(paramName)) {</span>
+<span class="fc" id="L81">					Expression argExpr = (Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree(ast, candidateExpr);</span>
+<span class="fc" id="L82">					arguments.add(argExpr);</span>
+<span class="fc" id="L83">					continue;</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">				} else if (exprMappings != null &amp;&amp; exprMappings.containsKey(paramName)) {</span>
 					// An expression mapping exists but the mapped expression is null - treat as mapping error
-<span class="nc" id="L88">					SimpleName arg = ast.newSimpleName(&quot;/* mapping error */&quot;);</span>
-<span class="nc" id="L89">					arguments.add(arg);</span>
-<span class="nc" id="L90">					continue;</span>
+<span class="nc" id="L86">					SimpleName arg = ast.newSimpleName(&quot;/* mapping error */&quot;);</span>
+<span class="nc" id="L87">					arguments.add(arg);</span>
+<span class="nc" id="L88">					continue;</span>
 				}
 			}
 			
 			// Fall back to simple name mapping
-<span class="fc" id="L95">			String inlineName = nameMappings.get(paramName);</span>
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">			if (inlineName != null) {</span>
+<span class="fc" id="L93">			String inlineName = nameMappings.get(paramName);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			if (inlineName != null) {</span>
 				// Create a simple name reference for the inline variable
-<span class="fc" id="L98">				SimpleName arg = ast.newSimpleName(inlineName);</span>
-<span class="fc" id="L99">				arguments.add(arg);</span>
-<span class="fc" id="L100">			} else {</span>
+<span class="fc" id="L96">				SimpleName arg = ast.newSimpleName(inlineName);</span>
+<span class="fc" id="L97">				arguments.add(arg);</span>
+<span class="fc" id="L98">			} else {</span>
 				// This shouldn't happen if matching worked correctly
 				// but we handle it gracefully
-<span class="nc" id="L103">				SimpleName arg = ast.newSimpleName(&quot;/* mapping error */&quot;);</span>
-<span class="nc" id="L104">				arguments.add(arg);</span>
+<span class="nc" id="L101">				SimpleName arg = ast.newSimpleName(&quot;/* mapping error */&quot;);</span>
+<span class="nc" id="L102">				arguments.add(arg);</span>
 			}
 		}
 		
-<span class="fc" id="L108">		return arguments;</span>
+<span class="fc" id="L106">		return arguments;</span>
 	}
 	
 	/**
@@ -117,33 +115,33 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 	 * @return true if replacement was successful
 	 */
 	public static boolean replaceWithMethodCall(ASTRewrite rewrite, MethodInvocation methodCall, List&lt;org.eclipse.jdt.core.dom.Statement&gt; statementsToReplace) {
-<span class="nc bnc" id="L120" title="All 8 branches missed.">		if (rewrite == null || methodCall == null || statementsToReplace == null || statementsToReplace.isEmpty()) {</span>
-<span class="nc" id="L121">			return false;</span>
+<span class="nc bnc" id="L118" title="All 8 branches missed.">		if (rewrite == null || methodCall == null || statementsToReplace == null || statementsToReplace.isEmpty()) {</span>
+<span class="nc" id="L119">			return false;</span>
 		}
 		
 		// Get the parent block and create a list rewrite for it
-<span class="nc" id="L125">		org.eclipse.jdt.core.dom.Statement firstStatement = statementsToReplace.get(0);</span>
-<span class="nc" id="L126">		org.eclipse.jdt.core.dom.ASTNode parent = firstStatement.getParent();</span>
+<span class="nc" id="L123">		org.eclipse.jdt.core.dom.Statement firstStatement = statementsToReplace.get(0);</span>
+<span class="nc" id="L124">		org.eclipse.jdt.core.dom.ASTNode parent = firstStatement.getParent();</span>
 		
-<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (!(parent instanceof org.eclipse.jdt.core.dom.Block)) {</span>
-<span class="nc" id="L129">			return false;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (!(parent instanceof org.eclipse.jdt.core.dom.Block)) {</span>
+<span class="nc" id="L127">			return false;</span>
 		}
 		
-<span class="nc" id="L132">		ListRewrite listRewrite = rewrite.getListRewrite(parent, org.eclipse.jdt.core.dom.Block.STATEMENTS_PROPERTY);</span>
+<span class="nc" id="L130">		ListRewrite listRewrite = rewrite.getListRewrite(parent, org.eclipse.jdt.core.dom.Block.STATEMENTS_PROPERTY);</span>
 		
 		// Create an expression statement wrapping the method call
-<span class="nc" id="L135">		AST ast = rewrite.getAST();</span>
-<span class="nc" id="L136">		org.eclipse.jdt.core.dom.ExpressionStatement expressionStatement = ast.newExpressionStatement(methodCall);</span>
+<span class="nc" id="L133">		AST ast = rewrite.getAST();</span>
+<span class="nc" id="L134">		org.eclipse.jdt.core.dom.ExpressionStatement expressionStatement = ast.newExpressionStatement(methodCall);</span>
 		
 		// Replace first statement with the method call
-<span class="nc" id="L139">		listRewrite.replace(firstStatement, expressionStatement, null);</span>
+<span class="nc" id="L137">		listRewrite.replace(firstStatement, expressionStatement, null);</span>
 		
 		// Remove remaining statements
-<span class="nc bnc" id="L142" title="All 2 branches missed.">		for (int i = 1; i &lt; statementsToReplace.size(); i++) {</span>
-<span class="nc" id="L143">			listRewrite.remove(statementsToReplace.get(i), null);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">		for (int i = 1; i &lt; statementsToReplace.size(); i++) {</span>
+<span class="nc" id="L141">			listRewrite.remove(statementsToReplace.get(i), null);</span>
 		}
 		
-<span class="nc" id="L146">		return true;</span>
+<span class="nc" id="L144">		return true;</span>
 	}
 	
 	/**
@@ -153,24 +151,23 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 	 * @param variableMapping The variable mapping
 	 * @return true if all parameters can be mapped
 	 */
-	@SuppressWarnings(&quot;unchecked&quot;)
 	public static boolean canCreateMethodCall(MethodDeclaration targetMethod, VariableMapping variableMapping) {
-<span class="nc bnc" id="L158" title="All 4 branches missed.">		if (targetMethod == null || variableMapping == null) {</span>
-<span class="nc" id="L159">			return false;</span>
+<span class="nc bnc" id="L155" title="All 4 branches missed.">		if (targetMethod == null || variableMapping == null) {</span>
+<span class="nc" id="L156">			return false;</span>
 		}
 		
-<span class="nc" id="L162">		Map&lt;String, String&gt; mappings = variableMapping.getMappings();</span>
-<span class="nc" id="L163">		List&lt;SingleVariableDeclaration&gt; parameters = targetMethod.parameters();</span>
+<span class="nc" id="L159">		Map&lt;String, String&gt; mappings = variableMapping.getMappings();</span>
+<span class="nc" id="L160">		List&lt;SingleVariableDeclaration&gt; parameters = targetMethod.parameters();</span>
 		
 		// Check that all parameters have a mapping
-<span class="nc bnc" id="L166" title="All 2 branches missed.">		for (SingleVariableDeclaration param : parameters) {</span>
-<span class="nc" id="L167">			String paramName = param.getName().getIdentifier();</span>
-<span class="nc bnc" id="L168" title="All 2 branches missed.">			if (!mappings.containsKey(paramName)) {</span>
-<span class="nc" id="L169">				return false;</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">		for (SingleVariableDeclaration param : parameters) {</span>
+<span class="nc" id="L164">			String paramName = param.getName().getIdentifier();</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">			if (!mappings.containsKey(paramName)) {</span>
+<span class="nc" id="L166">				return false;</span>
 			}
 		}
 		
-<span class="nc" id="L173">		return true;</span>
+<span class="nc" id="L170">		return true;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

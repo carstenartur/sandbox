@@ -26,6 +26,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jdt.core.dom.ASTNode;
+
 /**
  * A thread-safe reference holder that extends ConcurrentHashMap for storing AST node references.
  * This class is used by cleanup visitors to track and store references to AST nodes during traversal.
@@ -40,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author chammer
  * @since 1.15
  */
-<span class="fc" id="L43">public class ReferenceHolder&lt;V,T&gt; extends ConcurrentHashMap&lt;V,T&gt; implements HelperVisitorProvider&lt;V,T,ReferenceHolder&lt;V,T&gt;&gt; {</span>
+<span class="fc" id="L45">public class ReferenceHolder&lt;V,T&gt; extends ConcurrentHashMap&lt;V,T&gt; implements HelperVisitorProvider&lt;V,T,ReferenceHolder&lt;V,T&gt;&gt; {</span>
 
 	/**
 	 * Serial version UID for serialization compatibility.
@@ -51,6 +53,73 @@ import java.util.concurrent.ConcurrentHashMap;
 	 * The associated helper visitor for processing AST nodes.
 	 */
 	HelperVisitor&lt;ReferenceHolder&lt;V,T&gt;,V,T&gt; hv;
+	
+	/**
+	 * Creates a new empty ReferenceHolder.
+	 * This is a convenience factory method to reduce verbosity in plugin code.
+	 * 
+	 * @param &lt;V&gt; the type of keys
+	 * @param &lt;T&gt; the type of values
+	 * @return a new ReferenceHolder instance
+	 * @since 1.16
+	 */
+	public static &lt;V,T&gt; ReferenceHolder&lt;V,T&gt; create() {
+<span class="fc" id="L67">		return new ReferenceHolder&lt;&gt;();</span>
+	}
+	
+	/**
+	 * Creates a new ReferenceHolder for storing AST nodes as keys with Object values.
+	 * This is the most common usage pattern across plugins.
+	 * 
+	 * @return a new ReferenceHolder&amp;lt;ASTNode, Object&amp;gt; instance
+	 * @since 1.16
+	 */
+	public static ReferenceHolder&lt;ASTNode, Object&gt; createForNodes() {
+<span class="fc" id="L78">		return new ReferenceHolder&lt;&gt;();</span>
+	}
+	
+	/**
+	 * Creates a new ReferenceHolder with Integer keys and typed values.
+	 * This pattern is commonly used for collecting results by index.
+	 * 
+	 * @param &lt;T&gt; the type of values to store
+	 * @return a new ReferenceHolder&amp;lt;Integer, T&amp;gt; instance
+	 * @since 1.16
+	 */
+	public static &lt;T&gt; ReferenceHolder&lt;Integer, T&gt; createIndexed() {
+<span class="fc" id="L90">		return new ReferenceHolder&lt;&gt;();</span>
+	}
+	
+	/**
+	 * Type-safe getter that casts the value to the specified type.
+	 * 
+	 * @param &lt;R&gt; the expected return type
+	 * @param key the key whose associated value is to be returned
+	 * @param clazz the class of the expected return type
+	 * @return the value cast to type R, or null if not present or wrong type
+	 * @since 1.16
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	public &lt;R&gt; R getAs(V key, Class&lt;R&gt; clazz) {
+<span class="nc" id="L104">		T value = get(key);</span>
+<span class="nc bnc" id="L105" title="All 4 branches missed.">		if (value != null &amp;&amp; clazz.isInstance(value)) {</span>
+<span class="nc" id="L106">			return (R) value;</span>
+		}
+<span class="nc" id="L108">		return null;</span>
+	}
+	
+	/**
+	 * Type-safe put that enforces the value type at compile time.
+	 * This is just an alias for put() but with clearer intent.
+	 * 
+	 * @param key the key with which the value is to be associated
+	 * @param value the value to be associated with the key
+	 * @return the previous value associated with key, or null
+	 * @since 1.16
+	 */
+	public T putTyped(V key, T value) {
+<span class="nc" id="L121">		return put(key, value);</span>
+	}
 
 	/**
 	 * Gets the helper visitor associated with this reference holder.
@@ -59,7 +128,7 @@ import java.util.concurrent.ConcurrentHashMap;
 	 */
 	@Override
 	public HelperVisitor&lt;ReferenceHolder&lt;V,T&gt;,V,T&gt; getHelperVisitor() {
-<span class="fc" id="L62">		return hv;</span>
+<span class="fc" id="L131">		return hv;</span>
 	}
 
 	/**
@@ -70,8 +139,8 @@ import java.util.concurrent.ConcurrentHashMap;
 	 */
 	@Override
 	public void setHelperVisitor(HelperVisitor&lt;ReferenceHolder&lt;V,T&gt;,V,T&gt; hv) {
-<span class="fc" id="L73">		this.hv=hv;</span>
-<span class="fc" id="L74">	}</span>
+<span class="fc" id="L142">		this.hv=hv;</span>
+<span class="fc" id="L143">	}</span>
 
 	/**
 	 * Custom serialization method for writing this object to an ObjectOutputStream.
@@ -83,8 +152,8 @@ import java.util.concurrent.ConcurrentHashMap;
 	@SuppressWarnings(&quot;static-method&quot;)
 	private void writeObject(ObjectOutputStream stream)
 			throws IOException {
-<span class="nc" id="L86">		stream.defaultWriteObject();</span>
-<span class="nc" id="L87">	}</span>
+<span class="nc" id="L155">		stream.defaultWriteObject();</span>
+<span class="nc" id="L156">	}</span>
 
 	/**
 	 * Custom deserialization method for reading this object from an ObjectInputStream.
@@ -97,8 +166,8 @@ import java.util.concurrent.ConcurrentHashMap;
 	@SuppressWarnings(&quot;static-method&quot;)
 	private void readObject(ObjectInputStream stream)
 			throws IOException, ClassNotFoundException {
-<span class="nc" id="L100">		stream.defaultReadObject();</span>
-<span class="nc" id="L101">	}</span>
+<span class="nc" id="L169">		stream.defaultReadObject();</span>
+<span class="nc" id="L170">	}</span>
 
 	/**
 	 * Returns the hash code value for this reference holder.
@@ -108,7 +177,7 @@ import java.util.concurrent.ConcurrentHashMap;
 	 */
 	@Override
 	public int hashCode() {
-<span class="nc" id="L111">		return super.hashCode();</span>
+<span class="nc" id="L180">		return super.hashCode();</span>
 	}
 
 	/**
@@ -120,7 +189,7 @@ import java.util.concurrent.ConcurrentHashMap;
 	 */
 	@Override
 	public boolean equals(Object o) {
-<span class="nc" id="L123">		return super.equals(o);</span>
+<span class="nc" id="L192">		return super.equals(o);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

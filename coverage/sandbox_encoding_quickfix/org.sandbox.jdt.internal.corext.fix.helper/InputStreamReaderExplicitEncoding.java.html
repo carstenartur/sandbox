@@ -47,76 +47,78 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc" id="L50">		ReferenceHolder&lt;ASTNode, Object&gt; datah= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L51">		HelperVisitor.callClassInstanceCreationVisitor(InputStreamReader.class, compilationUnit, datah, nodesprocessed,</span>
-<span class="fc" id="L52">				(visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L53">	}</span>
+<span class="fc" id="L50">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L51">		HelperVisitor.forClassInstanceCreation(InputStreamReader.class)</span>
+<span class="fc" id="L52">			.in(compilationUnit)</span>
+<span class="fc" id="L53">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L54">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L55">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, ChangeBehavior cb,
 			ClassInstanceCreation visited, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L58">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
-<span class="pc bpc" id="L59" title="1 of 3 branches missed.">		switch (arguments.size()) {</span>
+<span class="fc" id="L60">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="pc bpc" id="L61" title="1 of 3 branches missed.">		switch (arguments.size()) {</span>
 			case 2:
-<span class="fc bfc" id="L61" title="All 2 branches covered.">				if (!(arguments.get(1) instanceof StringLiteral)) {</span>
-<span class="fc" id="L62">					return false;</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">				if (!(arguments.get(1) instanceof StringLiteral)) {</span>
+<span class="fc" id="L64">					return false;</span>
 				}
-<span class="fc" id="L64">				StringLiteral argstring3= (StringLiteral) arguments.get(1);</span>
-<span class="fc bfc" id="L65" title="All 2 branches covered.">				if (!ENCODINGS.contains(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT))) {</span>
-<span class="fc" id="L66">					return false;</span>
+<span class="fc" id="L66">				StringLiteral argstring3= (StringLiteral) arguments.get(1);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">				if (!ENCODINGS.contains(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT))) {</span>
+<span class="fc" id="L68">					return false;</span>
 				}
-<span class="fc" id="L68">				NodeData nd= new NodeData(true, argstring3, ENCODING_MAP.get(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT)));</span>
-<span class="fc" id="L69">				holder.put(visited, nd);</span>
-<span class="fc" id="L70">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L71">				break;</span>
+<span class="fc" id="L70">				NodeData nd= new NodeData(true, argstring3, ENCODING_MAP.get(argstring3.getLiteralValue().toUpperCase(java.util.Locale.ROOT)));</span>
+<span class="fc" id="L71">				holder.put(visited, nd);</span>
+<span class="fc" id="L72">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L73">				break;</span>
 			case 1:
-<span class="fc" id="L73">				NodeData nd2= new NodeData(false, visited, null);</span>
-<span class="fc" id="L74">				holder.put(visited, nd2);</span>
-<span class="fc" id="L75">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L76">				break;</span>
+<span class="fc" id="L75">				NodeData nd2= new NodeData(false, visited, null);</span>
+<span class="fc" id="L76">				holder.put(visited, nd2);</span>
+<span class="fc" id="L77">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L78">				break;</span>
 			default:
 				break;
 		}
 
-<span class="fc" id="L81">		return false;</span>
+<span class="fc" id="L83">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, ClassInstanceCreation visited, CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L87">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L88">		NodeData nodedata = (NodeData) data.get(visited);</span>
+<span class="fc" id="L89">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L90">		NodeData nodedata = (NodeData) data.get(visited);</span>
 
-<span class="fc" id="L90">		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, cuRewrite.getRoot().getAST(),</span>
-<span class="fc" id="L91">				nodedata.encoding(), getCharsetConstants());</span>
+<span class="fc" id="L92">		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, cuRewrite.getRoot().getAST(),</span>
+<span class="fc" id="L93">				nodedata.encoding(), getCharsetConstants());</span>
 
-<span class="fc" id="L93">		ListRewrite listRewrite = rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);</span>
-<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
+<span class="fc" id="L95">		ListRewrite listRewrite = rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
 			try {
-<span class="fc" id="L96">				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);</span>
-<span class="pc" id="L97">			} catch (CoreException e) {</span>
-<span class="nc" id="L98">				JavaManipulationPlugin.log(e); // should never happen</span>
+<span class="fc" id="L98">				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);</span>
+<span class="pc" id="L99">			} catch (CoreException e) {</span>
+<span class="nc" id="L100">				JavaManipulationPlugin.log(e); // should never happen</span>
 			}
 //			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
 //			removeNLSComment(cuRewrite, visited, group);
-<span class="nc" id="L102">		} else {</span>
-<span class="fc" id="L103">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+<span class="nc" id="L104">		} else {</span>
+<span class="fc" id="L105">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
 		}
 
-<span class="fc" id="L106">		removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRewrite());</span>
-<span class="fc" id="L107">	}</span>
+<span class="fc" id="L108">		removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRewrite());</span>
+<span class="fc" id="L109">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L111" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L112">			return &quot;Reader r=new InputStreamReader(in, &quot; + cb.computeCharsetforPreview() + &quot;);\nInputStreamReader is=new InputStreamReader(new FileInputStream(\&quot;\&quot;), \&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L114">			return &quot;Reader r=new InputStreamReader(in, &quot; + cb.computeCharsetforPreview() + &quot;);\nInputStreamReader is=new InputStreamReader(new FileInputStream(\&quot;\&quot;), \&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="nc" id="L114">		return &quot;Reader r=new InputStreamReader(in);\nInputStreamReader is=new InputStreamReader(new FileInputStream(\&quot;\&quot;), StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L116">		return &quot;Reader r=new InputStreamReader(in);\nInputStreamReader is=new InputStreamReader(new FileInputStream(\&quot;\&quot;), StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L119">		return &quot;new InputStreamReader(in)&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L121">		return &quot;new InputStreamReader(in)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

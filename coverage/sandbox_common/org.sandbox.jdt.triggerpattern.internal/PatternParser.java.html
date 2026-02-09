@@ -18,6 +18,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -38,7 +39,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * 
  * @since 1.2.2
  */
-<span class="fc" id="L41">public class PatternParser {</span>
+<span class="fc" id="L42">public class PatternParser {</span>
 	
 	/**
 	 * Parses a pattern into an AST node.
@@ -47,28 +48,30 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 * @return the parsed AST node (Expression or Statement), or {@code null} if parsing fails
 	 */
 	public ASTNode parse(Pattern pattern) {
-<span class="pc bpc" id="L50" title="1 of 2 branches missed.">		if (pattern == null) {</span>
-<span class="nc" id="L51">			return null;</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">		if (pattern == null) {</span>
+<span class="nc" id="L52">			return null;</span>
 		}
 		
-<span class="fc" id="L54">		String patternValue = pattern.getValue();</span>
-<span class="fc" id="L55">		PatternKind kind = pattern.getKind();</span>
+<span class="fc" id="L55">		String patternValue = pattern.getValue();</span>
+<span class="fc" id="L56">		PatternKind kind = pattern.getKind();</span>
 		
-<span class="fc bfc" id="L57" title="All 2 branches covered.">		if (kind == PatternKind.EXPRESSION) {</span>
-<span class="fc" id="L58">			return parseExpression(patternValue);</span>
-<span class="fc bfc" id="L59" title="All 2 branches covered.">		} else if (kind == PatternKind.STATEMENT) {</span>
-<span class="fc" id="L60">			return parseStatement(patternValue);</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">		} else if (kind == PatternKind.ANNOTATION) {</span>
-<span class="fc" id="L62">			return parseAnnotation(patternValue);</span>
-<span class="fc bfc" id="L63" title="All 2 branches covered.">		} else if (kind == PatternKind.METHOD_CALL) {</span>
-<span class="fc" id="L64">			return parseMethodCall(patternValue);</span>
-<span class="fc bfc" id="L65" title="All 2 branches covered.">		} else if (kind == PatternKind.IMPORT) {</span>
-<span class="fc" id="L66">			return parseImport(patternValue);</span>
-<span class="pc bpc" id="L67" title="1 of 2 branches missed.">		} else if (kind == PatternKind.FIELD) {</span>
-<span class="fc" id="L68">			return parseField(patternValue);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">		if (kind == PatternKind.EXPRESSION) {</span>
+<span class="fc" id="L59">			return parseExpression(patternValue);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">		} else if (kind == PatternKind.STATEMENT) {</span>
+<span class="fc" id="L61">			return parseStatement(patternValue);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		} else if (kind == PatternKind.ANNOTATION) {</span>
+<span class="fc" id="L63">			return parseAnnotation(patternValue);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		} else if (kind == PatternKind.METHOD_CALL) {</span>
+<span class="fc" id="L65">			return parseMethodCall(patternValue);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">		} else if (kind == PatternKind.IMPORT) {</span>
+<span class="fc" id="L67">			return parseImport(patternValue);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">		} else if (kind == PatternKind.FIELD) {</span>
+<span class="fc" id="L69">			return parseField(patternValue);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		} else if (kind == PatternKind.CONSTRUCTOR) {</span>
+<span class="fc" id="L71">			return parseConstructor(patternValue);</span>
 		}
 		
-<span class="nc" id="L71">		return null;</span>
+<span class="nc" id="L74">		return null;</span>
 	}
 	
 	/**
@@ -79,45 +82,45 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 */
 	private Expression parseExpression(String expressionSnippet) {
 		// Wrap the expression in a minimal method context
-<span class="fc" id="L82">		String source = &quot;class _Pattern { void _method() { _result = &quot; + expressionSnippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L85">		String source = &quot;class _Pattern { void _method() { _result = &quot; + expressionSnippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		
-<span class="fc" id="L84">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L85">		parser.setSource(source.toCharArray());</span>
-<span class="fc" id="L86">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L87">		parser.setCompilerOptions(JavaCore.getOptions());</span>
+<span class="fc" id="L87">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L88">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L89">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L90">		parser.setCompilerOptions(JavaCore.getOptions());</span>
 		
-<span class="fc" id="L89">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L92">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
 		
 		// Navigate to the expression: CompilationUnit -&gt; TypeDeclaration -&gt; MethodDeclaration -&gt; Block -&gt; ExpressionStatement -&gt; Assignment -&gt; right-hand side
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
-<span class="nc" id="L93">			return null;</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L96">			return null;</span>
 		}
 		
-<span class="fc" id="L96">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		if (typeDecl.getMethods().length == 0) {</span>
-<span class="nc" id="L98">			return null;</span>
+<span class="fc" id="L99">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (typeDecl.getMethods().length == 0) {</span>
+<span class="nc" id="L101">			return null;</span>
 		}
 		
-<span class="fc" id="L101">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
-<span class="pc bpc" id="L102" title="1 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
-<span class="fc" id="L103">			return null;</span>
+<span class="fc" id="L104">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
+<span class="pc bpc" id="L105" title="1 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
+<span class="fc" id="L106">			return null;</span>
 		}
 		
-<span class="fc" id="L106">		Statement stmt = (Statement) method.getBody().statements().get(0);</span>
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
-<span class="fc" id="L108">			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;</span>
-<span class="fc" id="L109">			Expression expr = exprStmt.getExpression();</span>
+<span class="fc" id="L109">		Statement stmt = (Statement) method.getBody().statements().get(0);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
+<span class="fc" id="L111">			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;</span>
+<span class="fc" id="L112">			Expression expr = exprStmt.getExpression();</span>
 			
 			// If it's an assignment, extract the right-hand side
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">			if (expr instanceof org.eclipse.jdt.core.dom.Assignment) {</span>
-<span class="fc" id="L113">				org.eclipse.jdt.core.dom.Assignment assignment = (org.eclipse.jdt.core.dom.Assignment) expr;</span>
-<span class="fc" id="L114">				return assignment.getRightHandSide();</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">			if (expr instanceof org.eclipse.jdt.core.dom.Assignment) {</span>
+<span class="fc" id="L116">				org.eclipse.jdt.core.dom.Assignment assignment = (org.eclipse.jdt.core.dom.Assignment) expr;</span>
+<span class="fc" id="L117">				return assignment.getRightHandSide();</span>
 			}
 			
-<span class="nc" id="L117">			return expr;</span>
+<span class="nc" id="L120">			return expr;</span>
 		}
 		
-<span class="nc" id="L120">		return null;</span>
+<span class="nc" id="L123">		return null;</span>
 	}
 	
 	/**
@@ -128,31 +131,31 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 */
 	private Statement parseStatement(String statementSnippet) {
 		// Wrap the statement in a minimal method context
-<span class="fc" id="L131">		String source = &quot;class _Pattern { void _method() { &quot; + statementSnippet + &quot; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L134">		String source = &quot;class _Pattern { void _method() { &quot; + statementSnippet + &quot; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		
-<span class="fc" id="L133">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L134">		parser.setSource(source.toCharArray());</span>
-<span class="fc" id="L135">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L136">		parser.setCompilerOptions(JavaCore.getOptions());</span>
+<span class="fc" id="L136">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L137">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L138">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L139">		parser.setCompilerOptions(JavaCore.getOptions());</span>
 		
-<span class="fc" id="L138">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L141">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
 		
 		// Navigate to the statement: CompilationUnit -&gt; TypeDeclaration -&gt; MethodDeclaration -&gt; Block -&gt; Statement
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
-<span class="nc" id="L142">			return null;</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L145">			return null;</span>
 		}
 		
-<span class="fc" id="L145">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (typeDecl.getMethods().length == 0) {</span>
-<span class="nc" id="L147">			return null;</span>
+<span class="fc" id="L148">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (typeDecl.getMethods().length == 0) {</span>
+<span class="nc" id="L150">			return null;</span>
 		}
 		
-<span class="fc" id="L150">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
-<span class="pc bpc" id="L151" title="2 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
-<span class="nc" id="L152">			return null;</span>
+<span class="fc" id="L153">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
+<span class="pc bpc" id="L154" title="2 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
+<span class="nc" id="L155">			return null;</span>
 		}
 		
-<span class="fc" id="L155">		return (Statement) method.getBody().statements().get(0);</span>
+<span class="fc" id="L158">		return (Statement) method.getBody().statements().get(0);</span>
 	}
 	
 	/**
@@ -164,31 +167,31 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 */
 	private Annotation parseAnnotation(String annotationSnippet) {
 		// Wrap the annotation in a minimal class context
-<span class="fc" id="L167">		String source = annotationSnippet + &quot; class _Pattern {}&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L170">		String source = annotationSnippet + &quot; class _Pattern {}&quot;; //$NON-NLS-1$</span>
 		
-<span class="fc" id="L169">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L170">		parser.setSource(source.toCharArray());</span>
-<span class="fc" id="L171">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L172">		parser.setCompilerOptions(JavaCore.getOptions());</span>
+<span class="fc" id="L172">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L173">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L174">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L175">		parser.setCompilerOptions(JavaCore.getOptions());</span>
 		
-<span class="fc" id="L174">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L177">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
 		
 		// Navigate to the annotation: CompilationUnit -&gt; TypeDeclaration -&gt; modifiers
-<span class="pc bpc" id="L177" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
-<span class="nc" id="L178">			return null;</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L181">			return null;</span>
 		}
 		
-<span class="fc" id="L181">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		if (typeDecl.modifiers().isEmpty()) {</span>
-<span class="nc" id="L183">			return null;</span>
+<span class="fc" id="L184">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">		if (typeDecl.modifiers().isEmpty()) {</span>
+<span class="nc" id="L186">			return null;</span>
 		}
 		
-<span class="fc" id="L186">		Object firstModifier = typeDecl.modifiers().get(0);</span>
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">		if (!(firstModifier instanceof Annotation)) {</span>
-<span class="nc" id="L188">			return null;</span>
+<span class="fc" id="L189">		Object firstModifier = typeDecl.modifiers().get(0);</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">		if (!(firstModifier instanceof Annotation)) {</span>
+<span class="nc" id="L191">			return null;</span>
 		}
 		
-<span class="fc" id="L191">		return (Annotation) firstModifier;</span>
+<span class="fc" id="L194">		return (Annotation) firstModifier;</span>
 	}
 	
 	/**
@@ -200,41 +203,41 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 */
 	private MethodInvocation parseMethodCall(String methodCallSnippet) {
 		// Wrap the method call in a minimal method context
-<span class="fc" id="L203">		String source = &quot;class _Pattern { void _method() { &quot; + methodCallSnippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L206">		String source = &quot;class _Pattern { void _method() { &quot; + methodCallSnippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		
-<span class="fc" id="L205">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L206">		parser.setSource(source.toCharArray());</span>
-<span class="fc" id="L207">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L208">		parser.setCompilerOptions(JavaCore.getOptions());</span>
+<span class="fc" id="L208">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L209">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L210">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L211">		parser.setCompilerOptions(JavaCore.getOptions());</span>
 		
-<span class="fc" id="L210">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L213">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
 		
 		// Navigate to the method invocation: CompilationUnit -&gt; TypeDeclaration -&gt; MethodDeclaration -&gt; Block -&gt; ExpressionStatement -&gt; Expression
-<span class="pc bpc" id="L213" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
-<span class="nc" id="L214">			return null;</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L217">			return null;</span>
 		}
 		
-<span class="fc" id="L217">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if (typeDecl.getMethods().length == 0) {</span>
-<span class="nc" id="L219">			return null;</span>
+<span class="fc" id="L220">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		if (typeDecl.getMethods().length == 0) {</span>
+<span class="nc" id="L222">			return null;</span>
 		}
 		
-<span class="fc" id="L222">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
-<span class="pc bpc" id="L223" title="2 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
-<span class="nc" id="L224">			return null;</span>
+<span class="fc" id="L225">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
+<span class="pc bpc" id="L226" title="2 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
+<span class="nc" id="L227">			return null;</span>
 		}
 		
-<span class="fc" id="L227">		Statement stmt = (Statement) method.getBody().statements().get(0);</span>
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
-<span class="fc" id="L229">			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;</span>
-<span class="fc" id="L230">			Expression expr = exprStmt.getExpression();</span>
+<span class="fc" id="L230">		Statement stmt = (Statement) method.getBody().statements().get(0);</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
+<span class="fc" id="L232">			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;</span>
+<span class="fc" id="L233">			Expression expr = exprStmt.getExpression();</span>
 			
-<span class="pc bpc" id="L232" title="1 of 2 branches missed.">			if (expr instanceof MethodInvocation) {</span>
-<span class="fc" id="L233">				return (MethodInvocation) expr;</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">			if (expr instanceof MethodInvocation) {</span>
+<span class="fc" id="L236">				return (MethodInvocation) expr;</span>
 			}
 		}
 		
-<span class="nc" id="L237">		return null;</span>
+<span class="nc" id="L240">		return null;</span>
 	}
 	
 	/**
@@ -246,22 +249,22 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 */
 	private ImportDeclaration parseImport(String importSnippet) {
 		// Ensure the import statement ends with a semicolon
-<span class="pc bpc" id="L249" title="1 of 2 branches missed.">		String importStatement = importSnippet.endsWith(&quot;;&quot;) ? importSnippet : importSnippet + &quot;;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L250">		String source = importStatement + &quot; class _Pattern {}&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">		String importStatement = importSnippet.endsWith(&quot;;&quot;) ? importSnippet : importSnippet + &quot;;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L253">		String source = importStatement + &quot; class _Pattern {}&quot;; //$NON-NLS-1$</span>
 		
-<span class="fc" id="L252">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L253">		parser.setSource(source.toCharArray());</span>
-<span class="fc" id="L254">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L255">		parser.setCompilerOptions(JavaCore.getOptions());</span>
+<span class="fc" id="L255">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L256">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L257">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L258">		parser.setCompilerOptions(JavaCore.getOptions());</span>
 		
-<span class="fc" id="L257">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L260">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
 		
 		// Navigate to the import: CompilationUnit -&gt; imports
-<span class="pc bpc" id="L260" title="1 of 2 branches missed.">		if (cu.imports().isEmpty()) {</span>
-<span class="nc" id="L261">			return null;</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		if (cu.imports().isEmpty()) {</span>
+<span class="nc" id="L264">			return null;</span>
 		}
 		
-<span class="fc" id="L264">		return (ImportDeclaration) cu.imports().get(0);</span>
+<span class="fc" id="L267">		return (ImportDeclaration) cu.imports().get(0);</span>
 	}
 	
 	/**
@@ -273,27 +276,78 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 */
 	private FieldDeclaration parseField(String fieldSnippet) {
 		// Ensure the field declaration ends with a semicolon
-<span class="pc bpc" id="L276" title="1 of 2 branches missed.">		String fieldStatement = fieldSnippet.endsWith(&quot;;&quot;) ? fieldSnippet : fieldSnippet + &quot;;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L277">		String source = &quot;class _Pattern { &quot; + fieldStatement + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">		String fieldStatement = fieldSnippet.endsWith(&quot;;&quot;) ? fieldSnippet : fieldSnippet + &quot;;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L280">		String source = &quot;class _Pattern { &quot; + fieldStatement + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		
-<span class="fc" id="L279">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L280">		parser.setSource(source.toCharArray());</span>
-<span class="fc" id="L281">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L282">		parser.setCompilerOptions(JavaCore.getOptions());</span>
+<span class="fc" id="L282">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L283">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L284">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L285">		parser.setCompilerOptions(JavaCore.getOptions());</span>
 		
-<span class="fc" id="L284">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L287">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
 		
 		// Navigate to the field: CompilationUnit -&gt; TypeDeclaration -&gt; FieldDeclaration
-<span class="pc bpc" id="L287" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
-<span class="nc" id="L288">			return null;</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L291">			return null;</span>
 		}
 		
-<span class="fc" id="L291">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
-<span class="pc bpc" id="L292" title="1 of 2 branches missed.">		if (typeDecl.getFields().length == 0) {</span>
-<span class="nc" id="L293">			return null;</span>
+<span class="fc" id="L294">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">		if (typeDecl.getFields().length == 0) {</span>
+<span class="nc" id="L296">			return null;</span>
 		}
 		
-<span class="fc" id="L296">		return typeDecl.getFields()[0];</span>
+<span class="fc" id="L299">		return typeDecl.getFields()[0];</span>
+	}
+	
+	/**
+	 * Parses a constructor pattern.
+	 * 
+	 * @param constructorSnippet the constructor snippet (e.g., {@code &quot;new String($bytes, $enc)&quot;})
+	 * @return the parsed ClassInstanceCreation node, or {@code null} if parsing fails
+	 * @since 1.2.5
+	 */
+	private ClassInstanceCreation parseConstructor(String constructorSnippet) {
+		// Wrap the constructor expression in a minimal method context
+<span class="fc" id="L311">		String source = &quot;class _Pattern { void _method() { Object _result = &quot; + constructorSnippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+		
+<span class="fc" id="L313">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L314">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L315">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L316">		parser.setCompilerOptions(JavaCore.getOptions());</span>
+		
+<span class="fc" id="L318">		CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+		
+		// Navigate to the constructor: CompilationUnit -&gt; TypeDeclaration -&gt; MethodDeclaration -&gt; Block -&gt; VariableDeclarationStatement -&gt; VariableDeclarationFragment -&gt; initializer (ClassInstanceCreation)
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L322">			return null;</span>
+		}
+		
+<span class="fc" id="L325">		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">		if (typeDecl.getMethods().length == 0) {</span>
+<span class="nc" id="L327">			return null;</span>
+		}
+		
+<span class="fc" id="L330">		MethodDeclaration method = typeDecl.getMethods()[0];</span>
+<span class="pc bpc" id="L331" title="2 of 4 branches missed.">		if (method.getBody() == null || method.getBody().statements().isEmpty()) {</span>
+<span class="nc" id="L332">			return null;</span>
+		}
+		
+<span class="fc" id="L335">		Statement stmt = (Statement) method.getBody().statements().get(0);</span>
+<span class="pc bpc" id="L336" title="1 of 2 branches missed.">		if (stmt instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {</span>
+<span class="fc" id="L337">			org.eclipse.jdt.core.dom.VariableDeclarationStatement varDeclStmt = (org.eclipse.jdt.core.dom.VariableDeclarationStatement) stmt;</span>
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">			if (!varDeclStmt.fragments().isEmpty()) {</span>
+<span class="fc" id="L339">				Object fragment = varDeclStmt.fragments().get(0);</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">				if (fragment instanceof org.eclipse.jdt.core.dom.VariableDeclarationFragment) {</span>
+<span class="fc" id="L341">					org.eclipse.jdt.core.dom.VariableDeclarationFragment varFrag = (org.eclipse.jdt.core.dom.VariableDeclarationFragment) fragment;</span>
+<span class="fc" id="L342">					Expression initializer = varFrag.getInitializer();</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">					if (initializer instanceof ClassInstanceCreation) {</span>
+<span class="fc" id="L344">						return (ClassInstanceCreation) initializer;</span>
+					}
+				}
+			}
+		}
+		
+<span class="nc" id="L350">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

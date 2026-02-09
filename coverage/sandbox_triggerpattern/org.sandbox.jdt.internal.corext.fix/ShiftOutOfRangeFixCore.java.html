@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ShiftOutOfRangeFixCore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix</a> &gt; <span class="el_source">ShiftOutOfRangeFixCore.java</span></div><h1>ShiftOutOfRangeFixCore.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix;
+
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
+
+/**
+ * Fix core for shift out of range detection using TriggerPattern hints.
+ *
+ * &lt;p&gt;This class applies shift out of range patterns as cleanup operations,
+ * detecting shift operations where the shift amount is out of range and
+ * replacing them with the effective masked value.&lt;/p&gt;
+ *
+ * @since 1.2.5
+ */
+<span class="nc" id="L45">public class ShiftOutOfRangeFixCore {</span>
+
+<span class="fc" id="L47">	private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();</span>
+
+	private static final int INT_SHIFT_MASK = 31;
+<span class="fc" id="L50">	private static final int LONG_SHIFT_MASK = 63;</span>
+
+	/**
+	 * Finds shift out of range operations in the compilation unit.
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param operations the set to add found operations to
+	 */
+	public static void findOperations(CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations) {
+
+		// Pattern 1: $v &lt;&lt; $c
+<span class="fc" id="L62">		Pattern leftShiftPattern = new Pattern(&quot;$v &lt;&lt; $c&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		List&lt;Match&gt; leftShiftMatches = ENGINE.findMatches(compilationUnit, leftShiftPattern);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		for (Match match : leftShiftMatches) {</span>
+<span class="fc" id="L65">			addOperationIfOutOfRange(match, operations);</span>
+		}
+
+		// Pattern 2: $v &gt;&gt; $c
+<span class="fc" id="L69">		Pattern rightShiftPattern = new Pattern(&quot;$v &gt;&gt; $c&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L70">		List&lt;Match&gt; rightShiftMatches = ENGINE.findMatches(compilationUnit, rightShiftPattern);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		for (Match match : rightShiftMatches) {</span>
+<span class="fc" id="L72">			addOperationIfOutOfRange(match, operations);</span>
+		}
+
+		// Pattern 3: $v &gt;&gt;&gt; $c
+<span class="fc" id="L76">		Pattern unsignedRightShiftPattern = new Pattern(&quot;$v &gt;&gt;&gt; $c&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L77">		List&lt;Match&gt; unsignedRightShiftMatches = ENGINE.findMatches(compilationUnit, unsignedRightShiftPattern);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">		for (Match match : unsignedRightShiftMatches) {</span>
+<span class="fc" id="L79">			addOperationIfOutOfRange(match, operations);</span>
+		}
+<span class="fc" id="L81">	}</span>
+
+	private static void addOperationIfOutOfRange(Match match, Set&lt;CompilationUnitRewriteOperation&gt; operations) {
+<span class="fc" id="L84">		ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L86">			return;</span>
+		}
+
+		// Get the shift amount
+<span class="fc" id="L90">		ASTNode cNode = match.getBinding(&quot;$c&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L91" title="2 of 4 branches missed.">		if (cNode == null || !(cNode instanceof Expression)) {</span>
+<span class="nc" id="L92">			return;</span>
+		}
+
+<span class="fc" id="L95">		Expression shiftAmountExpr = (Expression) cNode;</span>
+<span class="fc" id="L96">		Object constantValue = shiftAmountExpr.resolveConstantExpressionValue();</span>
+<span class="pc bpc" id="L97" title="2 of 4 branches missed.">		if (constantValue == null || !(constantValue instanceof Number)) {</span>
+<span class="nc" id="L98">			return;</span>
+		}
+<span class="fc" id="L100">		long shiftAmount = ((Number) constantValue).longValue();</span>
+
+		// Get the left operand type
+<span class="fc" id="L103">		ASTNode vNode = match.getBinding(&quot;$v&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L104" title="2 of 4 branches missed.">		if (vNode == null || !(vNode instanceof Expression)) {</span>
+<span class="nc" id="L105">			return;</span>
+		}
+
+<span class="fc" id="L108">		Expression leftOperand = (Expression) vNode;</span>
+<span class="fc" id="L109">		ITypeBinding typeBinding = leftOperand.resolveTypeBinding();</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L111">			return;</span>
+		}
+
+<span class="fc" id="L114">		String qualifiedName = typeBinding.getQualifiedName();</span>
+		long maskedValue;
+<span class="fc bfc" id="L116" title="All 2 branches covered.">		boolean isIntLike = &quot;int&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">				|| &quot;byte&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">				|| &quot;short&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">				|| &quot;char&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">				|| &quot;java.lang.Integer&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">				|| &quot;java.lang.Byte&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">				|| &quot;java.lang.Short&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">				|| &quot;java.lang.Character&quot;.equals(qualifiedName); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">		boolean isLongLike = &quot;long&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">				|| &quot;java.lang.Long&quot;.equals(qualifiedName); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		if (isIntLike) {</span>
+<span class="fc bfc" id="L127" title="All 4 branches covered.">			if (shiftAmount &gt;= 0 &amp;&amp; shiftAmount &lt;= INT_SHIFT_MASK) {</span>
+<span class="fc" id="L128">				return; // in range</span>
+			}
+<span class="fc" id="L130">			maskedValue = shiftAmount &amp; INT_SHIFT_MASK;</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		} else if (isLongLike) {</span>
+<span class="pc bpc" id="L132" title="1 of 4 branches missed.">			if (shiftAmount &gt;= 0 &amp;&amp; shiftAmount &lt;= LONG_SHIFT_MASK) {</span>
+<span class="fc" id="L133">				return; // in range</span>
+			}
+<span class="fc" id="L135">			maskedValue = shiftAmount &amp; LONG_SHIFT_MASK;</span>
+<span class="fc" id="L136">		} else {</span>
+<span class="nc" id="L137">			return;</span>
+		}
+
+<span class="fc" id="L140">		operations.add(new ShiftOutOfRangeOperation(match, maskedValue));</span>
+<span class="fc" id="L141">	}</span>
+
+	/**
+	 * Rewrite operation for shift out of range replacement.
+	 */
+	private static class ShiftOutOfRangeOperation extends CompilationUnitRewriteOperation {
+
+		private final Match match;
+		private final long maskedValue;
+
+<span class="fc" id="L151">		public ShiftOutOfRangeOperation(Match match, long maskedValue) {</span>
+<span class="fc" id="L152">			this.match = match;</span>
+<span class="fc" id="L153">			this.maskedValue = maskedValue;</span>
+<span class="fc" id="L154">		}</span>
+
+		@Override
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+<span class="fc" id="L158">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L159">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L160">			TextEditGroup group = createTextEditGroup(&quot;Replace out-of-range shift amount&quot;, cuRewrite); //$NON-NLS-1$</span>
+
+<span class="fc" id="L162">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">			if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L164">				return;</span>
+			}
+
+<span class="fc" id="L167">			InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
+<span class="fc" id="L168">			NumberLiteral newLiteral = ast.newNumberLiteral(String.valueOf(maskedValue));</span>
+<span class="fc" id="L169">			rewrite.replace(infixExpr.getRightOperand(), newLiteral, group);</span>
+<span class="fc" id="L170">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

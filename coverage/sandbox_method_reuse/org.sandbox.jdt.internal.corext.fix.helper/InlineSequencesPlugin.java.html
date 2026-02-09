@@ -90,160 +90,155 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.VariableMapping;
 	public void rewrite(Object fixcore, ReferenceHolder&lt;?, ?&gt; holder,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
 		
-		// Cast to the correct types
-<span class="fc" id="L94">		MethodReuseCleanUpFixCore fixCore = (MethodReuseCleanUpFixCore) fixcore;</span>
-		
 		// Get the method declaration and match from the holder
-<span class="fc" id="L97">		MethodDeclaration targetMethod = (MethodDeclaration) holder.get(0);</span>
-<span class="fc" id="L98">		InlineSequenceMatch match = (InlineSequenceMatch) holder.get(1);</span>
+<span class="fc" id="L94">		MethodDeclaration targetMethod = (MethodDeclaration) holder.get(0);</span>
+<span class="fc" id="L95">		InlineSequenceMatch match = (InlineSequenceMatch) holder.get(1);</span>
 		
-<span class="pc bpc" id="L100" title="2 of 4 branches missed.">		if (targetMethod == null || match == null) {</span>
-<span class="nc" id="L101">			return;</span>
+<span class="pc bpc" id="L97" title="2 of 4 branches missed.">		if (targetMethod == null || match == null) {</span>
+<span class="nc" id="L98">			return;</span>
 		}
 		
 		// Important: Get the AST from cuRewrite's root, not from the original nodes
-<span class="fc" id="L105">		AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L106">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L102">		AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L103">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
 		
 		// Set up tight source range computer
 		TightSourceRangeComputer rangeComputer;
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
-<span class="nc" id="L111">			rangeComputer = (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
-<span class="nc" id="L112">		} else {</span>
-<span class="fc" id="L113">			rangeComputer = new TightSourceRangeComputer();</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">		if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
+<span class="nc" id="L108">			rangeComputer = (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
+<span class="nc" id="L109">		} else {</span>
+<span class="fc" id="L110">			rangeComputer = new TightSourceRangeComputer();</span>
 		}
 		
-<span class="fc" id="L116">		List&lt;Statement&gt; statementsToReplace = match.getMatchingStatements();</span>
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (!statementsToReplace.isEmpty()) {</span>
-<span class="fc" id="L118">			rangeComputer.addTightSourceNode(statementsToReplace.get(0));</span>
+<span class="fc" id="L113">		List&lt;Statement&gt; statementsToReplace = match.getMatchingStatements();</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">		if (!statementsToReplace.isEmpty()) {</span>
+<span class="fc" id="L115">			rangeComputer.addTightSourceNode(statementsToReplace.get(0));</span>
 		}
-<span class="fc" id="L120">		rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
+<span class="fc" id="L117">		rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
 		
 		// Create the method invocation
-<span class="fc" id="L123">		VariableMapping variableMapping = match.getVariableMapping();</span>
-<span class="fc" id="L124">		MethodInvocation methodCall = MethodCallReplacer.createMethodCall(ast, targetMethod, variableMapping);</span>
+<span class="fc" id="L120">		VariableMapping variableMapping = match.getVariableMapping();</span>
+<span class="fc" id="L121">		MethodInvocation methodCall = MethodCallReplacer.createMethodCall(ast, targetMethod, variableMapping);</span>
 		
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		if (methodCall == null) {</span>
-<span class="nc" id="L127">			return;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		if (methodCall == null) {</span>
+<span class="nc" id="L124">			return;</span>
 		}
 		
 		// Determine how to replace based on the target method's return type
-<span class="fc" id="L131">		replaceStatementsWithMethodCall(rewrite, ast, targetMethod, methodCall, statementsToReplace, group);</span>
-<span class="fc" id="L132">	}</span>
+<span class="fc" id="L128">		replaceStatementsWithMethodCall(rewrite, ast, targetMethod, methodCall, statementsToReplace, group);</span>
+<span class="fc" id="L129">	}</span>
 
 	/**
 	 * Replace the inline code sequence with a method call
 	 * Handles both return statements and variable declarations
 	 */
-	@SuppressWarnings(&quot;unchecked&quot;)
 	private void replaceStatementsWithMethodCall(ASTRewrite rewrite, AST ast, 
 			MethodDeclaration targetMethod, MethodInvocation methodCall,
 			List&lt;Statement&gt; statementsToReplace, TextEditGroup group) {
 		
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">		if (statementsToReplace.isEmpty()) {</span>
-<span class="nc" id="L144">			return;</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		if (statementsToReplace.isEmpty()) {</span>
+<span class="nc" id="L140">			return;</span>
 		}
 		
-<span class="fc" id="L147">		Statement firstStatement = statementsToReplace.get(0);</span>
-<span class="fc" id="L148">		ASTNode parent = firstStatement.getParent();</span>
+<span class="fc" id="L143">		Statement firstStatement = statementsToReplace.get(0);</span>
+<span class="fc" id="L144">		ASTNode parent = firstStatement.getParent();</span>
 		
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (!(parent instanceof Block)) {</span>
-<span class="nc" id="L151">			return;</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (!(parent instanceof Block)) {</span>
+<span class="nc" id="L147">			return;</span>
 		}
 		
-<span class="fc" id="L154">		ListRewrite listRewrite = rewrite.getListRewrite(parent, Block.STATEMENTS_PROPERTY);</span>
+<span class="fc" id="L150">		ListRewrite listRewrite = rewrite.getListRewrite(parent, Block.STATEMENTS_PROPERTY);</span>
 		
 		// Check if the target method has a return statement
 		// If so, we need to handle variable declaration specially
-<span class="fc" id="L158">		boolean targetReturnsValue = methodReturnsValue(targetMethod);</span>
-<span class="fc" id="L159">		Statement lastInlineStatement = statementsToReplace.get(statementsToReplace.size() - 1);</span>
+<span class="fc" id="L154">		boolean targetReturnsValue = methodReturnsValue(targetMethod);</span>
+<span class="fc" id="L155">		Statement lastInlineStatement = statementsToReplace.get(statementsToReplace.size() - 1);</span>
 		
-<span class="pc bpc" id="L161" title="2 of 4 branches missed.">		if (targetReturnsValue &amp;&amp; lastInlineStatement instanceof VariableDeclarationStatement) {</span>
+<span class="pc bpc" id="L157" title="2 of 4 branches missed.">		if (targetReturnsValue &amp;&amp; lastInlineStatement instanceof VariableDeclarationStatement) {</span>
 			// The last statement is a variable declaration that corresponds to the return value
 			// Replace it with a variable declaration using the method call
-<span class="fc" id="L164">			VariableDeclarationStatement varDecl = (VariableDeclarationStatement) lastInlineStatement;</span>
+<span class="fc" id="L160">			VariableDeclarationStatement varDecl = (VariableDeclarationStatement) lastInlineStatement;</span>
 			
 			// Defensive check: ensure there is at least one fragment before accessing index 0
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">			if (varDecl.fragments().isEmpty()) {</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">			if (varDecl.fragments().isEmpty()) {</span>
 				// Fallback to simple replacement with a method call expression
-<span class="nc" id="L169">				ExpressionStatement expressionStatement = ast.newExpressionStatement((Expression) ASTNode.copySubtree(ast, methodCall));</span>
-<span class="nc" id="L170">				listRewrite.replace(firstStatement, expressionStatement, group);</span>
+<span class="nc" id="L165">				ExpressionStatement expressionStatement = ast.newExpressionStatement((Expression) ASTNode.copySubtree(ast, methodCall));</span>
+<span class="nc" id="L166">				listRewrite.replace(firstStatement, expressionStatement, group);</span>
 				
 				// Remove remaining statements
-<span class="nc bnc" id="L173" title="All 2 branches missed.">				for (int i = 1; i &lt; statementsToReplace.size(); i++) {</span>
-<span class="nc" id="L174">					listRewrite.remove(statementsToReplace.get(i), group);</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">				for (int i = 1; i &lt; statementsToReplace.size(); i++) {</span>
+<span class="nc" id="L170">					listRewrite.remove(statementsToReplace.get(i), group);</span>
 				}
-<span class="nc" id="L176">				return;</span>
+<span class="nc" id="L172">				return;</span>
 			}
 			
-<span class="fc" id="L179">			VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);</span>
+<span class="fc" id="L175">			VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);</span>
 			
 			// Create new variable declaration with method call as initializer
-<span class="fc" id="L182">			VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L183">			newFragment.setName(ast.newSimpleName(fragment.getName().getIdentifier()));</span>
-<span class="fc" id="L184">			newFragment.setInitializer((Expression) ASTNode.copySubtree(ast, methodCall));</span>
+<span class="fc" id="L178">			VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L179">			newFragment.setName(ast.newSimpleName(fragment.getName().getIdentifier()));</span>
+<span class="fc" id="L180">			newFragment.setInitializer((Expression) ASTNode.copySubtree(ast, methodCall));</span>
 			
-<span class="fc" id="L186">			VariableDeclarationStatement newVarDecl = ast.newVariableDeclarationStatement(newFragment);</span>
-<span class="fc" id="L187">			newVarDecl.setType((org.eclipse.jdt.core.dom.Type) ASTNode.copySubtree(ast, varDecl.getType()));</span>
+<span class="fc" id="L182">			VariableDeclarationStatement newVarDecl = ast.newVariableDeclarationStatement(newFragment);</span>
+<span class="fc" id="L183">			newVarDecl.setType((org.eclipse.jdt.core.dom.Type) ASTNode.copySubtree(ast, varDecl.getType()));</span>
 			
 			// Replace the first statement with the new variable declaration
-<span class="fc" id="L190">			listRewrite.replace(firstStatement, newVarDecl, group);</span>
+<span class="fc" id="L186">			listRewrite.replace(firstStatement, newVarDecl, group);</span>
 			
 			// Remove intermediate statements (but not the last one which we're effectively replacing)
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">			for (int i = 1; i &lt; statementsToReplace.size() - 1; i++) {</span>
-<span class="nc" id="L194">				listRewrite.remove(statementsToReplace.get(i), group);</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">			for (int i = 1; i &lt; statementsToReplace.size() - 1; i++) {</span>
+<span class="nc" id="L190">				listRewrite.remove(statementsToReplace.get(i), group);</span>
 			}
 			
 			// Remove the last statement
-<span class="fc bfc" id="L198" title="All 2 branches covered.">			if (statementsToReplace.size() &gt; 1) {</span>
-<span class="fc" id="L199">				listRewrite.remove(lastInlineStatement, group);</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">			if (statementsToReplace.size() &gt; 1) {</span>
+<span class="fc" id="L195">				listRewrite.remove(lastInlineStatement, group);</span>
 			}
-<span class="fc" id="L201">		} else {</span>
+<span class="fc" id="L197">		} else {</span>
 			// Simple case: just replace with expression statement
-<span class="nc" id="L203">			ExpressionStatement expressionStatement = ast.newExpressionStatement((Expression) ASTNode.copySubtree(ast, methodCall));</span>
-<span class="nc" id="L204">			listRewrite.replace(firstStatement, expressionStatement, group);</span>
+<span class="nc" id="L199">			ExpressionStatement expressionStatement = ast.newExpressionStatement((Expression) ASTNode.copySubtree(ast, methodCall));</span>
+<span class="nc" id="L200">			listRewrite.replace(firstStatement, expressionStatement, group);</span>
 			
 			// Remove remaining statements
-<span class="nc bnc" id="L207" title="All 2 branches missed.">			for (int i = 1; i &lt; statementsToReplace.size(); i++) {</span>
-<span class="nc" id="L208">				listRewrite.remove(statementsToReplace.get(i), group);</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">			for (int i = 1; i &lt; statementsToReplace.size(); i++) {</span>
+<span class="nc" id="L204">				listRewrite.remove(statementsToReplace.get(i), group);</span>
 			}
 		}
-<span class="fc" id="L211">	}</span>
+<span class="fc" id="L207">	}</span>
 
 	/**
 	 * Check if a method returns a value (has a return statement with an expression)
 	 */
-	@SuppressWarnings(&quot;unchecked&quot;)
 	private boolean methodReturnsValue(MethodDeclaration method) {
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if (method.getBody() == null) {</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">		if (method.getBody() == null) {</span>
+<span class="nc" id="L214">			return false;</span>
+		}
+		
+<span class="fc" id="L217">		List&lt;Statement&gt; statements = method.getBody().statements();</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if (statements.isEmpty()) {</span>
 <span class="nc" id="L219">			return false;</span>
 		}
 		
-<span class="fc" id="L222">		List&lt;Statement&gt; statements = method.getBody().statements();</span>
-<span class="pc bpc" id="L223" title="1 of 2 branches missed.">		if (statements.isEmpty()) {</span>
-<span class="nc" id="L224">			return false;</span>
-		}
-		
 		// Check the last statement
-<span class="fc" id="L228">		Statement lastStatement = statements.get(statements.size() - 1);</span>
-<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		if (lastStatement instanceof ReturnStatement) {</span>
-<span class="fc" id="L230">			ReturnStatement returnStmt = (ReturnStatement) lastStatement;</span>
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">			return returnStmt.getExpression() != null;</span>
+<span class="fc" id="L223">		Statement lastStatement = statements.get(statements.size() - 1);</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		if (lastStatement instanceof ReturnStatement) {</span>
+<span class="fc" id="L225">			ReturnStatement returnStmt = (ReturnStatement) lastStatement;</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">			return returnStmt.getExpression() != null;</span>
 		}
 		
-<span class="nc" id="L234">		return false;</span>
+<span class="nc" id="L229">		return false;</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L239" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L240">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L235">			return &quot;&quot;&quot;</span>
 				// After: Inline code replaced with method call
 				String name = formatName(firstName, lastName);
 				System.out.println(name);
 				&quot;&quot;&quot;;
 		} else {
-<span class="nc" id="L246">			return &quot;&quot;&quot;</span>
+<span class="nc" id="L241">			return &quot;&quot;&quot;</span>
 				// Before: Duplicated code inline
 				String name = firstName.trim() + &quot; &quot; + lastName.trim();
 				System.out.println(name);

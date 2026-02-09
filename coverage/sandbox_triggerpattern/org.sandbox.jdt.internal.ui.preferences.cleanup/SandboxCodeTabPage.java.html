@@ -21,40 +21,50 @@ import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp;
 import org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp;
 
 /**
- * Preference tab page for string simplification cleanup options.
+ * Preference tab page for TriggerPattern-based cleanup options
+ * (string simplification, shift out of range, etc.).
  * 
  * @since 1.2.2
  */
-<span class="nc" id="L31">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
+<span class="nc" id="L33">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
 	
 	/**
 	 * Constant array for boolean selection
 	 */
-<span class="nc" id="L36">	static final String[] FALSE_TRUE = {</span>
-<span class="nc" id="L37">			CleanUpOptions.FALSE,</span>
-<span class="nc" id="L38">			CleanUpOptions.TRUE</span>
+<span class="nc" id="L38">	static final String[] FALSE_TRUE = {</span>
+<span class="nc" id="L39">			CleanUpOptions.FALSE,</span>
+<span class="nc" id="L40">			CleanUpOptions.TRUE</span>
 	};
 	
-<span class="nc" id="L41">	public static final String ID = &quot;org.sandbox.jdt.ui.cleanup.tabpage.string_simplification&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L43">	public static final String ID = &quot;org.sandbox.jdt.ui.cleanup.tabpage.triggerpattern&quot;; //$NON-NLS-1$</span>
 	
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
-<span class="nc" id="L45">		return new AbstractCleanUp[] {</span>
-<span class="nc" id="L46">				new StringSimplificationCleanUp(values)</span>
+<span class="nc" id="L47">		return new AbstractCleanUp[] {</span>
+<span class="nc" id="L48">				new StringSimplificationCleanUp(values),</span>
+<span class="nc" id="L49">				new ShiftOutOfRangeCleanUp(values)</span>
 		};
 	}
 	
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-<span class="nc" id="L52">		Group stringGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);</span>
-<span class="nc" id="L53">		final CheckboxPreference stringSimplification = createCheckboxPref(stringGroup, numColumns, </span>
-<span class="nc" id="L54">				CleanUpMessages.StringSimplificationTabPage_CheckboxName_StringSimplification, </span>
-<span class="nc" id="L55">				MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L56">		intent(stringGroup);</span>
-<span class="nc" id="L57">		registerPreference(stringSimplification);</span>
-<span class="nc" id="L58">	}</span>
+<span class="nc" id="L55">		Group stringGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);</span>
+<span class="nc" id="L56">		final CheckboxPreference stringSimplification = createCheckboxPref(stringGroup, numColumns, </span>
+<span class="nc" id="L57">				CleanUpMessages.StringSimplificationTabPage_CheckboxName_StringSimplification, </span>
+<span class="nc" id="L58">				MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L59">		intent(stringGroup);</span>
+<span class="nc" id="L60">		registerPreference(stringSimplification);</span>
+
+<span class="nc" id="L62">		Group shiftGroup = createGroup(numColumns, composite, CleanUpMessages.ShiftOutOfRangeTabPage_GroupName);</span>
+<span class="nc" id="L63">		final CheckboxPreference shiftOutOfRange = createCheckboxPref(shiftGroup, numColumns,</span>
+<span class="nc" id="L64">				CleanUpMessages.ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange,</span>
+<span class="nc" id="L65">				MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L66">		intent(shiftGroup);</span>
+<span class="nc" id="L67">		registerPreference(shiftOutOfRange);</span>
+<span class="nc" id="L68">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

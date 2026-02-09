@@ -389,27 +389,26 @@ public class StreamConcatRefactorer {
 
 		// We have a match! Create a merged VariableDeclarationStatement
 <span class="fc" id="L391">		VariableDeclarationStatement originalDecl = (VariableDeclarationStatement) precedingStmt;</span>
-<span class="fc" id="L392">		VariableDeclarationFragment originalFragment = (VariableDeclarationFragment) originalDecl.fragments().get(0);</span>
 
-<span class="fc" id="L394">		AST ast = firstLoop.getAST();</span>
+<span class="fc" id="L393">		AST ast = firstLoop.getAST();</span>
 
 		// Create new VariableDeclarationFragment with the concat expression as initializer
-<span class="fc" id="L397">		VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L398">		newFragment.setName(ast.newSimpleName(group.getTargetVariable()));</span>
-<span class="fc" id="L399">		newFragment.setInitializer((MethodInvocation) ASTNode.copySubtree(ast, concatExpression));</span>
+<span class="fc" id="L396">		VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L397">		newFragment.setName(ast.newSimpleName(group.getTargetVariable()));</span>
+<span class="fc" id="L398">		newFragment.setInitializer((MethodInvocation) ASTNode.copySubtree(ast, concatExpression));</span>
 
 		// Create new VariableDeclarationStatement with the same type
-<span class="fc" id="L402">		VariableDeclarationStatement newDecl = ast.newVariableDeclarationStatement(newFragment);</span>
-<span class="fc" id="L403">		Type originalType = originalDecl.getType();</span>
-<span class="fc" id="L404">		newDecl.setType((Type) ASTNode.copySubtree(ast, originalType));</span>
+<span class="fc" id="L401">		VariableDeclarationStatement newDecl = ast.newVariableDeclarationStatement(newFragment);</span>
+<span class="fc" id="L402">		Type originalType = originalDecl.getType();</span>
+<span class="fc" id="L403">		newDecl.setType((Type) ASTNode.copySubtree(ast, originalType));</span>
 
 		// Copy modifiers if any
-<span class="fc" id="L407">		newDecl.modifiers().addAll(ASTNode.copySubtrees(ast, originalDecl.modifiers()));</span>
+<span class="fc" id="L406">		newDecl.modifiers().addAll(ASTNode.copySubtrees(ast, originalDecl.modifiers()));</span>
 
 		// Remove the preceding declaration
-<span class="fc" id="L410">		rewrite.remove(precedingStmt, editGroup);</span>
+<span class="fc" id="L409">		rewrite.remove(precedingStmt, editGroup);</span>
 
-<span class="fc" id="L412">		return newDecl;</span>
+<span class="fc" id="L411">		return newDecl;</span>
 	}
 
 	/**
@@ -421,43 +420,43 @@ public class StreamConcatRefactorer {
 	 */
 	private String getCollectionDeclarationVariable(Statement stmt) {
 		// Try the standard empty collection check first
-<span class="fc" id="L424">		String emptyVar = CollectPatternDetector.isEmptyCollectionDeclaration(stmt);</span>
-<span class="pc bpc" id="L425" title="1 of 2 branches missed.">		if (emptyVar != null) {</span>
-<span class="nc" id="L426">			return emptyVar;</span>
+<span class="fc" id="L423">		String emptyVar = CollectPatternDetector.isEmptyCollectionDeclaration(stmt);</span>
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">		if (emptyVar != null) {</span>
+<span class="nc" id="L425">			return emptyVar;</span>
 		}
 
 		// Also accept collections with constructor arguments (e.g., new ArrayList&lt;&gt;(size))
-<span class="pc bpc" id="L430" title="1 of 2 branches missed.">		if (!(stmt instanceof VariableDeclarationStatement)) {</span>
-<span class="nc" id="L431">			return null;</span>
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">		if (!(stmt instanceof VariableDeclarationStatement)) {</span>
+<span class="nc" id="L430">			return null;</span>
 		}
 
-<span class="fc" id="L434">		VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>
-<span class="pc bpc" id="L435" title="1 of 2 branches missed.">		if (varDecl.fragments().size() != 1) {</span>
-<span class="nc" id="L436">			return null;</span>
+<span class="fc" id="L433">		VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">		if (varDecl.fragments().size() != 1) {</span>
+<span class="nc" id="L435">			return null;</span>
 		}
 
-<span class="fc" id="L439">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);</span>
-<span class="fc" id="L440">		Expression initializer = fragment.getInitializer();</span>
+<span class="fc" id="L438">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);</span>
+<span class="fc" id="L439">		Expression initializer = fragment.getInitializer();</span>
 
-<span class="pc bpc" id="L442" title="1 of 2 branches missed.">		if (!(initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation)) {</span>
-<span class="nc" id="L443">			return null;</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">		if (!(initializer instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation)) {</span>
+<span class="nc" id="L442">			return null;</span>
 		}
 
-<span class="fc" id="L446">		org.eclipse.jdt.core.dom.ClassInstanceCreation creation = </span>
-<span class="fc" id="L447">			(org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer;</span>
+<span class="fc" id="L445">		org.eclipse.jdt.core.dom.ClassInstanceCreation creation = </span>
+<span class="fc" id="L446">			(org.eclipse.jdt.core.dom.ClassInstanceCreation) initializer;</span>
 		
-<span class="fc" id="L449">		org.eclipse.jdt.core.dom.ITypeBinding typeBinding = creation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L450" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
-<span class="nc" id="L451">			return null;</span>
+<span class="fc" id="L448">		org.eclipse.jdt.core.dom.ITypeBinding typeBinding = creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L449" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L450">			return null;</span>
 		}
 
 		// Check if it's a supported collection type
-<span class="fc" id="L455">		String qualifiedName = typeBinding.getErasure().getQualifiedName();</span>
-<span class="pc bpc" id="L456" title="1 of 2 branches missed.">		if (CollectorType.fromCollectionType(qualifiedName) != null) {</span>
-<span class="fc" id="L457">			return fragment.getName().getIdentifier();</span>
+<span class="fc" id="L454">		String qualifiedName = typeBinding.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">		if (CollectorType.fromCollectionType(qualifiedName) != null) {</span>
+<span class="fc" id="L456">			return fragment.getName().getIdentifier();</span>
 		}
 
-<span class="nc" id="L460">		return null;</span>
+<span class="nc" id="L459">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

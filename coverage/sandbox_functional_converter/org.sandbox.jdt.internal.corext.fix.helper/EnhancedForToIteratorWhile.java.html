@@ -137,27 +137,26 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="nc" id="L137">		ASTNode parent = forStmt.getParent();</span>
 <span class="nc bnc" id="L138" title="All 2 branches missed.">		if (parent instanceof Block) {</span>
 <span class="nc" id="L139">			Block parentBlock = (Block) parent;</span>
-<span class="nc" id="L140">			int index = parentBlock.statements().indexOf(forStmt);</span>
 			
-<span class="nc" id="L142">			org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
-<span class="nc" id="L143">			listRewrite.insertBefore(iteratorDecl, forStmt, group);</span>
-<span class="nc" id="L144">			listRewrite.replace(forStmt, whileStmt, group);</span>
-<span class="nc" id="L145">		} else {</span>
+<span class="nc" id="L141">			org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
+<span class="nc" id="L142">			listRewrite.insertBefore(iteratorDecl, forStmt, group);</span>
+<span class="nc" id="L143">			listRewrite.replace(forStmt, whileStmt, group);</span>
+<span class="nc" id="L144">		} else {</span>
 			// If not in a block, we need to create one
-<span class="nc" id="L147">			Block newBlock = ast.newBlock();</span>
-<span class="nc" id="L148">			newBlock.statements().add(iteratorDecl);</span>
-<span class="nc" id="L149">			newBlock.statements().add(whileStmt);</span>
-<span class="nc" id="L150">			rewrite.replace(forStmt, newBlock, group);</span>
+<span class="nc" id="L146">			Block newBlock = ast.newBlock();</span>
+<span class="nc" id="L147">			newBlock.statements().add(iteratorDecl);</span>
+<span class="nc" id="L148">			newBlock.statements().add(whileStmt);</span>
+<span class="nc" id="L149">			rewrite.replace(forStmt, newBlock, group);</span>
 		}
 		
 		// Add Iterator import
-<span class="nc" id="L154">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L155">	}</span>
+<span class="nc" id="L153">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L154">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L159" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L160">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L159">			return &quot;&quot;&quot;</span>
 					Iterator&lt;String&gt; it = items.iterator();
 					while (it.hasNext()) {
 						String item = it.next();
@@ -165,7 +164,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 					}
 					&quot;&quot;&quot;;
 		}
-<span class="nc" id="L168">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L167">		return &quot;&quot;&quot;</span>
 				for (String item : items) {
 					System.out.println(item);
 				}

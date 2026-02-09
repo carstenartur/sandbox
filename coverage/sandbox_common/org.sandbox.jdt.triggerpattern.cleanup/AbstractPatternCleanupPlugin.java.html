@@ -14,10 +14,12 @@
 package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -27,8 +29,10 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.HintContext;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 
@@ -67,11 +71,11 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
  * &lt;/ul&gt;
  * 
  * @param &lt;H&gt; the holder type for storing match information
- * @since 1.3.0
+ * @since 1.2.5
  */
-<span class="nc" id="L72">public abstract class AbstractPatternCleanupPlugin&lt;H&gt; {</span>
+<span class="fc" id="L76">public abstract class AbstractPatternCleanupPlugin&lt;H&gt; {</span>
     
-<span class="nc" id="L74">    private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();</span>
+<span class="fc" id="L78">    private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();</span>
     
     /**
      * Returns the Pattern extracted from the @CleanupPattern annotation.
@@ -84,12 +88,12 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return the pattern for matching, or null if no @CleanupPattern annotation is present
      */
     public Pattern getPattern() {
-<span class="nc" id="L87">        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);</span>
-<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (annotation == null) {</span>
-<span class="nc" id="L89">            return null; // Subclass uses getPatterns() instead</span>
+<span class="nc" id="L91">        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (annotation == null) {</span>
+<span class="nc" id="L93">            return null; // Subclass uses getPatterns() instead</span>
         }
-<span class="nc bnc" id="L91" title="All 2 branches missed.">        String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();</span>
-<span class="nc" id="L92">        return new Pattern(annotation.value(), annotation.kind(), qualifiedType);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();</span>
+<span class="nc" id="L96">        return new Pattern(annotation.value(), annotation.kind(), qualifiedType);</span>
     }
     
     /**
@@ -101,12 +105,12 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @throws IllegalStateException if neither @CleanupPattern annotation is present nor getPatterns() is overridden
      */
     protected List&lt;Pattern&gt; getPatterns() {
-<span class="nc" id="L104">        Pattern pattern = getPattern();</span>
-<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (pattern != null) {</span>
-<span class="nc" id="L106">            return List.of(pattern);</span>
+<span class="nc" id="L108">        Pattern pattern = getPattern();</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if (pattern != null) {</span>
+<span class="nc" id="L110">            return List.of(pattern);</span>
         }
-<span class="nc" id="L108">        throw new IllegalStateException(</span>
-<span class="nc" id="L109">            &quot;Plugin &quot; + getClass().getSimpleName() +  //$NON-NLS-1$</span>
+<span class="nc" id="L112">        throw new IllegalStateException(</span>
+<span class="nc" id="L113">            &quot;Plugin &quot; + getClass().getSimpleName() +  //$NON-NLS-1$</span>
             &quot; must either be annotated with @CleanupPattern or override getPatterns() method to define patterns&quot;); //$NON-NLS-1$
     }
     
@@ -116,8 +120,8 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return the cleanup ID, or empty string if annotation is not present or cleanupId is not set
      */
     public String getCleanupId() {
-<span class="nc" id="L119">        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);</span>
-<span class="nc bnc" id="L120" title="All 2 branches missed.">        return annotation != null ? annotation.cleanupId() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L123">        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        return annotation != null ? annotation.cleanupId() : &quot;&quot;; //$NON-NLS-1$</span>
     }
     
     /**
@@ -126,8 +130,8 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return the description, or empty string if annotation is not present or description is not set
      */
     public String getDescription() {
-<span class="nc" id="L129">        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">        return annotation != null ? annotation.description() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L133">        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        return annotation != null ? annotation.description() : &quot;&quot;; //$NON-NLS-1$</span>
     }
     
     /**
@@ -148,7 +152,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return true if this match should be processed
      */
     protected boolean shouldProcess(Match match, Pattern pattern) {
-<span class="nc" id="L151">        return true;</span>
+<span class="nc" id="L155">        return true;</span>
     }
     
     /**
@@ -161,12 +165,12 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return true to stop processing more matches, false to continue
      */
     protected boolean processMatch(Match match, Object fixcore, Object operations) {
-<span class="nc" id="L164">        H holder = createHolder(match);</span>
+<span class="nc" id="L168">        H holder = createHolder(match);</span>
         if (holder != null) {
             // Subclasses that override this method handle their own operation creation
             // This default implementation is a hook for subclasses
         }
-<span class="nc" id="L169">        return false;</span>
+<span class="nc" id="L173">        return false;</span>
     }
     
     /**
@@ -178,12 +182,12 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return list of all matches
      */
     protected List&lt;Match&gt; findAllMatches(org.eclipse.jdt.core.dom.CompilationUnit compilationUnit, List&lt;Pattern&gt; patterns) {
-<span class="nc" id="L181">        java.util.List&lt;Match&gt; allMatches = new java.util.ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L182" title="All 2 branches missed.">        for (Pattern pattern : patterns) {</span>
-<span class="nc" id="L183">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
-<span class="nc" id="L184">            allMatches.addAll(matches);</span>
+<span class="nc" id="L185">        java.util.List&lt;Match&gt; allMatches = new java.util.ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        for (Pattern pattern : patterns) {</span>
+<span class="nc" id="L187">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
+<span class="nc" id="L188">            allMatches.addAll(matches);</span>
         }
-<span class="nc" id="L186">        return allMatches;</span>
+<span class="nc" id="L190">        return allMatches;</span>
     }
     
     /**
@@ -194,26 +198,26 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return true if types match, false otherwise
      */
     protected boolean validateQualifiedType(ASTNode node, String qualifiedType) {
-<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (node instanceof Annotation) {</span>
-<span class="nc" id="L198">            Annotation annotation = (Annotation) node;</span>
-<span class="nc" id="L199">            ITypeBinding binding = annotation.resolveTypeBinding();</span>
-<span class="nc bnc" id="L200" title="All 2 branches missed.">            if (binding != null) {</span>
-<span class="nc" id="L201">                return qualifiedType.equals(binding.getQualifiedName());</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (node instanceof Annotation) {</span>
+<span class="nc" id="L202">            Annotation annotation = (Annotation) node;</span>
+<span class="nc" id="L203">            ITypeBinding binding = annotation.resolveTypeBinding();</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">            if (binding != null) {</span>
+<span class="nc" id="L205">                return qualifiedType.equals(binding.getQualifiedName());</span>
             }
             // Fallback: check simple name
-<span class="nc" id="L204">            return annotation.getTypeName().getFullyQualifiedName().equals(</span>
-<span class="nc" id="L205">                    qualifiedType.substring(qualifiedType.lastIndexOf('.') + 1));</span>
+<span class="nc" id="L208">            return annotation.getTypeName().getFullyQualifiedName().equals(</span>
+<span class="nc" id="L209">                    qualifiedType.substring(qualifiedType.lastIndexOf('.') + 1));</span>
         }
         // Add more type checks as needed
-<span class="nc" id="L208">        return true;</span>
+<span class="nc" id="L212">        return true;</span>
     }
     
     // Regex pattern for parsing replacement patterns (compiled once for performance)
     // Supports:
     // - @AnnotationName or @AnnotationName($placeholder) or @AnnotationName($placeholder$)
     // - MethodName.method($args) or MethodName.method($args$)
-<span class="nc" id="L215">    private static final java.util.regex.Pattern REPLACEMENT_PATTERN = </span>
-<span class="nc" id="L216">        java.util.regex.Pattern.compile(&quot;@?([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(?:\\((.*)\\))?&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L219">    private static final java.util.regex.Pattern REPLACEMENT_PATTERN = </span>
+<span class="fc" id="L220">        java.util.regex.Pattern.compile(&quot;@?([A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(?:\\((.*)\\))?&quot;); //$NON-NLS-1$</span>
     
     /**
      * Processes AST rewrite operations.
@@ -235,86 +239,331 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
     /**
      * Provides default implementation of processRewrite using @RewriteRule annotation.
      * This method can be called by subclasses that want to use declarative @RewriteRule
-     * for simple annotation replacements.
+     * for pattern-based transformations.
      * 
-     * &lt;p&gt;&lt;b&gt;Limitations:&lt;/b&gt; This default implementation only supports:
+     * &lt;p&gt;&lt;b&gt;Supported patterns:&lt;/b&gt;&lt;/p&gt;
      * &lt;ul&gt;
-     *   &lt;li&gt;MarkerAnnotation (no parameters): {@code @BeforeEach}&lt;/li&gt;
-     *   &lt;li&gt;SingleMemberAnnotation (single value): {@code @Disabled($value)}&lt;/li&gt;
+     *   &lt;li&gt;ANNOTATION patterns: MarkerAnnotation, SingleMemberAnnotation&lt;/li&gt;
+     *   &lt;li&gt;EXPRESSION patterns: Any expression replacement (delegates to FixUtilities.rewriteFix)&lt;/li&gt;
+     *   &lt;li&gt;METHOD_CALL patterns: Method invocation replacement (delegates to FixUtilities.rewriteFix)&lt;/li&gt;
+     *   &lt;li&gt;CONSTRUCTOR patterns: Constructor invocation replacement (delegates to FixUtilities.rewriteFix)&lt;/li&gt;
+     *   &lt;li&gt;STATEMENT patterns: Statement replacement (delegates to FixUtilities.rewriteFix)&lt;/li&gt;
+     *   &lt;li&gt;FIELD patterns: Field declaration replacement (delegates to FixUtilities.rewriteFix)&lt;/li&gt;
      * &lt;/ul&gt;
-     * NormalAnnotation with named parameters like {@code @Ignore(value=&quot;reason&quot;)} is not supported.
-     * &lt;/p&gt;
+     * 
+     * &lt;p&gt;&lt;b&gt;Limitations for ANNOTATION patterns:&lt;/b&gt;&lt;/p&gt;
+     * &lt;ul&gt;
+     *   &lt;li&gt;NormalAnnotation with named parameters like {@code @Ignore(value=&quot;reason&quot;)} is not supported.&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * &lt;p&gt;&lt;b&gt;Type-safe version:&lt;/b&gt; This overload accepts a {@link MatchHolder} interface,
+     * avoiding reflection. For legacy holders that don't implement the interface, use
+     * {@link #processRewriteWithRule(TextEditGroup, ASTRewrite, AST, ImportRewrite, Object)}.&lt;/p&gt;
      * 
      * @param group the text edit group for tracking changes
      * @param rewriter the AST rewriter
      * @param ast the AST instance
      * @param importRewriter the import rewriter
-     * @param holder the holder containing transformation information (must provide getAnnotation() and getBindingAsExpression() methods)
+     * @param holder the holder containing transformation information (must implement {@link MatchHolder})
      */
     protected void processRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
-            ImportRewrite importRewriter, Object holder) {
+            ImportRewrite importRewriter, MatchHolder holder) {
         
-<span class="nc" id="L257">        RewriteRule rewriteRule = this.getClass().getAnnotation(RewriteRule.class);</span>
-<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (rewriteRule == null) {</span>
-<span class="nc" id="L259">            throw new UnsupportedOperationException(</span>
-<span class="nc" id="L260">                &quot;Plugin &quot; + getClass().getSimpleName() +  //$NON-NLS-1$</span>
+<span class="fc" id="L272">        RewriteRule rewriteRule = getRewriteRule();</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">        if (rewriteRule == null) {</span>
+<span class="nc" id="L274">            throw new UnsupportedOperationException(</span>
+<span class="nc" id="L275">                &quot;Plugin &quot; + getClass().getSimpleName() +  //$NON-NLS-1$</span>
                 &quot; must be annotated with @RewriteRule because it does not override processRewrite()&quot;); //$NON-NLS-1$
         }
         
+        // Check if this is an annotation pattern
+<span class="fc" id="L280">        Annotation annotation = holder.getAnnotation();</span>
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">        if (annotation != null) {</span>
+<span class="fc" id="L282">            processAnnotationRewriteWithRuleTypeSafe(group, rewriter, ast, importRewriter, holder, rewriteRule);</span>
+<span class="fc" id="L283">            return;</span>
+        }
+        
+        // For non-annotation patterns, get the matched node
+<span class="nc" id="L287">        ASTNode matchedNode = holder.getMinv();</span>
+        
+        // Determine the pattern kind from the matched node type
+<span class="nc" id="L290">        PatternKind patternKind = org.sandbox.jdt.triggerpattern.api.FixUtilities.determinePatternKindFromNode(matchedNode);</span>
+        
+        // For ANNOTATION patterns detected via node type, use the annotation replacement logic
+<span class="nc bnc" id="L293" title="All 2 branches missed.">        if (patternKind == PatternKind.ANNOTATION) {</span>
+<span class="nc" id="L294">            processAnnotationRewriteWithRuleTypeSafe(group, rewriter, ast, importRewriter, holder, rewriteRule);</span>
+<span class="nc" id="L295">        } else {</span>
+            // For all other patterns (EXPRESSION, METHOD_CALL, CONSTRUCTOR, STATEMENT, FIELD),
+            // delegate to FixUtilities.rewriteFix()
+<span class="nc" id="L298">            processGenericRewriteWithRuleTypeSafe(group, rewriter, ast, importRewriter, holder, rewriteRule, matchedNode);</span>
+        }
+<span class="nc" id="L300">    }</span>
+    
+    /**
+     * Returns the RewriteRule annotation for this plugin.
+     * 
+     * &lt;p&gt;Subclasses can override this method to provide a RewriteRule from a different source
+     * (e.g., when using composition/delegation patterns where the annotation is on
+     * an outer class).&lt;/p&gt;
+     * 
+     * @return the RewriteRule annotation, or null if not present
+     */
+    protected RewriteRule getRewriteRule() {
+<span class="nc" id="L312">        return this.getClass().getAnnotation(RewriteRule.class);</span>
+    }
+    
+    /**
+     * Legacy version of processRewriteWithRule that uses reflection.
+     * 
+     * &lt;p&gt;&lt;b&gt;Deprecated:&lt;/b&gt; Use the type-safe version with {@link MatchHolder} instead.&lt;/p&gt;
+     * 
+     * @param group the text edit group for tracking changes
+     * @param rewriter the AST rewriter
+     * @param ast the AST instance
+     * @param importRewriter the import rewriter
+     * @param holder the holder containing transformation information
+     * @deprecated Use {@link #processRewriteWithRule(TextEditGroup, ASTRewrite, AST, ImportRewrite, MatchHolder)} instead
+     */
+    @Deprecated
+    protected void processRewriteWithRuleLegacy(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, Object holder) {
+        
+<span class="nc" id="L331">        RewriteRule rewriteRule = getRewriteRule();</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        if (rewriteRule == null) {</span>
+<span class="nc" id="L333">            throw new UnsupportedOperationException(</span>
+<span class="nc" id="L334">                &quot;Plugin &quot; + getClass().getSimpleName() +  //$NON-NLS-1$</span>
+                &quot; must be annotated with @RewriteRule because it does not override processRewrite()&quot;); //$NON-NLS-1$
+        }
+        
+        // Try to detect if this is an annotation pattern by checking for getAnnotation() method
+        try {
+<span class="nc" id="L340">            java.lang.reflect.Method method = holder.getClass().getMethod(&quot;getAnnotation&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L341">            Annotation annotation = (Annotation) method.invoke(holder);</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">            if (annotation != null) {</span>
+<span class="nc" id="L343">                processAnnotationRewriteWithRule(group, rewriter, ast, importRewriter, holder, rewriteRule);</span>
+<span class="nc" id="L344">                return;</span>
+            }
+<span class="nc" id="L346">        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {</span>
+            // Not an annotation pattern, continue to check for getMinv()
+        }
+        
+        // For non-annotation patterns, get the matched node
+<span class="nc" id="L351">        ASTNode matchedNode = getMatchedNodeFromHolder(holder);</span>
+        
+        // Determine the pattern kind from the matched node type
+<span class="nc" id="L354">        PatternKind patternKind = org.sandbox.jdt.triggerpattern.api.FixUtilities.determinePatternKindFromNode(matchedNode);</span>
+        
+        // For ANNOTATION patterns detected via node type, use the legacy annotation replacement logic
+<span class="nc bnc" id="L357" title="All 2 branches missed.">        if (patternKind == PatternKind.ANNOTATION) {</span>
+<span class="nc" id="L358">            processAnnotationRewriteWithRule(group, rewriter, ast, importRewriter, holder, rewriteRule);</span>
+<span class="nc" id="L359">        } else {</span>
+            // For all other patterns (EXPRESSION, METHOD_CALL, CONSTRUCTOR, STATEMENT, FIELD),
+            // delegate to FixUtilities.rewriteFix()
+<span class="nc" id="L362">            processGenericRewriteWithRule(group, rewriter, ast, importRewriter, holder, rewriteRule, matchedNode);</span>
+        }
+<span class="nc" id="L364">    }</span>
+    
+    /**
+     * Processes annotation rewrite using the legacy annotation replacement logic.
+     */
+    private void processAnnotationRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, Object holder, RewriteRule rewriteRule) {
+        
         // Process the replacement pattern
-<span class="nc" id="L265">        String replaceWith = rewriteRule.replaceWith();</span>
+<span class="nc" id="L373">        String replaceWith = rewriteRule.replaceWith();</span>
         
         // Use reflection to get annotation and bindings from holder
-<span class="nc" id="L268">        Annotation oldAnnotation = getAnnotationFromHolder(holder);</span>
+<span class="nc" id="L376">        Annotation oldAnnotation = getAnnotationFromHolder(holder);</span>
         
         // Parse the replacement pattern to extract annotation name and placeholders
-<span class="nc" id="L271">        AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);</span>
+<span class="nc" id="L379">        AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);</span>
         
         // Create the new annotation based on whether placeholders are present
         Annotation newAnnotation;
-<span class="nc bnc" id="L275" title="All 2 branches missed.">        if (replacementInfo.hasPlaceholders()) {</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">        if (replacementInfo.hasPlaceholders()) {</span>
             // Create SingleMemberAnnotation with the placeholder value
-<span class="nc" id="L277">            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
-<span class="nc" id="L278">            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));</span>
+<span class="nc" id="L385">            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="nc" id="L386">            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));</span>
             
             // Get the placeholder value from bindings
-<span class="nc" id="L281">            String placeholder = replacementInfo.placeholderName;</span>
-<span class="nc" id="L282">            Expression value = getBindingAsExpressionFromHolder(holder, &quot;$&quot; + placeholder); //$NON-NLS-1$</span>
+<span class="nc" id="L389">            String placeholder = replacementInfo.placeholderName;</span>
+<span class="nc" id="L390">            Expression value = getBindingAsExpressionFromHolder(holder, &quot;$&quot; + placeholder); //$NON-NLS-1$</span>
             
             // Fallback: if no binding is found, reuse the value from existing annotation
-<span class="nc bnc" id="L285" title="All 4 branches missed.">            if (value == null &amp;&amp; oldAnnotation instanceof SingleMemberAnnotation) {</span>
-<span class="nc" id="L286">                value = ((SingleMemberAnnotation) oldAnnotation).getValue();</span>
+<span class="nc bnc" id="L393" title="All 4 branches missed.">            if (value == null &amp;&amp; oldAnnotation instanceof SingleMemberAnnotation) {</span>
+<span class="nc" id="L394">                value = ((SingleMemberAnnotation) oldAnnotation).getValue();</span>
             }
             
-<span class="nc bnc" id="L289" title="All 2 branches missed.">            if (value != null) {</span>
-<span class="nc" id="L290">                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">            if (value != null) {</span>
+<span class="nc" id="L398">                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));</span>
             }
             
-<span class="nc" id="L293">            newAnnotation = singleMemberAnnotation;</span>
-<span class="nc" id="L294">        } else {</span>
+<span class="nc" id="L401">            newAnnotation = singleMemberAnnotation;</span>
+<span class="nc" id="L402">        } else {</span>
             // Create MarkerAnnotation (no parameters)
-<span class="nc" id="L296">            MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();</span>
-<span class="nc" id="L297">            markerAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));</span>
-<span class="nc" id="L298">            newAnnotation = markerAnnotation;</span>
+<span class="nc" id="L404">            MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();</span>
+<span class="nc" id="L405">            markerAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));</span>
+<span class="nc" id="L406">            newAnnotation = markerAnnotation;</span>
         }
         
         // Replace the old annotation with the new one
-<span class="nc" id="L302">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
+<span class="nc" id="L410">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
         
         // Handle imports
-<span class="nc bnc" id="L305" title="All 2 branches missed.">        for (String importToRemove : rewriteRule.removeImports()) {</span>
-<span class="nc" id="L306">            importRewriter.removeImport(importToRemove);</span>
+<span class="nc" id="L413">        processImports(importRewriter, rewriteRule);</span>
+<span class="nc" id="L414">    }</span>
+    
+    /**
+     * Type-safe version of processAnnotationRewriteWithRule using MatchHolder interface.
+     */
+    private void processAnnotationRewriteWithRuleTypeSafe(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, MatchHolder holder, RewriteRule rewriteRule) {
+        
+        // Process the replacement pattern
+<span class="fc" id="L423">        String replaceWith = rewriteRule.replaceWith();</span>
+        
+        // Get annotation directly from holder
+<span class="fc" id="L426">        Annotation oldAnnotation = holder.getAnnotation();</span>
+        
+        // Parse the replacement pattern to extract annotation name and placeholders
+<span class="fc" id="L429">        AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);</span>
+        
+        // Create the new annotation based on whether placeholders are present
+        Annotation newAnnotation;
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">        if (replacementInfo.hasPlaceholders()) {</span>
+            // Create SingleMemberAnnotation with the placeholder value
+<span class="nc" id="L435">            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="nc" id="L436">            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));</span>
+            
+            // Get the placeholder value from bindings
+<span class="nc" id="L439">            String placeholder = replacementInfo.placeholderName;</span>
+<span class="nc" id="L440">            Expression value = holder.getBindingAsExpression(&quot;$&quot; + placeholder); //$NON-NLS-1$</span>
+            
+            // Fallback: if no binding is found, reuse the value from existing annotation
+<span class="nc bnc" id="L443" title="All 4 branches missed.">            if (value == null &amp;&amp; oldAnnotation instanceof SingleMemberAnnotation) {</span>
+<span class="nc" id="L444">                value = ((SingleMemberAnnotation) oldAnnotation).getValue();</span>
+            }
+            
+<span class="nc bnc" id="L447" title="All 2 branches missed.">            if (value != null) {</span>
+<span class="nc" id="L448">                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));</span>
+            }
+            
+<span class="nc" id="L451">            newAnnotation = singleMemberAnnotation;</span>
+<span class="nc" id="L452">        } else {</span>
+            // Create MarkerAnnotation (no parameters)
+<span class="fc" id="L454">            MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();</span>
+<span class="fc" id="L455">            markerAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));</span>
+<span class="fc" id="L456">            newAnnotation = markerAnnotation;</span>
         }
-<span class="nc bnc" id="L308" title="All 2 branches missed.">        for (String importToAdd : rewriteRule.addImports()) {</span>
-<span class="nc" id="L309">            importRewriter.addImport(importToAdd);</span>
+        
+        // Replace the old annotation with the new one
+<span class="fc" id="L460">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
+        
+        // Handle imports
+<span class="fc" id="L463">        processImports(importRewriter, rewriteRule);</span>
+<span class="fc" id="L464">    }</span>
+    
+    /**
+     * Processes generic pattern rewrite by delegating to FixUtilities.rewriteFix().
+     */
+    private void processGenericRewriteWithRule(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, Object holder, RewriteRule rewriteRule, ASTNode matchedNode) {
+        
+        // Get bindings from holder
+<span class="nc" id="L473">        Map&lt;String, Object&gt; bindings = getBindingsFromHolder(holder);</span>
+        
+        // Create a Match from the holder data
+<span class="nc" id="L476">        Match match = new Match(matchedNode, bindings, matchedNode.getStartPosition(), matchedNode.getLength());</span>
+        
+        // Create a HintContext for FixUtilities.rewriteFix()
+<span class="nc" id="L479">        CompilationUnit cu = (CompilationUnit) matchedNode.getRoot();</span>
+<span class="nc" id="L480">        HintContext ctx = new HintContext(cu, null, match, rewriter);</span>
+<span class="nc" id="L481">        ctx.setImportRewrite(importRewriter);</span>
+        
+        // Use FixUtilities.rewriteFix() to perform the replacement
+<span class="nc" id="L484">        String replacementPattern = rewriteRule.replaceWith();</span>
+<span class="nc" id="L485">        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(ctx, replacementPattern);</span>
+        
+        // Handle imports
+<span class="nc" id="L488">        processImports(importRewriter, rewriteRule);</span>
+<span class="nc" id="L489">    }</span>
+    
+    /**
+     * Type-safe version of processGenericRewriteWithRule using MatchHolder interface.
+     */
+    private void processGenericRewriteWithRuleTypeSafe(TextEditGroup group, ASTRewrite rewriter, AST ast,
+            ImportRewrite importRewriter, MatchHolder holder, RewriteRule rewriteRule, ASTNode matchedNode) {
+        
+        // Get bindings directly from holder
+<span class="nc" id="L498">        Map&lt;String, Object&gt; bindings = holder.getBindings();</span>
+        
+        // Create a Match from the holder data
+<span class="nc" id="L501">        Match match = new Match(matchedNode, bindings, matchedNode.getStartPosition(), matchedNode.getLength());</span>
+        
+        // Create a HintContext for FixUtilities.rewriteFix()
+<span class="nc" id="L504">        CompilationUnit cu = (CompilationUnit) matchedNode.getRoot();</span>
+<span class="nc" id="L505">        HintContext ctx = new HintContext(cu, null, match, rewriter);</span>
+<span class="nc" id="L506">        ctx.setImportRewrite(importRewriter);</span>
+        
+        // Use FixUtilities.rewriteFix() to perform the replacement
+<span class="nc" id="L509">        String replacementPattern = rewriteRule.replaceWith();</span>
+<span class="nc" id="L510">        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(ctx, replacementPattern);</span>
+        
+        // Handle imports
+<span class="nc" id="L513">        processImports(importRewriter, rewriteRule);</span>
+<span class="nc" id="L514">    }</span>
+    
+    /**
+     * Processes import additions and removals from RewriteRule.
+     */
+    private void processImports(ImportRewrite importRewriter, RewriteRule rewriteRule) {
+<span class="fc bfc" id="L520" title="All 2 branches covered.">        for (String importToRemove : rewriteRule.removeImports()) {</span>
+<span class="fc" id="L521">            importRewriter.removeImport(importToRemove);</span>
         }
-<span class="nc bnc" id="L311" title="All 2 branches missed.">        for (String staticImportToRemove : rewriteRule.removeStaticImports()) {</span>
-<span class="nc" id="L312">            importRewriter.removeStaticImport(staticImportToRemove);</span>
+<span class="fc bfc" id="L523" title="All 2 branches covered.">        for (String importToAdd : rewriteRule.addImports()) {</span>
+<span class="fc" id="L524">            importRewriter.addImport(importToAdd);</span>
         }
-<span class="nc bnc" id="L314" title="All 2 branches missed.">        for (String staticImportToAdd : rewriteRule.addStaticImports()) {</span>
-<span class="nc" id="L315">            addStaticImport(importRewriter, staticImportToAdd);</span>
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">        for (String staticImportToRemove : rewriteRule.removeStaticImports()) {</span>
+<span class="nc" id="L527">            importRewriter.removeStaticImport(staticImportToRemove);</span>
         }
-<span class="nc" id="L317">    }</span>
+<span class="pc bpc" id="L529" title="1 of 2 branches missed.">        for (String staticImportToAdd : rewriteRule.addStaticImports()) {</span>
+<span class="nc" id="L530">            addStaticImport(importRewriter, staticImportToAdd);</span>
+        }
+<span class="fc" id="L532">    }</span>
+    
+    /**
+     * Gets the matched node from holder using reflection.
+     * Subclasses can override if they have a type-safe way to access the matched node.
+     * 
+     * @param holder the holder object
+     * @return the matched AST node
+     */
+    protected ASTNode getMatchedNodeFromHolder(Object holder) {
+        try {
+<span class="nc" id="L543">            java.lang.reflect.Method method = holder.getClass().getMethod(&quot;getMinv&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L544">            return (ASTNode) method.invoke(holder);</span>
+<span class="nc" id="L545">        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {</span>
+<span class="nc" id="L546">            throw new RuntimeException(&quot;Holder must provide getMinv() method&quot;, e); //$NON-NLS-1$</span>
+        }
+    }
+    
+    /**
+     * Gets the bindings map from holder using reflection.
+     * Subclasses can override if they have a type-safe way to access bindings.
+     * 
+     * @param holder the holder object
+     * @return the bindings map
+     * @throws RuntimeException if the holder does not provide getBindings() method
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    protected Map&lt;String, Object&gt; getBindingsFromHolder(Object holder) {
+        try {
+<span class="nc" id="L561">            java.lang.reflect.Method method = holder.getClass().getMethod(&quot;getBindings&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L562">            return (Map&lt;String, Object&gt;) method.invoke(holder);</span>
+<span class="nc" id="L563">        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {</span>
+<span class="nc" id="L564">            throw new RuntimeException(&quot;Holder must provide getBindings() method for non-annotation rewrites&quot;, e); //$NON-NLS-1$</span>
+        }
+    }
     
     /**
      * Adds a static import to the compilation unit.
@@ -325,18 +574,18 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      */
     protected void addStaticImport(ImportRewrite importRewriter, String staticImport) {
         // Parse static import: &quot;org.junit.Assert.assertEquals&quot; -&gt; class=&quot;org.junit.Assert&quot;, method=&quot;assertEquals&quot;
-<span class="nc" id="L328">        int lastDot = staticImport.lastIndexOf('.');</span>
-<span class="nc bnc" id="L329" title="All 2 branches missed.">        if (lastDot &gt; 0) {</span>
-<span class="nc" id="L330">            String className = staticImport.substring(0, lastDot);</span>
-<span class="nc" id="L331">            String methodName = staticImport.substring(lastDot + 1);</span>
+<span class="nc" id="L577">        int lastDot = staticImport.lastIndexOf('.');</span>
+<span class="nc bnc" id="L578" title="All 2 branches missed.">        if (lastDot &gt; 0) {</span>
+<span class="nc" id="L579">            String className = staticImport.substring(0, lastDot);</span>
+<span class="nc" id="L580">            String methodName = staticImport.substring(lastDot + 1);</span>
             // Handle wildcard imports (*)
-<span class="nc bnc" id="L333" title="All 2 branches missed.">            if (&quot;*&quot;.equals(methodName)) { //$NON-NLS-1$</span>
-<span class="nc" id="L334">                importRewriter.addStaticImport(className, &quot;*&quot;, false); //$NON-NLS-1$</span>
-<span class="nc" id="L335">            } else {</span>
-<span class="nc" id="L336">                importRewriter.addStaticImport(className, methodName, false);</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">            if (&quot;*&quot;.equals(methodName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L583">                importRewriter.addStaticImport(className, &quot;*&quot;, false); //$NON-NLS-1$</span>
+<span class="nc" id="L584">            } else {</span>
+<span class="nc" id="L585">                importRewriter.addStaticImport(className, methodName, false);</span>
             }
         }
-<span class="nc" id="L339">    }</span>
+<span class="nc" id="L588">    }</span>
     
     /**
      * Gets the annotation from holder using reflection.
@@ -348,10 +597,10 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
     @SuppressWarnings(&quot;unused&quot;)
     protected Annotation getAnnotationFromHolder(Object holder) {
         try {
-<span class="nc" id="L351">            java.lang.reflect.Method method = holder.getClass().getMethod(&quot;getAnnotation&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L352">            return (Annotation) method.invoke(holder);</span>
-<span class="nc" id="L353">        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {</span>
-<span class="nc" id="L354">            throw new RuntimeException(&quot;Holder must provide getAnnotation() method&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L600">            java.lang.reflect.Method method = holder.getClass().getMethod(&quot;getAnnotation&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L601">            return (Annotation) method.invoke(holder);</span>
+<span class="nc" id="L602">        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {</span>
+<span class="nc" id="L603">            throw new RuntimeException(&quot;Holder must provide getAnnotation() method&quot;, e); //$NON-NLS-1$</span>
         }
     }
     
@@ -366,10 +615,10 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
     @SuppressWarnings(&quot;unused&quot;)
     protected Expression getBindingAsExpressionFromHolder(Object holder, String placeholder) {
         try {
-<span class="nc" id="L369">            java.lang.reflect.Method method = holder.getClass().getMethod(&quot;getBindingAsExpression&quot;, String.class); //$NON-NLS-1$</span>
-<span class="nc" id="L370">            return (Expression) method.invoke(holder, placeholder);</span>
-<span class="nc" id="L371">        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {</span>
-<span class="nc" id="L372">            return null; // Binding not found is not an error</span>
+<span class="nc" id="L618">            java.lang.reflect.Method method = holder.getClass().getMethod(&quot;getBindingAsExpression&quot;, String.class); //$NON-NLS-1$</span>
+<span class="nc" id="L619">            return (Expression) method.invoke(holder, placeholder);</span>
+<span class="nc" id="L620">        } catch (NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {</span>
+<span class="nc" id="L621">            return null; // Binding not found is not an error</span>
         }
     }
     
@@ -390,15 +639,15 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return parsed annotation replacement information
      */
     private AnnotationReplacementInfo parseReplacementPattern(String pattern) {
-<span class="nc" id="L393">        java.util.regex.Matcher matcher = REPLACEMENT_PATTERN.matcher(pattern.trim());</span>
+<span class="fc" id="L642">        java.util.regex.Matcher matcher = REPLACEMENT_PATTERN.matcher(pattern.trim());</span>
         
-<span class="nc bnc" id="L395" title="All 2 branches missed.">        if (matcher.matches()) {</span>
-<span class="nc" id="L396">            String name = matcher.group(1);</span>
-<span class="nc" id="L397">            String placeholderPart = matcher.group(2); // null if no parentheses</span>
-<span class="nc" id="L398">            return new AnnotationReplacementInfo(name, placeholderPart);</span>
+<span class="pc bpc" id="L644" title="1 of 2 branches missed.">        if (matcher.matches()) {</span>
+<span class="fc" id="L645">            String name = matcher.group(1);</span>
+<span class="fc" id="L646">            String placeholderPart = matcher.group(2); // null if no parentheses</span>
+<span class="fc" id="L647">            return new AnnotationReplacementInfo(name, placeholderPart);</span>
         }
         
-<span class="nc" id="L401">        throw new IllegalArgumentException(&quot;Invalid replacement pattern: &quot; + pattern); //$NON-NLS-1$</span>
+<span class="nc" id="L650">        throw new IllegalArgumentException(&quot;Invalid replacement pattern: &quot; + pattern); //$NON-NLS-1$</span>
     }
     
     /**
@@ -408,17 +657,17 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
         final String annotationName;
         final String placeholderName; // null if no placeholder, or could be &quot;$args$&quot; for multi-placeholders
         
-<span class="nc" id="L411">        AnnotationReplacementInfo(String annotationName, String placeholderName) {</span>
-<span class="nc" id="L412">            this.annotationName = annotationName;</span>
-<span class="nc" id="L413">            this.placeholderName = placeholderName;</span>
-<span class="nc" id="L414">        }</span>
+<span class="fc" id="L660">        AnnotationReplacementInfo(String annotationName, String placeholderName) {</span>
+<span class="fc" id="L661">            this.annotationName = annotationName;</span>
+<span class="fc" id="L662">            this.placeholderName = placeholderName;</span>
+<span class="fc" id="L663">        }</span>
         
         boolean hasPlaceholders() {
-<span class="nc bnc" id="L417" title="All 4 branches missed.">            return placeholderName != null &amp;&amp; !placeholderName.isEmpty();</span>
+<span class="pc bpc" id="L666" title="3 of 4 branches missed.">            return placeholderName != null &amp;&amp; !placeholderName.isEmpty();</span>
         }
         
         boolean isMultiPlaceholder() {
-<span class="nc bnc" id="L421" title="All 6 branches missed.">            return placeholderName != null &amp;&amp; placeholderName.startsWith(&quot;$&quot;) &amp;&amp; placeholderName.endsWith(&quot;$&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L670" title="All 6 branches missed.">            return placeholderName != null &amp;&amp; placeholderName.startsWith(&quot;$&quot;) &amp;&amp; placeholderName.endsWith(&quot;$&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
         }
     }
     
@@ -461,12 +710,12 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
             String removeImport, 
             String addImport) {
         
-<span class="nc" id="L464">        MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();</span>
-<span class="nc" id="L465">        newAnnotation.setTypeName(ast.newSimpleName(newAnnotationName));</span>
-<span class="nc" id="L466">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
-<span class="nc" id="L467">        importRewriter.removeImport(removeImport);</span>
-<span class="nc" id="L468">        importRewriter.addImport(addImport);</span>
-<span class="nc" id="L469">    }</span>
+<span class="nc" id="L713">        MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();</span>
+<span class="nc" id="L714">        newAnnotation.setTypeName(ast.newSimpleName(newAnnotationName));</span>
+<span class="nc" id="L715">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
+<span class="nc" id="L716">        importRewriter.removeImport(removeImport);</span>
+<span class="nc" id="L717">        importRewriter.addImport(addImport);</span>
+<span class="nc" id="L718">    }</span>
     
     /**
      * Gets a preview of the code before or after refactoring.

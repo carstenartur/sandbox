@@ -13,22 +13,106 @@
  *******************************************************************************/
 package org.sandbox.functional.core.operation;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 /**
  * Represents a map operation in a stream pipeline.
  */
-<span class="fc" id="L19">public record MapOp(String expression, String targetType) implements Operation {</span>
+public final class MapOp implements Operation {
+    private final String expression;
+    private final String targetType;
+    private final List&lt;String&gt; associatedComments;
+    
+    /**
+     * Creates a MapOp with expression and target type.
+     * @param expression the mapping expression
+     * @param targetType the target type (can be null)
+     */
+<span class="fc" id="L33">    public MapOp(String expression, String targetType) {</span>
+<span class="fc" id="L34">        this.expression = Objects.requireNonNull(expression, &quot;expression must not be null&quot;);</span>
+<span class="fc" id="L35">        this.targetType = targetType;</span>
+<span class="fc" id="L36">        this.associatedComments = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L37">    }</span>
     
     /**
      * Creates a MapOp with just an expression and no target type.
      * @param expression the mapping expression
      */
     public MapOp(String expression) { 
-<span class="fc" id="L26">        this(expression, null); </span>
-<span class="fc" id="L27">    }</span>
+<span class="fc" id="L44">        this(expression, null); </span>
+<span class="fc" id="L45">    }</span>
+    
+    @Override
+    public String expression() {
+<span class="fc" id="L49">        return expression;</span>
+    }
+    
+    public String targetType() {
+<span class="fc" id="L53">        return targetType;</span>
+    }
     
     @Override
     public String operationType() { 
-<span class="fc" id="L31">        return &quot;map&quot;; </span>
+<span class="fc" id="L58">        return &quot;map&quot;; </span>
+    }
+    
+    /**
+     * Adds a comment associated with this operation.
+     * @param comment the comment text
+     */
+    public void addComment(String comment) {
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">        if (comment != null &amp;&amp; !comment.isBlank()) {</span>
+<span class="fc" id="L67">            this.associatedComments.add(comment);</span>
+        }
+<span class="fc" id="L69">    }</span>
+    
+    /**
+     * Adds multiple comments associated with this operation.
+     * @param comments the list of comment texts
+     */
+    public void addComments(List&lt;String&gt; comments) {
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (comments != null) {</span>
+<span class="fc" id="L77">            comments.forEach(this::addComment);</span>
+        }
+<span class="fc" id="L79">    }</span>
+    
+    /**
+     * Returns all comments associated with this operation.
+     * @return unmodifiable view of the comments list
+     */
+    public List&lt;String&gt; getComments() {
+<span class="fc" id="L86">        return List.copyOf(associatedComments);</span>
+    }
+    
+    /**
+     * Checks if this operation has any associated comments.
+     * @return true if there are comments, false otherwise
+     */
+    public boolean hasComments() {
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        return !associatedComments.isEmpty();</span>
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (this == o) return true;</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (!(o instanceof MapOp)) return false;</span>
+<span class="nc" id="L101">        MapOp mapOp = (MapOp) o;</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        return expression.equals(mapOp.expression) &amp;&amp; </span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">               Objects.equals(targetType, mapOp.targetType);</span>
+    }
+    
+    @Override
+    public int hashCode() {
+<span class="nc" id="L108">        return Objects.hash(expression, targetType);</span>
+    }
+    
+    @Override
+    public String toString() {
+<span class="nc" id="L113">        return &quot;MapOp[expression=&quot; + expression + </span>
+               &quot;, targetType=&quot; + targetType + 
+<span class="nc" id="L115">               &quot;, comments=&quot; + associatedComments.size() + &quot;]&quot;;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

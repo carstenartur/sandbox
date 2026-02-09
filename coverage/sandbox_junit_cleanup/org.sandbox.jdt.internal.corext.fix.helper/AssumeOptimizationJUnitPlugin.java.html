@@ -50,7 +50,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L53">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L53">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
 		
 		// NOTE: We only process JUnit 5 (Assumptions) calls here.
 		// JUnit 4 (Assume) calls are handled by AssumeJUnitPlugin which does migration.

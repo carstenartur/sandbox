@@ -76,7 +76,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L79">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L79">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
 <span class="fc" id="L80">		HelperVisitor.forAnnotation(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY)</span>
 <span class="fc" id="L81">			.in(compilationUnit)</span>
 <span class="fc" id="L82">			.excluding(nodesprocessed)</span>
@@ -124,19 +124,18 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			}
 <span class="pc bpc" id="L125" title="1 of 2 branches missed.">		} else if (value instanceof ArrayInitializer arrayInit) {</span>
 			// Multiple categories: @Category({Fast.class, Slow.class})
-			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L128">			List&lt;Expression&gt; expressions= arrayInit.expressions();</span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">			for (Expression expr : expressions) {</span>
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">				if (expr instanceof TypeLiteral typeLiteral) {</span>
-<span class="fc" id="L131">					String className= extractSimpleClassName(typeLiteral);</span>
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">					if (className != null) {</span>
-<span class="fc" id="L133">						categoryNames.add(className);</span>
+<span class="fc" id="L127">			List&lt;Expression&gt; expressions= arrayInit.expressions();</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">			for (Expression expr : expressions) {</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">				if (expr instanceof TypeLiteral typeLiteral) {</span>
+<span class="fc" id="L130">					String className= extractSimpleClassName(typeLiteral);</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">					if (className != null) {</span>
+<span class="fc" id="L132">						categoryNames.add(className);</span>
 					}
 				}
 			}
 		}
 		
-<span class="fc" id="L139">		return categoryNames;</span>
+<span class="fc" id="L138">		return categoryNames;</span>
 	}
 
 	/**
@@ -144,61 +143,61 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	 * For example, FastTests.class → &quot;FastTests&quot;
 	 */
 	private String extractSimpleClassName(TypeLiteral typeLiteral) {
-<span class="fc" id="L147">		Type type= typeLiteral.getType();</span>
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">		if (type != null) {</span>
-<span class="fc" id="L149">			String typeName= type.toString();</span>
+<span class="fc" id="L146">		Type type= typeLiteral.getType();</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		if (type != null) {</span>
+<span class="fc" id="L148">			String typeName= type.toString();</span>
 			// Get simple name (remove package if present)
-<span class="fc" id="L151">			int lastDot= typeName.lastIndexOf('.');</span>
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">			return lastDot &gt;= 0 ? typeName.substring(lastDot + 1) : typeName;</span>
+<span class="fc" id="L150">			int lastDot= typeName.lastIndexOf('.');</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">			return lastDot &gt;= 0 ? typeName.substring(lastDot + 1) : typeName;</span>
 		}
-<span class="nc" id="L154">		return null;</span>
+<span class="nc" id="L153">		return null;</span>
 	}
 
 	@Override
 	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L161">		Annotation minv= junitHolder.getAnnotation();</span>
-<span class="fc" id="L162">		String[] categoryNames= junitHolder.getValue().split(&quot;,&quot;);</span>
+<span class="fc" id="L160">		Annotation minv= junitHolder.getAnnotation();</span>
+<span class="fc" id="L161">		String[] categoryNames= junitHolder.getValue().split(&quot;,&quot;);</span>
 		
 		// Determine if annotation is on a method or class and get the appropriate ListRewrite
-<span class="fc" id="L165">		ListRewrite listRewrite= null;</span>
-<span class="fc" id="L166">		MethodDeclaration method= ASTNodes.getParent(minv, MethodDeclaration.class);</span>
-<span class="fc" id="L167">		TypeDeclaration type= ASTNodes.getParent(minv, TypeDeclaration.class);</span>
+<span class="fc" id="L164">		ListRewrite listRewrite= null;</span>
+<span class="fc" id="L165">		MethodDeclaration method= ASTNodes.getParent(minv, MethodDeclaration.class);</span>
+<span class="fc" id="L166">		TypeDeclaration type= ASTNodes.getParent(minv, TypeDeclaration.class);</span>
 		
-<span class="fc bfc" id="L169" title="All 2 branches covered.">		if (method != null) {</span>
-<span class="fc" id="L170">			listRewrite= rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="pc bpc" id="L171" title="1 of 2 branches missed.">		} else if (type != null) {</span>
-<span class="fc" id="L172">			listRewrite= rewriter.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">		if (method != null) {</span>
+<span class="fc" id="L169">			listRewrite= rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">		} else if (type != null) {</span>
+<span class="fc" id="L171">			listRewrite= rewriter.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
 		}
 		
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">		if (listRewrite != null) {</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">		if (listRewrite != null) {</span>
 			// Create @Tag annotation for each category
-<span class="fc bfc" id="L177" title="All 2 branches covered.">			for (String categoryName : categoryNames) {</span>
-<span class="fc" id="L178">				SingleMemberAnnotation tagAnnotation= ast.newSingleMemberAnnotation();</span>
-<span class="fc" id="L179">				tagAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TAG));</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">			for (String categoryName : categoryNames) {</span>
+<span class="fc" id="L177">				SingleMemberAnnotation tagAnnotation= ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L178">				tagAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TAG));</span>
 				
-<span class="fc" id="L181">				StringLiteral tagValue= ast.newStringLiteral();</span>
-<span class="fc" id="L182">				tagValue.setLiteralValue(categoryName);</span>
-<span class="fc" id="L183">				tagAnnotation.setValue(tagValue);</span>
+<span class="fc" id="L180">				StringLiteral tagValue= ast.newStringLiteral();</span>
+<span class="fc" id="L181">				tagValue.setLiteralValue(categoryName);</span>
+<span class="fc" id="L182">				tagAnnotation.setValue(tagValue);</span>
 				
 				// Insert the new annotation before the original one
-<span class="fc" id="L186">				listRewrite.insertBefore(tagAnnotation, minv, group);</span>
+<span class="fc" id="L185">				listRewrite.insertBefore(tagAnnotation, minv, group);</span>
 			}
 			
 			// Remove the original @Category annotation
-<span class="fc" id="L190">			listRewrite.remove(minv, group);</span>
+<span class="fc" id="L189">			listRewrite.remove(minv, group);</span>
 		}
 		
 		// Update imports
-<span class="fc" id="L194">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TAG);</span>
-<span class="fc" id="L195">		importRewriter.removeImport(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY);</span>
-<span class="fc" id="L196">	}</span>
+<span class="fc" id="L193">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TAG);</span>
+<span class="fc" id="L194">		importRewriter.removeImport(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY);</span>
+<span class="fc" id="L195">	}</span>
 	
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L200" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L201">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L200">			return &quot;&quot;&quot;</span>
 					@Tag(&quot;FastTests&quot;)
 					@Test
 					public void fastTest() {
@@ -206,7 +205,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L209">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L208">		return &quot;&quot;&quot;</span>
 				@Category(FastTests.class)
 				@Test
 				public void fastTest() {
@@ -217,7 +216,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L220">		return &quot;Category&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L219">		return &quot;Category&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

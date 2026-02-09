@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.sandbox.jdt.triggerpattern.cleanup.MatchHolder;
 
 /**
  * Data holder for JUnit migration operations.
@@ -44,8 +45,12 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
  * Refactored to use private fields with fluent setters for better encapsulation.
  * A Builder inner class is provided for convenient construction.
  * &lt;/p&gt;
+ * &lt;p&gt;
+ * Implements {@link MatchHolder} interface for type-safe integration with
+ * {@link org.sandbox.jdt.triggerpattern.cleanup.AbstractPatternCleanupPlugin}.
+ * &lt;/p&gt;
  */
-<span class="fc" id="L48">public class JunitHolder {</span>
+<span class="fc" id="L53">public class JunitHolder implements MatchHolder {</span>
 	/** The main AST node to be transformed (can be Annotation, MethodInvocation, FieldDeclaration, TypeDeclaration, or ImportDeclaration) */
 	private ASTNode minv;
 	
@@ -68,7 +73,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	private Object additionalInfo;
 	
 	/** Placeholder bindings from TriggerPattern (e.g., &quot;$x&quot; -&gt; ASTNode or &quot;$args$&quot; -&gt; List&lt;ASTNode&gt;) */
-<span class="fc" id="L71">	private Map&lt;String, Object&gt; bindings = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L76">	private Map&lt;String, Object&gt; bindings = new HashMap&lt;&gt;();</span>
 
 	// ========== Getters ==========
 	
@@ -76,8 +81,9 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * Gets the main AST node.
 	 * @return the AST node
 	 */
+	@Override
 	public ASTNode getMinv() {
-<span class="fc" id="L80">		return minv;</span>
+<span class="fc" id="L86">		return minv;</span>
 	}
 	
 	/**
@@ -85,7 +91,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the name
 	 */
 	public String getMinvname() {
-<span class="fc" id="L88">		return minvname;</span>
+<span class="fc" id="L94">		return minvname;</span>
 	}
 	
 	/**
@@ -93,7 +99,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the set of processed nodes
 	 */
 	public Set&lt;ASTNode&gt; getNodesprocessed() {
-<span class="nc" id="L96">		return nodesprocessed;</span>
+<span class="nc" id="L102">		return nodesprocessed;</span>
 	}
 	
 	/**
@@ -101,7 +107,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the value
 	 */
 	public String getValue() {
-<span class="fc" id="L104">		return value;</span>
+<span class="fc" id="L110">		return value;</span>
 	}
 	
 	/**
@@ -109,7 +115,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the method invocation
 	 */
 	public MethodInvocation getMethod() {
-<span class="nc" id="L112">		return method;</span>
+<span class="nc" id="L118">		return method;</span>
 	}
 	
 	/**
@@ -117,7 +123,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the count
 	 */
 	public int getCount() {
-<span class="nc" id="L120">		return count;</span>
+<span class="nc" id="L126">		return count;</span>
 	}
 	
 	/**
@@ -125,23 +131,25 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the additional info
 	 */
 	public Object getAdditionalInfo() {
-<span class="fc" id="L128">		return additionalInfo;</span>
+<span class="fc" id="L134">		return additionalInfo;</span>
 	}
 	
 	/**
 	 * Gets the placeholder bindings map.
 	 * @return the bindings map
 	 */
+	@Override
 	public Map&lt;String, Object&gt; getBindings() {
-<span class="nc" id="L136">		return bindings;</span>
+<span class="nc" id="L143">		return bindings;</span>
 	}
 
 	/**
 	 * Gets the node as an Annotation.
 	 * @return the AST node cast to Annotation
 	 */
+	@Override
 	public Annotation getAnnotation() {
-<span class="fc" id="L144">		return (Annotation) minv;</span>
+<span class="fc" id="L152">		return (Annotation) minv;</span>
 	}
 
 	/**
@@ -149,7 +157,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the AST node cast to MethodInvocation
 	 */
 	public MethodInvocation getMethodInvocation() {
-<span class="fc" id="L152">		return (MethodInvocation) minv;</span>
+<span class="fc" id="L160">		return (MethodInvocation) minv;</span>
 	}
 
 	/**
@@ -157,7 +165,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the AST node cast to ImportDeclaration
 	 */
 	public ImportDeclaration getImportDeclaration() {
-<span class="nc" id="L160">		return (ImportDeclaration) minv;</span>
+<span class="nc" id="L168">		return (ImportDeclaration) minv;</span>
 	}
 
 	/**
@@ -165,7 +173,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the AST node cast to FieldDeclaration
 	 */
 	public FieldDeclaration getFieldDeclaration() {
-<span class="fc" id="L168">		return (FieldDeclaration) minv;</span>
+<span class="fc" id="L176">		return (FieldDeclaration) minv;</span>
 	}
 
 	/**
@@ -173,7 +181,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the AST node cast to TypeDeclaration
 	 */
 	public TypeDeclaration getTypeDeclaration() {
-<span class="fc" id="L176">		return (TypeDeclaration) minv;</span>
+<span class="fc" id="L184">		return (TypeDeclaration) minv;</span>
 	}
 	
 	// ========== Fluent Setters for Backward Compatibility ==========
@@ -184,8 +192,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return this holder for fluent API
 	 */
 	public JunitHolder setMinv(ASTNode minv) {
-<span class="fc" id="L187">		this.minv = minv;</span>
-<span class="fc" id="L188">		return this;</span>
+<span class="fc" id="L195">		this.minv = minv;</span>
+<span class="fc" id="L196">		return this;</span>
 	}
 	
 	/**
@@ -194,8 +202,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return this holder for fluent API
 	 */
 	public JunitHolder setMinvname(String minvname) {
-<span class="fc" id="L197">		this.minvname = minvname;</span>
-<span class="fc" id="L198">		return this;</span>
+<span class="fc" id="L205">		this.minvname = minvname;</span>
+<span class="fc" id="L206">		return this;</span>
 	}
 	
 	/**
@@ -204,8 +212,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return this holder for fluent API
 	 */
 	public JunitHolder setNodesprocessed(Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="nc" id="L207">		this.nodesprocessed = nodesprocessed;</span>
-<span class="nc" id="L208">		return this;</span>
+<span class="nc" id="L215">		this.nodesprocessed = nodesprocessed;</span>
+<span class="nc" id="L216">		return this;</span>
 	}
 	
 	/**
@@ -214,8 +222,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return this holder for fluent API
 	 */
 	public JunitHolder setValue(String value) {
-<span class="fc" id="L217">		this.value = value;</span>
-<span class="fc" id="L218">		return this;</span>
+<span class="fc" id="L225">		this.value = value;</span>
+<span class="fc" id="L226">		return this;</span>
 	}
 	
 	/**
@@ -224,8 +232,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return this holder for fluent API
 	 */
 	public JunitHolder setMethod(MethodInvocation method) {
-<span class="nc" id="L227">		this.method = method;</span>
-<span class="nc" id="L228">		return this;</span>
+<span class="nc" id="L235">		this.method = method;</span>
+<span class="nc" id="L236">		return this;</span>
 	}
 	
 	/**
@@ -234,8 +242,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return this holder for fluent API
 	 */
 	public JunitHolder setCount(int count) {
-<span class="nc" id="L237">		this.count = count;</span>
-<span class="nc" id="L238">		return this;</span>
+<span class="nc" id="L245">		this.count = count;</span>
+<span class="nc" id="L246">		return this;</span>
 	}
 	
 	/**
@@ -244,8 +252,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return this holder for fluent API
 	 */
 	public JunitHolder setAdditionalInfo(Object additionalInfo) {
-<span class="fc" id="L247">		this.additionalInfo = additionalInfo;</span>
-<span class="fc" id="L248">		return this;</span>
+<span class="fc" id="L255">		this.additionalInfo = additionalInfo;</span>
+<span class="fc" id="L256">		return this;</span>
 	}
 	
 	/**
@@ -254,8 +262,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return this holder for fluent API
 	 */
 	public JunitHolder setBindings(Map&lt;String, Object&gt; bindings) {
-<span class="pc bpc" id="L257" title="1 of 2 branches missed.">		this.bindings = bindings != null ? bindings : new HashMap&lt;&gt;();</span>
-<span class="fc" id="L258">		return this;</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">		this.bindings = bindings != null ? bindings : new HashMap&lt;&gt;();</span>
+<span class="fc" id="L266">		return this;</span>
 	}
 	
 	/**
@@ -264,12 +272,13 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @param placeholder the placeholder name (e.g., &quot;$x&quot;)
 	 * @return the bound expression, or null if not found or if it's a list binding
 	 */
+	@Override
 	public Expression getBindingAsExpression(String placeholder) {
-<span class="nc" id="L268">		Object value = bindings.get(placeholder);</span>
-<span class="nc bnc" id="L269" title="All 2 branches missed.">		if (value instanceof Expression) {</span>
-<span class="nc" id="L270">			return (Expression) value;</span>
+<span class="nc" id="L277">		Object value = bindings.get(placeholder);</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">		if (value instanceof Expression) {</span>
+<span class="nc" id="L279">			return (Expression) value;</span>
 		}
-<span class="nc" id="L272">		return null;</span>
+<span class="nc" id="L281">		return null;</span>
 	}
 	
 	/**
@@ -279,11 +288,11 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return the bound AST node, or null if not found or if it's a list binding
 	 */
 	public ASTNode getBinding(String placeholder) {
-<span class="nc" id="L282">		Object value = bindings.get(placeholder);</span>
-<span class="nc bnc" id="L283" title="All 2 branches missed.">		if (value instanceof ASTNode) {</span>
-<span class="nc" id="L284">			return (ASTNode) value;</span>
+<span class="nc" id="L291">		Object value = bindings.get(placeholder);</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">		if (value instanceof ASTNode) {</span>
+<span class="nc" id="L293">			return (ASTNode) value;</span>
 		}
-<span class="nc" id="L286">		return null;</span>
+<span class="nc" id="L295">		return null;</span>
 	}
 	
 	/**
@@ -293,7 +302,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return true if the binding exists
 	 */
 	public boolean hasBinding(String placeholder) {
-<span class="nc" id="L296">		return bindings.containsKey(placeholder);</span>
+<span class="nc" id="L305">		return bindings.containsKey(placeholder);</span>
 	}
 	
 	// ========== Builder ==========
@@ -308,9 +317,9 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		/**
 		 * Creates a new builder instance.
 		 */
-<span class="nc" id="L311">		public Builder() {</span>
-<span class="nc" id="L312">			this.holder = new JunitHolder();</span>
-<span class="nc" id="L313">		}</span>
+<span class="nc" id="L320">		public Builder() {</span>
+<span class="nc" id="L321">			this.holder = new JunitHolder();</span>
+<span class="nc" id="L322">		}</span>
 		
 		/**
 		 * Sets the main AST node.
@@ -318,8 +327,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		 * @return this builder
 		 */
 		public Builder minv(ASTNode minv) {
-<span class="nc" id="L321">			holder.setMinv(minv);</span>
-<span class="nc" id="L322">			return this;</span>
+<span class="nc" id="L330">			holder.setMinv(minv);</span>
+<span class="nc" id="L331">			return this;</span>
 		}
 		
 		/**
@@ -328,8 +337,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		 * @return this builder
 		 */
 		public Builder minvname(String minvname) {
-<span class="nc" id="L331">			holder.setMinvname(minvname);</span>
-<span class="nc" id="L332">			return this;</span>
+<span class="nc" id="L340">			holder.setMinvname(minvname);</span>
+<span class="nc" id="L341">			return this;</span>
 		}
 		
 		/**
@@ -338,8 +347,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		 * @return this builder
 		 */
 		public Builder nodesprocessed(Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="nc" id="L341">			holder.setNodesprocessed(nodesprocessed);</span>
-<span class="nc" id="L342">			return this;</span>
+<span class="nc" id="L350">			holder.setNodesprocessed(nodesprocessed);</span>
+<span class="nc" id="L351">			return this;</span>
 		}
 		
 		/**
@@ -348,8 +357,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		 * @return this builder
 		 */
 		public Builder value(String value) {
-<span class="nc" id="L351">			holder.setValue(value);</span>
-<span class="nc" id="L352">			return this;</span>
+<span class="nc" id="L360">			holder.setValue(value);</span>
+<span class="nc" id="L361">			return this;</span>
 		}
 		
 		/**
@@ -358,8 +367,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		 * @return this builder
 		 */
 		public Builder method(MethodInvocation method) {
-<span class="nc" id="L361">			holder.setMethod(method);</span>
-<span class="nc" id="L362">			return this;</span>
+<span class="nc" id="L370">			holder.setMethod(method);</span>
+<span class="nc" id="L371">			return this;</span>
 		}
 		
 		/**
@@ -368,8 +377,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		 * @return this builder
 		 */
 		public Builder count(int count) {
-<span class="nc" id="L371">			holder.setCount(count);</span>
-<span class="nc" id="L372">			return this;</span>
+<span class="nc" id="L380">			holder.setCount(count);</span>
+<span class="nc" id="L381">			return this;</span>
 		}
 		
 		/**
@@ -378,8 +387,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		 * @return this builder
 		 */
 		public Builder additionalInfo(Object additionalInfo) {
-<span class="nc" id="L381">			holder.setAdditionalInfo(additionalInfo);</span>
-<span class="nc" id="L382">			return this;</span>
+<span class="nc" id="L390">			holder.setAdditionalInfo(additionalInfo);</span>
+<span class="nc" id="L391">			return this;</span>
 		}
 		
 		/**
@@ -389,11 +398,11 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		 * @throws IllegalArgumentException if {@code bindings} is {@code null}
 		 */
 		public Builder bindings(Map&lt;String, Object&gt; bindings) {
-<span class="nc bnc" id="L392" title="All 2 branches missed.">			if (bindings == null) {</span>
-<span class="nc" id="L393">				throw new IllegalArgumentException(&quot;bindings must not be null&quot;);</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">			if (bindings == null) {</span>
+<span class="nc" id="L402">				throw new IllegalArgumentException(&quot;bindings must not be null&quot;);</span>
 			}
-<span class="nc" id="L395">			holder.setBindings(bindings);</span>
-<span class="nc" id="L396">			return this;</span>
+<span class="nc" id="L404">			holder.setBindings(bindings);</span>
+<span class="nc" id="L405">			return this;</span>
 		}
 		
 		/**
@@ -401,7 +410,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 		 * @return the constructed holder
 		 */
 		public JunitHolder build() {
-<span class="nc" id="L404">			return holder;</span>
+<span class="nc" id="L413">			return holder;</span>
 		}
 	}
 	
@@ -410,7 +419,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	 * @return a new builder
 	 */
 	public static Builder builder() {
-<span class="nc" id="L413">		return new Builder();</span>
+<span class="nc" id="L422">		return new Builder();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

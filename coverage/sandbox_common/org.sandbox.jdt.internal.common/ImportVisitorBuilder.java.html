@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.common;
 
 import java.util.function.BiPredicate;
 
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 
 /**
@@ -42,15 +41,15 @@ public class ImportVisitorBuilder extends HelperVisitorBuilder&lt;ImportDeclarat
      * 
      * @param importFQN the fully qualified name of the import to find
      */
-<span class="fc" id="L45">    public ImportVisitorBuilder(String importFQN) {</span>
-<span class="fc" id="L46">        this.importFQN = importFQN;</span>
-<span class="fc" id="L47">    }</span>
+<span class="fc" id="L44">    public ImportVisitorBuilder(String importFQN) {</span>
+<span class="fc" id="L45">        this.importFQN = importFQN;</span>
+<span class="fc" id="L46">    }</span>
     
     @Override
     protected &lt;V, H&gt; void executeVisitors(ReferenceHolder&lt;V, H&gt; holder, 
-            BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor) {
-<span class="fc" id="L52">        HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
-<span class="fc" id="L53">                holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
-<span class="fc" id="L54">    }</span>
+            BiPredicate&lt;ImportDeclaration, ReferenceHolder&lt;V, H&gt;&gt; processor) {
+<span class="fc" id="L51">        HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
+<span class="fc" id="L52">                holder, nodesprocessed, processor);</span>
+<span class="fc" id="L53">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

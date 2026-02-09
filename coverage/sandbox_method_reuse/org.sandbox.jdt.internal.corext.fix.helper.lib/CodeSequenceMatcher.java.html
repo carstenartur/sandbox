@@ -62,55 +62,54 @@ import org.eclipse.jdt.core.dom.Statement;
 	/**
 	 * Match two statements with variable mapping
 	 */
-	@SuppressWarnings(&quot;unchecked&quot;)
 	private static boolean matchStatement(Statement target, Statement candidate, VariableMapping mapping) {
-<span class="pc bpc" id="L67" title="2 of 4 branches missed.">		if (target == null || candidate == null) {</span>
-<span class="nc" id="L68">			return false;</span>
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">		if (target == null || candidate == null) {</span>
+<span class="nc" id="L67">			return false;</span>
 		}
 		
 		// Special case: return statement can match variable declaration
 		// This allows matching code like &quot;return x + y;&quot; with &quot;int result = x + y;&quot;
-<span class="fc bfc" id="L73" title="All 2 branches covered.">		if (target instanceof org.eclipse.jdt.core.dom.ReturnStatement &amp;&amp; </span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">			candidate instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		if (target instanceof org.eclipse.jdt.core.dom.ReturnStatement &amp;&amp; </span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">			candidate instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {</span>
 			
-<span class="fc" id="L76">			org.eclipse.jdt.core.dom.ReturnStatement returnStmt = (org.eclipse.jdt.core.dom.ReturnStatement) target;</span>
-<span class="fc" id="L77">			org.eclipse.jdt.core.dom.VariableDeclarationStatement varDecl = (org.eclipse.jdt.core.dom.VariableDeclarationStatement) candidate;</span>
+<span class="fc" id="L75">			org.eclipse.jdt.core.dom.ReturnStatement returnStmt = (org.eclipse.jdt.core.dom.ReturnStatement) target;</span>
+<span class="fc" id="L76">			org.eclipse.jdt.core.dom.VariableDeclarationStatement varDecl = (org.eclipse.jdt.core.dom.VariableDeclarationStatement) candidate;</span>
 			
 			// Return statement must have an expression
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">			if (returnStmt.getExpression() == null) {</span>
-<span class="nc" id="L81">				return false;</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">			if (returnStmt.getExpression() == null) {</span>
+<span class="nc" id="L80">				return false;</span>
 			}
 			
 			// Variable declaration must have exactly one fragment with an initializer
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">			if (varDecl.fragments().size() != 1) {</span>
-<span class="nc" id="L86">				return false;</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">			if (varDecl.fragments().size() != 1) {</span>
+<span class="nc" id="L85">				return false;</span>
 			}
 			
 			// Defensive check: ensure fragment list is not empty before accessing index 0
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">			if (varDecl.fragments().isEmpty()) {</span>
-<span class="nc" id="L91">				return false;</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (varDecl.fragments().isEmpty()) {</span>
+<span class="nc" id="L90">				return false;</span>
 			}
 			
-<span class="fc" id="L94">			org.eclipse.jdt.core.dom.VariableDeclarationFragment fragment = </span>
-<span class="fc" id="L95">				(org.eclipse.jdt.core.dom.VariableDeclarationFragment) varDecl.fragments().get(0);</span>
+<span class="fc" id="L93">			org.eclipse.jdt.core.dom.VariableDeclarationFragment fragment = </span>
+<span class="fc" id="L94">				(org.eclipse.jdt.core.dom.VariableDeclarationFragment) varDecl.fragments().get(0);</span>
 			
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			if (fragment.getInitializer() == null) {</span>
-<span class="nc" id="L98">				return false;</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">			if (fragment.getInitializer() == null) {</span>
+<span class="nc" id="L97">				return false;</span>
 			}
 			
 			// Match the return expression against the initializer expression
-<span class="fc" id="L102">			VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);</span>
-<span class="fc" id="L103">			return returnStmt.getExpression().subtreeMatch(matcher, fragment.getInitializer());</span>
+<span class="fc" id="L101">			VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);</span>
+<span class="fc" id="L102">			return returnStmt.getExpression().subtreeMatch(matcher, fragment.getInitializer());</span>
 		}
 		
 		// Must be same statement type for normal matching
-<span class="fc bfc" id="L107" title="All 2 branches covered.">		if (target.getNodeType() != candidate.getNodeType()) {</span>
-<span class="fc" id="L108">			return false;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		if (target.getNodeType() != candidate.getNodeType()) {</span>
+<span class="fc" id="L107">			return false;</span>
 		}
 		
 		// Use custom AST matcher that tracks variable mappings
-<span class="fc" id="L112">		VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);</span>
-<span class="fc" id="L113">		return target.subtreeMatch(matcher, candidate);</span>
+<span class="fc" id="L111">		VariableMappingMatcher matcher = new VariableMappingMatcher(mapping);</span>
+<span class="fc" id="L112">		return target.subtreeMatch(matcher, candidate);</span>
 	}
 	
 	/**
@@ -119,37 +118,37 @@ import org.eclipse.jdt.core.dom.Statement;
 	private static class VariableMappingMatcher extends ASTMatcher {
 		private final VariableMapping mapping;
 		
-<span class="fc" id="L122">		public VariableMappingMatcher(VariableMapping mapping) {</span>
-<span class="fc" id="L123">			this.mapping = mapping;</span>
-<span class="fc" id="L124">		}</span>
+<span class="fc" id="L121">		public VariableMappingMatcher(VariableMapping mapping) {</span>
+<span class="fc" id="L122">			this.mapping = mapping;</span>
+<span class="fc" id="L123">		}</span>
 		
 		@Override
 		public boolean match(SimpleName node, Object other) {
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">			if (!(other instanceof org.eclipse.jdt.core.dom.ASTNode)) {</span>
-<span class="nc" id="L129">				return false;</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">			if (!(other instanceof org.eclipse.jdt.core.dom.ASTNode)) {</span>
+<span class="nc" id="L128">				return false;</span>
 			}
 			
-<span class="fc" id="L132">			String targetName = node.getIdentifier();</span>
+<span class="fc" id="L131">			String targetName = node.getIdentifier();</span>
 			
 			// If other is also a SimpleName, do normal name mapping
-<span class="fc bfc" id="L135" title="All 2 branches covered.">			if (other instanceof SimpleName) {</span>
-<span class="fc" id="L136">				SimpleName otherName = (SimpleName) other;</span>
-<span class="fc" id="L137">				String candidateName = otherName.getIdentifier();</span>
-<span class="fc" id="L138">				return mapping.addMapping(targetName, candidateName);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">			if (other instanceof SimpleName) {</span>
+<span class="fc" id="L135">				SimpleName otherName = (SimpleName) other;</span>
+<span class="fc" id="L136">				String candidateName = otherName.getIdentifier();</span>
+<span class="fc" id="L137">				return mapping.addMapping(targetName, candidateName);</span>
 			}
 			
 			// If other is a complex expression (not a SimpleName), store it as an expression mapping
 			// This handles cases like: parameter 'a' matching expression 'u.getFirst()'
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">			if (other instanceof org.eclipse.jdt.core.dom.Expression) {</span>
-<span class="fc" id="L144">				org.eclipse.jdt.core.dom.Expression candidateExpr = (org.eclipse.jdt.core.dom.Expression) other;</span>
-<span class="fc" id="L145">				mapping.addExpressionMapping(targetName, candidateExpr);</span>
-<span class="fc" id="L146">				return true;</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">			if (other instanceof org.eclipse.jdt.core.dom.Expression) {</span>
+<span class="fc" id="L143">				org.eclipse.jdt.core.dom.Expression candidateExpr = (org.eclipse.jdt.core.dom.Expression) other;</span>
+<span class="fc" id="L144">				mapping.addExpressionMapping(targetName, candidateExpr);</span>
+<span class="fc" id="L145">				return true;</span>
 			}
 			
 			// For all other ASTNode kinds (e.g., Statement, Type, etc.) we intentionally do not
 			// create a mapping and report &quot;no match&quot; to avoid binding a SimpleName placeholder
 			// to structurally larger constructs.
-<span class="nc" id="L152">			return false;</span>
+<span class="nc" id="L151">			return false;</span>
 		}
 	}
 }

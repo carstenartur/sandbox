@@ -547,6 +547,25 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	}
 
 	/**
+	 * Filters ClassInstanceCreation nodes by the fully qualified type name being instantiated.
+	 * 
+	 * &lt;p&gt;This overload accepts a String instead of a Class to avoid deprecation warnings
+	 * when the class being filtered is deprecated (e.g., SubProgressMonitor).&lt;/p&gt;
+	 *
+	 * @param qualifiedTypeName the fully qualified class name to filter for (e.g., &quot;org.eclipse.core.runtime.SubProgressMonitor&quot;)
+	 * @param bs the predicate to test each matching node
+	 * @return a reference to this object.
+	 * @since 1.2.5
+	 */
+	public ASTProcessor&lt;E, V, T&gt; callClassInstanceCreationVisitor(String qualifiedTypeName, BiPredicate&lt;ClassInstanceCreation, E&gt; bs) {
+<span class="nc" id="L561">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="nc" id="L562">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF_BYNAME, qualifiedTypeName)</span>
+				);
+<span class="nc" id="L564">		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, null, map));</span>
+<span class="nc" id="L565">		return this;</span>
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @param navigate
@@ -554,8 +573,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callClassInstanceCreationVisitor(BiPredicate&lt;ClassInstanceCreation, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L557">		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L558">		return this;</span>
+<span class="fc" id="L576">		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L577">		return this;</span>
 	}
 
 	/**
@@ -568,11 +587,32 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callClassInstanceCreationVisitor(Class&lt;?&gt; typeof, BiPredicate&lt;ClassInstanceCreation, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L571">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="fc" id="L572">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
+<span class="fc" id="L590">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L591">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
 				);
-<span class="fc" id="L574">		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, map));</span>
-<span class="fc" id="L575">		return this;</span>
+<span class="fc" id="L593">		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, map));</span>
+<span class="fc" id="L594">		return this;</span>
+	}
+
+	/**
+	 * Filters ClassInstanceCreation nodes by the fully qualified type name being instantiated.
+	 * 
+	 * &lt;p&gt;This overload accepts a String instead of a Class to avoid deprecation warnings
+	 * when the class being filtered is deprecated (e.g., SubProgressMonitor).&lt;/p&gt;
+	 *
+	 * @param qualifiedTypeName the fully qualified class name to filter for (e.g., &quot;org.eclipse.core.runtime.SubProgressMonitor&quot;)
+	 * @param bs the predicate to test each matching node
+	 * @param navigate optional function to navigate to a different node before the next visitor in the chain
+	 * @return a reference to this object.
+	 * @since 1.2.5
+	 */
+	public ASTProcessor&lt;E, V, T&gt; callClassInstanceCreationVisitor(String qualifiedTypeName, BiPredicate&lt;ClassInstanceCreation, E&gt; bs,
+			Function&lt;ASTNode, ASTNode&gt; navigate) {
+<span class="fc" id="L611">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L612">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF_BYNAME, qualifiedTypeName)</span>
+				);
+<span class="fc" id="L614">		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, map));</span>
+<span class="fc" id="L615">		return this;</span>
 	}
 
 	/**
@@ -581,7 +621,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callCompilationUnitVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L584">		return callCompilationUnitVisitor(bs, null);</span>
+<span class="nc" id="L624">		return callCompilationUnitVisitor(bs, null);</span>
 	}
 
 	/**
@@ -592,8 +632,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callCompilationUnitVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L595">		nodetypelist.put(VisitorEnum.CompilationUnit, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L596">		return this;</span>
+<span class="nc" id="L635">		nodetypelist.put(VisitorEnum.CompilationUnit, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L636">		return this;</span>
 	}
 
 	/**
@@ -602,7 +642,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callConditionalExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L605">		return callConditionalExpressionVisitor(bs, null);</span>
+<span class="nc" id="L645">		return callConditionalExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -613,8 +653,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callConditionalExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L616">		nodetypelist.put(VisitorEnum.ConditionalExpression, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L617">		return this;</span>
+<span class="nc" id="L656">		nodetypelist.put(VisitorEnum.ConditionalExpression, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L657">		return this;</span>
 	}
 
 	/**
@@ -623,7 +663,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callConstructorInvocationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L626">		return callConstructorInvocationVisitor(bs, null);</span>
+<span class="nc" id="L666">		return callConstructorInvocationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -634,8 +674,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callConstructorInvocationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L637">		nodetypelist.put(VisitorEnum.ConstructorInvocation, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L638">		return this;</span>
+<span class="nc" id="L677">		nodetypelist.put(VisitorEnum.ConstructorInvocation, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L678">		return this;</span>
 	}
 
 	/**
@@ -644,7 +684,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callContinueStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L647">		return callContinueStatementVisitor(bs, null);</span>
+<span class="fc" id="L687">		return callContinueStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -655,8 +695,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callContinueStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L658">		nodetypelist.put(VisitorEnum.ContinueStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L659">		return this;</span>
+<span class="fc" id="L698">		nodetypelist.put(VisitorEnum.ContinueStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L699">		return this;</span>
 	}
 
 	/**
@@ -665,7 +705,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callCreationReferenceVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L668">		return callCreationReferenceVisitor(bs, null);</span>
+<span class="nc" id="L708">		return callCreationReferenceVisitor(bs, null);</span>
 	}
 
 	/**
@@ -676,8 +716,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callCreationReferenceVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L679">		nodetypelist.put(VisitorEnum.CreationReference, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L680">		return this;</span>
+<span class="nc" id="L719">		nodetypelist.put(VisitorEnum.CreationReference, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L720">		return this;</span>
 	}
 
 	/**
@@ -686,7 +726,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callDimensionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L689">		return callDimensionVisitor(bs, null);</span>
+<span class="nc" id="L729">		return callDimensionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -696,8 +736,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callDimensionVisitor(BiPredicate&lt;ASTNode, E&gt; bs, Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L699">		nodetypelist.put(VisitorEnum.Dimension, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L700">		return this;</span>
+<span class="nc" id="L739">		nodetypelist.put(VisitorEnum.Dimension, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L740">		return this;</span>
 	}
 
 	/**
@@ -706,7 +746,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callDoStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L709">		return callDoStatementVisitor(bs, null);</span>
+<span class="fc" id="L749">		return callDoStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -717,8 +757,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callDoStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L720">		nodetypelist.put(VisitorEnum.DoStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L721">		return this;</span>
+<span class="fc" id="L760">		nodetypelist.put(VisitorEnum.DoStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L761">		return this;</span>
 	}
 
 	/**
@@ -727,7 +767,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callEmptyStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L730">		return callEmptyStatementVisitor(bs, null);</span>
+<span class="nc" id="L770">		return callEmptyStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -738,8 +778,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callEmptyStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L741">		nodetypelist.put(VisitorEnum.EmptyStatement, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L742">		return this;</span>
+<span class="nc" id="L781">		nodetypelist.put(VisitorEnum.EmptyStatement, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L782">		return this;</span>
 	}
 
 	/**
@@ -748,7 +788,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callEnhancedForStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L751">		return callEnhancedForStatementVisitor(bs, null);</span>
+<span class="fc" id="L791">		return callEnhancedForStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -759,8 +799,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callEnhancedForStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L762">		nodetypelist.put(VisitorEnum.EnhancedForStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L763">		return this;</span>
+<span class="fc" id="L802">		nodetypelist.put(VisitorEnum.EnhancedForStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L803">		return this;</span>
 	}
 
 	/**
@@ -769,7 +809,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callEnumConstantDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L772">		return callEnumConstantDeclarationVisitor(bs, null);</span>
+<span class="nc" id="L812">		return callEnumConstantDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -780,8 +820,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callEnumConstantDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L783">		nodetypelist.put(VisitorEnum.EnumConstantDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L784">		return this;</span>
+<span class="nc" id="L823">		nodetypelist.put(VisitorEnum.EnumConstantDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L824">		return this;</span>
 	}
 
 	/**
@@ -790,7 +830,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callEnumDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L793">		return callEnumDeclarationVisitor(bs, null);</span>
+<span class="nc" id="L833">		return callEnumDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -801,8 +841,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callEnumDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L804">		nodetypelist.put(VisitorEnum.EnumDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L805">		return this;</span>
+<span class="nc" id="L844">		nodetypelist.put(VisitorEnum.EnumDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L845">		return this;</span>
 	}
 
 	/**
@@ -811,7 +851,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callExportsDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L814">		return callExportsDirectiveVisitor(bs, null);</span>
+<span class="nc" id="L854">		return callExportsDirectiveVisitor(bs, null);</span>
 	}
 
 	/**
@@ -822,8 +862,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callExportsDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L825">		nodetypelist.put(VisitorEnum.ExportsDirective, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L826">		return this;</span>
+<span class="nc" id="L865">		nodetypelist.put(VisitorEnum.ExportsDirective, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L866">		return this;</span>
 	}
 
 	/**
@@ -832,7 +872,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callExpressionMethodReferenceVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L835">		return callExpressionMethodReferenceVisitor(bs, null);</span>
+<span class="nc" id="L875">		return callExpressionMethodReferenceVisitor(bs, null);</span>
 	}
 
 	/**
@@ -843,8 +883,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callExpressionMethodReferenceVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L846">		nodetypelist.put(VisitorEnum.ExpressionMethodReference, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L847">		return this;</span>
+<span class="nc" id="L886">		nodetypelist.put(VisitorEnum.ExpressionMethodReference, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L887">		return this;</span>
 	}
 
 	/**
@@ -853,7 +893,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callExpressionStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L856">		return callExpressionStatementVisitor(bs, null);</span>
+<span class="nc" id="L896">		return callExpressionStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -864,8 +904,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callExpressionStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L867">		nodetypelist.put(VisitorEnum.ExpressionStatement, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L868">		return this;</span>
+<span class="nc" id="L907">		nodetypelist.put(VisitorEnum.ExpressionStatement, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L908">		return this;</span>
 	}
 
 	/**
@@ -874,7 +914,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callFieldAccessVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L877">		return callFieldAccessVisitor(bs, null);</span>
+<span class="nc" id="L917">		return callFieldAccessVisitor(bs, null);</span>
 	}
 
 	/**
@@ -885,8 +925,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callFieldAccessVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L888">		nodetypelist.put(VisitorEnum.FieldAccess, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L889">		return this;</span>
+<span class="nc" id="L928">		nodetypelist.put(VisitorEnum.FieldAccess, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L929">		return this;</span>
 	}
 
 	/**
@@ -895,7 +935,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callFieldDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L898">		return callFieldDeclarationVisitor(bs, null);</span>
+<span class="nc" id="L938">		return callFieldDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -906,8 +946,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callFieldDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L909">		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L910">		return this;</span>
+<span class="nc" id="L949">		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L950">		return this;</span>
 	}
 
 	/**
@@ -918,11 +958,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callFieldDeclarationVisitor(Class&lt;?&gt; typeof, BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L921">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="fc" id="L922">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
+<span class="fc" id="L961">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L962">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
 				);
-<span class="fc" id="L924">		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, null, map));</span>
-<span class="fc" id="L925">		return this;</span>
+<span class="fc" id="L964">		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, null, map));</span>
+<span class="fc" id="L965">		return this;</span>
 	}
 
 	/**
@@ -935,11 +975,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callFieldDeclarationVisitor(Class&lt;?&gt; typeof, BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L938">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="nc" id="L939">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
+<span class="nc" id="L978">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="nc" id="L979">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
 				);
-<span class="nc" id="L941">		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, navigate, map));</span>
-<span class="nc" id="L942">		return this;</span>
+<span class="nc" id="L981">		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, navigate, map));</span>
+<span class="nc" id="L982">		return this;</span>
 	}
 
 	/**
@@ -948,7 +988,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callForStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L951">		return callForStatementVisitor(bs, null);</span>
+<span class="fc" id="L991">		return callForStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -959,8 +999,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callForStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L962">		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L963">		return this;</span>
+<span class="fc" id="L1002">		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L1003">		return this;</span>
 	}
 
 	/**
@@ -971,11 +1011,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callForStatementVisitor(Class&lt;?&gt; typeof, BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L974">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="fc" id="L975">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
+<span class="fc" id="L1014">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L1015">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
 				);
-<span class="fc" id="L977">		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, null, map));</span>
-<span class="fc" id="L978">		return this;</span>
+<span class="fc" id="L1017">		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, null, map));</span>
+<span class="fc" id="L1018">		return this;</span>
 	}
 
 	/**
@@ -988,11 +1028,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callForStatementVisitor(Class&lt;?&gt; typeof, BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L991">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="nc" id="L992">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
+<span class="nc" id="L1031">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="nc" id="L1032">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
 				);
-<span class="nc" id="L994">		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, navigate, map));</span>
-<span class="nc" id="L995">		return this;</span>
+<span class="nc" id="L1034">		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, navigate, map));</span>
+<span class="nc" id="L1035">		return this;</span>
 	}
 
 	/**
@@ -1001,7 +1041,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callIfStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1004">		return callIfStatementVisitor(bs, null);</span>
+<span class="fc" id="L1044">		return callIfStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1012,8 +1052,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callIfStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L1015">		nodetypelist.put(VisitorEnum.IfStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L1016">		return this;</span>
+<span class="fc" id="L1055">		nodetypelist.put(VisitorEnum.IfStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L1056">		return this;</span>
 	}
 
 	/**
@@ -1022,7 +1062,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callImportDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1025">		return callImportDeclarationVisitor(bs, null);</span>
+<span class="nc" id="L1065">		return callImportDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1033,8 +1073,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callImportDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1036">		nodetypelist.put(VisitorEnum.ImportDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1037">		return this;</span>
+<span class="nc" id="L1076">		nodetypelist.put(VisitorEnum.ImportDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1077">		return this;</span>
 	}
 
 	/**
@@ -1043,7 +1083,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callInfixExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1046">		return callInfixExpressionVisitor(bs, null);</span>
+<span class="nc" id="L1086">		return callInfixExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1054,8 +1094,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callInfixExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1057">		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1058">		return this;</span>
+<span class="nc" id="L1097">		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1098">		return this;</span>
 	}
 
 	/**
@@ -1066,11 +1106,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callInfixExpressionVisitor(org.eclipse.jdt.core.dom.InfixExpression.Operator operator, BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1069">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="fc" id="L1070">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.OPERATOR, operator)</span>
+<span class="fc" id="L1109">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L1110">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.OPERATOR, operator)</span>
 				);
-<span class="fc" id="L1072">		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, null, map));</span>
-<span class="fc" id="L1073">		return this;</span>
+<span class="fc" id="L1112">		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, null, map));</span>
+<span class="fc" id="L1113">		return this;</span>
 	}
 
 	/**
@@ -1083,11 +1123,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callInfixExpressionVisitor(org.eclipse.jdt.core.dom.InfixExpression.Operator operator, BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1086">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="nc" id="L1087">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.OPERATOR, operator)</span>
+<span class="nc" id="L1126">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="nc" id="L1127">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.OPERATOR, operator)</span>
 				);
-<span class="nc" id="L1089">		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, navigate, map));</span>
-<span class="nc" id="L1090">		return this;</span>
+<span class="nc" id="L1129">		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, navigate, map));</span>
+<span class="nc" id="L1130">		return this;</span>
 	}
 
 	/**
@@ -1096,7 +1136,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callInitializerVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1099">		return callInitializerVisitor(bs, null);</span>
+<span class="nc" id="L1139">		return callInitializerVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1107,8 +1147,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callInitializerVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1110">		nodetypelist.put(VisitorEnum.Initializer, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1111">		return this;</span>
+<span class="nc" id="L1150">		nodetypelist.put(VisitorEnum.Initializer, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1151">		return this;</span>
 	}
 
 	/**
@@ -1117,7 +1157,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callInstanceofExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1120">		return callInstanceofExpressionVisitor(bs, null);</span>
+<span class="nc" id="L1160">		return callInstanceofExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1128,8 +1168,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callInstanceofExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1131">		nodetypelist.put(VisitorEnum.InstanceofExpression, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1132">		return this;</span>
+<span class="nc" id="L1171">		nodetypelist.put(VisitorEnum.InstanceofExpression, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1172">		return this;</span>
 	}
 
 	/**
@@ -1138,7 +1178,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callIntersectionTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1141">		return callIntersectionTypeVisitor(bs, null);</span>
+<span class="nc" id="L1181">		return callIntersectionTypeVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1149,8 +1189,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callIntersectionTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1152">		nodetypelist.put(VisitorEnum.IntersectionType, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1153">		return this;</span>
+<span class="nc" id="L1192">		nodetypelist.put(VisitorEnum.IntersectionType, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1193">		return this;</span>
 	}
 
 	/**
@@ -1159,7 +1199,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callJavadocVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1162">		return callJavadocVisitor(bs, null);</span>
+<span class="nc" id="L1202">		return callJavadocVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1169,8 +1209,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callJavadocVisitor(BiPredicate&lt;ASTNode, E&gt; bs, Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1172">		nodetypelist.put(VisitorEnum.Javadoc, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1173">		return this;</span>
+<span class="nc" id="L1212">		nodetypelist.put(VisitorEnum.Javadoc, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1213">		return this;</span>
 	}
 
 	/**
@@ -1179,7 +1219,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callLabeledStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1182">		return callLabeledStatementVisitor(bs, null);</span>
+<span class="nc" id="L1222">		return callLabeledStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1190,8 +1230,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callLabeledStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1193">		nodetypelist.put(VisitorEnum.LabeledStatement, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1194">		return this;</span>
+<span class="nc" id="L1233">		nodetypelist.put(VisitorEnum.LabeledStatement, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1234">		return this;</span>
 	}
 
 	/**
@@ -1200,7 +1240,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callLambdaExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1203">		return callLambdaExpressionVisitor(bs, null);</span>
+<span class="nc" id="L1243">		return callLambdaExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1211,8 +1251,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callLambdaExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1214">		nodetypelist.put(VisitorEnum.LambdaExpression, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1215">		return this;</span>
+<span class="nc" id="L1254">		nodetypelist.put(VisitorEnum.LambdaExpression, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1255">		return this;</span>
 	}
 
 	/**
@@ -1221,7 +1261,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callLineCommentVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1224">		return callLineCommentVisitor(bs, null);</span>
+<span class="nc" id="L1264">		return callLineCommentVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1232,8 +1272,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callLineCommentVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1235">		nodetypelist.put(VisitorEnum.LineComment, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1236">		return this;</span>
+<span class="nc" id="L1275">		nodetypelist.put(VisitorEnum.LineComment, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1276">		return this;</span>
 	}
 
 	/**
@@ -1242,7 +1282,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMarkerAnnotationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1245">		return callMarkerAnnotationVisitor(bs, null);</span>
+<span class="nc" id="L1285">		return callMarkerAnnotationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1253,8 +1293,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMarkerAnnotationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1256">		nodetypelist.put(VisitorEnum.MarkerAnnotation, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1257">		return this;</span>
+<span class="nc" id="L1296">		nodetypelist.put(VisitorEnum.MarkerAnnotation, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1297">		return this;</span>
 	}
 
 	/**
@@ -1263,7 +1303,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMemberRefVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1266">		return callMemberRefVisitor(bs, null);</span>
+<span class="nc" id="L1306">		return callMemberRefVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1273,8 +1313,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMemberRefVisitor(BiPredicate&lt;ASTNode, E&gt; bs, Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1276">		nodetypelist.put(VisitorEnum.MemberRef, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1277">		return this;</span>
+<span class="nc" id="L1316">		nodetypelist.put(VisitorEnum.MemberRef, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1317">		return this;</span>
 	}
 
 	/**
@@ -1283,7 +1323,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMemberValuePairVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1286">		return callMemberValuePairVisitor(bs, null);</span>
+<span class="nc" id="L1326">		return callMemberValuePairVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1294,8 +1334,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMemberValuePairVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1297">		nodetypelist.put(VisitorEnum.MemberValuePair, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1298">		return this;</span>
+<span class="nc" id="L1337">		nodetypelist.put(VisitorEnum.MemberValuePair, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1338">		return this;</span>
 	}
 
 	/**
@@ -1304,7 +1344,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodRefVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1307">		return callMethodRefVisitor(bs, null);</span>
+<span class="nc" id="L1347">		return callMethodRefVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1314,8 +1354,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodRefVisitor(BiPredicate&lt;ASTNode, E&gt; bs, Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1317">		nodetypelist.put(VisitorEnum.MethodRef, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1318">		return this;</span>
+<span class="nc" id="L1357">		nodetypelist.put(VisitorEnum.MethodRef, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1358">		return this;</span>
 	}
 
 	/**
@@ -1324,7 +1364,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodRefParameterVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1327">		return callMethodRefParameterVisitor(bs, null);</span>
+<span class="nc" id="L1367">		return callMethodRefParameterVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1335,8 +1375,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodRefParameterVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1338">		nodetypelist.put(VisitorEnum.MethodRefParameter, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1339">		return this;</span>
+<span class="nc" id="L1378">		nodetypelist.put(VisitorEnum.MethodRefParameter, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1379">		return this;</span>
 	}
 
 	/**
@@ -1345,7 +1385,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1348">		return callMethodDeclarationVisitor(bs, null);</span>
+<span class="fc" id="L1388">		return callMethodDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1356,8 +1396,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L1359">		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L1360">		return this;</span>
+<span class="fc" id="L1399">		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L1400">		return this;</span>
 	}
 
 	/**
@@ -1368,11 +1408,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodDeclarationVisitor(String methodName, BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1371">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="fc" id="L1372">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodName)</span>
+<span class="fc" id="L1411">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L1412">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodName)</span>
 				);
-<span class="fc" id="L1374">		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, null, map));</span>
-<span class="fc" id="L1375">		return this;</span>
+<span class="fc" id="L1414">		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, null, map));</span>
+<span class="fc" id="L1415">		return this;</span>
 	}
 
 	/**
@@ -1385,11 +1425,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodDeclarationVisitor(String methodName, BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1388">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="nc" id="L1389">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodName)</span>
+<span class="nc" id="L1428">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="nc" id="L1429">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodName)</span>
 				);
-<span class="nc" id="L1391">		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, navigate, map));</span>
-<span class="nc" id="L1392">		return this;</span>
+<span class="nc" id="L1431">		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, navigate, map));</span>
+<span class="nc" id="L1432">		return this;</span>
 	}
 
 	/**
@@ -1398,7 +1438,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodInvocationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1401">		return callMethodInvocationVisitor(bs, null);</span>
+<span class="fc" id="L1441">		return callMethodInvocationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1409,8 +1449,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodInvocationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L1412">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L1413">		return this;</span>
+<span class="fc" id="L1452">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L1453">		return this;</span>
 	}
 
 	/**
@@ -1419,11 +1459,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodInvocationVisitor(String methodname, BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1422">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="fc" id="L1423">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodname)</span>
+<span class="fc" id="L1462">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L1463">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodname)</span>
 				);
-<span class="fc" id="L1425">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, map));</span>
-<span class="fc" id="L1426">		return this;</span>
+<span class="fc" id="L1465">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, map));</span>
+<span class="fc" id="L1466">		return this;</span>
 	}
 
 	/**
@@ -1432,11 +1472,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodInvocationVisitor(Class&lt;?&gt; typeof, BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1435">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="nc" id="L1436">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
+<span class="nc" id="L1475">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="nc" id="L1476">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
 				);
-<span class="nc" id="L1438">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, map));</span>
-<span class="nc" id="L1439">		return this;</span>
+<span class="nc" id="L1478">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, map));</span>
+<span class="nc" id="L1479">		return this;</span>
 	}
 
 	/**
@@ -1446,7 +1486,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodInvocationVisitor(Class&lt;?&gt; typeof,String methodname, BiPredicate&lt;MethodInvocation, E&gt; bs) {
-<span class="fc" id="L1449">		return callMethodInvocationVisitor(typeof,methodname,bs,null);</span>
+<span class="fc" id="L1489">		return callMethodInvocationVisitor(typeof,methodname,bs,null);</span>
 	}
 
 	/**
@@ -1457,12 +1497,12 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodInvocationVisitor(Class&lt;?&gt; typeof,String methodname, BiPredicate&lt;MethodInvocation, E&gt; bs, Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L1460">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="fc" id="L1461">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodname),</span>
-<span class="fc" id="L1462">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
+<span class="fc" id="L1500">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L1501">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodname),</span>
+<span class="fc" id="L1502">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPEOF, typeof)</span>
 				);
-<span class="fc" id="L1464">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, map));</span>
-<span class="fc" id="L1465">		return this;</span>
+<span class="fc" id="L1504">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, map));</span>
+<span class="fc" id="L1505">		return this;</span>
 	}
 
 	/**
@@ -1473,11 +1513,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callMethodInvocationVisitor(String methodname, BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1476">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="nc" id="L1477">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodname)</span>
+<span class="nc" id="L1516">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="nc" id="L1517">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodname)</span>
 				);
-<span class="nc" id="L1479">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, map));</span>
-<span class="nc" id="L1480">		return this;</span>
+<span class="nc" id="L1519">		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, map));</span>
+<span class="nc" id="L1520">		return this;</span>
 	}
 
 	/**
@@ -1486,7 +1526,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callModifierVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1489">		return callModifierVisitor(bs, null);</span>
+<span class="nc" id="L1529">		return callModifierVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1496,8 +1536,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callModifierVisitor(BiPredicate&lt;ASTNode, E&gt; bs, Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1499">		nodetypelist.put(VisitorEnum.Modifier, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1500">		return this;</span>
+<span class="nc" id="L1539">		nodetypelist.put(VisitorEnum.Modifier, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1540">		return this;</span>
 	}
 
 	/**
@@ -1506,7 +1546,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callModuleDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1509">		return callModuleDeclarationVisitor(bs, null);</span>
+<span class="nc" id="L1549">		return callModuleDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1517,8 +1557,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callModuleDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1520">		nodetypelist.put(VisitorEnum.ModuleDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1521">		return this;</span>
+<span class="nc" id="L1560">		nodetypelist.put(VisitorEnum.ModuleDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1561">		return this;</span>
 	}
 
 	/**
@@ -1527,7 +1567,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callModuleModifierVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1530">		return callModuleModifierVisitor(bs, null);</span>
+<span class="nc" id="L1570">		return callModuleModifierVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1538,8 +1578,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callModuleModifierVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1541">		nodetypelist.put(VisitorEnum.ModuleModifier, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1542">		return this;</span>
+<span class="nc" id="L1581">		nodetypelist.put(VisitorEnum.ModuleModifier, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1582">		return this;</span>
 	}
 
 	/**
@@ -1548,7 +1588,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callNameQualifiedTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1551">		return callNameQualifiedTypeVisitor(bs, null);</span>
+<span class="nc" id="L1591">		return callNameQualifiedTypeVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1559,8 +1599,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callNameQualifiedTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1562">		nodetypelist.put(VisitorEnum.NameQualifiedType, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1563">		return this;</span>
+<span class="nc" id="L1602">		nodetypelist.put(VisitorEnum.NameQualifiedType, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1603">		return this;</span>
 	}
 
 	/**
@@ -1569,7 +1609,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callNormalAnnotationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1572">		return callNormalAnnotationVisitor(bs, null);</span>
+<span class="nc" id="L1612">		return callNormalAnnotationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1580,8 +1620,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callNormalAnnotationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1583">		nodetypelist.put(VisitorEnum.NormalAnnotation, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1584">		return this;</span>
+<span class="nc" id="L1623">		nodetypelist.put(VisitorEnum.NormalAnnotation, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1624">		return this;</span>
 	}
 
 	/**
@@ -1590,7 +1630,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callNullLiteralVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1593">		return callNullLiteralVisitor(bs, null);</span>
+<span class="nc" id="L1633">		return callNullLiteralVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1601,8 +1641,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callNullLiteralVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1604">		nodetypelist.put(VisitorEnum.NullLiteral, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1605">		return this;</span>
+<span class="nc" id="L1644">		nodetypelist.put(VisitorEnum.NullLiteral, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1645">		return this;</span>
 	}
 
 	/**
@@ -1611,7 +1651,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callNumberLiteralVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1614">		return callNumberLiteralVisitor(bs, null);</span>
+<span class="nc" id="L1654">		return callNumberLiteralVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1622,8 +1662,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callNumberLiteralVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1625">		nodetypelist.put(VisitorEnum.NumberLiteral, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1626">		return this;</span>
+<span class="nc" id="L1665">		nodetypelist.put(VisitorEnum.NumberLiteral, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1666">		return this;</span>
 	}
 
 	/**
@@ -1632,7 +1672,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callOpensDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1635">		return callOpensDirectiveVisitor(bs, null);</span>
+<span class="nc" id="L1675">		return callOpensDirectiveVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1643,8 +1683,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callOpensDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1646">		nodetypelist.put(VisitorEnum.OpensDirective, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1647">		return this;</span>
+<span class="nc" id="L1686">		nodetypelist.put(VisitorEnum.OpensDirective, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1687">		return this;</span>
 	}
 
 	/**
@@ -1653,7 +1693,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPackageDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1656">		return callPackageDeclarationVisitor(bs, null);</span>
+<span class="nc" id="L1696">		return callPackageDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1664,8 +1704,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPackageDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1667">		nodetypelist.put(VisitorEnum.PackageDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1668">		return this;</span>
+<span class="nc" id="L1707">		nodetypelist.put(VisitorEnum.PackageDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1708">		return this;</span>
 	}
 
 	/**
@@ -1674,7 +1714,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callParameterizedTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1677">		return callParameterizedTypeVisitor(bs, null);</span>
+<span class="nc" id="L1717">		return callParameterizedTypeVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1685,8 +1725,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callParameterizedTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1688">		nodetypelist.put(VisitorEnum.ParameterizedType, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1689">		return this;</span>
+<span class="nc" id="L1728">		nodetypelist.put(VisitorEnum.ParameterizedType, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1729">		return this;</span>
 	}
 
 	/**
@@ -1695,7 +1735,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callParenthesizedExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1698">		return callParenthesizedExpressionVisitor(bs, null);</span>
+<span class="nc" id="L1738">		return callParenthesizedExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1706,8 +1746,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callParenthesizedExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1709">		nodetypelist.put(VisitorEnum.ParenthesizedExpression, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1710">		return this;</span>
+<span class="nc" id="L1749">		nodetypelist.put(VisitorEnum.ParenthesizedExpression, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1750">		return this;</span>
 	}
 
 	/**
@@ -1716,7 +1756,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPatternInstanceofExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1719">		return callPatternInstanceofExpressionVisitor(bs, null);</span>
+<span class="nc" id="L1759">		return callPatternInstanceofExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1727,8 +1767,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPatternInstanceofExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1730">		nodetypelist.put(VisitorEnum.PatternInstanceofExpression, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1731">		return this;</span>
+<span class="nc" id="L1770">		nodetypelist.put(VisitorEnum.PatternInstanceofExpression, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1771">		return this;</span>
 	}
 
 	/**
@@ -1737,7 +1777,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPostfixExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1740">		return callPostfixExpressionVisitor(bs, null);</span>
+<span class="fc" id="L1780">		return callPostfixExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1748,8 +1788,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPostfixExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L1751">		nodetypelist.put(VisitorEnum.PostfixExpression, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L1752">		return this;</span>
+<span class="fc" id="L1791">		nodetypelist.put(VisitorEnum.PostfixExpression, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L1792">		return this;</span>
 	}
 
 	/**
@@ -1758,7 +1798,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPrefixExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1761">		return callPrefixExpressionVisitor(bs, null);</span>
+<span class="fc" id="L1801">		return callPrefixExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1769,8 +1809,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPrefixExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L1772">		nodetypelist.put(VisitorEnum.PrefixExpression, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L1773">		return this;</span>
+<span class="fc" id="L1812">		nodetypelist.put(VisitorEnum.PrefixExpression, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L1813">		return this;</span>
 	}
 
 	/**
@@ -1779,7 +1819,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callProvidesDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1782">		return callProvidesDirectiveVisitor(bs, null);</span>
+<span class="nc" id="L1822">		return callProvidesDirectiveVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1790,8 +1830,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callProvidesDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1793">		nodetypelist.put(VisitorEnum.ProvidesDirective, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1794">		return this;</span>
+<span class="nc" id="L1833">		nodetypelist.put(VisitorEnum.ProvidesDirective, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1834">		return this;</span>
 	}
 
 	/**
@@ -1800,7 +1840,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPrimitiveTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1803">		return callPrimitiveTypeVisitor(bs, null);</span>
+<span class="nc" id="L1843">		return callPrimitiveTypeVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1811,8 +1851,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callPrimitiveTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1814">		nodetypelist.put(VisitorEnum.PrimitiveType, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1815">		return this;</span>
+<span class="nc" id="L1854">		nodetypelist.put(VisitorEnum.PrimitiveType, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1855">		return this;</span>
 	}
 
 	/**
@@ -1821,7 +1861,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callQualifiedNameVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1824">		return callQualifiedNameVisitor(bs, null);</span>
+<span class="nc" id="L1864">		return callQualifiedNameVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1832,8 +1872,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callQualifiedNameVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1835">		nodetypelist.put(VisitorEnum.QualifiedName, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1836">		return this;</span>
+<span class="nc" id="L1875">		nodetypelist.put(VisitorEnum.QualifiedName, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1876">		return this;</span>
 	}
 
 	/**
@@ -1842,7 +1882,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callQualifiedTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1845">		return callQualifiedTypeVisitor(bs, null);</span>
+<span class="nc" id="L1885">		return callQualifiedTypeVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1853,8 +1893,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callQualifiedTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1856">		nodetypelist.put(VisitorEnum.QualifiedType, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1857">		return this;</span>
+<span class="nc" id="L1896">		nodetypelist.put(VisitorEnum.QualifiedType, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1897">		return this;</span>
 	}
 
 	/**
@@ -1863,7 +1903,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callModuleQualifiedNameVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1866">		return callModuleQualifiedNameVisitor(bs, null);</span>
+<span class="nc" id="L1906">		return callModuleQualifiedNameVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1874,8 +1914,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callModuleQualifiedNameVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1877">		nodetypelist.put(VisitorEnum.ModuleQualifiedName, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1878">		return this;</span>
+<span class="nc" id="L1917">		nodetypelist.put(VisitorEnum.ModuleQualifiedName, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1918">		return this;</span>
 	}
 
 	/**
@@ -1884,7 +1924,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callRequiresDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1887">		return callRequiresDirectiveVisitor(bs, null);</span>
+<span class="nc" id="L1927">		return callRequiresDirectiveVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1895,8 +1935,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callRequiresDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1898">		nodetypelist.put(VisitorEnum.RequiresDirective, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1899">		return this;</span>
+<span class="nc" id="L1938">		nodetypelist.put(VisitorEnum.RequiresDirective, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1939">		return this;</span>
 	}
 
 	/**
@@ -1905,7 +1945,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callRecordDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1908">		return callRecordDeclarationVisitor(bs, null);</span>
+<span class="nc" id="L1948">		return callRecordDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1916,8 +1956,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callRecordDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1919">		nodetypelist.put(VisitorEnum.RecordDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1920">		return this;</span>
+<span class="nc" id="L1959">		nodetypelist.put(VisitorEnum.RecordDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L1960">		return this;</span>
 	}
 
 	/**
@@ -1926,7 +1966,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callReturnStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1929">		return callReturnStatementVisitor(bs, null);</span>
+<span class="fc" id="L1969">		return callReturnStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1937,8 +1977,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callReturnStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L1940">		nodetypelist.put(VisitorEnum.ReturnStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L1941">		return this;</span>
+<span class="fc" id="L1980">		nodetypelist.put(VisitorEnum.ReturnStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L1981">		return this;</span>
 	}
 
 	/**
@@ -1947,7 +1987,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSimpleNameVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L1950">		return callSimpleNameVisitor(bs, null);</span>
+<span class="fc" id="L1990">		return callSimpleNameVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1958,8 +1998,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSimpleNameVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L1961">		nodetypelist.put(VisitorEnum.SimpleName, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L1962">		return this;</span>
+<span class="fc" id="L2001">		nodetypelist.put(VisitorEnum.SimpleName, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L2002">		return this;</span>
 	}
 
 	/**
@@ -1968,7 +2008,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSimpleTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1971">		return callSimpleTypeVisitor(bs, null);</span>
+<span class="nc" id="L2011">		return callSimpleTypeVisitor(bs, null);</span>
 	}
 
 	/**
@@ -1979,8 +2019,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSimpleTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L1982">		nodetypelist.put(VisitorEnum.SimpleType, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L1983">		return this;</span>
+<span class="nc" id="L2022">		nodetypelist.put(VisitorEnum.SimpleType, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2023">		return this;</span>
 	}
 
 	/**
@@ -1989,7 +2029,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSingleMemberAnnotationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L1992">		return callSingleMemberAnnotationVisitor(bs, null);</span>
+<span class="nc" id="L2032">		return callSingleMemberAnnotationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2000,8 +2040,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSingleMemberAnnotationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2003">		nodetypelist.put(VisitorEnum.SingleMemberAnnotation, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2004">		return this;</span>
+<span class="nc" id="L2043">		nodetypelist.put(VisitorEnum.SingleMemberAnnotation, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2044">		return this;</span>
 	}
 
 	/**
@@ -2010,7 +2050,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSingleVariableDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2013">		return callSingleVariableDeclarationVisitor(bs, null);</span>
+<span class="nc" id="L2053">		return callSingleVariableDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2021,8 +2061,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSingleVariableDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2024">		nodetypelist.put(VisitorEnum.SingleVariableDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2025">		return this;</span>
+<span class="nc" id="L2064">		nodetypelist.put(VisitorEnum.SingleVariableDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2065">		return this;</span>
 	}
 
 	/**
@@ -2031,7 +2071,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callStringLiteralVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2034">		return callStringLiteralVisitor(bs, null);</span>
+<span class="nc" id="L2074">		return callStringLiteralVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2042,8 +2082,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callStringLiteralVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2045">		nodetypelist.put(VisitorEnum.StringLiteral, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2046">		return this;</span>
+<span class="nc" id="L2085">		nodetypelist.put(VisitorEnum.StringLiteral, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2086">		return this;</span>
 	}
 
 	/**
@@ -2052,7 +2092,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperConstructorInvocationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2055">		return callSuperConstructorInvocationVisitor(bs, null);</span>
+<span class="nc" id="L2095">		return callSuperConstructorInvocationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2063,8 +2103,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperConstructorInvocationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2066">		nodetypelist.put(VisitorEnum.SuperConstructorInvocation, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2067">		return this;</span>
+<span class="nc" id="L2106">		nodetypelist.put(VisitorEnum.SuperConstructorInvocation, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2107">		return this;</span>
 	}
 
 	/**
@@ -2073,7 +2113,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperFieldAccessVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2076">		return callSuperFieldAccessVisitor(bs, null);</span>
+<span class="nc" id="L2116">		return callSuperFieldAccessVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2084,8 +2124,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperFieldAccessVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2087">		nodetypelist.put(VisitorEnum.SuperFieldAccess, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2088">		return this;</span>
+<span class="nc" id="L2127">		nodetypelist.put(VisitorEnum.SuperFieldAccess, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2128">		return this;</span>
 	}
 
 	/**
@@ -2094,7 +2134,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperMethodInvocationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2097">		return callSuperMethodInvocationVisitor(bs, null);</span>
+<span class="nc" id="L2137">		return callSuperMethodInvocationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2105,8 +2145,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperMethodInvocationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2108">		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2109">		return this;</span>
+<span class="nc" id="L2148">		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2149">		return this;</span>
 	}
 
 	/**
@@ -2117,11 +2157,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperMethodInvocationVisitor(String methodName, BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2120">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="fc" id="L2121">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodName)</span>
+<span class="fc" id="L2160">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L2161">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodName)</span>
 				);
-<span class="fc" id="L2123">		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, null, map));</span>
-<span class="fc" id="L2124">		return this;</span>
+<span class="fc" id="L2163">		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, null, map));</span>
+<span class="fc" id="L2164">		return this;</span>
 	}
 
 	/**
@@ -2134,11 +2174,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperMethodInvocationVisitor(String methodName, BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2137">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="nc" id="L2138">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodName)</span>
+<span class="nc" id="L2177">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="nc" id="L2178">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.METHODNAME, methodName)</span>
 				);
-<span class="nc" id="L2140">		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, navigate, map));</span>
-<span class="nc" id="L2141">		return this;</span>
+<span class="nc" id="L2180">		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, navigate, map));</span>
+<span class="nc" id="L2181">		return this;</span>
 	}
 
 	/**
@@ -2147,7 +2187,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperMethodReferenceVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2150">		return callSuperMethodReferenceVisitor(bs, null);</span>
+<span class="nc" id="L2190">		return callSuperMethodReferenceVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2158,8 +2198,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSuperMethodReferenceVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2161">		nodetypelist.put(VisitorEnum.SuperMethodReference, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2162">		return this;</span>
+<span class="nc" id="L2201">		nodetypelist.put(VisitorEnum.SuperMethodReference, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2202">		return this;</span>
 	}
 
 	/**
@@ -2168,7 +2208,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSwitchCaseVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2171">		return callSwitchCaseVisitor(bs, null);</span>
+<span class="nc" id="L2211">		return callSwitchCaseVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2179,8 +2219,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSwitchCaseVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2182">		nodetypelist.put(VisitorEnum.SwitchCase, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2183">		return this;</span>
+<span class="nc" id="L2222">		nodetypelist.put(VisitorEnum.SwitchCase, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2223">		return this;</span>
 	}
 
 	/**
@@ -2189,7 +2229,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSwitchExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2192">		return callSwitchExpressionVisitor(bs, null);</span>
+<span class="nc" id="L2232">		return callSwitchExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2200,8 +2240,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSwitchExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2203">		nodetypelist.put(VisitorEnum.SwitchExpression, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2204">		return this;</span>
+<span class="nc" id="L2243">		nodetypelist.put(VisitorEnum.SwitchExpression, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2244">		return this;</span>
 	}
 
 	/**
@@ -2210,7 +2250,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSwitchStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2213">		return callSwitchStatementVisitor(bs, null);</span>
+<span class="fc" id="L2253">		return callSwitchStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2221,8 +2261,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSwitchStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L2224">		nodetypelist.put(VisitorEnum.SwitchStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L2225">		return this;</span>
+<span class="fc" id="L2264">		nodetypelist.put(VisitorEnum.SwitchStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L2265">		return this;</span>
 	}
 
 	/**
@@ -2231,7 +2271,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSynchronizedStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2234">		return callSynchronizedStatementVisitor(bs, null);</span>
+<span class="fc" id="L2274">		return callSynchronizedStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2242,8 +2282,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callSynchronizedStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L2245">		nodetypelist.put(VisitorEnum.SynchronizedStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L2246">		return this;</span>
+<span class="fc" id="L2285">		nodetypelist.put(VisitorEnum.SynchronizedStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L2286">		return this;</span>
 	}
 
 	/**
@@ -2252,7 +2292,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTagElementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2255">		return callTagElementVisitor(bs, null);</span>
+<span class="nc" id="L2295">		return callTagElementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2263,8 +2303,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTagElementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2266">		nodetypelist.put(VisitorEnum.TagElement, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2267">		return this;</span>
+<span class="nc" id="L2306">		nodetypelist.put(VisitorEnum.TagElement, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2307">		return this;</span>
 	}
 
 	/**
@@ -2273,7 +2313,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTextBlockVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2276">		return callTextBlockVisitor(bs, null);</span>
+<span class="nc" id="L2316">		return callTextBlockVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2283,8 +2323,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTextBlockVisitor(BiPredicate&lt;ASTNode, E&gt; bs, Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2286">		nodetypelist.put(VisitorEnum.TextBlock, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2287">		return this;</span>
+<span class="nc" id="L2326">		nodetypelist.put(VisitorEnum.TextBlock, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2327">		return this;</span>
 	}
 
 	/**
@@ -2293,7 +2333,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTextElementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2296">		return callTextElementVisitor(bs, null);</span>
+<span class="nc" id="L2336">		return callTextElementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2304,8 +2344,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTextElementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2307">		nodetypelist.put(VisitorEnum.TextElement, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2308">		return this;</span>
+<span class="nc" id="L2347">		nodetypelist.put(VisitorEnum.TextElement, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2348">		return this;</span>
 	}
 
 	/**
@@ -2314,7 +2354,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callThisExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2317">		return callThisExpressionVisitor(bs, null);</span>
+<span class="nc" id="L2357">		return callThisExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2325,8 +2365,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callThisExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2328">		nodetypelist.put(VisitorEnum.ThisExpression, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2329">		return this;</span>
+<span class="nc" id="L2368">		nodetypelist.put(VisitorEnum.ThisExpression, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2369">		return this;</span>
 	}
 
 	/**
@@ -2335,7 +2375,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callThrowStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2338">		return callThrowStatementVisitor(bs, null);</span>
+<span class="fc" id="L2378">		return callThrowStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2346,8 +2386,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callThrowStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L2349">		nodetypelist.put(VisitorEnum.ThrowStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L2350">		return this;</span>
+<span class="fc" id="L2389">		nodetypelist.put(VisitorEnum.ThrowStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L2390">		return this;</span>
 	}
 
 	/**
@@ -2356,7 +2396,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTryStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2359">		return callTryStatementVisitor(bs, null);</span>
+<span class="fc" id="L2399">		return callTryStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2367,8 +2407,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTryStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L2370">		nodetypelist.put(VisitorEnum.TryStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L2371">		return this;</span>
+<span class="fc" id="L2410">		nodetypelist.put(VisitorEnum.TryStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L2411">		return this;</span>
 	}
 
 	/**
@@ -2377,7 +2417,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2380">		return callTypeDeclarationVisitor(bs, null);</span>
+<span class="fc" id="L2420">		return callTypeDeclarationVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2388,8 +2428,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeDeclarationVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L2391">		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L2392">		return this;</span>
+<span class="fc" id="L2431">		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L2432">		return this;</span>
 	}
 
 	/**
@@ -2400,11 +2440,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeDeclarationVisitor(String typeName, BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2403">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="fc" id="L2404">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPENAME, typeName)</span>
+<span class="fc" id="L2443">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="fc" id="L2444">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPENAME, typeName)</span>
 				);
-<span class="fc" id="L2406">		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, null, map));</span>
-<span class="fc" id="L2407">		return this;</span>
+<span class="fc" id="L2446">		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, null, map));</span>
+<span class="fc" id="L2447">		return this;</span>
 	}
 
 	/**
@@ -2417,11 +2457,11 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeDeclarationVisitor(String typeName, BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2420">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
-<span class="nc" id="L2421">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPENAME, typeName)</span>
+<span class="nc" id="L2460">		Map&lt;String, Object&gt; map = Map.ofEntries(</span>
+<span class="nc" id="L2461">				new AbstractMap.SimpleEntry&lt;&gt;(HelperVisitor.TYPENAME, typeName)</span>
 				);
-<span class="nc" id="L2423">		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, navigate, map));</span>
-<span class="nc" id="L2424">		return this;</span>
+<span class="nc" id="L2463">		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, navigate, map));</span>
+<span class="nc" id="L2464">		return this;</span>
 	}
 
 	/**
@@ -2430,7 +2470,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeDeclarationStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2433">		return callTypeDeclarationStatementVisitor(bs, null);</span>
+<span class="nc" id="L2473">		return callTypeDeclarationStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2441,8 +2481,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeDeclarationStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2444">		nodetypelist.put(VisitorEnum.TypeDeclarationStatement, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2445">		return this;</span>
+<span class="nc" id="L2484">		nodetypelist.put(VisitorEnum.TypeDeclarationStatement, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2485">		return this;</span>
 	}
 
 	/**
@@ -2451,7 +2491,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeLiteralVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2454">		return callTypeLiteralVisitor(bs, null);</span>
+<span class="nc" id="L2494">		return callTypeLiteralVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2462,8 +2502,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeLiteralVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2465">		nodetypelist.put(VisitorEnum.TypeLiteral, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2466">		return this;</span>
+<span class="nc" id="L2505">		nodetypelist.put(VisitorEnum.TypeLiteral, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2506">		return this;</span>
 	}
 
 	/**
@@ -2472,7 +2512,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeMethodReferenceVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2475">		return callTypeMethodReferenceVisitor(bs, null);</span>
+<span class="nc" id="L2515">		return callTypeMethodReferenceVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2483,8 +2523,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeMethodReferenceVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2486">		nodetypelist.put(VisitorEnum.TypeMethodReference, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2487">		return this;</span>
+<span class="nc" id="L2526">		nodetypelist.put(VisitorEnum.TypeMethodReference, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2527">		return this;</span>
 	}
 
 	/**
@@ -2493,7 +2533,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeParameterVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2496">		return callTypeParameterVisitor(bs, null);</span>
+<span class="nc" id="L2536">		return callTypeParameterVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2504,8 +2544,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callTypeParameterVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2507">		nodetypelist.put(VisitorEnum.TypeParameter, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2508">		return this;</span>
+<span class="nc" id="L2547">		nodetypelist.put(VisitorEnum.TypeParameter, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2548">		return this;</span>
 	}
 
 	/**
@@ -2514,7 +2554,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callUnionTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2517">		return callUnionTypeVisitor(bs, null);</span>
+<span class="nc" id="L2557">		return callUnionTypeVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2524,8 +2564,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callUnionTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs, Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2527">		nodetypelist.put(VisitorEnum.UnionType, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2528">		return this;</span>
+<span class="nc" id="L2567">		nodetypelist.put(VisitorEnum.UnionType, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2568">		return this;</span>
 	}
 
 	/**
@@ -2534,7 +2574,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callUsesDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2537">		return callUsesDirectiveVisitor(bs, null);</span>
+<span class="nc" id="L2577">		return callUsesDirectiveVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2545,8 +2585,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callUsesDirectiveVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2548">		nodetypelist.put(VisitorEnum.UsesDirective, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2549">		return this;</span>
+<span class="nc" id="L2588">		nodetypelist.put(VisitorEnum.UsesDirective, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2589">		return this;</span>
 	}
 
 	/**
@@ -2555,7 +2595,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callVariableDeclarationExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2558">		return callVariableDeclarationExpressionVisitor(bs, null);</span>
+<span class="nc" id="L2598">		return callVariableDeclarationExpressionVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2566,8 +2606,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callVariableDeclarationExpressionVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2569">		nodetypelist.put(VisitorEnum.VariableDeclarationExpression, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2570">		return this;</span>
+<span class="nc" id="L2609">		nodetypelist.put(VisitorEnum.VariableDeclarationExpression, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2610">		return this;</span>
 	}
 
 	/**
@@ -2576,7 +2616,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callVariableDeclarationStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2579">		return callVariableDeclarationStatementVisitor(bs, null);</span>
+<span class="nc" id="L2619">		return callVariableDeclarationStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2587,8 +2627,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callVariableDeclarationStatementVisitor(Class&lt;?&gt; class1, BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L2590">		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, navigate, class1));</span>
-<span class="fc" id="L2591">		return this;</span>
+<span class="fc" id="L2630">		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, navigate, class1));</span>
+<span class="fc" id="L2631">		return this;</span>
 	}
 
 	/**
@@ -2597,8 +2637,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callVariableDeclarationStatementVisitor(Class&lt;?&gt; class1, BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2600">		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, null, class1));</span>
-<span class="fc" id="L2601">		return this;</span>
+<span class="fc" id="L2640">		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, null, class1));</span>
+<span class="fc" id="L2641">		return this;</span>
 	}
 
 	/**
@@ -2609,8 +2649,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callVariableDeclarationStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2612">		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2613">		return this;</span>
+<span class="nc" id="L2652">		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2653">		return this;</span>
 	}
 
 	/**
@@ -2619,7 +2659,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callVariableDeclarationFragmentVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2622">		return callVariableDeclarationFragmentVisitor(bs, null);</span>
+<span class="fc" id="L2662">		return callVariableDeclarationFragmentVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2630,8 +2670,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callVariableDeclarationFragmentVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L2633">		nodetypelist.put(VisitorEnum.VariableDeclarationFragment, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L2634">		return this;</span>
+<span class="fc" id="L2673">		nodetypelist.put(VisitorEnum.VariableDeclarationFragment, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L2674">		return this;</span>
 	}
 
 	/**
@@ -2640,7 +2680,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callWhileStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="fc" id="L2643">		return callWhileStatementVisitor(bs, null);</span>
+<span class="fc" id="L2683">		return callWhileStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2651,8 +2691,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callWhileStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="fc" id="L2654">		nodetypelist.put(VisitorEnum.WhileStatement, new NodeHolder(bs, navigate));</span>
-<span class="fc" id="L2655">		return this;</span>
+<span class="fc" id="L2694">		nodetypelist.put(VisitorEnum.WhileStatement, new NodeHolder(bs, navigate));</span>
+<span class="fc" id="L2695">		return this;</span>
 	}
 
 	/**
@@ -2661,7 +2701,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callWildcardTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2664">		return callWildcardTypeVisitor(bs, null);</span>
+<span class="nc" id="L2704">		return callWildcardTypeVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2672,8 +2712,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callWildcardTypeVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2675">		nodetypelist.put(VisitorEnum.WildcardType, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2676">		return this;</span>
+<span class="nc" id="L2715">		nodetypelist.put(VisitorEnum.WildcardType, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2716">		return this;</span>
 	}
 
 	/**
@@ -2682,7 +2722,7 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callYieldStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs) {
-<span class="nc" id="L2685">		return callYieldStatementVisitor(bs, null);</span>
+<span class="nc" id="L2725">		return callYieldStatementVisitor(bs, null);</span>
 	}
 
 	/**
@@ -2693,8 +2733,8 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 */
 	public ASTProcessor&lt;E, V, T&gt; callYieldStatementVisitor(BiPredicate&lt;ASTNode, E&gt; bs,
 			Function&lt;ASTNode, ASTNode&gt; navigate) {
-<span class="nc" id="L2696">		nodetypelist.put(VisitorEnum.YieldStatement, new NodeHolder(bs, navigate));</span>
-<span class="nc" id="L2697">		return this;</span>
+<span class="nc" id="L2736">		nodetypelist.put(VisitorEnum.YieldStatement, new NodeHolder(bs, navigate));</span>
+<span class="nc" id="L2737">		return this;</span>
 	}
 
 	/**
@@ -2702,51 +2742,51 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 	 * @param node
 	 */
 	public void build(ASTNode node) {
-<span class="fc" id="L2705">		nodetypekeylist= new LinkedList&lt;&gt;(nodetypelist.keySet());</span>
-<span class="fc" id="L2706">		process(node, 0);</span>
-<span class="fc" id="L2707">	}</span>
+<span class="fc" id="L2745">		nodetypekeylist= new LinkedList&lt;&gt;(nodetypelist.keySet());</span>
+<span class="fc" id="L2746">		process(node, 0);</span>
+<span class="fc" id="L2747">	}</span>
 
 	void process(ASTNode localnode, final int i) {
-<span class="fc bfc" id="L2710" title="All 2 branches covered.">		if (i == nodetypekeylist.size()) {</span>
-<span class="fc" id="L2711">			return;</span>
+<span class="fc bfc" id="L2750" title="All 2 branches covered.">		if (i == nodetypekeylist.size()) {</span>
+<span class="fc" id="L2751">			return;</span>
 		}
-<span class="fc" id="L2713">		final VisitorEnum next= nodetypekeylist.get(i);</span>
-<span class="fc" id="L2714">		ASTProcessor&lt;E, V, T&gt;.NodeHolder nodeHolder= nodetypelist.get(next);</span>
-<span class="fc" id="L2715">		BiPredicate&lt;ASTNode, E&gt; biPredicate= nodeHolder.callee;</span>
-<span class="fc" id="L2716">		BiConsumer&lt;ASTNode, E&gt; bcConsumer= nodeHolder.callee_end;</span>
-<span class="fc" id="L2717">		HelperVisitor&lt;E, V, T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
-<span class="pc bpc" id="L2718" title="1 of 2 branches missed.">		if(bcConsumer!=null) {</span>
-<span class="nc" id="L2719">			hv.addEnd(next, (node, holder) -&gt; {</span>
-<span class="nc" id="L2720">				bcConsumer.accept(node, holder);</span>
-<span class="nc bnc" id="L2721" title="All 2 branches missed.">				if (nodeHolder.navigate != null) {</span>
-<span class="nc" id="L2722">					process(nodeHolder.navigate.apply(node), i + 1);</span>
-<span class="nc" id="L2723">				} else {</span>
-<span class="nc" id="L2724">					process(node, i + 1);</span>
+<span class="fc" id="L2753">		final VisitorEnum next= nodetypekeylist.get(i);</span>
+<span class="fc" id="L2754">		ASTProcessor&lt;E, V, T&gt;.NodeHolder nodeHolder= nodetypelist.get(next);</span>
+<span class="fc" id="L2755">		BiPredicate&lt;ASTNode, E&gt; biPredicate= nodeHolder.callee;</span>
+<span class="fc" id="L2756">		BiConsumer&lt;ASTNode, E&gt; bcConsumer= nodeHolder.callee_end;</span>
+<span class="fc" id="L2757">		HelperVisitor&lt;E, V, T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
+<span class="pc bpc" id="L2758" title="1 of 2 branches missed.">		if(bcConsumer!=null) {</span>
+<span class="nc" id="L2759">			hv.addEnd(next, (node, holder) -&gt; {</span>
+<span class="nc" id="L2760">				bcConsumer.accept(node, holder);</span>
+<span class="nc bnc" id="L2761" title="All 2 branches missed.">				if (nodeHolder.navigate != null) {</span>
+<span class="nc" id="L2762">					process(nodeHolder.navigate.apply(node), i + 1);</span>
+<span class="nc" id="L2763">				} else {</span>
+<span class="nc" id="L2764">					process(node, i + 1);</span>
 				}
-<span class="nc" id="L2726">			});</span>
-<span class="pc bfc" id="L2727" title="All 2 branches covered.">		} else if (nodeHolder.object != null) {</span>
-<span class="fc" id="L2728">			hv.add(nodeHolder.object, next, (node, holder) -&gt; {</span>
-<span class="fc" id="L2729">				boolean test= biPredicate.test(node, holder);</span>
-<span class="fc bfc" id="L2730" title="All 2 branches covered.">				if (nodeHolder.navigate != null) {</span>
-<span class="fc" id="L2731">					process(nodeHolder.navigate.apply(node), i + 1);</span>
-<span class="fc" id="L2732">				} else {</span>
-<span class="fc" id="L2733">					process(node, i + 1);</span>
+<span class="nc" id="L2766">			});</span>
+<span class="pc bfc" id="L2767" title="All 2 branches covered.">		} else if (nodeHolder.object != null) {</span>
+<span class="fc" id="L2768">			hv.add(nodeHolder.object, next, (node, holder) -&gt; {</span>
+<span class="fc" id="L2769">				boolean test= biPredicate.test(node, holder);</span>
+<span class="fc bfc" id="L2770" title="All 2 branches covered.">				if (nodeHolder.navigate != null) {</span>
+<span class="fc" id="L2771">					process(nodeHolder.navigate.apply(node), i + 1);</span>
+<span class="fc" id="L2772">				} else {</span>
+<span class="fc" id="L2773">					process(node, i + 1);</span>
 				}
-<span class="fc" id="L2735">				return test;</span>
+<span class="fc" id="L2775">				return test;</span>
 			});
-<span class="fc" id="L2737">		} else  {</span>
-<span class="fc" id="L2738">			hv.add(next, (node, holder) -&gt; {</span>
-<span class="fc" id="L2739">				boolean test= biPredicate.test(node, holder);</span>
-<span class="fc bfc" id="L2740" title="All 2 branches covered.">				if (nodeHolder.navigate != null) {</span>
-<span class="fc" id="L2741">					process(nodeHolder.navigate.apply(node), i + 1);</span>
-<span class="fc" id="L2742">				} else {</span>
-<span class="fc" id="L2743">					process(node, i + 1);</span>
+<span class="fc" id="L2777">		} else  {</span>
+<span class="fc" id="L2778">			hv.add(next, (node, holder) -&gt; {</span>
+<span class="fc" id="L2779">				boolean test= biPredicate.test(node, holder);</span>
+<span class="fc bfc" id="L2780" title="All 2 branches covered.">				if (nodeHolder.navigate != null) {</span>
+<span class="fc" id="L2781">					process(nodeHolder.navigate.apply(node), i + 1);</span>
+<span class="fc" id="L2782">				} else {</span>
+<span class="fc" id="L2783">					process(node, i + 1);</span>
 				}
-<span class="fc" id="L2745">				return test;</span>
+<span class="fc" id="L2785">				return test;</span>
 			});
 		}
-<span class="fc" id="L2748">		hv.build(localnode);</span>
-<span class="fc" id="L2749">	}</span>
+<span class="fc" id="L2788">		hv.build(localnode);</span>
+<span class="fc" id="L2789">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

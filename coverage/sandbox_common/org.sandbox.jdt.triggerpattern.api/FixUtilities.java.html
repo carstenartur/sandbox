@@ -20,6 +20,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
@@ -64,32 +65,42 @@ public final class FixUtilities {
 	 * @throws IllegalArgumentException if the replacement pattern cannot be parsed
 	 */
 	public static void rewriteFix(HintContext ctx, String replacementPattern) {
-<span class="pc bpc" id="L67" title="2 of 4 branches missed.">		if (ctx == null || replacementPattern == null) {</span>
-<span class="nc" id="L68">			throw new IllegalArgumentException(&quot;Context and replacement pattern must not be null&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L68" title="2 of 4 branches missed.">		if (ctx == null || replacementPattern == null) {</span>
+<span class="nc" id="L69">			throw new IllegalArgumentException(&quot;Context and replacement pattern must not be null&quot;); //$NON-NLS-1$</span>
 		}
 		
-<span class="fc" id="L71">		Match match = ctx.getMatch();</span>
-<span class="fc" id="L72">		ASTRewrite rewrite = ctx.getASTRewrite();</span>
-<span class="fc" id="L73">		ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="fc" id="L72">		Match match = ctx.getMatch();</span>
+<span class="fc" id="L73">		ASTRewrite rewrite = ctx.getASTRewrite();</span>
+<span class="fc" id="L74">		ASTNode matchedNode = match.getMatchedNode();</span>
 		
 		// Determine pattern kind from matched node type
-<span class="fc" id="L76">		PatternKind kind = determinePatternKind(matchedNode);</span>
+<span class="fc" id="L77">		PatternKind kind = determinePatternKind(matchedNode);</span>
 		
 		// Parse the replacement pattern
-<span class="fc" id="L79">		PatternParser parser = new PatternParser();</span>
-<span class="fc" id="L80">		Pattern pattern = new Pattern(replacementPattern, kind, null, null);</span>
-<span class="fc" id="L81">		ASTNode replacementNode = parser.parse(pattern);</span>
+<span class="fc" id="L80">		PatternParser parser = new PatternParser();</span>
+<span class="fc" id="L81">		Pattern pattern = new Pattern(replacementPattern, kind, null, null);</span>
+<span class="fc" id="L82">		ASTNode replacementNode = parser.parse(pattern);</span>
 		
-<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (replacementNode == null) {</span>
-<span class="fc" id="L84">			throw new IllegalArgumentException(&quot;Could not parse replacement pattern: &quot; + replacementPattern); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		if (replacementNode == null) {</span>
+<span class="fc" id="L85">			throw new IllegalArgumentException(&quot;Could not parse replacement pattern: &quot; + replacementPattern); //$NON-NLS-1$</span>
 		}
 		
 		// Substitute placeholders with actual bindings
-<span class="fc" id="L88">		ASTNode substituted = substitutePlaceholders(replacementNode, match.getBindings(), rewrite.getAST());</span>
+<span class="fc" id="L89">		ASTNode substituted = substitutePlaceholders(replacementNode, match.getBindings(), rewrite.getAST());</span>
 		
 		// Replace the matched node with the substituted replacement
-<span class="fc" id="L91">		rewrite.replace(matchedNode, substituted, null);</span>
-<span class="fc" id="L92">	}</span>
+<span class="fc" id="L92">		rewrite.replace(matchedNode, substituted, null);</span>
+<span class="fc" id="L93">	}</span>
+	
+	/**
+	 * Determines the PatternKind from a matched node type.
+	 * 
+	 * @param node the matched node
+	 * @return the appropriate PatternKind
+	 */
+	public static PatternKind determinePatternKindFromNode(ASTNode node) {
+<span class="nc" id="L102">		return determinePatternKind(node);</span>
+	}
 	
 	/**
 	 * Determines the PatternKind from a matched node type.
@@ -98,18 +109,21 @@ public final class FixUtilities {
 	 * @return the appropriate PatternKind
 	 */
 	private static PatternKind determinePatternKind(ASTNode node) {
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">		if (node instanceof Expression) {</span>
-<span class="fc" id="L102">			return PatternKind.EXPRESSION;</span>
-<span class="nc bnc" id="L103" title="All 2 branches missed.">		} else if (node instanceof Annotation) {</span>
-<span class="nc" id="L104">			return PatternKind.ANNOTATION;</span>
-<span class="nc bnc" id="L105" title="All 2 branches missed.">		} else if (node instanceof MethodInvocation) {</span>
-<span class="nc" id="L106">			return PatternKind.METHOD_CALL;</span>
-<span class="nc bnc" id="L107" title="All 2 branches missed.">		} else if (node instanceof ImportDeclaration) {</span>
-<span class="nc" id="L108">			return PatternKind.IMPORT;</span>
-<span class="nc bnc" id="L109" title="All 2 branches missed.">		} else if (node instanceof FieldDeclaration) {</span>
-<span class="nc" id="L110">			return PatternKind.FIELD;</span>
+		// Check ClassInstanceCreation before Expression since it extends Expression
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (node instanceof ClassInstanceCreation) {</span>
+<span class="fc" id="L114">			return PatternKind.CONSTRUCTOR;</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		} else if (node instanceof Annotation) {</span>
+<span class="nc" id="L116">			return PatternKind.ANNOTATION;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">		} else if (node instanceof MethodInvocation) {</span>
+<span class="fc" id="L118">			return PatternKind.METHOD_CALL;</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		} else if (node instanceof ImportDeclaration) {</span>
+<span class="nc" id="L120">			return PatternKind.IMPORT;</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">		} else if (node instanceof FieldDeclaration) {</span>
+<span class="nc" id="L122">			return PatternKind.FIELD;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		} else if (node instanceof Expression) {</span>
+<span class="fc" id="L124">			return PatternKind.EXPRESSION;</span>
 		}
-<span class="nc" id="L112">		return PatternKind.STATEMENT;</span>
+<span class="nc" id="L126">		return PatternKind.STATEMENT;</span>
 	}
 	
 	/**
@@ -122,50 +136,50 @@ public final class FixUtilities {
 	 */
 	private static ASTNode substitutePlaceholders(ASTNode template, Map&lt;String, Object&gt; bindings, AST ast) {
 		// For simple cases, if the entire template is a placeholder, return its binding directly
-<span class="fc" id="L125">		String placeholderName = extractPlaceholderName(template);</span>
-<span class="fc bfc" id="L126" title="All 2 branches covered.">		if (placeholderName != null) {</span>
-<span class="fc" id="L127">			Object binding = bindings.get(placeholderName);</span>
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">			if (binding instanceof ASTNode) {</span>
-<span class="fc" id="L129">				return ASTNode.copySubtree(ast, (ASTNode) binding);</span>
+<span class="fc" id="L139">		String placeholderName = extractPlaceholderName(template);</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		if (placeholderName != null) {</span>
+<span class="fc" id="L141">			Object binding = bindings.get(placeholderName);</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">			if (binding instanceof ASTNode) {</span>
+<span class="fc" id="L143">				return ASTNode.copySubtree(ast, (ASTNode) binding);</span>
 			}
 		}
 		
 		// For complex templates, perform a recursive substitution
-<span class="fc" id="L134">		ASTNode copy = ASTNode.copySubtree(ast, template);</span>
+<span class="fc" id="L148">		ASTNode copy = ASTNode.copySubtree(ast, template);</span>
 		
 		// Build a map of placeholder SimpleNames to their replacements
-<span class="fc" id="L137">		Map&lt;SimpleName, ASTNode&gt; replacements = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L151">		Map&lt;SimpleName, ASTNode&gt; replacements = new HashMap&lt;&gt;();</span>
 		
-<span class="fc" id="L139">		copy.accept(new ASTVisitor() {</span>
+<span class="fc" id="L153">		copy.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName node) {
-<span class="fc" id="L142">				String name = node.getIdentifier();</span>
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">				if (name.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L144">					Object binding = bindings.get(name);</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">					if (binding instanceof ASTNode) {</span>
-<span class="fc" id="L146">						replacements.put(node, (ASTNode) binding);</span>
+<span class="fc" id="L156">				String name = node.getIdentifier();</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">				if (name.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L158">					Object binding = bindings.get(name);</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">					if (binding instanceof ASTNode) {</span>
+<span class="fc" id="L160">						replacements.put(node, (ASTNode) binding);</span>
 					}
 					// Multi-placeholders are handled separately as they need list context
 				}
-<span class="fc" id="L150">				return true;</span>
+<span class="fc" id="L164">				return true;</span>
 			}
 		});
 		
 		// Apply replacements using structural replace
-<span class="fc bfc" id="L155" title="All 2 branches covered.">		for (Map.Entry&lt;SimpleName, ASTNode&gt; entry : replacements.entrySet()) {</span>
-<span class="fc" id="L156">			SimpleName placeholder = entry.getKey();</span>
-<span class="fc" id="L157">			ASTNode replacement = entry.getValue();</span>
-<span class="fc" id="L158">			ASTNode parent = placeholder.getParent();</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		for (Map.Entry&lt;SimpleName, ASTNode&gt; entry : replacements.entrySet()) {</span>
+<span class="fc" id="L170">			SimpleName placeholder = entry.getKey();</span>
+<span class="fc" id="L171">			ASTNode replacement = entry.getValue();</span>
+<span class="fc" id="L172">			ASTNode parent = placeholder.getParent();</span>
 			
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">			if (parent != null) {</span>
-<span class="fc" id="L161">				StructuralPropertyDescriptor location = placeholder.getLocationInParent();</span>
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">				if (location.isChildProperty()) {</span>
-<span class="fc" id="L163">					parent.setStructuralProperty(location, ASTNode.copySubtree(ast, replacement));</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">			if (parent != null) {</span>
+<span class="fc" id="L175">				StructuralPropertyDescriptor location = placeholder.getLocationInParent();</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">				if (location.isChildProperty()) {</span>
+<span class="fc" id="L177">					parent.setStructuralProperty(location, ASTNode.copySubtree(ast, replacement));</span>
 				}
 			}
 		}
 		
-<span class="fc" id="L168">		return copy;</span>
+<span class="fc" id="L182">		return copy;</span>
 	}
 	
 	/**
@@ -176,13 +190,13 @@ public final class FixUtilities {
 	 */
 	private static String extractPlaceholderName(ASTNode node) {
 		// SimpleName nodes with names starting with $ are placeholders
-<span class="fc bfc" id="L179" title="All 2 branches covered.">		if (node.getNodeType() == ASTNode.SIMPLE_NAME) {</span>
-<span class="fc" id="L180">			String name = node.toString();</span>
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">			if (name.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L182">				return name;</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">		if (node.getNodeType() == ASTNode.SIMPLE_NAME) {</span>
+<span class="fc" id="L194">			String name = node.toString();</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">			if (name.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L196">				return name;</span>
 			}
 		}
-<span class="fc" id="L185">		return null;</span>
+<span class="fc" id="L199">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

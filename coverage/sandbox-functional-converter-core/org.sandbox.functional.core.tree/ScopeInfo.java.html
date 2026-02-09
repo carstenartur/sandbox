@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ScopeInfo.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-functional-converter-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.functional.core.tree</a> &gt; <span class="el_source">ScopeInfo.java</span></div><h1>ScopeInfo.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.functional.core.tree;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Tracks variable scope information for loop analysis.
+ * 
+ * &lt;p&gt;This class maintains information about variables in scope, including
+ * which variables are modified and which are effectively final. This is
+ * crucial for determining if a loop can be safely converted to use lambda
+ * expressions, which require effectively final variables.&lt;/p&gt;
+ * 
+ * @since 1.0.0
+ */
+public final class ScopeInfo {
+    private final Set&lt;String&gt; outerScopeVariables;
+    private final Set&lt;String&gt; modifiedVariables;
+    private final Set&lt;String&gt; localVariables;
+    
+    /**
+     * Creates a new empty scope info.
+     */
+<span class="fc" id="L38">    public ScopeInfo() {</span>
+<span class="fc" id="L39">        this.outerScopeVariables = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L40">        this.modifiedVariables = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L41">        this.localVariables = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L42">    }</span>
+    
+<span class="fc" id="L44">    private ScopeInfo(Set&lt;String&gt; outerScopeVariables, Set&lt;String&gt; modifiedVariables, Set&lt;String&gt; localVariables) {</span>
+<span class="fc" id="L45">        this.outerScopeVariables = new HashSet&lt;&gt;(outerScopeVariables);</span>
+<span class="fc" id="L46">        this.modifiedVariables = new HashSet&lt;&gt;(modifiedVariables);</span>
+<span class="fc" id="L47">        this.localVariables = new HashSet&lt;&gt;(localVariables);</span>
+<span class="fc" id="L48">    }</span>
+    
+    /**
+     * Creates a child scope that inherits this scope's variables.
+     * 
+     * &lt;p&gt;The child scope will see all variables from outer scope plus
+     * this scope's local variables. Modifications are tracked across scopes.&lt;/p&gt;
+     * 
+     * @return a new ScopeInfo representing a child scope
+     */
+    public ScopeInfo createChildScope() {
+<span class="fc" id="L59">        Set&lt;String&gt; childOuter = new HashSet&lt;&gt;(outerScopeVariables);</span>
+<span class="fc" id="L60">        childOuter.addAll(localVariables);</span>
+<span class="fc" id="L61">        return new ScopeInfo(childOuter, new HashSet&lt;&gt;(modifiedVariables), new HashSet&lt;&gt;());</span>
+    }
+    
+    /**
+     * Adds a local variable to this scope.
+     * 
+     * @param name the variable name
+     */
+    public void addLocalVariable(String name) { 
+<span class="fc" id="L70">        localVariables.add(name); </span>
+<span class="fc" id="L71">    }</span>
+    
+    /**
+     * Marks a variable as modified.
+     * 
+     * @param name the variable name
+     */
+    public void addModifiedVariable(String name) { 
+<span class="fc" id="L79">        modifiedVariables.add(name); </span>
+<span class="fc" id="L80">    }</span>
+    
+    /**
+     * Checks if a variable is effectively final (not modified).
+     * 
+     * @param variableName the variable name to check
+     * @return true if the variable is not in the modified set
+     */
+    public boolean isEffectivelyFinal(String variableName) {
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        return !modifiedVariables.contains(variableName);</span>
+    }
+    
+    /**
+     * Gets an unmodifiable view of outer scope variables.
+     * 
+     * @return unmodifiable set of outer scope variables
+     */
+    public Set&lt;String&gt; getOuterScopeVariables() { 
+<span class="fc" id="L98">        return Collections.unmodifiableSet(outerScopeVariables); </span>
+    }
+    
+    /**
+     * Gets an unmodifiable view of modified variables.
+     * 
+     * @return unmodifiable set of modified variables
+     */
+    public Set&lt;String&gt; getModifiedVariables() { 
+<span class="fc" id="L107">        return Collections.unmodifiableSet(modifiedVariables); </span>
+    }
+    
+    /**
+     * Gets an unmodifiable view of local variables.
+     * 
+     * @return unmodifiable set of local variables
+     */
+    public Set&lt;String&gt; getLocalVariables() { 
+<span class="nc" id="L116">        return Collections.unmodifiableSet(localVariables); </span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -71,87 +71,89 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 			 */
 <span class="fc" id="L72">			return;</span>
 		}
-<span class="fc" id="L74">		ReferenceHolder&lt;ASTNode, Object&gt; datah= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L75">		HelperVisitor.callMethodInvocationVisitor(URLDecoder.class, METHOD_DECODE, compilationUnit, datah, nodesprocessed,</span>
-<span class="fc" id="L76">				(visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L77">	}</span>
+<span class="fc" id="L74">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L75">		HelperVisitor.forMethodCall(URLDecoder.class, METHOD_DECODE)</span>
+<span class="fc" id="L76">			.in(compilationUnit)</span>
+<span class="fc" id="L77">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L78">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L79">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L82">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
-<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName(), String.class.getCanonicalName())) {</span>
-<span class="fc" id="L84">			ASTNode encodingArg= arguments.get(1);</span>
+<span class="fc" id="L84">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName(), String.class.getCanonicalName())) {</span>
+<span class="fc" id="L86">			ASTNode encodingArg= arguments.get(1);</span>
 
-<span class="fc" id="L86">			String encodingValue= null;</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">			if (encodingArg instanceof StringLiteral) {</span>
-<span class="fc" id="L88">				encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			} else if (encodingArg instanceof SimpleName) {</span>
-<span class="fc" id="L90">				encodingValue= findVariableValue((SimpleName) encodingArg, visited);</span>
+<span class="fc" id="L88">			String encodingValue= null;</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">			if (encodingArg instanceof StringLiteral) {</span>
+<span class="fc" id="L90">				encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">			} else if (encodingArg instanceof SimpleName) {</span>
+<span class="fc" id="L92">				encodingValue= findVariableValue((SimpleName) encodingArg, visited);</span>
 			}
 
-<span class="fc bfc" id="L93" title="All 4 branches covered.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
-<span class="fc" id="L94">				NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
-<span class="fc" id="L95">				holder.put(visited, nd);</span>
-<span class="fc" id="L96">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L97">				return false;</span>
+<span class="fc bfc" id="L95" title="All 4 branches covered.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
+<span class="fc" id="L96">				NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
+<span class="fc" id="L97">				holder.put(visited, nd);</span>
+<span class="fc" id="L98">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L99">				return false;</span>
 			}
 		}
-<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName())) {</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName())) {</span>
 			String encoding;
-<span class="pc bpc" id="L102" title="1 of 4 branches missed.">			switch (cb) {</span>
+<span class="pc bpc" id="L104" title="1 of 4 branches missed.">			switch (cb) {</span>
 				case KEEP_BEHAVIOR:
-<span class="fc" id="L104">					encoding= null;</span>
-<span class="fc" id="L105">					break;</span>
+<span class="fc" id="L106">					encoding= null;</span>
+<span class="fc" id="L107">					break;</span>
 				case ENFORCE_UTF8:
-<span class="fc" id="L107">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L108">					break;</span>
+<span class="fc" id="L109">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L110">					break;</span>
 				case ENFORCE_UTF8_AGGREGATE:
-<span class="fc" id="L110">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L111">					break;</span>
+<span class="fc" id="L112">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L113">					break;</span>
 				default:
-<span class="nc" id="L113">					encoding= null;</span>
+<span class="nc" id="L115">					encoding= null;</span>
 					break;
 			}
-<span class="fc" id="L116">			NodeData nd= new NodeData(false, visited, encoding);</span>
-<span class="fc" id="L117">			holder.put(visited, nd);</span>
-<span class="fc" id="L118">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L119">			return false;</span>
+<span class="fc" id="L118">			NodeData nd= new NodeData(false, visited, encoding);</span>
+<span class="fc" id="L119">			holder.put(visited, nd);</span>
+<span class="fc" id="L120">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L121">			return false;</span>
 		}
-<span class="fc" id="L121">		return false;</span>
+<span class="fc" id="L123">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final MethodInvocation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L127">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L128">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L129">		ImportRewrite importRewriter= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L130">		NodeData nodedata= (NodeData) data.get(visited);</span>
-<span class="fc" id="L131">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
+<span class="fc" id="L129">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L130">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L131">		ImportRewrite importRewriter= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L132">		NodeData nodedata= (NodeData) data.get(visited);</span>
+<span class="fc" id="L133">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
 		/**
 		 * Add Charset.defaultCharset() or StandardCharsets.UTF_8 as second (last) parameter
 		 */
-<span class="fc" id="L135">		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
-<span class="fc" id="L137">			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);</span>
-<span class="fc" id="L138">		} else {</span>
-<span class="fc" id="L139">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L137">		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
+<span class="fc" id="L139">			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L140">		} else {</span>
+<span class="fc" id="L141">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
 		}
-<span class="fc" id="L141">		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);</span>
-<span class="fc" id="L142">	}</span>
+<span class="fc" id="L143">		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);</span>
+<span class="fc" id="L144">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L146" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L147">			return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L149">			return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L149">		return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, \&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L151">		return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, \&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L154">		return &quot;URLDecoder.decode()&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L156">		return &quot;URLDecoder.decode()&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

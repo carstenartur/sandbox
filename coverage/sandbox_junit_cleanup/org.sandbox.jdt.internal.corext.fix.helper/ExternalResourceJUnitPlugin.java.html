@@ -66,7 +66,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L69">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L69">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
 <span class="fc" id="L70">		HelperVisitor.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataHolder,</span>
 <span class="fc" id="L71">				nodesprocessed, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder,nodesprocessed));</span>
 <span class="fc" id="L72">	}</span>

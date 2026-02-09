@@ -46,51 +46,54 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc" id="L49">		ReferenceHolder&lt;ASTNode, Object&gt; datah= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L50">		HelperVisitor.callClassInstanceCreationVisitor(FileWriter.class, compilationUnit, datah, nodesprocessed, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L51">	}</span>
+<span class="fc" id="L49">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L50">		HelperVisitor.forClassInstanceCreation(FileWriter.class)</span>
+<span class="fc" id="L51">			.in(compilationUnit)</span>
+<span class="fc" id="L52">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L53">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L54">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set&lt;CompilationUnitRewriteOperation&gt; operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L56">		operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L57">		return false;</span>
+<span class="fc" id="L59">		operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L60">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L63">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L64">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L65">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());</span>
+<span class="fc" id="L66">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L67">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L68">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());</span>
 		/**
 		 * new FileInputStream(&lt;filename&gt;)
 		 */
-<span class="fc" id="L69">		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();</span>
-<span class="fc" id="L70">		fosclassInstance.setType(ast.newSimpleType(addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));</span>
-<span class="fc" id="L71">		fosclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));</span>
+<span class="fc" id="L72">		ClassInstanceCreation fosclassInstance= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L73">		fosclassInstance.setType(ast.newSimpleType(addImport(FileOutputStream.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="fc" id="L74">		fosclassInstance.arguments().add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((ASTNode) visited.arguments().get(0))));</span>
 		/**
 		 * new InputStreamReader(new FileInputStream(&lt;filename&gt;))
 		 */
-<span class="fc" id="L75">		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();</span>
-<span class="fc" id="L76">		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
-<span class="fc" id="L77">		oswclassInstance.arguments().add(fosclassInstance);</span>
-<span class="fc" id="L78">		oswclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
+<span class="fc" id="L78">		ClassInstanceCreation oswclassInstance= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L79">		oswclassInstance.setType(ast.newSimpleType(addImport(OutputStreamWriter.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="fc" id="L80">		oswclassInstance.arguments().add(fosclassInstance);</span>
+<span class="fc" id="L81">		oswclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
 
-<span class="fc" id="L80">		ASTNodes.replaceButKeepComment(rewrite, visited, oswclassInstance, group);</span>
-<span class="fc" id="L81">	}</span>
+<span class="fc" id="L83">		ASTNodes.replaceButKeepComment(rewrite, visited, oswclassInstance, group);</span>
+<span class="fc" id="L84">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L85" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L86">			return &quot;Writer w=new OutputStreamWriter(new FileOutputStream(outputfile),&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L89">			return &quot;Writer w=new OutputStreamWriter(new FileOutputStream(outputfile),&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="nc" id="L88">		return &quot;Writer w=new FileWriter(outputfile);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L91">		return &quot;Writer w=new FileWriter(outputfile);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L93">		return &quot;new FileWriter(outputfile)&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L96">		return &quot;new FileWriter(outputfile)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

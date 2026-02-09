@@ -76,7 +76,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L79">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L79">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
 <span class="fc" id="L80">		HelperVisitor.forField()</span>
 <span class="fc" id="L81">			.withAnnotation(ORG_JUNIT_RULE)</span>
 <span class="fc" id="L82">			.ofType(ORG_JUNIT_RULES_EXPECTED_EXCEPTION)</span>
@@ -362,58 +362,59 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="nc" id="L362">		return null;</span>
 	}
 
+	@SuppressWarnings(&quot;unused&quot;) // Helper method kept for potential future use (alternative to extractExceptionType)
 	private String extractExceptionTypeName(MethodInvocation expectCall) {
 		// The argument is typically a TypeLiteral like IllegalArgumentException.class
-<span class="nc bnc" id="L367" title="All 2 branches missed.">		if (!expectCall.arguments().isEmpty()) {</span>
-<span class="nc" id="L368">			Expression arg = (Expression) expectCall.arguments().get(0);</span>
+<span class="nc bnc" id="L368" title="All 2 branches missed.">		if (!expectCall.arguments().isEmpty()) {</span>
+<span class="nc" id="L369">			Expression arg = (Expression) expectCall.arguments().get(0);</span>
 			
 			// Use TypeLiteral API for robust type extraction
-<span class="nc bnc" id="L371" title="All 2 branches missed.">			if (arg instanceof TypeLiteral typeLiteral) {</span>
-<span class="nc" id="L372">				Type type = typeLiteral.getType();</span>
-<span class="nc bnc" id="L373" title="All 2 branches missed.">				if (type != null) {</span>
-<span class="nc" id="L374">					ITypeBinding typeBinding = type.resolveBinding();</span>
-<span class="nc bnc" id="L375" title="All 2 branches missed.">					if (typeBinding != null) {</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">			if (arg instanceof TypeLiteral typeLiteral) {</span>
+<span class="nc" id="L373">				Type type = typeLiteral.getType();</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">				if (type != null) {</span>
+<span class="nc" id="L375">					ITypeBinding typeBinding = type.resolveBinding();</span>
+<span class="nc bnc" id="L376" title="All 2 branches missed.">					if (typeBinding != null) {</span>
 						// Try qualified name first, fall back to simple name
-<span class="nc" id="L377">						String qualifiedName = typeBinding.getQualifiedName();</span>
-<span class="nc bnc" id="L378" title="All 4 branches missed.">						if (qualifiedName != null &amp;&amp; !qualifiedName.isEmpty()) {</span>
-<span class="nc" id="L379">							return qualifiedName;</span>
+<span class="nc" id="L378">						String qualifiedName = typeBinding.getQualifiedName();</span>
+<span class="nc bnc" id="L379" title="All 4 branches missed.">						if (qualifiedName != null &amp;&amp; !qualifiedName.isEmpty()) {</span>
+<span class="nc" id="L380">							return qualifiedName;</span>
 						}
-<span class="nc" id="L381">						String name = typeBinding.getName();</span>
-<span class="nc bnc" id="L382" title="All 4 branches missed.">						if (name != null &amp;&amp; !name.isEmpty()) {</span>
-<span class="nc" id="L383">							return name;</span>
+<span class="nc" id="L382">						String name = typeBinding.getName();</span>
+<span class="nc bnc" id="L383" title="All 4 branches missed.">						if (name != null &amp;&amp; !name.isEmpty()) {</span>
+<span class="nc" id="L384">							return name;</span>
 						}
 					}
 					// Fallback: use the type's string representation
-<span class="nc" id="L387">					return type.toString();</span>
+<span class="nc" id="L388">					return type.toString();</span>
 				}
 			}
 			
 			// Fallback for non-TypeLiteral expressions
-<span class="nc" id="L392">			String argStr = arg.toString();</span>
-<span class="nc bnc" id="L393" title="All 2 branches missed.">			if (argStr.endsWith(&quot;.class&quot;)) {</span>
-<span class="nc" id="L394">				return argStr.substring(0, argStr.length() - &quot;.class&quot;.length());</span>
+<span class="nc" id="L393">			String argStr = arg.toString();</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">			if (argStr.endsWith(&quot;.class&quot;)) {</span>
+<span class="nc" id="L395">				return argStr.substring(0, argStr.length() - &quot;.class&quot;.length());</span>
 			}
 		}
-<span class="nc" id="L397">		return &quot;Exception&quot;;</span>
+<span class="nc" id="L398">		return &quot;Exception&quot;;</span>
 	}
 
 	private String generateUniqueVariableName(String baseName, Collection&lt;String&gt; usedNames) {
-<span class="pc bpc" id="L401" title="1 of 2 branches missed.">		if (!usedNames.contains(baseName)) {</span>
-<span class="fc" id="L402">			return baseName;</span>
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">		if (!usedNames.contains(baseName)) {</span>
+<span class="fc" id="L403">			return baseName;</span>
 		}
-<span class="nc" id="L404">		int counter = 1;</span>
+<span class="nc" id="L405">		int counter = 1;</span>
 		String candidateName;
 		do {
-<span class="nc" id="L407">			candidateName = baseName + counter;</span>
-<span class="nc" id="L408">			counter++;</span>
-<span class="nc bnc" id="L409" title="All 2 branches missed.">		} while (usedNames.contains(candidateName));</span>
-<span class="nc" id="L410">		return candidateName;</span>
+<span class="nc" id="L408">			candidateName = baseName + counter;</span>
+<span class="nc" id="L409">			counter++;</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">		} while (usedNames.contains(candidateName));</span>
+<span class="nc" id="L411">		return candidateName;</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L415" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L416">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L416" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L417">			return &quot;&quot;&quot;</span>
 					import static org.junit.jupiter.api.Assertions.assertEquals;
 					import static org.junit.jupiter.api.Assertions.assertThrows;
 					
@@ -430,7 +431,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L433">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L434">		return &quot;&quot;&quot;</span>
 				import org.junit.Rule;
 				import org.junit.Test;
 				import org.junit.rules.ExpectedException;
@@ -451,15 +452,15 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L454">		return &quot;RuleExpectedException&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L455">		return &quot;RuleExpectedException&quot;; //$NON-NLS-1$</span>
 	}
 
-<span class="fc" id="L457">	private static class ExpectedExceptionInfo {</span>
+<span class="fc" id="L458">	private static class ExpectedExceptionInfo {</span>
 		MethodInvocation expectCall;
 		MethodInvocation expectMessageCall;
 		MethodInvocation expectCauseCall;
-<span class="fc" id="L461">		int firstExpectStatementIndex = -1;</span>
-<span class="fc" id="L462">		int lastExpectStatementIndex = -1;</span>
+<span class="fc" id="L462">		int firstExpectStatementIndex = -1;</span>
+<span class="fc" id="L463">		int lastExpectStatementIndex = -1;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

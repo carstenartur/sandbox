@@ -77,7 +77,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 <span class="fc" id="L77">                nodesProcessed.add(previousStmt);</span>
 <span class="fc" id="L78">                nodesProcessed.add(node);</span>
                 
-<span class="fc" id="L80">                ReferenceHolder&lt;ASTNode, Object&gt; holder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L80">                ReferenceHolder&lt;ASTNode, Object&gt; holder = ReferenceHolder.create();</span>
 <span class="fc" id="L81">                holder.put(node, pattern);</span>
                 
 <span class="fc" id="L83">                operations.add(fixCore.rewrite(node, holder));</span>
@@ -102,7 +102,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
                 
 <span class="fc" id="L103">                nodesProcessed.add(node);</span>
                 
-<span class="fc" id="L105">                ReferenceHolder&lt;ASTNode, Object&gt; holder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L105">                ReferenceHolder&lt;ASTNode, Object&gt; holder = ReferenceHolder.create();</span>
 <span class="fc" id="L106">                holder.put(node, pattern);</span>
                 
 <span class="fc" id="L108">                operations.add(fixCore.rewrite(node, holder));</span>

@@ -240,28 +240,26 @@ public class Refactorer {
 		
 		// We have a match! Create a merged VariableDeclarationStatement
 <span class="fc" id="L242">		VariableDeclarationStatement originalDecl = (VariableDeclarationStatement) precedingStmt;</span>
-<span class="fc" id="L243">		VariableDeclarationFragment originalFragment = </span>
-<span class="fc" id="L244">				(VariableDeclarationFragment) originalDecl.fragments().get(0);</span>
 		
-<span class="fc" id="L246">		AST ast = forLoop.getAST();</span>
+<span class="fc" id="L244">		AST ast = forLoop.getAST();</span>
 		
 		// Create new VariableDeclarationFragment with the pipeline as initializer
-<span class="fc" id="L249">		VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L250">		newFragment.setName(ast.newSimpleName(targetVariable));</span>
-<span class="fc" id="L251">		newFragment.setInitializer((MethodInvocation) ASTNode.copySubtree(ast, pipeline));</span>
+<span class="fc" id="L247">		VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L248">		newFragment.setName(ast.newSimpleName(targetVariable));</span>
+<span class="fc" id="L249">		newFragment.setInitializer((MethodInvocation) ASTNode.copySubtree(ast, pipeline));</span>
 		
 		// Create new VariableDeclarationStatement with the same type
-<span class="fc" id="L254">		VariableDeclarationStatement newDecl = ast.newVariableDeclarationStatement(newFragment);</span>
-<span class="fc" id="L255">		Type originalType = originalDecl.getType();</span>
-<span class="fc" id="L256">		newDecl.setType((Type) ASTNode.copySubtree(ast, originalType));</span>
+<span class="fc" id="L252">		VariableDeclarationStatement newDecl = ast.newVariableDeclarationStatement(newFragment);</span>
+<span class="fc" id="L253">		Type originalType = originalDecl.getType();</span>
+<span class="fc" id="L254">		newDecl.setType((Type) ASTNode.copySubtree(ast, originalType));</span>
 		
 		// Copy modifiers if any
-<span class="fc" id="L259">		newDecl.modifiers().addAll(ASTNode.copySubtrees(ast, originalDecl.modifiers()));</span>
+<span class="fc" id="L257">		newDecl.modifiers().addAll(ASTNode.copySubtrees(ast, originalDecl.modifiers()));</span>
 		
 		// Remove the preceding declaration
-<span class="fc" id="L262">		rewrite.remove(precedingStmt, group);</span>
+<span class="fc" id="L260">		rewrite.remove(precedingStmt, group);</span>
 		
-<span class="fc" id="L264">		return newDecl;</span>
+<span class="fc" id="L262">		return newDecl;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

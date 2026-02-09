@@ -82,27 +82,26 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 
 		// Create the replacement: String.valueOf(valueExpression)
 <span class="nc" id="L84">		AST ast = ctx.getASTRewrite().getAST();</span>
-<span class="nc" id="L85">		ImportRewrite importRewrite = ctx.getImportRewrite();</span>
 		
-<span class="nc" id="L87">		MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L88">		methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L89">		methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L90">		methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
+<span class="nc" id="L86">		MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
+<span class="nc" id="L87">		methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L88">		methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L89">		methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
 
 		// Apply the rewrite
-<span class="nc" id="L93">		ctx.getASTRewrite().replace(infixExpr, methodInvocation, null);</span>
+<span class="nc" id="L92">		ctx.getASTRewrite().replace(infixExpr, methodInvocation, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L96">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'String.valueOf(...)'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L97">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L98">			label,</span>
-<span class="nc" id="L99">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L100">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L101">			10, // relevance</span>
-<span class="nc" id="L102">			(Image) null</span>
+<span class="nc" id="L95">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'String.valueOf(...)'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L96">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L97">			label,</span>
+<span class="nc" id="L98">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L99">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L100">			10, // relevance</span>
+<span class="nc" id="L101">			(Image) null</span>
 		);
 
-<span class="nc" id="L105">		return proposal;</span>
+<span class="nc" id="L104">		return proposal;</span>
 	}
 
 	/**
@@ -117,44 +116,44 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Replace with String.valueOf()&quot;, 
 	      description = &quot;Replaces concatenation with empty string with String.valueOf() for clarity&quot;)
 	public static IJavaCompletionProposal replaceTrailingEmptyString(HintContext ctx) {
-<span class="nc" id="L120">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L119">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
-<span class="nc" id="L123">			return null;</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L122">			return null;</span>
 		}
 
-<span class="nc" id="L126">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
+<span class="nc" id="L125">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the bound variable
-<span class="nc" id="L129">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L130" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
-<span class="nc" id="L131">			return null;</span>
+<span class="nc" id="L128">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
+<span class="nc" id="L130">			return null;</span>
 		}
 
-<span class="nc" id="L134">		Expression valueExpression = (Expression) xNode;</span>
+<span class="nc" id="L133">		Expression valueExpression = (Expression) xNode;</span>
 
 		// Create the replacement: String.valueOf(valueExpression)
-<span class="nc" id="L137">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L136">		AST ast = ctx.getASTRewrite().getAST();</span>
 		
-<span class="nc" id="L139">		MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L140">		methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L141">		methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L142">		methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
+<span class="nc" id="L138">		MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
+<span class="nc" id="L139">		methodInvocation.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L140">		methodInvocation.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L141">		methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
 
 		// Apply the rewrite
-<span class="nc" id="L145">		ctx.getASTRewrite().replace(infixExpr, methodInvocation, null);</span>
+<span class="nc" id="L144">		ctx.getASTRewrite().replace(infixExpr, methodInvocation, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L148">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'String.valueOf(...)'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L149">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L150">			label,</span>
-<span class="nc" id="L151">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L152">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L153">			10, // relevance</span>
-<span class="nc" id="L154">			(Image) null</span>
+<span class="nc" id="L147">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'String.valueOf(...)'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L148">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L149">			label,</span>
+<span class="nc" id="L150">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L151">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L152">			10, // relevance</span>
+<span class="nc" id="L153">			(Image) null</span>
 		);
 
-<span class="nc" id="L157">		return proposal;</span>
+<span class="nc" id="L156">		return proposal;</span>
 	}
 
 	/**
@@ -169,43 +168,43 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Use isEmpty()&quot;, 
 	      description = &quot;Replaces length() == 0 check with isEmpty() for better readability&quot;)
 	public static IJavaCompletionProposal replaceStringLengthCheck(HintContext ctx) {
-<span class="nc" id="L172">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L171">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L174" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
-<span class="nc" id="L175">			return null;</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L174">			return null;</span>
 		}
 
-<span class="nc" id="L178">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
+<span class="nc" id="L177">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the string expression
-<span class="nc" id="L181">		ASTNode strNode = ctx.getMatch().getBinding(&quot;$str&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L182" title="All 4 branches missed.">		if (strNode == null || !(strNode instanceof Expression)) {</span>
-<span class="nc" id="L183">			return null;</span>
+<span class="nc" id="L180">		ASTNode strNode = ctx.getMatch().getBinding(&quot;$str&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L181" title="All 4 branches missed.">		if (strNode == null || !(strNode instanceof Expression)) {</span>
+<span class="nc" id="L182">			return null;</span>
 		}
 
-<span class="nc" id="L186">		Expression strExpression = (Expression) strNode;</span>
+<span class="nc" id="L185">		Expression strExpression = (Expression) strNode;</span>
 
 		// Create the replacement: strExpression.isEmpty()
-<span class="nc" id="L189">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L188">		AST ast = ctx.getASTRewrite().getAST();</span>
 		
-<span class="nc" id="L191">		MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L192">		isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, strExpression));</span>
-<span class="nc" id="L193">		isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L190">		MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L191">		isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, strExpression));</span>
+<span class="nc" id="L192">		isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
 
 		// Apply the rewrite
-<span class="nc" id="L196">		ctx.getASTRewrite().replace(infixExpr, isEmptyCall, null);</span>
+<span class="nc" id="L195">		ctx.getASTRewrite().replace(infixExpr, isEmptyCall, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L199">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'isEmpty()'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L200">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L201">			label,</span>
-<span class="nc" id="L202">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L203">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L204">			10, // relevance</span>
-<span class="nc" id="L205">			(Image) null</span>
+<span class="nc" id="L198">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'isEmpty()'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L199">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L200">			label,</span>
+<span class="nc" id="L201">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L202">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L203">			10, // relevance</span>
+<span class="nc" id="L204">			(Image) null</span>
 		);
 
-<span class="nc" id="L208">		return proposal;</span>
+<span class="nc" id="L207">		return proposal;</span>
 	}
 
 	/**
@@ -220,43 +219,43 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Use isEmpty()&quot;, 
 	      description = &quot;Replaces equals(\&quot;\&quot;) check with isEmpty() for better performance&quot;)
 	public static IJavaCompletionProposal replaceEqualsEmptyString(HintContext ctx) {
-<span class="nc" id="L223">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L222">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L225" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodInvocation)) {</span>
-<span class="nc" id="L226">			return null;</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodInvocation)) {</span>
+<span class="nc" id="L225">			return null;</span>
 		}
 
-<span class="nc" id="L229">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
+<span class="nc" id="L228">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
 
 		// Get the string expression
-<span class="nc" id="L232">		ASTNode strNode = ctx.getMatch().getBinding(&quot;$str&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L233" title="All 4 branches missed.">		if (strNode == null || !(strNode instanceof Expression)) {</span>
-<span class="nc" id="L234">			return null;</span>
+<span class="nc" id="L231">		ASTNode strNode = ctx.getMatch().getBinding(&quot;$str&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L232" title="All 4 branches missed.">		if (strNode == null || !(strNode instanceof Expression)) {</span>
+<span class="nc" id="L233">			return null;</span>
 		}
 
-<span class="nc" id="L237">		Expression strExpression = (Expression) strNode;</span>
+<span class="nc" id="L236">		Expression strExpression = (Expression) strNode;</span>
 
 		// Create the replacement: strExpression.isEmpty()
-<span class="nc" id="L240">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L239">		AST ast = ctx.getASTRewrite().getAST();</span>
 		
-<span class="nc" id="L242">		MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L243">		isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, strExpression));</span>
-<span class="nc" id="L244">		isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L241">		MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L242">		isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, strExpression));</span>
+<span class="nc" id="L243">		isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
 
 		// Apply the rewrite
-<span class="nc" id="L247">		ctx.getASTRewrite().replace(methodInvocation, isEmptyCall, null);</span>
+<span class="nc" id="L246">		ctx.getASTRewrite().replace(methodInvocation, isEmptyCall, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L250">		String label = &quot;Replace '&quot; + methodInvocation + &quot;' with 'isEmpty()'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L251">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L252">			label,</span>
-<span class="nc" id="L253">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L254">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L255">			10, // relevance</span>
-<span class="nc" id="L256">			(Image) null</span>
+<span class="nc" id="L249">		String label = &quot;Replace '&quot; + methodInvocation + &quot;' with 'isEmpty()'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L250">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L251">			label,</span>
+<span class="nc" id="L252">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L253">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L254">			10, // relevance</span>
+<span class="nc" id="L255">			(Image) null</span>
 		);
 
-<span class="nc" id="L259">		return proposal;</span>
+<span class="nc" id="L258">		return proposal;</span>
 	}
 
 	/**
@@ -271,40 +270,40 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Simplify boolean comparison&quot;, 
 	      description = &quot;Removes redundant comparison with true&quot;)
 	public static IJavaCompletionProposal simplifyBooleanComparisonTrue(HintContext ctx) {
-<span class="nc" id="L274">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L273">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L276" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
-<span class="nc" id="L277">			return null;</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L276">			return null;</span>
 		}
 
-<span class="nc" id="L280">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
+<span class="nc" id="L279">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the boolean variable
-<span class="nc" id="L283">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L284" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
-<span class="nc" id="L285">			return null;</span>
+<span class="nc" id="L282">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L283" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
+<span class="nc" id="L284">			return null;</span>
 		}
 
-<span class="nc" id="L288">		Expression boolExpression = (Expression) xNode;</span>
+<span class="nc" id="L287">		Expression boolExpression = (Expression) xNode;</span>
 
 		// Create the replacement: just the boolean expression
-<span class="nc" id="L291">		AST ast = ctx.getASTRewrite().getAST();</span>
-<span class="nc" id="L292">		Expression replacement = (Expression) ASTNode.copySubtree(ast, boolExpression);</span>
+<span class="nc" id="L290">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L291">		Expression replacement = (Expression) ASTNode.copySubtree(ast, boolExpression);</span>
 
 		// Apply the rewrite
-<span class="nc" id="L295">		ctx.getASTRewrite().replace(infixExpr, replacement, null);</span>
+<span class="nc" id="L294">		ctx.getASTRewrite().replace(infixExpr, replacement, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L298">		String label = &quot;Simplify '&quot; + infixExpr + &quot;' to '&quot; + boolExpression + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="nc" id="L299">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L300">			label,</span>
-<span class="nc" id="L301">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L302">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L303">			10, // relevance</span>
-<span class="nc" id="L304">			(Image) null</span>
+<span class="nc" id="L297">		String label = &quot;Simplify '&quot; + infixExpr + &quot;' to '&quot; + boolExpression + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L298">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L299">			label,</span>
+<span class="nc" id="L300">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L301">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L302">			10, // relevance</span>
+<span class="nc" id="L303">			(Image) null</span>
 		);
 
-<span class="nc" id="L307">		return proposal;</span>
+<span class="nc" id="L306">		return proposal;</span>
 	}
 
 	/**
@@ -319,42 +318,42 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Simplify boolean comparison&quot;, 
 	      description = &quot;Replaces comparison with false with negation operator&quot;)
 	public static IJavaCompletionProposal simplifyBooleanComparisonFalse(HintContext ctx) {
-<span class="nc" id="L322">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L321">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L324" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
-<span class="nc" id="L325">			return null;</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L324">			return null;</span>
 		}
 
-<span class="nc" id="L328">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
+<span class="nc" id="L327">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the boolean variable
-<span class="nc" id="L331">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L332" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
-<span class="nc" id="L333">			return null;</span>
+<span class="nc" id="L330">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L331" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
+<span class="nc" id="L332">			return null;</span>
 		}
 
-<span class="nc" id="L336">		Expression boolExpression = (Expression) xNode;</span>
+<span class="nc" id="L335">		Expression boolExpression = (Expression) xNode;</span>
 
 		// Create the replacement: !boolExpression
-<span class="nc" id="L339">		AST ast = ctx.getASTRewrite().getAST();</span>
-<span class="nc" id="L340">		PrefixExpression negation = ast.newPrefixExpression();</span>
-<span class="nc" id="L341">		negation.setOperator(PrefixExpression.Operator.NOT);</span>
-<span class="nc" id="L342">		negation.setOperand((Expression) ASTNode.copySubtree(ast, boolExpression));</span>
+<span class="nc" id="L338">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L339">		PrefixExpression negation = ast.newPrefixExpression();</span>
+<span class="nc" id="L340">		negation.setOperator(PrefixExpression.Operator.NOT);</span>
+<span class="nc" id="L341">		negation.setOperand((Expression) ASTNode.copySubtree(ast, boolExpression));</span>
 
 		// Apply the rewrite
-<span class="nc" id="L345">		ctx.getASTRewrite().replace(infixExpr, negation, null);</span>
+<span class="nc" id="L344">		ctx.getASTRewrite().replace(infixExpr, negation, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L348">		String label = &quot;Simplify '&quot; + infixExpr + &quot;' to '!&quot; + boolExpression + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="nc" id="L349">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L350">			label,</span>
-<span class="nc" id="L351">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L352">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L353">			10, // relevance</span>
-<span class="nc" id="L354">			(Image) null</span>
+<span class="nc" id="L347">		String label = &quot;Simplify '&quot; + infixExpr + &quot;' to '!&quot; + boolExpression + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L348">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L349">			label,</span>
+<span class="nc" id="L350">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L351">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L352">			10, // relevance</span>
+<span class="nc" id="L353">			(Image) null</span>
 		);
 
-<span class="nc" id="L357">		return proposal;</span>
+<span class="nc" id="L356">		return proposal;</span>
 	}
 
 	/**
@@ -369,40 +368,40 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Simplify ternary boolean&quot;, 
 	      description = &quot;Replaces redundant ternary expression with condition itself&quot;)
 	public static IJavaCompletionProposal simplifyTernaryBooleanTrueFalse(HintContext ctx) {
-<span class="nc" id="L372">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L371">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L374" title="All 2 branches missed.">		if (!(matchedNode instanceof ConditionalExpression)) {</span>
-<span class="nc" id="L375">			return null;</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">		if (!(matchedNode instanceof ConditionalExpression)) {</span>
+<span class="nc" id="L374">			return null;</span>
 		}
 
-<span class="nc" id="L378">		ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
+<span class="nc" id="L377">		ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
 
 		// Get the condition
-<span class="nc" id="L381">		ASTNode condNode = ctx.getMatch().getBinding(&quot;$cond&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L382" title="All 4 branches missed.">		if (condNode == null || !(condNode instanceof Expression)) {</span>
-<span class="nc" id="L383">			return null;</span>
+<span class="nc" id="L380">		ASTNode condNode = ctx.getMatch().getBinding(&quot;$cond&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L381" title="All 4 branches missed.">		if (condNode == null || !(condNode instanceof Expression)) {</span>
+<span class="nc" id="L382">			return null;</span>
 		}
 
-<span class="nc" id="L386">		Expression condition = (Expression) condNode;</span>
+<span class="nc" id="L385">		Expression condition = (Expression) condNode;</span>
 
 		// Create the replacement: just the condition
-<span class="nc" id="L389">		AST ast = ctx.getASTRewrite().getAST();</span>
-<span class="nc" id="L390">		Expression replacement = (Expression) ASTNode.copySubtree(ast, condition);</span>
+<span class="nc" id="L388">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L389">		Expression replacement = (Expression) ASTNode.copySubtree(ast, condition);</span>
 
 		// Apply the rewrite
-<span class="nc" id="L393">		ctx.getASTRewrite().replace(ternary, replacement, null);</span>
+<span class="nc" id="L392">		ctx.getASTRewrite().replace(ternary, replacement, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L396">		String label = &quot;Simplify '&quot; + ternary + &quot;' to '&quot; + condition + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="nc" id="L397">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L398">			label,</span>
-<span class="nc" id="L399">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L400">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L401">			10, // relevance</span>
-<span class="nc" id="L402">			(Image) null</span>
+<span class="nc" id="L395">		String label = &quot;Simplify '&quot; + ternary + &quot;' to '&quot; + condition + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L396">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L397">			label,</span>
+<span class="nc" id="L398">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L399">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L400">			10, // relevance</span>
+<span class="nc" id="L401">			(Image) null</span>
 		);
 
-<span class="nc" id="L405">		return proposal;</span>
+<span class="nc" id="L404">		return proposal;</span>
 	}
 
 	/**
@@ -417,42 +416,42 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Simplify ternary boolean&quot;, 
 	      description = &quot;Replaces inverted ternary expression with negated condition&quot;)
 	public static IJavaCompletionProposal simplifyTernaryBooleanFalseTrue(HintContext ctx) {
-<span class="nc" id="L420">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L419">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L422" title="All 2 branches missed.">		if (!(matchedNode instanceof ConditionalExpression)) {</span>
-<span class="nc" id="L423">			return null;</span>
+<span class="nc bnc" id="L421" title="All 2 branches missed.">		if (!(matchedNode instanceof ConditionalExpression)) {</span>
+<span class="nc" id="L422">			return null;</span>
 		}
 
-<span class="nc" id="L426">		ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
+<span class="nc" id="L425">		ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
 
 		// Get the condition
-<span class="nc" id="L429">		ASTNode condNode = ctx.getMatch().getBinding(&quot;$cond&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L430" title="All 4 branches missed.">		if (condNode == null || !(condNode instanceof Expression)) {</span>
-<span class="nc" id="L431">			return null;</span>
+<span class="nc" id="L428">		ASTNode condNode = ctx.getMatch().getBinding(&quot;$cond&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L429" title="All 4 branches missed.">		if (condNode == null || !(condNode instanceof Expression)) {</span>
+<span class="nc" id="L430">			return null;</span>
 		}
 
-<span class="nc" id="L434">		Expression condition = (Expression) condNode;</span>
+<span class="nc" id="L433">		Expression condition = (Expression) condNode;</span>
 
 		// Create the replacement: !condition
-<span class="nc" id="L437">		AST ast = ctx.getASTRewrite().getAST();</span>
-<span class="nc" id="L438">		PrefixExpression negation = ast.newPrefixExpression();</span>
-<span class="nc" id="L439">		negation.setOperator(PrefixExpression.Operator.NOT);</span>
-<span class="nc" id="L440">		negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));</span>
+<span class="nc" id="L436">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L437">		PrefixExpression negation = ast.newPrefixExpression();</span>
+<span class="nc" id="L438">		negation.setOperator(PrefixExpression.Operator.NOT);</span>
+<span class="nc" id="L439">		negation.setOperand((Expression) ASTNode.copySubtree(ast, condition));</span>
 
 		// Apply the rewrite
-<span class="nc" id="L443">		ctx.getASTRewrite().replace(ternary, negation, null);</span>
+<span class="nc" id="L442">		ctx.getASTRewrite().replace(ternary, negation, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L446">		String label = &quot;Simplify '&quot; + ternary + &quot;' to '!&quot; + condition + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="nc" id="L447">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L448">			label,</span>
-<span class="nc" id="L449">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L450">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L451">			10, // relevance</span>
-<span class="nc" id="L452">			(Image) null</span>
+<span class="nc" id="L445">		String label = &quot;Simplify '&quot; + ternary + &quot;' to '!&quot; + condition + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L446">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L447">			label,</span>
+<span class="nc" id="L448">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L449">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L450">			10, // relevance</span>
+<span class="nc" id="L451">			(Image) null</span>
 		);
 
-<span class="nc" id="L455">		return proposal;</span>
+<span class="nc" id="L454">		return proposal;</span>
 	}
 
 	/**
@@ -468,43 +467,43 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Use isEmpty() for collections&quot;, 
 	      description = &quot;Replaces size() == 0 with isEmpty() for better readability and performance&quot;)
 	public static IJavaCompletionProposal replaceCollectionSizeCheck(HintContext ctx) {
-<span class="nc" id="L471">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L470">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L473" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
-<span class="nc" id="L474">			return null;</span>
+<span class="nc bnc" id="L472" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L473">			return null;</span>
 		}
 
-<span class="nc" id="L477">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
+<span class="nc" id="L476">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the collection expression
-<span class="nc" id="L480">		ASTNode listNode = ctx.getMatch().getBinding(&quot;$list&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L481" title="All 4 branches missed.">		if (listNode == null || !(listNode instanceof Expression)) {</span>
-<span class="nc" id="L482">			return null;</span>
+<span class="nc" id="L479">		ASTNode listNode = ctx.getMatch().getBinding(&quot;$list&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L480" title="All 4 branches missed.">		if (listNode == null || !(listNode instanceof Expression)) {</span>
+<span class="nc" id="L481">			return null;</span>
 		}
 
-<span class="nc" id="L485">		Expression listExpression = (Expression) listNode;</span>
+<span class="nc" id="L484">		Expression listExpression = (Expression) listNode;</span>
 
 		// Create the replacement: listExpression.isEmpty()
-<span class="nc" id="L488">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L487">		AST ast = ctx.getASTRewrite().getAST();</span>
 		
-<span class="nc" id="L490">		MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L491">		isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, listExpression));</span>
-<span class="nc" id="L492">		isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L489">		MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L490">		isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, listExpression));</span>
+<span class="nc" id="L491">		isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
 
 		// Apply the rewrite
-<span class="nc" id="L495">		ctx.getASTRewrite().replace(infixExpr, isEmptyCall, null);</span>
+<span class="nc" id="L494">		ctx.getASTRewrite().replace(infixExpr, isEmptyCall, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L498">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'isEmpty()'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L499">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L500">			label,</span>
-<span class="nc" id="L501">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L502">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L503">			10, // relevance</span>
-<span class="nc" id="L504">			(Image) null</span>
+<span class="nc" id="L497">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with 'isEmpty()'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L498">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L499">			label,</span>
+<span class="nc" id="L500">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L501">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L502">			10, // relevance</span>
+<span class="nc" id="L503">			(Image) null</span>
 		);
 
-<span class="nc" id="L507">		return proposal;</span>
+<span class="nc" id="L506">		return proposal;</span>
 	}
 
 	/**
@@ -519,47 +518,47 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Use !isEmpty() for collections&quot;, 
 	      description = &quot;Replaces size() &gt; 0 with !isEmpty() for better readability&quot;)
 	public static IJavaCompletionProposal replaceCollectionSizeGreaterThanZero(HintContext ctx) {
-<span class="nc" id="L522">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L521">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L524" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
-<span class="nc" id="L525">			return null;</span>
+<span class="nc bnc" id="L523" title="All 2 branches missed.">		if (!(matchedNode instanceof InfixExpression)) {</span>
+<span class="nc" id="L524">			return null;</span>
 		}
 
-<span class="nc" id="L528">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
+<span class="nc" id="L527">		InfixExpression infixExpr = (InfixExpression) matchedNode;</span>
 
 		// Get the collection expression
-<span class="nc" id="L531">		ASTNode listNode = ctx.getMatch().getBinding(&quot;$list&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L532" title="All 4 branches missed.">		if (listNode == null || !(listNode instanceof Expression)) {</span>
-<span class="nc" id="L533">			return null;</span>
+<span class="nc" id="L530">		ASTNode listNode = ctx.getMatch().getBinding(&quot;$list&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L531" title="All 4 branches missed.">		if (listNode == null || !(listNode instanceof Expression)) {</span>
+<span class="nc" id="L532">			return null;</span>
 		}
 
-<span class="nc" id="L536">		Expression listExpression = (Expression) listNode;</span>
+<span class="nc" id="L535">		Expression listExpression = (Expression) listNode;</span>
 
 		// Create the replacement: !listExpression.isEmpty()
-<span class="nc" id="L539">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L538">		AST ast = ctx.getASTRewrite().getAST();</span>
 		
-<span class="nc" id="L541">		MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L542">		isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, listExpression));</span>
-<span class="nc" id="L543">		isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L540">		MethodInvocation isEmptyCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L541">		isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, listExpression));</span>
+<span class="nc" id="L542">		isEmptyCall.setName(ast.newSimpleName(&quot;isEmpty&quot;)); //$NON-NLS-1$</span>
 		
-<span class="nc" id="L545">		PrefixExpression negation = ast.newPrefixExpression();</span>
-<span class="nc" id="L546">		negation.setOperator(PrefixExpression.Operator.NOT);</span>
-<span class="nc" id="L547">		negation.setOperand(isEmptyCall);</span>
+<span class="nc" id="L544">		PrefixExpression negation = ast.newPrefixExpression();</span>
+<span class="nc" id="L545">		negation.setOperator(PrefixExpression.Operator.NOT);</span>
+<span class="nc" id="L546">		negation.setOperand(isEmptyCall);</span>
 
 		// Apply the rewrite
-<span class="nc" id="L550">		ctx.getASTRewrite().replace(infixExpr, negation, null);</span>
+<span class="nc" id="L549">		ctx.getASTRewrite().replace(infixExpr, negation, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L553">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with '!isEmpty()'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L554">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L555">			label,</span>
-<span class="nc" id="L556">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L557">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L558">			10, // relevance</span>
-<span class="nc" id="L559">			(Image) null</span>
+<span class="nc" id="L552">		String label = &quot;Replace '&quot; + infixExpr + &quot;' with '!isEmpty()'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L553">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L554">			label,</span>
+<span class="nc" id="L555">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L556">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L557">			10, // relevance</span>
+<span class="nc" id="L558">			(Image) null</span>
 		);
 
-<span class="nc" id="L562">		return proposal;</span>
+<span class="nc" id="L561">		return proposal;</span>
 	}
 
 	/**
@@ -578,44 +577,44 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Simplify StringBuilder single append&quot;, 
 	      description = &quot;Replaces unnecessary StringBuilder with single append with String.valueOf()&quot;)
 	public static IJavaCompletionProposal simplifyStringBuilderSingleAppend(HintContext ctx) {
-<span class="nc" id="L581">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L580">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L583" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodInvocation)) {</span>
-<span class="nc" id="L584">			return null;</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodInvocation)) {</span>
+<span class="nc" id="L583">			return null;</span>
 		}
 
-<span class="nc" id="L587">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
+<span class="nc" id="L586">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
 
 		// Get the appended value
-<span class="nc" id="L590">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L591" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
-<span class="nc" id="L592">			return null;</span>
+<span class="nc" id="L589">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L590" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
+<span class="nc" id="L591">			return null;</span>
 		}
 
-<span class="nc" id="L595">		Expression valueExpression = (Expression) xNode;</span>
+<span class="nc" id="L594">		Expression valueExpression = (Expression) xNode;</span>
 
 		// Create the replacement: String.valueOf(valueExpression)
-<span class="nc" id="L598">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L597">		AST ast = ctx.getASTRewrite().getAST();</span>
 		
-<span class="nc" id="L600">		MethodInvocation valueOfCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L601">		valueOfCall.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L602">		valueOfCall.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L603">		valueOfCall.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
+<span class="nc" id="L599">		MethodInvocation valueOfCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L600">		valueOfCall.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L601">		valueOfCall.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L602">		valueOfCall.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
 
 		// Apply the rewrite
-<span class="nc" id="L606">		ctx.getASTRewrite().replace(methodInvocation, valueOfCall, null);</span>
+<span class="nc" id="L605">		ctx.getASTRewrite().replace(methodInvocation, valueOfCall, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L609">		String label = &quot;Replace StringBuilder single append with 'String.valueOf(...)'&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L610">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L611">			label,</span>
-<span class="nc" id="L612">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L613">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L614">			10, // relevance</span>
-<span class="nc" id="L615">			(Image) null</span>
+<span class="nc" id="L608">		String label = &quot;Replace StringBuilder single append with 'String.valueOf(...)'&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L609">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L610">			label,</span>
+<span class="nc" id="L611">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L612">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L613">			10, // relevance</span>
+<span class="nc" id="L614">			(Image) null</span>
 		);
 
-<span class="nc" id="L618">		return proposal;</span>
+<span class="nc" id="L617">		return proposal;</span>
 	}
 
 	/**
@@ -633,44 +632,44 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Simplify String.format&quot;, 
 	      description = &quot;Replaces String.format with simple %s with String.valueOf() for better performance&quot;)
 	public static IJavaCompletionProposal simplifyStringFormat(HintContext ctx) {
-<span class="nc" id="L636">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L635">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L638" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodInvocation)) {</span>
-<span class="nc" id="L639">			return null;</span>
+<span class="nc bnc" id="L637" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodInvocation)) {</span>
+<span class="nc" id="L638">			return null;</span>
 		}
 
-<span class="nc" id="L642">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
+<span class="nc" id="L641">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
 
 		// Get the formatted value
-<span class="nc" id="L645">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L646" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
-<span class="nc" id="L647">			return null;</span>
+<span class="nc" id="L644">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L645" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression)) {</span>
+<span class="nc" id="L646">			return null;</span>
 		}
 
-<span class="nc" id="L650">		Expression valueExpression = (Expression) xNode;</span>
+<span class="nc" id="L649">		Expression valueExpression = (Expression) xNode;</span>
 
 		// Create the replacement: String.valueOf(valueExpression)
-<span class="nc" id="L653">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L652">		AST ast = ctx.getASTRewrite().getAST();</span>
 		
-<span class="nc" id="L655">		MethodInvocation valueOfCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L656">		valueOfCall.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L657">		valueOfCall.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L658">		valueOfCall.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
+<span class="nc" id="L654">		MethodInvocation valueOfCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L655">		valueOfCall.setExpression(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L656">		valueOfCall.setName(ast.newSimpleName(&quot;valueOf&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L657">		valueOfCall.arguments().add(ASTNode.copySubtree(ast, valueExpression));</span>
 
 		// Apply the rewrite
-<span class="nc" id="L661">		ctx.getASTRewrite().replace(methodInvocation, valueOfCall, null);</span>
+<span class="nc" id="L660">		ctx.getASTRewrite().replace(methodInvocation, valueOfCall, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L664">		String label = &quot;Replace 'String.format(\&quot;%s\&quot;, ...)' with 'String.valueOf(...)'&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L665">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L666">			label,</span>
-<span class="nc" id="L667">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L668">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L669">			10, // relevance</span>
-<span class="nc" id="L670">			(Image) null</span>
+<span class="nc" id="L663">		String label = &quot;Replace 'String.format(\&quot;%s\&quot;, ...)' with 'String.valueOf(...)'&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L664">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L665">			label,</span>
+<span class="nc" id="L666">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L667">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L668">			10, // relevance</span>
+<span class="nc" id="L669">			(Image) null</span>
 		);
 
-<span class="nc" id="L673">		return proposal;</span>
+<span class="nc" id="L672">		return proposal;</span>
 	}
 
 	/**
@@ -688,59 +687,59 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Use Objects.equals for null safety&quot;, 
 	      description = &quot;Replaces potential NPE-prone equals() with null-safe Objects.equals()&quot;)
 	public static IJavaCompletionProposal useObjectsEquals(HintContext ctx) {
-<span class="nc" id="L691">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L690">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L693" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodInvocation)) {</span>
-<span class="nc" id="L694">			return null;</span>
+<span class="nc bnc" id="L692" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodInvocation)) {</span>
+<span class="nc" id="L693">			return null;</span>
 		}
 
-<span class="nc" id="L697">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
+<span class="nc" id="L696">		MethodInvocation methodInvocation = (MethodInvocation) matchedNode;</span>
 
 		// Get both expressions
-<span class="nc" id="L700">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L701">		ASTNode yNode = ctx.getMatch().getBinding(&quot;$y&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L699">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L700">		ASTNode yNode = ctx.getMatch().getBinding(&quot;$y&quot;); //$NON-NLS-1$</span>
 		
-<span class="nc bnc" id="L703" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression) ||</span>
-<span class="nc bnc" id="L704" title="All 4 branches missed.">		    yNode == null || !(yNode instanceof Expression)) {</span>
-<span class="nc" id="L705">			return null;</span>
+<span class="nc bnc" id="L702" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression) ||</span>
+<span class="nc bnc" id="L703" title="All 4 branches missed.">		    yNode == null || !(yNode instanceof Expression)) {</span>
+<span class="nc" id="L704">			return null;</span>
 		}
 
-<span class="nc" id="L708">		Expression xExpression = (Expression) xNode;</span>
-<span class="nc" id="L709">		Expression yExpression = (Expression) yNode;</span>
+<span class="nc" id="L707">		Expression xExpression = (Expression) xNode;</span>
+<span class="nc" id="L708">		Expression yExpression = (Expression) yNode;</span>
 
 		// Create the replacement: Objects.equals(x.toString(), y)
-<span class="nc" id="L712">		AST ast = ctx.getASTRewrite().getAST();</span>
-<span class="nc" id="L713">		ImportRewrite importRewrite = ctx.getImportRewrite();</span>
+<span class="nc" id="L711">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L712">		ImportRewrite importRewrite = ctx.getImportRewrite();</span>
 		
 		// Add import for Objects if needed
-<span class="nc" id="L716">		String objectsType = importRewrite.addImport(&quot;java.util.Objects&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L715">		String objectsType = importRewrite.addImport(&quot;java.util.Objects&quot;); //$NON-NLS-1$</span>
 		
-<span class="nc" id="L718">		MethodInvocation equalsCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L719">		equalsCall.setExpression(ast.newName(objectsType));</span>
-<span class="nc" id="L720">		equalsCall.setName(ast.newSimpleName(&quot;equals&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L717">		MethodInvocation equalsCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L718">		equalsCall.setExpression(ast.newName(objectsType));</span>
+<span class="nc" id="L719">		equalsCall.setName(ast.newSimpleName(&quot;equals&quot;)); //$NON-NLS-1$</span>
 		
 		// Create x.toString()
-<span class="nc" id="L723">		MethodInvocation toStringCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L724">		toStringCall.setExpression((Expression) ASTNode.copySubtree(ast, xExpression));</span>
-<span class="nc" id="L725">		toStringCall.setName(ast.newSimpleName(&quot;toString&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L722">		MethodInvocation toStringCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L723">		toStringCall.setExpression((Expression) ASTNode.copySubtree(ast, xExpression));</span>
+<span class="nc" id="L724">		toStringCall.setName(ast.newSimpleName(&quot;toString&quot;)); //$NON-NLS-1$</span>
 		
-<span class="nc" id="L727">		equalsCall.arguments().add(toStringCall);</span>
-<span class="nc" id="L728">		equalsCall.arguments().add(ASTNode.copySubtree(ast, yExpression));</span>
+<span class="nc" id="L726">		equalsCall.arguments().add(toStringCall);</span>
+<span class="nc" id="L727">		equalsCall.arguments().add(ASTNode.copySubtree(ast, yExpression));</span>
 
 		// Apply the rewrite
-<span class="nc" id="L731">		ctx.getASTRewrite().replace(methodInvocation, equalsCall, null);</span>
+<span class="nc" id="L730">		ctx.getASTRewrite().replace(methodInvocation, equalsCall, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L734">		String label = &quot;Replace with null-safe 'Objects.equals(...)'&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L735">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L736">			label,</span>
-<span class="nc" id="L737">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L738">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L739">			10, // relevance</span>
-<span class="nc" id="L740">			(Image) null</span>
+<span class="nc" id="L733">		String label = &quot;Replace with null-safe 'Objects.equals(...)'&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L734">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L735">			label,</span>
+<span class="nc" id="L736">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L737">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L738">			10, // relevance</span>
+<span class="nc" id="L739">			(Image) null</span>
 		);
 
-<span class="nc" id="L743">		return proposal;</span>
+<span class="nc" id="L742">		return proposal;</span>
 	}
 
 	/**
@@ -758,53 +757,53 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	@Hint(displayName = &quot;Use Objects.requireNonNullElse&quot;, 
 	      description = &quot;Replaces null-check ternary with Objects.requireNonNullElse() (Java 9+)&quot;)
 	public static IJavaCompletionProposal useRequireNonNullElse(HintContext ctx) {
-<span class="nc" id="L761">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L760">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 
-<span class="nc bnc" id="L763" title="All 2 branches missed.">		if (!(matchedNode instanceof ConditionalExpression)) {</span>
-<span class="nc" id="L764">			return null;</span>
+<span class="nc bnc" id="L762" title="All 2 branches missed.">		if (!(matchedNode instanceof ConditionalExpression)) {</span>
+<span class="nc" id="L763">			return null;</span>
 		}
 
-<span class="nc" id="L767">		ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
+<span class="nc" id="L766">		ConditionalExpression ternary = (ConditionalExpression) matchedNode;</span>
 
 		// Get the expressions
-<span class="nc" id="L770">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L771">		ASTNode defaultNode = ctx.getMatch().getBinding(&quot;$default&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L769">		ASTNode xNode = ctx.getMatch().getBinding(&quot;$x&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L770">		ASTNode defaultNode = ctx.getMatch().getBinding(&quot;$default&quot;); //$NON-NLS-1$</span>
 		
-<span class="nc bnc" id="L773" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression) ||</span>
-<span class="nc bnc" id="L774" title="All 4 branches missed.">		    defaultNode == null || !(defaultNode instanceof Expression)) {</span>
-<span class="nc" id="L775">			return null;</span>
+<span class="nc bnc" id="L772" title="All 4 branches missed.">		if (xNode == null || !(xNode instanceof Expression) ||</span>
+<span class="nc bnc" id="L773" title="All 4 branches missed.">		    defaultNode == null || !(defaultNode instanceof Expression)) {</span>
+<span class="nc" id="L774">			return null;</span>
 		}
 
-<span class="nc" id="L778">		Expression xExpression = (Expression) xNode;</span>
-<span class="nc" id="L779">		Expression defaultExpression = (Expression) defaultNode;</span>
+<span class="nc" id="L777">		Expression xExpression = (Expression) xNode;</span>
+<span class="nc" id="L778">		Expression defaultExpression = (Expression) defaultNode;</span>
 
 		// Create the replacement: Objects.requireNonNullElse(x, default)
-<span class="nc" id="L782">		AST ast = ctx.getASTRewrite().getAST();</span>
-<span class="nc" id="L783">		ImportRewrite importRewrite = ctx.getImportRewrite();</span>
+<span class="nc" id="L781">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L782">		ImportRewrite importRewrite = ctx.getImportRewrite();</span>
 		
 		// Add import for Objects if needed
-<span class="nc" id="L786">		String objectsType = importRewrite.addImport(&quot;java.util.Objects&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L785">		String objectsType = importRewrite.addImport(&quot;java.util.Objects&quot;); //$NON-NLS-1$</span>
 		
-<span class="nc" id="L788">		MethodInvocation requireNonNullElseCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L789">		requireNonNullElseCall.setExpression(ast.newName(objectsType));</span>
-<span class="nc" id="L790">		requireNonNullElseCall.setName(ast.newSimpleName(&quot;requireNonNullElse&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L791">		requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, xExpression));</span>
-<span class="nc" id="L792">		requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, defaultExpression));</span>
+<span class="nc" id="L787">		MethodInvocation requireNonNullElseCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L788">		requireNonNullElseCall.setExpression(ast.newName(objectsType));</span>
+<span class="nc" id="L789">		requireNonNullElseCall.setName(ast.newSimpleName(&quot;requireNonNullElse&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L790">		requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, xExpression));</span>
+<span class="nc" id="L791">		requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, defaultExpression));</span>
 
 		// Apply the rewrite
-<span class="nc" id="L795">		ctx.getASTRewrite().replace(ternary, requireNonNullElseCall, null);</span>
+<span class="nc" id="L794">		ctx.getASTRewrite().replace(ternary, requireNonNullElseCall, null);</span>
 
 		// Create the proposal
-<span class="nc" id="L798">		String label = &quot;Replace with 'Objects.requireNonNullElse(...)'&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L799">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L800">			label,</span>
-<span class="nc" id="L801">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L802">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L803">			10, // relevance</span>
-<span class="nc" id="L804">			(Image) null</span>
+<span class="nc" id="L797">		String label = &quot;Replace with 'Objects.requireNonNullElse(...)'&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L798">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L799">			label,</span>
+<span class="nc" id="L800">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L801">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L802">			10, // relevance</span>
+<span class="nc" id="L803">			(Image) null</span>
 		);
 
-<span class="nc" id="L807">		return proposal;</span>
+<span class="nc" id="L806">		return proposal;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

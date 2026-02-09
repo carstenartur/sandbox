@@ -13,13 +13,84 @@
  *******************************************************************************/
 package org.sandbox.functional.core.operation;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 /**
  * Represents a filter operation in a stream pipeline.
  */
-<span class="fc" id="L19">public record FilterOp(String expression) implements Operation {</span>
+public final class FilterOp implements Operation {
+    private final String expression;
+    private final List&lt;String&gt; associatedComments;
+    
+<span class="fc" id="L27">    public FilterOp(String expression) {</span>
+<span class="fc" id="L28">        this.expression = Objects.requireNonNull(expression, &quot;expression must not be null&quot;);</span>
+<span class="fc" id="L29">        this.associatedComments = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L30">    }</span>
+    
+    @Override
+    public String expression() {
+<span class="fc" id="L34">        return expression;</span>
+    }
+    
     @Override
     public String operationType() { 
-<span class="fc" id="L22">        return &quot;filter&quot;; </span>
+<span class="fc" id="L39">        return &quot;filter&quot;; </span>
+    }
+    
+    /**
+     * Adds a comment associated with this operation.
+     * @param comment the comment text
+     */
+    public void addComment(String comment) {
+<span class="fc bfc" id="L47" title="All 4 branches covered.">        if (comment != null &amp;&amp; !comment.isBlank()) {</span>
+<span class="fc" id="L48">            this.associatedComments.add(comment);</span>
+        }
+<span class="fc" id="L50">    }</span>
+    
+    /**
+     * Adds multiple comments associated with this operation.
+     * @param comments the list of comment texts
+     */
+    public void addComments(List&lt;String&gt; comments) {
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (comments != null) {</span>
+<span class="fc" id="L58">            comments.forEach(this::addComment);</span>
+        }
+<span class="fc" id="L60">    }</span>
+    
+    /**
+     * Returns all comments associated with this operation.
+     * @return unmodifiable view of the comments list
+     */
+    public List&lt;String&gt; getComments() {
+<span class="fc" id="L67">        return List.copyOf(associatedComments);</span>
+    }
+    
+    /**
+     * Checks if this operation has any associated comments.
+     * @return true if there are comments, false otherwise
+     */
+    public boolean hasComments() {
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        return !associatedComments.isEmpty();</span>
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (!(o instanceof FilterOp)) return false;</span>
+<span class="fc" id="L82">        FilterOp filterOp = (FilterOp) o;</span>
+<span class="fc" id="L83">        return expression.equals(filterOp.expression);</span>
+    }
+    
+    @Override
+    public int hashCode() {
+<span class="fc" id="L88">        return Objects.hash(expression);</span>
+    }
+    
+    @Override
+    public String toString() {
+<span class="fc" id="L93">        return &quot;FilterOp[expression=&quot; + expression + &quot;, comments=&quot; + associatedComments.size() + &quot;]&quot;;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

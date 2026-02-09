@@ -307,7 +307,7 @@ public final class ExternalResourceRefactorer {
 
 <span class="fc" id="L308">			String fieldName = NamingUtils.extractFieldName(fieldDeclaration);</span>
 <span class="fc" id="L309">			String nestedClassName = NamingUtils.generateUniqueNestedClassName(anonymousClass, fieldName);</span>
-<span class="fc" id="L310">			TypeDeclaration nestedClass = createNestedClassFromAnonymous(anonymousClass, nestedClassName, fieldStatic,</span>
+<span class="fc" id="L310">			createNestedClassFromAnonymous(anonymousClass, nestedClassName, fieldStatic,</span>
 <span class="fc" id="L311">					rewriter, ast, importRewriter, group);</span>
 
 <span class="fc" id="L313">			replaceFieldWithExtensionDeclaration(classInstanceCreation, nestedClassName, fieldStatic, rewriter, ast,</span>

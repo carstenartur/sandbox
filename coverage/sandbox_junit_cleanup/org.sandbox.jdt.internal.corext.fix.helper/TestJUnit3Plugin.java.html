@@ -70,7 +70,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="nc" id="L73">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
+<span class="nc" id="L73">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
 <span class="nc" id="L74">		HelperVisitor.callTypeDeclarationVisitor(&quot;junit.framework.TestCase&quot;, compilationUnit, dataHolder,</span>
 <span class="nc" id="L75">				nodesprocessed,</span>
 <span class="nc" id="L76">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder, nodesprocessed));</span>
@@ -100,47 +100,48 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="nc" id="L100">		return false;</span>
 	}
 
+	@SuppressWarnings(&quot;unused&quot;) // Method intended for future assertion order correction feature
 	private void correctAssertionOrder(MethodInvocation node, ASTRewrite rewriter, AST ast, TextEditGroup group) {
-<span class="nc" id="L104">	    String methodName = node.getName().getIdentifier();</span>
+<span class="nc" id="L105">	    String methodName = node.getName().getIdentifier();</span>
 
 	    // Prüfe, ob es sich um eine bekannte Assertion handelt
-<span class="nc bnc" id="L107" title="All 4 branches missed.">	    if (&quot;assertEquals&quot;.equals(methodName) || &quot;assertArrayEquals&quot;.equals(methodName)) {</span>
-<span class="nc" id="L108">	        List&lt;?&gt; arguments = node.arguments();</span>
-<span class="nc bnc" id="L109" title="All 2 branches missed.">	        if (arguments.size() == 3) {</span>
+<span class="nc bnc" id="L108" title="All 4 branches missed.">	    if (&quot;assertEquals&quot;.equals(methodName) || &quot;assertArrayEquals&quot;.equals(methodName)) {</span>
+<span class="nc" id="L109">	        List&lt;?&gt; arguments = node.arguments();</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">	        if (arguments.size() == 3) {</span>
 	            // Reorganisiere die Reihenfolge: message, expected, actual -&gt; expected, actual, message
-<span class="nc" id="L111">	            Expression expected = (Expression) arguments.get(1);</span>
-<span class="nc" id="L112">	            Expression actual = (Expression) arguments.get(2);</span>
-<span class="nc" id="L113">	            Expression message = (Expression) arguments.get(0);</span>
+<span class="nc" id="L112">	            Expression expected = (Expression) arguments.get(1);</span>
+<span class="nc" id="L113">	            Expression actual = (Expression) arguments.get(2);</span>
+<span class="nc" id="L114">	            Expression message = (Expression) arguments.get(0);</span>
 
-<span class="nc" id="L115">	            ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="nc" id="L116">	            listRewrite.replace((ASTNode) arguments.get(0), expected, group);</span>
-<span class="nc" id="L117">	            listRewrite.replace((ASTNode) arguments.get(1), actual, group);</span>
-<span class="nc" id="L118">	            listRewrite.replace((ASTNode) arguments.get(2), message, group);</span>
+<span class="nc" id="L116">	            ListRewrite listRewrite = rewriter.getListRewrite(node, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="nc" id="L117">	            listRewrite.replace((ASTNode) arguments.get(0), expected, group);</span>
+<span class="nc" id="L118">	            listRewrite.replace((ASTNode) arguments.get(1), actual, group);</span>
+<span class="nc" id="L119">	            listRewrite.replace((ASTNode) arguments.get(2), message, group);</span>
 	        }
 	    }
-<span class="nc" id="L121">	}</span>
+<span class="nc" id="L122">	}</span>
 
 	private boolean isTestMethod(MethodDeclaration method) {
 	    // Konstruktoren ausschließen
-<span class="nc bnc" id="L125" title="All 2 branches missed.">	    if (method.isConstructor()) {</span>
-<span class="nc" id="L126">	        return false;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">	    if (method.isConstructor()) {</span>
+<span class="nc" id="L127">	        return false;</span>
 	    }
 
-<span class="nc" id="L129">	    String methodName = method.getName().getIdentifier();</span>
+<span class="nc" id="L130">	    String methodName = method.getName().getIdentifier();</span>
 
 	    // Prüfen auf typische JUnit 3-Testmethoden
-<span class="nc bnc" id="L132" title="All 2 branches missed.">	    if (methodName.startsWith(&quot;test&quot;)) {</span>
-<span class="nc" id="L133">	        return true;</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">	    if (methodName.startsWith(&quot;test&quot;)) {</span>
+<span class="nc" id="L134">	        return true;</span>
 	    }
 
 	    // Prüfen auf alternative Namensschemata
-<span class="nc bnc" id="L137" title="All 6 branches missed.">	    if (methodName.endsWith(&quot;_test&quot;) || methodName.startsWith(&quot;should&quot;) || methodName.contains(&quot;Test&quot;)) {</span>
-<span class="nc" id="L138">	        return true;</span>
+<span class="nc bnc" id="L138" title="All 6 branches missed.">	    if (methodName.endsWith(&quot;_test&quot;) || methodName.startsWith(&quot;should&quot;) || methodName.contains(&quot;Test&quot;)) {</span>
+<span class="nc" id="L139">	        return true;</span>
 	    }
 
 	    // Zusätzliche Bedingungen: public, void, keine Parameter
-<span class="nc bnc" id="L142" title="All 4 branches missed.">	    return Modifier.isPublic(method.getModifiers()) &amp;&amp; &quot;void&quot;.equals(method.getReturnType2().toString())</span>
-<span class="nc bnc" id="L143" title="All 2 branches missed.">	            &amp;&amp; method.parameters().isEmpty();</span>
+<span class="nc bnc" id="L143" title="All 4 branches missed.">	    return Modifier.isPublic(method.getModifiers()) &amp;&amp; &quot;void&quot;.equals(method.getReturnType2().toString())</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">	            &amp;&amp; method.parameters().isEmpty();</span>
 	}
 
 
@@ -148,42 +149,42 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="nc" id="L151">		TypeDeclaration node= junitHolder.getTypeDeclaration();</span>
+<span class="nc" id="L152">		TypeDeclaration node= junitHolder.getTypeDeclaration();</span>
 		// Remove `extends TestCase`
-<span class="nc" id="L153">		Type superclass= node.getSuperclassType();</span>
-<span class="nc bnc" id="L154" title="All 4 branches missed.">		if (superclass != null &amp;&amp; &quot;TestCase&quot;.equals(superclass.toString())) {</span>
-<span class="nc" id="L155">			rewriter.remove(node.getSuperclassType(), group);</span>
+<span class="nc" id="L154">		Type superclass= node.getSuperclassType();</span>
+<span class="nc bnc" id="L155" title="All 4 branches missed.">		if (superclass != null &amp;&amp; &quot;TestCase&quot;.equals(superclass.toString())) {</span>
+<span class="nc" id="L156">			rewriter.remove(node.getSuperclassType(), group);</span>
 		}
 
-<span class="nc bnc" id="L158" title="All 2 branches missed.">		for (MethodDeclaration method : node.getMethods()) {</span>
-<span class="nc bnc" id="L159" title="All 2 branches missed.">		    if (isSetupMethod(method)) {</span>
-<span class="nc" id="L160">		        convertToAnnotation(method, &quot;BeforeEach&quot;, importRewriter, rewriter, ast, group);</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">		    } else if (isTeardownMethod(method)) {</span>
-<span class="nc" id="L162">		        convertToAnnotation(method, &quot;AfterEach&quot;, importRewriter, rewriter, ast, group);</span>
-<span class="nc bnc" id="L163" title="All 2 branches missed.">		    } else if (isTestMethod(method)) {</span>
-<span class="nc" id="L164">		        addAnnotationToMethod(method, &quot;Test&quot;, importRewriter, rewriter, ast, group);</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">		for (MethodDeclaration method : node.getMethods()) {</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">		    if (isSetupMethod(method)) {</span>
+<span class="nc" id="L161">		        convertToAnnotation(method, &quot;BeforeEach&quot;, importRewriter, rewriter, ast, group);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">		    } else if (isTeardownMethod(method)) {</span>
+<span class="nc" id="L163">		        convertToAnnotation(method, &quot;AfterEach&quot;, importRewriter, rewriter, ast, group);</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">		    } else if (isTestMethod(method)) {</span>
+<span class="nc" id="L165">		        addAnnotationToMethod(method, &quot;Test&quot;, importRewriter, rewriter, ast, group);</span>
 		    }
 
 		    // Bearbeite Assertions und Assumptions in allen relevanten Methoden
-<span class="nc bnc" id="L168" title="All 2 branches missed.">		    if (method.getBody() != null) {</span>
-<span class="nc" id="L169">		        rewriteAssertionsAndAssumptions(method, rewriter, ast, group,importRewriter);</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">		    if (method.getBody() != null) {</span>
+<span class="nc" id="L170">		        rewriteAssertionsAndAssumptions(method, rewriter, ast, group,importRewriter);</span>
 		    }
 		}
 
-<span class="nc" id="L173">	}</span>
+<span class="nc" id="L174">	}</span>
 
 	private void rewriteAssertionsAndAssumptions(MethodDeclaration method, ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
-<span class="nc" id="L176">	    method.accept(new ASTVisitor() {</span>
+<span class="nc" id="L177">	    method.accept(new ASTVisitor() {</span>
 	        @Override
 	        public boolean visit(MethodInvocation node) {
 	            // Überprüfen, ob das MethodBinding aufgelöst werden kann
-<span class="nc bnc" id="L180" title="All 2 branches missed.">	            if (node.resolveMethodBinding() != null) {</span>
-<span class="nc" id="L181">	                String fullyQualifiedName = node.resolveMethodBinding().getDeclaringClass().getQualifiedName();</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">	            if (node.resolveMethodBinding() != null) {</span>
+<span class="nc" id="L182">	                String fullyQualifiedName = node.resolveMethodBinding().getDeclaringClass().getQualifiedName();</span>
 
-<span class="nc bnc" id="L183" title="All 4 branches missed.">	                if (&quot;junit.framework.Assert&quot;.equals(fullyQualifiedName) || &quot;junit.framework.Assume&quot;.equals(fullyQualifiedName)) {</span>
+<span class="nc bnc" id="L184" title="All 4 branches missed.">	                if (&quot;junit.framework.Assert&quot;.equals(fullyQualifiedName) || &quot;junit.framework.Assume&quot;.equals(fullyQualifiedName)) {</span>
 //	                    correctAssertionOrder(node, rewriter, ast, group);
 
-<span class="nc" id="L186">	                    reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
+<span class="nc" id="L187">	                    reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
 //	    				SimpleName newQualifier= ast.newSimpleName(ASSERTIONS);
 //	    				Expression expression= assertexpression;
 //	    				if (expression != null) {
@@ -194,96 +195,96 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	                    
 	                    
 	                    // Ändere den Qualifier (z.B. Assert.assertEquals -&gt; Assertions.assertEquals)
-<span class="nc" id="L197">	                    rewriter.set(node.getExpression(), SimpleName.IDENTIFIER_PROPERTY, &quot;Assertions&quot;, group);</span>
+<span class="nc" id="L198">	                    rewriter.set(node.getExpression(), SimpleName.IDENTIFIER_PROPERTY, &quot;Assertions&quot;, group);</span>
 //	                    ASTNodes.replaceButKeepComment(rewriter, expression, newQualifier, group);
 
 	                    // Passe Importe an
-<span class="nc" id="L201">	                    addImportForAssertion(node.getName().getIdentifier(), ast, rewriter, group, importRewriter);</span>
+<span class="nc" id="L202">	                    addImportForAssertion(node.getName().getIdentifier(), ast, rewriter, group, importRewriter);</span>
 	                }
 	            }
 
-<span class="nc" id="L205">	            return super.visit(node);</span>
+<span class="nc" id="L206">	            return super.visit(node);</span>
 	        }
 	    });
-<span class="nc" id="L208">	}</span>
+<span class="nc" id="L209">	}</span>
 
 
 	private void addImportForAssertion(String assertionMethod, AST ast, ASTRewrite rewriter, TextEditGroup group, ImportRewrite importRewriter) {
-<span class="nc" id="L212">	    String importToAdd = null;</span>
+<span class="nc" id="L213">	    String importToAdd = null;</span>
 
-<span class="nc bnc" id="L214" title="All 4 branches missed.">	    switch (assertionMethod) {</span>
+<span class="nc bnc" id="L215" title="All 4 branches missed.">	    switch (assertionMethod) {</span>
 	        case &quot;assertEquals&quot;:
 	        case &quot;assertArrayEquals&quot;:
 	        case &quot;assertTrue&quot;:
 	        case &quot;assertFalse&quot;:
 	        case &quot;assertNull&quot;:
 	        case &quot;assertNotNull&quot;:
-<span class="nc" id="L221">	            importToAdd = &quot;org.junit.jupiter.api.Assertions&quot;;</span>
-<span class="nc" id="L222">	            break;</span>
+<span class="nc" id="L222">	            importToAdd = &quot;org.junit.jupiter.api.Assertions&quot;;</span>
+<span class="nc" id="L223">	            break;</span>
 	        case &quot;assumeTrue&quot;:
 	        case &quot;assumeFalse&quot;:
 	        case &quot;assumeNotNull&quot;:
-<span class="nc" id="L226">	            importToAdd = &quot;org.junit.jupiter.api.Assumptions&quot;;</span>
-<span class="nc" id="L227">	            break;</span>
+<span class="nc" id="L227">	            importToAdd = &quot;org.junit.jupiter.api.Assumptions&quot;;</span>
+<span class="nc" id="L228">	            break;</span>
 	        case &quot;assertThat&quot;:
-<span class="nc" id="L229">	            importToAdd = &quot;org.hamcrest.MatcherAssert&quot;;</span>
+<span class="nc" id="L230">	            importToAdd = &quot;org.hamcrest.MatcherAssert&quot;;</span>
 	            break;
 	    }
 
-<span class="nc bnc" id="L233" title="All 2 branches missed.">	    if (importToAdd != null) {</span>
-<span class="nc" id="L234">	        importRewriter.addImport(importToAdd);</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">	    if (importToAdd != null) {</span>
+<span class="nc" id="L235">	        importRewriter.addImport(importToAdd);</span>
 	    }
-<span class="nc" id="L236">	}</span>
+<span class="nc" id="L237">	}</span>
 
 	
 	private boolean isSetupMethod(MethodDeclaration method) {
-<span class="nc bnc" id="L240" title="All 4 branches missed.">		return &quot;setUp&quot;.equals(method.getName().getIdentifier()) &amp;&amp; method.parameters().isEmpty()</span>
-<span class="nc bnc" id="L241" title="All 2 branches missed.">				&amp;&amp; method.getReturnType2() == null;</span>
+<span class="nc bnc" id="L241" title="All 4 branches missed.">		return &quot;setUp&quot;.equals(method.getName().getIdentifier()) &amp;&amp; method.parameters().isEmpty()</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">				&amp;&amp; method.getReturnType2() == null;</span>
 	}
 
 	private boolean isTeardownMethod(MethodDeclaration method) {
-<span class="nc bnc" id="L245" title="All 4 branches missed.">		return &quot;tearDown&quot;.equals(method.getName().getIdentifier()) &amp;&amp; method.parameters().isEmpty()</span>
-<span class="nc bnc" id="L246" title="All 2 branches missed.">				&amp;&amp; method.getReturnType2() == null;</span>
+<span class="nc bnc" id="L246" title="All 4 branches missed.">		return &quot;tearDown&quot;.equals(method.getName().getIdentifier()) &amp;&amp; method.parameters().isEmpty()</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">				&amp;&amp; method.getReturnType2() == null;</span>
 	}
 
 	private void convertToAnnotation(MethodDeclaration method, String annotation, ImportRewrite importRewrite,
 			ASTRewrite rewrite, AST ast, TextEditGroup group) {
 		// Add annotation
-<span class="nc" id="L252">		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="nc" id="L253">		MarkerAnnotation newMarkerAnnotation= ast.newMarkerAnnotation();</span>
-<span class="nc" id="L254">		newMarkerAnnotation.setTypeName(ast.newSimpleName(annotation));</span>
-<span class="nc" id="L255">		modifiers.insertFirst(newMarkerAnnotation, group);</span>
-<span class="nc" id="L256">		importRewrite.addImport(&quot;org.junit.jupiter.api.&quot; + annotation.substring(1));</span>
-<span class="nc" id="L257">	}</span>
+<span class="nc" id="L253">		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="nc" id="L254">		MarkerAnnotation newMarkerAnnotation= ast.newMarkerAnnotation();</span>
+<span class="nc" id="L255">		newMarkerAnnotation.setTypeName(ast.newSimpleName(annotation));</span>
+<span class="nc" id="L256">		modifiers.insertFirst(newMarkerAnnotation, group);</span>
+<span class="nc" id="L257">		importRewrite.addImport(&quot;org.junit.jupiter.api.&quot; + annotation.substring(1));</span>
+<span class="nc" id="L258">	}</span>
 
 	private void addAnnotationToMethod(MethodDeclaration method, String annotation, ImportRewrite importRewrite,
 			ASTRewrite rewrite, AST ast, TextEditGroup group) {
 // Füge die Annotation zum Methodenkopf hinzu
-<span class="nc" id="L262">		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="nc" id="L263">		MarkerAnnotation newMarkerAnnotation= ast.newMarkerAnnotation();</span>
-<span class="nc" id="L264">		newMarkerAnnotation.setTypeName(ast.newSimpleName(annotation)); // annotation sollte nur den Namen enthalten, z.</span>
+<span class="nc" id="L263">		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="nc" id="L264">		MarkerAnnotation newMarkerAnnotation= ast.newMarkerAnnotation();</span>
+<span class="nc" id="L265">		newMarkerAnnotation.setTypeName(ast.newSimpleName(annotation)); // annotation sollte nur den Namen enthalten, z.</span>
 																		// B. &quot;Test&quot;
-<span class="nc" id="L266">		modifiers.insertFirst(newMarkerAnnotation, group);</span>
+<span class="nc" id="L267">		modifiers.insertFirst(newMarkerAnnotation, group);</span>
 
 // Import der Annotation hinzufügen
-<span class="nc" id="L269">		importRewrite.addImport(&quot;org.junit.jupiter.api.&quot; + annotation);</span>
-<span class="nc" id="L270">	}</span>
+<span class="nc" id="L270">		importRewrite.addImport(&quot;org.junit.jupiter.api.&quot; + annotation);</span>
+<span class="nc" id="L271">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L274" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L275">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L276">			return &quot;&quot;&quot;</span>
 					import org.junit.jupiter.api.Test;
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L279">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L280">		return &quot;&quot;&quot;</span>
 				import junit.framework.TestCase;
 				&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 
 	@Override
 	public String toString() {
-<span class="nc" id="L286">		return &quot;TestCase&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L287">		return &quot;TestCase&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -26,6 +26,14 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 <span class="nc" id="L26">		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM, CleanUpOptions.TRUE); // default to Stream</span>
 <span class="nc" id="L27">		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR, CleanUpOptions.FALSE);</span>
 <span class="nc" id="L28">		options.setOption(MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE, CleanUpOptions.FALSE);</span>
-<span class="nc" id="L29">	}</span>
+		
+		// Bidirectional Loop Conversion (Phase 9)
+<span class="nc" id="L31">		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_ENABLED, CleanUpOptions.FALSE);</span>
+<span class="nc" id="L32">		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, &quot;stream&quot;); // default target format</span>
+<span class="nc" id="L33">		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR, CleanUpOptions.FALSE);</span>
+<span class="nc" id="L34">		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE, CleanUpOptions.FALSE);</span>
+<span class="nc" id="L35">		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM, CleanUpOptions.FALSE);</span>
+<span class="nc" id="L36">		options.setOption(MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, CleanUpOptions.FALSE);</span>
+<span class="nc" id="L37">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

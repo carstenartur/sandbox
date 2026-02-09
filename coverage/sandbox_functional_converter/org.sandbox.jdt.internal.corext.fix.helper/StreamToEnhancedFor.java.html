@@ -52,7 +52,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="nc" id="L55">		ReferenceHolder&lt;Integer, Object&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="nc" id="L55">		ReferenceHolder&lt;Integer, Object&gt; dataHolder = ReferenceHolder.create();</span>
 		
 		// Find forEach method calls
 <span class="nc" id="L58">		HelperVisitor.callMethodInvocationVisitor(&quot;forEach&quot;, compilationUnit, dataHolder, nodesprocessed, //$NON-NLS-1$</span>

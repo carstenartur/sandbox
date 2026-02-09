@@ -115,46 +115,45 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 			// Handle NormalAnnotation (e.g., @Ignore(value=&quot;reason&quot;))
 			// Convert to SingleMemberAnnotation for @Disabled
 <span class="fc" id="L117">			org.eclipse.jdt.core.dom.NormalAnnotation oldAnnotation = (org.eclipse.jdt.core.dom.NormalAnnotation) annotation;</span>
-			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L119">			java.util.List&lt;org.eclipse.jdt.core.dom.MemberValuePair&gt; values = oldAnnotation.values();</span>
+<span class="fc" id="L118">			java.util.List&lt;org.eclipse.jdt.core.dom.MemberValuePair&gt; values = oldAnnotation.values();</span>
 			
 			// Find the &quot;value&quot; member specifically
-<span class="fc" id="L122">			org.eclipse.jdt.core.dom.MemberValuePair valuePair = null;</span>
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">			for (org.eclipse.jdt.core.dom.MemberValuePair pair : values) {</span>
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">				if (&quot;value&quot;.equals(pair.getName().getIdentifier())) {</span>
-<span class="fc" id="L125">					valuePair = pair;</span>
-<span class="fc" id="L126">					break;</span>
+<span class="fc" id="L121">			org.eclipse.jdt.core.dom.MemberValuePair valuePair = null;</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">			for (org.eclipse.jdt.core.dom.MemberValuePair pair : values) {</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">				if (&quot;value&quot;.equals(pair.getName().getIdentifier())) {</span>
+<span class="fc" id="L124">					valuePair = pair;</span>
+<span class="fc" id="L125">					break;</span>
 				}
 			}
 			
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">			if (valuePair != null) {</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">			if (valuePair != null) {</span>
 				// If there's a value attribute, extract it and create SingleMemberAnnotation
-<span class="fc" id="L132">				SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
-<span class="fc" id="L133">				newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
-<span class="fc" id="L134">				newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, valuePair.getValue()));</span>
-<span class="fc" id="L135">				newAnnotation = newSingleMemberAnnotation;</span>
-<span class="fc" id="L136">			} else {</span>
+<span class="fc" id="L131">				SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L132">				newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
+<span class="fc" id="L133">				newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, valuePair.getValue()));</span>
+<span class="fc" id="L134">				newAnnotation = newSingleMemberAnnotation;</span>
+<span class="fc" id="L135">			} else {</span>
 				// No value, treat as marker
-<span class="nc" id="L138">				MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();</span>
-<span class="nc" id="L139">				newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
-<span class="nc" id="L140">				newAnnotation = newMarkerAnnotation;</span>
+<span class="nc" id="L137">				MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();</span>
+<span class="nc" id="L138">				newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
+<span class="nc" id="L139">				newAnnotation = newMarkerAnnotation;</span>
 			}
-<span class="nc" id="L142">		} else {</span>
+<span class="nc" id="L141">		} else {</span>
 			// MarkerAnnotation - no reason to preserve
-<span class="fc" id="L144">			MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();</span>
-<span class="fc" id="L145">			newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
-<span class="fc" id="L146">			newAnnotation = newMarkerAnnotation;</span>
+<span class="fc" id="L143">			MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();</span>
+<span class="fc" id="L144">			newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
+<span class="fc" id="L145">			newAnnotation = newMarkerAnnotation;</span>
 		}
 		
-<span class="fc" id="L149">		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);</span>
-<span class="fc" id="L150">		importRewriter.removeImport(ORG_JUNIT_IGNORE);</span>
-<span class="fc" id="L151">		importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);</span>
-<span class="fc" id="L152">	}</span>
+<span class="fc" id="L148">		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);</span>
+<span class="fc" id="L149">		importRewriter.removeImport(ORG_JUNIT_IGNORE);</span>
+<span class="fc" id="L150">		importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);</span>
+<span class="fc" id="L151">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="fc bfc" id="L156" title="All 2 branches covered.">		if (afterRefactoring) {</span>
-<span class="fc" id="L157">			return &quot;&quot;&quot;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (afterRefactoring) {</span>
+<span class="fc" id="L156">			return &quot;&quot;&quot;</span>
 				@Disabled(&quot;not implemented&quot;)
 				@Test
 				public void test() {
@@ -162,7 +161,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 				}
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="fc" id="L165">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L164">		return &quot;&quot;&quot;</span>
 			@Ignore(&quot;not implemented&quot;)
 			@Test
 			public void test() {
@@ -173,7 +172,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L176">		return &quot;Ignore&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L175">		return &quot;Ignore&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

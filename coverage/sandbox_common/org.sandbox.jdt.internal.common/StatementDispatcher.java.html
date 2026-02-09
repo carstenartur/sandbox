@@ -227,7 +227,7 @@ public final class StatementDispatcher&lt;C, R&gt; {
 		 */
 		public HandlerBuilder&lt;N, C, R&gt; matching(Predicate&lt;N&gt; nodeCondition) {
 			// Create a combined condition that checks both the context and the node
-<span class="nc" id="L230">			Predicate&lt;C&gt; originalCondition = this.condition;</span>
+			// Note: nodeCondition is stored for later application in the handler
 			// We'll need to apply this in the handler instead
 <span class="nc" id="L232">			return this;</span>
 		}

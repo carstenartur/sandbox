@@ -13,8 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper.lib;
 
-import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
-
 import java.util.Collection;
 import java.util.Set;
 
@@ -24,7 +22,6 @@ import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -45,7 +42,7 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
  * 
  * @param &lt;T&gt; Type found in Visitor
  */
-<span class="fc" id="L48">public abstract class AbstractTool&lt;T&gt; {</span>
+<span class="fc" id="L45">public abstract class AbstractTool&lt;T&gt; {</span>
 
 	/**
 	 * Gets all variable names used in the scope of the given AST node.
@@ -54,8 +51,8 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 * @return collection of variable names used in the node's scope
 	 */
 	public static Collection&lt;String&gt; getUsedVariableNames(ASTNode node) {
-<span class="fc" id="L57">		CompilationUnit root = (CompilationUnit) node.getRoot();</span>
-<span class="fc" id="L58">		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L54">		CompilationUnit root = (CompilationUnit) node.getRoot();</span>
+<span class="fc" id="L55">		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
 	}
 
 	/**
@@ -66,7 +63,7 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 * @return the class name, or null if not found
 	 */
 	public String extractClassNameFromField(FieldDeclaration field) {
-<span class="fc" id="L69">		return NamingUtils.extractClassNameFromField(field);</span>
+<span class="nc" id="L66">		return NamingUtils.extractClassNameFromField(field);</span>
 	}
 
 	/**
@@ -98,7 +95,7 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 * @return true if the field has the annotation
 	 */
 	protected boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
-<span class="fc" id="L101">		return AnnotationUtils.isFieldAnnotatedWith(field, annotationClass);</span>
+<span class="fc" id="L98">		return AnnotationUtils.isFieldAnnotatedWith(field, annotationClass);</span>
 	}
 
 	/**
@@ -115,9 +112,9 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	protected void modifyExternalResourceClass(TypeDeclaration node, FieldDeclaration field, boolean fieldStatic,
 			ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
-<span class="nc" id="L118">		ExternalResourceRefactorer.modifyExternalResourceClass(node, field, fieldStatic, rewriter, ast, group,</span>
-<span class="nc" id="L119">				importRewriter);</span>
-<span class="nc" id="L120">	}</span>
+<span class="nc" id="L115">		ExternalResourceRefactorer.modifyExternalResourceClass(node, field, fieldStatic, rewriter, ast, group,</span>
+<span class="nc" id="L116">				importRewriter);</span>
+<span class="nc" id="L117">	}</span>
 
 
 	/**
@@ -148,9 +145,9 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	protected void refactorAnonymousClassToImplementCallbacks(AnonymousClassDeclaration anonymousClass,
 			FieldDeclaration fieldDeclaration, boolean fieldStatic, ASTRewrite rewriter, AST ast, TextEditGroup group,
 			ImportRewrite importRewriter) {
-<span class="nc" id="L151">		ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(anonymousClass, fieldDeclaration,</span>
-<span class="nc" id="L152">				fieldStatic, rewriter, ast, group, importRewriter);</span>
-<span class="nc" id="L153">	}</span>
+<span class="nc" id="L148">		ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(anonymousClass, fieldDeclaration,</span>
+<span class="nc" id="L149">				fieldStatic, rewriter, ast, group, importRewriter);</span>
+<span class="nc" id="L150">	}</span>
 
 	/**
 	 * Refactors TestName field usage in a class and all its subclasses.
@@ -164,8 +161,8 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	protected void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewrite, FieldDeclaration node) {
-<span class="fc" id="L167">		TestNameRefactorer.refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewrite, node);</span>
-<span class="fc" id="L168">	}</span>
+<span class="fc" id="L164">		TestNameRefactorer.refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewrite, node);</span>
+<span class="fc" id="L165">	}</span>
 
 	/**
 	 * Reorders parameters in a method invocation to match JUnit 5 assertion parameter order.
@@ -179,8 +176,8 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	public void reorderParameters(MethodInvocation node, ASTRewrite rewriter, TextEditGroup group, Set&lt;String&gt; oneparam,
 			Set&lt;String&gt; twoparam) {
-<span class="fc" id="L182">		AssertionRefactorer.reorderParameters(node, rewriter, group, oneparam, twoparam);</span>
-<span class="fc" id="L183">	}</span>
+<span class="fc" id="L179">		AssertionRefactorer.reorderParameters(node, rewriter, group, oneparam, twoparam);</span>
+<span class="fc" id="L180">	}</span>
 
 	/**
 	 * Standard helper for processing found nodes in the common pattern.
@@ -196,11 +193,11 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	protected boolean addStandardRewriteOperation(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L199">		JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L200">		mh.setMinv(node);</span>
-<span class="fc" id="L201">		dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L202">		operations.add(fixcore.rewrite(dataHolder));</span>
-<span class="fc" id="L203">		return true;</span>
+<span class="fc" id="L196">		JunitHolder mh = new JunitHolder();</span>
+<span class="fc" id="L197">		mh.setMinv(node);</span>
+<span class="fc" id="L198">		dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L199">		operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L200">		return true;</span>
 	}
 
 	/**
@@ -214,8 +211,8 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	protected void changeImportDeclaration(ImportDeclaration node, ImportRewrite importRewriter, String sourceClass,
 			String targetClass) {
-<span class="nc" id="L217">		ImportHelper.changeImportDeclaration(node, importRewriter, sourceClass, targetClass);</span>
-<span class="nc" id="L218">	}</span>
+<span class="nc" id="L214">		ImportHelper.changeImportDeclaration(node, importRewriter, sourceClass, targetClass);</span>
+<span class="nc" id="L215">	}</span>
 
 	/**
 	 * Applies the JUnit migration rewrite to the compilation unit.
@@ -228,12 +225,12 @@ import org.sandbox.jdt.internal.corext.util.NamingUtils;
 	 */
 	public void rewrite(JUnitCleanUpFixCore upp, ReferenceHolder&lt;Integer, JunitHolder&gt; hit,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-<span class="fc" id="L231">		ASTRewrite rewriter = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L232">		AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L233">		ImportRewrite importRewriter = cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L234">		JunitHolder junitHolder = hit.get(hit.size() - 1);</span>
-<span class="fc" id="L235">		process2Rewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
-<span class="fc" id="L236">		hit.remove(hit.size() - 1);</span>
-<span class="fc" id="L237">	}</span>
+<span class="fc" id="L228">		ASTRewrite rewriter = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L229">		AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L230">		ImportRewrite importRewriter = cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L231">		JunitHolder junitHolder = hit.get(hit.size() - 1);</span>
+<span class="fc" id="L232">		process2Rewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
+<span class="fc" id="L233">		hit.remove(hit.size() - 1);</span>
+<span class="fc" id="L234">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

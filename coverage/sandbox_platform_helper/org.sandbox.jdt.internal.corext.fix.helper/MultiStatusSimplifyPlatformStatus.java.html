@@ -27,7 +27,6 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -61,112 +60,114 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 	private static final String OK_SIMPLE_NAME = &quot;OK&quot;; //$NON-NLS-1$
 
 	public MultiStatusSimplifyPlatformStatus() {
-<span class="fc" id="L64">		super(&quot;&quot;, &quot;&quot;); // MultiStatus doesn't use factory method names //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L65">	}</span>
+<span class="fc" id="L63">		super(&quot;&quot;, &quot;&quot;); // MultiStatus doesn't use factory method names //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L64">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L70">			return &quot;MultiStatus status = new MultiStatus(pluginId, IStatus.OK, \&quot;message\&quot;, null);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L69">			return &quot;MultiStatus status = new MultiStatus(pluginId, IStatus.OK, \&quot;message\&quot;, null);\n&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L72">		return &quot;MultiStatus status = new MultiStatus(pluginId, someCode, \&quot;message\&quot;, null);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L71">		return &quot;MultiStatus status = new MultiStatus(pluginId, someCode, \&quot;message\&quot;, null);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) throws CoreException {
-<span class="nc" id="L78">		find(fixcore, compilationUnit, operations, nodesprocessed, false);</span>
-<span class="nc" id="L79">	}</span>
+<span class="nc" id="L77">		find(fixcore, compilationUnit, operations, nodesprocessed, false);</span>
+<span class="nc" id="L78">	}</span>
 
 	@Override
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed,
 			boolean preservePluginId) throws CoreException {
 		try {
-<span class="fc" id="L86">			ReferenceHolder&lt;ASTNode, Object&gt; dataholder= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L87">			HelperVisitor.callClassInstanceCreationVisitor(MultiStatus.class, compilationUnit, dataholder, nodesprocessed, (visited, holder) -&gt; {</span>
-<span class="pc bpc" id="L88" title="1 of 2 branches missed.">				if (nodesprocessed.contains(visited)) {</span>
-<span class="nc" id="L89">					return false;</span>
-				}
-				
-				// MultiStatus has a 4-argument constructor:
-				// MultiStatus(String pluginId, int code, String message, Throwable exception)
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">				if (visited.arguments().size() != 4) {</span>
-<span class="nc" id="L95">					return false;</span>
-				}
-				
-<span class="fc" id="L98">				List&lt;Expression&gt; arguments= visited.arguments();</span>
-				
-				// Check if argument at index 1 (code) is NOT already IStatus.OK
-<span class="fc" id="L101">				Expression codeArg= arguments.get(1);</span>
-<span class="fc bfc" id="L102" title="All 2 branches covered.">				if (codeArg instanceof QualifiedName) {</span>
-<span class="fc" id="L103">					QualifiedName codeQualifiedName= (QualifiedName) codeArg;</span>
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">					if (ISTATUS_OK.equals(codeQualifiedName.toString())) {</span>
-						// Already using IStatus.OK, no transformation needed
-<span class="fc" id="L106">						return false;</span>
+<span class="fc" id="L85">			ReferenceHolder&lt;ASTNode, Object&gt; dataholder= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L86">			HelperVisitor.forClassInstanceCreation(MultiStatus.class)</span>
+<span class="fc" id="L87">				.in(compilationUnit)</span>
+<span class="fc" id="L88">				.excluding(nodesprocessed)</span>
+<span class="fc" id="L89">				.processEach(dataholder, (visited, holder) -&gt; {</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">					if (nodesprocessed.contains(visited)) {</span>
+<span class="nc" id="L91">						return false;</span>
 					}
-				}
-				
-				// Found a MultiStatus that could be simplified to use IStatus.OK
-<span class="fc" id="L111">				operations.add(fixcore.rewrite(visited, holder, preservePluginId));</span>
-<span class="fc" id="L112">				nodesprocessed.add(visited);</span>
-<span class="fc" id="L113">				return false;</span>
-			});
-<span class="pc" id="L115">		} catch (Exception e) {</span>
-<span class="nc" id="L116">			throw new CoreException(Status.error(&quot;Problem in find MultiStatus&quot;, e)); //$NON-NLS-1$</span>
+					
+					// MultiStatus has a 4-argument constructor:
+					// MultiStatus(String pluginId, int code, String message, Throwable exception)
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">					if (visited.arguments().size() != 4) {</span>
+<span class="nc" id="L97">						return false;</span>
+					}
+					
+<span class="fc" id="L100">					List&lt;Expression&gt; arguments= visited.arguments();</span>
+					
+					// Check if argument at index 1 (code) is NOT already IStatus.OK
+<span class="fc" id="L103">					Expression codeArg= arguments.get(1);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">					if (codeArg instanceof QualifiedName) {</span>
+<span class="fc" id="L105">						QualifiedName codeQualifiedName= (QualifiedName) codeArg;</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">						if (ISTATUS_OK.equals(codeQualifiedName.toString())) {</span>
+							// Already using IStatus.OK, no transformation needed
+<span class="fc" id="L108">							return false;</span>
+						}
+					}
+					
+					// Found a MultiStatus that could be simplified to use IStatus.OK
+<span class="fc" id="L113">					operations.add(fixcore.rewrite(visited, holder, preservePluginId));</span>
+<span class="fc" id="L114">					nodesprocessed.add(visited);</span>
+<span class="fc" id="L115">					return false;</span>
+				});
+<span class="pc" id="L117">		} catch (Exception e) {</span>
+<span class="nc" id="L118">			throw new CoreException(Status.error(&quot;Problem in find MultiStatus&quot;, e)); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L118">	}</span>
+<span class="fc" id="L120">	}</span>
 
 	@Override
 	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="nc" id="L123">		rewrite(upp, visited, cuRewrite, group, holder, false);</span>
-<span class="nc" id="L124">	}</span>
+<span class="nc" id="L125">		rewrite(upp, visited, cuRewrite, group, holder, false);</span>
+<span class="nc" id="L126">	}</span>
 
 	@Override
 	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; holder,
 			boolean preservePluginId) {
-<span class="fc" id="L130">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L131">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L132">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L133">		ImportRemover remover= cuRewrite.getImportRemover();</span>
+<span class="fc" id="L132">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L133">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L134">		ImportRemover remover= cuRewrite.getImportRemover();</span>
 
 		// Create a new MultiStatus construction with IStatus.OK as the code parameter
-<span class="fc" id="L136">		ClassInstanceCreation newMultiStatus= ast.newClassInstanceCreation();</span>
-<span class="fc" id="L137">		Name multiStatusName= addImport(MultiStatus.class.getName(), cuRewrite, ast);</span>
-<span class="fc" id="L138">		newMultiStatus.setType(ast.newSimpleType(multiStatusName));</span>
+<span class="fc" id="L137">		ClassInstanceCreation newMultiStatus= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L138">		Name multiStatusName= addImport(MultiStatus.class.getName(), cuRewrite, ast);</span>
+<span class="fc" id="L139">		newMultiStatus.setType(ast.newSimpleType(multiStatusName));</span>
 		
 		// Add import for IStatus to support IStatus.OK reference
-<span class="fc" id="L141">		addImport(org.eclipse.core.runtime.IStatus.class.getName(), cuRewrite, ast);</span>
+<span class="fc" id="L142">		addImport(org.eclipse.core.runtime.IStatus.class.getName(), cuRewrite, ast);</span>
 		
-<span class="fc" id="L143">		List&lt;Expression&gt; arguments= visited.arguments();</span>
-<span class="fc" id="L144">		List&lt;Expression&gt; newArguments= newMultiStatus.arguments();</span>
+<span class="fc" id="L144">		List&lt;Expression&gt; arguments= visited.arguments();</span>
+<span class="fc" id="L145">		List&lt;Expression&gt; newArguments= newMultiStatus.arguments();</span>
 		
 		// Copy pluginId (argument 0)
-<span class="fc" id="L147">		newArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
-<span class="fc" id="L148">				ASTNodes.getUnparenthesedExpression(arguments.get(0))));</span>
+<span class="fc" id="L148">		newArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="fc" id="L149">				ASTNodes.getUnparenthesedExpression(arguments.get(0))));</span>
 		
 		// Replace code with IStatus.OK
-<span class="fc" id="L151">		QualifiedName okConstant= ast.newQualifiedName(</span>
-<span class="fc" id="L152">				ast.newSimpleName(ISTATUS_SIMPLE_NAME),</span>
-<span class="fc" id="L153">				ast.newSimpleName(OK_SIMPLE_NAME));</span>
-<span class="fc" id="L154">		newArguments.add(okConstant);</span>
+<span class="fc" id="L152">		QualifiedName okConstant= ast.newQualifiedName(</span>
+<span class="fc" id="L153">				ast.newSimpleName(ISTATUS_SIMPLE_NAME),</span>
+<span class="fc" id="L154">				ast.newSimpleName(OK_SIMPLE_NAME));</span>
+<span class="fc" id="L155">		newArguments.add(okConstant);</span>
 		
 		// Copy message (argument 2)
-<span class="fc" id="L157">		newArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
-<span class="fc" id="L158">				ASTNodes.getUnparenthesedExpression(arguments.get(2))));</span>
+<span class="fc" id="L158">		newArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="fc" id="L159">				ASTNodes.getUnparenthesedExpression(arguments.get(2))));</span>
 		
 		// Copy exception (argument 3)
-<span class="fc" id="L161">		newArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
-<span class="fc" id="L162">				ASTNodes.getUnparenthesedExpression(arguments.get(3))));</span>
+<span class="fc" id="L162">		newArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="fc" id="L163">				ASTNodes.getUnparenthesedExpression(arguments.get(3))));</span>
 		
-<span class="fc" id="L164">		ASTNodes.replaceButKeepComment(rewrite, visited, newMultiStatus, group);</span>
-<span class="fc" id="L165">		remover.registerRemovedNode(visited);</span>
+<span class="fc" id="L165">		ASTNodes.replaceButKeepComment(rewrite, visited, newMultiStatus, group);</span>
+<span class="fc" id="L166">		remover.registerRemovedNode(visited);</span>
 		// Note: Do NOT call remover.applyRemoves(importRewrite) here
 		// The transformation still uses MultiStatus and IStatus classes,
 		// so the imports should be preserved.
 		// ImportRewrite will automatically manage imports without explicit applyRemoves.
-<span class="fc" id="L170">	}</span>
+<span class="fc" id="L171">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

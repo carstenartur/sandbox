@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoopTree.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-functional-converter-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.functional.core.tree</a> &gt; <span class="el_source">LoopTree.java</span></div><h1>LoopTree.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.functional.core.tree;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.List;
+
+/**
+ * Represents a tree structure of nested loops for conversion analysis.
+ * 
+ * &lt;p&gt;This class manages the hierarchical structure of loops in source code,
+ * allowing bottom-up analysis (inner loops first) to determine which loops
+ * can be safely converted to functional stream operations.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Usage Pattern:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * LoopTree tree = new LoopTree();
+ * 
+ * // When entering a loop:
+ * LoopTreeNode node = tree.pushLoop(LoopKind.ENHANCED_FOR);
+ * node.setAstNodeReference(astNode);
+ * 
+ * // ... analyze loop body ...
+ * 
+ * // When exiting a loop:
+ * LoopTreeNode node = tree.popLoop();
+ * // Decide if convertible based on children
+ * node.setDecision(decision);
+ * 
+ * // After traversal:
+ * List&lt;LoopTreeNode&gt; convertible = tree.getConvertibleNodes();
+ * }&lt;/pre&gt;
+ * 
+ * @since 1.0.0
+ */
+<span class="fc" id="L50">public class LoopTree {</span>
+<span class="fc" id="L51">    private final List&lt;LoopTreeNode&gt; roots = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L52">    private final Deque&lt;LoopTreeNode&gt; stack = new ArrayDeque&lt;&gt;();</span>
+    
+    /**
+     * Pushes a new loop onto the stack and adds it to the tree.
+     * 
+     * &lt;p&gt;If called when the stack is empty, the loop becomes a root.
+     * Otherwise, it becomes a child of the current loop.&lt;/p&gt;
+     * 
+     * @param kind the kind of loop being pushed
+     * @return the newly created loop tree node
+     */
+    public LoopTreeNode pushLoop(LoopKind kind) {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        ScopeInfo parentScope = stack.isEmpty() ? new ScopeInfo() : stack.peek().getScopeInfo();</span>
+<span class="fc" id="L65">        ScopeInfo childScope = parentScope.createChildScope();</span>
+        
+<span class="fc" id="L67">        LoopTreeNode node = new LoopTreeNode(kind, childScope);</span>
+        
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (stack.isEmpty()) {</span>
+<span class="fc" id="L70">            roots.add(node);</span>
+        } else {
+<span class="fc" id="L72">            stack.peek().addChild(node);</span>
+        }
+        
+<span class="fc" id="L75">        stack.push(node);</span>
+<span class="fc" id="L76">        return node;</span>
+    }
+    
+    /**
+     * Pops the current loop from the stack.
+     * 
+     * &lt;p&gt;This should be called when exiting a loop after analysis is complete.&lt;/p&gt;
+     * 
+     * @return the popped loop tree node
+     * @throws java.util.NoSuchElementException if the stack is empty
+     */
+    public LoopTreeNode popLoop() {
+<span class="fc" id="L88">        return stack.pop();</span>
+    }
+    
+    /**
+     * Gets the current (innermost) loop being processed.
+     * 
+     * @return the current loop tree node, or null if the stack is empty
+     */
+    public LoopTreeNode current() {
+<span class="fc" id="L97">        return stack.peek();</span>
+    }
+    
+    /**
+     * Checks if currently inside a loop.
+     * 
+     * @return true if the stack is not empty
+     */
+    public boolean isInsideLoop() {
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        return !stack.isEmpty();</span>
+    }
+    
+    /**
+     * Gets all nodes marked as CONVERTIBLE in the tree.
+     * 
+     * &lt;p&gt;This performs a depth-first traversal and collects all nodes
+     * that have been marked as convertible after analysis.&lt;/p&gt;
+     * 
+     * @return an unmodifiable list of convertible nodes
+     */
+    public List&lt;LoopTreeNode&gt; getConvertibleNodes() {
+<span class="fc" id="L118">        List&lt;LoopTreeNode&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (LoopTreeNode root : roots) {</span>
+<span class="fc" id="L120">            collectConvertible(root, result);</span>
+<span class="fc" id="L121">        }</span>
+<span class="fc" id="L122">        return Collections.unmodifiableList(result);</span>
+    }
+    
+    private void collectConvertible(LoopTreeNode node, List&lt;LoopTreeNode&gt; result) {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        for (LoopTreeNode child : node.getChildren()) {</span>
+<span class="fc" id="L127">            collectConvertible(child, result);</span>
+<span class="fc" id="L128">        }</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (node.getDecision() == ConversionDecision.CONVERTIBLE) {</span>
+<span class="fc" id="L130">            result.add(node);</span>
+        }
+<span class="fc" id="L132">    }</span>
+    
+    /**
+     * Gets the root nodes of the loop tree.
+     * 
+     * &lt;p&gt;Root nodes are top-level loops that are not nested inside
+     * other loops.&lt;/p&gt;
+     * 
+     * @return an unmodifiable list of root nodes
+     */
+    public List&lt;LoopTreeNode&gt; getRoots() { 
+<span class="fc" id="L143">        return Collections.unmodifiableList(roots); </span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

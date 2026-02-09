@@ -56,11 +56,11 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 public class UseFunctionalCallCleanUpCoreV2 extends AbstractCleanUp {
 	
 	public UseFunctionalCallCleanUpCoreV2(final Map&lt;String, String&gt; options) {
-<span class="nc" id="L59">		super(options);</span>
-<span class="nc" id="L60">	}</span>
+<span class="fc" id="L59">		super(options);</span>
+<span class="fc" id="L60">	}</span>
 
-<span class="fc" id="L62">	public UseFunctionalCallCleanUpCoreV2() {</span>
-<span class="fc" id="L63">	}</span>
+<span class="nc" id="L62">	public UseFunctionalCallCleanUpCoreV2() {</span>
+<span class="nc" id="L63">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
@@ -113,10 +113,11 @@ public class UseFunctionalCallCleanUpCoreV2 extends AbstractCleanUp {
 <span class="fc" id="L113">		EnumSet&lt;UseFunctionalCallFixCore&gt; fixSet = EnumSet.noneOf(UseFunctionalCallFixCore.class);</span>
 
 <span class="fc bfc" id="L115" title="All 2 branches covered.">		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2)) {</span>
-			// Only include LOOP_V2 in the fix set
+			// Include both LOOP_V2 and ITERATOR_LOOP in the fix set
 <span class="fc" id="L117">			fixSet.add(UseFunctionalCallFixCore.LOOP_V2);</span>
+<span class="fc" id="L118">			fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);</span>
 		}
-<span class="fc" id="L119">		return fixSet;</span>
+<span class="fc" id="L120">		return fixSet;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -71,34 +71,35 @@ import org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp;
 <span class="nc" id="L71">		intent(loopConversionGroup);</span>
 		
 		// Target format combo
-<span class="nc" id="L74">		final ComboPreference targetFormat = createComboPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L75">			CleanUpMessages.LoopConversion_TargetFormat,</span>
-<span class="nc" id="L76">			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,</span>
-<span class="nc" id="L77">			new String[] {</span>
-<span class="nc" id="L78">				CleanUpMessages.LoopConversion_TargetFormat_Stream,</span>
-<span class="nc" id="L79">				CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor,</span>
-<span class="nc" id="L80">				CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile</span>
+		// Note: ComboPreference is created but not registered as a slave (it remains independently enabled)
+<span class="nc" id="L75">		createComboPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L76">			CleanUpMessages.LoopConversion_TargetFormat,</span>
+<span class="nc" id="L77">			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,</span>
+<span class="nc" id="L78">			new String[] {</span>
+<span class="nc" id="L79">				CleanUpMessages.LoopConversion_TargetFormat_Stream,</span>
+<span class="nc" id="L80">				CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor,</span>
+<span class="nc" id="L81">				CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile</span>
 			},
-<span class="nc" id="L82">			new String[] { &quot;stream&quot;, &quot;enhanced_for&quot;, &quot;iterator_while&quot; });</span>
+<span class="nc" id="L83">			new String[] { &quot;stream&quot;, &quot;enhanced_for&quot;, &quot;iterator_while&quot; });</span>
 		
 		// Source format checkboxes
-<span class="nc" id="L85">		final CheckboxPreference fromEnhancedFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L86">			CleanUpMessages.LoopConversion_From_EnhancedFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR, FALSE_TRUE);</span>
-<span class="nc" id="L87">		final CheckboxPreference fromIteratorWhile = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L88">			CleanUpMessages.LoopConversion_From_IteratorWhile, MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE, FALSE_TRUE);</span>
-<span class="nc" id="L89">		final CheckboxPreference fromStream = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L90">			CleanUpMessages.LoopConversion_From_Stream, MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM, FALSE_TRUE);</span>
-<span class="nc" id="L91">		final CheckboxPreference fromClassicFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L92">			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);</span>
+<span class="nc" id="L86">		final CheckboxPreference fromEnhancedFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L87">			CleanUpMessages.LoopConversion_From_EnhancedFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR, FALSE_TRUE);</span>
+<span class="nc" id="L88">		final CheckboxPreference fromIteratorWhile = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L89">			CleanUpMessages.LoopConversion_From_IteratorWhile, MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE, FALSE_TRUE);</span>
+<span class="nc" id="L90">		final CheckboxPreference fromStream = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L91">			CleanUpMessages.LoopConversion_From_Stream, MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM, FALSE_TRUE);</span>
+<span class="nc" id="L92">		final CheckboxPreference fromClassicFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L93">			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);</span>
 		
 		// Register dependencies: enable/disable based on master checkbox
 		// Note: registerSlavePreference only supports specific preference types (CheckboxPreference, RadioPreference)
 		// ComboPreference is created but not registered as a slave (it remains independently enabled)
-<span class="nc" id="L97">		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {</span>
-<span class="nc" id="L98">			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor</span>
+<span class="nc" id="L98">		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {</span>
+<span class="nc" id="L99">			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor</span>
 		});
 		
-<span class="nc" id="L101">		registerPreference(loopConversionEnabled);</span>
-<span class="nc" id="L102">	}</span>
+<span class="nc" id="L102">		registerPreference(loopConversionEnabled);</span>
+<span class="nc" id="L103">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

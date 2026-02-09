@@ -76,7 +76,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 <span class="nc" id="L76">				nodesprocessed.add(previousStmt);</span>
 <span class="nc" id="L77">				nodesprocessed.add(node);</span>
 				
-<span class="nc" id="L79">				ReferenceHolder&lt;ASTNode, Object&gt; holder = new ReferenceHolder&lt;&gt;();</span>
+<span class="nc" id="L79">				ReferenceHolder&lt;ASTNode, Object&gt; holder = ReferenceHolder.create();</span>
 <span class="nc" id="L80">				holder.put(node, pattern);</span>
 <span class="nc" id="L81">				holder.put(previousStmt, pattern); // Store pattern for both nodes</span>
 				

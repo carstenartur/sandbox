@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -64,7 +63,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
  *
  * @param &lt;T&gt; The type of AST node that this encoding handler processes
  */
-<span class="fc" id="L67">public abstract class AbstractExplicitEncoding&lt;T extends ASTNode&gt; {</span>
+<span class="fc" id="L66">public abstract class AbstractExplicitEncoding&lt;T extends ASTNode&gt; {</span>
 
 	/** Fully qualified name of java.io.UnsupportedEncodingException. */
 	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION = &quot;java.io.UnsupportedEncodingException&quot;; //$NON-NLS-1$
@@ -80,20 +79,20 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * &lt;/p&gt;
 	 * @since 1.3
 	 */
-<span class="fc" id="L83">	public static final Map&lt;String, String&gt; ENCODING_MAP = Map.of(</span>
-<span class="fc" id="L84">			&quot;UTF-8&quot;, &quot;UTF_8&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L85">			&quot;UTF-16&quot;, &quot;UTF_16&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L86">			&quot;UTF-16BE&quot;, &quot;UTF_16BE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L87">			&quot;UTF-16LE&quot;, &quot;UTF_16LE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L88">			&quot;ISO-8859-1&quot;, &quot;ISO_8859_1&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L89">			&quot;US-ASCII&quot;, &quot;US_ASCII&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L82">	public static final Map&lt;String, String&gt; ENCODING_MAP = Map.of(</span>
+<span class="fc" id="L83">			&quot;UTF-8&quot;, &quot;UTF_8&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L84">			&quot;UTF-16&quot;, &quot;UTF_16&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L85">			&quot;UTF-16BE&quot;, &quot;UTF_16BE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L86">			&quot;UTF-16LE&quot;, &quot;UTF_16LE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L87">			&quot;ISO-8859-1&quot;, &quot;ISO_8859_1&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L88">			&quot;US-ASCII&quot;, &quot;US_ASCII&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
 	);
 
 	/**
 	 * Immutable set of supported encoding names that can be converted to StandardCharsets constants.
 	 * @since 1.3
 	 */
-<span class="fc" id="L96">	public static final Set&lt;String&gt; ENCODINGS = ENCODING_MAP.keySet();</span>
+<span class="fc" id="L95">	public static final Set&lt;String&gt; ENCODINGS = ENCODING_MAP.keySet();</span>
 
 	/**
 	 * Maps standard charset names (e.g., &quot;UTF-8&quot;) to their corresponding
@@ -103,7 +102,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 *             if modification is attempted.
 	 */
 	@Deprecated
-<span class="fc" id="L106">	static final Map&lt;String, String&gt; encodingmap = ENCODING_MAP;</span>
+<span class="fc" id="L105">	static final Map&lt;String, String&gt; encodingmap = ENCODING_MAP;</span>
 
 	/**
 	 * Set of supported encoding names that can be converted to StandardCharsets constants.
@@ -112,7 +111,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 *             if modification is attempted.
 	 */
 	@Deprecated
-<span class="fc" id="L115">	static final Set&lt;String&gt; encodings = ENCODINGS;</span>
+<span class="fc" id="L114">	static final Set&lt;String&gt; encodings = ENCODINGS;</span>
 
 	/**
 	 * Immutable record to hold node data for encoding transformations.
@@ -129,7 +128,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * Thread-safe map to cache charset constant references during aggregation.
 	 * Used to avoid creating duplicate QualifiedName instances.
 	 */
-<span class="fc" id="L132">	private static final Map&lt;String, QualifiedName&gt; CHARSET_CONSTANTS = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L131">	private static final Map&lt;String, QualifiedName&gt; CHARSET_CONSTANTS = new ConcurrentHashMap&lt;&gt;();</span>
 
 	/**
 	 * Returns the charset constants map for use in encoding transformations.
@@ -137,7 +136,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @return thread-safe map of charset constants
 	 */
 	protected static Map&lt;String, QualifiedName&gt; getCharsetConstants() {
-<span class="fc" id="L140">		return CHARSET_CONSTANTS;</span>
+<span class="fc" id="L139">		return CHARSET_CONSTANTS;</span>
 	}
 
 	/** Key used for storing encoding information in data holders. */
@@ -156,7 +155,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @deprecated Use {@link #KEY_REPLACE} instead. This field will be removed in a future version.
 	 */
 	@Deprecated(forRemoval = true)
-<span class="fc" id="L159">	protected static final String REPLACE = KEY_REPLACE;</span>
+<span class="fc" id="L158">	protected static final String REPLACE = KEY_REPLACE;</span>
 
 	/**
 	 * Finds all occurrences of the encoding pattern that this handler processes
@@ -194,8 +193,8 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 *         a conflict; never null
 	 */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-<span class="fc" id="L197">		String importedName = cuRewrite.getImportRewrite().addImport(typeName);</span>
-<span class="fc" id="L198">		return ast.newName(importedName);</span>
+<span class="fc" id="L196">		String importedName = cuRewrite.getImportRewrite().addImport(typeName);</span>
+<span class="fc" id="L197">		return ast.newName(importedName);</span>
 	}
 
 	/**
@@ -206,10 +205,10 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @return true if the literal contains a known encoding, false otherwise
 	 */
 	protected static boolean isKnownEncoding(StringLiteral literal) {
-<span class="nc bnc" id="L209" title="All 2 branches missed.">		if (literal == null) {</span>
-<span class="nc" id="L210">			return false;</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">		if (literal == null) {</span>
+<span class="nc" id="L209">			return false;</span>
 		}
-<span class="nc" id="L212">		return ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
+<span class="nc" id="L211">		return ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
 	}
 
 	/**
@@ -220,10 +219,10 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 *         is null or contains an unknown encoding
 	 */
 	protected static String getEncodingConstantName(StringLiteral literal) {
-<span class="nc bnc" id="L223" title="All 2 branches missed.">		if (literal == null) {</span>
-<span class="nc" id="L224">			return null;</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">		if (literal == null) {</span>
+<span class="nc" id="L223">			return null;</span>
 		}
-<span class="nc" id="L226">		return ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
+<span class="nc" id="L225">		return ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
 	}
 
 	/**
@@ -233,20 +232,20 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @return the enclosing MethodDeclaration or TypeDeclaration, or null if not found
 	 */
 	private static ASTNode findEnclosingMethodOrType(ASTNode node) {
-<span class="pc bpc" id="L236" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L237">			return null;</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L236">			return null;</span>
 		}
-<span class="fc" id="L239">		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
-<span class="fc" id="L240">		ASTNode typeDecl = ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);</span>
+<span class="fc" id="L238">		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
+<span class="fc" id="L239">		ASTNode typeDecl = ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);</span>
 		
 		// Return the closest ancestor. In Java, methods are always declared inside types,
 		// so if a MethodDeclaration exists, it is guaranteed to be closer than any TypeDeclaration.
 		// getFirstAncestorOrNull returns the nearest ancestor of each type, so we just need to
 		// prefer the more specific (nested) one.
-<span class="pc bpc" id="L246" title="1 of 2 branches missed.">		if (methodDecl != null) {</span>
-<span class="fc" id="L247">			return methodDecl;</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">		if (methodDecl != null) {</span>
+<span class="fc" id="L246">			return methodDecl;</span>
 		}
-<span class="nc" id="L249">		return typeDecl;</span>
+<span class="nc" id="L248">		return typeDecl;</span>
 	}
 
 	/**
@@ -258,14 +257,14 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @return the uppercase string literal value if found, null otherwise
 	 */
 	private static String extractStringLiteralValue(VariableDeclarationFragment fragment, String variableIdentifier) {
-<span class="fc bfc" id="L261" title="All 2 branches covered.">		if (!fragment.getName().getIdentifier().equals(variableIdentifier)) {</span>
-<span class="fc" id="L262">			return null;</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">		if (!fragment.getName().getIdentifier().equals(variableIdentifier)) {</span>
+<span class="fc" id="L261">			return null;</span>
 		}
-<span class="fc" id="L264">		Expression initializer = fragment.getInitializer();</span>
-<span class="pc bpc" id="L265" title="1 of 2 branches missed.">		if (initializer instanceof StringLiteral) {</span>
-<span class="fc" id="L266">			return ((StringLiteral) initializer).getLiteralValue().toUpperCase(Locale.ROOT);</span>
+<span class="fc" id="L263">		Expression initializer = fragment.getInitializer();</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">		if (initializer instanceof StringLiteral) {</span>
+<span class="fc" id="L265">			return ((StringLiteral) initializer).getLiteralValue().toUpperCase(Locale.ROOT);</span>
 		}
-<span class="nc" id="L268">		return null;</span>
+<span class="nc" id="L267">		return null;</span>
 	}
 
 	/**
@@ -276,14 +275,14 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @return the uppercase string literal value if found, null otherwise
 	 */
 	private static String findValueInFragments(List&lt;?&gt; fragments, String variableIdentifier) {
-<span class="fc bfc" id="L279" title="All 2 branches covered.">		for (Object frag : fragments) {</span>
-<span class="fc" id="L280">			VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;</span>
-<span class="fc" id="L281">			String value = extractStringLiteralValue(fragment, variableIdentifier);</span>
-<span class="fc bfc" id="L282" title="All 2 branches covered.">			if (value != null) {</span>
-<span class="fc" id="L283">				return value;</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">		for (Object frag : fragments) {</span>
+<span class="fc" id="L279">			VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;</span>
+<span class="fc" id="L280">			String value = extractStringLiteralValue(fragment, variableIdentifier);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">			if (value != null) {</span>
+<span class="fc" id="L282">				return value;</span>
 			}
 		}
-<span class="fc" id="L286">		return null;</span>
+<span class="fc" id="L285">		return null;</span>
 	}
 
 	/**
@@ -294,21 +293,21 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @return the uppercase string literal value if found, null otherwise
 	 */
 	private static String findVariableValueInMethod(MethodDeclaration method, String variableIdentifier) {
-<span class="fc" id="L297">		Block body = method.getBody();</span>
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		if (body == null) {</span>
-<span class="nc" id="L299">			return null;</span>
+<span class="fc" id="L296">		Block body = method.getBody();</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">		if (body == null) {</span>
+<span class="nc" id="L298">			return null;</span>
 		}
-<span class="fc" id="L301">		List&lt;?&gt; statements = body.statements();</span>
-<span class="fc bfc" id="L302" title="All 2 branches covered.">		for (Object stmt : statements) {</span>
-<span class="fc bfc" id="L303" title="All 2 branches covered.">			if (stmt instanceof VariableDeclarationStatement) {</span>
-<span class="fc" id="L304">				VariableDeclarationStatement varDeclStmt = (VariableDeclarationStatement) stmt;</span>
-<span class="fc" id="L305">				String value = findValueInFragments(varDeclStmt.fragments(), variableIdentifier);</span>
-<span class="fc bfc" id="L306" title="All 2 branches covered.">				if (value != null) {</span>
-<span class="fc" id="L307">					return value;</span>
+<span class="fc" id="L300">		List&lt;?&gt; statements = body.statements();</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">		for (Object stmt : statements) {</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">			if (stmt instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L303">				VariableDeclarationStatement varDeclStmt = (VariableDeclarationStatement) stmt;</span>
+<span class="fc" id="L304">				String value = findValueInFragments(varDeclStmt.fragments(), variableIdentifier);</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">				if (value != null) {</span>
+<span class="fc" id="L306">					return value;</span>
 				}
 			}
 		}
-<span class="fc" id="L311">		return null;</span>
+<span class="fc" id="L310">		return null;</span>
 	}
 
 	/**
@@ -319,14 +318,14 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @return the uppercase string literal value if found, null otherwise
 	 */
 	private static String findVariableValueInType(TypeDeclaration type, String variableIdentifier) {
-<span class="nc" id="L322">		FieldDeclaration[] fields = type.getFields();</span>
-<span class="nc bnc" id="L323" title="All 2 branches missed.">		for (FieldDeclaration field : fields) {</span>
-<span class="nc" id="L324">			String value = findValueInFragments(field.fragments(), variableIdentifier);</span>
-<span class="nc bnc" id="L325" title="All 2 branches missed.">			if (value != null) {</span>
-<span class="nc" id="L326">				return value;</span>
+<span class="nc" id="L321">		FieldDeclaration[] fields = type.getFields();</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">		for (FieldDeclaration field : fields) {</span>
+<span class="nc" id="L323">			String value = findValueInFragments(field.fragments(), variableIdentifier);</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">			if (value != null) {</span>
+<span class="nc" id="L325">				return value;</span>
 			}
 		}
-<span class="nc" id="L329">		return null;</span>
+<span class="nc" id="L328">		return null;</span>
 	}
 
 	/**
@@ -340,22 +339,22 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 *         or null if the variable is null, context is null, or the value cannot be found
 	 */
 	protected static String findVariableValue(SimpleName variable, ASTNode context) {
-<span class="pc bpc" id="L343" title="2 of 4 branches missed.">		if (variable == null || context == null) {</span>
-<span class="nc" id="L344">			return null;</span>
+<span class="pc bpc" id="L342" title="2 of 4 branches missed.">		if (variable == null || context == null) {</span>
+<span class="nc" id="L343">			return null;</span>
 		}
 
-<span class="fc" id="L347">		ASTNode enclosing = findEnclosingMethodOrType(context);</span>
-<span class="pc bpc" id="L348" title="1 of 2 branches missed.">		if (enclosing == null) {</span>
-<span class="nc" id="L349">			return null;</span>
+<span class="fc" id="L346">		ASTNode enclosing = findEnclosingMethodOrType(context);</span>
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">		if (enclosing == null) {</span>
+<span class="nc" id="L348">			return null;</span>
 		}
 
-<span class="fc" id="L352">		String variableIdentifier = variable.getIdentifier();</span>
-<span class="pc bpc" id="L353" title="1 of 2 branches missed.">		if (enclosing instanceof MethodDeclaration) {</span>
-<span class="fc" id="L354">			return findVariableValueInMethod((MethodDeclaration) enclosing, variableIdentifier);</span>
-<span class="nc bnc" id="L355" title="All 2 branches missed.">		} else if (enclosing instanceof TypeDeclaration) {</span>
-<span class="nc" id="L356">			return findVariableValueInType((TypeDeclaration) enclosing, variableIdentifier);</span>
+<span class="fc" id="L351">		String variableIdentifier = variable.getIdentifier();</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">		if (enclosing instanceof MethodDeclaration) {</span>
+<span class="fc" id="L353">			return findVariableValueInMethod((MethodDeclaration) enclosing, variableIdentifier);</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">		} else if (enclosing instanceof TypeDeclaration) {</span>
+<span class="nc" id="L355">			return findVariableValueInType((TypeDeclaration) enclosing, variableIdentifier);</span>
 		}
-<span class="nc" id="L358">		return null;</span>
+<span class="nc" id="L357">		return null;</span>
 	}
 
 	/**
@@ -374,17 +373,17 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @return the enclosing MethodDeclaration or TryStatement, or null if not found
 	 */
 	private static ASTNode findEnclosingMethodOrTry(ASTNode node) {
-<span class="fc" id="L377">		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);</span>
-<span class="fc" id="L378">		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
+<span class="fc" id="L376">		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);</span>
+<span class="fc" id="L377">		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
 		
 		// Return the closest ancestor. In Java, try statements are always inside method bodies,
 		// so if a TryStatement exists, it is guaranteed to be closer than any MethodDeclaration.
 		// getFirstAncestorOrNull returns the nearest ancestor of each type, so we just need to
 		// prefer the more specific (nested) one.
-<span class="fc bfc" id="L384" title="All 2 branches covered.">		if (tryStmt != null) {</span>
-<span class="fc" id="L385">			return tryStmt;</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">		if (tryStmt != null) {</span>
+<span class="fc" id="L384">			return tryStmt;</span>
 		}
-<span class="fc" id="L387">		return methodDecl;</span>
+<span class="fc" id="L386">		return methodDecl;</span>
 	}
 
 	/**
@@ -394,7 +393,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @return true if the type is UnsupportedEncodingException
 	 */
 	private static boolean isUnsupportedEncodingException(Type type) {
-<span class="fc" id="L397">		return type.toString().equals(UNSUPPORTED_ENCODING_EXCEPTION);</span>
+<span class="fc" id="L396">		return type.toString().equals(UNSUPPORTED_ENCODING_EXCEPTION);</span>
 	}
 
 	/**
@@ -406,15 +405,15 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @param importRewriter the import rewrite to use
 	 */
 	private static void removeExceptionFromMethodThrows(MethodDeclaration method, ASTRewrite rewrite, TextEditGroup group, ImportRewrite importRewriter) {
-<span class="fc" id="L409">		ListRewrite throwsRewrite = rewrite.getListRewrite(method, MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);</span>
-<span class="fc" id="L410">		List&lt;Type&gt; thrownExceptions = method.thrownExceptionTypes();</span>
-<span class="fc bfc" id="L411" title="All 2 branches covered.">		for (Type exceptionType : thrownExceptions) {</span>
-<span class="fc bfc" id="L412" title="All 2 branches covered.">			if (isUnsupportedEncodingException(exceptionType)) {</span>
-<span class="fc" id="L413">				throwsRewrite.remove(exceptionType, group);</span>
-<span class="fc" id="L414">				importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);</span>
+<span class="fc" id="L408">		ListRewrite throwsRewrite = rewrite.getListRewrite(method, MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);</span>
+<span class="fc" id="L409">		List&lt;Type&gt; thrownExceptions = method.thrownExceptionTypes();</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">		for (Type exceptionType : thrownExceptions) {</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">			if (isUnsupportedEncodingException(exceptionType)) {</span>
+<span class="fc" id="L412">				throwsRewrite.remove(exceptionType, group);</span>
+<span class="fc" id="L413">				importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);</span>
 			}
 		}
-<span class="fc" id="L417">	}</span>
+<span class="fc" id="L416">	}</span>
 
 	/**
 	 * Handles UnsupportedEncodingException removal from a union type in a catch clause.
@@ -425,31 +424,31 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @param group the text edit group
 	 */
 	private static void removeExceptionFromUnionType(UnionType unionType, CatchClause catchClause, ASTRewrite rewrite, TextEditGroup group) {
-<span class="fc" id="L428">		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);</span>
-<span class="fc" id="L429">		List&lt;Type&gt; types = unionType.types();</span>
+<span class="fc" id="L427">		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);</span>
+<span class="fc" id="L428">		List&lt;Type&gt; types = unionType.types();</span>
 
 		// Collect types to remove first to avoid modification during iteration
-<span class="fc" id="L432">		List&lt;Type&gt; typesToRemove = types.stream()</span>
-<span class="fc" id="L433">				.filter(AbstractExplicitEncoding::isUnsupportedEncodingException)</span>
-<span class="fc" id="L434">				.toList();</span>
+<span class="fc" id="L431">		List&lt;Type&gt; typesToRemove = types.stream()</span>
+<span class="fc" id="L432">				.filter(AbstractExplicitEncoding::isUnsupportedEncodingException)</span>
+<span class="fc" id="L433">				.toList();</span>
 
-<span class="fc" id="L436">		typesToRemove.forEach(type -&gt; unionRewrite.remove(type, group));</span>
+<span class="fc" id="L435">		typesToRemove.forEach(type -&gt; unionRewrite.remove(type, group));</span>
 
 		// Calculate remaining count after scheduled removals
-<span class="fc" id="L439">		int remainingCount = types.size() - typesToRemove.size();</span>
-<span class="pc bpc" id="L440" title="1 of 2 branches missed.">		if (remainingCount == 1) {</span>
+<span class="fc" id="L438">		int remainingCount = types.size() - typesToRemove.size();</span>
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">		if (remainingCount == 1) {</span>
 			// Find the remaining type (not in removal list)
-<span class="fc" id="L442">			Type remainingType = types.stream()</span>
-<span class="pc bpc" id="L443" title="1 of 2 branches missed.">					.filter(type -&gt; !typesToRemove.contains(type))</span>
-<span class="fc" id="L444">					.findFirst()</span>
-<span class="fc" id="L445">					.orElse(null);</span>
-<span class="pc bpc" id="L446" title="1 of 2 branches missed.">			if (remainingType != null) {</span>
-<span class="fc" id="L447">				rewrite.replace(unionType, remainingType, group);</span>
+<span class="fc" id="L441">			Type remainingType = types.stream()</span>
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">					.filter(type -&gt; !typesToRemove.contains(type))</span>
+<span class="fc" id="L443">					.findFirst()</span>
+<span class="fc" id="L444">					.orElse(null);</span>
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">			if (remainingType != null) {</span>
+<span class="fc" id="L446">				rewrite.replace(unionType, remainingType, group);</span>
 			}
-<span class="pc bnc" id="L449" title="All 2 branches missed.">		} else if (remainingCount == 0) {</span>
-<span class="nc" id="L450">			rewrite.remove(catchClause, group);</span>
+<span class="pc bnc" id="L448" title="All 2 branches missed.">		} else if (remainingCount == 0) {</span>
+<span class="nc" id="L449">			rewrite.remove(catchClause, group);</span>
 		}
-<span class="fc" id="L452">	}</span>
+<span class="fc" id="L451">	}</span>
 
 	/**
 	 * Removes UnsupportedEncodingException from catch clauses in a try statement.
@@ -460,19 +459,19 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @param importRewriter the import rewrite to use
 	 */
 	private static void removeExceptionFromTryCatch(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group, ImportRewrite importRewriter) {
-<span class="fc" id="L463">		List&lt;CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
-<span class="fc bfc" id="L464" title="All 2 branches covered.">		for (CatchClause catchClause : catchClauses) {</span>
-<span class="fc" id="L465">			SingleVariableDeclaration exception = catchClause.getException();</span>
-<span class="fc" id="L466">			Type exceptionType = exception.getType();</span>
+<span class="fc" id="L462">		List&lt;CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
+<span class="fc bfc" id="L463" title="All 2 branches covered.">		for (CatchClause catchClause : catchClauses) {</span>
+<span class="fc" id="L464">			SingleVariableDeclaration exception = catchClause.getException();</span>
+<span class="fc" id="L465">			Type exceptionType = exception.getType();</span>
 
-<span class="fc bfc" id="L468" title="All 2 branches covered.">			if (exceptionType instanceof UnionType) {</span>
-<span class="fc" id="L469">				removeExceptionFromUnionType((UnionType) exceptionType, catchClause, rewrite, group);</span>
-<span class="fc bfc" id="L470" title="All 2 branches covered.">			} else if (isUnsupportedEncodingException(exceptionType)) {</span>
-<span class="fc" id="L471">				rewrite.remove(catchClause, group);</span>
-<span class="fc" id="L472">				importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">			if (exceptionType instanceof UnionType) {</span>
+<span class="fc" id="L468">				removeExceptionFromUnionType((UnionType) exceptionType, catchClause, rewrite, group);</span>
+<span class="fc bfc" id="L469" title="All 2 branches covered.">			} else if (isUnsupportedEncodingException(exceptionType)) {</span>
+<span class="fc" id="L470">				rewrite.remove(catchClause, group);</span>
+<span class="fc" id="L471">				importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);</span>
 			}
 		}
-<span class="fc" id="L475">	}</span>
+<span class="fc" id="L474">	}</span>
 
 	/**
 	 * Simplifies a try statement that has become empty after removing catch clauses.
@@ -482,20 +481,20 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @param group the text edit group
 	 */
 	private static void simplifyEmptyTryStatement(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group) {
-<span class="pc bpc" id="L485" title="1 of 4 branches missed.">		if (!tryStatement.catchClauses().isEmpty() || tryStatement.getFinally() != null) {</span>
-<span class="fc" id="L486">			return;</span>
+<span class="pc bpc" id="L484" title="1 of 4 branches missed.">		if (!tryStatement.catchClauses().isEmpty() || tryStatement.getFinally() != null) {</span>
+<span class="fc" id="L485">			return;</span>
 		}
 
-<span class="fc" id="L489">		Block tryBlock = tryStatement.getBody();</span>
-<span class="pc bpc" id="L490" title="1 of 2 branches missed.">		boolean hasResources = !tryStatement.resources().isEmpty();</span>
-<span class="pc bpc" id="L491" title="1 of 2 branches missed.">		boolean hasStatements = !tryBlock.statements().isEmpty();</span>
+<span class="fc" id="L488">		Block tryBlock = tryStatement.getBody();</span>
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">		boolean hasResources = !tryStatement.resources().isEmpty();</span>
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">		boolean hasStatements = !tryBlock.statements().isEmpty();</span>
 
-<span class="pc bpc" id="L493" title="3 of 4 branches missed.">		if (!hasResources &amp;&amp; !hasStatements) {</span>
-<span class="nc" id="L494">			rewrite.remove(tryStatement, group);</span>
-<span class="pc bpc" id="L495" title="1 of 2 branches missed.">		} else if (!hasResources) {</span>
-<span class="nc" id="L496">			rewrite.replace(tryStatement, tryBlock, group);</span>
+<span class="pc bpc" id="L492" title="3 of 4 branches missed.">		if (!hasResources &amp;&amp; !hasStatements) {</span>
+<span class="nc" id="L493">			rewrite.remove(tryStatement, group);</span>
+<span class="pc bpc" id="L494" title="1 of 2 branches missed.">		} else if (!hasResources) {</span>
+<span class="nc" id="L495">			rewrite.replace(tryStatement, tryBlock, group);</span>
 		}
-<span class="fc" id="L498">	}</span>
+<span class="fc" id="L497">	}</span>
 
 	/**
 	 * Removes UnsupportedEncodingException from the enclosing method's throws clause
@@ -513,19 +512,19 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	 * @param importRewriter the import rewrite for removing unused imports, must not be null
 	 */
 	protected void removeUnsupportedEncodingException(final ASTNode visited, TextEditGroup group, ASTRewrite rewrite, ImportRewrite importRewriter) {
-<span class="fc" id="L516">		ASTNode parent = findEnclosingMethodOrTry(visited);</span>
-<span class="pc bpc" id="L517" title="1 of 2 branches missed.">		if (parent == null) {</span>
-<span class="nc" id="L518">			return;</span>
+<span class="fc" id="L515">		ASTNode parent = findEnclosingMethodOrTry(visited);</span>
+<span class="pc bpc" id="L516" title="1 of 2 branches missed.">		if (parent == null) {</span>
+<span class="nc" id="L517">			return;</span>
 		}
 
-<span class="fc bfc" id="L521" title="All 2 branches covered.">		if (parent instanceof MethodDeclaration) {</span>
-<span class="fc" id="L522">			removeExceptionFromMethodThrows((MethodDeclaration) parent, rewrite, group, importRewriter);</span>
-<span class="pc bpc" id="L523" title="1 of 2 branches missed.">		} else if (parent instanceof TryStatement) {</span>
-<span class="fc" id="L524">			TryStatement tryStatement = (TryStatement) parent;</span>
-<span class="fc" id="L525">			removeExceptionFromTryCatch(tryStatement, rewrite, group, importRewriter);</span>
-<span class="fc" id="L526">			simplifyEmptyTryStatement(tryStatement, rewrite, group);</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">		if (parent instanceof MethodDeclaration) {</span>
+<span class="fc" id="L521">			removeExceptionFromMethodThrows((MethodDeclaration) parent, rewrite, group, importRewriter);</span>
+<span class="pc bpc" id="L522" title="1 of 2 branches missed.">		} else if (parent instanceof TryStatement) {</span>
+<span class="fc" id="L523">			TryStatement tryStatement = (TryStatement) parent;</span>
+<span class="fc" id="L524">			removeExceptionFromTryCatch(tryStatement, rewrite, group, importRewriter);</span>
+<span class="fc" id="L525">			simplifyEmptyTryStatement(tryStatement, rewrite, group);</span>
 		}
-<span class="fc" id="L528">	}</span>
+<span class="fc" id="L527">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

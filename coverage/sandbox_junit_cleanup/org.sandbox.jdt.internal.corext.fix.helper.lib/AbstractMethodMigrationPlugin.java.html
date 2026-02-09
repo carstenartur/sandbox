@@ -92,7 +92,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L95">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L95">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
 <span class="fc" id="L96">		HelperVisitor.forMethodCalls(getSourceClass(), getMethodNames())</span>
 <span class="fc" id="L97">			.andStaticImports()</span>
 <span class="fc" id="L98">			.andImportsOf(getSourceClass())</span>

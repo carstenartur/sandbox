@@ -42,156 +42,263 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
     }
     
     public ExtractedLoop extract(EnhancedForStatement forStatement) {
-<span class="fc" id="L45">        Expression iterable = forStatement.getExpression();</span>
-<span class="fc" id="L46">        SingleVariableDeclaration parameter = forStatement.getParameter();</span>
-<span class="fc" id="L47">        Statement body = forStatement.getBody();</span>
+<span class="fc" id="L45">        return extract(forStatement, null);</span>
+    }
+    
+    public ExtractedLoop extract(EnhancedForStatement forStatement, CompilationUnit compilationUnit) {
+<span class="fc" id="L49">        Expression iterable = forStatement.getExpression();</span>
+<span class="fc" id="L50">        SingleVariableDeclaration parameter = forStatement.getParameter();</span>
+<span class="fc" id="L51">        Statement body = forStatement.getBody();</span>
         
         // Determine source type
-<span class="fc" id="L50">        SourceType sourceType = determineSourceType(iterable);</span>
-<span class="fc" id="L51">        String sourceExpression = iterable.toString();</span>
-<span class="fc" id="L52">        String elementType = parameter.getType().toString();</span>
+<span class="fc" id="L54">        SourceType sourceType = determineSourceType(iterable);</span>
+<span class="fc" id="L55">        String sourceExpression = iterable.toString();</span>
+<span class="fc" id="L56">        String elementType = parameter.getType().toString();</span>
         
         // Element info
-<span class="fc" id="L55">        String varName = parameter.getName().getIdentifier();</span>
-<span class="fc" id="L56">        boolean isFinal = Modifier.isFinal(parameter.getModifiers());</span>
+<span class="fc" id="L59">        String varName = parameter.getName().getIdentifier();</span>
+<span class="fc" id="L60">        boolean isFinal = Modifier.isFinal(parameter.getModifiers());</span>
         
         // Analyze metadata
-<span class="fc" id="L59">        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer();</span>
-<span class="fc" id="L60">        body.accept(analyzer);</span>
+<span class="fc" id="L63">        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer();</span>
+<span class="fc" id="L64">        body.accept(analyzer);</span>
         
         // Build model
-<span class="fc" id="L63">        LoopModelBuilder builder = new LoopModelBuilder()</span>
-<span class="fc" id="L64">            .source(sourceType, sourceExpression, elementType)</span>
-<span class="fc" id="L65">            .element(varName, elementType, isFinal)</span>
-<span class="fc" id="L66">            .metadata(analyzer.hasBreak(), analyzer.hasContinue(), </span>
-<span class="fc" id="L67">                      analyzer.hasReturn(), analyzer.modifiesCollection(), true);</span>
+<span class="fc" id="L67">        LoopModelBuilder builder = new LoopModelBuilder()</span>
+<span class="fc" id="L68">            .source(sourceType, sourceExpression, elementType)</span>
+<span class="fc" id="L69">            .element(varName, elementType, isFinal)</span>
+<span class="fc" id="L70">            .metadata(analyzer.hasBreak(), analyzer.hasContinue(), </span>
+<span class="fc" id="L71">                      analyzer.hasReturn(), analyzer.modifiesCollection(), true);</span>
         
         // Analyze body and add operations/terminal
-<span class="fc" id="L70">        analyzeAndAddOperations(body, builder, varName);</span>
+<span class="fc" id="L74">        analyzeAndAddOperations(body, builder, varName, compilationUnit);</span>
         
-<span class="fc" id="L72">        LoopModel model = builder.build();</span>
-<span class="fc" id="L73">        return new ExtractedLoop(model, body);</span>
+<span class="fc" id="L76">        LoopModel model = builder.build();</span>
+<span class="fc" id="L77">        return new ExtractedLoop(model, body);</span>
     }
     
     private SourceType determineSourceType(Expression iterable) {
-<span class="fc" id="L77">        ITypeBinding binding = iterable.resolveTypeBinding();</span>
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (binding != null) {</span>
-<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (binding.isArray()) {</span>
-<span class="fc" id="L80">                return SourceType.ARRAY;</span>
+<span class="fc" id="L81">        ITypeBinding binding = iterable.resolveTypeBinding();</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (binding != null) {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (binding.isArray()) {</span>
+<span class="fc" id="L84">                return SourceType.ARRAY;</span>
             }
             // Check for Collection
-<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (isCollection(binding)) {</span>
-<span class="fc" id="L84">                return SourceType.COLLECTION;</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">            if (isCollection(binding)) {</span>
+<span class="fc" id="L88">                return SourceType.COLLECTION;</span>
             }
         }
-<span class="nc" id="L87">        return SourceType.ITERABLE;</span>
+<span class="nc" id="L91">        return SourceType.ITERABLE;</span>
     }
     
     private boolean isCollection(ITypeBinding binding) {
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (binding == null) {</span>
-<span class="nc" id="L92">            return false;</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (binding == null) {</span>
+<span class="nc" id="L96">            return false;</span>
         }
         
-<span class="fc" id="L95">        ITypeBinding erasure = binding.getErasure();</span>
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (erasure == null) {</span>
-<span class="nc" id="L97">            return false;</span>
+<span class="fc" id="L99">        ITypeBinding erasure = binding.getErasure();</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (erasure == null) {</span>
+<span class="nc" id="L101">            return false;</span>
         }
         
-<span class="fc" id="L100">        String qualifiedName = erasure.getQualifiedName();</span>
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (&quot;java.util.Collection&quot;.equals(qualifiedName)</span>
-<span class="pc bpc" id="L102" title="1 of 2 branches missed.">                || &quot;java.util.List&quot;.equals(qualifiedName)</span>
-<span class="nc bnc" id="L103" title="All 2 branches missed.">                || &quot;java.util.Set&quot;.equals(qualifiedName)</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">                || &quot;java.util.Queue&quot;.equals(qualifiedName)</span>
-<span class="nc bnc" id="L105" title="All 2 branches missed.">                || &quot;java.util.Deque&quot;.equals(qualifiedName)) {</span>
-<span class="fc" id="L106">            return true;</span>
+<span class="fc" id="L104">        String qualifiedName = erasure.getQualifiedName();</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (&quot;java.util.Collection&quot;.equals(qualifiedName)</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">                || &quot;java.util.List&quot;.equals(qualifiedName)</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">                || &quot;java.util.Set&quot;.equals(qualifiedName)</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">                || &quot;java.util.Queue&quot;.equals(qualifiedName)</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">                || &quot;java.util.Deque&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L110">            return true;</span>
         }
         
         // Check interfaces
-<span class="nc bnc" id="L110" title="All 2 branches missed.">        for (ITypeBinding iface : erasure.getInterfaces()) {</span>
-<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (isCollection(iface)) {</span>
-<span class="nc" id="L112">                return true;</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        for (ITypeBinding iface : erasure.getInterfaces()) {</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            if (isCollection(iface)) {</span>
+<span class="nc" id="L116">                return true;</span>
             }
         }
         
         // Check superclass
-<span class="nc" id="L117">        ITypeBinding superclass = erasure.getSuperclass();</span>
-<span class="nc bnc" id="L118" title="All 4 branches missed.">        if (superclass != null &amp;&amp; isCollection(superclass)) {</span>
-<span class="nc" id="L119">            return true;</span>
+<span class="nc" id="L121">        ITypeBinding superclass = erasure.getSuperclass();</span>
+<span class="nc bnc" id="L122" title="All 4 branches missed.">        if (superclass != null &amp;&amp; isCollection(superclass)) {</span>
+<span class="nc" id="L123">            return true;</span>
         }
         
-<span class="nc" id="L122">        return false;</span>
+<span class="nc" id="L126">        return false;</span>
     }
     
-    private void analyzeAndAddOperations(Statement body, LoopModelBuilder builder, String varName) {
+    private void analyzeAndAddOperations(Statement body, LoopModelBuilder builder, String varName, CompilationUnit compilationUnit) {
         // For now, treat the entire body as a forEach terminal
         // More sophisticated analysis will be added later
         
-<span class="fc" id="L129">        java.util.List&lt;String&gt; bodyStatements = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L133">        java.util.List&lt;String&gt; bodyStatements = new java.util.ArrayList&lt;&gt;();</span>
         
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (body instanceof Block) {</span>
-<span class="fc" id="L132">            Block block = (Block) body;</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">            for (Object stmt : block.statements()) {</span>
-<span class="fc" id="L134">                String stmtStr = stmt.toString();</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (body instanceof Block) {</span>
+<span class="fc" id="L136">            Block block = (Block) body;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            for (Object stmt : block.statements()) {</span>
+<span class="fc" id="L138">                String stmtStr = stmt.toString();</span>
                 // Strip trailing semicolon for expression statements
                 // This allows the renderer to use them as lambda expressions
-<span class="pc bpc" id="L137" title="1 of 2 branches missed.">                if (stmtStr.endsWith(&quot;;&quot;)) {</span>
-<span class="nc" id="L138">                    stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">                if (stmtStr.endsWith(&quot;;&quot;)) {</span>
+<span class="nc" id="L142">                    stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();</span>
                 }
-<span class="fc" id="L140">                bodyStatements.add(stmtStr);</span>
+<span class="fc" id="L144">                bodyStatements.add(stmtStr);</span>
             }
-<span class="fc" id="L142">        } else {</span>
-<span class="nc" id="L143">            String stmtStr = body.toString();</span>
+<span class="fc" id="L146">        } else {</span>
+<span class="nc" id="L147">            String stmtStr = body.toString();</span>
             // Strip trailing semicolon for expression statements
-<span class="nc bnc" id="L145" title="All 2 branches missed.">            if (stmtStr.endsWith(&quot;;&quot;)) {</span>
-<span class="nc" id="L146">                stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">            if (stmtStr.endsWith(&quot;;&quot;)) {</span>
+<span class="nc" id="L150">                stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();</span>
             }
-<span class="nc" id="L148">            bodyStatements.add(stmtStr);</span>
+<span class="nc" id="L152">            bodyStatements.add(stmtStr);</span>
         }
         
-<span class="fc" id="L151">        builder.forEach(bodyStatements, false); // unordered for simple enhanced for</span>
-<span class="fc" id="L152">    }</span>
+<span class="fc" id="L155">        builder.forEach(bodyStatements, false); // unordered for simple enhanced for</span>
+        
+        // Note: Comment extraction is implemented but not yet wired up to specific operations
+        // This would require more sophisticated loop body analysis to detect filter/map patterns
+        // For now, extractComments() is available for future use when operation detection is added
+<span class="fc" id="L160">    }</span>
+    
+    /**
+     * Extracts comments associated with an AST node.
+     * 
+     * @param node the AST node to extract comments from
+     * @param cu the compilation unit (can be null)
+     * @return list of comment strings, never null
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private java.util.List&lt;String&gt; extractComments(ASTNode node, CompilationUnit cu) {
+<span class="nc" id="L171">        java.util.List&lt;String&gt; comments = new java.util.ArrayList&lt;&gt;();</span>
+        
+<span class="nc bnc" id="L173" title="All 4 branches missed.">        if (cu == null || node == null) {</span>
+<span class="nc" id="L174">            return comments;</span>
+        }
+        
+<span class="nc" id="L177">        java.util.List&lt;Comment&gt; commentList = cu.getCommentList();</span>
+<span class="nc bnc" id="L178" title="All 4 branches missed.">        if (commentList == null || commentList.isEmpty()) {</span>
+<span class="nc" id="L179">            return comments;</span>
+        }
+        
+<span class="nc" id="L182">        int nodeStart = node.getStartPosition();</span>
+<span class="nc" id="L183">        int nodeEnd = nodeStart + node.getLength();</span>
+<span class="nc" id="L184">        int nodeStartLine = cu.getLineNumber(nodeStart);</span>
+        
+<span class="nc bnc" id="L186" title="All 2 branches missed.">        for (Comment comment : commentList) {</span>
+<span class="nc" id="L187">            int commentStart = comment.getStartPosition();</span>
+<span class="nc" id="L188">            int commentEnd = commentStart + comment.getLength();</span>
+<span class="nc" id="L189">            int commentEndLine = cu.getLineNumber(commentEnd);</span>
+            
+            // Associate comments that are:
+            // 1. On the line immediately before the node, OR
+            // 2. On the same line as the node (trailing comment), OR
+            // 3. Within the node's span (embedded comment)
+<span class="nc bnc" id="L195" title="All 4 branches missed.">            boolean isLeadingComment = commentEndLine == nodeStartLine - 1 || </span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">                                       (commentEndLine == nodeStartLine &amp;&amp; commentEnd &lt;= nodeStart);</span>
+<span class="nc bnc" id="L197" title="All 4 branches missed.">            boolean isEmbeddedComment = commentStart &gt;= nodeStart &amp;&amp; commentEnd &lt;= nodeEnd;</span>
+            
+<span class="nc bnc" id="L199" title="All 4 branches missed.">            if (isLeadingComment || isEmbeddedComment) {</span>
+<span class="nc" id="L200">                String commentText = extractCommentText(comment, cu);</span>
+<span class="nc bnc" id="L201" title="All 4 branches missed.">                if (commentText != null &amp;&amp; !commentText.isEmpty()) {</span>
+<span class="nc" id="L202">                    comments.add(commentText);</span>
+                }
+            }
+        }
+        
+<span class="nc" id="L207">        return comments;</span>
+    }
+    
+    /**
+     * Extracts the text content from a Comment node.
+     * 
+     * @param comment the comment node
+     * @param cu the compilation unit
+     * @return the comment text without delimiters, or null if not available
+     */
+    private String extractCommentText(Comment comment, CompilationUnit cu) {
+        try {
+            // Get the original source from the compilation unit's type root
+<span class="nc" id="L220">            org.eclipse.jdt.core.ICompilationUnit javaElement = </span>
+<span class="nc" id="L221">                (org.eclipse.jdt.core.ICompilationUnit) cu.getJavaElement();</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">            if (javaElement == null) {</span>
+<span class="nc" id="L223">                return null;</span>
+            }
+            
+<span class="nc" id="L226">            String source = javaElement.getSource();</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">            if (source == null) {</span>
+<span class="nc" id="L228">                return null;</span>
+            }
+            
+<span class="nc" id="L231">            int start = comment.getStartPosition();</span>
+<span class="nc" id="L232">            int length = comment.getLength();</span>
+            
+<span class="nc bnc" id="L234" title="All 4 branches missed.">            if (start &lt; 0 || start + length &gt; source.length()) {</span>
+<span class="nc" id="L235">                return null;</span>
+            }
+            
+<span class="nc" id="L238">            String commentStr = source.substring(start, start + length);</span>
+            
+            // Remove comment delimiters
+<span class="nc bnc" id="L241" title="All 2 branches missed.">            if (comment.isLineComment()) {</span>
+                // Remove leading //
+<span class="nc" id="L243">                commentStr = commentStr.replaceFirst(&quot;^//\\s*&quot;, &quot;&quot;);</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">            } else if (comment.isBlockComment()) {</span>
+                // Remove /* and */
+<span class="nc" id="L246">                commentStr = commentStr.replaceFirst(&quot;^/\\*\\s*&quot;, &quot;&quot;);</span>
+<span class="nc" id="L247">                commentStr = commentStr.replaceFirst(&quot;\\s*\\*/$&quot;, &quot;&quot;);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">            } else if (comment instanceof Javadoc) {</span>
+                // Remove /** and */
+<span class="nc" id="L250">                commentStr = commentStr.replaceFirst(&quot;^/\\*\\*\\s*&quot;, &quot;&quot;);</span>
+<span class="nc" id="L251">                commentStr = commentStr.replaceFirst(&quot;\\s*\\*/$&quot;, &quot;&quot;);</span>
+            }
+            
+<span class="nc" id="L254">            return commentStr.trim();</span>
+<span class="nc" id="L255">        } catch (Exception e) {</span>
+            // If extraction fails, return null
+<span class="nc" id="L257">            return null;</span>
+        }
+    }
     
     /**
      * Visitor to analyze loop body for control flow.
      */
-<span class="fc" id="L157">    private static class LoopBodyAnalyzer extends ASTVisitor {</span>
-<span class="fc" id="L158">        private boolean hasBreak = false;</span>
-<span class="fc" id="L159">        private boolean hasContinue = false;</span>
-<span class="fc" id="L160">        private boolean hasReturn = false;</span>
-<span class="fc" id="L161">        private boolean modifiesCollection = false;</span>
+<span class="fc" id="L264">    private static class LoopBodyAnalyzer extends ASTVisitor {</span>
+<span class="fc" id="L265">        private boolean hasBreak = false;</span>
+<span class="fc" id="L266">        private boolean hasContinue = false;</span>
+<span class="fc" id="L267">        private boolean hasReturn = false;</span>
+<span class="fc" id="L268">        private boolean modifiesCollection = false;</span>
         
         @Override
         public boolean visit(BreakStatement node) {
-<span class="fc" id="L165">            hasBreak = true;</span>
-<span class="fc" id="L166">            return false;</span>
+<span class="fc" id="L272">            hasBreak = true;</span>
+<span class="fc" id="L273">            return false;</span>
         }
         
         @Override
         public boolean visit(ContinueStatement node) {
-<span class="fc" id="L171">            hasContinue = true;</span>
-<span class="fc" id="L172">            return false;</span>
+<span class="fc" id="L278">            hasContinue = true;</span>
+<span class="fc" id="L279">            return false;</span>
         }
         
         @Override
         public boolean visit(ReturnStatement node) {
-<span class="fc" id="L177">            hasReturn = true;</span>
-<span class="fc" id="L178">            return false;</span>
+<span class="fc" id="L284">            hasReturn = true;</span>
+<span class="fc" id="L285">            return false;</span>
         }
         
         @Override
         public boolean visit(MethodInvocation node) {
-<span class="fc" id="L183">            String name = node.getName().getIdentifier();</span>
-<span class="pc bpc" id="L184" title="2 of 4 branches missed.">            if (&quot;add&quot;.equals(name) || &quot;remove&quot;.equals(name) || </span>
-<span class="pc bpc" id="L185" title="2 of 4 branches missed.">                &quot;clear&quot;.equals(name) || &quot;set&quot;.equals(name)) {</span>
-<span class="nc" id="L186">                modifiesCollection = true;</span>
+<span class="fc" id="L290">            String name = node.getName().getIdentifier();</span>
+<span class="pc bpc" id="L291" title="2 of 4 branches missed.">            if (&quot;add&quot;.equals(name) || &quot;remove&quot;.equals(name) || </span>
+<span class="pc bpc" id="L292" title="2 of 4 branches missed.">                &quot;clear&quot;.equals(name) || &quot;set&quot;.equals(name)) {</span>
+<span class="nc" id="L293">                modifiesCollection = true;</span>
             }
-<span class="fc" id="L188">            return true;</span>
+<span class="fc" id="L295">            return true;</span>
         }
         
-<span class="fc" id="L191">        public boolean hasBreak() { return hasBreak; }</span>
-<span class="fc" id="L192">        public boolean hasContinue() { return hasContinue; }</span>
-<span class="fc" id="L193">        public boolean hasReturn() { return hasReturn; }</span>
-<span class="fc" id="L194">        public boolean modifiesCollection() { return modifiesCollection; }</span>
+<span class="fc" id="L298">        public boolean hasBreak() { return hasBreak; }</span>
+<span class="fc" id="L299">        public boolean hasContinue() { return hasContinue; }</span>
+<span class="fc" id="L300">        public boolean hasReturn() { return hasReturn; }</span>
+<span class="fc" id="L301">        public boolean modifiesCollection() { return modifiesCollection; }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

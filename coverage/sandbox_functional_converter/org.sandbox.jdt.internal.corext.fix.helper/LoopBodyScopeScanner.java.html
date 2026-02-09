@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoopBodyScopeScanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">LoopBodyScopeScanner.java</span></div><h1>LoopBodyScopeScanner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.DoStatement;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.WhileStatement;
+import org.sandbox.functional.core.tree.ScopeInfo;
+
+/**
+ * Lightweight scanner that analyzes a loop body to populate {@link ScopeInfo}.
+ * 
+ * &lt;p&gt;This scanner identifies:
+ * &lt;ul&gt;
+ * &lt;li&gt;Variables accessed from the outer scope&lt;/li&gt;
+ * &lt;li&gt;Variables modified within the loop (not effectively final)&lt;/li&gt;
+ * &lt;li&gt;Local variables declared in the loop&lt;/li&gt;
+ * &lt;/ul&gt;
+ * &lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Usage:&lt;/b&gt;&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * LoopBodyScopeScanner scanner = new LoopBodyScopeScanner(loopStatement);
+ * scanner.scan();
+ * ScopeInfo scopeInfo = scanner.populateScopeInfo(parentScopeInfo);
+ * }&lt;/pre&gt;
+ * 
+ * @since 1.0.0
+ */
+public class LoopBodyScopeScanner {
+	private final EnhancedForStatement loop;
+	private final String loopParameterName;
+<span class="fc" id="L58">	private final Set&lt;String&gt; localVariables = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L59">	private final Set&lt;String&gt; modifiedVariables = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L60">	private final Set&lt;String&gt; referencedVariables = new HashSet&lt;&gt;();</span>
+	
+	/**
+	 * Creates a new scope scanner for the given loop.
+	 * 
+	 * @param loop the enhanced for statement to scan
+	 */
+<span class="fc" id="L67">	public LoopBodyScopeScanner(EnhancedForStatement loop) {</span>
+<span class="fc" id="L68">		this.loop = loop;</span>
+<span class="fc" id="L69">		this.loopParameterName = loop.getParameter().getName().getIdentifier();</span>
+<span class="fc" id="L70">	}</span>
+	
+	/**
+	 * Scans the loop body to collect variable information.
+	 */
+	public void scan() {
+<span class="fc" id="L76">		Statement body = loop.getBody();</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		if (body == null) {</span>
+<span class="nc" id="L78">			return;</span>
+		}
+		
+		// First pass: collect variable declarations
+<span class="fc" id="L82">		body.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(VariableDeclarationFragment node) {
+<span class="fc" id="L85">				String varName = node.getName().getIdentifier();</span>
+<span class="fc" id="L86">				localVariables.add(varName);</span>
+<span class="fc" id="L87">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(SingleVariableDeclaration node) {
+<span class="fc" id="L92">				String varName = node.getName().getIdentifier();</span>
+<span class="fc" id="L93">				localVariables.add(varName);</span>
+<span class="fc" id="L94">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(EnhancedForStatement node) {
+				// Don't descend into nested loops - they'll be analyzed separately
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">				return node == loop;</span>
+			}
+			
+			@Override
+			public boolean visit(ForStatement node) {
+				// Don't descend into nested loops
+<span class="fc" id="L106">				return false;</span>
+			}
+			
+			@Override
+			public boolean visit(WhileStatement node) {
+				// Don't descend into nested loops
+<span class="fc" id="L112">				return false;</span>
+			}
+			
+			@Override
+			public boolean visit(DoStatement node) {
+				// Don't descend into nested loops
+<span class="fc" id="L118">				return false;</span>
+			}
+		});
+		
+		// Second pass: collect variable references and modifications
+<span class="fc" id="L123">		body.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName node) {
+<span class="fc" id="L126">				String varName = node.getIdentifier();</span>
+				
+				// Skip if this is a declaration
+<span class="fc bfc" id="L129" title="All 2 branches covered.">				if (node.isDeclaration()) {</span>
+<span class="fc" id="L130">					return true;</span>
+				}
+				
+				// Skip the loop parameter itself
+<span class="fc bfc" id="L134" title="All 2 branches covered.">				if (varName.equals(loopParameterName)) {</span>
+<span class="fc" id="L135">					return true;</span>
+				}
+				
+				// Skip local variables declared in this loop
+<span class="fc bfc" id="L139" title="All 2 branches covered.">				if (localVariables.contains(varName)) {</span>
+<span class="fc" id="L140">					return true;</span>
+				}
+				
+				// Try to resolve binding to filter out fields
+<span class="fc" id="L144">				IBinding binding = node.resolveBinding();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">				if (binding instanceof IVariableBinding) {</span>
+<span class="fc" id="L146">					IVariableBinding varBinding = (IVariableBinding) binding;</span>
+					
+					// Skip fields - they're not in local scope
+<span class="fc bfc" id="L149" title="All 2 branches covered.">					if (varBinding.isField()) {</span>
+<span class="fc" id="L150">						return true;</span>
+					}
+				}
+				
+				// This is a reference to a variable from outer scope
+<span class="fc" id="L155">				referencedVariables.add(varName);</span>
+				
+				// Check if this variable is being modified
+<span class="fc bfc" id="L158" title="All 2 branches covered.">				if (isModification(node)) {</span>
+<span class="fc" id="L159">					modifiedVariables.add(varName);</span>
+				}
+				
+<span class="fc" id="L162">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(EnhancedForStatement node) {
+				// Don't descend into nested loops - they'll be analyzed separately
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">				return node == loop;</span>
+			}
+			
+			@Override
+			public boolean visit(ForStatement node) {
+				// Don't descend into nested loops
+<span class="fc" id="L174">				return false;</span>
+			}
+			
+			@Override
+			public boolean visit(WhileStatement node) {
+				// Don't descend into nested loops
+<span class="fc" id="L180">				return false;</span>
+			}
+			
+			@Override
+			public boolean visit(DoStatement node) {
+				// Don't descend into nested loops
+<span class="fc" id="L186">				return false;</span>
+			}
+		});
+<span class="fc" id="L189">	}</span>
+	
+	/**
+	 * Checks if a SimpleName node represents a modification of the variable.
+	 * 
+	 * &lt;p&gt;This method checks for direct modifications to the variable itself:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;{@code x = 5} - MODIFICATION (x is directly the LHS)&lt;/li&gt;
+	 * &lt;li&gt;{@code x++} or {@code ++x} - MODIFICATION&lt;/li&gt;
+	 * &lt;li&gt;{@code arr[i] = 5} - NOT a modification of arr (only the element is modified)&lt;/li&gt;
+	 * &lt;li&gt;{@code obj.field = 5} - NOT a modification of obj (only the field is modified)&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * &lt;p&gt;This is correct for lambda capture purposes: modifying array elements or
+	 * object fields doesn't make the variable non-effectively-final. Only direct
+	 * reassignment of the variable itself does.&lt;/p&gt;
+	 * 
+	 * @param node the SimpleName node to check
+	 * @return true if the variable itself is being modified
+	 */
+	private boolean isModification(SimpleName node) {
+		// Check if node is the DIRECT left-hand side of an assignment
+		// (not part of a complex LHS like arr[i] or obj.field)
+<span class="fc bfc" id="L212" title="All 2 branches covered.">		if (node.getParent() instanceof Assignment) {</span>
+<span class="fc" id="L213">			Assignment assignment = (Assignment) node.getParent();</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">			if (assignment.getLeftHandSide() == node) {</span>
+<span class="fc" id="L215">				return true;</span>
+			}
+		}
+		
+		// Check if node is part of increment/decrement expression
+<span class="fc bfc" id="L220" title="All 2 branches covered.">		if (node.getParent() instanceof PostfixExpression) {</span>
+<span class="fc" id="L221">			PostfixExpression postfix = (PostfixExpression) node.getParent();</span>
+<span class="fc" id="L222">			PostfixExpression.Operator op = postfix.getOperator();</span>
+<span class="pc bpc" id="L223" title="3 of 4 branches missed.">			if (op == PostfixExpression.Operator.INCREMENT || op == PostfixExpression.Operator.DECREMENT) {</span>
+<span class="fc" id="L224">				return true;</span>
+			}
+		}
+		
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		if (node.getParent() instanceof PrefixExpression) {</span>
+<span class="nc" id="L229">			PrefixExpression prefix = (PrefixExpression) node.getParent();</span>
+<span class="nc" id="L230">			PrefixExpression.Operator op = prefix.getOperator();</span>
+<span class="nc bnc" id="L231" title="All 4 branches missed.">			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {</span>
+<span class="nc" id="L232">				return true;</span>
+			}
+		}
+		
+<span class="fc" id="L236">		return false;</span>
+	}
+	
+	/**
+	 * Populates the given ScopeInfo with the collected variable information.
+	 * 
+	 * @param scopeInfo the ScopeInfo to populate
+	 */
+	public void populateScopeInfo(ScopeInfo scopeInfo) {
+		// Add local variables declared in this loop
+<span class="fc bfc" id="L246" title="All 2 branches covered.">		for (String varName : localVariables) {</span>
+<span class="fc" id="L247">			scopeInfo.addLocalVariable(varName);</span>
+		}
+		
+		// Add modified variables
+<span class="fc bfc" id="L251" title="All 2 branches covered.">		for (String varName : modifiedVariables) {</span>
+<span class="fc" id="L252">			scopeInfo.addModifiedVariable(varName);</span>
+		}
+		
+		// Note: outerScopeVariables are handled by ScopeInfo.createChildScope()
+		// which already propagates parent scope variables. We don't need to
+		// explicitly add them here, they're already in the ScopeInfo from the parent.
+<span class="fc" id="L258">	}</span>
+	
+	/**
+	 * Gets the set of variables referenced from outer scope.
+	 * 
+	 * @return unmodifiable set of referenced variable names
+	 */
+	public Set&lt;String&gt; getReferencedVariables() {
+<span class="fc" id="L266">		return Set.copyOf(referencedVariables);</span>
+	}
+	
+	/**
+	 * Gets the set of variables modified in this loop.
+	 * 
+	 * @return unmodifiable set of modified variable names
+	 */
+	public Set&lt;String&gt; getModifiedVariables() {
+<span class="nc" id="L275">		return Set.copyOf(modifiedVariables);</span>
+	}
+	
+	/**
+	 * Gets the set of local variables declared in this loop.
+	 * 
+	 * @return unmodifiable set of local variable names
+	 */
+	public Set&lt;String&gt; getLocalVariables() {
+<span class="nc" id="L284">		return Set.copyOf(localVariables);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -285,209 +285,104 @@ public final class PreconditionsChecker {
 <span class="nc" id="L285">			return true;</span>
 <span class="fc" id="L286">		}).onEnhancedForStatement((node, h) -&gt; {</span>
 			// If we encounter another EnhancedForStatement inside the loop body,
-			// it's a nested loop - mark as not convertible
-			// We check that this is NOT the same node as the outer loop
-<span class="nc bnc" id="L290" title="All 2 branches missed.">			if (node != loop) {</span>
-<span class="nc" id="L291">				containsNestedLoop = true;</span>
+			// it's a nested loop.
+			// PHASE 9: With LoopTree, nested loops are handled separately in the tree.
+			// We should NOT descend into them, as they'll be analyzed independently.
+			// Only mark as containsNestedLoop if this is the root loop we're analyzing.
+<span class="nc bnc" id="L292" title="All 2 branches missed.">			if (node == loop) {</span>
+<span class="nc" id="L293">				return true; // Continue analyzing this loop's body</span>
 			}
-<span class="nc" id="L293">			return true;</span>
-<span class="fc" id="L294">		}).onForStatement((node, h) -&gt; {</span>
+			// Found a nested loop - don't descend into it (return false)
+			// The LoopTree will handle this nested loop separately
+<span class="nc" id="L297">			return false;</span>
+<span class="fc" id="L298">		}).onForStatement((node, h) -&gt; {</span>
 			// Traditional for loops inside the enhanced-for also prevent conversion
-<span class="nc" id="L296">			containsNestedLoop = true;</span>
-<span class="nc" id="L297">			return true;</span>
-<span class="fc" id="L298">		}).onWhileStatement((node, h) -&gt; {</span>
-			// While loops inside the enhanced-for also prevent conversion
 <span class="nc" id="L300">			containsNestedLoop = true;</span>
 <span class="nc" id="L301">			return true;</span>
-<span class="fc" id="L302">		}).onDoStatement((node, h) -&gt; {</span>
-			// Do-while loops inside the enhanced-for also prevent conversion
+<span class="fc" id="L302">		}).onWhileStatement((node, h) -&gt; {</span>
+			// While loops inside the enhanced-for also prevent conversion
 <span class="nc" id="L304">			containsNestedLoop = true;</span>
 <span class="nc" id="L305">			return true;</span>
-<span class="fc" id="L306">		}).onTryStatement((node, h) -&gt; {</span>
+<span class="fc" id="L306">		}).onDoStatement((node, h) -&gt; {</span>
+			// Do-while loops inside the enhanced-for also prevent conversion
+<span class="nc" id="L308">			containsNestedLoop = true;</span>
+<span class="nc" id="L309">			return true;</span>
+<span class="fc" id="L310">		}).onTryStatement((node, h) -&gt; {</span>
 			// Try-catch blocks inside the loop prevent conversion
 			// (exception handling in lambdas is complex)
-<span class="nc" id="L309">			containsNEFs = true;</span>
-<span class="nc" id="L310">			return true;</span>
-<span class="fc" id="L311">		}).onSwitchStatement((node, h) -&gt; {</span>
-			// Switch statements inside the loop prevent conversion
 <span class="nc" id="L313">			containsNEFs = true;</span>
 <span class="nc" id="L314">			return true;</span>
-<span class="fc" id="L315">		}).onSynchronizedStatement((node, h) -&gt; {</span>
-			// Synchronized blocks inside the loop prevent conversion
+<span class="fc" id="L315">		}).onSwitchStatement((node, h) -&gt; {</span>
+			// Switch statements inside the loop prevent conversion
 <span class="nc" id="L317">			containsNEFs = true;</span>
 <span class="nc" id="L318">			return true;</span>
-<span class="fc" id="L319">		}).onCompoundAssignment((node, h) -&gt; {</span>
-			// Compound assignments: +=, -=, *=, /=, |=, &amp;=, etc.
-<span class="nc" id="L321">			markAsReducer(node);</span>
+<span class="fc" id="L319">		}).onSynchronizedStatement((node, h) -&gt; {</span>
+			// Synchronized blocks inside the loop prevent conversion
+<span class="nc" id="L321">			containsNEFs = true;</span>
 <span class="nc" id="L322">			return true;</span>
-<span class="fc" id="L323">		}).onAssignment((node, h) -&gt; {</span>
+<span class="fc" id="L323">		}).onCompoundAssignment((node, h) -&gt; {</span>
+			// Compound assignments: +=, -=, *=, /=, |=, &amp;=, etc.
+<span class="nc" id="L325">			markAsReducer(node);</span>
+<span class="nc" id="L326">			return true;</span>
+<span class="fc" id="L327">		}).onAssignment((node, h) -&gt; {</span>
 			// Check for Math.max/Math.min patterns: max = Math.max(max, x)
-<span class="nc bnc" id="L325" title="All 4 branches missed.">			if (node.getOperator() == Assignment.Operator.ASSIGN &amp;&amp; isMathMinMaxReducerPattern(node)) {</span>
-<span class="nc" id="L326">				markAsReducer(node);</span>
+<span class="nc bnc" id="L329" title="All 4 branches missed.">			if (node.getOperator() == Assignment.Operator.ASSIGN &amp;&amp; isMathMinMaxReducerPattern(node)) {</span>
+<span class="nc" id="L330">				markAsReducer(node);</span>
 			}
-<span class="nc" id="L328">			return true;</span>
-<span class="fc" id="L329">		}).onPostfixIncrementOrDecrement((node, h) -&gt; {</span>
-			// Detect i++, i--
-<span class="nc" id="L331">			markAsReducer(node);</span>
 <span class="nc" id="L332">			return true;</span>
-<span class="fc" id="L333">		}).onPrefixIncrementOrDecrement((node, h) -&gt; {</span>
-			// Detect ++i, --i
+<span class="fc" id="L333">		}).onPostfixIncrementOrDecrement((node, h) -&gt; {</span>
+			// Detect i++, i--
 <span class="nc" id="L335">			markAsReducer(node);</span>
 <span class="nc" id="L336">			return true;</span>
-<span class="fc" id="L337">		}).onMethodInvocation((node, h) -&gt; {</span>
+<span class="fc" id="L337">		}).onPrefixIncrementOrDecrement((node, h) -&gt; {</span>
+			// Detect ++i, --i
+<span class="nc" id="L339">			markAsReducer(node);</span>
+<span class="nc" id="L340">			return true;</span>
+<span class="fc" id="L341">		}).onMethodInvocation((node, h) -&gt; {</span>
 			// Detect collection.add() patterns for collect operation
-<span class="nc bnc" id="L339" title="All 2 branches missed.">			if (isCollectPattern(node)) {</span>
-<span class="nc" id="L340">				markAsCollectPattern(node);</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">			if (isCollectPattern(node)) {</span>
+<span class="nc" id="L344">				markAsCollectPattern(node);</span>
 			}
-<span class="nc" id="L342">			return true;</span>
+<span class="nc" id="L346">			return true;</span>
 		});
 
 		// First, analyze just the loop itself
-<span class="fc" id="L346">		builder.build(loop);</span>
+<span class="fc" id="L350">		builder.build(loop);</span>
 
 		// Save the containsReturn flag state after analyzing only the loop body
 		// This is important because we want to distinguish between:
 		// 1. Returns INSIDE the loop (which may prevent conversion, except for match patterns)
 		// 2. Returns AFTER the loop (which are just part of the method and shouldn't prevent conversion)
-<span class="fc" id="L352">		boolean containsReturnInsideLoop = containsReturn;</span>
+<span class="fc" id="L356">		boolean containsReturnInsideLoop = containsReturn;</span>
 
 		// Then, if the loop is inside a Block, analyze only the immediately following
 		// statement (if any). This lets us detect patterns that depend on the statement
 		// right after the loop without pulling in unrelated statements.
-<span class="fc" id="L357">		ASTNode parent = loop.getParent();</span>
-<span class="fc bfc" id="L358" title="All 2 branches covered.">		if (parent instanceof Block) {</span>
-<span class="fc" id="L359">			Block block = (Block) parent;</span>
-			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L361">			List&lt;Statement&gt; statements = block.statements();</span>
-<span class="fc" id="L362">			int loopIndex = statements.indexOf(loop);</span>
-<span class="pc bpc" id="L363" title="1 of 4 branches missed.">			if (loopIndex != -1 &amp;&amp; loopIndex + 1 &lt; statements.size()) {</span>
-<span class="fc" id="L364">				Statement followingStatement = statements.get(loopIndex + 1);</span>
-<span class="fc" id="L365">				builder.build(followingStatement);</span>
+<span class="fc" id="L361">		ASTNode parent = loop.getParent();</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">		if (parent instanceof Block) {</span>
+<span class="fc" id="L363">			Block block = (Block) parent;</span>
+<span class="fc" id="L364">			List&lt;Statement&gt; statements = block.statements();</span>
+<span class="fc" id="L365">			int loopIndex = statements.indexOf(loop);</span>
+<span class="pc bpc" id="L366" title="1 of 4 branches missed.">			if (loopIndex != -1 &amp;&amp; loopIndex + 1 &lt; statements.size()) {</span>
+<span class="fc" id="L367">				Statement followingStatement = statements.get(loopIndex + 1);</span>
+<span class="fc" id="L368">				builder.build(followingStatement);</span>
 			}
 		}
 
 		// Detect anyMatch/noneMatch patterns
 		// This needs to see if there's a return statement after the loop,
 		// so containsReturn may be true from analyzing the following statement
-<span class="fc" id="L372">		detectEarlyReturnPatterns();</span>
+<span class="fc" id="L375">		detectEarlyReturnPatterns();</span>
 
 		// Restore the containsReturn flag to only reflect returns INSIDE the loop
 		// This ensures that isSafeToRefactor() only rejects loops with returns inside,
 		// not loops followed by return statements (like reducers)
-<span class="fc" id="L377">		containsReturn = containsReturnInsideLoop;</span>
-
-<span class="fc" id="L379">		analyzeEffectivelyFinalVariables();</span>
-<span class="fc" id="L380">	}</span>
-
-	/**
-	 * Checks if variables declared within the loop are effectively final.
-	 * 
-	 * &lt;p&gt;
-	 * A variable is effectively final if it is never modified after its
-	 * initialization. This is important for stream operations because lambda
-	 * expressions can only capture effectively final variables from their enclosing
-	 * scope.
-	 * &lt;/p&gt;
-	 * 
-	 * &lt;p&gt;
-	 * Sets {@link #containsNEFs} to true if any non-effectively-final variable is
-	 * found.
-	 * &lt;/p&gt;
-	 * 
-	 * &lt;p&gt;
-	 * &lt;b&gt;Important:&lt;/b&gt; Variables declared inside the loop body that are modified
-	 * within the same loop iteration are NOT checked here. Such variables will be
-	 * converted to map operations in the stream pipeline. Only variables that would
-	 * need to be captured from an outer scope are relevant for this check.
-	 * &lt;/p&gt;
-	 */
-	private void analyzeEffectivelyFinalVariables() {
-		// Variables declared INSIDE the loop body are allowed to be modified,
-		// as they will be converted to map operations in the stream pipeline.
-		// We need to check for variables declared OUTSIDE the loop that
-		// are used inside the loop body - these must be effectively final
-		// to be captured by a lambda.
-		//
-		// EXCEPTION: For reducer patterns (hasReducer == true), the accumulator
-		// variable doesn't need to be effectively final because it will become
-		// the reduce accumulator, not a captured variable in a lambda.
+<span class="fc" id="L380">		containsReturn = containsReturnInsideLoop;</span>
 		
-<span class="pc bpc" id="L415" title="1 of 2 branches missed.">		if (!(loop instanceof EnhancedForStatement)) {</span>
-<span class="nc" id="L416">			return;</span>
-		}
-		
-		// If this is a reducer pattern, the accumulator variable is allowed
-		// to be non-effectively-final since it will be part of the reduce operation
-		// and won't need to be captured by a lambda.
-<span class="pc bpc" id="L422" title="1 of 2 branches missed.">		if (hasReducer) {</span>
-			// For reducers, we don't check effectively final because the
-			// modified variable becomes the reduce accumulator, not a captured var
-<span class="nc" id="L425">			return;</span>
-		}
-		
-<span class="fc" id="L428">		EnhancedForStatement enhancedFor = (EnhancedForStatement) loop;</span>
-<span class="fc" id="L429">		Statement body = enhancedFor.getBody();</span>
-		
-		// Get the loop parameter name (the iteration variable)
-<span class="fc" id="L432">		String loopParamName = enhancedFor.getParameter().getName().getIdentifier();</span>
-		
-		// Collect all names of variables declared inside the loop
-<span class="fc" id="L435">		Set&lt;String&gt; innerVariableNames = new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L436" title="All 2 branches covered.">		for (VariableDeclarationFragment frag : innerVariables) {</span>
-<span class="fc" id="L437">			innerVariableNames.add(frag.getName().getIdentifier());</span>
-		}
-		
-		// Visit all SimpleName references in the loop body
-<span class="fc" id="L441">		body.accept(new ASTVisitor() {</span>
-			@Override
-			public boolean visit(SimpleName node) {
-				// Skip if this is a declaration, not a reference
-<span class="fc bfc" id="L445" title="All 2 branches covered.">				if (node.isDeclaration()) {</span>
-<span class="fc" id="L446">					return true;</span>
-				}
-				
-				// Skip if this is the loop parameter
-<span class="fc bfc" id="L450" title="All 2 branches covered.">				if (node.getIdentifier().equals(loopParamName)) {</span>
-<span class="fc" id="L451">					return true;</span>
-				}
-				
-				// Skip if this is a variable declared inside the loop
-<span class="fc bfc" id="L455" title="All 2 branches covered.">				if (innerVariableNames.contains(node.getIdentifier())) {</span>
-<span class="fc" id="L456">					return true;</span>
-				}
-				
-				// Resolve the binding
-<span class="fc" id="L460">				IBinding binding = node.resolveBinding();</span>
-<span class="fc bfc" id="L461" title="All 2 branches covered.">				if (binding == null) {</span>
-					// Cannot resolve binding - skip this check (don't block conversion)
-<span class="fc" id="L463">					return true;</span>
-				}
-				
-<span class="fc bfc" id="L466" title="All 2 branches covered.">				if (binding instanceof IVariableBinding) {</span>
-<span class="fc" id="L467">					IVariableBinding varBinding = (IVariableBinding) binding;</span>
-					
-					// Skip fields - they're not captured as local variables
-<span class="fc bfc" id="L470" title="All 2 branches covered.">					if (varBinding.isField()) {</span>
-<span class="fc" id="L471">						return true;</span>
-					}
-					
-					// Skip method parameters - they're allowed to be captured
-<span class="fc bfc" id="L475" title="All 2 branches covered.">					if (varBinding.isParameter()) {</span>
-<span class="fc" id="L476">						return true;</span>
-					}
-					
-					// Check if the variable is effectively final
-					// Note: final variables and effectively final variables both return true
-<span class="fc" id="L481">					if (!varBinding.isEffectivelyFinal()) {</span>
-						// This variable is captured from an outer scope but is not effectively final
-						// It cannot be used in a lambda
-//						containsNEFs = true;
-					}
-				}
-<span class="fc" id="L487">				return true;</span>
-			}
-		});
-<span class="fc" id="L490">	}</span>
+		// NOTE: Effectively-final variable checks for nested loops are now handled
+		// by LoopToFunctional.endVisitLoop() using LoopTree/ScopeInfo, which properly
+		// tracks modifications in ancestor scopes while allowing reducer patterns.
+<span class="fc" id="L385">	}</span>
 
 	/**
 	 * Marks an AST node as a reducer pattern and records its statement.
@@ -495,11 +390,11 @@ public final class PreconditionsChecker {
 	 * @param node the AST node that represents a reducer operation
 	 */
 	private void markAsReducer(ASTNode node) {
-<span class="nc" id="L498">		hasReducer = true;</span>
-<span class="nc bnc" id="L499" title="All 2 branches missed.">		if (reducerStatement == null) {</span>
-<span class="nc" id="L500">			reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);</span>
+<span class="nc" id="L393">		hasReducer = true;</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">		if (reducerStatement == null) {</span>
+<span class="nc" id="L395">			reducerStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);</span>
 		}
-<span class="nc" id="L502">	}</span>
+<span class="nc" id="L397">	}</span>
 
 	/**
 	 * Marks an AST node as a collect pattern and records its statement.
@@ -507,18 +402,18 @@ public final class PreconditionsChecker {
 	 * @param node the AST node that represents a collect operation (MethodInvocation)
 	 */
 	private void markAsCollectPattern(ASTNode node) {
-<span class="nc" id="L510">		hasCollectPattern = true;</span>
-<span class="nc bnc" id="L511" title="All 2 branches missed.">		if (collectStatement == null) {</span>
-<span class="nc" id="L512">			collectStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);</span>
+<span class="nc" id="L405">		hasCollectPattern = true;</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">		if (collectStatement == null) {</span>
+<span class="nc" id="L407">			collectStatement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);</span>
 		}
 		// Extract target variable from the MethodInvocation
-<span class="nc bnc" id="L515" title="All 4 branches missed.">		if (node instanceof MethodInvocation methodInv &amp;&amp; collectTargetVariable == null) {</span>
-<span class="nc" id="L516">			Expression receiver = methodInv.getExpression();</span>
-<span class="nc bnc" id="L517" title="All 2 branches missed.">			if (receiver instanceof SimpleName) {</span>
-<span class="nc" id="L518">				collectTargetVariable = ((SimpleName) receiver).getIdentifier();</span>
+<span class="nc bnc" id="L410" title="All 4 branches missed.">		if (node instanceof MethodInvocation methodInv &amp;&amp; collectTargetVariable == null) {</span>
+<span class="nc" id="L411">			Expression receiver = methodInv.getExpression();</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">			if (receiver instanceof SimpleName) {</span>
+<span class="nc" id="L413">				collectTargetVariable = ((SimpleName) receiver).getIdentifier();</span>
 			}
 		}
-<span class="nc" id="L521">	}</span>
+<span class="nc" id="L416">	}</span>
 
 	/**
 	 * Checks if a method invocation represents a collect pattern.
@@ -530,25 +425,25 @@ public final class PreconditionsChecker {
 	 */
 	private boolean isCollectPattern(MethodInvocation methodInv) {
 		// Check if method name is &quot;add&quot;
-<span class="nc bnc" id="L533" title="All 2 branches missed.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
-<span class="nc" id="L534">			return false;</span>
+<span class="nc bnc" id="L428" title="All 2 branches missed.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="nc" id="L429">			return false;</span>
 		}
 		
 		// Check if invoked on a SimpleName (collection variable)
-<span class="nc" id="L538">		Expression receiver = methodInv.getExpression();</span>
-<span class="nc bnc" id="L539" title="All 2 branches missed.">		if (!(receiver instanceof SimpleName)) {</span>
-<span class="nc" id="L540">			return false;</span>
+<span class="nc" id="L433">		Expression receiver = methodInv.getExpression();</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">		if (!(receiver instanceof SimpleName)) {</span>
+<span class="nc" id="L435">			return false;</span>
 		}
 		
 		// Check if add() has one argument
-<span class="nc bnc" id="L544" title="All 2 branches missed.">		if (methodInv.arguments().size() != 1) {</span>
-<span class="nc" id="L545">			return false;</span>
+<span class="nc bnc" id="L439" title="All 2 branches missed.">		if (methodInv.arguments().size() != 1) {</span>
+<span class="nc" id="L440">			return false;</span>
 		}
 		
 		// Additional validation: check if the receiver is a collection type
 		// This is done in CollectPatternDetector, but for preconditions checking
 		// we'll allow it here and let the detector do the full validation
-<span class="nc" id="L551">		return true;</span>
+<span class="nc" id="L446">		return true;</span>
 	}
 
 	/**
@@ -560,52 +455,52 @@ public final class PreconditionsChecker {
 	 * @return true if this is a Math.max/Math.min reducer pattern
 	 */
 	private boolean isMathMinMaxReducerPattern(Assignment assignment) {
-<span class="nc" id="L563">		Expression rhs = assignment.getRightHandSide();</span>
-<span class="nc bnc" id="L564" title="All 2 branches missed.">		if (!(rhs instanceof MethodInvocation methodInv)) {</span>
-<span class="nc" id="L565">			return false;</span>
+<span class="nc" id="L458">		Expression rhs = assignment.getRightHandSide();</span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">		if (!(rhs instanceof MethodInvocation methodInv)) {</span>
+<span class="nc" id="L460">			return false;</span>
 		}
 		
-<span class="nc bnc" id="L568" title="All 2 branches missed.">		if (!isMathMinMaxInvocation(methodInv)) {</span>
-<span class="nc" id="L569">			return false;</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">		if (!isMathMinMaxInvocation(methodInv)) {</span>
+<span class="nc" id="L464">			return false;</span>
 		}
 		
-<span class="nc" id="L572">		return isLhsVariableInArguments(assignment.getLeftHandSide(), methodInv.arguments());</span>
+<span class="nc" id="L467">		return isLhsVariableInArguments(assignment.getLeftHandSide(), methodInv.arguments());</span>
 	}
 
 	/**
 	 * Checks if a method invocation is Math.max or Math.min.
 	 */
 	private boolean isMathMinMaxInvocation(MethodInvocation methodInv) {
-<span class="nc" id="L579">		Expression methodExpr = methodInv.getExpression();</span>
-<span class="nc bnc" id="L580" title="All 2 branches missed.">		if (!(methodExpr instanceof SimpleName className)) {</span>
-<span class="nc" id="L581">			return false;</span>
+<span class="nc" id="L474">		Expression methodExpr = methodInv.getExpression();</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">		if (!(methodExpr instanceof SimpleName className)) {</span>
+<span class="nc" id="L476">			return false;</span>
 		}
 		
-<span class="nc bnc" id="L584" title="All 2 branches missed.">		if (!&quot;Math&quot;.equals(className.getIdentifier())) {</span>
-<span class="nc" id="L585">			return false;</span>
+<span class="nc bnc" id="L479" title="All 2 branches missed.">		if (!&quot;Math&quot;.equals(className.getIdentifier())) {</span>
+<span class="nc" id="L480">			return false;</span>
 		}
 		
-<span class="nc" id="L588">		String methodName = methodInv.getName().getIdentifier();</span>
-<span class="nc bnc" id="L589" title="All 4 branches missed.">		return &quot;max&quot;.equals(methodName) || &quot;min&quot;.equals(methodName);</span>
+<span class="nc" id="L483">		String methodName = methodInv.getName().getIdentifier();</span>
+<span class="nc bnc" id="L484" title="All 4 branches missed.">		return &quot;max&quot;.equals(methodName) || &quot;min&quot;.equals(methodName);</span>
 	}
 
 	/**
 	 * Checks if the LHS variable name appears in the method arguments.
 	 */
 	private boolean isLhsVariableInArguments(Expression lhs, List&lt;?&gt; arguments) {
-<span class="nc bnc" id="L596" title="All 2 branches missed.">		if (!(lhs instanceof SimpleName lhsName)) {</span>
-<span class="nc" id="L597">			return false;</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">		if (!(lhs instanceof SimpleName lhsName)) {</span>
+<span class="nc" id="L492">			return false;</span>
 		}
 		
-<span class="nc bnc" id="L600" title="All 2 branches missed.">		if (arguments.size() != 2) {</span>
-<span class="nc" id="L601">			return false;</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">		if (arguments.size() != 2) {</span>
+<span class="nc" id="L496">			return false;</span>
 		}
 		
-<span class="nc" id="L604">		String varName = lhsName.getIdentifier();</span>
-<span class="nc" id="L605">		return arguments.stream()</span>
-<span class="nc" id="L606">				.filter(SimpleName.class::isInstance)</span>
-<span class="nc" id="L607">				.map(SimpleName.class::cast)</span>
-<span class="nc" id="L608">				.anyMatch(arg -&gt; varName.equals(arg.getIdentifier()));</span>
+<span class="nc" id="L499">		String varName = lhsName.getIdentifier();</span>
+<span class="nc" id="L500">		return arguments.stream()</span>
+<span class="nc" id="L501">				.filter(SimpleName.class::isInstance)</span>
+<span class="nc" id="L502">				.map(SimpleName.class::cast)</span>
+<span class="nc" id="L503">				.anyMatch(arg -&gt; varName.equals(arg.getIdentifier()));</span>
 	}
 
 	/**
@@ -635,54 +530,54 @@ public final class PreconditionsChecker {
 	 * &lt;/pre&gt;
 	 */
 	private void detectEarlyReturnPatterns() {
-<span class="pc bpc" id="L638" title="3 of 4 branches missed.">		if (!containsReturn || !(loop instanceof EnhancedForStatement)) {</span>
-<span class="fc" id="L639">			return;</span>
+<span class="pc bpc" id="L533" title="3 of 4 branches missed.">		if (!containsReturn || !(loop instanceof EnhancedForStatement)) {</span>
+<span class="fc" id="L534">			return;</span>
 		}
 
-<span class="nc" id="L642">		EnhancedForStatement forLoop = (EnhancedForStatement) loop;</span>
-<span class="nc" id="L643">		Statement body = forLoop.getBody();</span>
+<span class="nc" id="L537">		EnhancedForStatement forLoop = (EnhancedForStatement) loop;</span>
+<span class="nc" id="L538">		Statement body = forLoop.getBody();</span>
 
 		// Find all IF statements with return statements in the loop
-<span class="nc" id="L646">		final List&lt;IfStatement&gt; ifStatementsWithReturn = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L541">		final List&lt;IfStatement&gt; ifStatementsWithReturn = new ArrayList&lt;&gt;();</span>
 
 		// Use ASTVisitor to find IF statements
-<span class="nc" id="L649">		body.accept(new ASTVisitor() {</span>
+<span class="nc" id="L544">		body.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(IfStatement node) {
-<span class="nc bnc" id="L652" title="All 2 branches missed.">				if (hasReturnInThenBranch(node)) {</span>
-<span class="nc" id="L653">					ifStatementsWithReturn.add(node);</span>
+<span class="nc bnc" id="L547" title="All 2 branches missed.">				if (hasReturnInThenBranch(node)) {</span>
+<span class="nc" id="L548">					ifStatementsWithReturn.add(node);</span>
 				}
-<span class="nc" id="L655">				return true;</span>
+<span class="nc" id="L550">				return true;</span>
 			}
 		});
 
 		// For anyMatch/noneMatch/allMatch, we expect exactly one IF with return
-<span class="nc bnc" id="L660" title="All 2 branches missed.">		if (ifStatementsWithReturn.size() != 1) {</span>
-<span class="nc" id="L661">			return;</span>
+<span class="nc bnc" id="L555" title="All 2 branches missed.">		if (ifStatementsWithReturn.size() != 1) {</span>
+<span class="nc" id="L556">			return;</span>
 		}
 
-<span class="nc" id="L664">		IfStatement ifStmt = ifStatementsWithReturn.get(0);</span>
+<span class="nc" id="L559">		IfStatement ifStmt = ifStatementsWithReturn.get(0);</span>
 
 		// The IF must not have an else branch for these patterns
-<span class="nc bnc" id="L667" title="All 2 branches missed.">		if (ifStmt.getElseStatement() != null) {</span>
-<span class="nc" id="L668">			return;</span>
+<span class="nc bnc" id="L562" title="All 2 branches missed.">		if (ifStmt.getElseStatement() != null) {</span>
+<span class="nc" id="L563">			return;</span>
 		}
 
 		// Check if the IF returns a boolean literal
-<span class="nc" id="L672">		BooleanLiteral returnValue = getReturnValueFromIf(ifStmt);</span>
-<span class="nc bnc" id="L673" title="All 2 branches missed.">		if (returnValue == null) {</span>
-<span class="nc" id="L674">			return;</span>
+<span class="nc" id="L567">		BooleanLiteral returnValue = getReturnValueFromIf(ifStmt);</span>
+<span class="nc bnc" id="L568" title="All 2 branches missed.">		if (returnValue == null) {</span>
+<span class="nc" id="L569">			return;</span>
 		}
 
 		// Check what statement follows the loop
-<span class="nc" id="L678">		BooleanLiteral followingReturn = getReturnAfterLoop(forLoop);</span>
-<span class="nc bnc" id="L679" title="All 2 branches missed.">		if (followingReturn == null) {</span>
-<span class="nc" id="L680">			return;</span>
+<span class="nc" id="L573">		BooleanLiteral followingReturn = getReturnAfterLoop(forLoop);</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">		if (followingReturn == null) {</span>
+<span class="nc" id="L575">			return;</span>
 		}
 
 		// Determine pattern based on return values
-<span class="nc" id="L684">		determineMatchPattern(returnValue.booleanValue(), followingReturn.booleanValue(), ifStmt.getExpression());</span>
-<span class="nc" id="L685">	}</span>
+<span class="nc" id="L579">		determineMatchPattern(returnValue.booleanValue(), followingReturn.booleanValue(), ifStmt.getExpression());</span>
+<span class="nc" id="L580">	}</span>
 
 	/**
 	 * Determines which match pattern (anyMatch, noneMatch, allMatch) applies based on
@@ -693,27 +588,27 @@ public final class PreconditionsChecker {
 	 * @param condition the condition expression in the if statement
 	 */
 	private void determineMatchPattern(boolean returnValueInLoop, boolean returnValueAfterLoop, Expression condition) {
-<span class="nc bnc" id="L696" title="All 4 branches missed.">		if (returnValueInLoop &amp;&amp; !returnValueAfterLoop) {</span>
+<span class="nc bnc" id="L591" title="All 4 branches missed.">		if (returnValueInLoop &amp;&amp; !returnValueAfterLoop) {</span>
 			// if (condition) return true; + return false; → anyMatch
-<span class="nc" id="L698">			isAnyMatchPattern = true;</span>
-<span class="nc bnc" id="L699" title="All 4 branches missed.">		} else if (!returnValueInLoop &amp;&amp; returnValueAfterLoop) {</span>
+<span class="nc" id="L593">			isAnyMatchPattern = true;</span>
+<span class="nc bnc" id="L594" title="All 4 branches missed.">		} else if (!returnValueInLoop &amp;&amp; returnValueAfterLoop) {</span>
 			// if (condition) return false; + return true; → could be noneMatch OR allMatch
 			// Distinguish based on condition negation:
 			// - if (!condition) return false; + return true; → allMatch(condition)
 			// - if (condition) return false; + return true; → noneMatch(condition)
-<span class="nc bnc" id="L704" title="All 2 branches missed.">			if (isNegatedCondition(condition)) {</span>
-<span class="nc" id="L705">				isAllMatchPattern = true;</span>
-<span class="nc" id="L706">			} else {</span>
-<span class="nc" id="L707">				isNoneMatchPattern = true;</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">			if (isNegatedCondition(condition)) {</span>
+<span class="nc" id="L600">				isAllMatchPattern = true;</span>
+<span class="nc" id="L601">			} else {</span>
+<span class="nc" id="L602">				isNoneMatchPattern = true;</span>
 			}
 		}
-<span class="nc" id="L710">	}</span>
+<span class="nc" id="L605">	}</span>
 
 	/**
 	 * Checks if the IF statement has a return in its then branch.
 	 */
 	private boolean hasReturnInThenBranch(IfStatement ifStmt) {
-<span class="nc" id="L716">		return getReturnStatementFromThenBranch(ifStmt).isPresent();</span>
+<span class="nc" id="L611">		return getReturnStatementFromThenBranch(ifStmt).isPresent();</span>
 	}
 
 	/**
@@ -724,20 +619,20 @@ public final class PreconditionsChecker {
 	 * @return Optional containing the ReturnStatement, or empty if not found
 	 */
 	private Optional&lt;ReturnStatement&gt; getReturnStatementFromThenBranch(IfStatement ifStmt) {
-<span class="nc" id="L727">		Statement thenStmt = ifStmt.getThenStatement();</span>
+<span class="nc" id="L622">		Statement thenStmt = ifStmt.getThenStatement();</span>
 
-<span class="nc bnc" id="L729" title="All 2 branches missed.">		if (thenStmt instanceof ReturnStatement returnStmt) {</span>
-<span class="nc" id="L730">			return Optional.of(returnStmt);</span>
+<span class="nc bnc" id="L624" title="All 2 branches missed.">		if (thenStmt instanceof ReturnStatement returnStmt) {</span>
+<span class="nc" id="L625">			return Optional.of(returnStmt);</span>
 		}
 
-<span class="nc bnc" id="L733" title="All 2 branches missed.">		if (thenStmt instanceof Block block) {</span>
-<span class="nc" id="L734">			List&lt;?&gt; stmts = block.statements();</span>
-<span class="nc bnc" id="L735" title="All 4 branches missed.">			if (stmts.size() == 1 &amp;&amp; stmts.get(0) instanceof ReturnStatement returnStmt) {</span>
-<span class="nc" id="L736">				return Optional.of(returnStmt);</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">		if (thenStmt instanceof Block block) {</span>
+<span class="nc" id="L629">			List&lt;?&gt; stmts = block.statements();</span>
+<span class="nc bnc" id="L630" title="All 4 branches missed.">			if (stmts.size() == 1 &amp;&amp; stmts.get(0) instanceof ReturnStatement returnStmt) {</span>
+<span class="nc" id="L631">				return Optional.of(returnStmt);</span>
 			}
 		}
 
-<span class="nc" id="L740">		return Optional.empty();</span>
+<span class="nc" id="L635">		return Optional.empty();</span>
 	}
 
 	/**
@@ -747,11 +642,11 @@ public final class PreconditionsChecker {
 	 *         otherwise
 	 */
 	private BooleanLiteral getReturnValueFromIf(IfStatement ifStmt) {
-<span class="nc" id="L750">		return getReturnStatementFromThenBranch(ifStmt)</span>
-<span class="nc" id="L751">				.map(ReturnStatement::getExpression)</span>
-<span class="nc" id="L752">				.filter(BooleanLiteral.class::isInstance)</span>
-<span class="nc" id="L753">				.map(BooleanLiteral.class::cast)</span>
-<span class="nc" id="L754">				.orElse(null);</span>
+<span class="nc" id="L645">		return getReturnStatementFromThenBranch(ifStmt)</span>
+<span class="nc" id="L646">				.map(ReturnStatement::getExpression)</span>
+<span class="nc" id="L647">				.filter(BooleanLiteral.class::isInstance)</span>
+<span class="nc" id="L648">				.map(BooleanLiteral.class::cast)</span>
+<span class="nc" id="L649">				.orElse(null);</span>
 	}
 
 	/**
@@ -763,12 +658,12 @@ public final class PreconditionsChecker {
 	 */
 	private boolean isNegatedCondition(Expression expr) {
 		// Unwrap parentheses
-<span class="nc bnc" id="L766" title="All 2 branches missed.">		while (expr instanceof ParenthesizedExpression) {</span>
-<span class="nc" id="L767">			expr = ((ParenthesizedExpression) expr).getExpression();</span>
+<span class="nc bnc" id="L661" title="All 2 branches missed.">		while (expr instanceof ParenthesizedExpression) {</span>
+<span class="nc" id="L662">			expr = ((ParenthesizedExpression) expr).getExpression();</span>
 		}
 		
-<span class="nc bnc" id="L770" title="All 2 branches missed.">		return expr instanceof PrefixExpression</span>
-<span class="nc bnc" id="L771" title="All 2 branches missed.">				&amp;&amp; ((PrefixExpression) expr).getOperator() == PrefixExpression.Operator.NOT;</span>
+<span class="nc bnc" id="L665" title="All 2 branches missed.">		return expr instanceof PrefixExpression</span>
+<span class="nc bnc" id="L666" title="All 2 branches missed.">				&amp;&amp; ((PrefixExpression) expr).getOperator() == PrefixExpression.Operator.NOT;</span>
 	}
 
 	/**
@@ -784,36 +679,36 @@ public final class PreconditionsChecker {
 	 * @return the BooleanLiteral returned after the loop, or null if not found
 	 */
 	private BooleanLiteral getReturnAfterLoop(EnhancedForStatement forLoop) {
-<span class="nc" id="L787">		ASTNode parent = forLoop.getParent();</span>
+<span class="nc" id="L682">		ASTNode parent = forLoop.getParent();</span>
 		
 		// The loop must be in a Block (method body, if-then block, etc.)
-<span class="nc bnc" id="L790" title="All 2 branches missed.">		if (!(parent instanceof Block)) {</span>
-<span class="nc" id="L791">			return null;</span>
+<span class="nc bnc" id="L685" title="All 2 branches missed.">		if (!(parent instanceof Block)) {</span>
+<span class="nc" id="L686">			return null;</span>
 		}
 		
-<span class="nc" id="L794">		Block block = (Block) parent;</span>
-<span class="nc" id="L795">		List&lt;?&gt; statements = block.statements();</span>
+<span class="nc" id="L689">		Block block = (Block) parent;</span>
+<span class="nc" id="L690">		List&lt;?&gt; statements = block.statements();</span>
 		
 		// Find the loop in the block's statements
-<span class="nc" id="L798">		int loopIndex = statements.indexOf(forLoop);</span>
-<span class="nc bnc" id="L799" title="All 4 branches missed.">		if (loopIndex == -1 || loopIndex &gt;= statements.size() - 1) {</span>
+<span class="nc" id="L693">		int loopIndex = statements.indexOf(forLoop);</span>
+<span class="nc bnc" id="L694" title="All 4 branches missed.">		if (loopIndex == -1 || loopIndex &gt;= statements.size() - 1) {</span>
 			// Loop not found or is the last statement
-<span class="nc" id="L801">			return null;</span>
+<span class="nc" id="L696">			return null;</span>
 		}
 		
 		// Check the next statement
-<span class="nc" id="L805">		Statement nextStmt = (Statement) statements.get(loopIndex + 1);</span>
+<span class="nc" id="L700">		Statement nextStmt = (Statement) statements.get(loopIndex + 1);</span>
 		
 		// We expect a return statement with a boolean literal
-<span class="nc bnc" id="L808" title="All 2 branches missed.">		if (nextStmt instanceof ReturnStatement) {</span>
-<span class="nc" id="L809">			ReturnStatement returnStmt = (ReturnStatement) nextStmt;</span>
-<span class="nc" id="L810">			Expression expr = returnStmt.getExpression();</span>
-<span class="nc bnc" id="L811" title="All 2 branches missed.">			if (expr instanceof BooleanLiteral) {</span>
-<span class="nc" id="L812">				return (BooleanLiteral) expr;</span>
+<span class="nc bnc" id="L703" title="All 2 branches missed.">		if (nextStmt instanceof ReturnStatement) {</span>
+<span class="nc" id="L704">			ReturnStatement returnStmt = (ReturnStatement) nextStmt;</span>
+<span class="nc" id="L705">			Expression expr = returnStmt.getExpression();</span>
+<span class="nc bnc" id="L706" title="All 2 branches missed.">			if (expr instanceof BooleanLiteral) {</span>
+<span class="nc" id="L707">				return (BooleanLiteral) expr;</span>
 			}
 		}
 		
-<span class="nc" id="L816">		return null;</span>
+<span class="nc" id="L711">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

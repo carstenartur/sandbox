@@ -68,8 +68,8 @@ public class LoopModelTransformer&lt;T&gt; {
     
     private T applyOperation(T pipeline, Operation op, String varName) {
 <span class="fc bfc" id="L70" title="All 8 branches covered.">        return switch (op) {</span>
-<span class="fc" id="L71">            case FilterOp f -&gt; renderer.renderFilter(pipeline, f.expression(), varName);</span>
-<span class="fc" id="L72">            case MapOp m -&gt; renderer.renderMap(pipeline, m.expression(), varName, m.targetType());</span>
+<span class="fc" id="L71">            case FilterOp f -&gt; renderer.renderFilterOp(pipeline, f, varName);</span>
+<span class="fc" id="L72">            case MapOp m -&gt; renderer.renderMapOp(pipeline, m, varName);</span>
 <span class="fc" id="L73">            case FlatMapOp fm -&gt; renderer.renderFlatMap(pipeline, fm.expression(), varName);</span>
 <span class="fc" id="L74">            case PeekOp p -&gt; renderer.renderPeek(pipeline, p.expression(), varName);</span>
 <span class="fc" id="L75">            case DistinctOp d -&gt; renderer.renderDistinct(pipeline);</span>

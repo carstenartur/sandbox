@@ -63,7 +63,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L66">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L66">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
 		
 		// Find @Rule fields with ExternalResource type
 <span class="fc" id="L69">		HelperVisitor.forField()</span>
@@ -105,24 +105,23 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="fc" id="L105">		FieldDeclaration fieldDeclaration= junitHolder.getFieldDeclaration();</span>
 <span class="fc" id="L106">		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);</span>
 <span class="fc" id="L107">		CompilationUnit cu= (CompilationUnit) fieldDeclaration.getRoot();</span>
-<span class="fc" id="L108">		String classNameFromField= extractClassNameFromField(fieldDeclaration);</span>
 
-<span class="fc" id="L110">		ASTNode node2= ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);</span>
+<span class="fc" id="L109">		ASTNode node2= ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);</span>
 
-<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (node2 instanceof TypeDeclaration) {</span>
-<span class="fc" id="L113">			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,</span>
-<span class="fc" id="L114">					importRewriter);</span>
-<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {</span>
-<span class="fc" id="L116">			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,</span>
-<span class="fc" id="L117">					importRewriter);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (node2 instanceof TypeDeclaration) {</span>
+<span class="fc" id="L112">			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,</span>
+<span class="fc" id="L113">					importRewriter);</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {</span>
+<span class="fc" id="L115">			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,</span>
+<span class="fc" id="L116">					importRewriter);</span>
 		}
 		// If no matching type definition found, no action needed
-<span class="fc" id="L120">	}</span>
+<span class="fc" id="L119">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L124" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L125">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L124">			return &quot;&quot;&quot;</span>
 					ExtendWith(MyTest.MyExternalResource.class)
 					public class MyTest {
 
@@ -137,7 +136,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 						}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L140">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L139">		return &quot;&quot;&quot;</span>
 				public class MyTest {
 
 					final class MyExternalResource extends ExternalResource {
@@ -157,7 +156,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L160">		return &quot;RuleExternalResource&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L159">		return &quot;RuleExternalResource&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

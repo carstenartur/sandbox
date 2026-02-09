@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConversionDecision.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-functional-converter-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.functional.core.tree</a> &gt; <span class="el_source">ConversionDecision.java</span></div><h1>ConversionDecision.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.functional.core.tree;
+
+/**
+ * Represents the conversion decision for a loop node in the loop tree.
+ * 
+ * &lt;p&gt;This enum tracks whether a loop can be converted to functional style
+ * and if it should be skipped due to nested loop conversions.&lt;/p&gt;
+ * 
+ * @since 1.0.0
+ */
+<span class="fc" id="L24">public enum ConversionDecision {</span>
+    /**
+     * The loop can be converted to functional stream operations.
+     */
+<span class="fc" id="L28">    CONVERTIBLE,</span>
+    
+    /**
+     * The loop cannot be converted due to precondition failures.
+     */
+<span class="fc" id="L33">    NOT_CONVERTIBLE,</span>
+    
+    /**
+     * The loop is not converted because an inner nested loop was converted.
+     * Converting both would lead to incorrect semantics.
+     */
+<span class="fc" id="L39">    SKIPPED_INNER_CONVERTED,</span>
+    
+    /**
+     * The conversion decision has not yet been determined.
+     * This is the initial state before analysis.
+     */
+<span class="fc" id="L45">    PENDING</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

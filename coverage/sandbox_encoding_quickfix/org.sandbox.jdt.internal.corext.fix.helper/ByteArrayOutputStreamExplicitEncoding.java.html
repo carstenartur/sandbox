@@ -76,80 +76,82 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 <span class="fc" id="L76">			return;</span>
 		}
 <span class="fc" id="L78">		ReferenceHolder&lt;ASTNode, Object&gt; holder= new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L79">		HelperVisitor.callMethodInvocationVisitor(ByteArrayOutputStream.class, METHOD_TOSTRING, compilationUnit, holder, nodesprocessed,</span>
-<span class="fc" id="L80">				(visited, aholder) -&gt; processFoundNode(fixcore, operations, cb, visited, aholder));</span>
-<span class="fc" id="L81">	}</span>
+<span class="fc" id="L79">		HelperVisitor.forMethodCall(ByteArrayOutputStream.class, METHOD_TOSTRING)</span>
+<span class="fc" id="L80">			.in(compilationUnit)</span>
+<span class="fc" id="L81">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L82">			.processEach(holder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, cb, visited, aholder));</span>
+<span class="fc" id="L83">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set&lt;CompilationUnitRewriteOperation&gt; operations,
 			ChangeBehavior cb, MethodInvocation visited,
 			ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L86">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING, String.class.getCanonicalName())) {</span>
-<span class="fc bfc" id="L88" title="All 2 branches covered.">			if (!(arguments.get(0) instanceof StringLiteral)) {</span>
-<span class="fc" id="L89">				return false;</span>
+<span class="fc" id="L88">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING, String.class.getCanonicalName())) {</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">			if (!(arguments.get(0) instanceof StringLiteral)) {</span>
+<span class="fc" id="L91">				return false;</span>
 			}
-<span class="fc" id="L91">			StringLiteral argstring3= (StringLiteral) arguments.get(0);</span>
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">			if (!ENCODINGS.contains(argstring3.getLiteralValue())) {</span>
-<span class="nc" id="L93">				return false;</span>
+<span class="fc" id="L93">			StringLiteral argstring3= (StringLiteral) arguments.get(0);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			if (!ENCODINGS.contains(argstring3.getLiteralValue())) {</span>
+<span class="nc" id="L95">				return false;</span>
 			}
-<span class="fc" id="L95">			NodeData nd= new NodeData(true, argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));</span>
-<span class="fc" id="L96">			holder.put(visited, nd);</span>
-<span class="fc" id="L97">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L98">			return false;</span>
+<span class="fc" id="L97">			NodeData nd= new NodeData(true, argstring3, ENCODING_MAP.get(argstring3.getLiteralValue()));</span>
+<span class="fc" id="L98">			holder.put(visited, nd);</span>
+<span class="fc" id="L99">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L100">			return false;</span>
 		}
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING)) {</span>
-<span class="fc" id="L101">			NodeData nd2= new NodeData(false, visited, null);</span>
-<span class="fc" id="L102">			holder.put(visited, nd2);</span>
-<span class="fc" id="L103">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L104">			return false;</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (ASTNodes.usesGivenSignature(visited, ByteArrayOutputStream.class.getCanonicalName(), METHOD_TOSTRING)) {</span>
+<span class="fc" id="L103">			NodeData nd2= new NodeData(false, visited, null);</span>
+<span class="fc" id="L104">			holder.put(visited, nd2);</span>
+<span class="fc" id="L105">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L106">			return false;</span>
 		}
-<span class="nc" id="L106">		return false;</span>
+<span class="nc" id="L108">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final MethodInvocation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L112">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L113">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L114">		ImportRewrite importRewriter= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L115">		NodeData nodedata= (NodeData) data.get(visited);</span>
-<span class="fc" id="L116">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(), getCharsetConstants());</span>
+<span class="fc" id="L114">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L115">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L116">		ImportRewrite importRewriter= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L117">		NodeData nodedata= (NodeData) data.get(visited);</span>
+<span class="fc" id="L118">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(), getCharsetConstants());</span>
 		/**
 		 * Add Charset.defaultCharset().displayName() as second (last) parameter of &quot;toString()&quot;
 		 * call Add Charset.defaultCharset() as second (last) parameter
 		 */
-<span class="fc" id="L121">		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="fc bfc" id="L122" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
-<span class="fc" id="L123">			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);</span>
-<span class="fc" id="L124">		} else {</span>
-<span class="fc" id="L125">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L123">		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
+<span class="fc" id="L125">			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L126">		} else {</span>
+<span class="fc" id="L127">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
 		}
-<span class="fc" id="L127">		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);</span>
-<span class="fc" id="L128">	}</span>
+<span class="fc" id="L129">		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);</span>
+<span class="fc" id="L130">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc" id="L132">		String insert= &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L133" title="All 3 branches missed.">		switch (cb) {</span>
+<span class="nc" id="L134">		String insert= &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L135" title="All 3 branches missed.">		switch (cb) {</span>
 			case KEEP_BEHAVIOR:
-<span class="nc" id="L135">				insert= &quot;Charset.defaultCharset().displayName()&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L136">				break;</span>
+<span class="nc" id="L137">				insert= &quot;Charset.defaultCharset().displayName()&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L138">				break;</span>
 			case ENFORCE_UTF8_AGGREGATE:
 				//				insert=&quot;charset_constant&quot;; //$NON-NLS-1$
 				//$FALL-THROUGH$
 			case ENFORCE_UTF8:
-<span class="nc" id="L141">				insert= &quot;StandardCharsets.UTF_8.displayName()&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L143">				insert= &quot;StandardCharsets.UTF_8.displayName()&quot;; //$NON-NLS-1$</span>
 				break;
 		}
-<span class="nc bnc" id="L144" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L145">			return &quot;ByteArrayOutputStream ba=new ByteArrayOutputStream();\n&quot; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L147">			return &quot;ByteArrayOutputStream ba=new ByteArrayOutputStream();\n&quot; //$NON-NLS-1$</span>
 					+ &quot;try {\n&quot; //$NON-NLS-1$
-<span class="nc" id="L147">					+ &quot;	String result=ba.toString(&quot; + insert + &quot;);\n&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L149">					+ &quot;	String result=ba.toString(&quot; + insert + &quot;);\n&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
 					+ &quot;} catch (UnsupportedEncodingException e1) {\n&quot; //$NON-NLS-1$
 					+ &quot;	e1.printStackTrace();\n&quot; //$NON-NLS-1$
 					+ &quot;}\n&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L152">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L154">		return &quot;&quot;&quot;</span>
 				ByteArrayOutputStream ba=new ByteArrayOutputStream();
 				try {
 					String result=ba.toString();
@@ -161,7 +163,7 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L164">		return &quot;ba.toString()&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L166">		return &quot;ba.toString()&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
