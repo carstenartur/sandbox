@@ -506,4 +506,215 @@ public class StringSimplificationCleanUpTest {
 		// Note: NOT enabling the cleanup option
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
+
+	// ========== Collection Size Check Tests ==========
+
+	/**
+	 * Tests transformation of {@code list.size() == 0} to {@code list.isEmpty()}.
+	 */
+	@Test
+	public void testCollectionSizeEqualsZero() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+			package test1;
+
+			import java.util.List;
+
+			public class E1 {
+			    void method(List<String> list) {
+			        boolean empty = list.size() == 0;
+			    }
+			}
+			""";
+
+		String expected = """
+			package test1;
+
+			import java.util.List;
+
+			public class E1 {
+			    void method(List<String> list) {
+			        boolean empty = list.isEmpty();
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+	/**
+	 * Tests transformation of {@code list.size() > 0} to {@code !list.isEmpty()}.
+	 */
+	@Test
+	public void testCollectionSizeGreaterThanZero() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+			package test1;
+
+			import java.util.List;
+
+			public class E1 {
+			    void method(List<String> list) {
+			        boolean hasItems = list.size() > 0;
+			    }
+			}
+			""";
+
+		String expected = """
+			package test1;
+
+			import java.util.List;
+
+			public class E1 {
+			    void method(List<String> list) {
+			        boolean hasItems = !list.isEmpty();
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+	// ========== StringBuilder/String.format Tests ==========
+
+	/**
+	 * Tests transformation of {@code new StringBuilder().append(x).toString()} to {@code String.valueOf(x)}.
+	 */
+	@Test
+	public void testStringBuilderSingleAppend() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+			package test1;
+
+			public class E1 {
+			    void method(int value) {
+			        String result = new StringBuilder().append(value).toString();
+			    }
+			}
+			""";
+
+		String expected = """
+			package test1;
+
+			public class E1 {
+			    void method(int value) {
+			        String result = String.valueOf(value);
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+	/**
+	 * Tests transformation of {@code String.format("%s", x)} to {@code String.valueOf(x)}.
+	 */
+	@Test
+	public void testStringFormatSimplification() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+			package test1;
+
+			public class E1 {
+			    void method(Object obj) {
+			        String result = String.format("%s", obj);
+			    }
+			}
+			""";
+
+		String expected = """
+			package test1;
+
+			public class E1 {
+			    void method(Object obj) {
+			        String result = String.valueOf(obj);
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+	// ========== Objects.equals/requireNonNullElse Tests ==========
+
+	/**
+	 * Tests transformation of {@code x.toString().equals(y)} to {@code Objects.equals(x.toString(), y)}.
+	 */
+	@Test
+	public void testToStringEqualsToObjectsEquals() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+			package test1;
+
+			public class E1 {
+			    void method(Object obj, String str) {
+			        boolean result = obj.toString().equals(str);
+			    }
+			}
+			""";
+
+		String expected = """
+			package test1;
+
+			import java.util.Objects;
+
+			public class E1 {
+			    void method(Object obj, String str) {
+			        boolean result = Objects.equals(obj.toString(), str);
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
+
+	/**
+	 * Tests transformation of {@code x != null ? x : defaultVal} to
+	 * {@code Objects.requireNonNullElse(x, defaultVal)}.
+	 */
+	@Test
+	public void testNullCheckTernaryToRequireNonNullElse() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+			package test1;
+
+			public class E1 {
+			    void method(String value) {
+			        String result = value != null ? value : "default";
+			    }
+			}
+			""";
+
+		String expected = """
+			package test1;
+
+			import java.util.Objects;
+
+			public class E1 {
+			    void method(String value) {
+			        String result = Objects.requireNonNullElse(value, "default");
+			    }
+			}
+			""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
+		context.enable(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+	}
 }

@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -108,6 +109,48 @@ public class StringSimplificationFixCore {
 		List<Match> ternaryFalseTrueMatches = ENGINE.findMatches(compilationUnit, ternaryFalseTruePattern);
 		for (Match match : ternaryFalseTrueMatches) {
 			operations.add(new SimplifyTernaryOperation(match, "Ternary false:true", true)); //$NON-NLS-1$
+		}
+		
+		// Pattern 9: $list.size() == 0
+		Pattern collectionSizePattern = new Pattern("$list.size() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> collectionSizeMatches = ENGINE.findMatches(compilationUnit, collectionSizePattern);
+		for (Match match : collectionSizeMatches) {
+			operations.add(new CollectionIsEmptyOperation(match, "Collection size check", "$list", false)); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		
+		// Pattern 10: $list.size() > 0
+		Pattern collectionNotEmptyPattern = new Pattern("$list.size() > 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> collectionNotEmptyMatches = ENGINE.findMatches(compilationUnit, collectionNotEmptyPattern);
+		for (Match match : collectionNotEmptyMatches) {
+			operations.add(new CollectionIsEmptyOperation(match, "Collection non-empty check", "$list", true)); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		
+		// Pattern 11: new StringBuilder().append($x).toString()
+		Pattern stringBuilderPattern = new Pattern("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> stringBuilderMatches = ENGINE.findMatches(compilationUnit, stringBuilderPattern);
+		for (Match match : stringBuilderMatches) {
+			operations.add(new StringValueOfOperation(match, "StringBuilder single append")); //$NON-NLS-1$
+		}
+		
+		// Pattern 12: String.format("%s", $x)
+		Pattern stringFormatPattern = new Pattern("String.format(\"%s\", $x)", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> stringFormatMatches = ENGINE.findMatches(compilationUnit, stringFormatPattern);
+		for (Match match : stringFormatMatches) {
+			operations.add(new StringValueOfOperation(match, "Redundant String.format")); //$NON-NLS-1$
+		}
+		
+		// Pattern 13: $x.toString().equals($y)
+		Pattern toStringEqualsPattern = new Pattern("$x.toString().equals($y)", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> toStringEqualsMatches = ENGINE.findMatches(compilationUnit, toStringEqualsPattern);
+		for (Match match : toStringEqualsMatches) {
+			operations.add(new ObjectsEqualsOperation(match, "Null-safe toString equals")); //$NON-NLS-1$
+		}
+		
+		// Pattern 14: $x != null ? $x : $default
+		Pattern nullCheckTernaryPattern = new Pattern("$x != null ? $x : $default", PatternKind.EXPRESSION); //$NON-NLS-1$
+		List<Match> nullCheckTernaryMatches = ENGINE.findMatches(compilationUnit, nullCheckTernaryPattern);
+		for (Match match : nullCheckTernaryMatches) {
+			operations.add(new RequireNonNullElseOperation(match, "Null-check ternary")); //$NON-NLS-1$
 		}
 	}
 	
@@ -298,6 +341,171 @@ public class StringSimplificationFixCore {
 			
 			// Apply the rewrite
 			rewrite.replace(ternary, replacement, group);
+		}
+	}
+	
+	/**
+	 * Rewrite operation for collection isEmpty() simplification.
+	 * 
+	 * <p>Handles both {@code $list.size() == 0} → {@code $list.isEmpty()}
+	 * and {@code $list.size() > 0} → {@code !$list.isEmpty()}.</p>
+	 */
+	private static class CollectionIsEmptyOperation extends CompilationUnitRewriteOperation {
+		
+		private final Match match;
+		private final String description;
+		private final String bindingName;
+		private final boolean negate;
+		
+		public CollectionIsEmptyOperation(Match match, String description, String bindingName, boolean negate) {
+			this.match = match;
+			this.description = description;
+			this.bindingName = bindingName;
+			this.negate = negate;
+		}
+		
+		@Override
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+			ASTRewrite rewrite = cuRewrite.getASTRewrite();
+			AST ast = cuRewrite.getRoot().getAST();
+			TextEditGroup group = createTextEditGroup(description, cuRewrite);
+			
+			ASTNode matchedNode = match.getMatchedNode();
+			
+			ASTNode listNode = match.getBinding(bindingName);
+			if (listNode == null || !(listNode instanceof Expression)) {
+				return;
+			}
+			
+			Expression listExpression = (Expression) listNode;
+			
+			// Create: listExpression.isEmpty()
+			MethodInvocation isEmptyCall = ast.newMethodInvocation();
+			isEmptyCall.setExpression((Expression) ASTNode.copySubtree(ast, listExpression));
+			isEmptyCall.setName(ast.newSimpleName("isEmpty")); //$NON-NLS-1$
+			
+			Expression replacement;
+			if (negate) {
+				// Create: !listExpression.isEmpty()
+				PrefixExpression negation = ast.newPrefixExpression();
+				negation.setOperator(PrefixExpression.Operator.NOT);
+				negation.setOperand(isEmptyCall);
+				replacement = negation;
+			} else {
+				replacement = isEmptyCall;
+			}
+			
+			rewrite.replace(matchedNode, replacement, group);
+		}
+	}
+	
+	/**
+	 * Rewrite operation for Objects.equals() null-safe transformation.
+	 * 
+	 * <p>Replaces {@code $x.toString().equals($y)} with {@code Objects.equals($x.toString(), $y)}.</p>
+	 */
+	private static class ObjectsEqualsOperation extends CompilationUnitRewriteOperation {
+		
+		private final Match match;
+		private final String description;
+		
+		public ObjectsEqualsOperation(Match match, String description) {
+			this.match = match;
+			this.description = description;
+		}
+		
+		@Override
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+			ASTRewrite rewrite = cuRewrite.getASTRewrite();
+			AST ast = cuRewrite.getRoot().getAST();
+			TextEditGroup group = createTextEditGroup(description, cuRewrite);
+			
+			ASTNode matchedNode = match.getMatchedNode();
+			if (!(matchedNode instanceof MethodInvocation)) {
+				return;
+			}
+			
+			ASTNode xNode = match.getBinding("$x"); //$NON-NLS-1$
+			ASTNode yNode = match.getBinding("$y"); //$NON-NLS-1$
+			
+			if (xNode == null || !(xNode instanceof Expression) ||
+			    yNode == null || !(yNode instanceof Expression)) {
+				return;
+			}
+			
+			Expression xExpression = (Expression) xNode;
+			Expression yExpression = (Expression) yNode;
+			
+			// Add import for java.util.Objects
+			ImportRewrite importRewrite = cuRewrite.getImportRewrite();
+			String objectsType = importRewrite.addImport("java.util.Objects"); //$NON-NLS-1$
+			
+			// Create: Objects.equals(x.toString(), y)
+			MethodInvocation equalsCall = ast.newMethodInvocation();
+			equalsCall.setExpression(ast.newName(objectsType));
+			equalsCall.setName(ast.newSimpleName("equals")); //$NON-NLS-1$
+			
+			// Create x.toString()
+			MethodInvocation toStringCall = ast.newMethodInvocation();
+			toStringCall.setExpression((Expression) ASTNode.copySubtree(ast, xExpression));
+			toStringCall.setName(ast.newSimpleName("toString")); //$NON-NLS-1$
+			
+			equalsCall.arguments().add(toStringCall);
+			equalsCall.arguments().add(ASTNode.copySubtree(ast, yExpression));
+			
+			rewrite.replace(matchedNode, equalsCall, group);
+		}
+	}
+	
+	/**
+	 * Rewrite operation for Objects.requireNonNullElse() transformation.
+	 * 
+	 * <p>Replaces {@code $x != null ? $x : $default} with {@code Objects.requireNonNullElse($x, $default)}.</p>
+	 */
+	private static class RequireNonNullElseOperation extends CompilationUnitRewriteOperation {
+		
+		private final Match match;
+		private final String description;
+		
+		public RequireNonNullElseOperation(Match match, String description) {
+			this.match = match;
+			this.description = description;
+		}
+		
+		@Override
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+			ASTRewrite rewrite = cuRewrite.getASTRewrite();
+			AST ast = cuRewrite.getRoot().getAST();
+			TextEditGroup group = createTextEditGroup(description, cuRewrite);
+			
+			ASTNode matchedNode = match.getMatchedNode();
+			if (!(matchedNode instanceof ConditionalExpression)) {
+				return;
+			}
+			
+			ASTNode xNode = match.getBinding("$x"); //$NON-NLS-1$
+			ASTNode defaultNode = match.getBinding("$default"); //$NON-NLS-1$
+			
+			if (xNode == null || !(xNode instanceof Expression) ||
+			    defaultNode == null || !(defaultNode instanceof Expression)) {
+				return;
+			}
+			
+			Expression xExpression = (Expression) xNode;
+			Expression defaultExpression = (Expression) defaultNode;
+			
+			// Add import for java.util.Objects
+			ImportRewrite importRewrite = cuRewrite.getImportRewrite();
+			String objectsType = importRewrite.addImport("java.util.Objects"); //$NON-NLS-1$
+			
+			// Create: Objects.requireNonNullElse(x, default)
+			MethodInvocation requireNonNullElseCall = ast.newMethodInvocation();
+			requireNonNullElseCall.setExpression(ast.newName(objectsType));
+			requireNonNullElseCall.setName(ast.newSimpleName("requireNonNullElse")); //$NON-NLS-1$
+			requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, xExpression));
+			requireNonNullElseCall.arguments().add(ASTNode.copySubtree(ast, defaultExpression));
+			
+			rewrite.replace(matchedNode, requireNonNullElseCall, group);
 		}
 	}
 }

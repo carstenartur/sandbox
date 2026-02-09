@@ -90,7 +90,7 @@ public class StringSimplificationCleanUpCore extends AbstractCleanUp {
 	public String[] getStepDescriptions() {
 		List<String> result = new ArrayList<>();
 		if (isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {
-			result.add("Simplifies string concatenation with empty strings to String.valueOf()"); //$NON-NLS-1$
+			result.add("Simplifies code patterns (e.g., empty string concatenation, collection size checks, redundant String.format)"); //$NON-NLS-1$
 		}
 		return result.toArray(new String[0]);
 	}
@@ -100,12 +100,12 @@ public class StringSimplificationCleanUpCore extends AbstractCleanUp {
 		if (isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {
 			return """
 				String result = String.valueOf(value);
-				String message = String.valueOf(count);
+				boolean empty = list.isEmpty();
 				"""; //$NON-NLS-1$
 		}
 		return """
 			String result = "" + value;
-			String message = count + "";
+			boolean empty = list.size() == 0;
 			"""; //$NON-NLS-1$
 	}
 }
