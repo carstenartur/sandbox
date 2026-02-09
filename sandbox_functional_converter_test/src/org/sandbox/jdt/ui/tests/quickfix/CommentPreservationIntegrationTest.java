@@ -96,9 +96,70 @@ public class CommentPreservationIntegrationTest {
         
         assertNotNull(extracted);
         assertNotNull(extracted.model);
+    }
+    
+    /**
+     * End-to-end test: verifies that comments before a filter statement (if-continue)
+     * are extracted from the AST and attached to the corresponding FilterOp in the model.
+     * This is the critical wiring that connects AST comment extraction to the ULR pipeline.
+     */
+    @Test
+    @DisplayName("End-to-end: comments before if-continue are attached to FilterOp")
+    void test_EndToEnd_FilterCommentAttached() throws CoreException {
+        String input = """
+            package test;
+            import java.util.List;
+            public class Test {
+                public void method(List<String> items) {
+                    for (String item : items) {
+                        // Skip empty items
+                        if (item.isEmpty()) continue;
+                        System.out.println(item);
+                    }
+                }
+            }
+            """;
         
-        // Comment extraction is implemented but not yet wired to operations
-        // This test validates the infrastructure is in place
+        IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+        ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, false, null);
+        
+        // Parse to get AST with bindings
+        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+        parser.setSource(cu);
+        parser.setResolveBindings(true);
+        CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
+        
+        // Find the for loop
+        EnhancedForStatement[] forLoop = new EnhancedForStatement[1];
+        compilationUnit.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
+            @Override
+            public boolean visit(EnhancedForStatement node) {
+                forLoop[0] = node;
+                return false;
+            }
+        });
+        
+        assertNotNull(forLoop[0]);
+        
+        // Extract loop with compilation unit to enable comment extraction
+        JdtLoopExtractor extractor = new JdtLoopExtractor();
+        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(forLoop[0], compilationUnit);
+        
+        assertNotNull(extracted);
+        assertNotNull(extracted.model);
+        
+        // The if-continue pattern should produce a FilterOp
+        assertFalse(extracted.model.getOperations().isEmpty(), "Model should have at least one operation");
+        
+        // The first operation should be a FilterOp (from if (item.isEmpty()) continue)
+        org.sandbox.functional.core.operation.Operation firstOp = extracted.model.getOperations().get(0);
+        assertTrue(firstOp instanceof FilterOp, "First operation should be FilterOp, was: " + firstOp);
+        
+        // The FilterOp should have the comment attached
+        FilterOp filterOp = (FilterOp) firstOp;
+        assertTrue(filterOp.hasComments(), "FilterOp should have comments attached from the AST");
+        assertTrue(filterOp.getComments().contains("Skip empty items"),
+            "FilterOp should contain 'Skip empty items' comment, but has: " + filterOp.getComments());
     }
     
     /**
