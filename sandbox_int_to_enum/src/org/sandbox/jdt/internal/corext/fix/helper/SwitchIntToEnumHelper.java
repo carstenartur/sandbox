@@ -19,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -28,10 +29,11 @@ import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrimitiveType;
-import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SwitchCase;
@@ -54,8 +56,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
  * <p>This handles the case where a switch statement already exists with int constant
  * case labels. The transformation:</p>
  * <ol>
- * <li>Detects public static final int constant declarations with a common prefix</li>
+ * <li>Detects static final int constant declarations with a common underscore-delimited prefix</li>
  * <li>Finds switch statements that use these constants as case labels</li>
+ * <li>Verifies the switch selector is a method parameter (so the type can be updated)</li>
+ * <li>Verifies constants are not referenced outside the switch (to avoid broken references)</li>
  * <li>Generates an enum type from the constant names</li>
  * <li>Replaces the int constants in switch cases with enum values</li>
  * <li>Removes the old int constant field declarations</li>
@@ -68,35 +72,6 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 	public void find(IntToEnumFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 
-		// Phase 1: Collect all static final int field declarations
-		Map<String, FieldDeclaration> intConstants = new LinkedHashMap<>();
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(FieldDeclaration node) {
-				int modifiers = node.getModifiers();
-				if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
-					Type type = node.getType();
-					if (type.isPrimitiveType()) {
-						PrimitiveType pt = (PrimitiveType) type;
-						if (pt.getPrimitiveTypeCode() == PrimitiveType.INT) {
-							for (Object fragment : node.fragments()) {
-								VariableDeclarationFragment vdf = (VariableDeclarationFragment) fragment;
-								intConstants.put(vdf.getName().getIdentifier(), node);
-							}
-						}
-					}
-				}
-				return true;
-			}
-		});
-
-		if (intConstants.size() < 2) {
-			return;
-		}
-
-		// Phase 2: Find switch statements that reference these constants
-		ReferenceHolder<Integer, IntConstantHolder> dataholder = new ReferenceHolder<>();
-
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SwitchStatement node) {
@@ -104,56 +79,154 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 					return true;
 				}
 
+				// Only process if the switch selector is a method parameter (so we can update its type)
+				Expression switchExpr = node.getExpression();
+				if (!(switchExpr instanceof SimpleName switchName)) {
+					return true;
+				}
+				MethodDeclaration method = findEnclosingMethod(node);
+				if (method == null || !isMethodParameter(method, switchName.getIdentifier())) {
+					return true;
+				}
+
+				// Collect constants from the same enclosing type as the switch
+				TypeDeclaration enclosingType = findEnclosingType(node);
+				if (enclosingType == null) {
+					return true;
+				}
+				Map<String, FieldDeclaration> intConstants = collectIntConstants(enclosingType);
+				if (intConstants.size() < 2) {
+					return true;
+				}
+
+				// Find case labels that reference collected constants (SimpleName only)
 				List<String> usedConstants = new ArrayList<>();
 				Map<String, FieldDeclaration> usedFields = new LinkedHashMap<>();
 
 				for (Object stmt : node.statements()) {
 					if (stmt instanceof SwitchCase switchCase && !switchCase.isDefault()) {
 						for (Object expr : switchCase.expressions()) {
-							String constName = extractConstantName(expr);
-							if (constName != null && intConstants.containsKey(constName)) {
-								usedConstants.add(constName);
-								usedFields.put(constName, intConstants.get(constName));
+							if (expr instanceof SimpleName sn) {
+								String constName = sn.getIdentifier();
+								if (intConstants.containsKey(constName)) {
+									usedConstants.add(constName);
+									usedFields.put(constName, intConstants.get(constName));
+								}
 							}
 						}
 					}
 				}
 
-				if (usedConstants.size() >= 2) {
-					String prefix = findCommonPrefix(usedConstants);
-					if (prefix != null && !prefix.isEmpty()) {
-						IntConstantHolder holder = new IntConstantHolder();
-						holder.switchStatement = node;
-						holder.constantFields.putAll(usedFields);
-						holder.constantNames.addAll(usedConstants);
+				if (usedConstants.size() < 2) {
+					return true;
+				}
 
-						Expression switchExpr = node.getExpression();
-						if (switchExpr instanceof SimpleName sn) {
-							holder.comparedVariable = sn.getIdentifier();
-						}
-						holder.nodesProcessed = nodesprocessed;
+				String prefix = findCommonPrefix(usedConstants);
+				if (prefix == null) {
+					return true;
+				}
 
-						dataholder.put(dataholder.size(), holder);
-						nodesprocessed.add(node);
+				// Validate all derived enum constant names are valid Java identifiers
+				for (String constName : usedConstants) {
+					String enumValueName = constName.substring(prefix.length());
+					if (enumValueName.isEmpty() || !Character.isJavaIdentifierStart(enumValueName.charAt(0))) {
+						return true;
 					}
 				}
+
+				// Verify constants are not referenced outside the switch statement
+				if (hasReferencesOutsideSwitch(compilationUnit, usedFields.keySet(), node)) {
+					return true;
+				}
+
+				IntConstantHolder holder = new IntConstantHolder();
+				holder.switchStatement = node;
+				holder.constantFields.putAll(usedFields);
+				holder.constantNames.addAll(usedConstants);
+				holder.comparedVariable = switchName.getIdentifier();
+				holder.nodesProcessed = nodesprocessed;
+
+				ReferenceHolder<Integer, IntConstantHolder> dataholder = new ReferenceHolder<>();
+				dataholder.put(0, holder);
+				operations.add(fixcore.rewrite(dataholder));
+				nodesprocessed.add(node);
 
 				return true;
 			}
 		});
-
-		if (!dataholder.isEmpty()) {
-			operations.add(fixcore.rewrite(dataholder));
-		}
 	}
 
-	private static String extractConstantName(Object expr) {
-		if (expr instanceof SimpleName sn) {
-			return sn.getIdentifier();
-		} else if (expr instanceof QualifiedName qn) {
-			return qn.getName().getIdentifier();
+	/**
+	 * Collect static final int field declarations from the given type declaration.
+	 */
+	private static Map<String, FieldDeclaration> collectIntConstants(TypeDeclaration typeDecl) {
+		Map<String, FieldDeclaration> intConstants = new LinkedHashMap<>();
+		for (FieldDeclaration field : typeDecl.getFields()) {
+			int modifiers = field.getModifiers();
+			if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
+				Type type = field.getType();
+				if (type.isPrimitiveType()
+						&& ((PrimitiveType) type).getPrimitiveTypeCode() == PrimitiveType.INT) {
+					for (Object fragment : field.fragments()) {
+						VariableDeclarationFragment vdf = (VariableDeclarationFragment) fragment;
+						intConstants.put(vdf.getName().getIdentifier(), field);
+					}
+				}
+			}
 		}
-		return null;
+		return intConstants;
+	}
+
+	/**
+	 * Check if the given variable name is a parameter of the method.
+	 */
+	private static boolean isMethodParameter(MethodDeclaration method, String varName) {
+		for (Object param : method.parameters()) {
+			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;
+			if (svd.getName().getIdentifier().equals(varName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check if any of the named constants are referenced outside the given switch statement.
+	 * Returns true if there are external references (meaning we should NOT transform).
+	 */
+	private static boolean hasReferencesOutsideSwitch(CompilationUnit cu, Set<String> constantNames,
+			SwitchStatement switchStatement) {
+		AtomicBoolean hasExternalRef = new AtomicBoolean(false);
+		cu.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				if (hasExternalRef.get()) {
+					return false;
+				}
+				if (!constantNames.contains(node.getIdentifier())) {
+					return true;
+				}
+				IBinding binding = node.resolveBinding();
+				if (!(binding instanceof IVariableBinding vb) || !vb.isField()) {
+					return true;
+				}
+				// Check if this reference is inside the switch statement or in a field declaration
+				ASTNode parent = node.getParent();
+				while (parent != null) {
+					if (parent == switchStatement) {
+						return true; // inside the switch - OK
+					}
+					if (parent instanceof FieldDeclaration) {
+						return true; // in the field declaration itself - OK
+					}
+					parent = parent.getParent();
+				}
+				// Reference found outside the switch statement
+				hasExternalRef.set(true);
+				return false;
+			}
+		});
+		return hasExternalRef.get();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -170,7 +243,7 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 			ASTRewrite rewrite = cuRewrite.getASTRewrite();
 
 			String prefix = findCommonPrefix(data.constantNames);
-			if (prefix == null || prefix.isEmpty()) {
+			if (prefix == null) {
 				continue;
 			}
 
@@ -229,11 +302,13 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 			for (Object stmt : data.switchStatement.statements()) {
 				if (stmt instanceof SwitchCase switchCase && !switchCase.isDefault()) {
 					for (Object expr : switchCase.expressions()) {
-						String constName = extractConstantName(expr);
-						if (constName != null && data.constantFields.containsKey(constName)) {
-							String enumValueName = constName.substring(prefix.length());
-							SimpleName newName = ast.newSimpleName(enumValueName);
-							rewrite.replace((ASTNode) expr, newName, group);
+						if (expr instanceof SimpleName sn) {
+							String constName = sn.getIdentifier();
+							if (data.constantFields.containsKey(constName)) {
+								String enumValueName = constName.substring(prefix.length());
+								SimpleName newName = ast.newSimpleName(enumValueName);
+								rewrite.replace(sn, newName, group);
+							}
 						}
 					}
 				}
@@ -255,6 +330,7 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 
 	/**
 	 * Find the longest common prefix of all constant names, ending at an underscore boundary.
+	 * Returns null if no valid underscore-delimited prefix is found.
 	 */
 	static String findCommonPrefix(List<String> names) {
 		if (names == null || names.isEmpty()) {
@@ -272,12 +348,15 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 			}
 		}
 		String prefix = first.substring(0, prefixEnd);
-		// Trim to last underscore for a clean prefix boundary
+		// Trim to last underscore for a clean prefix boundary.
+		// If there is no underscore (or only at position 0), we do not
+		// consider this a valid prefix according to the architecture
+		// contract (which requires underscore-delimited prefixes).
 		int lastUnderscore = prefix.lastIndexOf('_');
 		if (lastUnderscore > 0) {
 			return prefix.substring(0, lastUnderscore + 1);
 		}
-		return prefix;
+		return null;
 	}
 
 	/**
