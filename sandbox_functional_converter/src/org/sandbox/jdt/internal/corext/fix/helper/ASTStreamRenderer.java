@@ -529,7 +529,6 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 break;
             case TO_MAP:
                 collector.setName(ast.newSimpleName("toMap"));
-                // Key and value mappers würden hier hinzugefügt
                 break;
             case JOINING:
                 collector.setName(ast.newSimpleName("joining"));
