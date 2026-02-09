@@ -460,8 +460,22 @@ public class JdtLoopExtractor {
             // if (cond) return true; → anyMatch(cond)
             builder.anyMatch(condition);
         } else {
-            // if (cond) return false; → noneMatch(cond) or allMatch(!cond)
-            builder.noneMatch(condition);
+            // if (cond) return false; 
+            // Check if the condition is already negated → allMatch with inner condition
+            Expression condExpr = ifStmt.getExpression();
+            if (condExpr instanceof PrefixExpression prefix 
+                    && prefix.getOperator() == PrefixExpression.Operator.NOT) {
+                // if (!innerCond) return false; → allMatch(innerCond)
+                String innerCondition = prefix.getOperand().toString();
+                builder.allMatch(innerCondition);
+            } else if (condition.startsWith("!(") && condition.endsWith(")")) {
+                // if (!(innerCond)) return false; → allMatch(innerCond)
+                String innerCondition = condition.substring(2, condition.length() - 1);
+                builder.allMatch(innerCondition);
+            } else {
+                // if (cond) return false; → noneMatch(cond)
+                builder.noneMatch(condition);
+            }
         }
     }
     

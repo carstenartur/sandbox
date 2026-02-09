@@ -362,15 +362,54 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
             return ast.newExpressionStatement(streamExpression);
         }
         
-        if (model.getTerminal() instanceof org.sandbox.functional.core.terminal.MatchTerminal) {
-            // For match: return stream.anyMatch/allMatch/noneMatch(...)
-            ReturnStatement returnStmt = ast.newReturnStatement();
-            returnStmt.setExpression(streamExpression);
-            return returnStmt;
+        if (model.getTerminal() instanceof org.sandbox.functional.core.terminal.MatchTerminal matchTerminal) {
+            // For match: wrap in if-statement matching V1 behavior
+            // anyMatch: if (stream.anyMatch(...)) { return true; }
+            // noneMatch: if (!stream.noneMatch(...)) { return false; }
+            // allMatch: if (!stream.allMatch(...)) { return false; }
+            return createMatchIfStatement(ast, streamExpression, matchTerminal);
         }
         
         // Default: wrap in ExpressionStatement
         return ast.newExpressionStatement(streamExpression);
+    }
+    
+    /**
+     * Creates an IfStatement wrapping a match expression, matching V1's behavior.
+     * 
+     * <p>For anyMatch: {@code if (stream.anyMatch(...)) { return true; }}</p>
+     * <p>For noneMatch: {@code if (!stream.noneMatch(...)) { return false; }}</p>
+     * <p>For allMatch: {@code if (!stream.allMatch(...)) { return false; }}</p>
+     */
+    @SuppressWarnings("unchecked")
+    private Statement createMatchIfStatement(AST ast, Expression streamExpression,
+                                              org.sandbox.functional.core.terminal.MatchTerminal matchTerminal) {
+        IfStatement ifStmt = ast.newIfStatement();
+        
+        org.sandbox.functional.core.terminal.MatchTerminal.MatchType matchType = matchTerminal.matchType();
+        
+        if (matchType == org.sandbox.functional.core.terminal.MatchTerminal.MatchType.ANY_MATCH) {
+            // if (stream.anyMatch(...)) { return true; }
+            ifStmt.setExpression(streamExpression);
+            Block thenBlock = ast.newBlock();
+            ReturnStatement returnStmt = ast.newReturnStatement();
+            returnStmt.setExpression(ast.newBooleanLiteral(true));
+            thenBlock.statements().add(returnStmt);
+            ifStmt.setThenStatement(thenBlock);
+        } else {
+            // noneMatch/allMatch: if (!stream.noneMatch/allMatch(...)) { return false; }
+            PrefixExpression negation = ast.newPrefixExpression();
+            negation.setOperator(PrefixExpression.Operator.NOT);
+            negation.setOperand(streamExpression);
+            ifStmt.setExpression(negation);
+            Block thenBlock = ast.newBlock();
+            ReturnStatement returnStmt = ast.newReturnStatement();
+            returnStmt.setExpression(ast.newBooleanLiteral(false));
+            thenBlock.statements().add(returnStmt);
+            ifStmt.setThenStatement(thenBlock);
+        }
+        
+        return ifStmt;
     }
     
     /**
