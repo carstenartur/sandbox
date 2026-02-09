@@ -25,6 +25,10 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopMetadata;
 import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.terminal.CollectTerminal;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
+import org.sandbox.functional.core.terminal.ReduceTerminal;
+import org.sandbox.functional.core.transformer.LoopModelTransformer;
 import org.sandbox.functional.core.tree.ConversionDecision;
 import org.sandbox.functional.core.tree.LoopKind;
 import org.sandbox.functional.core.tree.LoopTree;
@@ -35,20 +39,23 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
 
 /**
- * Unified implementation using the Unified Loop Representation (ULR) architecture
- * with fallback to V1's Refactorer for complex patterns.
+ * V2 loop-to-functional converter using the Unified Loop Representation (ULR).
  * 
- * <p>This class is the single loop-to-functional converter. It uses the ULR-based
- * pipeline (JdtLoopExtractor → LoopModel → ASTStreamRenderer) for simple forEach
- * patterns, and falls back to V1's Refactorer (PreconditionsChecker → StreamPipelineBuilder
- * → Refactorer) for complex patterns like filter, map, collect, and reduce.</p>
+ * <p>This class implements the complete loop-to-functional conversion using the ULR pipeline:
+ * {@code JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer}.</p>
  * 
- * <p>This consolidation replaces the former separate V1 ({@code LoopToFunctional}) and
- * V2 implementations, achieving feature parity by combining both approaches.</p>
+ * <p>The {@link JdtLoopExtractor} bridges JDT AST nodes to the abstract {@link LoopModel},
+ * detecting all supported patterns (filter, map, collect, reduce, match, forEach).
+ * The {@link LoopModelTransformer} then drives the {@link ASTStreamRenderer} to produce
+ * JDT AST nodes for the stream pipeline.</p>
+ * 
+ * <p>The core transformation logic (pattern detection, model building) is testable
+ * without OSGi via {@code sandbox-functional-converter-core}.</p>
  * 
  * @see LoopModel
+ * @see JdtLoopExtractor
  * @see ASTStreamRenderer
- * @see Refactorer
+ * @see LoopModelTransformer
  */
 public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatement> {
     
@@ -240,23 +247,20 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
             }
         }
         
-        // Use V1's PreconditionsChecker for thorough safety validation
-        // (checks exceptions, effectively-final vars, labeled continues, etc.)
-        PreconditionsChecker pc = new PreconditionsChecker(visited, compilationUnit);
-        if (!pc.isSafeToRefactor()) {
+        // Extract ULR LoopModel — this now does full body analysis (filter, map, collect, etc.)
+        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(visited, compilationUnit);
+        
+        // Use LoopModel-based convertibility check
+        if (!isConvertible(extracted.model)) {
             node.setDecision(ConversionDecision.NOT_CONVERTIBLE);
             return;
         }
         
-        // Use V1's StreamPipelineBuilder to verify the body can be analyzed into a stream pipeline
-        StreamPipelineBuilder builder = new StreamPipelineBuilder(visited, pc);
-        if (!builder.analyze()) {
+        // Verify the model has a terminal (i.e., the body was analyzed successfully)
+        if (extracted.model.getTerminal() == null) {
             node.setDecision(ConversionDecision.NOT_CONVERTIBLE);
             return;
         }
-        
-        // Also extract ULR LoopModel for use by the ULR-based rendering path
-        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(visited);
         
         // Cache the extracted loop so that later phases (e.g., rewrite construction)
         // can reuse it without re-running the extraction on the same AST node.
@@ -274,17 +278,20 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         // Get the extracted loop from the holder (passed from find())
         JdtLoopExtractor.ExtractedLoop extracted = (JdtLoopExtractor.ExtractedLoop) data.get(visited);
         
-        // Try ULR-based path first for simple forEach patterns
-        if (extracted != null && isConvertible(extracted.model) && canUseDirectForEach(extracted.model)) {
-            AST ast = cuRewrite.getRoot().getAST();
-            ASTRewrite rewrite = cuRewrite.getASTRewrite();
-            CompilationUnit compilationUnit = cuRewrite.getRoot();
-            
-            // Create renderer with original body for AST node access
-            ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit, extracted.originalBody);
-            
-            org.sandbox.functional.core.terminal.ForEachTerminal terminal = 
-                (org.sandbox.functional.core.terminal.ForEachTerminal) extracted.model.getTerminal();
+        if (extracted == null || !isConvertible(extracted.model)) {
+            return;
+        }
+        
+        AST ast = cuRewrite.getRoot().getAST();
+        ASTRewrite rewrite = cuRewrite.getASTRewrite();
+        CompilationUnit compilationUnit = cuRewrite.getRoot();
+        
+        // Create renderer with original body for AST node access
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, compilationUnit, extracted.originalBody);
+        
+        // Check if we can use direct forEach (no operations, collection source)
+        if (canUseDirectForEach(extracted.model)) {
+            ForEachTerminal terminal = (ForEachTerminal) extracted.model.getTerminal();
             String varName = extracted.model.getElement() != null 
                 ? extracted.model.getElement().variableName() 
                 : "x";
@@ -299,7 +306,6 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
                 ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);
                 rewrite.replace(visited, newStatement, group);
                 
-                // For direct forEach on arrays, we still need Arrays import
                 if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
                     cuRewrite.getImportRewrite().addImport("java.util.Arrays");
                 }
@@ -307,11 +313,78 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
             }
         }
         
-        // Fallback to V1's Refactorer for complex patterns (filter, map, collect, reduce, etc.)
-        ASTRewrite rewrite = cuRewrite.getASTRewrite();
-        PreconditionsChecker pc = new PreconditionsChecker(visited, (CompilationUnit) visited.getRoot());
-        Refactorer refactorer = new Refactorer(visited, rewrite, pc, group, cuRewrite);
-        refactorer.refactor();
+        // Use LoopModelTransformer for ALL patterns (filter, map, collect, reduce, match, forEach with ops)
+        LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
+        Expression streamExpression = transformer.transform(extracted.model);
+        
+        if (streamExpression != null) {
+            // Wrap the stream expression appropriately based on terminal type
+            Statement replacement = createReplacement(ast, streamExpression, extracted.model, visited);
+            if (replacement != null) {
+                rewrite.replace(visited, replacement, group);
+                addRequiredImports(cuRewrite, extracted.model);
+            }
+        }
+    }
+    
+    /**
+     * Creates the replacement statement based on the terminal type.
+     * 
+     * <p>For most terminals (forEach, collect), the stream expression is wrapped in an
+     * ExpressionStatement. For collect/reduce, we may need to create an assignment
+     * to the original target variable.</p>
+     */
+    private Statement createReplacement(AST ast, Expression streamExpression, LoopModel model,
+                                         EnhancedForStatement originalLoop) {
+        if (model.getTerminal() instanceof CollectTerminal collectTerminal) {
+            // For collect: targetVar = stream.collect(...)
+            String targetVar = collectTerminal.targetVariable();
+            if (targetVar != null && !targetVar.isEmpty()) {
+                // Create: targetVar = streamExpression;
+                Assignment assignment = ast.newAssignment();
+                assignment.setLeftHandSide(ast.newSimpleName(targetVar));
+                assignment.setOperator(Assignment.Operator.ASSIGN);
+                assignment.setRightHandSide(streamExpression);
+                return ast.newExpressionStatement(assignment);
+            }
+        }
+        
+        if (model.getTerminal() instanceof ReduceTerminal) {
+            // For reduce: just the expression statement (reduce result is typically assigned externally)
+            return ast.newExpressionStatement(streamExpression);
+        }
+        
+        if (model.getTerminal() instanceof org.sandbox.functional.core.terminal.MatchTerminal) {
+            // For match: return stream.anyMatch/allMatch/noneMatch(...)
+            ReturnStatement returnStmt = ast.newReturnStatement();
+            returnStmt.setExpression(streamExpression);
+            return returnStmt;
+        }
+        
+        // Default: wrap in ExpressionStatement
+        return ast.newExpressionStatement(streamExpression);
+    }
+    
+    /**
+     * Adds required imports based on the LoopModel operations and terminals.
+     */
+    private void addRequiredImports(CompilationUnitRewrite cuRewrite, LoopModel model) {
+        // Source-based imports
+        switch (model.getSource().type()) {
+            case ARRAY:
+                cuRewrite.getImportRewrite().addImport("java.util.Arrays");
+                break;
+            case ITERABLE:
+                cuRewrite.getImportRewrite().addImport("java.util.stream.StreamSupport");
+                break;
+            default:
+                break;
+        }
+        
+        // Terminal-based imports
+        if (model.getTerminal() instanceof CollectTerminal) {
+            cuRewrite.getImportRewrite().addImport("java.util.stream.Collectors");
+        }
     }
     
     /**

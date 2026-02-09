@@ -126,37 +126,309 @@ public class JdtLoopExtractor {
         return false;
     }
     
+    /**
+     * Analyzes the loop body and populates the builder with operations and terminal.
+     * 
+     * <p>Detects the following patterns:</p>
+     * <ul>
+     *   <li>IF with continue → negated FilterOp</li>
+     *   <li>IF guard (no else) → FilterOp + nested body</li>
+     *   <li>Variable declaration with assignment → MapOp</li>
+     *   <li>Variable reassignment → MapOp</li>
+     *   <li>collection.add(expr) → CollectTerminal (TO_LIST or TO_SET)</li>
+     *   <li>accumulator patterns (+=, ++, etc.) → ReduceTerminal</li>
+     *   <li>if (cond) return true/false → MatchTerminal</li>
+     *   <li>Everything else → ForEachTerminal</li>
+     * </ul>
+     */
     private void analyzeAndAddOperations(Statement body, LoopModelBuilder builder, String varName, CompilationUnit compilationUnit) {
-        // For now, treat the entire body as a forEach terminal
-        // More sophisticated analysis will be added later
+        java.util.List<Statement> statements = new java.util.ArrayList<>();
         
-        java.util.List<String> bodyStatements = new java.util.ArrayList<>();
-        
-        if (body instanceof Block) {
-            Block block = (Block) body;
+        if (body instanceof Block block) {
             for (Object stmt : block.statements()) {
-                String stmtStr = stmt.toString();
-                // Strip trailing semicolon for expression statements
-                // This allows the renderer to use them as lambda expressions
-                if (stmtStr.endsWith(";")) {
-                    stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();
-                }
-                bodyStatements.add(stmtStr);
+                statements.add((Statement) stmt);
             }
         } else {
-            String stmtStr = body.toString();
-            // Strip trailing semicolon for expression statements
-            if (stmtStr.endsWith(";")) {
-                stmtStr = stmtStr.substring(0, stmtStr.length() - 1).trim();
-            }
-            bodyStatements.add(stmtStr);
+            statements.add(body);
         }
         
-        builder.forEach(bodyStatements, false); // unordered for simple enhanced for
+        // Analyze statements and build operations/terminal
+        String currentVarName = varName;
+        boolean hasOperations = false;
         
-        // Note: Comment extraction is implemented but not yet wired up to specific operations
-        // This would require more sophisticated loop body analysis to detect filter/map patterns
-        // For now, extractComments() is available for future use when operation detection is added
+        for (int i = 0; i < statements.size(); i++) {
+            Statement stmt = statements.get(i);
+            boolean isLast = (i == statements.size() - 1);
+            
+            // Pattern 1: if (cond) continue; → filter(x -> !(cond))
+            if (stmt instanceof IfStatement ifStmt && ifStmt.getElseStatement() == null) {
+                Statement thenStmt = ifStmt.getThenStatement();
+                if (isContinueStatement(thenStmt)) {
+                    String condition = ifStmt.getExpression().toString();
+                    builder.filter("!(" + condition + ")");
+                    hasOperations = true;
+                    continue;
+                }
+                
+                // Pattern 2: Early return match patterns: if (cond) return true/false;
+                //   followed by return false/true at end of method
+                if (isLast && isEarlyReturnIf(ifStmt, statements)) {
+                    addMatchTerminal(ifStmt, builder, currentVarName);
+                    return; // terminal set, done
+                }
+                
+                // Pattern 3: if (cond) { body } → filter(x -> cond) + body operations
+                if (isLast) {
+                    String condition = ifStmt.getExpression().toString();
+                    builder.filter("(" + condition + ")");
+                    hasOperations = true;
+                    // Recurse into then-block
+                    analyzeAndAddOperations(ifStmt.getThenStatement(), builder, currentVarName, compilationUnit);
+                    return; // terminal already set by recursion
+                }
+            }
+            
+            // Pattern 4: Variable declaration: Type x = expr; → map(var -> expr) with renamed var
+            if (stmt instanceof VariableDeclarationStatement varDecl && !isLast) {
+                @SuppressWarnings("unchecked")
+                java.util.List<VariableDeclarationFragment> fragments = varDecl.fragments();
+                if (fragments.size() == 1) {
+                    VariableDeclarationFragment frag = fragments.get(0);
+                    Expression init = frag.getInitializer();
+                    if (init != null) {
+                        String newVarName = frag.getName().getIdentifier();
+                        String mapExpr = init.toString();
+                        builder.map(mapExpr, varDecl.getType().toString());
+                        currentVarName = newVarName;
+                        hasOperations = true;
+                        continue;
+                    }
+                }
+            }
+            
+            // Pattern 5: Variable reassignment: x = expr; → map(x -> expr)
+            if (stmt instanceof ExpressionStatement exprStmt && !isLast) {
+                Expression expr = exprStmt.getExpression();
+                if (expr instanceof Assignment assign) {
+                    Expression lhs = assign.getLeftHandSide();
+                    if (lhs instanceof SimpleName name 
+                            && assign.getOperator() == Assignment.Operator.ASSIGN) {
+                        String assignedVar = name.getIdentifier();
+                        String mapExpr = assign.getRightHandSide().toString();
+                        builder.map(mapExpr, null);
+                        currentVarName = assignedVar;
+                        hasOperations = true;
+                        continue;
+                    }
+                }
+            }
+            
+            // Pattern 6: collection.add(expr) → CollectTerminal
+            if (isCollectPattern(stmt)) {
+                addCollectTerminal(stmt, builder, currentVarName);
+                return; // terminal set, done
+            }
+            
+            // Pattern 7: Accumulator pattern (+=, ++, etc.) → ReduceTerminal
+            if (isReducePattern(stmt)) {
+                addReduceTerminal(stmt, builder, currentVarName);
+                return; // terminal set, done
+            }
+            
+            // Pattern 8: Everything else at the end → ForEachTerminal
+            if (isLast || i == statements.size() - 1) {
+                java.util.List<String> bodyStmts = new java.util.ArrayList<>();
+                // Collect remaining statements from current position onward
+                for (int j = i; j < statements.size(); j++) {
+                    String stmtStr = statements.get(j).toString();
+                    if (stmtStr.endsWith(";\n") || stmtStr.endsWith(";")) {
+                        stmtStr = stmtStr.replaceAll(";\\s*$", "").trim();
+                    }
+                    bodyStmts.add(stmtStr);
+                }
+                // Use forEachOrdered when there are intermediate operations (filter/map)
+                // to preserve encounter order, just like V1
+                builder.forEach(bodyStmts, hasOperations);
+                return; // terminal set, done
+            }
+        }
+        
+        // Fallback: treat entire body as forEach if nothing matched
+        java.util.List<String> bodyStmts = new java.util.ArrayList<>();
+        for (Statement stmt : statements) {
+            String stmtStr = stmt.toString();
+            if (stmtStr.endsWith(";\n") || stmtStr.endsWith(";")) {
+                stmtStr = stmtStr.replaceAll(";\\s*$", "").trim();
+            }
+            bodyStmts.add(stmtStr);
+        }
+        builder.forEach(bodyStmts, hasOperations);
+    }
+    
+    private boolean isContinueStatement(Statement stmt) {
+        if (stmt instanceof ContinueStatement) {
+            return true;
+        }
+        if (stmt instanceof Block block) {
+            @SuppressWarnings("unchecked")
+            java.util.List<Statement> stmts = block.statements();
+            return stmts.size() == 1 && stmts.get(0) instanceof ContinueStatement;
+        }
+        return false;
+    }
+    
+    /**
+     * Detects early return patterns for anyMatch/noneMatch/allMatch.
+     * Pattern: if (condition) return true/false; (as last statement)
+     */
+    private boolean isEarlyReturnIf(IfStatement ifStmt, java.util.List<Statement> statements) {
+        Statement thenStmt = ifStmt.getThenStatement();
+        if (thenStmt instanceof ReturnStatement returnStmt) {
+            return returnStmt.getExpression() instanceof BooleanLiteral;
+        }
+        if (thenStmt instanceof Block block) {
+            @SuppressWarnings("unchecked")
+            java.util.List<Statement> stmts = block.statements();
+            if (stmts.size() == 1 && stmts.get(0) instanceof ReturnStatement returnStmt) {
+                return returnStmt.getExpression() instanceof BooleanLiteral;
+            }
+        }
+        return false;
+    }
+    
+    private void addMatchTerminal(IfStatement ifStmt, LoopModelBuilder builder, String varName) {
+        String condition = ifStmt.getExpression().toString();
+        
+        // Determine match type from the return value
+        Statement thenStmt = ifStmt.getThenStatement();
+        ReturnStatement returnStmt;
+        if (thenStmt instanceof ReturnStatement rs) {
+            returnStmt = rs;
+        } else {
+            @SuppressWarnings("unchecked")
+            java.util.List<Statement> stmts = ((Block) thenStmt).statements();
+            returnStmt = (ReturnStatement) stmts.get(0);
+        }
+        
+        boolean returnsTrue = ((BooleanLiteral) returnStmt.getExpression()).booleanValue();
+        
+        if (returnsTrue) {
+            // if (cond) return true; → anyMatch(cond)
+            builder.anyMatch(condition);
+        } else {
+            // if (cond) return false; → noneMatch(cond) or allMatch(!cond)
+            builder.noneMatch(condition);
+        }
+    }
+    
+    /**
+     * Detects collection.add(expr) patterns.
+     */
+    private boolean isCollectPattern(Statement stmt) {
+        if (stmt instanceof ExpressionStatement exprStmt) {
+            Expression expr = exprStmt.getExpression();
+            if (expr instanceof MethodInvocation mi) {
+                String methodName = mi.getName().getIdentifier();
+                return "add".equals(methodName) && mi.arguments().size() == 1;
+            }
+        }
+        return false;
+    }
+    
+    private void addCollectTerminal(Statement stmt, LoopModelBuilder builder, String varName) {
+        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+        MethodInvocation mi = (MethodInvocation) exprStmt.getExpression();
+        
+        // Determine collector type from the target collection type
+        Expression target = mi.getExpression();
+        ITypeBinding targetType = target != null ? target.resolveTypeBinding() : null;
+        
+        org.sandbox.functional.core.terminal.CollectTerminal.CollectorType collectorType =
+            org.sandbox.functional.core.terminal.CollectTerminal.CollectorType.TO_LIST;
+        
+        if (targetType != null) {
+            String typeName = targetType.getErasure() != null ? targetType.getErasure().getQualifiedName() : "";
+            if (typeName.contains("Set")) {
+                collectorType = org.sandbox.functional.core.terminal.CollectTerminal.CollectorType.TO_SET;
+            }
+        }
+        
+        String targetVar = target != null ? target.toString() : "result";
+        
+        // Check if the added expression is not identity (needs a map before collect)
+        Expression addedExpr = (Expression) mi.arguments().get(0);
+        if (addedExpr instanceof SimpleName sn && sn.getIdentifier().equals(varName)) {
+            // Identity mapping - just collect
+            builder.collect(collectorType, targetVar);
+        } else {
+            // Non-identity: add map before collect
+            builder.map(addedExpr.toString());
+            builder.collect(collectorType, targetVar);
+        }
+    }
+    
+    /**
+     * Detects accumulator patterns like sum += x, count++, etc.
+     */
+    private boolean isReducePattern(Statement stmt) {
+        if (stmt instanceof ExpressionStatement exprStmt) {
+            Expression expr = exprStmt.getExpression();
+            // Compound assignment: sum += x, product *= x
+            if (expr instanceof Assignment assign) {
+                Assignment.Operator op = assign.getOperator();
+                return op == Assignment.Operator.PLUS_ASSIGN 
+                    || op == Assignment.Operator.MINUS_ASSIGN
+                    || op == Assignment.Operator.TIMES_ASSIGN;
+            }
+            // Postfix: count++, count--
+            if (expr instanceof PostfixExpression) {
+                return true;
+            }
+            // Prefix: ++count, --count
+            if (expr instanceof PrefixExpression prefix) {
+                PrefixExpression.Operator op = prefix.getOperator();
+                return op == PrefixExpression.Operator.INCREMENT 
+                    || op == PrefixExpression.Operator.DECREMENT;
+            }
+        }
+        return false;
+    }
+    
+    private void addReduceTerminal(Statement stmt, LoopModelBuilder builder, String varName) {
+        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
+        Expression expr = exprStmt.getExpression();
+        
+        if (expr instanceof Assignment assign) {
+            Assignment.Operator op = assign.getOperator();
+            String accumVar = assign.getLeftHandSide().toString();
+            String valueExpr = assign.getRightHandSide().toString();
+            
+            if (op == Assignment.Operator.PLUS_ASSIGN) {
+                builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + " + valueExpr, null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM);
+            } else if (op == Assignment.Operator.TIMES_ASSIGN) {
+                builder.reduce("1", "(" + accumVar + ", " + varName + ") -> " + accumVar + " * " + valueExpr, null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT);
+            } else {
+                // Generic reduce
+                builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - " + valueExpr, null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM);
+            }
+        } else if (expr instanceof PostfixExpression postfix) {
+            // count++ → mapToLong().count() or reduce(0, (a,b) -> a + 1)
+            String accumVar = postfix.getOperand().toString();
+            builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + 1", null,
+                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT);
+        } else if (expr instanceof PrefixExpression prefix) {
+            String accumVar = prefix.getOperand().toString();
+            if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {
+                builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + 1", null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT);
+            } else {
+                builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - 1", null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM);
+            }
+        }
     }
     
     /**
