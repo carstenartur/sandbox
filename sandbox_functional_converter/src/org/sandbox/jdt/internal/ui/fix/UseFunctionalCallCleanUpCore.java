@@ -14,10 +14,12 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_ENABLED;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP_V2;
-import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR;
-import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUp_description;
 import static org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages.LoopConversion_Description;
@@ -38,18 +40,31 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
+import org.eclipse.jdt.internal.ui.fix.MapCleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	
+	private Map<String, String> optionsMap;
+	
 	public UseFunctionalCallCleanUpCore(final Map<String, String> options) {
 		super(options);
+		this.optionsMap = options;
 	}
 
 	public UseFunctionalCallCleanUpCore() {
+	}
+
+	@Override
+	public void setOptions(CleanUpOptions options) {
+		super.setOptions(options);
+		if (options instanceof MapCleanUpOptions mapOptions) {
+			this.optionsMap = mapOptions.getMap();
+		}
 	}
 
 	@Override
@@ -69,15 +84,6 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 		}
 		EnumSet<UseFunctionalCallFixCore> computeFixSet = computeFixSet();
 		if ((!isEnabled(USEFUNCTIONALLOOP_CLEANUP) && !isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2) && !isEnabled(LOOP_CONVERSION_ENABLED)) || computeFixSet.isEmpty()) {
-			return null;
-		}
-		
-		// Check target format preference (STREAM, FOR_LOOP, WHILE_LOOP)
-		// Note: Currently only STREAM is fully implemented. FOR_LOOP and WHILE_LOOP
-		// support will be added in future phases.
-		// For backward compatibility, proceed with STREAM format unless FOR or WHILE is explicitly enabled
-		if (isEnabled(USEFUNCTIONALLOOP_FORMAT_FOR) || isEnabled(USEFUNCTIONALLOOP_FORMAT_WHILE)) {
-			// Not yet implemented - return null to skip transformation
 			return null;
 		}
 		
@@ -122,13 +128,52 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 			fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
 		}
 		
-		// Bidirectional Loop Conversion (Phase 9) - Currently disabled
-		// The LOOP_CONVERSION_* options are defined but the infrastructure to properly
-		// read the target format from CleanUpOptions is not yet working correctly.
-		// For now, these bidirectional transformations remain disabled.
-		// TODO: Implement proper CleanUpOptions value reading for non-boolean options
-		// See: https://github.com/carstenartur/sandbox/issues/XXX
+		// Bidirectional Loop Conversion (Phase 9)
+		if (isEnabled(LOOP_CONVERSION_ENABLED)) {
+			String targetFormat = getTargetFormat();
+			addBidirectionalTransformers(fixSet, targetFormat);
+		}
 		
 		return fixSet;
+	}
+
+	private String getTargetFormat() {
+		if (optionsMap != null) {
+			String value = optionsMap.get(LOOP_CONVERSION_TARGET_FORMAT);
+			if (value != null) {
+				return value;
+			}
+		}
+		return "stream"; //$NON-NLS-1$
+	}
+
+	private void addBidirectionalTransformers(EnumSet<UseFunctionalCallFixCore> fixSet, String targetFormat) {
+		switch (targetFormat) {
+		case "enhanced_for": //$NON-NLS-1$
+			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {
+				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_FOR);
+			}
+			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {
+				fixSet.add(UseFunctionalCallFixCore.ITERATOR_TO_FOR);
+			}
+			break;
+		case "iterator_while": //$NON-NLS-1$
+			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {
+				fixSet.add(UseFunctionalCallFixCore.FOR_TO_ITERATOR);
+			}
+			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {
+				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_ITERATOR);
+			}
+			break;
+		case "stream": //$NON-NLS-1$
+		default:
+			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {
+				fixSet.add(UseFunctionalCallFixCore.LOOP);
+			}
+			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {
+				fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
+			}
+			break;
+		}
 	}
 }
