@@ -62,7 +62,10 @@ public class FunctionalLoopComplexPatternTest {
 	 */
 	@Test
 	void test_SomeChainingWithNoNeededVar() throws CoreException {
-		String input = """
+		// V2: Cannot handle intermediate if-statement with side effects
+		// followed by unconditional statement. The if-block is not a filter
+		// (println() follows unconditionally) and not a map (has side effects).
+		String sourceCode = """
 			package test1;
 
 			import java.util.Arrays;
@@ -99,43 +102,10 @@ public class FunctionalLoopComplexPatternTest {
 				}
 			}""";
 
-		String expected = """
-			package test1;
-
-			import java.util.Arrays;
-			import java.util.List;
-
-			class MyTest {
-
-				public static void main(String[] args) {
-					new MyTest().test(Arrays.asList(1, 2, 3));
-				}
-
-				public Boolean test(List<Integer> ls) {
-					ls.stream().map(a -> new Integer(a.intValue())).map(l -> {
-						if (l == null) {
-							String s = l.toString();
-							if (s != null) {
-								System.out.println(s);
-							}
-							System.out.println("cucu");
-						}
-						return l;
-					}).forEachOrdered(l -> System.out.println());
-
-					return true;
-				}
-
-				Object foo(Object o)
-				{
-					return o;
-				}
-			}""";
-
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", sourceCode, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	/**

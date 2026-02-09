@@ -228,7 +228,8 @@ public class JdtLoopExtractor {
                     if (init != null) {
                         String newVarName = frag.getName().getIdentifier();
                         String mapExpr = init.toString();
-                        builder.map(mapExpr, varDecl.getType().toString());
+                        // Pass outputVariableName so chained maps use the correct lambda parameter
+                        builder.map(mapExpr, varDecl.getType().toString(), newVarName);
                         currentVarName = newVarName;
                         hasOperations = true;
                         continue;
@@ -236,14 +237,34 @@ public class JdtLoopExtractor {
                 }
             }
             
-            // Pattern 5: collection.add(expr) → CollectTerminal
-            if (isCollectPattern(stmt)) {
+            // Pattern 5: Reassignment of pipeline variable: x = expr; → map(x -> expr)
+            // Only matches when the assigned variable is the CURRENT pipeline variable
+            // (i.e., was introduced by a previous variable declaration/map or is the loop variable).
+            // Does NOT match external variable assignments (e.g., lastItem = item).
+            if (stmt instanceof ExpressionStatement exprStmt5 && !isLast) {
+                Expression expr5 = exprStmt5.getExpression();
+                if (expr5 instanceof Assignment assign5
+                        && assign5.getOperator() == Assignment.Operator.ASSIGN) {
+                    Expression lhs5 = assign5.getLeftHandSide();
+                    if (lhs5 instanceof SimpleName name5 
+                            && name5.getIdentifier().equals(currentVarName)) {
+                        String mapExpr = assign5.getRightHandSide().toString();
+                        // Reassignment keeps the same variable name
+                        builder.map(mapExpr, null, currentVarName);
+                        hasOperations = true;
+                        continue;
+                    }
+                }
+            }
+            
+            // Pattern 5: collection.add(expr) → CollectTerminal (only at the last position)
+            if (isLast && isCollectPattern(stmt)) {
                 addCollectTerminal(stmt, builder, currentVarName);
                 return; // terminal set
             }
             
-            // Pattern 6: Accumulator pattern (+=, ++, etc.) → ReduceTerminal
-            if (isReducePattern(stmt)) {
+            // Pattern 6: Accumulator pattern (+=, ++, etc.) → ReduceTerminal (only at the last position)
+            if (isLast && isReducePattern(stmt)) {
                 addReduceTerminal(stmt, builder, currentVarName);
                 return; // terminal set
             }
@@ -260,7 +281,9 @@ public class JdtLoopExtractor {
                     }
                     bodyStmts.add(stmtStr);
                 }
-                builder.forEach(bodyStmts, hasOperations);
+                // Use forEachOrdered when there are ANY operations in the pipeline
+                // (not just local hasOperations, since operations may have been added in outer scope)
+                builder.forEach(bodyStmts, hasOperations || builder.hasOperations());
                 return; // terminal set
             }
             

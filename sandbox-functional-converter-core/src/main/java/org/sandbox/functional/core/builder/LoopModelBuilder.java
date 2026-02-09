@@ -101,6 +101,11 @@ public class LoopModelBuilder {
         return this;
     }
     
+    public LoopModelBuilder map(String expression, String targetType, String outputVariableName) {
+        this.operations.add(new MapOp(expression, targetType, outputVariableName));
+        return this;
+    }
+    
     public LoopModelBuilder map(String expression) {
         this.operations.add(new MapOp(expression, null));
         return this;
@@ -144,6 +149,14 @@ public class LoopModelBuilder {
     public LoopModelBuilder operation(Operation op) {
         this.operations.add(op);
         return this;
+    }
+    
+    /**
+     * Returns whether any intermediate operations (filter, map, etc.) have been added.
+     * @return true if operations exist
+     */
+    public boolean hasOperations() {
+        return !this.operations.isEmpty();
     }
     
     // Terminal shortcuts

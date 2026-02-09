@@ -23,7 +23,21 @@ import java.util.Objects;
 public final class MapOp implements Operation {
     private final String expression;
     private final String targetType;
+    private final String outputVariableName;
     private final List<String> associatedComments;
+    
+    /**
+     * Creates a MapOp with expression, target type, and output variable name.
+     * @param expression the mapping expression
+     * @param targetType the target type (can be null)
+     * @param outputVariableName the variable name for the output of this map (can be null)
+     */
+    public MapOp(String expression, String targetType, String outputVariableName) {
+        this.expression = Objects.requireNonNull(expression, "expression must not be null");
+        this.targetType = targetType;
+        this.outputVariableName = outputVariableName;
+        this.associatedComments = new ArrayList<>();
+    }
     
     /**
      * Creates a MapOp with expression and target type.
@@ -31,9 +45,7 @@ public final class MapOp implements Operation {
      * @param targetType the target type (can be null)
      */
     public MapOp(String expression, String targetType) {
-        this.expression = Objects.requireNonNull(expression, "expression must not be null");
-        this.targetType = targetType;
-        this.associatedComments = new ArrayList<>();
+        this(expression, targetType, null);
     }
     
     /**
@@ -41,7 +53,7 @@ public final class MapOp implements Operation {
      * @param expression the mapping expression
      */
     public MapOp(String expression) { 
-        this(expression, null); 
+        this(expression, null, null); 
     }
     
     @Override
@@ -51,6 +63,15 @@ public final class MapOp implements Operation {
     
     public String targetType() {
         return targetType;
+    }
+    
+    /**
+     * Returns the output variable name for this map operation.
+     * When chaining maps, the next operation should use this as its lambda parameter.
+     * @return the output variable name, or null if not specified
+     */
+    public String outputVariableName() {
+        return outputVariableName;
     }
     
     @Override
@@ -100,12 +121,13 @@ public final class MapOp implements Operation {
         if (!(o instanceof MapOp)) return false;
         MapOp mapOp = (MapOp) o;
         return expression.equals(mapOp.expression) && 
-               Objects.equals(targetType, mapOp.targetType);
+               Objects.equals(targetType, mapOp.targetType) &&
+               Objects.equals(outputVariableName, mapOp.outputVariableName);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(expression, targetType);
+        return Objects.hash(expression, targetType, outputVariableName);
     }
     
     @Override
