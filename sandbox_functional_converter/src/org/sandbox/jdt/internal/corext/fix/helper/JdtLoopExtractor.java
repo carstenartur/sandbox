@@ -531,7 +531,8 @@ public class JdtLoopExtractor {
     }
     
     /**
-     * Detects accumulator patterns like sum += x, count++, count = count + 1, etc.
+     * Detects accumulator patterns like sum += x, count++, count = count + 1,
+     * max = Math.max(max, x), etc.
      */
     private boolean isReducePattern(Statement stmt) {
         if (stmt instanceof ExpressionStatement exprStmt) {
@@ -546,7 +547,8 @@ public class JdtLoopExtractor {
                 }
                 // Plain assignment with infix accumulator: count = count + 1
                 if (op == Assignment.Operator.ASSIGN && assign.getLeftHandSide() instanceof SimpleName) {
-                    return isInfixAccumulator(assign);
+                    if (isInfixAccumulator(assign)) return true;
+                    if (isMathMaxMinPattern(assign)) return true;
                 }
             }
             // Postfix: count++, count--
@@ -590,40 +592,121 @@ public class JdtLoopExtractor {
             Assignment.Operator op = assign.getOperator();
             String accumVar = assign.getLeftHandSide().toString();
             String valueExpr = assign.getRightHandSide().toString();
+            String accumType = resolveReducerType(assign.getLeftHandSide());
             
             if (op == Assignment.Operator.PLUS_ASSIGN) {
+                // sum += value → .map(var -> value).reduce(sum, Integer/Long/Double::sum)
+                if (!valueExpr.equals(varName)) {
+                    builder.map(valueExpr, null);
+                }
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                    "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + " + valueExpr, null,
+                    accumVar, accumType + "::sum", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));
             } else if (op == Assignment.Operator.TIMES_ASSIGN) {
+                if (!valueExpr.equals(varName)) {
+                    builder.map(valueExpr, null);
+                }
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                    "1", "(" + accumVar + ", " + varName + ") -> " + accumVar + " * " + valueExpr, null,
+                    accumVar, "(a, b) -> a * b", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT, accumVar));
             } else if (op == Assignment.Operator.MINUS_ASSIGN) {
+                if (!valueExpr.equals(varName)) {
+                    builder.map(valueExpr, null);
+                }
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                    "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - " + valueExpr, null,
+                    accumVar, "(a, b) -> a - b", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
-            } else if (op == Assignment.Operator.ASSIGN && assign.getRightHandSide() instanceof InfixExpression infix) {
-                // Plain assignment with infix: count = count + 1
-                addInfixReduceTerminal(infix, builder, varName, accumVar);
+            } else if (op == Assignment.Operator.ASSIGN) {
+                if (assign.getRightHandSide() instanceof InfixExpression infix) {
+                    addInfixReduceTerminal(infix, builder, varName, accumVar);
+                } else if (isMathMaxMinPattern(assign)) {
+                    addMathMaxMinReduce(assign, builder, accumVar);
+                }
             }
         } else if (expr instanceof PostfixExpression postfix) {
+            // i++ → .map(var -> 1).reduce(i, Integer::sum)
             String accumVar = postfix.getOperand().toString();
+            String accumType = resolveReducerType(postfix.getOperand());
+            String mapValue = isLongType(accumType) ? "1L" : "1";
+            builder.map(mapValue, null);
             builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + 1", null,
+                accumVar, accumType + "::sum", null,
                 org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
         } else if (expr instanceof PrefixExpression prefix) {
             String accumVar = prefix.getOperand().toString();
+            String accumType = resolveReducerType(prefix.getOperand());
+            String mapValue = isLongType(accumType) ? "1L" : "1";
             if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {
+                builder.map(mapValue, null);
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                    "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + 1", null,
+                    accumVar, accumType + "::sum", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
             } else {
+                builder.map(mapValue, null);
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-                    "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - 1", null,
+                    accumVar, "(a, b) -> a - b", null,
                     org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
             }
         }
+    }
+    
+    /**
+     * Resolves the boxed type name for a reducer variable (Integer, Long, Double, etc.)
+     * Falls back to "Integer" if type cannot be resolved.
+     */
+    private String resolveReducerType(Expression operand) {
+        ITypeBinding binding = operand.resolveTypeBinding();
+        if (binding != null) {
+            String name = binding.isPrimitive() ? getBoxedTypeName(binding.getName()) : binding.getName();
+            if (name != null) return name;
+        }
+        return "Integer";
+    }
+    
+    private String getBoxedTypeName(String primitiveName) {
+        return switch (primitiveName) {
+            case "int" -> "Integer";
+            case "long" -> "Long";
+            case "double" -> "Double";
+            case "float" -> "Float";
+            default -> "Integer";
+        };
+    }
+    
+    private boolean isLongType(String typeName) {
+        return "Long".equals(typeName) || "long".equals(typeName);
+    }
+    
+    /**
+     * Checks if an assignment is a Math.max or Math.min pattern.
+     * Pattern: max = Math.max(max, x) or min = Math.min(min, x)
+     */
+    private boolean isMathMaxMinPattern(Assignment assign) {
+        Expression rhs = assign.getRightHandSide();
+        if (rhs instanceof MethodInvocation mi) {
+            String methodName = mi.getName().getIdentifier();
+            Expression expr = mi.getExpression();
+            if (expr instanceof SimpleName sn && "Math".equals(sn.getIdentifier())) {
+                return ("max".equals(methodName) || "min".equals(methodName)) && mi.arguments().size() == 2;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Adds Math.max/min reduce terminal.
+     * Pattern: max = Math.max(max, num) → .reduce(max, Math::max)
+     */
+    private void addMathMaxMinReduce(Assignment assign, LoopModelBuilder builder, String accumVar) {
+        MethodInvocation mi = (MethodInvocation) assign.getRightHandSide();
+        String methodName = mi.getName().getIdentifier();
+        
+        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType type = 
+            "max".equals(methodName) ? org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.MAX
+                                     : org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.MIN;
+        
+        builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+            accumVar, "Math::" + methodName, null, type, accumVar));
     }
     
     private void addInfixReduceTerminal(InfixExpression infix, LoopModelBuilder builder, 
