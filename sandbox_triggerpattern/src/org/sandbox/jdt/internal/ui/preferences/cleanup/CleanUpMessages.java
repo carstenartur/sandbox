@@ -20,8 +20,13 @@ public class CleanUpMessages extends NLS {
 
 	public static String StringSimplificationTabPage_GroupName;
 	public static String StringSimplificationTabPage_CheckboxName_StringSimplification;
+<<<<<<< copilot/implement-triggerpattern-example
 	public static String ThreadingTabPage_GroupName;
 	public static String ThreadingTabPage_CheckboxName_Threading;
+=======
+	public static String ShiftOutOfRangeTabPage_GroupName;
+	public static String ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange;
+>>>>>>> main
 
 	static {
 		// initialize resource bundle

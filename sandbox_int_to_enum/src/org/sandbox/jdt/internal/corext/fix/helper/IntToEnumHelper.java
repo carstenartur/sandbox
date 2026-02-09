@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.SwitchStatement;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -48,11 +49,13 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 
 	/**
 	 * Holder for int constant pattern data.
-	 * Tracks int constant declarations and their usage in if-else chains.
+	 * Tracks int constant declarations and their usage in if-else chains or switch statements.
 	 */
 	public static class IntConstantHolder {
-		/** The if-statement that uses these constants */
+		/** The if-statement that uses these constants (for if-else to switch conversion) */
 		public IfStatement ifStatement;
+		/** The switch statement that uses these constants (for switch int to enum conversion) */
+		public SwitchStatement switchStatement;
 		/** Map of constant names to their field declarations */
 		public Map<String, FieldDeclaration> constantFields = new HashMap<>();
 		/** List of constant names in order they appear */

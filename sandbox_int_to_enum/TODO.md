@@ -11,6 +11,13 @@
 - [x] CompilationUnitRewriteOperationWithSourceRange implementation
 - [x] Proper static imports and code organization
 - [x] IntConstantHolder data structure defined
+- [x] SwitchIntToEnumHelper - converts switch statements using int constants to use enums
+- [x] Pattern detection: finds static final int fields and switch statements referencing them
+- [x] Enum generation from common constant name prefix
+- [x] Switch case label updates from int constants to enum values
+- [x] Method parameter type updates from int to enum
+- [x] Test for switch int to enum basic transformation
+- [x] Test for single constant (no transformation expected)
 
 ### Implementation Complexity Note
 
@@ -43,27 +50,33 @@
    - Integer values used without named constants
 
 ### Current State
+- [x] Switch int to enum transformation (SwitchIntToEnumHelper - fully implemented)
 - [x] Core transformation structure (Placeholder implementation with extensive comments)
-  - Structure is in place but returns no operations
+  - Structure is in place but returns no operations for IF_ELSE_TO_SWITCH
   - Prevents incorrect transformations
   - Demonstrates intended architecture
-- [ ] Actual transformation logic implementation
-  - [ ] AST visitor for pattern detection
-  - [ ] Enum generation logic
+- [ ] If-else to switch transformation (IntToEnumHelper - placeholder)
+  - [ ] AST visitor for if-else pattern detection
   - [ ] If-else to switch conversion
+  - [ ] Enum generation logic
 
 ### Next Steps for Full Implementation
-- [ ] Implement pattern detection in find() method
+- [ ] Implement if-else pattern detection in IntToEnumHelper.find() method
   - [ ] Use AstProcessorBuilder for field and if-statement visitors
   - [ ] Detect public static final int constants
   - [ ] Find if-else chains comparing against constants
   - [ ] Group related constants by common prefixes
   
-- [ ] Implement transformation in rewrite() method
+- [ ] Implement if-else to switch transformation in IntToEnumHelper.rewrite() method
   - [ ] Generate enum declaration from constants
   - [ ] Create switch statement from if-else chain
   - [ ] Update variable types
   - [ ] Handle break statements and fall-through
+
+- [ ] Enhanced switch int to enum support
+  - [ ] Handle switch expressions (not just switch statements)
+  - [ ] Handle local variable type updates (not just method parameters)
+  - [ ] Handle constants from other classes (qualified name references)
   
 - [ ] Comprehensive testing
   - [ ] Test with various constant patterns
@@ -74,9 +87,10 @@
 ## Known Limitations
 
 1. **Pattern Detection**
-   - Currently only detects simple if-else chains with direct equality comparisons
-   - Does not handle switch statements on integers (already optimal)
+   - Currently only detects simple switch statements with direct constant references in case labels
+   - If-else chain detection not yet implemented
    - Does not handle complex boolean expressions
+   - Does not handle switch expressions (only switch statements)
 
 2. **Scope Analysis**
    - Only processes constants in the same class
