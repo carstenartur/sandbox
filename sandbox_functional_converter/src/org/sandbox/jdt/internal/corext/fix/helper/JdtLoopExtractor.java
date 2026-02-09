@@ -236,7 +236,7 @@ public class JdtLoopExtractor {
             }
             
             // Pattern 8: Everything else at the end → ForEachTerminal
-            if (isLast || i == statements.size() - 1) {
+            if (isLast) {
                 java.util.List<String> bodyStmts = new java.util.ArrayList<>();
                 // Collect remaining statements from current position onward
                 for (int j = i; j < statements.size(); j++) {
@@ -361,8 +361,13 @@ public class JdtLoopExtractor {
             // Identity mapping - just collect
             builder.collect(collectorType, targetVar);
         } else {
-            // Non-identity: add map before collect
-            builder.map(addedExpr.toString());
+            // Non-identity: add map before collect, infer type from expression
+            String mapTargetType = null;
+            ITypeBinding exprType = addedExpr.resolveTypeBinding();
+            if (exprType != null) {
+                mapTargetType = exprType.getName();
+            }
+            builder.map(addedExpr.toString(), mapTargetType);
             builder.collect(collectorType, targetVar);
         }
     }
@@ -404,29 +409,33 @@ public class JdtLoopExtractor {
             String valueExpr = assign.getRightHandSide().toString();
             
             if (op == Assignment.Operator.PLUS_ASSIGN) {
-                builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + " + valueExpr, null,
-                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM);
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + " + valueExpr, null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));
             } else if (op == Assignment.Operator.TIMES_ASSIGN) {
-                builder.reduce("1", "(" + accumVar + ", " + varName + ") -> " + accumVar + " * " + valueExpr, null,
-                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT);
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    "1", "(" + accumVar + ", " + varName + ") -> " + accumVar + " * " + valueExpr, null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT, accumVar));
             } else {
-                // Generic reduce
-                builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - " + valueExpr, null,
-                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM);
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - " + valueExpr, null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
             }
         } else if (expr instanceof PostfixExpression postfix) {
-            // count++ → mapToLong().count() or reduce(0, (a,b) -> a + 1)
             String accumVar = postfix.getOperand().toString();
-            builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + 1", null,
-                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT);
+            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + 1", null,
+                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
         } else if (expr instanceof PrefixExpression prefix) {
             String accumVar = prefix.getOperand().toString();
             if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {
-                builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + 1", null,
-                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT);
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " + 1", null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));
             } else {
-                builder.reduce("0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - 1", null,
-                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM);
+                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
+                    "0", "(" + accumVar + ", " + varName + ") -> " + accumVar + " - 1", null,
+                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));
             }
         }
     }

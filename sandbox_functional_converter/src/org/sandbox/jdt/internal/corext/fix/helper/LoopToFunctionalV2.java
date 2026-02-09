@@ -349,8 +349,16 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
             }
         }
         
-        if (model.getTerminal() instanceof ReduceTerminal) {
-            // For reduce: just the expression statement (reduce result is typically assigned externally)
+        if (model.getTerminal() instanceof ReduceTerminal reduceTerminal) {
+            // For reduce: accumVar = stream.reduce(...)
+            String targetVar = reduceTerminal.targetVariable();
+            if (targetVar != null && !targetVar.isEmpty()) {
+                Assignment assignment = ast.newAssignment();
+                assignment.setLeftHandSide(ast.newSimpleName(targetVar));
+                assignment.setOperator(Assignment.Operator.ASSIGN);
+                assignment.setRightHandSide(streamExpression);
+                return ast.newExpressionStatement(assignment);
+            }
             return ast.newExpressionStatement(streamExpression);
         }
         
