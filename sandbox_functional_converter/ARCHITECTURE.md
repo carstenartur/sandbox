@@ -190,7 +190,7 @@ The following phases were completed during the V1/V2 parallel development:
 |-----------|-------|--------|
 | `IteratorLoopToStreamTest` | 5 enabled, 9 disabled | ✅ Simple forEach functional, safety bug + advanced patterns disabled |
 | `IteratorLoopConversionTest` | 6 | ✅ Enabled |
-| `LoopBidirectionalTransformationTest` | 2 active, 3 future | ✅ New |
+| `LoopBidirectionalTransformationTest` | 5 active | ✅ Complete |
 | `AdditionalLoopPatternsTest` | 6 active, 3 future | ✅ New |
 | **Total Active** | **19** | **11 iterator + 8 new tests** |
 
@@ -1318,7 +1318,7 @@ All extend `AbstractFunctionalCall<ASTNode>` and implement:
 - `rewrite()` - Perform the transformation
 - `getPreview()` - Generate before/after preview
 
-**Transformer Implementations** (Currently stubs):
+**Transformer Implementations**:
 
 1. **StreamToEnhancedFor**
    - Pattern: `collection.forEach(x -> statement)` or `collection.stream().forEach(x -> statement)`
@@ -1331,7 +1331,7 @@ All extend `AbstractFunctionalCall<ASTNode>` and implement:
 3. **IteratorWhileToEnhancedFor**
    - Pattern: `Iterator<T> it = c.iterator(); while (it.hasNext()) { T x = it.next(); ... }`
    - Output: `for (T x : collection) { ... }`
-   - Challenge: Recovering collection reference from iterator
+   - Uses IteratorPatternDetector to recover collection reference from iterator
    
 4. **EnhancedForToIteratorWhile**
    - Pattern: `for (T x : collection) { ... }`
@@ -1393,39 +1393,27 @@ private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
     
     // Bidirectional mode
     if (isEnabled(LOOP_CONVERSION_ENABLED)) {
-        String targetFormat = getOptions().get(LOOP_CONVERSION_TARGET_FORMAT);
-        
-        // Enhanced-for as source
-        if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {
-            if ("stream".equals(targetFormat)) {
-                fixSet.add(LOOP); // Existing transformer
-            } else if ("iterator_while".equals(targetFormat)) {
-                fixSet.add(FOR_TO_ITERATOR); // New transformer
-            }
-        }
-        
-        // Iterator-while as source
-        if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {
-            if ("stream".equals(targetFormat)) {
-                fixSet.add(ITERATOR_LOOP); // Existing transformer
-            } else if ("enhanced_for".equals(targetFormat)) {
-                fixSet.add(ITERATOR_TO_FOR); // New transformer
-            }
-        }
-        
-        // Stream as source
-        if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {
-            if ("enhanced_for".equals(targetFormat)) {
-                fixSet.add(STREAM_TO_FOR); // New transformer
-            } else if ("iterator_while".equals(targetFormat)) {
-                fixSet.add(STREAM_TO_ITERATOR); // New transformer
-            }
-        }
+        String targetFormat = getTargetFormat(); // reads from stored optionsMap
+        addBidirectionalTransformers(fixSet, targetFormat);
     }
     
     return fixSet;
 }
+
+private String getTargetFormat() {
+    if (optionsMap != null) {
+        String value = optionsMap.get(LOOP_CONVERSION_TARGET_FORMAT);
+        if (value != null) return value;
+    }
+    return "stream"; // default
+}
 ```
+
+**Key Design**: Options map is stored in `UseFunctionalCallCleanUpCore` via:
+1. Constructor: `this.optionsMap = options;` when `Map<String, String>` is passed
+2. `setOptions(CleanUpOptions)` override: captures `MapCleanUpOptions.getMap()`
+
+This bypasses the limitation that `AbstractCleanUp.fOptions` is private and only exposes `isEnabled()` for boolean values.
 
 #### Transformation Matrix
 
@@ -1437,20 +1425,19 @@ private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
 
 ### Implementation Status
 
-#### Completed (January 31, 2026)
+#### Completed (February 2026)
 - ✅ All constants defined
 - ✅ UI components created and wired
 - ✅ Default options configured
-- ✅ computeFixSet() logic implemented
+- ✅ computeFixSet() logic implemented with optionsMap for string-value access
 - ✅ Enum values added
-- ✅ Stub transformer classes created
+- ✅ All 4 transformer classes fully implemented (find + rewrite)
 - ✅ Messages internationalized (English)
+- ✅ All 5 bidirectional tests enabled and passing
 
 #### Pending
-- ⏳ Transformer find() implementation
-- ⏳ Transformer rewrite() implementation
-- ⏳ Test enablement in LoopBidirectionalTransformationTest
 - ⏳ German translations (feature_de.properties)
+- ⏳ Complex scenario tests (nested lambdas, multiple statements)
 - ⏳ Stream.toList() immutability handling
 
 ### Design Decisions
@@ -1489,21 +1476,16 @@ private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
 
 ### Known Limitations
 
-1. **Stub Implementations**: All 4 new transformers are empty stubs
-   - They compile but do nothing
-   - Tests cannot be enabled until implemented
-
-2. **Iterator → Enhanced-for Challenge**: 
+1. **Iterator → Enhanced-for Challenge**: 
    - Pattern: `Iterator<T> it = collection.iterator(); while (...)`
-   - Problem: Need to recover `collection` reference from iterator
-   - Solution: Track variable through data flow analysis
+   - Uses IteratorPatternDetector to recover `collection` reference from iterator
 
-3. **Stream.toList() Immutability**:
+2. **Stream.toList() Immutability**:
    - `stream.toList()` creates immutable list (Java 16+)
    - If user later modifies list (.sort(), .add()), code breaks
    - Solution needed: Usage analysis or fallback to Collectors.toList()
 
-4. **Complex Lambda Bodies**:
+3. **Complex Lambda Bodies**:
    - Multi-statement lambdas harder to convert back to loops
    - May need to create block statements
    - Side effect analysis required
