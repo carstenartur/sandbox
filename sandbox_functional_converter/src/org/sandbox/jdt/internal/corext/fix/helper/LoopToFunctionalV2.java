@@ -321,6 +321,15 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
             // Wrap the stream expression appropriately based on terminal type
             Statement replacement = createReplacement(ast, streamExpression, extracted.model, visited);
             if (replacement != null) {
+                // For COLLECT: try to merge with preceding empty collection declaration
+                if (extracted.model.getTerminal() instanceof CollectTerminal collectTerminal) {
+                    Statement merged = tryMergeWithPrecedingDeclaration(
+                        ast, rewrite, group, visited, streamExpression, collectTerminal.targetVariable());
+                    if (merged != null) {
+                        replacement = merged;
+                    }
+                }
+                
                 rewrite.replace(visited, replacement, group);
                 addRequiredImports(cuRewrite, extracted.model);
             }
@@ -432,6 +441,70 @@ public class LoopToFunctionalV2 extends AbstractFunctionalCall<EnhancedForStatem
         if (model.getTerminal() instanceof CollectTerminal) {
             cuRewrite.getImportRewrite().addImport("java.util.stream.Collectors");
         }
+    }
+    
+    /**
+     * Attempts to merge a COLLECT operation with its preceding empty collection declaration.
+     * 
+     * <p>V1 Pattern: If the preceding statement is an empty collection initialization
+     * (e.g., {@code List<X> result = new ArrayList<>()}), merge it with the stream
+     * collect to produce {@code List<X> result = stream.collect(Collectors.toList())}.</p>
+     * 
+     * @return merged VariableDeclarationStatement, or null if merge not possible
+     */
+    @SuppressWarnings("unchecked")
+    private Statement tryMergeWithPrecedingDeclaration(AST ast, ASTRewrite rewrite, TextEditGroup group,
+                                                        EnhancedForStatement forLoop, 
+                                                        Expression streamExpression, 
+                                                        String targetVariable) {
+        if (targetVariable == null || targetVariable.isEmpty()) {
+            return null;
+        }
+        
+        // Get the parent block
+        ASTNode parent = forLoop.getParent();
+        if (!(parent instanceof Block block)) {
+            return null;
+        }
+        
+        java.util.List<Statement> statements = block.statements();
+        
+        // Find the index of the for-loop in the parent block
+        int forLoopIndex = -1;
+        for (int i = 0; i < statements.size(); i++) {
+            if (statements.get(i) == forLoop) {
+                forLoopIndex = i;
+                break;
+            }
+        }
+        
+        if (forLoopIndex <= 0) {
+            return null;
+        }
+        
+        Statement precedingStmt = statements.get(forLoopIndex - 1);
+        
+        // Check if preceding statement is an empty collection declaration for the same variable
+        String declaredVar = CollectPatternDetector.isEmptyCollectionDeclaration(precedingStmt);
+        if (declaredVar == null || !declaredVar.equals(targetVariable)) {
+            return null;
+        }
+        
+        // Merge: create List<X> result = stream.collect(...)
+        VariableDeclarationStatement originalDecl = (VariableDeclarationStatement) precedingStmt;
+        
+        VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();
+        newFragment.setName(ast.newSimpleName(targetVariable));
+        newFragment.setInitializer((Expression) ASTNode.copySubtree(ast, streamExpression));
+        
+        VariableDeclarationStatement newDecl = ast.newVariableDeclarationStatement(newFragment);
+        newDecl.setType((Type) ASTNode.copySubtree(ast, originalDecl.getType()));
+        newDecl.modifiers().addAll(ASTNode.copySubtrees(ast, originalDecl.modifiers()));
+        
+        // Remove the preceding empty declaration
+        rewrite.remove(precedingStmt, group);
+        
+        return newDecl;
     }
     
     /**
