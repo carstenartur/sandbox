@@ -59,6 +59,21 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  *   <li>Builds {@link LoopModel} with {@link ForEachTerminal} for body statements</li>
  * </ul>
  * 
+ * <p><b>Thread-Safety Guards:</b></p>
+ * <ul>
+ *   <li><b>Nested loop guard</b>: {@code isNestedInsideLoop()} rejects loops inside other loops
+ *       to avoid interfering with the {@code EnhancedForHandler}'s scope analysis and to
+ *       prevent generating IntStream calls inside lambdas where mutable loop state could be captured</li>
+ *   <li><b>Unconvertible statement detection</b>: {@code containsUnconvertibleStatements()} rejects
+ *       loops with {@code break}, {@code continue}, or {@code return} which cannot be expressed
+ *       in lambda bodies</li>
+ *   <li><b>Sequential-only streams</b>: Always generates {@code IntStream.range()} (sequential),
+ *       never parallel streams, avoiding complex synchronization requirements</li>
+ *   <li><b>Synchronized block detection</b>: Handled upstream by {@code JdtLoopExtractor} and
+ *       {@code PreconditionsChecker}, which reject loops containing synchronized statements
+ *       before they reach this handler</li>
+ * </ul>
+ * 
  * <p><b>Naming Note:</b> This class is named after the <i>source</i> loop type (traditional for-loop),
  * not the target format. The architecture supports bidirectional transformations, so the name
  * describes what loop pattern this handler processes.</p>

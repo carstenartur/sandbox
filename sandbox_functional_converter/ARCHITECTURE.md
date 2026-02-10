@@ -1008,6 +1008,125 @@ As part of the December 2025 improvements, significant dead code was removed:
 - **Fallback**: Legacy implementation removed - no longer needed
 - **Helper classes**: All necessary classes (`AbstractFunctionalCall`, `EnhancedForHandler`, `PreconditionsChecker`, `ProspectiveOperation`) are in active use
 
+## Thread-Safety Analysis Architecture
+
+Converting loops to stream/functional operations introduces thread-safety concerns because lambdas
+and streams have different semantics than imperative loops (e.g., variable capture rules, lock scope,
+parallel execution). Rather than a single centralized analyzer, thread-safety is enforced by
+**distributed guards across the ULR pipeline**, each responsible for a specific class of concern.
+
+### Guard 1: Synchronized Block Detection (`JdtLoopExtractor`)
+
+**What it protects against**: Loops containing `synchronized` blocks have fundamentally different
+semantics when converted to streams. Lock scope, duration, and exception handling differ significantly
+between `synchronized` in a loop body vs. a lambda body (especially with `parallelStream`).
+
+**How it works**: The `LoopBodyAnalyzer` inner class visits the loop AST and sets `hasSynchronized = true`
+when a `SynchronizedStatement` is found. During extraction, if `hasSynchronized()` is true, the loop is
+marked as having unconvertible patterns and is skipped.
+
+```java
+// JdtLoopExtractor.LoopBodyAnalyzer
+@Override
+public boolean visit(SynchronizedStatement node) {
+    hasSynchronized = true;
+    return false;
+}
+```
+
+### Guard 2: Synchronized Block Detection (`PreconditionsChecker`)
+
+**What it protects against**: Same concern as Guard 1, but for the legacy (non-ULR) code path.
+
+**How it works**: Uses the `AstProcessorBuilder` visitor to detect `SynchronizedStatement` nodes
+and marks the loop as containing non-effectively-final patterns (NEFs), preventing conversion.
+
+```java
+// PreconditionsChecker.analyzeLoop()
+.onSynchronizedStatement((node, h) -> {
+    containsNEFs = true;
+    return true;
+})
+```
+
+### Guard 3: Effectively-Final Variable Enforcement (`LoopBodyScopeScanner`)
+
+**What it protects against**: Lambda expressions require captured variables to be effectively final.
+If a loop body modifies a variable declared outside the loop, converting to a lambda would fail
+to compile. This also prevents data races when the same variable is accessed from multiple threads.
+
+**How it works**: `LoopBodyScopeScanner` analyzes variable references in the loop body:
+- Detects direct assignments (`x = ...`)
+- Detects increment/decrement operators (`x++`, `--x`)
+- Tracks which variables are modified vs. only read
+- Reports modified variables via `ScopeInfo.getModifiedVariables()`
+
+The `EnhancedForHandler.endVisitLoop()` method uses this information to reject loops that capture
+variables modified in ancestor loop scopes.
+
+### Guard 4: Nested Loop Scope Analysis (`EnhancedForHandler` + `LoopTree`)
+
+**What it protects against**: When nested loops share mutable state, converting the inner loop
+to a lambda can violate effectively-final requirements or change observation order semantics.
+
+**How it works**: The `LoopTree` tracks parent-child relationships between loops. During
+`endVisitLoop()`, the handler walks up the tree checking if any referenced variable is modified
+in an ancestor scope:
+
+```java
+// EnhancedForHandler.endVisitLoop()
+LoopTreeNode parent = node.getParent();
+while (parent != null) {
+    for (String referencedVar : scanner.getReferencedVariables()) {
+        if (parent.getScopeInfo().getModifiedVariables().contains(referencedVar)) {
+            node.setDecision(ConversionDecision.NOT_CONVERTIBLE);
+            return;
+        }
+    }
+    parent = parent.getParent();
+}
+```
+
+### Guard 5: Nested Loop Guard (`TraditionalForHandler`)
+
+**What it protects against**: Converting a traditional for-loop nested inside another loop
+(enhanced-for, while, for, do-while) can interfere with the outer loop's conversion analysis.
+It also prevents generating `IntStream.range()` calls inside lambdas where the stream expression
+would capture mutable loop state.
+
+**How it works**: `isNestedInsideLoop()` walks up the AST and rejects the conversion if any
+ancestor node is a loop statement.
+
+### Guard 6: Unconvertible Statement Detection (`TraditionalForHandler` + `JdtLoopExtractor`)
+
+**What it protects against**: `break`, `continue`, `return`, and `throw` statements cannot be
+expressed in lambda bodies. Converting such loops would produce incorrect or non-compilable code.
+
+**How it works**: Both `TraditionalForHandler.containsUnconvertibleStatements()` and
+`JdtLoopExtractor.LoopBodyAnalyzer` visit the loop body to detect these statements and reject
+conversion when found.
+
+### Guard 7: Sequential-Only Stream Generation
+
+**What it protects against**: Parallel streams (`parallelStream()`) introduce complex
+synchronization requirements. All handlers generate sequential streams only, avoiding
+the need for thread-safe lambda bodies.
+
+**Current state**: The pipeline always generates `.stream()` (sequential), never `.parallelStream()`.
+This is documented as a future enhancement in the Limitations section below.
+
+### Summary Table
+
+| Guard | Component | Threat | Action |
+|-------|-----------|--------|--------|
+| Synchronized blocks | `JdtLoopExtractor` | Lock semantics change in lambdas | BLOCK conversion |
+| Synchronized blocks | `PreconditionsChecker` | Lock semantics change in lambdas | BLOCK conversion |
+| Non-effectively-final vars | `LoopBodyScopeScanner` | Lambda capture violation / data race | REJECT loop |
+| Nested loop shared state | `EnhancedForHandler` + `LoopTree` | Variable modified in ancestor scope | REJECT loop |
+| Nested loop interference | `TraditionalForHandler` | Inner conversion breaks outer analysis | SKIP inner loop |
+| Unconvertible statements | Multiple handlers | `break`/`continue`/`return` in lambda | BLOCK conversion |
+| Parallel streams | All handlers | Complex synchronization requirements | Sequential only |
+
 ## Limitations and Future Work
 
 ### Current Limitations
