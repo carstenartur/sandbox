@@ -60,6 +60,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.ast.api.expr.MethodInvocationExpr;
 import org.sandbox.ast.api.expr.SimpleNameExpr;
+import org.sandbox.ast.api.jdt.FluentRewriter;
 import org.sandbox.ast.api.jdt.JDTConverter;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -85,8 +86,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 					List<Object> computeVarName= computeVarName(init_iterator);
 					MethodInvocation iteratorCall= computeIteratorCall(init_iterator);
 					if (computeVarName != null && iteratorCall != null) {
-						Statement iteratorAssignment= ASTNodes.getFirstAncestorOrNull(iteratorCall,
-								Statement.class);
+						// Use JDTConverter.firstAncestor() instead of ASTNodes.getFirstAncestorOrNull()
+						Statement iteratorAssignment= JDTConverter.firstAncestor(iteratorCall, Statement.class).orElse(null);
 						HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder, nodesprocessed,
 								(whilestatement, holder) -> {
 									String name= computeNextVarname(whilestatement);
@@ -129,8 +130,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 															operationsMap.put(whilestatement, invalidHit);
 															return true;
 														}
-														if (ASTNodes.getFirstAncestorOrNull(mi,
-																ExpressionStatement.class) != null
+														// Use JDTConverter.firstAncestor() instead of ASTNodes.getFirstAncestorOrNull()
+														if (JDTConverter.firstAncestor(mi, ExpressionStatement.class).isPresent()
 																&& createForOnlyIfVarUsed) {
 															operationsMap.put(whilestatement, invalidHit);
 															return true;
@@ -147,10 +148,11 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 															hit.collectionExpression= (Expression) computeVarName
 																	.get(1);
 														}
-														VariableDeclarationStatement typedAncestor= ASTNodes
-																.getTypedAncestor(mi,
+														// Use JDTConverter.ancestor() instead of ASTNodes.getTypedAncestor()
+														Optional<VariableDeclarationStatement> typedAncestorOpt= JDTConverter.ancestor(mi,
 																		VariableDeclarationStatement.class);
-														if (typedAncestor != null) {
+														if (typedAncestorOpt.isPresent()) {
+															VariableDeclarationStatement typedAncestor= typedAncestorOpt.get();
 															ITypeBinding iteratorTypeArgument= computeTypeArgument(
 																	init_iterator);
 															ITypeBinding varTypeBinding= typedAncestor.getType()
@@ -228,19 +230,19 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			} else {
 				MethodInvocationExpr miExpr= JDTConverter.convert(mi);
 				if (miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
-					ASTNode assignment= ASTNodes.getFirstAncestorOrNull(mi, Assignment.class);
-					if (assignment instanceof Assignment) {
-						Expression leftSide= ((Assignment) assignment).getLeftHandSide();
+					// Use JDTConverter.firstAncestor() instead of ASTNodes.getFirstAncestorOrNull()
+					JDTConverter.firstAncestor(mi, Assignment.class).ifPresent(assignment -> {
+						Expression leftSide= assignment.getLeftHandSide();
 						String assignedVarId= JDTConverter.identifierOf(leftSide)
 								.orElse(null);
 						if (assignedVarId != null && assignedVarId.equals(hit.iteratorName)) {
-							Statement stmt= ASTNodes.getFirstAncestorOrNull(assignment, Statement.class);
-							if (stmt == null || stmt.getParent() != hit.whileStatement.getParent()) {
+							// Use JDTConverter.firstAncestor() instead of ASTNodes.getFirstAncestorOrNull()
+							Optional<Statement> stmtOpt= JDTConverter.firstAncestor(assignment, Statement.class);
+							if (stmtOpt.isEmpty() || stmtOpt.get().getParent() != hit.whileStatement.getParent()) {
 								hit.isInvalid= true;
-								return false;
 							}
 						}
-					}
+					});
 				}
 			}
 			return true;
@@ -274,27 +276,23 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		if (exp == null) {
 			exp= computeIteratorCall(node_a);
 		}
-		MethodInvocation mi= ASTNodes.as(exp, MethodInvocation.class);
-		if (mi == null) {
+		// Use JDTConverter.as() instead of ASTNodes.as()
+		Optional<MethodInvocation> miOpt= JDTConverter.as(exp, MethodInvocation.class);
+		if (miOpt.isEmpty()) {
 			return null;
 		}
+		MethodInvocation mi= miOpt.get();
 		MethodInvocationExpr miExpr= JDTConverter.convert(mi);
 		if (!miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
 			return null;
 		}
-		ITypeBinding iterableAncestor= null;
-		IMethodBinding miBinding= mi.resolveMethodBinding();
-		if (miBinding != null) {
-			iterableAncestor= ASTNodes.findImplementedType(miBinding.getDeclaringClass(),
-					Iterable.class.getCanonicalName());
-		}
-		if (iterableAncestor == null || iterableAncestor.isRawType()) {
+		// Use JDTConverter.findImplementedType() instead of manual pattern
+		Optional<ITypeBinding> iterableAncestor= JDTConverter.findImplementedType(mi, Iterable.class.getCanonicalName());
+		if (iterableAncestor.isEmpty() || iterableAncestor.get().isRawType()) {
 			return null;
 		}
-		Expression sn= ASTNodes.as(mi.getExpression(), Expression.class);
-		if (sn != null) {
-			objectList.add(sn);
-		}
+		// Use JDTConverter.as() for the expression cast
+		JDTConverter.as(mi.getExpression(), Expression.class).ifPresent(objectList::add);
 		return objectList;
 	}
 
@@ -314,23 +312,24 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 				HelperVisitor.callAssignmentVisitor(parent, dataholder, nodesprocessed, (assignment, holder2) -> {
 					if (assignment.getStartPosition() > node_a.getStartPosition()) {
 						Expression leftSide= assignment.getLeftHandSide();
-						SimpleName sn= ASTNodes.as(leftSide, SimpleName.class);
-						if (sn != null) {
+						// Use JDTConverter.as() instead of ASTNodes.as()
+						JDTConverter.as(leftSide, SimpleName.class).ifPresent(sn -> {
 							IBinding binding= sn.resolveBinding();
 							if (binding.isEqualTo(bliBinding)) {
-								MethodInvocation mi= ASTNodes.as(assignment.getRightHandSide(), MethodInvocation.class);
-								if (mi == null) {
+								// Use JDTConverter.as() instead of ASTNodes.as()
+								Optional<MethodInvocation> miOpt= JDTConverter.as(assignment.getRightHandSide(), MethodInvocation.class);
+								if (miOpt.isEmpty()) {
 									dataholder.put(node_a, Invalid);
 									throw new AbortSearchException();
 								}
-								MethodInvocationExpr miExpr= JDTConverter.convert(mi);
+								MethodInvocationExpr miExpr= JDTConverter.convert(miOpt.get());
 								if (!miExpr.isMethodNamed("iterator") || (dataholder.get(node_a) != null)) { //$NON-NLS-1$
 									dataholder.put(node_a, Invalid);
 									throw new AbortSearchException();
 								}
-								dataholder.put(node_a, mi);
+								dataholder.put(node_a, miOpt.get());
 							}
-						}
+						});
 					}
 					return true;
 				});
@@ -343,7 +342,8 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			}
 			return (MethodInvocation) holderObject;
 		}
-		return ASTNodes.as(exp, MethodInvocation.class);
+		// Use JDTConverter.as() instead of ASTNodes.as()
+		return JDTConverter.as(exp, MethodInvocation.class).orElse(null);
 	}
 
 	private static ITypeBinding computeTypeArgument(VariableDeclarationStatement node_a) {
@@ -362,23 +362,24 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 				HelperVisitor.callAssignmentVisitor(parent, dataholder, nodesprocessed, (assignment, holder2) -> {
 					if (assignment.getStartPosition() > node_a.getStartPosition()) {
 						Expression leftSide= assignment.getLeftHandSide();
-						SimpleName sn= ASTNodes.as(leftSide, SimpleName.class);
-						if (sn != null) {
+						// Use JDTConverter.as() instead of ASTNodes.as()
+						JDTConverter.as(leftSide, SimpleName.class).ifPresent(sn -> {
 							IBinding binding= sn.resolveBinding();
 							if (binding.isEqualTo(bliBinding)) {
-								MethodInvocation mi= ASTNodes.as(assignment.getRightHandSide(), MethodInvocation.class);
-								if (mi == null) {
+								// Use JDTConverter.as() instead of ASTNodes.as()
+								Optional<MethodInvocation> miOpt= JDTConverter.as(assignment.getRightHandSide(), MethodInvocation.class);
+								if (miOpt.isEmpty()) {
 									dataholder.put(node_a, Invalid);
 									throw new AbortSearchException();
 								}
-								MethodInvocationExpr miExpr= JDTConverter.convert(mi);
+								MethodInvocationExpr miExpr= JDTConverter.convert(miOpt.get());
 								if (!miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
 									dataholder.put(node_a, Invalid);
 									throw new AbortSearchException();
 								}
-								dataholder.put(node_a, mi);
+								dataholder.put(node_a, miOpt.get());
 							}
-						}
+						});
 					}
 					return true;
 				});
@@ -391,18 +392,16 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			}
 			exp= (Expression) dataholder.get(node_a);
 		}
-		MethodInvocation mi= ASTNodes.as(exp, MethodInvocation.class);
-		if (mi != null) {
+		// Use JDTConverter.as() instead of ASTNodes.as()
+		Optional<MethodInvocation> miOpt= JDTConverter.as(exp, MethodInvocation.class);
+		if (miOpt.isPresent()) {
+			MethodInvocation mi= miOpt.get();
 			MethodInvocationExpr miExpr= JDTConverter.convert(mi);
 			if (miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
-				ITypeBinding iterableAncestor= null;
-				IMethodBinding miBinding= mi.resolveMethodBinding();
-				if (miBinding != null) {
-					iterableAncestor= ASTNodes.findImplementedType(miBinding.getDeclaringClass(),
-							Iterable.class.getCanonicalName());
-				}
-				if (iterableAncestor != null) {
-					ITypeBinding[] typeArgs= iterableAncestor.getTypeArguments();
+				// Use JDTConverter.findImplementedType() instead of manual pattern
+				Optional<ITypeBinding> iterableAncestor= JDTConverter.findImplementedType(mi, Iterable.class.getCanonicalName());
+				if (iterableAncestor.isPresent()) {
+					ITypeBinding[] typeArgs= iterableAncestor.get().getTypeArguments();
 					if (typeArgs.length > 0) {
 						return typeArgs[0];
 					}
@@ -429,6 +428,9 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 		ImportRemover remover= cuRewrite.getImportRemover();
 
+		// Create FluentRewriter for cleaner rewrite operations
+		FluentRewriter fr= new FluentRewriter(rewrite, group);
+
 		EnhancedForStatement newEnhancedForStatement= ast.newEnhancedForStatement();
 
 		SingleVariableDeclaration result= ast.newSingleVariableDeclaration();
@@ -443,10 +445,12 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			type= null;
 		} else {
 			Expression expression= hit.loopVarDeclaration.getExpression();
-			SimpleName variable= ASTNodes.as(expression, SimpleName.class);
+			// Use JDTConverter.as() instead of ASTNodes.as()
+			SimpleName variable= JDTConverter.as(expression, SimpleName.class).orElse(null);
 			looptargettype= variable.resolveTypeBinding().getErasure().getQualifiedName();
-			VariableDeclarationStatement typedAncestor= ASTNodes.getTypedAncestor(hit.loopVarDeclaration,
-					VariableDeclarationStatement.class);
+			// Use JDTConverter.ancestor() instead of ASTNodes.getTypedAncestor()
+			VariableDeclarationStatement typedAncestor= JDTConverter.ancestor(hit.loopVarDeclaration,
+					VariableDeclarationStatement.class).orElse(null);
 			type= typedAncestor.getType();
 			varBinding= type.resolveBinding();
 		}
@@ -476,13 +480,14 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			ThisExpression newThisExpression= ast.newThisExpression();
 			newEnhancedForStatement.setExpression(newThisExpression);
 		} else {
-			Expression loopExpression= (Expression) rewrite.createCopyTarget(hit.collectionExpression);
+			Expression loopExpression= fr.copyTarget(hit.collectionExpression);
 			newEnhancedForStatement.setExpression(loopExpression);
 		}
-		ASTNodes.removeButKeepComment(rewrite, hit.iteratorDeclaration, group);
+		// Use FluentRewriter for cleaner syntax
+		fr.remove(hit.iteratorDeclaration);
 		remover.registerRemovedNode(hit.iteratorDeclaration.getType());
 		if (hit.iteratorCall != hit.iteratorDeclaration) {
-			ASTNodes.removeButKeepComment(rewrite, hit.iteratorCall, group);
+			fr.remove(hit.iteratorCall);
 			remover.registerRemovedNode(hit.iteratorCall);
 		}
 		if (hit.nextFound) {
@@ -493,20 +498,23 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 					loopVarDeclaration= loopVarDeclaration.getParent();
 				}
 				if (loopVarDeclaration.getLocationInParent() == ExpressionStatement.EXPRESSION_PROPERTY) {
-					rewrite.remove(loopVarDeclaration.getParent(), group);
+					fr.removeRaw(loopVarDeclaration.getParent());
 					remover.registerRemovedNode(loopVarDeclaration);
 				} else {
-					ASTNodes.replaceButKeepComment(rewrite, hit.loopVarDeclaration, name, group);
+					fr.replace(hit.loopVarDeclaration, name);
 					remover.registerRemovedNode(hit.loopVarDeclaration);
 				}
 			} else {
-				ASTNode node= ASTNodes.getTypedAncestor(hit.loopVarDeclaration, VariableDeclarationStatement.class);
-				ASTNodes.removeButKeepComment(rewrite, node, group);
-				remover.registerRemovedNode(node);
+				// Use JDTConverter.ancestor() instead of ASTNodes.getTypedAncestor()
+				JDTConverter.ancestor(hit.loopVarDeclaration, VariableDeclarationStatement.class)
+					.ifPresent(node -> {
+						fr.remove(node);
+						remover.registerRemovedNode(node);
+					});
 			}
 		}
-		newEnhancedForStatement.setBody(ASTNodes.createMoveTarget(rewrite, hit.whileStatement.getBody()));
-		ASTNodes.replaceButKeepComment(rewrite, hit.whileStatement, newEnhancedForStatement, group);
+		newEnhancedForStatement.setBody(fr.moveTarget(hit.whileStatement.getBody()));
+		fr.replace(hit.whileStatement, newEnhancedForStatement);
 		remover.registerRemovedNode(hit.whileStatement.getExpression());
 		remover.applyRemoves(importRewrite);
 	}

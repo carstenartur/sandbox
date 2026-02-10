@@ -16,8 +16,8 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.sandbox.ast.api.expr.ASTExpr;
+import org.sandbox.ast.api.expr.CastExpr;
 import org.sandbox.ast.api.expr.MethodInvocationExpr;
 import org.sandbox.ast.api.expr.SimpleNameExpr;
 import org.sandbox.ast.api.jdt.FluentASTVisitor;
@@ -43,11 +43,12 @@ class CheckNodeForValidReferences {
 					throw new AbortSearchException();
 				}
 				if (fLocalVarsOnly && visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-					MethodInvocation methodInvocation= ASTNodes.getParent(visitedField, MethodInvocation.class);
-					MethodInvocationExpr miExpr= JDTConverter.convert(methodInvocation);
-					if (miExpr.returnsType(ITERATOR_NAME)) {
-						throw new AbortSearchException();
-					}
+					JDTConverter.ancestor(visitedField, MethodInvocation.class)
+						.map(JDTConverter::convert)
+						.filter(miExpr -> miExpr.returnsType(ITERATOR_NAME))
+						.ifPresent(miExpr -> {
+							throw new AbortSearchException();
+						});
 				}
 				return true;
 			}
@@ -58,11 +59,12 @@ class CheckNodeForValidReferences {
 					throw new AbortSearchException();
 				}
 				if (fLocalVarsOnly && visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-					MethodInvocation methodInvocation= ASTNodes.getParent(visitedField, MethodInvocation.class);
-					MethodInvocationExpr miExpr= JDTConverter.convert(methodInvocation);
-					if (miExpr.returnsType(ITERATOR_NAME)) {
-						throw new AbortSearchException();
-					}
+					JDTConverter.ancestor(visitedField, MethodInvocation.class)
+						.map(JDTConverter::convert)
+						.filter(miExpr -> miExpr.returnsType(ITERATOR_NAME))
+						.ifPresent(miExpr -> {
+							throw new AbortSearchException();
+						});
 				}
 				return true;
 			}
@@ -97,7 +99,7 @@ class CheckNodeForValidReferences {
 			}
 
 			@Override
-			public boolean visit(CastExpression castExpression) {
+			protected boolean visitCastExpression(CastExpr expr, CastExpression castExpression) {
 				Type castType= castExpression.getType();
 				ITypeBinding typeBinding= castType.resolveBinding();
 				if (AbstractTool.isOfType(typeBinding, ITERATOR_NAME)) {
@@ -137,9 +139,12 @@ class CheckNodeForValidReferences {
 						.map(var -> {
 							// Check if SimpleName is used as receiver for a method invocation
 							if (simpleName.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-								MethodInvocation methodInvocation= ASTNodes.getParent(simpleName, MethodInvocation.class);
-								MethodInvocationExpr miExpr= JDTConverter.convert(methodInvocation);
-								if (!miExpr.returnsType(ITERATOR_NAME)) {
+								// Use JDTConverter.ancestor() instead of ASTNodes.getParent()
+								boolean returnsIterator = JDTConverter.ancestor(simpleName, MethodInvocation.class)
+									.map(JDTConverter::convert)
+									.filter(miExpr -> miExpr.returnsType(ITERATOR_NAME))
+									.isPresent();
+								if (!returnsIterator) {
 									return true;
 								}
 							}
