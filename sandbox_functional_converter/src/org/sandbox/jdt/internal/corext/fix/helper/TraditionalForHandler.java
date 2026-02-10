@@ -342,30 +342,82 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
     
     /**
      * Checks if an InfixExpression uses the index variable in arithmetic.
-     * Detects patterns: i+1, i-1, i*2, i%2, etc.
+     * Detects patterns: i+1, i-1, i*2, i%2, etc., including nested and chained
+     * arithmetic expressions (e.g., (i + 1) + offset, multiplier * (i - 1)).
      */
     private boolean isIndexInArithmeticExpression(InfixExpression expr, String indexVarName) {
-        InfixExpression.Operator op = expr.getOperator();
-        
-        // Only check arithmetic operators
-        if (op != InfixExpression.Operator.PLUS
-                && op != InfixExpression.Operator.MINUS
-                && op != InfixExpression.Operator.TIMES
-                && op != InfixExpression.Operator.DIVIDE
-                && op != InfixExpression.Operator.REMAINDER) {
+        if (!isArithmeticOperator(expr.getOperator())) {
             return false;
         }
-        
-        // Check if either operand is the index variable
-        return isSimpleName(expr.getLeftOperand(), indexVarName)
-                || isSimpleName(expr.getRightOperand(), indexVarName);
+
+        // Recursively inspect all operands (left, right, and extended) for
+        // arithmetic usage of the index variable.
+        if (containsIndexInArithmeticOperand(expr.getLeftOperand(), indexVarName)) {
+            return true;
+        }
+        if (containsIndexInArithmeticOperand(expr.getRightOperand(), indexVarName)) {
+            return true;
+        }
+        @SuppressWarnings("unchecked")
+        List<Expression> extended = expr.extendedOperands();
+        for (Expression operand : extended) {
+            if (containsIndexInArithmeticOperand(operand, indexVarName)) {
+                return true;
+            }
+        }
+        return false;
     }
-    
+
     /**
-     * Checks if an expression is a SimpleName matching the given name.
+     * Returns {@code true} if the given operator is an arithmetic operator
+     * relevant for index arithmetic detection.
      */
-    private boolean isSimpleName(Expression expr, String name) {
-        return expr instanceof SimpleName && ((SimpleName) expr).getIdentifier().equals(name);
+    private boolean isArithmeticOperator(InfixExpression.Operator op) {
+        return op == InfixExpression.Operator.PLUS
+                || op == InfixExpression.Operator.MINUS
+                || op == InfixExpression.Operator.TIMES
+                || op == InfixExpression.Operator.DIVIDE
+                || op == InfixExpression.Operator.REMAINDER;
+    }
+
+    /**
+     * Recursively checks whether the given expression contains an arithmetic
+     * use of the index variable.
+     */
+    private boolean containsIndexInArithmeticOperand(Expression expr, String indexVarName) {
+        if (expr == null) {
+            return false;
+        }
+
+        if (expr instanceof SimpleName) {
+            return ((SimpleName) expr).getIdentifier().equals(indexVarName);
+        }
+
+        if (expr instanceof ParenthesizedExpression) {
+            Expression inner = ((ParenthesizedExpression) expr).getExpression();
+            return containsIndexInArithmeticOperand(inner, indexVarName);
+        }
+
+        if (expr instanceof InfixExpression infix) {
+            if (!isArithmeticOperator(infix.getOperator())) {
+                return false;
+            }
+            if (containsIndexInArithmeticOperand(infix.getLeftOperand(), indexVarName)) {
+                return true;
+            }
+            if (containsIndexInArithmeticOperand(infix.getRightOperand(), indexVarName)) {
+                return true;
+            }
+            @SuppressWarnings("unchecked")
+            List<Expression> extended = infix.extendedOperands();
+            for (Expression operand : extended) {
+                if (containsIndexInArithmeticOperand(operand, indexVarName)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
     
     @Override

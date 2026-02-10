@@ -1066,16 +1066,9 @@ public class JdtLoopExtractor {
         @Override
         public boolean visit(MethodInvocation node) {
             // Issue #670: Detect structural modifications on the iterated collection
-            if (iteratedCollectionName != null) {
-                Expression receiver = node.getExpression();
-                if (receiver instanceof SimpleName receiverName
-                        && iteratedCollectionName.equals(receiverName.getIdentifier())) {
-                    String methodName = node.getName().getIdentifier();
-                    if (java.util.Set.of("remove", "add", "put", "clear", "set", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
-                            "addAll", "removeAll", "retainAll").contains(methodName)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                        modifiesIteratedCollection = true;
-                    }
-                }
+            if (iteratedCollectionName != null
+                    && CollectionModificationDetector.isModification(node, iteratedCollectionName)) {
+                modifiesIteratedCollection = true;
             }
             return true;
         }
