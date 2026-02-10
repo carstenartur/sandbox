@@ -1528,16 +1528,12 @@ This bypasses the limitation that `AbstractCleanUp.fOptions` is private and only
 - **Test File**: `sandbox_functional_converter_test/.../LoopBidirectionalTransformationTest.java`
 - **Design Spec**: `TODO.md` Phase 9 section
 
-## Phase 10b: Traditional For-Loop Conversion + Thread-Safety Analysis (February 2026)
+## Phase 10b: Traditional For-Loop Conversion (February 2026)
 
 ### Overview
 
-Phase 10b extends loop conversion support to traditional index-based for-loops (`for (int i = 0; i < N; i++)`).
-Two conversion strategies are supported:
-
-1. **IntStream.range()**: For loops where the index variable is used in the body
-2. **Index elimination**: For loops where the index is only used in `collection.get(i)` calls,
-   converting to `collection.forEach()` instead
+Phase 10b extends loop conversion support to traditional index-based for-loops (`for (int i = 0; i < N; i++)`),
+converting them to `IntStream.range(start, end).forEach(i -> ...)` using the ULR pipeline.
 
 ### Architecture Changes
 
@@ -1546,59 +1542,42 @@ Two conversion strategies are supported:
 - **`TraditionalForHandler`** (`sandbox_functional_converter/.../helper/TraditionalForHandler.java`)
   - Extends `AbstractFunctionalCall<ForStatement>`
   - Registered as `TRADITIONAL_FOR_LOOP` in `UseFunctionalCallFixCore`
+  - Uses the ULR pipeline: `LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer`
   - Contains `ForLoopPattern` inner class for analysis results
   - Key methods:
     - `analyzeForLoop()`: Validates the for-loop structure (initializer, condition, updater)
-    - `analyzeIndexUsage()`: Determines if index elimination is possible
-    - `rewriteAsIntStreamRange()`: Generates `IntStream.range(start, end).forEach(i -> ...)`
-    - `rewriteAsForEach()`: Generates `collection.forEach(element -> ...)` with index elimination
-
-- **`CollectionThreadSafetyAnalyzer`** (`sandbox_functional_converter/.../helper/CollectionThreadSafetyAnalyzer.java`)
-  - Analyzes collection thread-safety for conversion decisions
-  - `SafetyLevel` enum: `LOCAL_ONLY`, `CONCURRENT_SAFE`, `IMMUTABLE`, `SYNCHRONIZED_WRAPPER`, `POTENTIALLY_SHARED`
-  - Only allows index elimination when the collection is provably safe (local, concurrent-safe, or immutable)
-  - Fields and unknown origins default to `POTENTIALLY_SHARED` (no index elimination, falls back to IntStream.range)
+    - `isNestedInsideLoop()`: Guards against converting loops nested inside other loops
+    - `buildLoopModel()`: Creates a `LoopModel` with `EXPLICIT_RANGE` source descriptor
+    - `rewrite()`: Uses `LoopModelTransformer` + `ASTStreamRenderer` to generate output
 
 #### Pattern Detection
 
 The `TraditionalForHandler` detects loops matching:
 ```
 for (int i = START; i < END; i++) { BODY }
+for (int i = START; i <= END; i++) { BODY }
 ```
 
 Where:
 - **START**: Any expression (typically `0`)
 - **END**: Any expression (e.g., `10`, `list.size()`)
-- **Updater**: `i++`, `++i`, or `i += 1`
-- **BODY**: Must not contain `break` or `continue` statements
-
-#### Index Elimination Logic
-
-When all of the following conditions are met, the index variable is eliminated:
-1. Start expression is `0`
-2. End expression is `collection.size()`
-3. ALL uses of `i` in the body are inside `collection.get(i)` calls
-4. The collection matches between the condition and body references
-5. The collection passes thread-safety analysis (`LOCAL_ONLY`, `CONCURRENT_SAFE`, `IMMUTABLE`, or `SYNCHRONIZED_WRAPPER`)
+- **Updater**: `i++` or `++i`
+- **BODY**: Must not contain `break`, `continue`, or `return` statements
+- **Nesting**: Loop must NOT be nested inside another loop (enhanced-for, while, for, do-while)
 
 ### Data Flow
 
 ```
 ForStatement → analyzeForLoop() → ForLoopPattern
-  ├── indexEliminable=true  → rewriteAsForEach()  → collection.forEach(elem -> ...)
-  └── indexEliminable=false → rewriteAsIntStreamRange() → IntStream.range(s,e).forEach(i -> ...)
+  → buildLoopModel() → LoopModel (EXPLICIT_RANGE source)
+  → LoopModelTransformer.transform() → ASTStreamRenderer
+  → IntStream.range(start, end).forEach(i -> ...)
 ```
-
-### API Constants
-
-- `LOOP_CONVERSION_THREADING_MODE` in `MYCleanUpConstants`: Reserved for future thread-safety analysis configuration
-  - Current implementation: This option is defined but not yet read by the converter; changing it has no effect
-  - Planned semantics (not implemented): modes to restrict conversions to provably thread-safe collections vs. always converting
 
 ### Testing
 
 - `testIndexBasedForLoop_toIntStream`: Basic `for (int i = 0; i < 10; i++)` → `IntStream.range(0, 10).forEach()`
-- `testIndexBasedCollectionLoop_toStream`: `for (int i = 0; i < items.size(); i++) { items.get(i) }` → `items.forEach()`
+- `testIndexBasedCollectionLoop_toStream`: `for (int i = 0; i < items.size(); i++) { ... }` → `IntStream.range(0, items.size()).forEach(i -> { ... })`
 
 ### References
 

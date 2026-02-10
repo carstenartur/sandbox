@@ -103,6 +103,12 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
      * @return a ForLoopPattern if convertible, null otherwise
      */
     private ForLoopPattern analyzeForLoop(ForStatement forStmt) {
+        // Skip for-loops nested inside other loops to avoid converting
+        // inner loops that the EnhancedForHandler expects to remain unchanged
+        if (isNestedInsideLoop(forStmt)) {
+            return null;
+        }
+        
         // Check initializer: must be single variable declaration of type int
         List<?> initializers = forStmt.initializers();
         if (initializers.size() != 1) {
@@ -218,6 +224,28 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         if (type instanceof PrimitiveType) {
             PrimitiveType primType = (PrimitiveType) type;
             return primType.getPrimitiveTypeCode() == PrimitiveType.INT;
+        }
+        return false;
+    }
+    
+    /**
+     * Checks if the for-loop is nested inside another loop (enhanced-for, while, for, do-while).
+     * Nested traditional for-loops are skipped to avoid interfering with the EnhancedForHandler's
+     * analysis of outer enhanced-for loops.
+     */
+    private boolean isNestedInsideLoop(ForStatement forStmt) {
+        ASTNode parent = forStmt.getParent();
+        while (parent != null) {
+            if (parent instanceof EnhancedForStatement
+                    || parent instanceof ForStatement
+                    || parent instanceof WhileStatement
+                    || parent instanceof DoStatement) {
+                return true;
+            }
+            if (parent instanceof MethodDeclaration || parent instanceof TypeDeclaration) {
+                break;
+            }
+            parent = parent.getParent();
         }
         return false;
     }
