@@ -95,7 +95,7 @@ public final class ReducePatternDetector {
 	 * @return the accumulator variable name, or null if no reduce was detected
 	 */
 	public String getAccumulatorVariable() {
-<span class="fc" id="L98">		return accumulatorVariable;</span>
+<span class="nc" id="L98">		return accumulatorVariable;</span>
 	}
 
 	/**
@@ -134,55 +134,55 @@ public final class ReducePatternDetector {
 	 * @return a REDUCE operation if detected, null otherwise
 	 */
 	public ProspectiveOperation detectReduceOperation(Statement stmt) {
-<span class="fc bfc" id="L137" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
-<span class="fc" id="L138">			return null;</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L138">			return null;</span>
 		}
 
-<span class="fc" id="L141">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc" id="L142">		Expression expr = exprStmt.getExpression();</span>
+<span class="nc" id="L141">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="nc" id="L142">		Expression expr = exprStmt.getExpression();</span>
 
 		// Check for postfix increment/decrement: i++, i--
-<span class="fc bfc" id="L145" title="All 2 branches covered.">		if (expr instanceof PostfixExpression) {</span>
-<span class="fc" id="L146">			return detectPostfixReducePattern((PostfixExpression) expr, stmt);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">		if (expr instanceof PostfixExpression) {</span>
+<span class="nc" id="L146">			return detectPostfixReducePattern((PostfixExpression) expr, stmt);</span>
 		}
 
 		// Check for prefix increment/decrement: ++i, --i
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (expr instanceof PrefixExpression) {</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">		if (expr instanceof PrefixExpression) {</span>
 <span class="nc" id="L151">			return detectPrefixReducePattern((PrefixExpression) expr, stmt);</span>
 		}
 
 		// Check for compound assignments: +=, -=, *=, etc.
-<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (expr instanceof Assignment) {</span>
-<span class="fc" id="L156">			return detectAssignmentReducePattern((Assignment) expr, stmt);</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">		if (expr instanceof Assignment) {</span>
+<span class="nc" id="L156">			return detectAssignmentReducePattern((Assignment) expr, stmt);</span>
 		}
 
-<span class="fc" id="L159">		return null;</span>
+<span class="nc" id="L159">		return null;</span>
 	}
 
 	/**
 	 * Detects postfix increment/decrement patterns: i++, i--
 	 */
 	private ProspectiveOperation detectPostfixReducePattern(PostfixExpression postfix, Statement stmt) {
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (!(postfix.getOperand() instanceof SimpleName)) {</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">		if (!(postfix.getOperand() instanceof SimpleName)) {</span>
 <span class="nc" id="L167">			return null;</span>
 		}
 
-<span class="fc" id="L170">		String varName = ((SimpleName) postfix.getOperand()).getIdentifier();</span>
+<span class="nc" id="L170">		String varName = ((SimpleName) postfix.getOperand()).getIdentifier();</span>
 		ReducerType reducerType;
 
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">		if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {</span>
-<span class="fc" id="L174">			reducerType = ReducerType.INCREMENT;</span>
-<span class="pc bnc" id="L175" title="All 2 branches missed.">		} else if (postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">		if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {</span>
+<span class="nc" id="L174">			reducerType = ReducerType.INCREMENT;</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">		} else if (postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {</span>
 <span class="nc" id="L176">			reducerType = ReducerType.DECREMENT;</span>
 <span class="nc" id="L177">		} else {</span>
 <span class="nc" id="L178">			return null;</span>
 		}
 
-<span class="fc" id="L181">		accumulatorVariable = varName;</span>
-<span class="fc" id="L182">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
-<span class="fc" id="L183">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
-<span class="fc" id="L184">		op.setAccumulatorType(accumulatorType);</span>
-<span class="fc" id="L185">		return op;</span>
+<span class="nc" id="L181">		accumulatorVariable = varName;</span>
+<span class="nc" id="L182">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
+<span class="nc" id="L183">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
+<span class="nc" id="L184">		op.setAccumulatorType(accumulatorType);</span>
+<span class="nc" id="L185">		return op;</span>
 	}
 
 	/**
@@ -215,37 +215,37 @@ public final class ReducePatternDetector {
 	 * Detects compound assignment patterns: +=, -=, *=, and Math.max/min patterns
 	 */
 	private ProspectiveOperation detectAssignmentReducePattern(Assignment assignment, Statement stmt) {
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if (!(assignment.getLeftHandSide() instanceof SimpleName)) {</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">		if (!(assignment.getLeftHandSide() instanceof SimpleName)) {</span>
 <span class="nc" id="L219">			return null;</span>
 		}
 
-<span class="fc" id="L222">		String varName = ((SimpleName) assignment.getLeftHandSide()).getIdentifier();</span>
+<span class="nc" id="L222">		String varName = ((SimpleName) assignment.getLeftHandSide()).getIdentifier();</span>
 
 		// Check for simple assignment operators first
-<span class="fc bfc" id="L225" title="All 2 branches covered.">		if (assignment.getOperator() != Assignment.Operator.ASSIGN) {</span>
-<span class="fc" id="L226">			return detectCompoundAssignmentPattern(assignment, stmt, varName);</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">		if (assignment.getOperator() != Assignment.Operator.ASSIGN) {</span>
+<span class="nc" id="L226">			return detectCompoundAssignmentPattern(assignment, stmt, varName);</span>
 		}
 
 		// Check for regular assignment with Math.max/Math.min pattern
 		// Pattern: max = Math.max(max, x) or min = Math.min(min, x)
-<span class="fc" id="L231">		Expression rhs = assignment.getRightHandSide();</span>
-<span class="fc" id="L232">		ReducerType reducerType = detectMathMaxMinPattern(varName, rhs);</span>
-<span class="fc bfc" id="L233" title="All 2 branches covered.">		if (reducerType != null) {</span>
-<span class="fc" id="L234">			accumulatorVariable = varName;</span>
-<span class="fc" id="L235">			accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
-<span class="fc" id="L236">			ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
-<span class="fc" id="L237">			op.setAccumulatorType(accumulatorType);</span>
-<span class="fc" id="L238">			return op;</span>
+<span class="nc" id="L231">		Expression rhs = assignment.getRightHandSide();</span>
+<span class="nc" id="L232">		ReducerType reducerType = detectMathMaxMinPattern(varName, rhs);</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">		if (reducerType != null) {</span>
+<span class="nc" id="L234">			accumulatorVariable = varName;</span>
+<span class="nc" id="L235">			accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
+<span class="nc" id="L236">			ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
+<span class="nc" id="L237">			op.setAccumulatorType(accumulatorType);</span>
+<span class="nc" id="L238">			return op;</span>
 		}
 
 		// Check for regular assignment with infix expression pattern
 		// Pattern: result = result + item, product = product * value, etc.
-<span class="fc" id="L243">		ProspectiveOperation infixOp = detectInfixReducePattern(assignment, stmt, varName);</span>
-<span class="fc bfc" id="L244" title="All 2 branches covered.">		if (infixOp != null) {</span>
-<span class="fc" id="L245">			return infixOp;</span>
+<span class="nc" id="L243">		ProspectiveOperation infixOp = detectInfixReducePattern(assignment, stmt, varName);</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">		if (infixOp != null) {</span>
+<span class="nc" id="L245">			return infixOp;</span>
 		}
 
-<span class="fc" id="L248">		return null;</span>
+<span class="nc" id="L248">		return null;</span>
 	}
 
 	/**
@@ -254,15 +254,15 @@ public final class ReducePatternDetector {
 	private ProspectiveOperation detectCompoundAssignmentPattern(Assignment assignment, Statement stmt, String varName) {
 		ReducerType reducerType;
 
-<span class="pc bpc" id="L257" title="1 of 2 branches missed.">		if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">		if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {</span>
 			// Check if this is string concatenation
-<span class="fc" id="L259">			ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);</span>
-<span class="pc bpc" id="L260" title="2 of 4 branches missed.">			if (varType != null &amp;&amp; JAVA_LANG_STRING.equals(varType.getQualifiedName())) {</span>
+<span class="nc" id="L259">			ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);</span>
+<span class="nc bnc" id="L260" title="All 4 branches missed.">			if (varType != null &amp;&amp; JAVA_LANG_STRING.equals(varType.getQualifiedName())) {</span>
 <span class="nc" id="L261">				reducerType = ReducerType.STRING_CONCAT;</span>
 <span class="nc" id="L262">			} else {</span>
-<span class="fc" id="L263">				reducerType = ReducerType.SUM;</span>
+<span class="nc" id="L263">				reducerType = ReducerType.SUM;</span>
 			}
-<span class="pc bnc" id="L265" title="All 2 branches missed.">		} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">		} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {</span>
 <span class="nc" id="L266">			reducerType = ReducerType.PRODUCT;</span>
 <span class="nc bnc" id="L267" title="All 2 branches missed.">		} else if (assignment.getOperator() == Assignment.Operator.MINUS_ASSIGN) {</span>
 <span class="nc" id="L268">			reducerType = ReducerType.DECREMENT;</span>
@@ -271,19 +271,19 @@ public final class ReducePatternDetector {
 <span class="nc" id="L271">			return null;</span>
 		}
 
-<span class="fc" id="L274">		accumulatorVariable = varName;</span>
-<span class="fc" id="L275">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
+<span class="nc" id="L274">		accumulatorVariable = varName;</span>
+<span class="nc" id="L275">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
 
-<span class="fc" id="L277">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
-<span class="fc" id="L278">		op.setAccumulatorType(accumulatorType);</span>
+<span class="nc" id="L277">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
+<span class="nc" id="L278">		op.setAccumulatorType(accumulatorType);</span>
 
 		// For STRING_CONCAT, check if the accumulator variable has @NotNull
-<span class="pc bpc" id="L281" title="1 of 2 branches missed.">		if (reducerType == ReducerType.STRING_CONCAT) {</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">		if (reducerType == ReducerType.STRING_CONCAT) {</span>
 <span class="nc" id="L282">			boolean isNullSafe = VariableResolver.hasNotNullAnnotation(contextNode, varName);</span>
 <span class="nc" id="L283">			op.setNullSafe(isNullSafe);</span>
 		}
 
-<span class="fc" id="L286">		return op;</span>
+<span class="nc" id="L286">		return op;</span>
 	}
 
 	/**
@@ -300,23 +300,23 @@ public final class ReducePatternDetector {
 	 * @return a REDUCE operation if pattern detected, null otherwise
 	 */
 	private ProspectiveOperation detectInfixReducePattern(Assignment assignment, Statement stmt, String varName) {
-<span class="fc" id="L303">		Expression rhs = assignment.getRightHandSide();</span>
+<span class="nc" id="L303">		Expression rhs = assignment.getRightHandSide();</span>
 		
 		// Check if RHS is an infix expression
-<span class="fc bfc" id="L306" title="All 2 branches covered.">		if (!(rhs instanceof InfixExpression)) {</span>
-<span class="fc" id="L307">			return null;</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">		if (!(rhs instanceof InfixExpression)) {</span>
+<span class="nc" id="L307">			return null;</span>
 		}
 		
-<span class="fc" id="L310">		InfixExpression infixExpr = (InfixExpression) rhs;</span>
+<span class="nc" id="L310">		InfixExpression infixExpr = (InfixExpression) rhs;</span>
 		
 		// Check if left operand is the accumulator variable
-<span class="fc" id="L313">		Expression leftOperand = infixExpr.getLeftOperand();</span>
-<span class="pc bpc" id="L314" title="1 of 2 branches missed.">		if (!(leftOperand instanceof SimpleName)) {</span>
+<span class="nc" id="L313">		Expression leftOperand = infixExpr.getLeftOperand();</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">		if (!(leftOperand instanceof SimpleName)) {</span>
 <span class="nc" id="L315">			return null;</span>
 		}
 		
-<span class="fc" id="L318">		SimpleName leftName = (SimpleName) leftOperand;</span>
-<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		if (!varName.equals(leftName.getIdentifier())) {</span>
+<span class="nc" id="L318">		SimpleName leftName = (SimpleName) leftOperand;</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">		if (!varName.equals(leftName.getIdentifier())) {</span>
 <span class="nc" id="L320">			return null;</span>
 		}
 		
@@ -327,17 +327,17 @@ public final class ReducePatternDetector {
 		
 		// Determine reducer type based on operator
 		ReducerType reducerType;
-<span class="fc" id="L330">		InfixExpression.Operator operator = infixExpr.getOperator();</span>
+<span class="nc" id="L330">		InfixExpression.Operator operator = infixExpr.getOperator();</span>
 		
-<span class="pc bpc" id="L332" title="1 of 2 branches missed.">		if (operator == InfixExpression.Operator.PLUS) {</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">		if (operator == InfixExpression.Operator.PLUS) {</span>
 			// Check if this is string concatenation
-<span class="fc" id="L334">			ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);</span>
-<span class="pc bpc" id="L335" title="1 of 4 branches missed.">			if (varType != null &amp;&amp; JAVA_LANG_STRING.equals(varType.getQualifiedName())) {</span>
-<span class="fc" id="L336">				reducerType = ReducerType.STRING_CONCAT;</span>
-<span class="fc" id="L337">			} else {</span>
-<span class="fc" id="L338">				reducerType = ReducerType.SUM;</span>
+<span class="nc" id="L334">			ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);</span>
+<span class="nc bnc" id="L335" title="All 4 branches missed.">			if (varType != null &amp;&amp; JAVA_LANG_STRING.equals(varType.getQualifiedName())) {</span>
+<span class="nc" id="L336">				reducerType = ReducerType.STRING_CONCAT;</span>
+<span class="nc" id="L337">			} else {</span>
+<span class="nc" id="L338">				reducerType = ReducerType.SUM;</span>
 			}
-<span class="pc bnc" id="L340" title="All 2 branches missed.">		} else if (operator == InfixExpression.Operator.TIMES) {</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">		} else if (operator == InfixExpression.Operator.TIMES) {</span>
 <span class="nc" id="L341">			reducerType = ReducerType.PRODUCT;</span>
 <span class="nc bnc" id="L342" title="All 2 branches missed.">		} else if (operator == InfixExpression.Operator.MINUS) {</span>
 <span class="nc" id="L343">			reducerType = ReducerType.DECREMENT;</span>
@@ -346,19 +346,19 @@ public final class ReducePatternDetector {
 <span class="nc" id="L346">			return null;</span>
 		}
 		
-<span class="fc" id="L349">		accumulatorVariable = varName;</span>
-<span class="fc" id="L350">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
+<span class="nc" id="L349">		accumulatorVariable = varName;</span>
+<span class="nc" id="L350">		accumulatorType = VariableResolver.getVariableType(contextNode, varName);</span>
 		
-<span class="fc" id="L352">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
-<span class="fc" id="L353">		op.setAccumulatorType(accumulatorType);</span>
+<span class="nc" id="L352">		ProspectiveOperation op = new ProspectiveOperation(stmt, varName, reducerType);</span>
+<span class="nc" id="L353">		op.setAccumulatorType(accumulatorType);</span>
 		
 		// For STRING_CONCAT, check if the accumulator variable has @NotNull
-<span class="fc bfc" id="L356" title="All 2 branches covered.">		if (reducerType == ReducerType.STRING_CONCAT) {</span>
-<span class="fc" id="L357">			boolean isNullSafe = VariableResolver.hasNotNullAnnotation(contextNode, varName);</span>
-<span class="fc" id="L358">			op.setNullSafe(isNullSafe);</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">		if (reducerType == ReducerType.STRING_CONCAT) {</span>
+<span class="nc" id="L357">			boolean isNullSafe = VariableResolver.hasNotNullAnnotation(contextNode, varName);</span>
+<span class="nc" id="L358">			op.setNullSafe(isNullSafe);</span>
 		}
 		
-<span class="fc" id="L361">		return op;</span>
+<span class="nc" id="L361">		return op;</span>
 	}
 
 	/**
@@ -370,28 +370,28 @@ public final class ReducePatternDetector {
 	 * @return MAX or MIN if pattern detected, null otherwise
 	 */
 	ReducerType detectMathMaxMinPattern(String varName, Expression expr) {
-<span class="fc bfc" id="L373" title="All 2 branches covered.">		if (!(expr instanceof MethodInvocation)) {</span>
-<span class="fc" id="L374">			return null;</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">		if (!(expr instanceof MethodInvocation)) {</span>
+<span class="nc" id="L374">			return null;</span>
 		}
 
-<span class="fc" id="L377">		MethodInvocation methodInv = (MethodInvocation) expr;</span>
+<span class="nc" id="L377">		MethodInvocation methodInv = (MethodInvocation) expr;</span>
 
 		// Get method name first
-<span class="fc" id="L380">		String methodName = methodInv.getName().getIdentifier();</span>
-<span class="fc bfc" id="L381" title="All 4 branches covered.">		if (!MAX_METHOD_NAME.equals(methodName) &amp;&amp; !MIN_METHOD_NAME.equals(methodName)) {</span>
-<span class="fc" id="L382">			return null;</span>
+<span class="nc" id="L380">		String methodName = methodInv.getName().getIdentifier();</span>
+<span class="nc bnc" id="L381" title="All 4 branches missed.">		if (!MAX_METHOD_NAME.equals(methodName) &amp;&amp; !MIN_METHOD_NAME.equals(methodName)) {</span>
+<span class="nc" id="L382">			return null;</span>
 		}
 
 		// Check if it's a Math.max or Math.min call
 		// Try binding resolution first (more robust)
-<span class="fc" id="L387">		IMethodBinding binding = methodInv.resolveMethodBinding();</span>
-<span class="pc bpc" id="L388" title="1 of 2 branches missed.">		if (binding != null) {</span>
-<span class="fc" id="L389">			ITypeBinding declaringClass = binding.getDeclaringClass();</span>
-<span class="pc bpc" id="L390" title="2 of 4 branches missed.">			if (declaringClass != null &amp;&amp; JAVA_LANG_MATH.equals(declaringClass.getQualifiedName())) {</span>
+<span class="nc" id="L387">		IMethodBinding binding = methodInv.resolveMethodBinding();</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">		if (binding != null) {</span>
+<span class="nc" id="L389">			ITypeBinding declaringClass = binding.getDeclaringClass();</span>
+<span class="nc bnc" id="L390" title="All 4 branches missed.">			if (declaringClass != null &amp;&amp; JAVA_LANG_MATH.equals(declaringClass.getQualifiedName())) {</span>
 				// Confirmed it's Math.max or Math.min via binding
-<span class="pc bpc" id="L392" title="1 of 2 branches missed.">				if (hasAccumulatorArgument(methodInv, varName)) {</span>
-<span class="fc bfc" id="L393" title="All 2 branches covered.">					return MAX_METHOD_NAME.equals(methodName) ? ReducerType.MAX</span>
-<span class="fc" id="L394">							: ReducerType.MIN;</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">				if (hasAccumulatorArgument(methodInv, varName)) {</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">					return MAX_METHOD_NAME.equals(methodName) ? ReducerType.MAX</span>
+<span class="nc" id="L394">							: ReducerType.MIN;</span>
 				}
 			}
 		}
@@ -424,16 +424,16 @@ public final class ReducePatternDetector {
 	 * Checks if the method invocation has the accumulator variable as one of its arguments.
 	 */
 	private boolean hasAccumulatorArgument(MethodInvocation methodInv, String varName) {
-<span class="fc" id="L427">		List&lt;?&gt; args = methodInv.arguments();</span>
-<span class="pc bpc" id="L428" title="1 of 2 branches missed.">		if (args.size() != 2) {</span>
+<span class="nc" id="L427">		List&lt;?&gt; args = methodInv.arguments();</span>
+<span class="nc bnc" id="L428" title="All 2 branches missed.">		if (args.size() != 2) {</span>
 <span class="nc" id="L429">			return false;</span>
 		}
 
-<span class="pc bpc" id="L432" title="1 of 2 branches missed.">		for (Object argObj : args) {</span>
-<span class="pc bpc" id="L433" title="1 of 2 branches missed.">			if (argObj instanceof SimpleName) {</span>
-<span class="fc" id="L434">				SimpleName argName = (SimpleName) argObj;</span>
-<span class="pc bpc" id="L435" title="1 of 2 branches missed.">				if (varName.equals(argName.getIdentifier())) {</span>
-<span class="fc" id="L436">					return true;</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">		for (Object argObj : args) {</span>
+<span class="nc bnc" id="L433" title="All 2 branches missed.">			if (argObj instanceof SimpleName) {</span>
+<span class="nc" id="L434">				SimpleName argName = (SimpleName) argObj;</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">				if (varName.equals(argName.getIdentifier())) {</span>
+<span class="nc" id="L436">					return true;</span>
 				}
 			}
 		}
@@ -449,31 +449,31 @@ public final class ReducePatternDetector {
 	 * @return the expression to be mapped, or null if none
 	 */
 	public Expression extractReduceExpression(Statement stmt) {
-<span class="pc bpc" id="L452" title="1 of 2 branches missed.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">		if (!(stmt instanceof ExpressionStatement)) {</span>
 <span class="nc" id="L453">			return null;</span>
 		}
 
-<span class="fc" id="L456">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc" id="L457">		Expression expr = exprStmt.getExpression();</span>
+<span class="nc" id="L456">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="nc" id="L457">		Expression expr = exprStmt.getExpression();</span>
 
-<span class="fc bfc" id="L459" title="All 2 branches covered.">		if (expr instanceof Assignment) {</span>
-<span class="fc" id="L460">			Assignment assignment = (Assignment) expr;</span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">		if (expr instanceof Assignment) {</span>
+<span class="nc" id="L460">			Assignment assignment = (Assignment) expr;</span>
 			// Return the right-hand side expression for compound assignments
-<span class="fc bfc" id="L462" title="All 2 branches covered.">			if (assignment.getOperator() != Assignment.Operator.ASSIGN) {</span>
-<span class="fc" id="L463">				return assignment.getRightHandSide();</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">			if (assignment.getOperator() != Assignment.Operator.ASSIGN) {</span>
+<span class="nc" id="L463">				return assignment.getRightHandSide();</span>
 			}
 			
 			// For regular assignment with infix expression (e.g., result = result + item)
 			// Extract the right operand of the infix expression
-<span class="fc" id="L468">			Expression rhs = assignment.getRightHandSide();</span>
-<span class="fc bfc" id="L469" title="All 2 branches covered.">			if (rhs instanceof InfixExpression) {</span>
-<span class="fc" id="L470">				InfixExpression infixExpr = (InfixExpression) rhs;</span>
+<span class="nc" id="L468">			Expression rhs = assignment.getRightHandSide();</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">			if (rhs instanceof InfixExpression) {</span>
+<span class="nc" id="L470">				InfixExpression infixExpr = (InfixExpression) rhs;</span>
 				// Return the right operand (the item being accumulated)
-<span class="fc" id="L472">				return infixExpr.getRightOperand();</span>
+<span class="nc" id="L472">				return infixExpr.getRightOperand();</span>
 			}
 		}
 
-<span class="fc" id="L476">		return null;</span>
+<span class="nc" id="L476">		return null;</span>
 	}
 
 	/**
@@ -487,46 +487,46 @@ public final class ReducePatternDetector {
 	 * @return the expression to be mapped, or null if it's an identity mapping
 	 */
 	public Expression extractMathMaxMinArgument(Statement stmt, String accumulatorVar, String currentVarName) {
-<span class="pc bpc" id="L490" title="1 of 2 branches missed.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="nc bnc" id="L490" title="All 2 branches missed.">		if (!(stmt instanceof ExpressionStatement)) {</span>
 <span class="nc" id="L491">			return null;</span>
 		}
 
-<span class="fc" id="L494">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc" id="L495">		Expression expr = exprStmt.getExpression();</span>
+<span class="nc" id="L494">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="nc" id="L495">		Expression expr = exprStmt.getExpression();</span>
 
-<span class="fc bfc" id="L497" title="All 2 branches covered.">		if (!(expr instanceof Assignment)) {</span>
-<span class="fc" id="L498">			return null;</span>
+<span class="nc bnc" id="L497" title="All 2 branches missed.">		if (!(expr instanceof Assignment)) {</span>
+<span class="nc" id="L498">			return null;</span>
 		}
 
-<span class="fc" id="L501">		Assignment assignment = (Assignment) expr;</span>
-<span class="fc bfc" id="L502" title="All 2 branches covered.">		if (assignment.getOperator() != Assignment.Operator.ASSIGN) {</span>
-<span class="fc" id="L503">			return null;</span>
+<span class="nc" id="L501">		Assignment assignment = (Assignment) expr;</span>
+<span class="nc bnc" id="L502" title="All 2 branches missed.">		if (assignment.getOperator() != Assignment.Operator.ASSIGN) {</span>
+<span class="nc" id="L503">			return null;</span>
 		}
 
-<span class="fc" id="L506">		Expression rhs = assignment.getRightHandSide();</span>
-<span class="fc bfc" id="L507" title="All 2 branches covered.">		if (!(rhs instanceof MethodInvocation)) {</span>
-<span class="fc" id="L508">			return null;</span>
+<span class="nc" id="L506">		Expression rhs = assignment.getRightHandSide();</span>
+<span class="nc bnc" id="L507" title="All 2 branches missed.">		if (!(rhs instanceof MethodInvocation)) {</span>
+<span class="nc" id="L508">			return null;</span>
 		}
 
-<span class="fc" id="L511">		MethodInvocation methodInv = (MethodInvocation) rhs;</span>
-<span class="fc" id="L512">		List&lt;?&gt; args = methodInv.arguments();</span>
-<span class="pc bpc" id="L513" title="1 of 2 branches missed.">		if (args.size() != 2) {</span>
+<span class="nc" id="L511">		MethodInvocation methodInv = (MethodInvocation) rhs;</span>
+<span class="nc" id="L512">		List&lt;?&gt; args = methodInv.arguments();</span>
+<span class="nc bnc" id="L513" title="All 2 branches missed.">		if (args.size() != 2) {</span>
 <span class="nc" id="L514">			return null;</span>
 		}
 
 		// Find the argument that is NOT the accumulator variable
-<span class="pc bpc" id="L518" title="1 of 2 branches missed.">		for (Object argObj : args) {</span>
-<span class="pc bpc" id="L519" title="1 of 2 branches missed.">			if (argObj instanceof Expression) {</span>
-<span class="fc" id="L520">				Expression arg = (Expression) argObj;</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">		for (Object argObj : args) {</span>
+<span class="nc bnc" id="L519" title="All 2 branches missed.">			if (argObj instanceof Expression) {</span>
+<span class="nc" id="L520">				Expression arg = (Expression) argObj;</span>
 				// Skip if this argument is just the accumulator variable
-<span class="pc bpc" id="L522" title="1 of 2 branches missed.">				if (arg instanceof SimpleName) {</span>
-<span class="fc" id="L523">					SimpleName name = (SimpleName) arg;</span>
-<span class="fc bfc" id="L524" title="All 2 branches covered.">					if (accumulatorVar.equals(name.getIdentifier())) {</span>
-<span class="fc" id="L525">						continue; // This is the accumulator, skip it</span>
+<span class="nc bnc" id="L522" title="All 2 branches missed.">				if (arg instanceof SimpleName) {</span>
+<span class="nc" id="L523">					SimpleName name = (SimpleName) arg;</span>
+<span class="nc bnc" id="L524" title="All 2 branches missed.">					if (accumulatorVar.equals(name.getIdentifier())) {</span>
+<span class="nc" id="L525">						continue; // This is the accumulator, skip it</span>
 					}
 					// Check if this is just the current loop/pipeline variable (identity mapping)
-<span class="pc bpc" id="L528" title="1 of 2 branches missed.">					if (currentVarName.equals(name.getIdentifier())) {</span>
-<span class="fc" id="L529">						return null; // Skip identity mapping</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">					if (currentVarName.equals(name.getIdentifier())) {</span>
+<span class="nc" id="L529">						return null; // Skip identity mapping</span>
 					}
 				}
 				// Return the non-accumulator argument
@@ -558,57 +558,57 @@ public final class ReducePatternDetector {
 	public void addMapBeforeReduce(List&lt;ProspectiveOperation&gt; ops, ProspectiveOperation reduceOp, Statement stmt,
 			String currentVarName, AST ast) {
 		// Defensive null checks
-<span class="pc bpc" id="L561" title="1 of 2 branches missed.">		if (ops == null) {</span>
+<span class="nc bnc" id="L561" title="All 2 branches missed.">		if (ops == null) {</span>
 <span class="nc" id="L562">			throw new IllegalArgumentException(&quot;ops list cannot be null&quot;);</span>
 		}
-<span class="pc bpc" id="L564" title="1 of 2 branches missed.">		if (reduceOp == null) {</span>
+<span class="nc bnc" id="L564" title="All 2 branches missed.">		if (reduceOp == null) {</span>
 <span class="nc" id="L565">			throw new IllegalArgumentException(&quot;reduceOp cannot be null&quot;);</span>
 		}
-<span class="pc bpc" id="L567" title="1 of 2 branches missed.">		if (stmt == null) {</span>
+<span class="nc bnc" id="L567" title="All 2 branches missed.">		if (stmt == null) {</span>
 <span class="nc" id="L568">			throw new IllegalArgumentException(&quot;stmt cannot be null&quot;);</span>
 		}
-<span class="pc bpc" id="L570" title="1 of 2 branches missed.">		if (currentVarName == null) {</span>
+<span class="nc bnc" id="L570" title="All 2 branches missed.">		if (currentVarName == null) {</span>
 <span class="nc" id="L571">			throw new IllegalArgumentException(&quot;currentVarName cannot be null&quot;);</span>
 		}
-<span class="pc bpc" id="L573" title="1 of 2 branches missed.">		if (ast == null) {</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">		if (ast == null) {</span>
 <span class="nc" id="L574">			throw new IllegalArgumentException(&quot;ast cannot be null&quot;);</span>
 		}
-<span class="pc bpc" id="L576" title="1 of 2 branches missed.">		if (reduceOp.getOperationType() != OperationType.REDUCE) {</span>
+<span class="nc bnc" id="L576" title="All 2 branches missed.">		if (reduceOp.getOperationType() != OperationType.REDUCE) {</span>
 <span class="nc" id="L577">			throw new IllegalArgumentException(&quot;reduceOp must be a REDUCE operation&quot;);</span>
 		}
 
-<span class="fc" id="L580">		ReducerType reducerType = reduceOp.getReducerType();</span>
-<span class="pc bpc" id="L581" title="1 of 2 branches missed.">		if (reducerType == null) {</span>
+<span class="nc" id="L580">		ReducerType reducerType = reduceOp.getReducerType();</span>
+<span class="nc bnc" id="L581" title="All 2 branches missed.">		if (reducerType == null) {</span>
 <span class="nc" id="L582">			throw new IllegalArgumentException(&quot;reduceOp must have a non-null reducerType for REDUCE operations&quot;);</span>
 		}
 
 		// Create context with all data needed for MAP expression creation
-<span class="fc" id="L586">		ReducerType.MapExpressionContext context = new ReducerType.MapExpressionContext(</span>
-<span class="fc" id="L587">				ast,</span>
-<span class="fc" id="L588">				accumulatorType,</span>
-<span class="fc" id="L589">				currentVarName,</span>
-<span class="fc" id="L590">				extractReduceExpression(stmt),</span>
-<span class="fc" id="L591">				extractMathMaxMinArgument(stmt, accumulatorVariable, currentVarName)</span>
+<span class="nc" id="L586">		ReducerType.MapExpressionContext context = new ReducerType.MapExpressionContext(</span>
+<span class="nc" id="L587">				ast,</span>
+<span class="nc" id="L588">				accumulatorType,</span>
+<span class="nc" id="L589">				currentVarName,</span>
+<span class="nc" id="L590">				extractReduceExpression(stmt),</span>
+<span class="nc" id="L591">				extractMathMaxMinArgument(stmt, accumulatorVariable, currentVarName)</span>
 		);
 		
 		// Let the reducer type create the appropriate MAP expression
-<span class="fc" id="L595">		Expression mapExpression = reducerType.createMapExpression(context);</span>
+<span class="nc" id="L595">		Expression mapExpression = reducerType.createMapExpression(context);</span>
 		
-<span class="fc bfc" id="L597" title="All 2 branches covered.">		if (mapExpression != null) {</span>
+<span class="nc bnc" id="L597" title="All 2 branches missed.">		if (mapExpression != null) {</span>
 			// Skip identity mapping for non-counting reducers
-<span class="fc bfc" id="L599" title="All 4 branches covered.">			if (!reducerType.isCounting() &amp;&amp; ExpressionHelper.isIdentityMapping(mapExpression, currentVarName)) {</span>
-<span class="fc" id="L600">				return;</span>
+<span class="nc bnc" id="L599" title="All 4 branches missed.">			if (!reducerType.isCounting() &amp;&amp; ExpressionHelper.isIdentityMapping(mapExpression, currentVarName)) {</span>
+<span class="nc" id="L600">				return;</span>
 			}
 			
 			// Determine the variable name for the MAP operation
-<span class="fc" id="L604">			String mapVarName = reducerType.getMapVariableName();</span>
-<span class="fc bfc" id="L605" title="All 2 branches covered.">			if (mapVarName == null) {</span>
-<span class="fc" id="L606">				mapVarName = currentVarName;</span>
+<span class="nc" id="L604">			String mapVarName = reducerType.getMapVariableName();</span>
+<span class="nc bnc" id="L605" title="All 2 branches missed.">			if (mapVarName == null) {</span>
+<span class="nc" id="L606">				mapVarName = currentVarName;</span>
 			}
 			
-<span class="fc" id="L609">			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression, OperationType.MAP, mapVarName);</span>
-<span class="fc" id="L610">			ops.add(mapOp);</span>
+<span class="nc" id="L609">			ProspectiveOperation mapOp = new ProspectiveOperation(mapExpression, OperationType.MAP, mapVarName);</span>
+<span class="nc" id="L610">			ops.add(mapOp);</span>
 		}
-<span class="fc" id="L612">	}</span>
+<span class="nc" id="L612">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

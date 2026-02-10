@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReducerType.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ReducerType.java</span></div><h1>ReducerType.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReducerType.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ReducerType.java</span></div><h1>ReducerType.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*******************************************************************************</span>
  * Copyright (c) 2025 Carsten Hammer and others.
  *
  * This program and the accompanying materials
@@ -67,12 +67,12 @@ public enum ReducerType {
 		
 		@Override
 		public Expression createMapExpression(MapExpressionContext context) {
-<span class="fc" id="L70">			return createTypedLiteralOne(context.ast(), context.accumulatorType());</span>
+<span class="nc" id="L70">			return createTypedLiteralOne(context.ast(), context.accumulatorType());</span>
 		}
 		
 		@Override
 		public String getMapVariableName() {
-<span class="fc" id="L75">			return UNUSED_PARAMETER_NAME;</span>
+<span class="nc" id="L75">			return UNUSED_PARAMETER_NAME;</span>
 		}
 	},
 	
@@ -109,7 +109,7 @@ public enum ReducerType {
 		
 		@Override
 		public Expression createMapExpression(MapExpressionContext context) {
-<span class="fc" id="L112">			return context.rhsExpression();</span>
+<span class="nc" id="L112">			return context.rhsExpression();</span>
 		}
 	},
 	
@@ -145,7 +145,7 @@ public enum ReducerType {
 		
 		@Override
 		public Expression createMapExpression(MapExpressionContext context) {
-<span class="fc" id="L148">			return context.rhsExpression();</span>
+<span class="nc" id="L148">			return context.rhsExpression();</span>
 		}
 	},
 	
@@ -156,12 +156,12 @@ public enum ReducerType {
 <span class="fc" id="L156">	MAX {</span>
 		@Override
 		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
-<span class="fc" id="L159">			return createMaxMinMethodReference(ast, accumulatorType, &quot;max&quot;);</span>
+<span class="nc" id="L159">			return createMaxMinMethodReference(ast, accumulatorType, &quot;max&quot;);</span>
 		}
 		
 		@Override
 		public Expression createMapExpression(MapExpressionContext context) {
-<span class="fc" id="L164">			return context.mathArgExpression();</span>
+<span class="nc" id="L164">			return context.mathArgExpression();</span>
 		}
 	},
 	
@@ -172,12 +172,12 @@ public enum ReducerType {
 <span class="fc" id="L172">	MIN {</span>
 		@Override
 		public Expression createAccumulatorExpression(AST ast, String accumulatorType, boolean isNullSafe) {
-<span class="fc" id="L175">			return createMaxMinMethodReference(ast, accumulatorType, &quot;min&quot;);</span>
+<span class="nc" id="L175">			return createMaxMinMethodReference(ast, accumulatorType, &quot;min&quot;);</span>
 		}
 		
 		@Override
 		public Expression createMapExpression(MapExpressionContext context) {
-<span class="fc" id="L180">			return context.mathArgExpression();</span>
+<span class="nc" id="L180">			return context.mathArgExpression();</span>
 		}
 	},
 	
@@ -235,7 +235,7 @@ public enum ReducerType {
 	 * @return the parameter name for the MAP lambda, or null to use the default
 	 */
 	public String getMapVariableName() {
-<span class="fc" id="L238">		return null; // Default: use current variable name</span>
+<span class="nc" id="L238">		return null; // Default: use current variable name</span>
 	}
 	
 	/**
@@ -285,7 +285,7 @@ public enum ReducerType {
 	 * @return true if this is INCREMENT or DECREMENT
 	 */
 	public boolean isCounting() {
-<span class="pc bpc" id="L288" title="1 of 4 branches missed.">		return this == INCREMENT || this == DECREMENT;</span>
+<span class="nc bnc" id="L288" title="All 4 branches missed.">		return this == INCREMENT || this == DECREMENT;</span>
 	}
 	
 	/**
@@ -315,17 +315,17 @@ public enum ReducerType {
 	 * @return an Expression representing the typed literal 1 (never null)
 	 */
 	private static Expression createTypedLiteralOne(AST ast, String accumulatorType) {
-<span class="pc bpc" id="L318" title="1 of 2 branches missed.">		if (accumulatorType == null) {</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">		if (accumulatorType == null) {</span>
 <span class="nc" id="L319">			return ast.newNumberLiteral(&quot;1&quot;);</span>
 		}
 
-<span class="pc bpc" id="L322" title="5 of 7 branches missed.">		switch (accumulatorType) {</span>
+<span class="nc bnc" id="L322" title="All 7 branches missed.">		switch (accumulatorType) {</span>
 		case &quot;double&quot;:
 <span class="nc" id="L324">			return ast.newNumberLiteral(&quot;1.0&quot;);</span>
 		case &quot;float&quot;:
 <span class="nc" id="L326">			return ast.newNumberLiteral(&quot;1.0f&quot;);</span>
 		case &quot;long&quot;:
-<span class="fc" id="L328">			return ast.newNumberLiteral(&quot;1L&quot;);</span>
+<span class="nc" id="L328">			return ast.newNumberLiteral(&quot;1L&quot;);</span>
 		case &quot;byte&quot;:
 <span class="nc" id="L330">			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.BYTE, &quot;1&quot;);</span>
 		case &quot;short&quot;:
@@ -333,7 +333,7 @@ public enum ReducerType {
 		case &quot;char&quot;:
 <span class="nc" id="L334">			return createCastExpression(ast, org.eclipse.jdt.core.dom.PrimitiveType.CHAR, &quot;1&quot;);</span>
 		default:
-<span class="fc" id="L336">			return ast.newNumberLiteral(&quot;1&quot;);</span>
+<span class="nc" id="L336">			return ast.newNumberLiteral(&quot;1&quot;);</span>
 		}
 	}
 	
@@ -358,7 +358,7 @@ public enum ReducerType {
 <span class="nc" id="L358">			return createMethodReference(ast, &quot;Integer&quot;, &quot;sum&quot;);</span>
 		}
 
-<span class="pc bpc" id="L361" title="2 of 5 branches missed.">		switch (accumulatorType) {</span>
+<span class="pc bpc" id="L361" title="3 of 5 branches missed.">		switch (accumulatorType) {</span>
 		case &quot;double&quot;:
 		case &quot;java.lang.Double&quot;:
 <span class="pc bpc" id="L364" title="1 of 2 branches missed.">			if (isIncrement) {</span>
@@ -373,7 +373,7 @@ public enum ReducerType {
 <span class="nc" id="L373">			return createBinaryOperatorLambda(ast, InfixExpression.Operator.PLUS);</span>
 		case &quot;long&quot;:
 		case &quot;java.lang.Long&quot;:
-<span class="fc" id="L376">			return createMethodReference(ast, &quot;Long&quot;, &quot;sum&quot;);</span>
+<span class="nc" id="L376">			return createMethodReference(ast, &quot;Long&quot;, &quot;sum&quot;);</span>
 		case &quot;short&quot;:
 		case &quot;java.lang.Short&quot;:
 		case &quot;byte&quot;:
@@ -403,7 +403,7 @@ public enum ReducerType {
 	 */
 	private static TypeMethodReference createMaxMinMethodReference(AST ast, String accumulatorType, String methodName) {
 		// Always use Math for max/min operations since they're detected from Math.max/min patterns
-<span class="fc" id="L406">		return createMethodReference(ast, &quot;Math&quot;, methodName);</span>
+<span class="nc" id="L406">		return createMethodReference(ast, &quot;Math&quot;, methodName);</span>
 	}
 	
 	/**

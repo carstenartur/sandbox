@@ -20,30 +20,40 @@ package org.sandbox.functional.core.terminal;
     String identity,
     String accumulator,
     String combiner,
-    ReduceType reduceType
+    ReduceType reduceType,
+    String targetVariable
 ) implements TerminalOperation {
+    
+    /**
+     * Constructor without target variable (backward compatibility).
+     */
+    public ReduceTerminal(String identity, String accumulator, String combiner, ReduceType reduceType) {
+<span class="fc" id="L31">        this(identity, accumulator, combiner, reduceType, null);</span>
+<span class="fc" id="L32">    }</span>
     
     /**
      * Types of reduce operations.
      */
-<span class="fc" id="L29">    public enum ReduceType {</span>
+<span class="fc" id="L37">    public enum ReduceType {</span>
         /** Sum reduction */
-<span class="fc" id="L31">        SUM, </span>
+<span class="fc" id="L39">        SUM, </span>
         /** Count reduction */
-<span class="fc" id="L33">        COUNT, </span>
+<span class="fc" id="L41">        COUNT, </span>
         /** Minimum reduction */
-<span class="fc" id="L35">        MIN, </span>
+<span class="fc" id="L43">        MIN, </span>
         /** Maximum reduction */
-<span class="fc" id="L37">        MAX, </span>
+<span class="fc" id="L45">        MAX, </span>
         /** Product reduction */
-<span class="fc" id="L39">        PRODUCT, </span>
+<span class="fc" id="L47">        PRODUCT,</span>
+        /** String concatenation reduction */
+<span class="fc" id="L49">        STRING_CONCAT,</span>
         /** Custom reduction */
-<span class="fc" id="L41">        CUSTOM</span>
+<span class="fc" id="L51">        CUSTOM</span>
     }
     
     @Override
     public String operationType() { 
-<span class="fc" id="L46">        return &quot;reduce&quot;; </span>
+<span class="fc" id="L56">        return &quot;reduce&quot;; </span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

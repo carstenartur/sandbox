@@ -368,11 +368,11 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(ExpressionMethodReference node) {
-<span class="nc bnc" id="L371" title="All 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BreakStatement)) {</span>
+<span class="pc bpc" id="L371" title="1 of 2 branches missed.">		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BreakStatement)) {</span>
 <span class="nc" id="L372">			return ((BiPredicate&lt;ExpressionMethodReference, E&gt;) (this.helperVisitor.predicatemap</span>
 <span class="nc" id="L373">					.get(VisitorEnum.ExpressionMethodReference))).test(node, this.helperVisitor.dataholder);</span>
 		}
-<span class="nc" id="L375">		return true;</span>
+<span class="fc" id="L375">		return true;</span>
 	}
 
 	@Override
@@ -1530,11 +1530,11 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(ExpressionMethodReference node) {
-<span class="nc bnc" id="L1533" title="All 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ExpressionMethodReference)) {</span>
+<span class="pc bpc" id="L1533" title="1 of 2 branches missed.">		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ExpressionMethodReference)) {</span>
 <span class="nc" id="L1534">			((BiConsumer&lt;ExpressionMethodReference, E&gt;) (this.helperVisitor.consumermap.get(VisitorEnum.ExpressionMethodReference)))</span>
 <span class="nc" id="L1535">					.accept(node, this.helperVisitor.dataholder);</span>
 		}
-<span class="nc" id="L1537">	}</span>
+<span class="fc" id="L1537">	}</span>
 
 	@Override
 	public void endVisit(ExpressionStatement node) {

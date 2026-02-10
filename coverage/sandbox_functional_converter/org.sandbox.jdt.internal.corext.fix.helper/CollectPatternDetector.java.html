@@ -112,19 +112,19 @@ public final class CollectPatternDetector {
 	 * @return a COLLECT operation if detected, null otherwise
 	 */
 	public ProspectiveOperation detectCollectOperation(Statement stmt) {
-<span class="fc bfc" id="L115" title="All 2 branches covered.">		if (!(stmt instanceof ExpressionStatement)) {</span>
-<span class="fc" id="L116">			return null;</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L116">			return null;</span>
 		}
 
 <span class="fc" id="L119">		ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
 <span class="fc" id="L120">		Expression expr = exprStmt.getExpression();</span>
 
 		// Check for method invocation: result.add(item)
-<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (expr instanceof MethodInvocation) {</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		if (expr instanceof MethodInvocation) {</span>
 <span class="fc" id="L124">			return detectAddMethodPattern((MethodInvocation) expr, stmt);</span>
 		}
 
-<span class="fc" id="L127">		return null;</span>
+<span class="nc" id="L127">		return null;</span>
 	}
 
 	/**
@@ -133,8 +133,8 @@ public final class CollectPatternDetector {
 	 */
 	private ProspectiveOperation detectAddMethodPattern(MethodInvocation methodInv, Statement stmt) {
 		// Check if method name is &quot;add&quot;
-<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
-<span class="fc" id="L137">			return null;</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="nc" id="L137">			return null;</span>
 		}
 
 		// Check if invoked on a SimpleName (the collection variable)
@@ -274,7 +274,7 @@ public final class CollectPatternDetector {
 			@Override
 			public boolean visit(MethodInvocation node) {
 <span class="fc" id="L276">				Expression receiver = node.getExpression();</span>
-<span class="fc bfc" id="L277" title="All 2 branches covered.">				if (receiver instanceof SimpleName) {</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">				if (receiver instanceof SimpleName) {</span>
 <span class="fc" id="L278">					String varName = ((SimpleName) receiver).getIdentifier();</span>
 <span class="fc bfc" id="L279" title="All 2 branches covered.">					if (varName.equals(collectTargetVar)) {</span>
 <span class="fc" id="L280">						String methodName = node.getName().getIdentifier();</span>

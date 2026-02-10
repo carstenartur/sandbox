@@ -31,7 +31,6 @@ import org.sandbox.jdt.internal.corext.fix.helper.EnhancedForToIteratorWhile;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorWhileToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
-import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamConcatRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToIteratorWhile;
@@ -39,28 +38,13 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
 
-<span class="fc" id="L42">	LOOP(new LoopToFunctional()),</span>
-<span class="fc" id="L43">	// V2 - ULR-based implementation running in parallel to LOOP (V1).</span>
-	// Phase 1 uses a delegation pattern: LOOP_V2 delegates to the existing implementation
-	// to maintain feature parity while introducing the new ULR infrastructure.
-	// Roadmap for future ULR phases:
-	//   - Phase 2: Gradually switch individual loop patterns to ULR-native implementations.
-	//   - Phase 3: Make ULR the primary implementation and retire legacy paths once stable.
-	// Documentation note (per coding guidelines):
-	// sandbox_functional_converter/ARCHITECTURE.md and sandbox_functional_converter/TODO.md
-	// have been reviewed and updated to describe:
-	//   (1) the V2 parallel implementation strategy,
-	//   (2) the Phase 1 delegation pattern,
-	//   (3) the roadmap for future ULR implementation phases.
-	// Related issues: https://github.com/carstenartur/sandbox/issues/450
-	//                 https://github.com/carstenartur/sandbox/issues/453
-<span class="fc" id="L57">	LOOP_V2(new LoopToFunctionalV2()),</span>
-<span class="fc" id="L58">	// ITERATOR_LOOP - Iterator-based loop conversion (from PR #449)</span>
+<span class="fc" id="L41">	LOOP(new LoopToFunctional()),</span>
+<span class="fc" id="L42">	// ITERATOR_LOOP - Iterator-based loop conversion (from PR #449)</span>
 	// Converts while-iterator and for-loop-iterator patterns to stream operations.
 	// Activated January 2026 - Phase 7: Iterator pattern support
-<span class="fc" id="L61">	ITERATOR_LOOP(new IteratorLoopToFunctional()),</span>
+<span class="fc" id="L45">	ITERATOR_LOOP(new IteratorLoopToFunctional()),</span>
 	
-<span class="fc" id="L63">	// Bidirectional Loop Transformation Support (Phase 9)</span>
+<span class="fc" id="L47">	// Bidirectional Loop Transformation Support (Phase 9)</span>
 	// New enum values for bidirectional loop transformations
 	// Related issues: https://github.com/carstenartur/sandbox/issues/453
 	//                 https://github.com/carstenartur/sandbox/issues/549
@@ -69,35 +53,35 @@ public enum UseFunctionalCallFixCore {
 	 * Stream → Enhanced for-loop transformation.
 	 * Converts: {@code collection.forEach(item -&gt; ...)} to {@code for (T item : collection) { ... }}
 	 */
-<span class="fc" id="L72">	STREAM_TO_FOR(new StreamToEnhancedFor()),</span>
+<span class="fc" id="L56">	STREAM_TO_FOR(new StreamToEnhancedFor()),</span>
 	
-<span class="fc" id="L74">	/**</span>
+<span class="fc" id="L58">	/**</span>
 	 * Stream → Iterator while-loop transformation.
 	 * Converts: {@code collection.forEach(item -&gt; ...)} to {@code Iterator&lt;T&gt; it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}
 	 */
-<span class="fc" id="L78">	STREAM_TO_ITERATOR(new StreamToIteratorWhile()),</span>
+<span class="fc" id="L62">	STREAM_TO_ITERATOR(new StreamToIteratorWhile()),</span>
 	
-<span class="fc" id="L80">	/**</span>
+<span class="fc" id="L64">	/**</span>
 	 * Iterator while-loop → Enhanced for-loop transformation.
 	 * Converts: {@code Iterator&lt;T&gt; it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }} to {@code for (T item : collection) { ... }}
 	 */
-<span class="fc" id="L84">	ITERATOR_TO_FOR(new IteratorWhileToEnhancedFor()),</span>
+<span class="fc" id="L68">	ITERATOR_TO_FOR(new IteratorWhileToEnhancedFor()),</span>
 	
-<span class="fc" id="L86">	/**</span>
+<span class="fc" id="L70">	/**</span>
 	 * Enhanced for-loop → Iterator while-loop transformation.
 	 * Converts: {@code for (T item : collection) { ... }} to {@code Iterator&lt;T&gt; it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}
 	 */
-<span class="fc" id="L90">	FOR_TO_ITERATOR(new EnhancedForToIteratorWhile());</span>
+<span class="fc" id="L74">	FOR_TO_ITERATOR(new EnhancedForToIteratorWhile());</span>
 
 	AbstractFunctionalCall&lt;ASTNode&gt; functionalcall;
 
 	@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L95">	UseFunctionalCallFixCore(AbstractFunctionalCall&lt;? extends ASTNode&gt; explicitencoding) {</span>
-<span class="fc" id="L96">		this.functionalcall=(AbstractFunctionalCall&lt;ASTNode&gt;) explicitencoding;</span>
-<span class="fc" id="L97">	}</span>
+<span class="fc" id="L79">	UseFunctionalCallFixCore(AbstractFunctionalCall&lt;? extends ASTNode&gt; explicitencoding) {</span>
+<span class="fc" id="L80">		this.functionalcall=(AbstractFunctionalCall&lt;ASTNode&gt;) explicitencoding;</span>
+<span class="fc" id="L81">	}</span>
 
 	public String getPreview(boolean i) {
-<span class="nc" id="L100">		return functionalcall.getPreview(i);</span>
+<span class="nc" id="L84">		return functionalcall.getPreview(i);</span>
 	}
 	/**
 	 * Compute set of CompilationUnitRewriteOperation to refactor supported situations using default encoding to make use of explicit calls
@@ -107,17 +91,17 @@ public enum UseFunctionalCallFixCore {
 	 * @param nodesprocessed list to remember nodes already processed
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,final Set&lt;CompilationUnitRewriteOperation&gt; operations,final Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L110">		functionalcall.find(this, compilationUnit, operations, nodesprocessed);</span>
-<span class="fc" id="L111">	}</span>
+<span class="fc" id="L94">		functionalcall.find(this, compilationUnit, operations, nodesprocessed);</span>
+<span class="fc" id="L95">	}</span>
 
 	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, final org.sandbox.jdt.internal.common.ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L114">		return new CompilationUnitRewriteOperation() {</span>
+<span class="fc" id="L98">		return new CompilationUnitRewriteOperation() {</span>
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
-<span class="fc" id="L117">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);</span>
-<span class="fc" id="L118">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
-<span class="fc" id="L119">				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group, data);</span>
-<span class="fc" id="L120">			}</span>
+<span class="fc" id="L101">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);</span>
+<span class="fc" id="L102">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
+<span class="fc" id="L103">				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group, data);</span>
+<span class="fc" id="L104">			}</span>
 		};
 	}
 
@@ -132,38 +116,38 @@ public enum UseFunctionalCallFixCore {
 	 * @return the rewrite operation for the group
 	 */
 	public CompilationUnitRewriteOperation rewriteConsecutiveLoops(final ConsecutiveLoopGroup group) {
-<span class="fc" id="L135">		return new CompilationUnitRewriteOperation() {</span>
+<span class="fc" id="L119">		return new CompilationUnitRewriteOperation() {</span>
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
-<span class="fc" id="L138">				TextEditGroup editGroup = createTextEditGroup(</span>
-<span class="fc" id="L139">					Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,</span>
-<span class="fc" id="L140">						new Object[] { &quot;Stream.concat() for consecutive loops&quot; }),</span>
-<span class="fc" id="L141">					cuRewrite);</span>
-<span class="fc" id="L142">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
+<span class="fc" id="L122">				TextEditGroup editGroup = createTextEditGroup(</span>
+<span class="fc" id="L123">					Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,</span>
+<span class="fc" id="L124">						new Object[] { &quot;Stream.concat() for consecutive loops&quot; }),</span>
+<span class="fc" id="L125">					cuRewrite);</span>
+<span class="fc" id="L126">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
 				
 				// Create and execute the StreamConcatRefactorer
-<span class="fc" id="L145">				StreamConcatRefactorer refactorer = new StreamConcatRefactorer(</span>
-<span class="fc" id="L146">					group, </span>
-<span class="fc" id="L147">					cuRewrite.getASTRewrite(), </span>
-<span class="fc" id="L148">					editGroup, </span>
-<span class="fc" id="L149">					cuRewrite</span>
+<span class="fc" id="L129">				StreamConcatRefactorer refactorer = new StreamConcatRefactorer(</span>
+<span class="fc" id="L130">					group, </span>
+<span class="fc" id="L131">					cuRewrite.getASTRewrite(), </span>
+<span class="fc" id="L132">					editGroup, </span>
+<span class="fc" id="L133">					cuRewrite</span>
 				);
 				
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">				if (refactorer.canRefactor()) {</span>
-<span class="fc" id="L153">					refactorer.refactor();</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">				if (refactorer.canRefactor()) {</span>
+<span class="fc" id="L137">					refactorer.refactor();</span>
 				}
-<span class="fc" id="L155">			}</span>
+<span class="fc" id="L139">			}</span>
 		};
 	}
 
-<span class="fc" id="L159">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
+<span class="fc" id="L143">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
 		@Override
 		public SourceRange computeSourceRange(final ASTNode nodeWithComment) {
-<span class="fc bfc" id="L162" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
-<span class="fc" id="L163">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
+<span class="fc" id="L147">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
 			}
-<span class="fc" id="L165">			return super.computeSourceRange(nodeWithComment);</span>
+<span class="fc" id="L149">			return super.computeSourceRange(nodeWithComment);</span>
 		}
-<span class="fc" id="L167">	};</span>
+<span class="fc" id="L151">	};</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

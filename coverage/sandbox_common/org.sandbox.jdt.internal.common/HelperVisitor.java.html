@@ -705,7 +705,7 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	 * @return old BiPredicate assigned for nodetype
 	 */
 	public BiPredicate&lt;? extends ASTNode, E&gt; addEnhancedForStatement(BiPredicate&lt;EnhancedForStatement, E&gt; bs) {
-<span class="nc" id="L708">		return predicatemap.put(VisitorEnum.EnhancedForStatement, bs);</span>
+<span class="fc" id="L708">		return predicatemap.put(VisitorEnum.EnhancedForStatement, bs);</span>
 	}
 
 	/**
@@ -4205,10 +4205,10 @@ public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T
 	public static &lt;V, T&gt; void callEnhancedForStatementVisitor(ASTNode node, ReferenceHolder&lt;V, T&gt; dataholder, Set&lt;ASTNode&gt; nodesprocessed,
 			BiPredicate&lt;EnhancedForStatement, ReferenceHolder&lt;V, T&gt;&gt; bs) {
 
-<span class="nc" id="L4208">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
-<span class="nc" id="L4209">		hv.addEnhancedForStatement(bs);</span>
-<span class="nc" id="L4210">		hv.build(node);</span>
-<span class="nc" id="L4211">	}</span>
+<span class="fc" id="L4208">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
+<span class="fc" id="L4209">		hv.addEnhancedForStatement(bs);</span>
+<span class="fc" id="L4210">		hv.build(node);</span>
+<span class="fc" id="L4211">	}</span>
 
 	/**
 	 *

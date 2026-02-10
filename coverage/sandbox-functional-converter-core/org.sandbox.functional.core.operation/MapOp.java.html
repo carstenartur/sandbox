@@ -23,39 +23,82 @@ import java.util.Objects;
 public final class MapOp implements Operation {
     private final String expression;
     private final String targetType;
+    private final String outputVariableName;
+    private final boolean sideEffect;
     private final List&lt;String&gt; associatedComments;
+    
+    /**
+     * Creates a MapOp with all parameters.
+     * @param expression the mapping expression
+     * @param targetType the target type (can be null)
+     * @param outputVariableName the variable name for the output of this map (can be null)
+     * @param sideEffect if true, this is a side-effect map: map(var -&gt; { stmt; return var; })
+     */
+<span class="fc" id="L37">    public MapOp(String expression, String targetType, String outputVariableName, boolean sideEffect) {</span>
+<span class="fc" id="L38">        this.expression = Objects.requireNonNull(expression, &quot;expression must not be null&quot;);</span>
+<span class="fc" id="L39">        this.targetType = targetType;</span>
+<span class="fc" id="L40">        this.outputVariableName = outputVariableName;</span>
+<span class="fc" id="L41">        this.sideEffect = sideEffect;</span>
+<span class="fc" id="L42">        this.associatedComments = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L43">    }</span>
+    
+    /**
+     * Creates a MapOp with expression, target type, and output variable name.
+     * @param expression the mapping expression
+     * @param targetType the target type (can be null)
+     * @param outputVariableName the variable name for the output of this map (can be null)
+     */
+    public MapOp(String expression, String targetType, String outputVariableName) {
+<span class="fc" id="L52">        this(expression, targetType, outputVariableName, false);</span>
+<span class="fc" id="L53">    }</span>
     
     /**
      * Creates a MapOp with expression and target type.
      * @param expression the mapping expression
      * @param targetType the target type (can be null)
      */
-<span class="fc" id="L33">    public MapOp(String expression, String targetType) {</span>
-<span class="fc" id="L34">        this.expression = Objects.requireNonNull(expression, &quot;expression must not be null&quot;);</span>
-<span class="fc" id="L35">        this.targetType = targetType;</span>
-<span class="fc" id="L36">        this.associatedComments = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L37">    }</span>
+    public MapOp(String expression, String targetType) {
+<span class="fc" id="L61">        this(expression, targetType, null, false);</span>
+<span class="fc" id="L62">    }</span>
     
     /**
      * Creates a MapOp with just an expression and no target type.
      * @param expression the mapping expression
      */
     public MapOp(String expression) { 
-<span class="fc" id="L44">        this(expression, null); </span>
-<span class="fc" id="L45">    }</span>
+<span class="fc" id="L69">        this(expression, null, null, false); </span>
+<span class="fc" id="L70">    }</span>
     
     @Override
     public String expression() {
-<span class="fc" id="L49">        return expression;</span>
+<span class="fc" id="L74">        return expression;</span>
     }
     
     public String targetType() {
-<span class="fc" id="L53">        return targetType;</span>
+<span class="fc" id="L78">        return targetType;</span>
+    }
+    
+    /**
+     * Returns the output variable name for this map operation.
+     * When chaining maps, the next operation should use this as its lambda parameter.
+     * @return the output variable name, or null if not specified
+     */
+    public String outputVariableName() {
+<span class="fc" id="L87">        return outputVariableName;</span>
+    }
+    
+    /**
+     * Returns whether this is a side-effect map.
+     * Side-effect maps render as: {@code map(var -&gt; { statements; return var; })}
+     * @return true if this is a side-effect map
+     */
+    public boolean isSideEffect() {
+<span class="fc" id="L96">        return sideEffect;</span>
     }
     
     @Override
     public String operationType() { 
-<span class="fc" id="L58">        return &quot;map&quot;; </span>
+<span class="fc" id="L101">        return &quot;map&quot;; </span>
     }
     
     /**
@@ -63,27 +106,27 @@ public final class MapOp implements Operation {
      * @param comment the comment text
      */
     public void addComment(String comment) {
-<span class="pc bpc" id="L66" title="2 of 4 branches missed.">        if (comment != null &amp;&amp; !comment.isBlank()) {</span>
-<span class="fc" id="L67">            this.associatedComments.add(comment);</span>
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">        if (comment != null &amp;&amp; !comment.isBlank()) {</span>
+<span class="fc" id="L110">            this.associatedComments.add(comment);</span>
         }
-<span class="fc" id="L69">    }</span>
+<span class="fc" id="L112">    }</span>
     
     /**
      * Adds multiple comments associated with this operation.
      * @param comments the list of comment texts
      */
     public void addComments(List&lt;String&gt; comments) {
-<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (comments != null) {</span>
-<span class="fc" id="L77">            comments.forEach(this::addComment);</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if (comments != null) {</span>
+<span class="fc" id="L120">            comments.forEach(this::addComment);</span>
         }
-<span class="fc" id="L79">    }</span>
+<span class="fc" id="L122">    }</span>
     
     /**
      * Returns all comments associated with this operation.
      * @return unmodifiable view of the comments list
      */
     public List&lt;String&gt; getComments() {
-<span class="fc" id="L86">        return List.copyOf(associatedComments);</span>
+<span class="fc" id="L129">        return List.copyOf(associatedComments);</span>
     }
     
     /**
@@ -91,28 +134,30 @@ public final class MapOp implements Operation {
      * @return true if there are comments, false otherwise
      */
     public boolean hasComments() {
-<span class="fc bfc" id="L94" title="All 2 branches covered.">        return !associatedComments.isEmpty();</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        return !associatedComments.isEmpty();</span>
     }
     
     @Override
     public boolean equals(Object o) {
-<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (this == o) return true;</span>
-<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (!(o instanceof MapOp)) return false;</span>
-<span class="nc" id="L101">        MapOp mapOp = (MapOp) o;</span>
-<span class="nc bnc" id="L102" title="All 2 branches missed.">        return expression.equals(mapOp.expression) &amp;&amp; </span>
-<span class="nc bnc" id="L103" title="All 2 branches missed.">               Objects.equals(targetType, mapOp.targetType);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (this == o) return true;</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (!(o instanceof MapOp)) return false;</span>
+<span class="nc" id="L144">        MapOp mapOp = (MapOp) o;</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        return sideEffect == mapOp.sideEffect &amp;&amp;</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">               expression.equals(mapOp.expression) &amp;&amp; </span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">               Objects.equals(targetType, mapOp.targetType) &amp;&amp;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">               Objects.equals(outputVariableName, mapOp.outputVariableName);</span>
     }
     
     @Override
     public int hashCode() {
-<span class="nc" id="L108">        return Objects.hash(expression, targetType);</span>
+<span class="nc" id="L153">        return Objects.hash(expression, targetType, outputVariableName, sideEffect);</span>
     }
     
     @Override
     public String toString() {
-<span class="nc" id="L113">        return &quot;MapOp[expression=&quot; + expression + </span>
+<span class="nc" id="L158">        return &quot;MapOp[expression=&quot; + expression + </span>
                &quot;, targetType=&quot; + targetType + 
-<span class="nc" id="L115">               &quot;, comments=&quot; + associatedComments.size() + &quot;]&quot;;</span>
+<span class="nc" id="L160">               &quot;, comments=&quot; + associatedComments.size() + &quot;]&quot;;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

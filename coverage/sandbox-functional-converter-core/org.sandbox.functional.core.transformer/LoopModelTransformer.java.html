@@ -53,41 +53,46 @@ public class LoopModelTransformer&lt;T&gt; {
         // Start with source
 <span class="fc" id="L54">        T pipeline = renderer.renderSource(model.getSource());</span>
         
-        // Apply operations
-<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (Operation op : model.getOperations()) {</span>
-<span class="fc" id="L58">            pipeline = applyOperation(pipeline, op, varName);</span>
-<span class="fc" id="L59">        }</span>
+        // Apply operations, tracking variable name through the chain
+<span class="fc" id="L57">        String currentVarName = varName;</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (Operation op : model.getOperations()) {</span>
+<span class="fc" id="L59">            pipeline = applyOperation(pipeline, op, currentVarName);</span>
+            // If the operation introduces a new variable name, use it for subsequent operations
+<span class="fc bfc" id="L61" title="All 4 branches covered.">            if (op instanceof MapOp mapOp &amp;&amp; mapOp.outputVariableName() != null) {</span>
+<span class="fc" id="L62">                currentVarName = mapOp.outputVariableName();</span>
+            }
+<span class="fc" id="L64">        }</span>
         
         // Apply terminal
-<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (model.getTerminal() != null) {</span>
-<span class="fc" id="L63">            pipeline = applyTerminal(pipeline, model.getTerminal(), varName);</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (model.getTerminal() != null) {</span>
+<span class="fc" id="L68">            pipeline = applyTerminal(pipeline, model.getTerminal(), currentVarName);</span>
         }
         
-<span class="fc" id="L66">        return pipeline;</span>
+<span class="fc" id="L71">        return pipeline;</span>
     }
     
     private T applyOperation(T pipeline, Operation op, String varName) {
-<span class="fc bfc" id="L70" title="All 8 branches covered.">        return switch (op) {</span>
-<span class="fc" id="L71">            case FilterOp f -&gt; renderer.renderFilterOp(pipeline, f, varName);</span>
-<span class="fc" id="L72">            case MapOp m -&gt; renderer.renderMapOp(pipeline, m, varName);</span>
-<span class="fc" id="L73">            case FlatMapOp fm -&gt; renderer.renderFlatMap(pipeline, fm.expression(), varName);</span>
-<span class="fc" id="L74">            case PeekOp p -&gt; renderer.renderPeek(pipeline, p.expression(), varName);</span>
-<span class="fc" id="L75">            case DistinctOp d -&gt; renderer.renderDistinct(pipeline);</span>
-<span class="fc" id="L76">            case SortOp s -&gt; renderer.renderSorted(pipeline, s.expression());</span>
-<span class="fc" id="L77">            case LimitOp l -&gt; renderer.renderLimit(pipeline, l.maxSize());</span>
-<span class="fc" id="L78">            case SkipOp sk -&gt; renderer.renderSkip(pipeline, sk.count());</span>
+<span class="fc bfc" id="L75" title="All 8 branches covered.">        return switch (op) {</span>
+<span class="fc" id="L76">            case FilterOp f -&gt; renderer.renderFilterOp(pipeline, f, varName);</span>
+<span class="fc" id="L77">            case MapOp m -&gt; renderer.renderMapOp(pipeline, m, varName);</span>
+<span class="fc" id="L78">            case FlatMapOp fm -&gt; renderer.renderFlatMap(pipeline, fm.expression(), varName);</span>
+<span class="fc" id="L79">            case PeekOp p -&gt; renderer.renderPeek(pipeline, p.expression(), varName);</span>
+<span class="fc" id="L80">            case DistinctOp d -&gt; renderer.renderDistinct(pipeline);</span>
+<span class="fc" id="L81">            case SortOp s -&gt; renderer.renderSorted(pipeline, s.expression());</span>
+<span class="fc" id="L82">            case LimitOp l -&gt; renderer.renderLimit(pipeline, l.maxSize());</span>
+<span class="fc" id="L83">            case SkipOp sk -&gt; renderer.renderSkip(pipeline, sk.count());</span>
         };
     }
     
     private T applyTerminal(T pipeline, TerminalOperation terminal, String varName) {
-<span class="fc bfc" id="L83" title="All 6 branches covered.">        return switch (terminal) {</span>
-<span class="fc" id="L84">            case ForEachTerminal fe -&gt; renderer.renderForEach(</span>
-<span class="fc" id="L85">                pipeline, fe.bodyStatements(), varName, fe.ordered());</span>
-<span class="fc" id="L86">            case CollectTerminal c -&gt; renderer.renderCollect(pipeline, c, varName);</span>
-<span class="fc" id="L87">            case ReduceTerminal r -&gt; renderer.renderReduce(pipeline, r, varName);</span>
-<span class="fc" id="L88">            case CountTerminal ct -&gt; renderer.renderCount(pipeline);</span>
-<span class="fc" id="L89">            case FindTerminal f -&gt; renderer.renderFind(pipeline, f.findFirst());</span>
-<span class="fc" id="L90">            case MatchTerminal m -&gt; renderer.renderMatch(pipeline, m, varName);</span>
+<span class="fc bfc" id="L88" title="All 6 branches covered.">        return switch (terminal) {</span>
+<span class="fc" id="L89">            case ForEachTerminal fe -&gt; renderer.renderForEach(</span>
+<span class="fc" id="L90">                pipeline, fe.bodyStatements(), varName, fe.ordered());</span>
+<span class="fc" id="L91">            case CollectTerminal c -&gt; renderer.renderCollect(pipeline, c, varName);</span>
+<span class="fc" id="L92">            case ReduceTerminal r -&gt; renderer.renderReduce(pipeline, r, varName);</span>
+<span class="fc" id="L93">            case CountTerminal ct -&gt; renderer.renderCount(pipeline);</span>
+<span class="fc" id="L94">            case FindTerminal f -&gt; renderer.renderFind(pipeline, f.findFirst());</span>
+<span class="fc" id="L95">            case MatchTerminal m -&gt; renderer.renderMatch(pipeline, m, varName);</span>
         };
     }
     
@@ -95,8 +100,8 @@ public class LoopModelTransformer&lt;T&gt; {
      * Checks if the model can be transformed.
      */
     public boolean canTransform(LoopModel model) {
-<span class="fc bfc" id="L98" title="All 4 branches covered.">        if (model == null || model.getSource() == null) return false;</span>
-<span class="fc" id="L99">        return model.isConvertible();</span>
+<span class="fc bfc" id="L103" title="All 4 branches covered.">        if (model == null || model.getSource() == null) return false;</span>
+<span class="fc" id="L104">        return model.isConvertible();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -104,23 +104,23 @@ public final class VariableResolver {
 	 * @throws IllegalArgumentException if startNode or varName is null
 	 */
 	public static String getVariableType(ASTNode startNode, String varName) {
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">		if (startNode == null) {</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">		if (startNode == null) {</span>
 <span class="nc" id="L108">			throw new IllegalArgumentException(&quot;startNode cannot be null&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (varName == null) {</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">		if (varName == null) {</span>
 <span class="nc" id="L111">			throw new IllegalArgumentException(&quot;varName cannot be null&quot;); //$NON-NLS-1$</span>
 		}
 
 		// Walk up the AST tree searching for the variable in each scope
-<span class="fc" id="L115">		ASTNode currentNode = startNode.getParent();</span>
+<span class="nc" id="L115">		ASTNode currentNode = startNode.getParent();</span>
 
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		while (currentNode != null) {</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		while (currentNode != null) {</span>
 			// Search in blocks
-<span class="pc bpc" id="L119" title="1 of 2 branches missed.">			if (currentNode instanceof Block) {</span>
-<span class="fc" id="L120">				Block block = (Block) currentNode;</span>
-<span class="fc" id="L121">				String type = searchBlockForVariableType(block, varName);</span>
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">				if (type != null) {</span>
-<span class="fc" id="L123">					return type;</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">			if (currentNode instanceof Block) {</span>
+<span class="nc" id="L120">				Block block = (Block) currentNode;</span>
+<span class="nc" id="L121">				String type = searchBlockForVariableType(block, varName);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">				if (type != null) {</span>
+<span class="nc" id="L123">					return type;</span>
 				}
 			}
 			// Search in method bodies
@@ -186,22 +186,22 @@ public final class VariableResolver {
 	 * @throws IllegalArgumentException if varName is null
 	 */
 	public static String searchBlockForVariableType(Block block, String varName) {
-<span class="pc bpc" id="L189" title="1 of 2 branches missed.">		if (varName == null) {</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">		if (varName == null) {</span>
 <span class="nc" id="L190">			throw new IllegalArgumentException(&quot;varName cannot be null&quot;); //$NON-NLS-1$</span>
 		}
 
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		if (block == null) {</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">		if (block == null) {</span>
 <span class="nc" id="L194">			return null;</span>
 		}
 
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">		for (Object stmtObj : block.statements()) {</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">			if (stmtObj instanceof VariableDeclarationStatement) {</span>
-<span class="fc" id="L199">				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;</span>
-<span class="fc bfc" id="L200" title="All 2 branches covered.">				for (Object fragObj : varDecl.fragments()) {</span>
-<span class="pc bpc" id="L201" title="1 of 2 branches missed.">					if (fragObj instanceof VariableDeclarationFragment) {</span>
-<span class="fc" id="L202">						VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;</span>
-<span class="fc bfc" id="L203" title="All 2 branches covered.">						if (frag.getName().getIdentifier().equals(varName)) {</span>
-<span class="fc" id="L204">							return extractTypeName(varDecl.getType());</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">		for (Object stmtObj : block.statements()) {</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">			if (stmtObj instanceof VariableDeclarationStatement) {</span>
+<span class="nc" id="L199">				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">				for (Object fragObj : varDecl.fragments()) {</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">					if (fragObj instanceof VariableDeclarationFragment) {</span>
+<span class="nc" id="L202">						VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">						if (frag.getName().getIdentifier().equals(varName)) {</span>
+<span class="nc" id="L204">							return extractTypeName(varDecl.getType());</span>
 						}
 					}
 				}
@@ -217,17 +217,17 @@ public final class VariableResolver {
 	 * @return the type name, or null if unable to determine
 	 */
 	private static String extractTypeName(Type type) {
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">		if (type == null) {</span>
 <span class="nc" id="L221">			return null;</span>
 		}
 
-<span class="fc bfc" id="L224" title="All 2 branches covered.">		if (type.isPrimitiveType()) {</span>
-<span class="fc" id="L225">			return ((PrimitiveType) type).getPrimitiveTypeCode().toString();</span>
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		} else if (type.isSimpleType()) {</span>
-<span class="fc" id="L227">			SimpleType simpleType = (SimpleType) type;</span>
-<span class="fc" id="L228">			ITypeBinding binding = simpleType.resolveBinding();</span>
-<span class="pc bpc" id="L229" title="1 of 2 branches missed.">			if (binding != null) {</span>
-<span class="fc" id="L230">				return binding.getName();</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (type.isPrimitiveType()) {</span>
+<span class="nc" id="L225">			return ((PrimitiveType) type).getPrimitiveTypeCode().toString();</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">		} else if (type.isSimpleType()) {</span>
+<span class="nc" id="L227">			SimpleType simpleType = (SimpleType) type;</span>
+<span class="nc" id="L228">			ITypeBinding binding = simpleType.resolveBinding();</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">			if (binding != null) {</span>
+<span class="nc" id="L230">				return binding.getName();</span>
 			}
 <span class="nc" id="L232">			return simpleType.getName().getFullyQualifiedName();</span>
 <span class="nc bnc" id="L233" title="All 2 branches missed.">		} else if (type.isArrayType()) {</span>
@@ -316,13 +316,13 @@ public final class VariableResolver {
 <span class="pc bpc" id="L316" title="1 of 2 branches missed.">		while (current != null) {</span>
 <span class="fc bfc" id="L317" title="All 2 branches covered.">			if (current instanceof Block) {</span>
 <span class="fc" id="L318">				Block block = (Block) current;</span>
-<span class="pc bpc" id="L319" title="1 of 2 branches missed.">				for (Object stmtObj : block.statements()) {</span>
-<span class="pc bpc" id="L320" title="1 of 2 branches missed.">					if (stmtObj instanceof VariableDeclarationStatement) {</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">				for (Object stmtObj : block.statements()) {</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">					if (stmtObj instanceof VariableDeclarationStatement) {</span>
 <span class="fc" id="L321">						VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;</span>
-<span class="fc bfc" id="L322" title="All 2 branches covered.">						for (Object fragObj : varDecl.fragments()) {</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">						for (Object fragObj : varDecl.fragments()) {</span>
 <span class="pc bpc" id="L323" title="1 of 2 branches missed.">							if (fragObj instanceof VariableDeclarationFragment) {</span>
 <span class="fc" id="L324">								VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;</span>
-<span class="fc bfc" id="L325" title="All 2 branches covered.">								if (varName.equals(frag.getName().getIdentifier())) {</span>
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">								if (varName.equals(frag.getName().getIdentifier())) {</span>
 <span class="fc" id="L326">									return frag;</span>
 								}
 							}

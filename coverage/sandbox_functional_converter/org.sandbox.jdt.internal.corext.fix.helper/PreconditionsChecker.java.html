@@ -268,8 +268,8 @@ public final class PreconditionsChecker {
 <span class="fc" id="L268">		AstProcessorBuilder&lt;String, Object&gt; builder = AstProcessorBuilder.with(new ReferenceHolder&lt;String, Object&gt;());</span>
 
 <span class="fc" id="L270">		builder.onVariableDeclarationFragment((node, h) -&gt; {</span>
-<span class="fc" id="L271">			innerVariables.add(node);</span>
-<span class="fc" id="L272">			return true;</span>
+<span class="nc" id="L271">			innerVariables.add(node);</span>
+<span class="nc" id="L272">			return true;</span>
 <span class="fc" id="L273">		}).onBreakStatement((node, h) -&gt; {</span>
 <span class="nc" id="L274">			containsBreak = true;</span>
 <span class="nc" id="L275">			return true;</span>
@@ -359,11 +359,11 @@ public final class PreconditionsChecker {
 		// statement (if any). This lets us detect patterns that depend on the statement
 		// right after the loop without pulling in unrelated statements.
 <span class="fc" id="L361">		ASTNode parent = loop.getParent();</span>
-<span class="fc bfc" id="L362" title="All 2 branches covered.">		if (parent instanceof Block) {</span>
+<span class="pc bpc" id="L362" title="1 of 2 branches missed.">		if (parent instanceof Block) {</span>
 <span class="fc" id="L363">			Block block = (Block) parent;</span>
 <span class="fc" id="L364">			List&lt;Statement&gt; statements = block.statements();</span>
 <span class="fc" id="L365">			int loopIndex = statements.indexOf(loop);</span>
-<span class="pc bpc" id="L366" title="1 of 4 branches missed.">			if (loopIndex != -1 &amp;&amp; loopIndex + 1 &lt; statements.size()) {</span>
+<span class="pc bpc" id="L366" title="2 of 4 branches missed.">			if (loopIndex != -1 &amp;&amp; loopIndex + 1 &lt; statements.size()) {</span>
 <span class="fc" id="L367">				Statement followingStatement = statements.get(loopIndex + 1);</span>
 <span class="fc" id="L368">				builder.build(followingStatement);</span>
 			}

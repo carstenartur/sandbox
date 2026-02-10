@@ -120,12 +120,12 @@ public class LoopBodyParser {
 <span class="fc" id="L120">		List&lt;ProspectiveOperation&gt; ops = new ArrayList&lt;&gt;();</span>
 <span class="fc" id="L121">		String currentVarName = loopVarName;</span>
 
-<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (body instanceof Block) {</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		if (body instanceof Block) {</span>
 <span class="fc" id="L124">			return parseBlock((Block) body, loopVarName, currentVarName, ops);</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		} else if (body instanceof IfStatement) {</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">		} else if (body instanceof IfStatement) {</span>
 <span class="nc" id="L126">			return parseIfStatement((IfStatement) body, loopVarName, currentVarName, ops);</span>
 		} else {
-<span class="fc" id="L128">			return parseSingleStatement(body, loopVarName, currentVarName, ops);</span>
+<span class="nc" id="L128">			return parseSingleStatement(body, loopVarName, currentVarName, ops);</span>
 		}
 	}
 
@@ -137,33 +137,33 @@ public class LoopBodyParser {
 <span class="fc" id="L137">		List&lt;Statement&gt; statements = block.statements();</span>
 
 		// Check if the entire block should be treated as a single forEach
-<span class="fc bfc" id="L140" title="All 2 branches covered.">		if (shouldTreatAsSimpleForEach(statements, loopVarName)) {</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		if (shouldTreatAsSimpleForEach(statements, loopVarName)) {</span>
 			// For single-statement blocks, unwrap to allow expression lambda
 			Statement forEachStatement;
-<span class="fc bfc" id="L143" title="All 2 branches covered.">			if (statements.size() == 1) {</span>
-<span class="fc" id="L144">				forEachStatement = statements.get(0);</span>
-<span class="fc" id="L145">			} else {</span>
-<span class="fc" id="L146">				forEachStatement = block;</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">			if (statements.size() == 1) {</span>
+<span class="nc" id="L144">				forEachStatement = statements.get(0);</span>
+<span class="nc" id="L145">			} else {</span>
+<span class="nc" id="L146">				forEachStatement = block;</span>
 			}
-<span class="fc" id="L148">			ProspectiveOperation forEachOp = new ProspectiveOperation(forEachStatement,</span>
-<span class="fc" id="L149">					OperationType.FOREACH, loopVarName);</span>
-<span class="fc" id="L150">			ops.add(forEachOp);</span>
-<span class="fc" id="L151">			return ops;</span>
+<span class="nc" id="L148">			ProspectiveOperation forEachOp = new ProspectiveOperation(forEachStatement,</span>
+<span class="nc" id="L149">					OperationType.FOREACH, loopVarName);</span>
+<span class="nc" id="L150">			ops.add(forEachOp);</span>
+<span class="nc" id="L151">			return ops;</span>
 		}
 
 <span class="fc bfc" id="L154" title="All 2 branches covered.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
 <span class="fc" id="L155">			Statement stmt = statements.get(i);</span>
-<span class="fc bfc" id="L156" title="All 2 branches covered.">			boolean isLast = (i == statements.size() - 1);</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">			boolean isLast = (i == statements.size() - 1);</span>
 
 <span class="fc" id="L158">			ParseResult result = parseStatement(stmt, currentVarName, ops, isLast, statements, i, loopVarName);</span>
-<span class="fc bfc" id="L159" title="All 2 branches covered.">			if (result.shouldAbort()) {</span>
-<span class="fc" id="L160">				return new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">			if (result.shouldAbort()) {</span>
+<span class="nc" id="L160">				return new ArrayList&lt;&gt;();</span>
 			}
 <span class="fc" id="L162">			currentVarName = result.getCurrentVarName();</span>
 			
 			// Handle skip index for wrapped statements
-<span class="fc bfc" id="L165" title="All 2 branches covered.">			if (result.getSkipToIndex() &gt;= 0) {</span>
-<span class="fc" id="L166">				i = result.getSkipToIndex();</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">			if (result.getSkipToIndex() &gt;= 0) {</span>
+<span class="nc" id="L166">				i = result.getSkipToIndex();</span>
 			}
 		}
 
@@ -238,8 +238,8 @@ public class LoopBodyParser {
 			String currentVarName, List&lt;ProspectiveOperation&gt; ops) {
 		
 		// Check for COLLECT pattern first
-<span class="fc" id="L241">		ProspectiveOperation collectOp = collectDetector.detectCollectOperation(body);</span>
-<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		if (collectOp != null) {</span>
+<span class="nc" id="L241">		ProspectiveOperation collectOp = collectDetector.detectCollectOperation(body);</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">		if (collectOp != null) {</span>
 			// For COLLECT, we might need a MAP operation before it if the added expression is not identity
 <span class="nc" id="L244">			Expression addedExpr = collectDetector.extractCollectExpression(body);</span>
 <span class="nc bnc" id="L245" title="All 4 branches missed.">			if (addedExpr != null &amp;&amp; !isIdentityMapping(addedExpr, currentVarName)) {</span>
@@ -252,21 +252,21 @@ public class LoopBodyParser {
 		}
 		
 		// Check for REDUCE pattern
-<span class="fc" id="L255">		ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(body);</span>
-<span class="fc bfc" id="L256" title="All 2 branches covered.">		if (reduceOp != null) {</span>
-<span class="fc" id="L257">			reduceDetector.addMapBeforeReduce(ops, reduceOp, body, currentVarName, ast);</span>
-<span class="fc" id="L258">			ops.add(reduceOp);</span>
-<span class="pc bpc" id="L259" title="2 of 4 branches missed.">		} else if (body instanceof ReturnStatement || body instanceof ContinueStatement </span>
-<span class="pc bpc" id="L260" title="1 of 2 branches missed.">				|| body instanceof ThrowStatement) {</span>
+<span class="nc" id="L255">		ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(body);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">		if (reduceOp != null) {</span>
+<span class="nc" id="L257">			reduceDetector.addMapBeforeReduce(ops, reduceOp, body, currentVarName, ast);</span>
+<span class="nc" id="L258">			ops.add(reduceOp);</span>
+<span class="nc bnc" id="L259" title="All 4 branches missed.">		} else if (body instanceof ReturnStatement || body instanceof ContinueStatement </span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">				|| body instanceof ThrowStatement) {</span>
 <span class="nc" id="L261">			return new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L262" title="1 of 2 branches missed.">		} else if (!sideEffectChecker.isSafeSideEffect(body, currentVarName, ops)) {</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">		} else if (!sideEffectChecker.isSafeSideEffect(body, currentVarName, ops)) {</span>
 <span class="nc" id="L263">			return new ArrayList&lt;&gt;();</span>
 		} else {
-<span class="fc" id="L265">			ProspectiveOperation forEachOp = new ProspectiveOperation(body,</span>
-<span class="fc" id="L266">					OperationType.FOREACH, currentVarName);</span>
-<span class="fc" id="L267">			ops.add(forEachOp);</span>
+<span class="nc" id="L265">			ProspectiveOperation forEachOp = new ProspectiveOperation(body,</span>
+<span class="nc" id="L266">					OperationType.FOREACH, currentVarName);</span>
+<span class="nc" id="L267">			ops.add(forEachOp);</span>
 		}
-<span class="fc" id="L269">		return ops;</span>
+<span class="nc" id="L269">		return ops;</span>
 	}
 	
 	/**
@@ -283,52 +283,52 @@ public class LoopBodyParser {
 	 * Determines if the loop body should be treated as a single forEach.
 	 */
 	private boolean shouldTreatAsSimpleForEach(List&lt;Statement&gt; statements, String loopVarName) {
-<span class="fc bfc" id="L286" title="All 2 branches covered.">		if (statements.isEmpty()) {</span>
-<span class="fc" id="L287">			return false;</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">		if (statements.isEmpty()) {</span>
+<span class="nc" id="L287">			return false;</span>
 		}
 
-<span class="pc bpc" id="L290" title="1 of 4 branches missed.">		if (statements.size() &gt;= 1 &amp;&amp; statements.get(0) instanceof IfStatement) {</span>
-<span class="fc" id="L291">			return false;</span>
+<span class="pc bpc" id="L290" title="2 of 4 branches missed.">		if (statements.size() &gt;= 1 &amp;&amp; statements.get(0) instanceof IfStatement) {</span>
+<span class="nc" id="L291">			return false;</span>
 		}
 
 <span class="fc" id="L294">		Set&lt;String&gt; declaredVariables = new HashSet&lt;&gt;();</span>
 <span class="fc" id="L295">		IfStatement ifStatementAfterVarDecls = null;</span>
 <span class="fc" id="L296">		boolean allSafeSideEffects = true;</span>
 
-<span class="fc bfc" id="L298" title="All 2 branches covered.">		for (Statement stmt : statements) {</span>
-<span class="fc bfc" id="L299" title="All 2 branches covered.">			if (stmt instanceof VariableDeclarationStatement) {</span>
-<span class="fc" id="L300">				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>
-<span class="fc bfc" id="L301" title="All 2 branches covered.">				for (Object frag : varDecl.fragments()) {</span>
-<span class="pc bpc" id="L302" title="1 of 2 branches missed.">					if (frag instanceof VariableDeclarationFragment) {</span>
-<span class="fc" id="L303">						declaredVariables.add(((VariableDeclarationFragment) frag).getName().getIdentifier());</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		for (Statement stmt : statements) {</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">			if (stmt instanceof VariableDeclarationStatement) {</span>
+<span class="nc" id="L300">				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">				for (Object frag : varDecl.fragments()) {</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">					if (frag instanceof VariableDeclarationFragment) {</span>
+<span class="nc" id="L303">						declaredVariables.add(((VariableDeclarationFragment) frag).getName().getIdentifier());</span>
 					}
 				}
 				// Variable declarations are not simple side-effects
-<span class="fc" id="L307">				allSafeSideEffects = false;</span>
-<span class="fc bfc" id="L308" title="All 2 branches covered.">			} else if (stmt instanceof IfStatement) {</span>
-<span class="fc" id="L309">				IfStatement ifStmt = (IfStatement) stmt;</span>
-<span class="fc bfc" id="L310" title="All 2 branches covered.">				if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)</span>
-<span class="pc bpc" id="L311" title="1 of 2 branches missed.">						|| ifAnalyzer.isIfWithContinue(ifStmt)) {</span>
-<span class="fc" id="L312">					return false;</span>
+<span class="nc" id="L307">				allSafeSideEffects = false;</span>
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">			} else if (stmt instanceof IfStatement) {</span>
+<span class="nc" id="L309">				IfStatement ifStmt = (IfStatement) stmt;</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">				if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">						|| ifAnalyzer.isIfWithContinue(ifStmt)) {</span>
+<span class="nc" id="L312">					return false;</span>
 				}
-<span class="pc bpc" id="L314" title="1 of 2 branches missed.">				if (!declaredVariables.isEmpty()) {</span>
-<span class="fc" id="L315">					ifStatementAfterVarDecls = ifStmt;</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">				if (!declaredVariables.isEmpty()) {</span>
+<span class="nc" id="L315">					ifStatementAfterVarDecls = ifStmt;</span>
 				}
 				// IF statements are not simple side-effects
-<span class="fc" id="L318">				allSafeSideEffects = false;</span>
-<span class="pc bpc" id="L319" title="1 of 4 branches missed.">			} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement </span>
+<span class="nc" id="L318">				allSafeSideEffects = false;</span>
+<span class="pc bpc" id="L319" title="2 of 4 branches missed.">			} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement </span>
 <span class="pc bpc" id="L320" title="1 of 2 branches missed.">					|| stmt instanceof BreakStatement) {</span>
-<span class="fc" id="L321">				return false;</span>
-<span class="fc bfc" id="L322" title="All 2 branches covered.">			} else if (stmt instanceof ExpressionStatement) {</span>
+<span class="nc" id="L321">				return false;</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">			} else if (stmt instanceof ExpressionStatement) {</span>
 				// Check if this is a method call or other safe side-effect
 <span class="fc" id="L324">				ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
 <span class="fc" id="L325">				Expression expr = exprStmt.getExpression();</span>
 				
-<span class="fc bfc" id="L327" title="All 2 branches covered.">				if (expr instanceof MethodInvocation) {</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">				if (expr instanceof MethodInvocation) {</span>
 <span class="fc" id="L328">					MethodInvocation methodInv = (MethodInvocation) expr;</span>
 					// Check if this is a COLLECT pattern (collection.add())
 					// If so, don't treat as simple forEach - let COLLECT handling take over
-<span class="fc bfc" id="L331" title="All 2 branches covered.">					if (&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">					if (&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
 <span class="fc" id="L332">						ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);</span>
 <span class="pc bpc" id="L333" title="1 of 2 branches missed.">						if (collectOp != null) {</span>
 <span class="fc" id="L334">							return false;  // NOT a simple forEach - it's a COLLECT pattern</span>
@@ -337,83 +337,83 @@ public class LoopBodyParser {
 					// Other method invocations are safe side-effects
 				} else {
 					// Non-method-call expressions might be reduce operations or assignments
-<span class="fc" id="L340">					ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);</span>
-<span class="fc bfc" id="L341" title="All 2 branches covered.">					if (reduceOp != null) {</span>
-<span class="fc" id="L342">						return false;</span>
+<span class="nc" id="L340">					ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">					if (reduceOp != null) {</span>
+<span class="nc" id="L342">						return false;</span>
 					}
-<span class="fc" id="L344">					allSafeSideEffects = false;</span>
+<span class="nc" id="L344">					allSafeSideEffects = false;</span>
 				}
-<span class="fc" id="L346">			} else {</span>
+<span class="nc" id="L346">			} else {</span>
 				// Other statement types are not simple side-effects
-<span class="fc" id="L348">				allSafeSideEffects = false;</span>
+<span class="nc" id="L348">				allSafeSideEffects = false;</span>
 			}
 
-<span class="fc" id="L351">			ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);</span>
-<span class="pc bpc" id="L352" title="1 of 2 branches missed.">			if (reduceOp != null) {</span>
+<span class="nc" id="L351">			ProspectiveOperation reduceOp = reduceDetector.detectReduceOperation(stmt);</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">			if (reduceOp != null) {</span>
 <span class="nc" id="L353">				return false;</span>
 			}
 		}
 
-<span class="pc bpc" id="L357" title="1 of 4 branches missed.">		if (ifStatementAfterVarDecls != null &amp;&amp; !declaredVariables.isEmpty()) {</span>
-<span class="fc bfc" id="L358" title="All 2 branches covered.">			if (ifModifiesDeclaredVariables(ifStatementAfterVarDecls, declaredVariables)) {</span>
-<span class="fc" id="L359">				return true;</span>
+<span class="nc bnc" id="L357" title="All 4 branches missed.">		if (ifStatementAfterVarDecls != null &amp;&amp; !declaredVariables.isEmpty()) {</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">			if (ifModifiesDeclaredVariables(ifStatementAfterVarDecls, declaredVariables)) {</span>
+<span class="nc" id="L359">				return true;</span>
 			}
-<span class="fc" id="L361">			return false;</span>
+<span class="nc" id="L361">			return false;</span>
 		}
 
 		// If all statements are safe side-effects (method calls), treat as simple forEach
-<span class="fc" id="L365">		return allSafeSideEffects;</span>
+<span class="nc" id="L365">		return allSafeSideEffects;</span>
 	}
 
 	/**
 	 * Checks if an IF statement modifies any declared variables.
 	 */
 	private boolean ifModifiesDeclaredVariables(IfStatement ifStmt, Set&lt;String&gt; declaredVariables) {
-<span class="fc" id="L372">		Statement thenStmt = ifStmt.getThenStatement();</span>
-<span class="fc" id="L373">		return statementModifiesVariables(thenStmt, declaredVariables);</span>
+<span class="nc" id="L372">		Statement thenStmt = ifStmt.getThenStatement();</span>
+<span class="nc" id="L373">		return statementModifiesVariables(thenStmt, declaredVariables);</span>
 	}
 
 	/**
 	 * Recursively checks if a statement modifies any variables.
 	 */
 	private boolean statementModifiesVariables(Statement stmt, Set&lt;String&gt; variables) {
-<span class="pc bpc" id="L380" title="2 of 4 branches missed.">		if (stmt == null || variables.isEmpty()) {</span>
+<span class="nc bnc" id="L380" title="All 4 branches missed.">		if (stmt == null || variables.isEmpty()) {</span>
 <span class="nc" id="L381">			return false;</span>
 		}
 
-<span class="fc bfc" id="L384" title="All 2 branches covered.">		if (stmt instanceof Block) {</span>
-<span class="fc" id="L385">			Block block = (Block) stmt;</span>
-<span class="fc bfc" id="L386" title="All 2 branches covered.">			for (Object s : block.statements()) {</span>
-<span class="fc bfc" id="L387" title="All 2 branches covered.">				if (statementModifiesVariables((Statement) s, variables)) {</span>
-<span class="fc" id="L388">					return true;</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">		if (stmt instanceof Block) {</span>
+<span class="nc" id="L385">			Block block = (Block) stmt;</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">			for (Object s : block.statements()) {</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">				if (statementModifiesVariables((Statement) s, variables)) {</span>
+<span class="nc" id="L388">					return true;</span>
 				}
 			}
-<span class="fc bfc" id="L391" title="All 2 branches covered.">		} else if (stmt instanceof ExpressionStatement) {</span>
-<span class="fc" id="L392">			ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc" id="L393">			return expressionModifiesVariables(exprStmt.getExpression(), variables);</span>
-<span class="fc bfc" id="L394" title="All 2 branches covered.">		} else if (stmt instanceof IfStatement) {</span>
-<span class="fc" id="L395">			IfStatement ifStmt = (IfStatement) stmt;</span>
-<span class="pc bpc" id="L396" title="1 of 2 branches missed.">			if (statementModifiesVariables(ifStmt.getThenStatement(), variables)) {</span>
+<span class="nc bnc" id="L391" title="All 2 branches missed.">		} else if (stmt instanceof ExpressionStatement) {</span>
+<span class="nc" id="L392">			ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="nc" id="L393">			return expressionModifiesVariables(exprStmt.getExpression(), variables);</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">		} else if (stmt instanceof IfStatement) {</span>
+<span class="nc" id="L395">			IfStatement ifStmt = (IfStatement) stmt;</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">			if (statementModifiesVariables(ifStmt.getThenStatement(), variables)) {</span>
 <span class="nc" id="L397">				return true;</span>
 			}
-<span class="pc bpc" id="L399" title="1 of 2 branches missed.">			if (ifStmt.getElseStatement() != null </span>
+<span class="nc bnc" id="L399" title="All 2 branches missed.">			if (ifStmt.getElseStatement() != null </span>
 <span class="nc bnc" id="L400" title="All 2 branches missed.">					&amp;&amp; statementModifiesVariables(ifStmt.getElseStatement(), variables)) {</span>
 <span class="nc" id="L401">				return true;</span>
 			}
 		}
 
-<span class="fc" id="L405">		return false;</span>
+<span class="nc" id="L405">		return false;</span>
 	}
 
 	/**
 	 * Checks if an expression modifies any variables.
 	 */
 	private boolean expressionModifiesVariables(Expression expr, Set&lt;String&gt; variables) {
-<span class="pc bpc" id="L412" title="1 of 2 branches missed.">		if (expr == null) {</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">		if (expr == null) {</span>
 <span class="nc" id="L413">			return false;</span>
 		}
 
-<span class="pc bpc" id="L416" title="1 of 2 branches missed.">		if (expr instanceof Assignment) {</span>
+<span class="nc bnc" id="L416" title="All 2 branches missed.">		if (expr instanceof Assignment) {</span>
 <span class="nc" id="L417">			Assignment assignment = (Assignment) expr;</span>
 <span class="nc" id="L418">			Expression lhs = assignment.getLeftHandSide();</span>
 <span class="nc bnc" id="L419" title="All 2 branches missed.">			if (lhs instanceof SimpleName) {</span>
@@ -421,14 +421,14 @@ public class LoopBodyParser {
 			}
 		}
 
-<span class="fc bfc" id="L424" title="All 2 branches covered.">		if (expr instanceof PostfixExpression) {</span>
-<span class="fc" id="L425">			PostfixExpression postfix = (PostfixExpression) expr;</span>
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">			if (postfix.getOperand() instanceof SimpleName) {</span>
-<span class="fc" id="L427">				return variables.contains(((SimpleName) postfix.getOperand()).getIdentifier());</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">		if (expr instanceof PostfixExpression) {</span>
+<span class="nc" id="L425">			PostfixExpression postfix = (PostfixExpression) expr;</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">			if (postfix.getOperand() instanceof SimpleName) {</span>
+<span class="nc" id="L427">				return variables.contains(((SimpleName) postfix.getOperand()).getIdentifier());</span>
 			}
 		}
 
-<span class="pc bpc" id="L431" title="1 of 2 branches missed.">		if (expr instanceof PrefixExpression) {</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">		if (expr instanceof PrefixExpression) {</span>
 <span class="nc" id="L432">			PrefixExpression prefix = (PrefixExpression) expr;</span>
 <span class="nc" id="L433">			PrefixExpression.Operator op = prefix.getOperator();</span>
 <span class="nc bnc" id="L434" title="All 4 branches missed.">			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {</span>
@@ -438,7 +438,7 @@ public class LoopBodyParser {
 			}
 		}
 
-<span class="fc" id="L441">		return false;</span>
+<span class="nc" id="L441">		return false;</span>
 	}
 
 	/**
