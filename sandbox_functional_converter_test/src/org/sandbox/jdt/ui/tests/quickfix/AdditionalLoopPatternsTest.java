@@ -207,18 +207,20 @@ public class AdditionalLoopPatternsTest {
 	// ===========================================
 
 	/**
-	 * Tests traditional index-based for-loop (NOT YET SUPPORTED).
+	 * Tests traditional index-based for-loop conversion to IntStream.range().
 	 * 
 	 * <p><b>Pattern:</b> {@code for (int i = 0; i < n; i++) { ... }}</p>
-	 * <p><b>Potential conversion:</b> {@code IntStream.range(0, n).forEach(i -> ...)}</p>
+	 * <p><b>Conversion:</b> {@code IntStream.range(0, n).forEach(i -> ...)}</p>
 	 * 
-	 * <p><b>Implementation Note:</b> This would require analyzing the loop to detect:
+	 * <p><b>Supported:</b></p>
 	 * <ul>
-	 *   <li>Initialization: {@code int i = start}</li>
+	 *   <li>Initialization: {@code int i = start} (single variable, int type)</li>
 	 *   <li>Condition: {@code i < end} or {@code i <= end}</li>
-	 *   <li>Update: {@code i++} or {@code i += step}</li>
+	 *   <li>Update: {@code i++} or {@code ++i}</li>
+	 *   <li>Body must not contain break, continue, or return statements</li>
 	 * </ul>
-	 * Then convert to {@code IntStream.range(start, end)} or {@code IntStream.rangeClosed()}.</p>
+	 * 
+	 * <p><b>Not yet supported:</b> Step increments other than 1 (e.g., {@code i += 2})</p>
 	 */
 	@Test
 	@DisplayName("Index-based for-loop to IntStream.range()")

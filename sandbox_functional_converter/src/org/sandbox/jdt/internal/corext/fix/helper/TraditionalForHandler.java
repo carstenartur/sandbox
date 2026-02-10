@@ -203,6 +203,11 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         // Extract body
         Statement body = forStmt.getBody();
         
+        // Check if body contains unconvertible statements (break, continue, return)
+        if (containsUnconvertibleStatements(body)) {
+            return null;
+        }
+        
         return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);
     }
     
@@ -215,6 +220,36 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
             return primType.getPrimitiveTypeCode() == PrimitiveType.INT;
         }
         return false;
+    }
+    
+    /**
+     * Checks if the loop body contains unconvertible statements.
+     * Statements containing break, continue, or return cannot be converted to lambda.
+     */
+    private boolean containsUnconvertibleStatements(Statement body) {
+        final boolean[] hasUnconvertible = {false};
+        
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(BreakStatement node) {
+                hasUnconvertible[0] = true;
+                return false;
+            }
+            
+            @Override
+            public boolean visit(ContinueStatement node) {
+                hasUnconvertible[0] = true;
+                return false;
+            }
+            
+            @Override
+            public boolean visit(ReturnStatement node) {
+                hasUnconvertible[0] = true;
+                return false;
+            }
+        });
+        
+        return hasUnconvertible[0];
     }
     
     @Override
@@ -262,9 +297,9 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         
         // Adjust end expression for inclusive range (i <= end)
         if (pattern.inclusive) {
-            // For i <= end, we need IntStream.range(start, end+1)
-            // The expression parser in ASTStreamRenderer will handle "end+1" format
-            endStr = endStr + " + 1";
+            // For i <= end, we need IntStream.range(start, (end) + 1)
+            // Parenthesize end expression to preserve operator precedence
+            endStr = "(" + endStr + ") + 1";
         }
         
         // Build EXPLICIT_RANGE source descriptor
@@ -282,8 +317,8 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
             false // not a collection element
         );
         
-        // Extract body statements
-        List<Statement> bodyStatements = extractBodyStatements(pattern.body);
+        // Extract body statements and convert to strings
+        List<String> bodyStatements = extractBodyStatementsAsStrings(pattern.body);
         
         // Build ForEachTerminal
         ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // ordered = false for IntStream
@@ -297,17 +332,25 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
     }
     
     /**
-     * Extracts statements from the loop body.
+     * Extracts statements from the loop body and converts them to strings.
+     * This matches the format expected by ForEachTerminal.
      */
     @SuppressWarnings("unchecked")
-    private List<Statement> extractBodyStatements(Statement body) {
+    private List<String> extractBodyStatementsAsStrings(Statement body) {
+        List<String> bodyStmts = new java.util.ArrayList<>();
+        
         if (body instanceof Block) {
             Block block = (Block) body;
-            return block.statements();
+            List<Statement> statements = block.statements();
+            for (Statement stmt : statements) {
+                bodyStmts.add(stmt.toString());
+            }
         } else {
             // Single statement body
-            return List.of(body);
+            bodyStmts.add(body.toString());
         }
+        
+        return bodyStmts;
     }
     
     @Override
