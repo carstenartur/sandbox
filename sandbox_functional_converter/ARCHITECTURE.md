@@ -16,10 +16,12 @@ Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the 
 
 ### Current Architecture
 
-`EnhancedForHandler` uses the clean ULR pipeline for **all** patterns:
+All three loop-to-stream handlers use the ULR pipeline:
 
 ```
-JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
+EnhancedForHandler:    JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
+IteratorWhileHandler:  JDT AST → IteratorPatternDetector → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
+TraditionalForHandler: JDT AST → analyzeForLoop() → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
 ```
 
 **`JdtLoopExtractor`** bridges JDT AST to the abstract `LoopModel`, detecting:
@@ -178,11 +180,12 @@ The following phases were completed during the V1/V2 parallel development:
    - Same forEach-only support as while-iterator
 
 **Implementation Architecture** (Phase 7):
-- `IteratorEnhancedForHandler` extends `AbstractFunctionalCall<ASTNode>`
+- `IteratorWhileHandler` extends `AbstractFunctionalCall<ASTNode>`
 - Uses `IteratorPatternDetector` to identify iterator patterns in AST
 - Uses `IteratorLoopAnalyzer` to validate safety (no breaks, continues, etc.)
 - Uses `IteratorLoopBodyParser` to extract loop body and next() variable
-- Performs a direct AST rewrite of supported iterator loops into functional stream pipelines
+- Uses the ULR pipeline: `LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer`
+- Builds `LoopModel` with `COLLECTION` source type and `ForEachTerminal`
 - Marks both iterator declaration and loop statement as processed to prevent double conversion
 
 **Test Coverage** (Phase 7):

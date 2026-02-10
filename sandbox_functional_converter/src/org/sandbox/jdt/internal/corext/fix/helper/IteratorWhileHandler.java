@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.List;
 import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.*;
@@ -20,6 +21,12 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.functional.core.builder.LoopModelBuilder;
+import org.sandbox.functional.core.model.ElementDescriptor;
+import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
+import org.sandbox.functional.core.transformer.LoopModelTransformer;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopAnalyzer.SafetyAnalysis;
@@ -29,14 +36,21 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 /**
  * Handler for converting iterator-based while-loops to functional stream operations.
  * 
- * <p>This converter handles:</p>
+ * <p>This handler processes:</p>
  * <ul>
  *   <li>while-iterator pattern: {@code Iterator<T> it = coll.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</li>
  *   <li>for-loop-iterator pattern: {@code for (Iterator<T> it = coll.iterator(); it.hasNext(); ) { T item = it.next(); ... }}</li>
  * </ul>
  * 
- * <p>The conversion creates a synthetic EnhancedForStatement and delegates to the existing
- * EnhancedForHandler infrastructure for the actual stream generation.</p>
+ * <p>Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer}.</p>
+ * 
+ * <p><b>Naming Note:</b> This class is named after the <i>source</i> loop type (iterator while-loop),
+ * not the target format. The architecture supports bidirectional transformations, so the name
+ * describes what loop pattern this handler processes.</p>
+ * 
+ * @see LoopModel
+ * @see ASTStreamRenderer
+ * @see LoopModelTransformer
  */
 public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
     
@@ -150,16 +164,22 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
             return;
         }
         
-        AST ast = cuRewrite.getAST();
+        AST ast = cuRewrite.getRoot().getAST();
         ASTRewrite rewrite = cuRewrite.getASTRewrite();
         
-        // Create a stream pipeline expression directly
-        Expression streamPipeline = createStreamPipeline(ast, pattern, parsedBody);
+        // Build LoopModel using the ULR pipeline
+        LoopModel model = buildLoopModel(pattern, parsedBody);
         
-        if (streamPipeline != null) {
-            // Replace the original loop with the stream pipeline
+        // Create renderer with the original loop body for AST node access
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.loopBody);
+        
+        // Transform using LoopModelTransformer
+        LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
+        Expression streamExpression = transformer.transform(model);
+        
+        if (streamExpression != null) {
+            // For while pattern, also remove the iterator declaration
             if (node instanceof WhileStatement) {
-                // For while pattern, also remove the iterator declaration
                 Block parentBlock = (Block) node.getParent();
                 Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, (Statement) node);
                 
@@ -168,60 +188,67 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
                 }
             }
             
-            // Create an expression statement for the stream pipeline
-            ExpressionStatement streamStmt = ast.newExpressionStatement(streamPipeline);
-            rewrite.replace(node, streamStmt, group);
+            // Wrap in ExpressionStatement and replace the loop
+            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);
+            rewrite.replace(node, newStatement, group);
         }
     }
     
     /**
-     * Creates a stream pipeline expression.
-     * This creates a simple forEach conversion directly without using StreamPipelineBuilder.
+     * Builds a LoopModel from the iterator pattern using the ULR pipeline.
+     * Uses COLLECTION source type since the iterator comes from collection.iterator().
      */
-    private Expression createStreamPipeline(AST ast, IteratorPattern pattern, ParsedBody parsedBody) {
-        // collection.stream().forEach(item -> { ... })
+    private LoopModel buildLoopModel(IteratorPattern pattern, ParsedBody parsedBody) {
+        // Build COLLECTION source descriptor using the collection expression
+        SourceDescriptor source = new SourceDescriptor(
+            SourceDescriptor.SourceType.COLLECTION,
+            pattern.collectionExpression.toString(),
+            parsedBody.elementType
+        );
         
-        // collection.stream()
-        MethodInvocation streamCall = ast.newMethodInvocation();
-        streamCall.setExpression((Expression) ASTNode.copySubtree(ast, pattern.collectionExpression));
-        streamCall.setName(ast.newSimpleName("stream"));
+        // Build element descriptor for the loop variable
+        ElementDescriptor element = new ElementDescriptor(
+            parsedBody.elementVariableName,
+            parsedBody.elementType,
+            true // is a collection element
+        );
         
-        // .forEach(item -> { ... })
-        MethodInvocation forEachCall = ast.newMethodInvocation();
-        forEachCall.setExpression(streamCall);
-        forEachCall.setName(ast.newSimpleName("forEach"));
+        // Extract body statements as expression strings (strip trailing semicolons)
+        List<String> bodyStatements = extractBodyStatementsAsStrings(parsedBody.actualBodyStatements);
         
-        // Lambda: item -> { ... }
-        LambdaExpression lambda = ast.newLambdaExpression();
-        VariableDeclarationFragment lambdaParam = ast.newVariableDeclarationFragment();
-        lambdaParam.setName(ast.newSimpleName(parsedBody.elementVariableName));
-        lambda.parameters().add(lambdaParam);
-        lambda.setParentheses(false);
+        // Build ForEachTerminal
+        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false);
         
-        // Lambda body
-        if (parsedBody.actualBodyStatements.isEmpty()) {
-            // Empty body - use empty block
-            lambda.setBody(ast.newBlock());
-        } else if (parsedBody.actualBodyStatements.size() == 1) {
-            Statement stmt = parsedBody.actualBodyStatements.get(0);
-            if (stmt instanceof ExpressionStatement) {
-                // Single expression - use as lambda body
-                ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-                lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
-            } else {
-                // Single non-expression statement - wrap in block
-                Block lambdaBlock = ast.newBlock();
-                lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
-                lambda.setBody(lambdaBlock);
-            }
-        } else {
-            // Multiple statements - create block
-            Block lambdaBlock = bodyParser.createSyntheticBlock(ast, parsedBody);
-            lambda.setBody(lambdaBlock);
+        // Build and return LoopModel
+        return new LoopModelBuilder()
+            .source(source)
+            .element(element)
+            .terminal(terminal)
+            .build();
+    }
+    
+    /**
+     * Converts body statements to expression strings for the ForEachTerminal.
+     * Trailing semicolons are stripped because ForEachTerminal / ASTStreamRenderer.createExpression()
+     * expects pure expressions, not statements.
+     */
+    private List<String> extractBodyStatementsAsStrings(List<Statement> statements) {
+        List<String> bodyStmts = new java.util.ArrayList<>();
+        for (Statement stmt : statements) {
+            bodyStmts.add(stripTrailingSemicolon(stmt.toString()));
         }
-        
-        forEachCall.arguments().add(lambda);
-        return forEachCall;
+        return bodyStmts;
+    }
+    
+    /**
+     * Strips a trailing semicolon (and surrounding whitespace) from a statement string.
+     */
+    private static String stripTrailingSemicolon(String stmtStr) {
+        String trimmed = stmtStr.trim();
+        if (trimmed.endsWith(";")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
+        }
+        return trimmed;
     }
     
     @Override
