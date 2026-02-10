@@ -255,6 +255,36 @@ class JDTConverterTest {
 			assertThatThrownBy(() -> JDTConverter.convert((SimpleName) null))
 					.isInstanceOf(IllegalArgumentException.class);
 		}
+
+		@Test
+		@DisplayName("identifierOf returns identifier for SimpleName")
+		void identifierOfSimpleName() {
+			SimpleName sn = ast.newSimpleName("myVariable");
+
+			Optional<String> result = JDTConverter.identifierOf(sn);
+
+			assertThat(result).isPresent();
+			assertThat(result.get()).isEqualTo("myVariable");
+		}
+
+		@Test
+		@DisplayName("identifierOf returns empty for null expression")
+		void identifierOfNull() {
+			Optional<String> result = JDTConverter.identifierOf(null);
+
+			assertThat(result).isEmpty();
+		}
+
+		@Test
+		@DisplayName("identifierOf returns empty for non-SimpleName expression")
+		void identifierOfNonSimpleName() {
+			MethodInvocation mi = ast.newMethodInvocation();
+			mi.setName(ast.newSimpleName("test"));
+
+			Optional<String> result = JDTConverter.identifierOf(mi);
+
+			assertThat(result).isEmpty();
+		}
 	}
 
 	// -------------------------------------------------------------------

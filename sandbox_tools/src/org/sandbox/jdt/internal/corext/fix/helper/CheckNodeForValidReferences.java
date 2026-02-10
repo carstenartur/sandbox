@@ -3,11 +3,13 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.Iterator;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -16,9 +18,10 @@ import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.sandbox.ast.api.expr.ASTExpr;
-import org.sandbox.ast.api.jdt.JDTConverter;
 import org.sandbox.ast.api.expr.MethodInvocationExpr;
 import org.sandbox.ast.api.expr.SimpleNameExpr;
+import org.sandbox.ast.api.jdt.FluentASTVisitor;
+import org.sandbox.ast.api.jdt.JDTConverter;
 
 class CheckNodeForValidReferences {
 	private static final String ITERATOR_NAME= Iterator.class.getCanonicalName();
@@ -32,7 +35,7 @@ class CheckNodeForValidReferences {
 	}
 
 	public boolean isValid() {
-		ASTVisitor visitor= new ASTVisitor() {
+		FluentASTVisitor visitor= new FluentASTVisitor() {
 
 			@Override
 			public boolean visit(FieldAccess visitedField) {
@@ -65,7 +68,7 @@ class CheckNodeForValidReferences {
 			}
 
 			@Override
-			public boolean visit(MethodInvocation methodInvocation) {
+			protected boolean visitMethodInvocation(MethodInvocationExpr miExpr, MethodInvocation methodInvocation) {
 				if (fLocalVarsOnly) {
 					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
 					if (methodInvocationBinding == null) {
@@ -124,8 +127,7 @@ class CheckNodeForValidReferences {
 			}
 
 			@Override
-			public boolean visit(SimpleName simpleName) {
-				SimpleNameExpr nameExpr= JDTConverter.convert(simpleName);
+			protected boolean visitSimpleName(SimpleNameExpr nameExpr, SimpleName simpleName) {
 				if (!nameExpr.isVariable()) {
 					return true;
 				}
