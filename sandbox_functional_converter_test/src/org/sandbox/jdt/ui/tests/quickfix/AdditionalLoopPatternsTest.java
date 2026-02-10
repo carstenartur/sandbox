@@ -254,18 +254,17 @@ public class AdditionalLoopPatternsTest {
 	}
 
 	/**
-	 * Tests index-based loop with collection access (NOT YET SUPPORTED).
+	 * Tests index-based loop with collection access.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (int i = 0; i < list.size(); i++) { T item = list.get(i); ... }}</p>
-	 * <p><b>Potential conversion:</b> {@code list.forEach(item -> ...)}</p>
+	 * <p><b>Conversion:</b> {@code list.forEach(item -> ...)}</p>
 	 * 
-	 * <p><b>Implementation Note:</b> Could detect {@code list.get(i)} pattern and convert
-	 * to enhanced for-loop first, then to stream. However, if index is used in computation,
-	 * would need {@code IntStream.range(0, list.size()).forEach(i -> ... list.get(i) ...)}.</p>
+	 * <p><b>Implementation Note:</b> Detects {@code list.get(i)} pattern where the index
+	 * is ONLY used for collection access. The element variable declaration is removed
+	 * and the forEach provides the element directly.</p>
 	 */
-	@Disabled("Index-based collection access not yet supported")
 	@Test
-	@DisplayName("Index-based collection loop (future)")
+	@DisplayName("Index-based collection loop to forEach")
 	public void testIndexBasedCollectionLoop_toStream() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 

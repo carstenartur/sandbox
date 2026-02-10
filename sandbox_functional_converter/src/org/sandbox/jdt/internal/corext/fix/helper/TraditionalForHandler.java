@@ -203,6 +203,14 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         // Extract body
         Statement body = forStmt.getBody();
         
+        // Analyze index usage to determine if we can eliminate the index variable
+        IndexUsageAnalysis indexAnalysis = analyzeIndexUsage(body, loopVarName, endExpr);
+        
+        if (indexAnalysis.indexEliminable) {
+            return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body,
+                                     true, indexAnalysis.collectionExpr, indexAnalysis.elementVarName);
+        }
+        
         return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);
     }
     
@@ -215,6 +223,162 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
             return primType.getPrimitiveTypeCode() == PrimitiveType.INT;
         }
         return false;
+    }
+    
+    /**
+     * Analyzes how the loop index variable is used in the body.
+     * Detects if the index is ONLY used for collection.get(i) calls and if so,
+     * enables index elimination (convert to collection.forEach instead of IntStream.range).
+     * 
+     * @param body the loop body
+     * @param loopVarName the loop variable name (e.g., "i")
+     * @param conditionRightOperand the right operand of the loop condition (e.g., "items.size()")
+     * @return IndexUsageAnalysis with elimination decision and collection info
+     */
+    private IndexUsageAnalysis analyzeIndexUsage(Statement body, String loopVarName, Expression conditionRightOperand) {
+        // First, check if the condition is collection.size()
+        Expression collectionExpr = extractCollectionFromSizeCall(conditionRightOperand);
+        if (collectionExpr == null) {
+            return IndexUsageAnalysis.notEliminable();
+        }
+        
+        String collectionName = collectionExpr.toString();
+        
+        // Scan the body for all uses of the loop variable
+        IndexUsageScanner scanner = new IndexUsageScanner(loopVarName, collectionName);
+        body.accept(scanner);
+        
+        if (!scanner.allUsesAreCollectionGet) {
+            return IndexUsageAnalysis.notEliminable();
+        }
+        
+        if (scanner.usageCount == 0) {
+            // Index not used at all - unusual but could happen
+            return IndexUsageAnalysis.notEliminable();
+        }
+        
+        // Derive element variable name from collection name
+        String elementVarName = deriveElementVarName(collectionName);
+        
+        return new IndexUsageAnalysis(true, collectionExpr, elementVarName);
+    }
+    
+    /**
+     * Extracts the collection expression from a .size() method call.
+     * E.g., "items.size()" → Expression for "items"
+     * 
+     * @param expr the expression to analyze
+     * @return the collection expression if it's a .size() call, null otherwise
+     */
+    private Expression extractCollectionFromSizeCall(Expression expr) {
+        if (!(expr instanceof MethodInvocation)) {
+            return null;
+        }
+        
+        MethodInvocation methodInv = (MethodInvocation) expr;
+        String methodName = methodInv.getName().getIdentifier();
+        
+        if (!"size".equals(methodName)) {
+            return null;
+        }
+        
+        // Check that there are no arguments
+        if (!methodInv.arguments().isEmpty()) {
+            return null;
+        }
+        
+        // Return the expression the method is called on
+        return methodInv.getExpression();
+    }
+    
+    /**
+     * Derives an element variable name from the collection name.
+     * E.g., "items" → "item", "list" → "element", "values" → "value"
+     */
+    private String deriveElementVarName(String collectionName) {
+        // Simple heuristic: if collection name ends with 's', remove it
+        if (collectionName.endsWith("s") && collectionName.length() > 1) {
+            return collectionName.substring(0, collectionName.length() - 1);
+        }
+        
+        // Otherwise use generic name
+        return "element";
+    }
+    
+    /**
+     * Helper class to track index usage analysis results.
+     */
+    private static class IndexUsageAnalysis {
+        final boolean indexEliminable;
+        final Expression collectionExpr;
+        final String elementVarName;
+        
+        IndexUsageAnalysis(boolean indexEliminable, Expression collectionExpr, String elementVarName) {
+            this.indexEliminable = indexEliminable;
+            this.collectionExpr = collectionExpr;
+            this.elementVarName = elementVarName;
+        }
+        
+        static IndexUsageAnalysis notEliminable() {
+            return new IndexUsageAnalysis(false, null, null);
+        }
+    }
+    
+    /**
+     * AST visitor that scans for uses of the loop index variable.
+     * Checks if ALL uses are of the form collection.get(index).
+     */
+    private static class IndexUsageScanner extends ASTVisitor {
+        private final String loopVarName;
+        private final String collectionName;
+        boolean allUsesAreCollectionGet = true;
+        int usageCount = 0;
+        
+        IndexUsageScanner(String loopVarName, String collectionName) {
+            this.loopVarName = loopVarName;
+            this.collectionName = collectionName;
+        }
+        
+        @Override
+        public boolean visit(SimpleName node) {
+            if (!node.getIdentifier().equals(loopVarName)) {
+                return true;
+            }
+            
+            usageCount++;
+            
+            // Check if this usage is inside a collection.get(i) call
+            ASTNode parent = node.getParent();
+            if (!(parent instanceof MethodInvocation)) {
+                allUsesAreCollectionGet = false;
+                return true;
+            }
+            
+            MethodInvocation methodInv = (MethodInvocation) parent;
+            
+            // Check method name is "get"
+            if (!"get".equals(methodInv.getName().getIdentifier())) {
+                allUsesAreCollectionGet = false;
+                return true;
+            }
+            
+            // Check that the index is the first (and only) argument
+            @SuppressWarnings("unchecked")
+            List<Expression> args = methodInv.arguments();
+            if (args.size() != 1 || args.get(0) != node) {
+                allUsesAreCollectionGet = false;
+                return true;
+            }
+            
+            // Check that the method is called on the expected collection
+            Expression methodExpr = methodInv.getExpression();
+            if (methodExpr == null || !methodExpr.toString().equals(collectionName)) {
+                allUsesAreCollectionGet = false;
+                return true;
+            }
+            
+            return true;
+        }
     }
     
     @Override
@@ -256,37 +420,66 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
      * Builds a LoopModel from the analyzed ForLoopPattern.
      */
     private LoopModel buildLoopModel(ForLoopPattern pattern, AST ast) {
-        // Get start and end expressions as strings
-        String startStr = pattern.startExpr.toString();
-        String endStr = pattern.endExpr.toString();
+        SourceDescriptor source;
+        ElementDescriptor element;
         
-        // Adjust end expression for inclusive range (i <= end)
-        if (pattern.inclusive) {
-            // For i <= end, we need IntStream.range(start, end+1)
-            // The expression parser in ASTStreamRenderer will handle "end+1" format
-            endStr = endStr + " + 1";
+        if (pattern.indexEliminable) {
+            // Index can be eliminated - convert to collection.forEach()
+            String collectionExpr = pattern.collectionExpr.toString();
+            
+            // Build COLLECTION source descriptor
+            source = new SourceDescriptor(
+                SourceDescriptor.SourceType.COLLECTION,
+                collectionExpr,
+                "Object" // Type will be inferred by ASTStreamRenderer
+            );
+            
+            // Build element descriptor using the derived element variable name
+            element = new ElementDescriptor(
+                pattern.elementVarName,
+                "Object", // Type will be inferred
+                false
+            );
+        } else {
+            // Standard IntStream.range() conversion
+            // Get start and end expressions as strings
+            String startStr = pattern.startExpr.toString();
+            String endStr = pattern.endExpr.toString();
+            
+            // Adjust end expression for inclusive range (i <= end)
+            if (pattern.inclusive) {
+                // For i <= end, we need IntStream.range(start, end+1)
+                // The expression parser in ASTStreamRenderer will handle "end+1" format
+                endStr = endStr + " + 1";
+            }
+            
+            // Build EXPLICIT_RANGE source descriptor
+            String rangeExpression = startStr + "," + endStr;
+            source = new SourceDescriptor(
+                SourceDescriptor.SourceType.EXPLICIT_RANGE,
+                rangeExpression,
+                "int"
+            );
+            
+            // Build element descriptor for the loop variable
+            element = new ElementDescriptor(
+                pattern.loopVarName,
+                "int",
+                false // not a collection element
+            );
         }
         
-        // Build EXPLICIT_RANGE source descriptor
-        String rangeExpression = startStr + "," + endStr;
-        SourceDescriptor source = new SourceDescriptor(
-            SourceDescriptor.SourceType.EXPLICIT_RANGE,
-            rangeExpression,
-            "int"
-        );
+        // Extract body statements - need to transform them if index is eliminable
+        List<Statement> bodyStatements = extractAndTransformBodyStatements(pattern);
         
-        // Build element descriptor for the loop variable
-        ElementDescriptor element = new ElementDescriptor(
-            pattern.loopVarName,
-            "int",
-            false // not a collection element
-        );
-        
-        // Extract body statements
-        List<Statement> bodyStatements = extractBodyStatements(pattern.body);
+        // Convert statements to strings for ForEachTerminal
+        List<String> bodyStmtStrings = new java.util.ArrayList<>();
+        for (Statement stmt : bodyStatements) {
+            bodyStmtStrings.add(stmt.toString());
+        }
         
         // Build ForEachTerminal
-        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // ordered = false for IntStream
+        ForEachTerminal terminal = new ForEachTerminal(bodyStmtStrings, false); // ordered = false
         
         // Build and return LoopModel
         return LoopModel.builder()
@@ -310,6 +503,88 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         }
     }
     
+    /**
+     * Extracts and transforms body statements.
+     * If index is eliminable, removes the element variable declaration
+     * (e.g., "String item = items.get(i);") since the forEach will provide the element directly.
+     */
+    @SuppressWarnings("unchecked")
+    private List<Statement> extractAndTransformBodyStatements(ForLoopPattern pattern) {
+        List<Statement> originalStatements = extractBodyStatements(pattern.body);
+        
+        if (!pattern.indexEliminable) {
+            // No transformation needed
+            return originalStatements;
+        }
+        
+        // Transform statements: remove variable declarations that assign from collection.get(i)
+        // The remaining statements will use the element variable name that forEach provides
+        List<Statement> transformedStatements = new java.util.ArrayList<>();
+        String collectionName = pattern.collectionExpr.toString();
+        
+        for (Statement stmt : originalStatements) {
+            // Check if this is a variable declaration like: String item = items.get(i);
+            if (stmt instanceof VariableDeclarationStatement) {
+                VariableDeclarationStatement varDeclStmt = (VariableDeclarationStatement) stmt;
+                List<VariableDeclarationFragment> fragments = varDeclStmt.fragments();
+                
+                if (fragments.size() == 1) {
+                    VariableDeclarationFragment fragment = fragments.get(0);
+                    Expression initializer = fragment.getInitializer();
+                    
+                    // Check if initializer is collection.get(i)
+                    if (isCollectionGetCall(initializer, collectionName, pattern.loopVarName)) {
+                        // Skip this declaration - the element variable from forEach replaces it
+                        continue;
+                    }
+                }
+            }
+            
+            // Keep the statement
+            transformedStatements.add(stmt);
+        }
+        
+        return transformedStatements;
+    }
+    
+    /**
+     * Checks if an expression is a collection.get(index) call.
+     */
+    private boolean isCollectionGetCall(Expression expr, String collectionName, String indexVar) {
+        if (!(expr instanceof MethodInvocation)) {
+            return false;
+        }
+        
+        MethodInvocation methodInv = (MethodInvocation) expr;
+        
+        if (!"get".equals(methodInv.getName().getIdentifier())) {
+            return false;
+        }
+        
+        @SuppressWarnings("unchecked")
+        List<Expression> args = methodInv.arguments();
+        if (args.size() != 1) {
+            return false;
+        }
+        
+        Expression arg = args.get(0);
+        if (!(arg instanceof SimpleName)) {
+            return false;
+        }
+        
+        SimpleName argName = (SimpleName) arg;
+        if (!argName.getIdentifier().equals(indexVar)) {
+            return false;
+        }
+        
+        Expression methodExpr = methodInv.getExpression();
+        if (methodExpr == null || !methodExpr.toString().equals(collectionName)) {
+            return false;
+        }
+        
+        return true;
+    }
+    
     @Override
     public String getPreview(boolean afterRefactoring) {
         if (afterRefactoring) {
@@ -328,13 +603,27 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         final boolean inclusive;  // true for <=, false for <
         final Statement body;
         
+        // Index elimination fields
+        final boolean indexEliminable;      // true if index is only used for collection.get(i)
+        final Expression collectionExpr;    // the collection being accessed (e.g., items)
+        final String elementVarName;        // derived element variable name (e.g., item)
+        
         ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,
                       boolean inclusive, Statement body) {
+            this(loopVarName, startExpr, endExpr, inclusive, body, false, null, null);
+        }
+        
+        ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,
+                      boolean inclusive, Statement body,
+                      boolean indexEliminable, Expression collectionExpr, String elementVarName) {
             this.loopVarName = loopVarName;
             this.startExpr = startExpr;
             this.endExpr = endExpr;
             this.inclusive = inclusive;
             this.body = body;
+            this.indexEliminable = indexEliminable;
+            this.collectionExpr = collectionExpr;
+            this.elementVarName = elementVarName;
         }
     }
 }
