@@ -333,8 +333,11 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
     }
     
     /**
-     * Extracts statements from the loop body and converts them to strings.
-     * This matches the format expected by ForEachTerminal.
+     * Extracts statements from the loop body and converts them to expression strings.
+     * Trailing semicolons are stripped because ForEachTerminal / ASTStreamRenderer.createExpression()
+     * expects pure expressions, not statements.  This matches how
+     * {@code JdtLoopExtractor.addSimpleForEachTerminal()} produces body strings for
+     * the existing EnhancedForHandler.
      */
     @SuppressWarnings("unchecked")
     private List<String> extractBodyStatementsAsStrings(Statement body) {
@@ -344,14 +347,26 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
             Block block = (Block) body;
             List<Statement> statements = block.statements();
             for (Statement stmt : statements) {
-                bodyStmts.add(stmt.toString());
+                bodyStmts.add(stripTrailingSemicolon(stmt.toString()));
             }
         } else {
             // Single statement body
-            bodyStmts.add(body.toString());
+            bodyStmts.add(stripTrailingSemicolon(body.toString()));
         }
         
         return bodyStmts;
+    }
+    
+    /**
+     * Strips a trailing semicolon (and surrounding whitespace) from a statement string
+     * so that it can be parsed as an expression by {@code ASTStreamRenderer.createExpression()}.
+     */
+    private static String stripTrailingSemicolon(String stmtStr) {
+        String trimmed = stmtStr.trim();
+        if (trimmed.endsWith(";")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
+        }
+        return trimmed;
     }
     
     @Override
