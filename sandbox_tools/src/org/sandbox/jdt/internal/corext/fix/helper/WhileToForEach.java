@@ -58,6 +58,7 @@ import org.eclipse.jdt.internal.corext.fix.ConvertLoopOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.ast.api.expr.ASTExpr;
 import org.sandbox.ast.api.jdt.JDTConverter;
 import org.sandbox.ast.api.expr.MethodInvocationExpr;
 import org.sandbox.ast.api.expr.SimpleNameExpr;
@@ -117,12 +118,12 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 										}
 										HelperVisitor.callMethodInvocationVisitor(whilestatement.getBody(), dataholder,
 												nodesprocessed, (mi, holder2) -> {
-													MethodInvocationExpr miExpr= JDTConverter.convert(mi);
-													String identifier= miExpr.receiverIdentifier().orElse(null);
+													String identifier= mi.getExpression() instanceof SimpleName sn ? sn.getIdentifier() : null;
 													if (identifier != null) {
 														if (!name.equals(identifier)) {
 															return true;
 														}
+														MethodInvocationExpr miExpr= JDTConverter.convert(mi);
 														String method= miExpr.methodName().orElse(""); //$NON-NLS-1$
 														WhileLoopToChangeHit previousHit= operationsMap
 																.get(whilestatement);
@@ -223,26 +224,28 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			return false;
 		}
 		HelperVisitor.callMethodInvocationVisitor(iterDeclarationParent, dataholder, nodesprocessed, (mi, holder2) -> {
-			MethodInvocationExpr miExpr= JDTConverter.convert(mi);
-			String receiverIdentifier= miExpr.receiverIdentifier().orElse(null);
+			String receiverIdentifier= mi.getExpression() instanceof SimpleName sn ? sn.getIdentifier() : null;
 			if (receiverIdentifier != null && receiverIdentifier.equals(hit.iteratorName)) {
 				if (mi.getStartPosition() < hit.whileStatement.getStartPosition()) {
 					hit.isInvalid= true;
 					return false;
 				}
-			} else if (miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
-				ASTNode assignment= ASTNodes.getFirstAncestorOrNull(mi, Assignment.class);
-				if (assignment instanceof Assignment) {
-					Expression leftSide= ((Assignment) assignment).getLeftHandSide();
-					String assignedVarId= JDTConverter.convertExpression(leftSide)
-							.flatMap(ASTExpr::asSimpleName)
-							.map(SimpleNameExpr::identifier)
-							.orElse(null);
-					if (assignedVarId != null && assignedVarId.equals(hit.iteratorName)) {
-						Statement stmt= ASTNodes.getFirstAncestorOrNull(assignment, Statement.class);
-						if (stmt == null || stmt.getParent() != hit.whileStatement.getParent()) {
-							hit.isInvalid= true;
-							return false;
+			} else {
+				MethodInvocationExpr miExpr= JDTConverter.convert(mi);
+				if (miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
+					ASTNode assignment= ASTNodes.getFirstAncestorOrNull(mi, Assignment.class);
+					if (assignment instanceof Assignment) {
+						Expression leftSide= ((Assignment) assignment).getLeftHandSide();
+						String assignedVarId= JDTConverter.convertExpression(leftSide)
+								.flatMap(ASTExpr::asSimpleName)
+								.map(SimpleNameExpr::identifier)
+								.orElse(null);
+						if (assignedVarId != null && assignedVarId.equals(hit.iteratorName)) {
+							Statement stmt= ASTNodes.getFirstAncestorOrNull(assignment, Statement.class);
+							if (stmt == null || stmt.getParent() != hit.whileStatement.getParent()) {
+								hit.isInvalid= true;
+								return false;
+							}
 						}
 					}
 				}

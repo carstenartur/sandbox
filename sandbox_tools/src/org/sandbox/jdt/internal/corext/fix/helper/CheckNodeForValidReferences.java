@@ -67,16 +67,24 @@ class CheckNodeForValidReferences {
 			@Override
 			public boolean visit(MethodInvocation methodInvocation) {
 				if (fLocalVarsOnly) {
-					MethodInvocationExpr miExpr= JDTConverter.convert(methodInvocation);
-					if (miExpr.returnsType(ITERATOR_NAME)) {
-						if (miExpr.receiverIdentifier().isPresent()) {
-							SimpleNameExpr receiverExpr= miExpr.receiver()
-									.flatMap(ASTExpr::asSimpleName)
-									.orElse(null);
-							if (receiverExpr != null 
-									&& receiverExpr.isLocalVariable() 
-									&& receiverExpr.variableHasType(ITERATOR_NAME)) {
-								return true;
+					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
+					if (methodInvocationBinding == null) {
+						throw new AbortSearchException();
+					}
+					ITypeBinding methodTypeBinding= methodInvocationBinding.getReturnType();
+					if (AbstractTool.isOfType(methodTypeBinding, ITERATOR_NAME)) {
+						Expression exp= methodInvocation.getExpression();
+						if (exp instanceof SimpleName simpleName) {
+							SimpleNameExpr nameExpr= JDTConverter.convert(simpleName);
+							IBinding binding= simpleName.resolveBinding();
+							if (binding instanceof IVariableBinding varBinding) {
+								// Check using fluent API for field and parameter, but use JDT for record component
+								if (nameExpr.resolveVariable()
+										.filter(var -> !var.isField() && !var.isParameter())
+										.filter(var -> var.hasType(ITERATOR_NAME))
+										.isPresent() && !varBinding.isRecordComponent()) {
+									return true;
+								}
 							}
 						}
 						throw new AbortSearchException();
