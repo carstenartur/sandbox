@@ -719,4 +719,41 @@ public class IteratorLoopToStreamTest {
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
+
+	/**
+	 * Tests that iterator loops with labeled continue are NOT converted.
+	 * 
+	 * <p><b>Reason:</b> Labeled continue statements have no equivalent in stream
+	 * operations. They control flow in outer loops which streams cannot replicate.</p>
+	 * 
+	 * <p><b>Pattern:</b> {@code outer: while(it.hasNext()) { continue outer; }}</p>
+	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
+	 */
+	@Test
+	@DisplayName("Labeled continue prevents conversion - unsafe pattern")
+	public void testIterator_withLabeledContinue_notConverted() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+				package test1;
+				import java.util.*;
+				public class MyTest {
+					void process(List<String> items) {
+						outer:
+						Iterator<String> it = items.iterator();
+						while (it.hasNext()) {
+							String item = it.next();
+							if (item == null) {
+								continue outer;
+							}
+							System.out.println(item);
+						}
+					}
+				}
+				""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
 }
