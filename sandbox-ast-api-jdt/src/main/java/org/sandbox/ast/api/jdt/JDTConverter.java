@@ -364,7 +364,8 @@ public final class JDTConverter {
 		Set<Modifier> modifiers = Modifier.fromJdtFlags(binding.getModifiers());
 		boolean isField = binding.isField();
 		boolean isParameter = binding.isParameter();
-		return Optional.of(new VariableInfo(name, type, modifiers, isField, isParameter));
+		boolean isRecordComponent = binding.isRecordComponent();
+		return Optional.of(new VariableInfo(name, type, modifiers, isField, isParameter, isRecordComponent));
 	}
 
 	// -----------------------------------------------------------------------
@@ -495,7 +496,7 @@ public final class JDTConverter {
 		ITypeBinding typeBinding = decl.getType().resolveBinding();
 		TypeInfo type = convertTypeBindingOrUnresolved(typeBinding);
 		Set<Modifier> modifiers = Modifier.fromJdtFlags(decl.getModifiers());
-		return Optional.of(new VariableInfo(name, type, modifiers, false, true));
+		return Optional.of(new VariableInfo(name, type, modifiers, false, true, false));
 	}
 
 	private static String[] parameterNames(int count) {
