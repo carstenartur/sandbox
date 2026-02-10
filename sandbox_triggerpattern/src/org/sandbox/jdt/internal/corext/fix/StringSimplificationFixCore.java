@@ -129,14 +129,14 @@ public class StringSimplificationFixCore {
 		Pattern stringBuilderPattern = new Pattern("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> stringBuilderMatches = ENGINE.findMatches(compilationUnit, stringBuilderPattern);
 		for (Match match : stringBuilderMatches) {
-			operations.add(new StringValueOfOperation(match, "StringBuilder single append")); //$NON-NLS-1$
+			operations.add(new MethodToStringValueOfOperation(match, "StringBuilder single append")); //$NON-NLS-1$
 		}
 		
 		// Pattern 12: String.format("%s", $x)
 		Pattern stringFormatPattern = new Pattern("String.format(\"%s\", $x)", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> stringFormatMatches = ENGINE.findMatches(compilationUnit, stringFormatPattern);
 		for (Match match : stringFormatMatches) {
-			operations.add(new StringValueOfOperation(match, "Redundant String.format")); //$NON-NLS-1$
+			operations.add(new MethodToStringValueOfOperation(match, "Redundant String.format")); //$NON-NLS-1$
 		}
 		
 		// Pattern 13: $x.toString().equals($y)
@@ -196,6 +196,52 @@ public class StringSimplificationFixCore {
 			
 			// Apply the rewrite
 			rewrite.replace(infixExpr, methodInvocation, group);
+		}
+	}
+	
+	/**
+	 * Rewrite operation for String.valueOf() simplification when the matched node is a MethodInvocation.
+	 * 
+	 * <p>Used for patterns like {@code new StringBuilder().append($x).toString()}
+	 * and {@code String.format("%s", $x)} which match MethodInvocation nodes.</p>
+	 */
+	private static class MethodToStringValueOfOperation extends CompilationUnitRewriteOperation {
+		
+		private final Match match;
+		private final String description;
+		
+		public MethodToStringValueOfOperation(Match match, String description) {
+			this.match = match;
+			this.description = description;
+		}
+		
+		@Override
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+			ASTRewrite rewrite = cuRewrite.getASTRewrite();
+			AST ast = cuRewrite.getRoot().getAST();
+			TextEditGroup group = createTextEditGroup(description, cuRewrite);
+			
+			ASTNode matchedNode = match.getMatchedNode();
+			if (!(matchedNode instanceof MethodInvocation)) {
+				return;
+			}
+			
+			// Get the bound variable from placeholders
+			ASTNode xNode = match.getBinding("$x"); //$NON-NLS-1$
+			if (xNode == null || !(xNode instanceof Expression)) {
+				return;
+			}
+			
+			Expression valueExpression = (Expression) xNode;
+			
+			// Create the replacement: String.valueOf(valueExpression)
+			MethodInvocation methodInvocation = ast.newMethodInvocation();
+			methodInvocation.setExpression(ast.newName("String")); //$NON-NLS-1$
+			methodInvocation.setName(ast.newSimpleName("valueOf")); //$NON-NLS-1$
+			methodInvocation.arguments().add(ASTNode.copySubtree(ast, valueExpression));
+			
+			// Apply the rewrite
+			rewrite.replace(matchedNode, methodInvocation, group);
 		}
 	}
 	
