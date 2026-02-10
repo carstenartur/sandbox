@@ -61,6 +61,10 @@ public class JdtLoopExtractor {
         
         // Analyze metadata — track truly unconvertible control flow and patterns.
         LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer();
+        // Issue #670: Enable collection modification detection
+        if (iterable instanceof SimpleName) {
+            analyzer.setIteratedCollectionName(((SimpleName) iterable).getIdentifier());
+        }
         body.accept(analyzer);
         
         // If the body contains unconvertible patterns, don't even try to build operations
@@ -71,14 +75,15 @@ public class JdtLoopExtractor {
                 || analyzer.hasTryCatch()
                 || analyzer.hasSynchronized()
                 || analyzer.hasNestedLoop()
-                || analyzer.hasVoidReturn();
+                || analyzer.hasVoidReturn()
+                || analyzer.modifiesIteratedCollection();
         
         // Build model — mark as unconvertible if any patterns detected
         LoopModelBuilder builder = new LoopModelBuilder()
             .source(sourceType, sourceExpression, elementType)
             .element(varName, elementType, isFinal)
             .metadata(analyzer.hasBreak(), analyzer.hasLabeledContinue(), 
-                      false, false, true);
+                      false, analyzer.modifiesIteratedCollection(), true);
         
         // Only analyze body and add operations/terminal if no unconvertible patterns
         if (!hasUnconvertiblePatterns) {
@@ -980,6 +985,8 @@ public class JdtLoopExtractor {
         private boolean hasNestedLoop = false;
         private boolean hasVoidReturn = false;
         private boolean hasIfElse = false;
+        private boolean modifiesIteratedCollection = false;
+        private String iteratedCollectionName;
         
         @Override
         public boolean visit(BreakStatement node) {
@@ -1056,6 +1063,23 @@ public class JdtLoopExtractor {
             return false;
         }
         
+        @Override
+        public boolean visit(MethodInvocation node) {
+            // Issue #670: Detect structural modifications on the iterated collection
+            if (iteratedCollectionName != null) {
+                Expression receiver = node.getExpression();
+                if (receiver instanceof SimpleName receiverName
+                        && iteratedCollectionName.equals(receiverName.getIdentifier())) {
+                    String methodName = node.getName().getIdentifier();
+                    if (java.util.Set.of("remove", "add", "put", "clear", "set", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+                            "addAll", "removeAll", "retainAll").contains(methodName)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                        modifiesIteratedCollection = true;
+                    }
+                }
+            }
+            return true;
+        }
+        
         public boolean hasBreak() { return hasBreak; }
         public boolean hasLabeledContinue() { return hasLabeledContinue; }
         public boolean hasTryCatch() { return hasTryCatch; }
@@ -1063,5 +1087,16 @@ public class JdtLoopExtractor {
         public boolean hasNestedLoop() { return hasNestedLoop; }
         public boolean hasVoidReturn() { return hasVoidReturn; }
         public boolean hasIfElse() { return hasIfElse; }
+        public boolean modifiesIteratedCollection() { return modifiesIteratedCollection; }
+        
+        /**
+         * Sets the name of the iterated collection for modification detection.
+         * Must be called before accept() to enable collection modification checking.
+         * 
+         * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
+         */
+        public void setIteratedCollectionName(String name) {
+            this.iteratedCollectionName = name;
+        }
     }
 }
