@@ -78,7 +78,7 @@ public class StreamToIteratorWhile extends AbstractFunctionalCall<ASTNode> {
 				
 				// Safety: reject chained stream operations (map/filter/reduce/flatMap/sorted/distinct)
 				// Only simple collection.forEach() or collection.stream().forEach() can be converted
-				if (hasChainedStreamOperations(visited)) {
+				if (StreamOperationDetector.hasChainedStreamOperations(visited)) {
 					return false;
 				}
 				
@@ -86,38 +86,6 @@ public class StreamToIteratorWhile extends AbstractFunctionalCall<ASTNode> {
 				nodesprocessed.add(visited);
 				return false;
 			});
-	}
-	
-	/**
-	 * Checks if the forEach call has chained intermediate stream operations.
-	 * 
-	 * <p>Patterns like {@code list.stream().filter(...).forEach(...)} or
-	 * {@code list.stream().map(...).forEach(...)} cannot be safely converted
-	 * to a simple iterator while-loop because the intermediate operations
-	 * (filter, map, flatMap, sorted, distinct, limit, skip, peek) would be lost.</p>
-	 * 
-	 * <p>Only {@code collection.forEach(...)} and {@code collection.stream().forEach(...)}
-	 * (with no intermediate operations) are convertible.</p>
-	 * 
-	 * @param forEach the forEach method invocation
-	 * @return true if there are chained stream operations that block conversion
-	 */
-	private static boolean hasChainedStreamOperations(MethodInvocation forEach) {
-		Expression receiver = forEach.getExpression();
-		if (!(receiver instanceof MethodInvocation)) {
-			return false; // collection.forEach() — no chain
-		}
-		MethodInvocation chainedCall = (MethodInvocation) receiver;
-		String methodName = chainedCall.getName().getIdentifier();
-		
-		// collection.stream().forEach() is OK — no intermediate ops
-		if ("stream".equals(methodName) || "parallelStream".equals(methodName)) { //$NON-NLS-1$ //$NON-NLS-2$
-			return false;
-		}
-		
-		// Any other chained method (filter, map, flatMap, sorted, distinct,
-		// limit, skip, peek, etc.) means there are intermediate operations
-		return true;
 	}
 
 	@Override
