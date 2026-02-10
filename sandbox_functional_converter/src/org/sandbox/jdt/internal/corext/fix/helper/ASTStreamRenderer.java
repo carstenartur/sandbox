@@ -142,12 +142,56 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     @Override
     public Expression renderMapOp(Expression pipeline, MapOp mapOp, String variableName) {
+        // Side-effect maps: map(var -> { statements; return var; })
+        if (mapOp.isSideEffect()) {
+            return renderSideEffectMap(pipeline, mapOp.expression(), variableName);
+        }
         // Check if operation has comments - if so, use block lambda
         if (mapOp.hasComments()) {
             return renderMapWithComments(pipeline, mapOp, variableName);
         }
         // Otherwise use simple expression lambda
         return renderMap(pipeline, mapOp.expression(), variableName, mapOp.targetType());
+    }
+    
+    /**
+     * Renders a side-effect MAP operation as: pipeline.map(var -> { statements; return var; })
+     */
+    @SuppressWarnings("unchecked")
+    private Expression renderSideEffectMap(Expression pipeline, String statementsText, String variableName) {
+        MethodInvocation mapCall = ast.newMethodInvocation();
+        mapCall.setExpression(pipeline);
+        mapCall.setName(ast.newSimpleName("map"));
+        
+        // Create block lambda: var -> { statements; return var; }
+        LambdaExpression lambda = ast.newLambdaExpression();
+        VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
+        param.setName(ast.newSimpleName(variableName));
+        lambda.parameters().add(param);
+        
+        Block block = ast.newBlock();
+        
+        // Parse the side-effect statements from text
+        org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
+        parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_STATEMENTS);
+        parser.setSource(statementsText.toCharArray());
+        ASTNode parsed = parser.createAST(null);
+        if (parsed instanceof Block parsedBlock) {
+            for (Object s : parsedBlock.statements()) {
+                block.statements().add(ASTNode.copySubtree(ast, (ASTNode) s));
+            }
+        }
+        
+        // Add return statement: return var;
+        ReturnStatement returnStmt = ast.newReturnStatement();
+        returnStmt.setExpression(ast.newSimpleName(variableName));
+        block.statements().add(returnStmt);
+        
+        lambda.setBody(block);
+        lambda.setParentheses(false);
+        
+        mapCall.arguments().add(lambda);
+        return mapCall;
     }
     
     @Override
@@ -227,55 +271,18 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // For single parameter without type annotation, don't use parentheses
         lambda.setParentheses(false);
         
-        // Use original body if available (production), otherwise fall back to string parsing (tests)
-        if (originalBody != null) {
-            // Production path: Use copySubtree from original body to preserve binding information
-            if (originalBody instanceof Block) {
-                Block block = (Block) originalBody;
-                if (block.statements().size() == 1) {
-                    // Single statement - extract as expression
-                    Statement stmt = (Statement) block.statements().get(0);
-                    if (stmt instanceof ExpressionStatement) {
-                        ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-                        lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
-                    } else {
-                        // Not an expression statement, copy the whole statement as block
-                        Block lambdaBlock = ast.newBlock();
-                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
-                        lambda.setBody(lambdaBlock);
-                    }
-                } else {
-                    // Multiple statements - copy all into a block
-                    Block lambdaBlock = ast.newBlock();
-                    for (Object stmt : block.statements()) {
-                        lambdaBlock.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
-                    }
-                    lambda.setBody(lambdaBlock);
-                }
-            } else {
-                // Body is a single statement (not a block)
-                if (originalBody instanceof ExpressionStatement) {
-                    ExpressionStatement exprStmt = (ExpressionStatement) originalBody;
-                    lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
-                } else {
-                    // Not an expression statement, wrap in block
-                    Block lambdaBlock = ast.newBlock();
-                    lambdaBlock.statements().add(ASTNode.copySubtree(ast, originalBody));
-                    lambda.setBody(lambdaBlock);
-                }
-            }
+        // Always use bodyStatements - this contains only the terminal body statements,
+        // not the full original loop body (which would include statements already converted
+        // to filter/map operations, causing duplication)
+        if (bodyStatements.size() == 1) {
+            Expression bodyExpr = createExpression(bodyStatements.get(0));
+            lambda.setBody(bodyExpr);
         } else {
-            // Test/fallback path: Use bodyStatements strings (for unit tests)
-            if (bodyStatements.size() == 1) {
-                Expression bodyExpr = createExpression(bodyStatements.get(0));
-                lambda.setBody(bodyExpr);
-            } else {
-                Block lambdaBlock = ast.newBlock();
-                for (String stmt : bodyStatements) {
-                    lambdaBlock.statements().add(createStatement(stmt));
-                }
-                lambda.setBody(lambdaBlock);
+            Block lambdaBlock = ast.newBlock();
+            for (String stmt : bodyStatements) {
+                lambdaBlock.statements().add(createStatement(stmt));
             }
+            lambda.setBody(lambdaBlock);
         }
         
         forEachCall.arguments().add(lambda);
@@ -485,7 +492,6 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 break;
             case TO_MAP:
                 collector.setName(ast.newSimpleName("toMap"));
-                // Key and value mappers würden hier hinzugefügt
                 break;
             case JOINING:
                 collector.setName(ast.newSimpleName("joining"));
@@ -566,6 +572,8 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
         param.setName(ast.newSimpleName(paramName));
         lambda.parameters().add(param);
+        // For single parameter without type annotation, don't use parentheses
+        lambda.setParentheses(false);
         lambda.setBody(createExpression(bodyExpression));
         return lambda;
     }
@@ -664,39 +672,51 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     /**
      * Renders a filter operation with comments using a block lambda.
+     * Comments are inserted before the return statement in the block lambda body.
      * 
      * @param pipeline the current pipeline
      * @param filterOp the filter operation with comments
      * @param variableName the variable name for the lambda
      * @return the pipeline with filter appended
      */
+    @SuppressWarnings("unchecked")
     private Expression renderFilterWithComments(Expression pipeline, FilterOp filterOp, String variableName) {
-        // Create: pipeline.filter(var -> { /* comment */ return expression; })
+        // Build a block body string that includes comments, then parse it.
+        // JDT AST doesn't support direct comment node creation, so we use
+        // the same string-parsing technique as renderSideEffectMap.
+        StringBuilder bodyStr = new StringBuilder();
+        for (String comment : filterOp.getComments()) {
+            bodyStr.append("// ").append(comment).append("\n");
+        }
+        bodyStr.append("return ").append(filterOp.expression()).append(";");
+        
         MethodInvocation filterCall = ast.newMethodInvocation();
         filterCall.setExpression(pipeline);
         filterCall.setName(ast.newSimpleName("filter"));
         
-        // Create block lambda with comments
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
         param.setName(ast.newSimpleName(variableName));
         lambda.parameters().add(param);
-        lambda.setParentheses(false); // Single parameter without type
+        lambda.setParentheses(false);
         
-        // Create block body
         Block block = ast.newBlock();
         
-        // TODO: Full comment insertion requires ASTRewrite integration to properly
-        // insert comment text into the source. For now, we just generate a block lambda
-        // to show the structure is in place. When ASTRewrite is available:
-        // 1. Create LineComment or BlockComment nodes
-        // 2. Use ASTRewrite to insert comment text at the correct position
-        // 3. Attach comments before the return statement
-        
-        // Add return statement with the filter expression
-        ReturnStatement returnStmt = ast.newReturnStatement();
-        returnStmt.setExpression(createExpression(filterOp.expression()));
-        block.statements().add(returnStmt);
+        // Parse the body string (comments + return) into AST statements
+        org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
+        parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_STATEMENTS);
+        parser.setSource(bodyStr.toString().toCharArray());
+        ASTNode parsed = parser.createAST(null);
+        if (parsed instanceof Block parsedBlock) {
+            for (Object s : parsedBlock.statements()) {
+                block.statements().add(ASTNode.copySubtree(ast, (ASTNode) s));
+            }
+        } else {
+            // Fallback: just add return statement without comments
+            ReturnStatement returnStmt = ast.newReturnStatement();
+            returnStmt.setExpression(createExpression(filterOp.expression()));
+            block.statements().add(returnStmt);
+        }
         
         lambda.setBody(block);
         filterCall.arguments().add(lambda);
@@ -706,39 +726,49 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     /**
      * Renders a map operation with comments using a block lambda.
+     * Comments are inserted before the return statement in the block lambda body.
      * 
      * @param pipeline the current pipeline
      * @param mapOp the map operation with comments
      * @param variableName the variable name for the lambda
      * @return the pipeline with map appended
      */
+    @SuppressWarnings("unchecked")
     private Expression renderMapWithComments(Expression pipeline, MapOp mapOp, String variableName) {
-        // Create: pipeline.map(var -> { /* comment */ return expression; })
+        // Build a block body string that includes comments, then parse it.
+        StringBuilder bodyStr = new StringBuilder();
+        for (String comment : mapOp.getComments()) {
+            bodyStr.append("// ").append(comment).append("\n");
+        }
+        bodyStr.append("return ").append(mapOp.expression()).append(";");
+        
         MethodInvocation mapCall = ast.newMethodInvocation();
         mapCall.setExpression(pipeline);
         mapCall.setName(ast.newSimpleName("map"));
         
-        // Create block lambda with comments
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
         param.setName(ast.newSimpleName(variableName));
         lambda.parameters().add(param);
-        lambda.setParentheses(false); // Single parameter without type
+        lambda.setParentheses(false);
         
-        // Create block body
         Block block = ast.newBlock();
         
-        // TODO: Full comment insertion requires ASTRewrite integration to properly
-        // insert comment text into the source. For now, we just generate a block lambda
-        // to show the structure is in place. When ASTRewrite is available:
-        // 1. Create LineComment or BlockComment nodes
-        // 2. Use ASTRewrite to insert comment text at the correct position
-        // 3. Attach comments before the return statement
-        
-        // Add return statement with the map expression
-        ReturnStatement returnStmt = ast.newReturnStatement();
-        returnStmt.setExpression(createExpression(mapOp.expression()));
-        block.statements().add(returnStmt);
+        // Parse the body string (comments + return) into AST statements
+        org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
+        parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_STATEMENTS);
+        parser.setSource(bodyStr.toString().toCharArray());
+        ASTNode parsed = parser.createAST(null);
+        if (parsed instanceof Block parsedBlock) {
+            for (Object s : parsedBlock.statements()) {
+                block.statements().add(ASTNode.copySubtree(ast, (ASTNode) s));
+            }
+        } else {
+            // Fallback: just add return statement without comments
+            ReturnStatement returnStmt = ast.newReturnStatement();
+            returnStmt.setExpression(createExpression(mapOp.expression()));
+            block.statements().add(returnStmt);
+        }
         
         lambda.setBody(block);
         mapCall.arguments().add(lambda);

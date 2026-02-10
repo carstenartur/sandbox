@@ -202,6 +202,44 @@ Arrays.stream(array).forEach(item -> System.out.println(item));
 - No unused imports for direct forEach (e.g., no StreamSupport for ITERABLE)
 - Array handling correctly uses stream fallback
 
+### Phase 7.6: V1/V2 Consolidation ✅ COMPLETED (February 2026)
+
+**Objective**: Remove V1 classes, consolidate into single implementation
+
+**Completed Tasks**:
+- ✅ Changed `LOOP` enum to use `LoopToFunctionalV2`
+- ✅ Removed `LOOP_V2` enum, `UseFunctionalCallCleanUpCoreV2`, `UseFunctionalCallCleanUpV2`
+- ✅ Removed `LoopToFunctional.java` (old V1 helper)
+- ✅ Updated `plugin.xml` and cleanup core to handle both constants
+
+### Phase 7.7: Full V2 Body Analysis ✅ COMPLETED (February 2026)
+
+**Objective**: Implement all pattern detection natively in V2's ULR pipeline, remove V1 Refactorer fallback
+
+**Problem Statement**:
+Phase 7.6 had only removed V1 classes but kept the V1 `Refactorer` as a fallback in `LoopToFunctionalV2.rewrite()`. This created a confusing mix of two approaches — V2's ULR pipeline for simple forEach, and V1's Refactorer for everything else. The core transformation logic was untestable without OSGi.
+
+**Completed Tasks**:
+- ✅ `JdtLoopExtractor.analyzeAndAddOperations()` now detects ALL loop patterns:
+  - `if (cond) continue;` → `FilterOp` (negated condition)
+  - `if (cond) { body }` → `FilterOp` + recursive body analysis
+  - `Type x = expr;` → `MapOp` (variable declaration with initializer)
+  - `collection.add(expr)` → `CollectTerminal` (TO_LIST or TO_SET)
+  - `sum += x`, `count++`, `product *= x` → `ReduceTerminal`
+  - `if (cond) return true/false;` → `MatchTerminal` (anyMatch/noneMatch)
+  - Everything else → `ForEachTerminal` (with ordered flag when operations present)
+- ✅ `LoopToFunctionalV2.rewrite()` uses `LoopModelTransformer` + `ASTStreamRenderer` for ALL patterns
+- ✅ `LoopToFunctionalV2.endVisitLoop()` uses `LoopModel`-based convertibility (no more PreconditionsChecker/StreamPipelineBuilder)
+- ✅ Proper import handling based on LoopModel (Arrays, StreamSupport, Collectors)
+- ✅ Proper replacement type based on terminal (ExpressionStatement, Assignment, ReturnStatement)
+- ✅ 19 `PatternTransformationTest` cases in `sandbox-functional-converter-core` (no OSGi)
+
+**Architecture Decision**:
+The complete ULR pipeline: `JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST`
+- All pattern detection logic is in `JdtLoopExtractor` (JDT-specific bridge)
+- All transformation/rendering logic is in the core module (testable without OSGi)
+- No dependency on V1's `Refactorer`, `PreconditionsChecker`, or `StreamPipelineBuilder`
+
 ### Phase 8: Multiple Loops to Stream.concat() (PLANNED)
 
 **Objective**: Support conversion of multiple consecutive for-loops adding to the same list
@@ -274,20 +312,23 @@ List<RuleEntry> entries = Stream.concat(
 
 
 
-### Phase 8: V1 Deprecation (FUTURE)
+### Phase 8: V1 Removal and Full V2 Implementation ✅ COMPLETED (February 2026)
+
+**Completed**: V1 has been fully removed. V2 now implements all patterns natively via the ULR pipeline.
+No V1 Refactorer fallback. See Phase 7.6 and 7.7 above.
 
 
-### Phase 9: Bidirectional Loop Transformations (IN PROGRESS - January 2026)
+### Phase 9: Bidirectional Loop Transformations ✅ COMPLETED (February 2026)
 
 **Objective**: Implement bidirectional loop conversions with flexible cleanup GUI for choosing target format and source format filters
 
-**Status**: 🚧 **Infrastructure Complete** - Transformation logic pending
+**Status**: ✅ **Complete** - All 4 transformers implemented and wired up
 
 **Related Issues**: 
 - Issue #453: https://github.com/carstenartur/sandbox/issues/453
 - Issue #549: https://github.com/carstenartur/sandbox/issues/549
 
-#### Completed Tasks ✅ (January 31, 2026)
+#### Completed Tasks ✅
 
 1. **New Constants in MYCleanUpConstants**
    - ✅ `LOOP_CONVERSION_ENABLED` - Master switch for bidirectional conversions
@@ -297,105 +338,37 @@ List<RuleEntry> entries = Stream.concat(
    - ✅ `LOOP_CONVERSION_FROM_STREAM` - Enable conversion FROM stream expressions
    - ✅ `LOOP_CONVERSION_FROM_CLASSIC_FOR` - Enable conversion FROM classic for-loops (experimental)
 
-2. **New Transformer Classes** (Stub Implementations)
+2. **Transformer Classes** (Full Implementations)
    - ✅ `StreamToEnhancedFor` - Stream forEach → enhanced for-loop
    - ✅ `StreamToIteratorWhile` - Stream forEach → iterator while-loop
    - ✅ `IteratorWhileToEnhancedFor` - Iterator while-loop → enhanced for-loop
    - ✅ `EnhancedForToIteratorWhile` - Enhanced for-loop → iterator while-loop
-   - All extend `AbstractFunctionalCall<ASTNode>` with stub implementations
 
 3. **UI Components** (SandboxCodeTabPage)
-   - ✅ Added "Loop Conversion" group in cleanup preferences
-   - ✅ Master checkbox: "Enable bidirectional loop conversions"
-   - ✅ Target format combo with options: Stream, Enhanced for-loop, Iterator while-loop
-   - ✅ Source format checkboxes:
-     - "Convert from: Enhanced for-loops (for-each)"
-     - "Convert from: Iterator while-loops"
-     - "Convert from: Stream expressions (forEach, etc.)"
-     - "Convert from: Classic index-based for-loops (experimental)"
-   - ✅ Proper master/slave dependencies configured
+   - ✅ Master checkbox, target format combo, source format checkboxes
 
-4. **Message Strings** (CleanUpMessages)
-   - ✅ Added all UI labels to CleanUpMessages.java
-   - ✅ Added English text to CleanUpMessages.properties
-   - ✅ Group name: "Loop Conversion"
-   - ✅ Labels for target format and source format options
+4. **Options Infrastructure** (UseFunctionalCallCleanUpCore)
+   - ✅ Store options map for string-value access (LOOP_CONVERSION_TARGET_FORMAT)
+   - ✅ Override setOptions() to capture MapCleanUpOptions map
+   - ✅ computeFixSet() maps target format + source flags to transformers
+   - ✅ Removed early return that blocked non-stream formats
 
-5. **Default Options** (DefaultCleanUpOptionsInitializer)
-   - ✅ `LOOP_CONVERSION_ENABLED` = FALSE (disabled by default)
-   - ✅ `LOOP_CONVERSION_TARGET_FORMAT` = "stream" (default target)
-   - ✅ `LOOP_CONVERSION_FROM_ENHANCED_FOR` = TRUE
-   - ✅ `LOOP_CONVERSION_FROM_ITERATOR_WHILE` = TRUE
-   - ✅ `LOOP_CONVERSION_FROM_STREAM` = FALSE (inverse transformations disabled by default)
-   - ✅ `LOOP_CONVERSION_FROM_CLASSIC_FOR` = FALSE (experimental)
+5. **Bidirectional Tests** (LoopBidirectionalTransformationTest)
+   - ✅ `testForToStream_forEach()` - Enhanced for → Stream
+   - ✅ `testIteratorToStream_forEach()` - Iterator → Stream
+   - ✅ `testStreamToFor_forEach()` - Stream → Enhanced for-loop
+   - ✅ `testForToWhile_iterator()` - Enhanced for → Iterator while-loop
+   - ✅ `testWhileToFor_iterator()` - Iterator while → Enhanced for-loop
 
-6. **Cleanup Logic** (UseFunctionalCallCleanUpCore)
-   - ✅ Updated `requireAST()` to include LOOP_CONVERSION_ENABLED
-   - ✅ Updated `createFix()` to handle both old and new cleanup modes
-   - ✅ Implemented `computeFixSet()` with bidirectional logic:
-     - Enhanced-for → Stream: Uses existing `LOOP`
-     - Enhanced-for → Iterator-while: Uses new `FOR_TO_ITERATOR`
-     - Iterator-while → Stream: Uses existing `ITERATOR_LOOP`
-     - Iterator-while → Enhanced-for: Uses new `ITERATOR_TO_FOR`
-     - Stream → Enhanced-for: Uses new `STREAM_TO_FOR`
-     - Stream → Iterator-while: Uses new `STREAM_TO_ITERATOR`
-   - ✅ Added step descriptions for new cleanup
+#### Future Enhancements ⏳
 
-7. **Enum Values** (UseFunctionalCallFixCore)
-   - ✅ `STREAM_TO_FOR` - Stream → Enhanced for-loop transformation
-   - ✅ `STREAM_TO_ITERATOR` - Stream → Iterator while-loop transformation
-   - ✅ `ITERATOR_TO_FOR` - Iterator while-loop → Enhanced for-loop transformation
-   - ✅ `FOR_TO_ITERATOR` - Enhanced for-loop → Iterator while-loop transformation
+1. **Complex Scenarios**
+   - [ ] Add tests for nested lambdas, multiple statements, etc.
+   - [ ] Handle stream pipelines with filter/map/collect → loop equivalents
 
-#### Pending Tasks ⏳
-
-1. **Transformation Logic Implementation**
-   - [ ] Implement `StreamToEnhancedFor.find()` and `rewrite()`
-     - Detect: `collection.forEach(x -> ...)` or `collection.stream().forEach(x -> ...)`
-     - Transform to: `for (T x : collection) { ... }`
-   - [ ] Implement `StreamToIteratorWhile.find()` and `rewrite()`
-     - Detect: `collection.forEach(x -> ...)`
-     - Transform to: `Iterator<T> it = c.iterator(); while (it.hasNext()) { T x = it.next(); ... }`
-   - [ ] Implement `IteratorWhileToEnhancedFor.find()` and `rewrite()`
-     - Detect: `Iterator<T> it = c.iterator(); while (it.hasNext()) { T x = it.next(); ... }`
-     - Transform to: `for (T x : collection) { ... }`
-   - [ ] Implement `EnhancedForToIteratorWhile.find()` and `rewrite()`
-     - Detect: `for (T x : collection) { ... }`
-     - Transform to: `Iterator<T> it = c.iterator(); while (it.hasNext()) { T x = it.next(); ... }`
-
-2. **Bidirectional Tests**
-   - [ ] Enable `testStreamToFor_forEach()` in LoopBidirectionalTransformationTest
-   - [ ] Enable `testForToWhile_iterator()` in LoopBidirectionalTransformationTest
-   - [ ] Enable `testWhileToFor_iterator()` in LoopBidirectionalTransformationTest
-   - [ ] Add tests for complex scenarios (nested lambdas, multiple statements, etc.)
-
-3. **Documentation**
-   - [ ] Update README.md with bidirectional transformation examples
-   - [ ] Update ARCHITECTURE.md with transformer design patterns
-   - [ ] Document use cases for each transformation direction
-   - [ ] Add screenshots of new UI components
-
-4. **Stream.toList() Immutability Handling**
-   - [ ] Implement usage analysis for stream → collection transformations
+2. **Stream.toList() Immutability Handling**
    - [ ] Detect subsequent modifications (.sort(), .add(), etc.)
    - [ ] Warn or prevent transformation when immutable list would break code
-   - [ ] Consider using `.collect(Collectors.toList())` when modifications detected
-
-#### Current Behavior
-
-**What Works**:
-- ✅ UI combo box and checkboxes appear in cleanup preferences
-- ✅ Format and source preferences are persisted
-- ✅ computeFixSet() correctly maps source/target combinations to transformers
-- ✅ Existing transformations still work (enhanced-for → stream, iterator → stream)
-
-**What Doesn't Work Yet**:
-- ❌ All 4 new transformers are stubs (find() and rewrite() do nothing)
-- ❌ Stream → for/while transformations not implemented
-- ❌ For → while and while → for transformations not implemented
-- ❌ No tests enabled yet (waiting for implementation)
-
-#### Design Notes
 
 **GUI Design Philosophy**:
 - **Global Target Format**: Single selection for desired output format

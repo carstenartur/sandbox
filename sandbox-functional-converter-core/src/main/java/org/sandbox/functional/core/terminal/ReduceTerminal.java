@@ -20,8 +20,16 @@ public record ReduceTerminal(
     String identity,
     String accumulator,
     String combiner,
-    ReduceType reduceType
+    ReduceType reduceType,
+    String targetVariable
 ) implements TerminalOperation {
+    
+    /**
+     * Constructor without target variable (backward compatibility).
+     */
+    public ReduceTerminal(String identity, String accumulator, String combiner, ReduceType reduceType) {
+        this(identity, accumulator, combiner, reduceType, null);
+    }
     
     /**
      * Types of reduce operations.
@@ -36,7 +44,9 @@ public record ReduceTerminal(
         /** Maximum reduction */
         MAX, 
         /** Product reduction */
-        PRODUCT, 
+        PRODUCT,
+        /** String concatenation reduction */
+        STRING_CONCAT,
         /** Custom reduction */
         CUSTOM
     }

@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,18 +38,18 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * 
  * <p><b>Current Implementation Status (Phase 9):</b></p>
  * <ul>
- *   <li>✅ Enhanced for → Stream (via LOOP and LOOP_V2)</li>
+ *   <li>✅ Enhanced for → Stream (via LOOP)</li>
  *   <li>✅ Iterator → Stream (via ITERATOR_LOOP)</li>
- *   <li>❌ Stream → for (not yet implemented - requires CleanUpOptions string access)</li>
- *   <li>❌ for → while (not yet implemented - requires CleanUpOptions string access)</li>
- *   <li>❌ while → for (not yet implemented - requires CleanUpOptions string access)</li>
+ *   <li>✅ Stream → for (via STREAM_TO_FOR with LOOP_CONVERSION_ENABLED)</li>
+ *   <li>✅ for → while (via FOR_TO_ITERATOR with LOOP_CONVERSION_ENABLED)</li>
+ *   <li>✅ while → for (via ITERATOR_TO_FOR with LOOP_CONVERSION_ENABLED)</li>
  * </ul>
  * 
  * <p><b>Implementation Note:</b></p>
- * <p>The bidirectional transformations require reading the LOOP_CONVERSION_TARGET_FORMAT
- * option as a string value from CleanUpOptions. The current Eclipse cleanup infrastructure
- * doesn't provide an easy way to access non-boolean option values from the cleanup profile
- * at runtime. This needs further investigation.</p>
+ * <p>The bidirectional transformations use LOOP_CONVERSION_ENABLED as the master switch,
+ * LOOP_CONVERSION_TARGET_FORMAT as a string option ("stream", "enhanced_for", "iterator_while"),
+ * and LOOP_CONVERSION_FROM_* boolean flags to select source formats. The target format is read
+ * via the options map stored in UseFunctionalCallCleanUpCore.</p>
  */
 @DisplayName("Bidirectional Loop Transformation Tests")
 public class LoopBidirectionalTransformationTest {
@@ -158,7 +157,6 @@ public class LoopBidirectionalTransformationTest {
 	 * <p><b>Implementation Note:</b> Uses StreamToEnhancedFor transformer activated via
 	 * LOOP_CONVERSION_ENABLED + LOOP_CONVERSION_TARGET_FORMAT="enhanced_for" + LOOP_CONVERSION_FROM_STREAM.</p>
 	 */
-	@Disabled("Bidirectional transformations not yet implemented - CleanUpOptions string value access needed")
 	@Test
 	@DisplayName("Stream → for: forEach to enhanced for-loop")
 	public void testStreamToFor_forEach() throws CoreException {
@@ -206,7 +204,6 @@ public class LoopBidirectionalTransformationTest {
 	 * <p><b>Implementation Note:</b> Uses EnhancedForToIteratorWhile transformer activated via
 	 * LOOP_CONVERSION_ENABLED + LOOP_CONVERSION_TARGET_FORMAT="iterator_while" + LOOP_CONVERSION_FROM_ENHANCED_FOR.</p>
 	 */
-	@Disabled("Bidirectional transformations not yet implemented - CleanUpOptions string value access needed")
 	@Test
 	@DisplayName("for → while: Enhanced for to iterator while-loop")
 	public void testForToWhile_iterator() throws CoreException {
@@ -258,7 +255,6 @@ public class LoopBidirectionalTransformationTest {
 	 * <p><b>Implementation Note:</b> Uses IteratorWhileToEnhancedFor transformer activated via
 	 * LOOP_CONVERSION_ENABLED + LOOP_CONVERSION_TARGET_FORMAT="enhanced_for" + LOOP_CONVERSION_FROM_ITERATOR_WHILE.</p>
 	 */
-	@Disabled("Bidirectional transformations not yet implemented - CleanUpOptions string value access needed")
 	@Test
 	@DisplayName("while → for: Iterator while-loop to enhanced for")
 	public void testWhileToFor_iterator() throws CoreException {

@@ -6,7 +6,6 @@
 		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer" cleanUpKind="cleanUp"></cleanUpOptionsInitializer>
 		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.SaveActionCleanUpOptionsInitializer" cleanUpKind="saveAction"></cleanUpOptionsInitializer>
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp" id="org.eclipse.jdt.ui.cleanup.functionalcleanup" />
-		<cleanUp class="org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUpV2" id="org.eclipse.jdt.ui.cleanup.functionalcleanupv2" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
 </plugin>

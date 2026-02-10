@@ -23,7 +23,34 @@ import java.util.Objects;
 public final class MapOp implements Operation {
     private final String expression;
     private final String targetType;
+    private final String outputVariableName;
+    private final boolean sideEffect;
     private final List<String> associatedComments;
+    
+    /**
+     * Creates a MapOp with all parameters.
+     * @param expression the mapping expression
+     * @param targetType the target type (can be null)
+     * @param outputVariableName the variable name for the output of this map (can be null)
+     * @param sideEffect if true, this is a side-effect map: map(var -> { stmt; return var; })
+     */
+    public MapOp(String expression, String targetType, String outputVariableName, boolean sideEffect) {
+        this.expression = Objects.requireNonNull(expression, "expression must not be null");
+        this.targetType = targetType;
+        this.outputVariableName = outputVariableName;
+        this.sideEffect = sideEffect;
+        this.associatedComments = new ArrayList<>();
+    }
+    
+    /**
+     * Creates a MapOp with expression, target type, and output variable name.
+     * @param expression the mapping expression
+     * @param targetType the target type (can be null)
+     * @param outputVariableName the variable name for the output of this map (can be null)
+     */
+    public MapOp(String expression, String targetType, String outputVariableName) {
+        this(expression, targetType, outputVariableName, false);
+    }
     
     /**
      * Creates a MapOp with expression and target type.
@@ -31,9 +58,7 @@ public final class MapOp implements Operation {
      * @param targetType the target type (can be null)
      */
     public MapOp(String expression, String targetType) {
-        this.expression = Objects.requireNonNull(expression, "expression must not be null");
-        this.targetType = targetType;
-        this.associatedComments = new ArrayList<>();
+        this(expression, targetType, null, false);
     }
     
     /**
@@ -41,7 +66,7 @@ public final class MapOp implements Operation {
      * @param expression the mapping expression
      */
     public MapOp(String expression) { 
-        this(expression, null); 
+        this(expression, null, null, false); 
     }
     
     @Override
@@ -51,6 +76,24 @@ public final class MapOp implements Operation {
     
     public String targetType() {
         return targetType;
+    }
+    
+    /**
+     * Returns the output variable name for this map operation.
+     * When chaining maps, the next operation should use this as its lambda parameter.
+     * @return the output variable name, or null if not specified
+     */
+    public String outputVariableName() {
+        return outputVariableName;
+    }
+    
+    /**
+     * Returns whether this is a side-effect map.
+     * Side-effect maps render as: {@code map(var -> { statements; return var; })}
+     * @return true if this is a side-effect map
+     */
+    public boolean isSideEffect() {
+        return sideEffect;
     }
     
     @Override
@@ -99,13 +142,15 @@ public final class MapOp implements Operation {
         if (this == o) return true;
         if (!(o instanceof MapOp)) return false;
         MapOp mapOp = (MapOp) o;
-        return expression.equals(mapOp.expression) && 
-               Objects.equals(targetType, mapOp.targetType);
+        return sideEffect == mapOp.sideEffect &&
+               expression.equals(mapOp.expression) && 
+               Objects.equals(targetType, mapOp.targetType) &&
+               Objects.equals(outputVariableName, mapOp.outputVariableName);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(expression, targetType);
+        return Objects.hash(expression, targetType, outputVariableName, sideEffect);
     }
     
     @Override

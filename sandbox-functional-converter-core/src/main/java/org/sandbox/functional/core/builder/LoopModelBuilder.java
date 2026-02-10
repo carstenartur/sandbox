@@ -101,8 +101,24 @@ public class LoopModelBuilder {
         return this;
     }
     
+    public LoopModelBuilder map(String expression, String targetType, String outputVariableName) {
+        this.operations.add(new MapOp(expression, targetType, outputVariableName));
+        return this;
+    }
+    
     public LoopModelBuilder map(String expression) {
         this.operations.add(new MapOp(expression, null));
+        return this;
+    }
+    
+    /**
+     * Adds a side-effect MAP operation that wraps a statement block and returns the current variable.
+     * Renders as: {@code .map(var -> { statements; return var; })}
+     * @param statementsBlock the side-effect statements
+     * @param outputVariableName the variable to return from the map
+     */
+    public LoopModelBuilder sideEffectMap(String statementsBlock, String outputVariableName) {
+        this.operations.add(new MapOp(statementsBlock, null, outputVariableName, true));
         return this;
     }
     
@@ -144,6 +160,26 @@ public class LoopModelBuilder {
     public LoopModelBuilder operation(Operation op) {
         this.operations.add(op);
         return this;
+    }
+    
+    /**
+     * Returns the last added operation, or null if no operations have been added.
+     * Useful for attaching comments to the most recently created operation.
+     * @return the last added Operation, or null
+     */
+    public Operation getLastOperation() {
+        if (this.operations.isEmpty()) {
+            return null;
+        }
+        return this.operations.get(this.operations.size() - 1);
+    }
+    
+    /**
+     * Returns whether any intermediate operations (filter, map, etc.) have been added.
+     * @return true if operations exist
+     */
+    public boolean hasOperations() {
+        return !this.operations.isEmpty();
     }
     
     // Terminal shortcuts
