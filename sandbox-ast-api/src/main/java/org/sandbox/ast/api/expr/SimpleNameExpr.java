@@ -163,6 +163,24 @@ public record SimpleNameExpr(
 	}
 	
 	/**
+	 * Checks if this name refers to a record component.
+	 * 
+	 * @return true if variable is a record component
+	 */
+	public boolean isRecordComponent() {
+		return variableBinding.map(VariableInfo::isRecordComponent).orElse(false);
+	}
+	
+	/**
+	 * Checks if this name refers to a local variable (not field, not parameter, not record component).
+	 * 
+	 * @return true if variable is a local variable
+	 */
+	public boolean isLocalVariable() {
+		return variableBinding.map(VariableInfo::isLocalVariable).orElse(false);
+	}
+	
+	/**
 	 * Checks if the variable has a specific type.
 	 * 
 	 * @param qualifiedTypeName the fully qualified type name

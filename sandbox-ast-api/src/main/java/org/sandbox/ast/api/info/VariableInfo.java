@@ -16,14 +16,15 @@ package org.sandbox.ast.api.info;
 import java.util.Set;
 
 /**
- * Immutable record representing a variable (field, local variable, parameter).
+ * Immutable record representing a variable (field, local variable, parameter, record component).
  */
 public record VariableInfo(
 	String name,
 	TypeInfo type,
 	Set<Modifier> modifiers,
 	boolean isField,
-	boolean isParameter
+	boolean isParameter,
+	boolean isRecordComponent
 ) {
 	
 	/**
@@ -34,6 +35,7 @@ public record VariableInfo(
 	 * @param modifiers set of modifiers
 	 * @param isField true if this is a field
 	 * @param isParameter true if this is a parameter
+	 * @param isRecordComponent true if this is a record component
 	 */
 	public VariableInfo {
 		if (name == null) {
@@ -115,6 +117,15 @@ public record VariableInfo(
 	}
 	
 	/**
+	 * Returns true if this is a local variable (not a field, parameter, or record component).
+	 * 
+	 * @return true if local variable
+	 */
+	public boolean isLocalVariable() {
+		return !isField && !isParameter && !isRecordComponent;
+	}
+	
+	/**
 	 * Builder for creating VariableInfo instances.
 	 */
 	public static class Builder {
@@ -123,6 +134,7 @@ public record VariableInfo(
 		private Set<Modifier> modifiers = Set.of();
 		private boolean isField;
 		private boolean isParameter;
+		private boolean isRecordComponent;
 		
 		/**
 		 * Creates a builder with the given name.
@@ -179,12 +191,22 @@ public record VariableInfo(
 		}
 		
 		/**
+		 * Marks this as a record component.
+		 * 
+		 * @return this builder
+		 */
+		public Builder recordComponent() {
+			this.isRecordComponent = true;
+			return this;
+		}
+		
+		/**
 		 * Builds the VariableInfo instance.
 		 * 
 		 * @return new VariableInfo
 		 */
 		public VariableInfo build() {
-			return new VariableInfo(name, type, modifiers, isField, isParameter);
+			return new VariableInfo(name, type, modifiers, isField, isParameter, isRecordComponent);
 		}
 	}
 }

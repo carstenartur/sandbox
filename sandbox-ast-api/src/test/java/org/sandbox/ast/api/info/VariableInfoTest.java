@@ -37,6 +37,8 @@ class VariableInfoTest {
 		assertThat(var.modifiers()).isEmpty();
 		assertThat(var.isField()).isFalse();
 		assertThat(var.isParameter()).isFalse();
+		assertThat(var.isRecordComponent()).isFalse();
+		assertThat(var.isLocalVariable()).isTrue();
 	}
 	
 	@Test
@@ -52,6 +54,7 @@ class VariableInfoTest {
 		assertThat(var.isPrivate()).isTrue();
 		assertThat(var.isFinal()).isTrue();
 		assertThat(var.isStatic()).isFalse();
+		assertThat(var.isLocalVariable()).isFalse();
 	}
 	
 	@Test
@@ -64,6 +67,21 @@ class VariableInfoTest {
 		
 		assertThat(var.isParameter()).isTrue();
 		assertThat(var.isField()).isFalse();
+		assertThat(var.isLocalVariable()).isFalse();
+	}
+	
+	@Test
+	void testRecordComponentVariable() {
+		TypeInfo stringType = TypeInfo.Builder.of("java.lang.String").build();
+		VariableInfo var = VariableInfo.Builder.named("name")
+			.type(stringType)
+			.recordComponent()
+			.build();
+		
+		assertThat(var.isRecordComponent()).isTrue();
+		assertThat(var.isField()).isFalse();
+		assertThat(var.isParameter()).isFalse();
+		assertThat(var.isLocalVariable()).isFalse();
 	}
 	
 	@Test
@@ -118,7 +136,7 @@ class VariableInfoTest {
 	@Test
 	void testValidation_nullName() {
 		TypeInfo stringType = TypeInfo.Builder.of("java.lang.String").build();
-		assertThatThrownBy(() -> new VariableInfo(null, stringType, Set.of(), false, false))
+		assertThatThrownBy(() -> new VariableInfo(null, stringType, Set.of(), false, false, false))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Variable name cannot be null");
 	}
@@ -126,14 +144,14 @@ class VariableInfoTest {
 	@Test
 	void testValidation_emptyName() {
 		TypeInfo stringType = TypeInfo.Builder.of("java.lang.String").build();
-		assertThatThrownBy(() -> new VariableInfo("", stringType, Set.of(), false, false))
+		assertThatThrownBy(() -> new VariableInfo("", stringType, Set.of(), false, false, false))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Variable name cannot be empty");
 	}
 	
 	@Test
 	void testValidation_nullType() {
-		assertThatThrownBy(() -> new VariableInfo("name", null, Set.of(), false, false))
+		assertThatThrownBy(() -> new VariableInfo("name", null, Set.of(), false, false, false))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Variable type cannot be null");
 	}

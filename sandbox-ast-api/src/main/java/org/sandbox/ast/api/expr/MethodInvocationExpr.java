@@ -162,6 +162,36 @@ public record MethodInvocationExpr(
 	}
 	
 	/**
+	 * Checks if this method has the given name.
+	 * 
+	 * @param name the method name
+	 * @return true if method has this name
+	 */
+	public boolean isMethodNamed(String name) {
+		return method.map(m -> m.name().equals(name)).orElse(false);
+	}
+	
+	/**
+	 * Gets the receiver's identifier if receiver is a SimpleName.
+	 * 
+	 * @return the receiver identifier, or empty if not a simple name
+	 */
+	public Optional<String> receiverIdentifier() {
+		return receiver.flatMap(ASTExpr::asSimpleName)
+		               .map(SimpleNameExpr::identifier);
+	}
+	
+	/**
+	 * Checks if this method's return type matches the given qualified name.
+	 * 
+	 * @param qualifiedName the fully qualified type name
+	 * @return true if return type matches
+	 */
+	public boolean returnsType(String qualifiedName) {
+		return method.map(m -> m.returnType().is(qualifiedName)).orElse(false);
+	}
+	
+	/**
 	 * Builder for creating MethodInvocationExpr instances.
 	 */
 	public static class Builder {

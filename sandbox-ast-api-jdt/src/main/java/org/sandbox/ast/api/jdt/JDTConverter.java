@@ -163,6 +163,30 @@ public final class JDTConverter {
 	}
 
 	/**
+	 * Extracts the identifier if the given expression is a SimpleName.
+	 * 
+	 * <p>This is a convenience shortcut for the common pattern of checking
+	 * if an expression is a SimpleName and getting its identifier string.</p>
+	 * 
+	 * <p>Equivalent to:
+	 * <pre>
+	 * JDTConverter.convertExpression(expression)
+	 *     .flatMap(ASTExpr::asSimpleName)
+	 *     .map(SimpleNameExpr::identifier)
+	 * </pre>
+	 * </p>
+	 *
+	 * @param expression the JDT expression to check (may be {@code null})
+	 * @return the identifier if expression is a SimpleName, otherwise empty
+	 */
+	public static Optional<String> identifierOf(Expression expression) {
+		if (expression instanceof SimpleName sn) {
+			return Optional.of(sn.getIdentifier());
+		}
+		return Optional.empty();
+	}
+
+	/**
 	 * Converts a JDT {@link FieldAccess} to a {@link FieldAccessExpr}.
 	 *
 	 * @param node the JDT field access (must not be {@code null})
@@ -364,7 +388,8 @@ public final class JDTConverter {
 		Set<Modifier> modifiers = Modifier.fromJdtFlags(binding.getModifiers());
 		boolean isField = binding.isField();
 		boolean isParameter = binding.isParameter();
-		return Optional.of(new VariableInfo(name, type, modifiers, isField, isParameter));
+		boolean isRecordComponent = binding.isRecordComponent();
+		return Optional.of(new VariableInfo(name, type, modifiers, isField, isParameter, isRecordComponent));
 	}
 
 	// -----------------------------------------------------------------------
@@ -495,7 +520,7 @@ public final class JDTConverter {
 		ITypeBinding typeBinding = decl.getType().resolveBinding();
 		TypeInfo type = convertTypeBindingOrUnresolved(typeBinding);
 		Set<Modifier> modifiers = Modifier.fromJdtFlags(decl.getModifiers());
-		return Optional.of(new VariableInfo(name, type, modifiers, false, true));
+		return Optional.of(new VariableInfo(name, type, modifiers, false, true, false));
 	}
 
 	private static String[] parameterNames(int count) {
