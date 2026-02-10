@@ -58,10 +58,9 @@ import org.eclipse.jdt.internal.corext.fix.ConvertLoopOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.ast.api.expr.ASTExpr;
-import org.sandbox.ast.api.jdt.JDTConverter;
 import org.sandbox.ast.api.expr.MethodInvocationExpr;
 import org.sandbox.ast.api.expr.SimpleNameExpr;
+import org.sandbox.ast.api.jdt.JDTConverter;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
@@ -108,9 +107,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 											if (hit.self) {
 												hit.loopVarName= ConvertLoopOperation.modifyBaseName("i"); //$NON-NLS-1$
 											} else {
-												String collectionId= JDTConverter.convertExpression(hit.collectionExpression)
-														.flatMap(ASTExpr::asSimpleName)
-														.map(SimpleNameExpr::identifier)
+												String collectionId= JDTConverter.identifierOf(hit.collectionExpression)
 														.orElse("element"); //$NON-NLS-1$
 												hit.loopVarName= ConvertLoopOperation.modifyBaseName(collectionId);
 											}
@@ -173,9 +170,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 																hit.loopVarName= ConvertLoopOperation
 																		.modifyBaseName("i"); //$NON-NLS-1$
 															} else {
-																String collectionId= JDTConverter.convertExpression(hit.collectionExpression)
-																		.flatMap(ASTExpr::asSimpleName)
-																		.map(SimpleNameExpr::identifier)
+																String collectionId= JDTConverter.identifierOf(hit.collectionExpression)
 																		.orElse("element"); //$NON-NLS-1$
 																hit.loopVarName= ConvertLoopOperation.modifyBaseName(collectionId);
 															}
@@ -236,9 +231,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 					ASTNode assignment= ASTNodes.getFirstAncestorOrNull(mi, Assignment.class);
 					if (assignment instanceof Assignment) {
 						Expression leftSide= ((Assignment) assignment).getLeftHandSide();
-						String assignedVarId= JDTConverter.convertExpression(leftSide)
-								.flatMap(ASTExpr::asSimpleName)
-								.map(SimpleNameExpr::identifier)
+						String assignedVarId= JDTConverter.identifierOf(leftSide)
 								.orElse(null);
 						if (assignedVarId != null && assignedVarId.equals(hit.iteratorName)) {
 							Statement stmt= ASTNodes.getFirstAncestorOrNull(assignment, Statement.class);
