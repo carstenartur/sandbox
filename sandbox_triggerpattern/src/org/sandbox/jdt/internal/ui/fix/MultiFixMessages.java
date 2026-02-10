@@ -20,6 +20,8 @@ public class MultiFixMessages extends NLS {
 
 	public static String StringSimplificationCleanUp_description;
 	public static String StringSimplificationCleanUpFix_refactor;
+	public static String ThreadingCleanUp_description;
+	public static String ThreadingCleanUpFix_refactor;
 	public static String ShiftOutOfRangeCleanUp_description;
 	public static String ShiftOutOfRangeCleanUpFix_refactor;
 

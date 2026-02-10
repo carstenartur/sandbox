@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
-import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -29,83 +29,85 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
-import org.sandbox.jdt.internal.corext.fix.StringSimplificationFixCore;
+import org.sandbox.jdt.internal.corext.fix.ThreadingFixCore;
 
 /**
- * CleanUp for string simplification using TriggerPattern hints.
- * 
- * <p>This cleanup applies string simplification patterns such as:</p>
+ * CleanUp for threading anti-patterns using TriggerPattern hints.
+ *
+ * <p>This cleanup detects and fixes threading anti-patterns such as:</p>
  * <ul>
- * <li>{@code "" + x} → {@code String.valueOf(x)}</li>
- * <li>{@code x + ""} → {@code String.valueOf(x)}</li>
+ * <li>{@code thread.run()} → {@code thread.start()} (direct run() call)</li>
  * </ul>
- * 
- * @since 1.2.2
+ *
+ * <p>Inspired by NetBeans' Tiny.java threading hints.</p>
+ *
+ * @since 1.2.5
+ * @see <a href="https://github.com/apache/netbeans/blob/master/java/java.hints/src/org/netbeans/modules/java/hints/threading/Tiny.java">NetBeans Tiny.java</a>
  */
-public class StringSimplificationCleanUpCore extends AbstractCleanUp {
-	
-	public StringSimplificationCleanUpCore(final Map<String, String> options) {
+public class ThreadingCleanUpCore extends AbstractCleanUp {
+
+	public ThreadingCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
-	
-	public StringSimplificationCleanUpCore() {
+
+	public ThreadingCleanUpCore() {
 	}
-	
+
 	@Override
 	public CleanUpRequirements getRequirements() {
 		return new CleanUpRequirements(requireAST(), false, false, null);
 	}
-	
+
 	public boolean requireAST() {
-		return isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP);
+		return isEnabled(TRIGGERPATTERN_THREADING_CLEANUP);
 	}
-	
+
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
 		CompilationUnit compilationUnit = context.getAST();
 		if (compilationUnit == null) {
 			return null;
 		}
-		
-		if (!isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {
+
+		if (!isEnabled(TRIGGERPATTERN_THREADING_CLEANUP)) {
 			return null;
 		}
-		
+
 		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
-		StringSimplificationFixCore.findOperations(compilationUnit, operations);
-		
+		ThreadingFixCore.findOperations(compilationUnit, operations);
+
 		if (operations.isEmpty()) {
 			return null;
 		}
-		
+
 		CompilationUnitRewriteOperation[] array = operations.toArray(
 				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
 		return new CompilationUnitRewriteOperationsFixCore(
-				"Simplify string concatenation", //$NON-NLS-1$
-				compilationUnit, 
+				MultiFixMessages.ThreadingCleanUpFix_refactor,
+				compilationUnit,
 				array);
 	}
-	
+
 	@Override
 	public String[] getStepDescriptions() {
 		List<String> result = new ArrayList<>();
-		if (isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {
-			result.add("Simplifies code patterns (e.g., empty string concatenation, collection size checks, redundant String.format)"); //$NON-NLS-1$
+		if (isEnabled(TRIGGERPATTERN_THREADING_CLEANUP)) {
+			result.add(MultiFixMessages.ThreadingCleanUp_description);
 		}
 		return result.toArray(new String[0]);
 	}
-	
+
 	@Override
 	public String getPreview() {
-		if (isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {
+		if (isEnabled(TRIGGERPATTERN_THREADING_CLEANUP)) {
 			return """
-				String result = String.valueOf(value);
-				boolean empty = list.isEmpty();
+				Thread thread = new Thread(runnable);
+				thread.start();
 				"""; //$NON-NLS-1$
 		}
 		return """
-			String result = "" + value;
-			boolean empty = list.size() == 0;
+			Thread thread = new Thread(runnable);
+			thread.run();
 			"""; //$NON-NLS-1$
 	}
 }
