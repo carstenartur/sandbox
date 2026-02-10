@@ -129,11 +129,15 @@ class CheckNodeForValidReferences {
 
 			@Override
 			public boolean visit(SimpleName simpleName) {
-				SimpleNameExpr nameExpr= JDTConverter.convert(simpleName);
-				if (!nameExpr.isVariable()) {
+				IBinding simpleNameBinding= simpleName.resolveBinding();
+				if (simpleNameBinding == null) {
+					throw new AbortSearchException();
+				}
+				if (!(simpleNameBinding instanceof IVariableBinding)) {
 					return true;
 				}
 				
+				SimpleNameExpr nameExpr= JDTConverter.convert(simpleName);
 				return nameExpr.resolveVariable()
 						.filter(var -> var.hasType(ITERATOR_NAME))
 						.map(var -> {
@@ -150,15 +154,18 @@ class CheckNodeForValidReferences {
 								}
 							}
 							
+							// Need to check record component via JDT binding (not yet in fluent API)
+							IVariableBinding simpleNameVarBinding= (IVariableBinding) simpleNameBinding;
+							
 							// Check variable kind based on fLocalVarsOnly flag
 							if (!fLocalVarsOnly) {
 								// For non-local mode, require field, parameter, or record component
-								if (!var.isField() && !var.isParameter()) {
+								if (!var.isField() && !var.isParameter() && !simpleNameVarBinding.isRecordComponent()) {
 									throw new AbortSearchException();
 								}
 							} else {
 								// For local-only mode, reject field, parameter, or record component
-								if (var.isField() || var.isParameter()) {
+								if (var.isField() || var.isParameter() || simpleNameVarBinding.isRecordComponent()) {
 									throw new AbortSearchException();
 								}
 							}
