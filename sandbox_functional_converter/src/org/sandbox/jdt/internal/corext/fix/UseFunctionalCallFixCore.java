@@ -34,6 +34,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorWhileToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamConcatRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToIteratorWhile;
+import org.sandbox.jdt.internal.corext.fix.helper.TraditionalForHandler;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
@@ -43,6 +44,11 @@ public enum UseFunctionalCallFixCore {
 	// Converts while-iterator and for-loop-iterator patterns to stream operations.
 	// Activated January 2026 - Phase 7: Iterator pattern support
 	ITERATOR_LOOP(new IteratorWhileHandler()),
+	
+	// TRADITIONAL_FOR_LOOP - Traditional for-loop conversion
+	// Converts index-based for-loops (for (int i = 0; i < n; i++)) to IntStream.range()
+	// Activated February 2026: Index-based loop support
+	TRADITIONAL_FOR_LOOP(new TraditionalForHandler()),
 	
 	// Bidirectional Loop Transformation Support (Phase 9)
 	// New enum values for bidirectional loop transformations

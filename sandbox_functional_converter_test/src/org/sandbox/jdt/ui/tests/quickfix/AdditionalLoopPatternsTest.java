@@ -220,9 +220,8 @@ public class AdditionalLoopPatternsTest {
 	 * </ul>
 	 * Then convert to {@code IntStream.range(start, end)} or {@code IntStream.rangeClosed()}.</p>
 	 */
-	@Disabled("Index-based for-loops not yet supported - requires range analysis")
 	@Test
-	@DisplayName("Index-based for-loop to IntStream.range() (future)")
+	@DisplayName("Index-based for-loop to IntStream.range()")
 	public void testIndexBasedForLoop_toIntStream() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
