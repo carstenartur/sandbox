@@ -1,0 +1,47 @@
+# Copilot Setup Steps
+# This workflow configures the environment for the GitHub Copilot coding agent.
+# It ensures the agent has Java 21, Maven 3.9.9, cached dependencies, and Xvfb
+# so that Tycho/Eclipse builds can succeed within the agent's time limits.
+#
+# The Maven cache key matches the one in maven.yml, so after a successful CI build
+# on main, the agent gets a full cache hit with all Tycho/P2 dependencies pre-resolved.
+
+name: "Copilot Setup Steps"
+on: workflow_dispatch
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    env:
+      DISPLAY: :0
+      MAVEN_OPTS: -Djava.awt.headless=true
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # required for jgit timestamp provider to work
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+        with:
+          maven-version: 3.9.9
+
+      - name: Install Xvfb and GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth \
+           libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
+           libasound2t64 libnss3 libgbm1
+          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
