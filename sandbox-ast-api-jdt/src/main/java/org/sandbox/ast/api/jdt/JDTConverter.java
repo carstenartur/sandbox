@@ -123,15 +123,27 @@ public final class JDTConverter {
 	}
 
 	/**
-	 * Attempts to cast/unwrap a JDT node to the given type.
+	 * Attempts to cast/unwrap a JDT expression to the given type.
 	 * Wraps {@code ASTNodes.as()} with Optional for null-safe usage.
 	 *
-	 * @param node the node to cast
+	 * @param expression the expression to cast
 	 * @param type the target type
-	 * @return the cast node if successful, otherwise empty
+	 * @return the cast expression if successful, otherwise empty
 	 */
-	public static <T extends ASTNode> Optional<T> as(ASTNode node, Class<T> type) {
-		return Optional.ofNullable(ASTNodes.as(node, type));
+	public static <T extends Expression> Optional<T> as(Expression expression, Class<T> type) {
+		return Optional.ofNullable(ASTNodes.as(expression, type));
+	}
+
+	/**
+	 * Attempts to cast/unwrap a JDT statement to the given type.
+	 * Wraps {@code ASTNodes.as()} with Optional for null-safe usage.
+	 *
+	 * @param statement the statement to cast
+	 * @param type the target type
+	 * @return the cast statement if successful, otherwise empty
+	 */
+	public static <T extends Statement> Optional<T> as(Statement statement, Class<T> type) {
+		return Optional.ofNullable(ASTNodes.as(statement, type));
 	}
 
 	/**

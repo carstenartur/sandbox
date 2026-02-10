@@ -43,6 +43,22 @@
 			<scope>provided</scope>
 		</dependency>
 		
+		<!-- Eclipse JDT UI/Manipulation for ASTNodes and related utilities -->
+		<dependency>
+			<groupId>org.eclipse.jdt</groupId>
+			<artifactId>org.eclipse.jdt.ui</artifactId>
+			<version>3.36.0</version>
+			<scope>provided</scope>
+		</dependency>
+		
+		<!-- Eclipse Text for TextEditGroup -->
+		<dependency>
+			<groupId>org.eclipse.platform</groupId>
+			<artifactId>org.eclipse.text</artifactId>
+			<version>3.14.400</version>
+			<scope>provided</scope>
+		</dependency>
+		
 		<!-- JUnit 5 for testing -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
