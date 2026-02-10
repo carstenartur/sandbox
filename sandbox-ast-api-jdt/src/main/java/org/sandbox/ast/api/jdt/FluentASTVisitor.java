@@ -14,8 +14,14 @@
 package org.sandbox.ast.api.jdt;
 
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.sandbox.ast.api.expr.CastExpr;
+import org.sandbox.ast.api.expr.FieldAccessExpr;
+import org.sandbox.ast.api.expr.InfixExpr;
 import org.sandbox.ast.api.expr.MethodInvocationExpr;
 import org.sandbox.ast.api.expr.SimpleNameExpr;
 
@@ -92,6 +98,42 @@ public class FluentASTVisitor extends ASTVisitor {
 	}
 
 	/**
+	 * Pre-converts the CastExpression to a fluent wrapper and delegates to
+	 * {@link #visitCastExpression(CastExpr, CastExpression)}.
+	 * 
+	 * <p>This method is {@code final}. Subclasses must override
+	 * {@link #visitCastExpression(CastExpr, CastExpression)} instead.</p>
+	 */
+	@Override
+	public final boolean visit(CastExpression node) {
+		return visitCastExpression(JDTConverter.convert(node), node);
+	}
+
+	/**
+	 * Pre-converts the FieldAccess to a fluent wrapper and delegates to
+	 * {@link #visitFieldAccess(FieldAccessExpr, FieldAccess)}.
+	 * 
+	 * <p>This method is {@code final}. Subclasses must override
+	 * {@link #visitFieldAccess(FieldAccessExpr, FieldAccess)} instead.</p>
+	 */
+	@Override
+	public final boolean visit(FieldAccess node) {
+		return visitFieldAccess(JDTConverter.convert(node), node);
+	}
+
+	/**
+	 * Pre-converts the InfixExpression to a fluent wrapper and delegates to
+	 * {@link #visitInfixExpression(InfixExpr, InfixExpression)}.
+	 * 
+	 * <p>This method is {@code final}. Subclasses must override
+	 * {@link #visitInfixExpression(InfixExpr, InfixExpression)} instead.</p>
+	 */
+	@Override
+	public final boolean visit(InfixExpression node) {
+		return visitInfixExpression(JDTConverter.convert(node), node);
+	}
+
+	/**
 	 * Called when visiting a MethodInvocation. Override this instead of {@code visit(MethodInvocation)}.
 	 * 
 	 * @param expr the pre-converted fluent wrapper
@@ -110,6 +152,39 @@ public class FluentASTVisitor extends ASTVisitor {
 	 * @return {@code true} to visit children, {@code false} to skip
 	 */
 	protected boolean visitSimpleName(SimpleNameExpr expr, SimpleName node) {
+		return true;
+	}
+
+	/**
+	 * Called when visiting a CastExpression. Override this instead of {@code visit(CastExpression)}.
+	 * 
+	 * @param expr the pre-converted fluent wrapper
+	 * @param node the raw JDT node (for position checks, parent navigation, rewriting)
+	 * @return {@code true} to visit children, {@code false} to skip
+	 */
+	protected boolean visitCastExpression(CastExpr expr, CastExpression node) {
+		return true;
+	}
+
+	/**
+	 * Called when visiting a FieldAccess. Override this instead of {@code visit(FieldAccess)}.
+	 * 
+	 * @param expr the pre-converted fluent wrapper
+	 * @param node the raw JDT node (for position checks, parent navigation, rewriting)
+	 * @return {@code true} to visit children, {@code false} to skip
+	 */
+	protected boolean visitFieldAccess(FieldAccessExpr expr, FieldAccess node) {
+		return true;
+	}
+
+	/**
+	 * Called when visiting an InfixExpression. Override this instead of {@code visit(InfixExpression)}.
+	 * 
+	 * @param expr the pre-converted fluent wrapper
+	 * @param node the raw JDT node (for position checks, parent navigation, rewriting)
+	 * @return {@code true} to visit children, {@code false} to skip
+	 */
+	protected boolean visitInfixExpression(InfixExpr expr, InfixExpression node) {
 		return true;
 	}
 }

@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
@@ -34,6 +35,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.WhileStatement;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 import org.sandbox.ast.api.core.ASTWrapper;
 import org.sandbox.ast.api.expr.ASTExpr;
@@ -90,6 +92,62 @@ public final class JDTConverter {
 
 	private JDTConverter() {
 		// utility class
+	}
+
+	// -----------------------------------------------------------------------
+	// JDT navigation convenience methods
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Finds the nearest ancestor of the given type. Wraps {@code ASTNodes.getTypedAncestor()}
+	 * with Optional for null-safe usage.
+	 *
+	 * @param node the starting node
+	 * @param ancestorType the ancestor class to search for
+	 * @return the ancestor if found, otherwise empty
+	 */
+	public static <T extends ASTNode> Optional<T> ancestor(ASTNode node, Class<T> ancestorType) {
+		return Optional.ofNullable(ASTNodes.getTypedAncestor(node, ancestorType));
+	}
+
+	/**
+	 * Finds the first ancestor of the given type (may skip intermediate ancestors).
+	 * Wraps {@code ASTNodes.getFirstAncestorOrNull()} with Optional.
+	 *
+	 * @param node the starting node
+	 * @param ancestorType the ancestor class to search for
+	 * @return the ancestor if found, otherwise empty
+	 */
+	public static <T extends ASTNode> Optional<T> firstAncestor(ASTNode node, Class<T> ancestorType) {
+		return Optional.ofNullable(ASTNodes.getFirstAncestorOrNull(node, ancestorType));
+	}
+
+	/**
+	 * Attempts to cast/unwrap a JDT node to the given type.
+	 * Wraps {@code ASTNodes.as()} with Optional for null-safe usage.
+	 *
+	 * @param node the node to cast
+	 * @param type the target type
+	 * @return the cast node if successful, otherwise empty
+	 */
+	public static <T extends ASTNode> Optional<T> as(ASTNode node, Class<T> type) {
+		return Optional.ofNullable(ASTNodes.as(node, type));
+	}
+
+	/**
+	 * Finds an implemented type (interface) on a method invocation's declaring class.
+	 * Wraps the common pattern of resolving method binding → declaring class → findImplementedType.
+	 *
+	 * @param node the method invocation
+	 * @param qualifiedTypeName the fully qualified type name to search for (e.g. "java.lang.Iterable")
+	 * @return the implemented type binding if found, otherwise empty
+	 */
+	public static Optional<ITypeBinding> findImplementedType(MethodInvocation node, String qualifiedTypeName) {
+		IMethodBinding binding = node.resolveMethodBinding();
+		if (binding == null) {
+			return Optional.empty();
+		}
+		return Optional.ofNullable(ASTNodes.findImplementedType(binding.getDeclaringClass(), qualifiedTypeName));
 	}
 
 	// -----------------------------------------------------------------------
@@ -493,6 +551,11 @@ public final class JDTConverter {
 					builder.addTypeArgument(convertTypeBindingNonNull(arg));
 				}
 			}
+		}
+		// Add erased qualified name
+		ITypeBinding erasure = binding.getErasure();
+		if (erasure != null) {
+			builder.erasedName(erasure.getQualifiedName());
 		}
 		return builder.build();
 	}

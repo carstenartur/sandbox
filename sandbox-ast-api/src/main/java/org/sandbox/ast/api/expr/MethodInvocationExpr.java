@@ -170,6 +170,23 @@ public record MethodInvocationExpr(
 	public boolean isMethodNamed(String name) {
 		return method.map(m -> m.name().equals(name)).orElse(false);
 	}
+
+	/**
+	 * Gets the qualified name of the declaring type, or empty if unresolved.
+	 */
+	public Optional<String> declaringTypeQualifiedName() {
+		return method.map(m -> m.declaringType())
+					 .filter(t -> t != null)
+					 .map(TypeInfo::qualifiedName);
+	}
+
+	/**
+	 * Checks if this is a call to the given method on the given declaring type.
+	 */
+	public boolean isCallOn(String declaringTypeName, String methodName) {
+		return isMethodNamed(methodName) 
+			&& declaringTypeQualifiedName().filter(n -> n.equals(declaringTypeName)).isPresent();
+	}
 	
 	/**
 	 * Gets the receiver's identifier if receiver is a SimpleName.

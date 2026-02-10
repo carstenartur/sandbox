@@ -28,7 +28,8 @@ public record TypeInfo(
 	List<TypeInfo> typeArguments,
 	boolean isPrimitive,
 	boolean isArray,
-	int arrayDimensions
+	int arrayDimensions,
+	String erasedQualifiedName
 ) {
 	
 	private static final Set<String> COLLECTION_TYPES = Set.of(
@@ -72,6 +73,7 @@ public record TypeInfo(
 	 * @param isPrimitive true if primitive type
 	 * @param isArray true if array type
 	 * @param arrayDimensions number of array dimensions
+	 * @param erasedQualifiedName erased qualified name (defaults to qualifiedName if null)
 	 */
 	public TypeInfo {
 		if (qualifiedName == null) {
@@ -90,6 +92,8 @@ public record TypeInfo(
 		if (arrayDimensions < 0) {
 			throw new IllegalArgumentException("Array dimensions cannot be negative");
 		}
+		// Default erasedQualifiedName to qualifiedName if not provided
+		erasedQualifiedName = erasedQualifiedName == null ? qualifiedName : erasedQualifiedName;
 	}
 	
 	/**
@@ -110,6 +114,16 @@ public record TypeInfo(
 	 */
 	public boolean is(String qualifiedName) {
 		return this.qualifiedName.equals(qualifiedName);
+	}
+
+	/**
+	 * Checks if the erased type matches the given qualified name.
+	 * 
+	 * @param qualifiedName qualified name to compare
+	 * @return true if erased qualified name matches
+	 */
+	public boolean erasedIs(String qualifiedName) {
+		return this.erasedQualifiedName.equals(qualifiedName);
 	}
 	
 	/**
@@ -256,6 +270,7 @@ public record TypeInfo(
 		private boolean isPrimitive;
 		private boolean isArray;
 		private int arrayDimensions;
+		private String erasedQualifiedName;
 		
 		private Builder(String qualifiedName) {
 			this.qualifiedName = qualifiedName;
@@ -347,6 +362,17 @@ public record TypeInfo(
 		public Builder array() {
 			return array(1);
 		}
+
+		/**
+		 * Sets the erased qualified name explicitly.
+		 * 
+		 * @param erasedQualifiedName erased qualified name
+		 * @return this builder
+		 */
+		public Builder erasedName(String erasedQualifiedName) {
+			this.erasedQualifiedName = erasedQualifiedName;
+			return this;
+		}
 		
 		/**
 		 * Builds the TypeInfo instance.
@@ -355,7 +381,7 @@ public record TypeInfo(
 		 */
 		public TypeInfo build() {
 			return new TypeInfo(qualifiedName, simpleName, typeArguments, 
-							   isPrimitive, isArray, arrayDimensions);
+							   isPrimitive, isArray, arrayDimensions, erasedQualifiedName);
 		}
 	}
 }
