@@ -58,6 +58,9 @@ import org.eclipse.jdt.internal.corext.fix.ConvertLoopOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.ast.api.jdt.JDTConverter;
+import org.sandbox.ast.api.expr.MethodInvocationExpr;
+import org.sandbox.ast.api.expr.SimpleNameExpr;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
@@ -113,13 +116,14 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 										}
 										HelperVisitor.callMethodInvocationVisitor(whilestatement.getBody(), dataholder,
 												nodesprocessed, (mi, holder2) -> {
+													MethodInvocationExpr miExpr= JDTConverter.convert(mi);
 													SimpleName sn= ASTNodes.as(mi.getExpression(), SimpleName.class);
 													if (sn != null) {
 														String identifier= sn.getIdentifier();
 														if (!name.equals(identifier)) {
 															return true;
 														}
-														String method= mi.getName().getFullyQualifiedName();
+														String method= miExpr.methodName().orElse(""); //$NON-NLS-1$
 														WhileLoopToChangeHit previousHit= operationsMap
 																.get(whilestatement);
 														if (previousHit != null && (previousHit == invalidHit
@@ -167,10 +171,9 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 															if (hit.self) {
 																hit.loopVarName= ConvertLoopOperation
 																		.modifyBaseName("i"); //$NON-NLS-1$
-															} else if (hit.collectionExpression instanceof SimpleName) {
+															} else if (hit.collectionExpression instanceof SimpleName simpleCollectionName) {
 																hit.loopVarName= ConvertLoopOperation.modifyBaseName(
-																		((SimpleName) hit.collectionExpression)
-																		.getIdentifier());
+																		simpleCollectionName.getIdentifier());
 															} else {
 																hit.loopVarName= ConvertLoopOperation
 																		.modifyBaseName("element"); //$NON-NLS-1$
@@ -220,13 +223,14 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			return false;
 		}
 		HelperVisitor.callMethodInvocationVisitor(iterDeclarationParent, dataholder, nodesprocessed, (mi, holder2) -> {
+			MethodInvocationExpr miExpr= JDTConverter.convert(mi);
 			SimpleName sn= ASTNodes.as(mi.getExpression(), SimpleName.class);
 			if (sn != null && sn.getIdentifier().equals(hit.iteratorName)) {
 				if (mi.getStartPosition() < hit.whileStatement.getStartPosition()) {
 					hit.isInvalid= true;
 					return false;
 				}
-			} else if (mi.getName().getIdentifier().equals("iterator")) { //$NON-NLS-1$
+			} else if (miExpr.methodName().filter(name -> name.equals("iterator")).isPresent()) { //$NON-NLS-1$
 				ASTNode assignment= ASTNodes.getFirstAncestorOrNull(mi, Assignment.class);
 				if (assignment instanceof Assignment) {
 					Expression leftSide= ((Assignment) assignment).getLeftHandSide();
@@ -246,18 +250,18 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 	}
 
 	private static String computeNextVarname(WhileStatement whilestatement) {
-		String name= null;
 		Expression exp= whilestatement.getExpression();
 		if (exp instanceof MethodInvocation mi) {
-			if (mi.getName().getIdentifier().equals("hasNext")) { //$NON-NLS-1$
-				SimpleName variable= ASTNodes.as(mi.getExpression(), SimpleName.class);
-				if (variable != null) {
-					IBinding resolveBinding= variable.resolveBinding();
-					name= resolveBinding.getName();
-				}
+			MethodInvocationExpr miExpr= JDTConverter.convert(mi);
+			if (miExpr.methodName().filter(name -> name.equals("hasNext")).isPresent()) { //$NON-NLS-1$
+				return miExpr.receiver()
+						.flatMap(receiver -> receiver.asSimpleName())
+						.flatMap(SimpleNameExpr::resolveVariable)
+						.map(var -> var.name())
+						.orElse(null);
 			}
 		}
-		return name;
+		return null;
 	}
 
 	private static List<Object> computeVarName(VariableDeclarationStatement node_a) {

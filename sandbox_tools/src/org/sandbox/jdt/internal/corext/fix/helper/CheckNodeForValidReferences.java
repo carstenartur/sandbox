@@ -18,6 +18,8 @@ import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.sandbox.ast.api.jdt.JDTConverter;
+import org.sandbox.ast.api.expr.SimpleNameExpr;
 
 class CheckNodeForValidReferences {
 	private static final String ITERATOR_NAME= Iterator.class.getCanonicalName();
@@ -83,15 +85,13 @@ class CheckNodeForValidReferences {
 					ITypeBinding methodTypeBinding= methodInvocationBinding.getReturnType();
 					if (AbstractTool.isOfType(methodTypeBinding, ITERATOR_NAME)) {
 						Expression exp= methodInvocation.getExpression();
-						if (exp instanceof SimpleName) {
-							IBinding binding= ((SimpleName) exp).resolveBinding();
-							if (binding instanceof IVariableBinding && !((IVariableBinding) binding).isField()
-									&& !((IVariableBinding) binding).isParameter()
-									&& !((IVariableBinding) binding).isRecordComponent()) {
-								ITypeBinding typeBinding= ((IVariableBinding) binding).getType();
-								if (AbstractTool.isOfType(typeBinding, ITERATOR_NAME)) {
-									return true;
-								}
+						if (exp instanceof SimpleName simpleName) {
+							SimpleNameExpr nameExpr= JDTConverter.convert(simpleName);
+							if (nameExpr.resolveVariable()
+									.filter(var -> !var.isField() && !var.isParameter())
+									.filter(var -> var.hasType(ITERATOR_NAME))
+									.isPresent()) {
+								return true;
 							}
 						}
 						throw new AbortSearchException();
@@ -106,8 +106,8 @@ class CheckNodeForValidReferences {
 				ITypeBinding typeBinding= castType.resolveBinding();
 				if (AbstractTool.isOfType(typeBinding, ITERATOR_NAME)) {
 					Expression exp= castExpression.getExpression();
-					if (exp instanceof Name) {
-						IBinding binding= ((Name) exp).resolveBinding();
+					if (exp instanceof Name name) {
+						IBinding binding= name.resolveBinding();
 						if (binding instanceof IVariableBinding simpleNameVarBinding) {
 							if (!fLocalVarsOnly) {
 								if (!simpleNameVarBinding.isField() && !simpleNameVarBinding.isParameter()
@@ -129,36 +129,42 @@ class CheckNodeForValidReferences {
 
 			@Override
 			public boolean visit(SimpleName simpleName) {
-				IBinding simpleNameBinding= simpleName.resolveBinding();
-				if (simpleNameBinding == null) {
-					throw new AbortSearchException();
+				SimpleNameExpr nameExpr= JDTConverter.convert(simpleName);
+				if (!nameExpr.isVariable()) {
+					return true;
 				}
-				if (simpleNameBinding instanceof IVariableBinding simpleNameVarBinding) {
-					ITypeBinding simpleNameTypeBinding= simpleNameVarBinding.getType();
-					if (AbstractTool.isOfType(simpleNameTypeBinding, ITERATOR_NAME)) {
-						if (simpleName.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
-							MethodInvocation methodInvocation= ASTNodes.getParent(simpleName, MethodInvocation.class);
-							IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
-							if (methodInvocationBinding == null) {
-								throw new AbortSearchException();
+				
+				return nameExpr.resolveVariable()
+						.filter(var -> var.hasType(ITERATOR_NAME))
+						.map(var -> {
+							// Check if SimpleName is used as receiver for a method invocation
+							if (simpleName.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {
+								MethodInvocation methodInvocation= ASTNodes.getParent(simpleName, MethodInvocation.class);
+								IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();
+								if (methodInvocationBinding == null) {
+									throw new AbortSearchException();
+								}
+								ITypeBinding methodInvocationReturnType= methodInvocationBinding.getReturnType();
+								if (!AbstractTool.isOfType(methodInvocationReturnType, ITERATOR_NAME)) {
+									return true;
+								}
 							}
-							ITypeBinding methodInvocationReturnType= methodInvocationBinding.getReturnType();
-							if (!AbstractTool.isOfType(methodInvocationReturnType, ITERATOR_NAME)) {
-								return true;
+							
+							// Check variable kind based on fLocalVarsOnly flag
+							if (!fLocalVarsOnly) {
+								// For non-local mode, require field, parameter, or record component
+								if (!var.isField() && !var.isParameter()) {
+									throw new AbortSearchException();
+								}
+							} else {
+								// For local-only mode, reject field, parameter, or record component
+								if (var.isField() || var.isParameter()) {
+									throw new AbortSearchException();
+								}
 							}
-						}
-						if (!fLocalVarsOnly) {
-							if (!simpleNameVarBinding.isField() && !simpleNameVarBinding.isParameter()
-									&& !simpleNameVarBinding.isRecordComponent()) {
-								throw new AbortSearchException();
-							}
-						} else if (simpleNameVarBinding.isField() || simpleNameVarBinding.isParameter()
-								|| simpleNameVarBinding.isRecordComponent()) {
-							throw new AbortSearchException();
-						}
-					}
-				}
-				return true;
+							return true;
+						})
+						.orElse(true);
 			}
 		};
 		try {
