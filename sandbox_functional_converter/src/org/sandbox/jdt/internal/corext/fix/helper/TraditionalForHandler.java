@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.functional.core.builder.LoopModelBuilder;
 import org.sandbox.functional.core.model.ElementDescriptor;
 import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
@@ -324,7 +325,7 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // ordered = false for IntStream
         
         // Build and return LoopModel
-        return LoopModel.builder()
+        return new LoopModelBuilder()
             .source(source)
             .element(element)
             .terminal(terminal)
