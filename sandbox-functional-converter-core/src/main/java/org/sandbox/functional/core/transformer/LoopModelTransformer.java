@@ -53,14 +53,19 @@ public class LoopModelTransformer<T> {
         // Start with source
         T pipeline = renderer.renderSource(model.getSource());
         
-        // Apply operations
+        // Apply operations, tracking variable name through the chain
+        String currentVarName = varName;
         for (Operation op : model.getOperations()) {
-            pipeline = applyOperation(pipeline, op, varName);
+            pipeline = applyOperation(pipeline, op, currentVarName);
+            // If the operation introduces a new variable name, use it for subsequent operations
+            if (op instanceof MapOp mapOp && mapOp.outputVariableName() != null) {
+                currentVarName = mapOp.outputVariableName();
+            }
         }
         
         // Apply terminal
         if (model.getTerminal() != null) {
-            pipeline = applyTerminal(pipeline, model.getTerminal(), varName);
+            pipeline = applyTerminal(pipeline, model.getTerminal(), currentVarName);
         }
         
         return pipeline;

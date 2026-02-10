@@ -23,19 +23,15 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /**
- * Tests zur Sicherstellung der Feature-Parität zwischen V1 und V2 Implementierung.
+ * Tests to verify that both the original constant ({@code USEFUNCTIONALLOOP_CLEANUP})
+ * and the V2 constant ({@code USEFUNCTIONALLOOP_CLEANUP_V2}) produce identical results
+ * through the unified implementation.
  * 
- * <p><b>Status Phase 6:</b> V2 hat noch KEINE Feature-Parität mit V1. Diese Tests
- * sind für Phase 7 (Feature-Parität) vorgesehen.</p>
+ * <p>V1 and V2 have been consolidated into a single implementation. These tests
+ * validate backward compatibility: enabling either constant should produce the same
+ * transformation output.</p>
  * 
- * <p>Aktuell sind die meisten Tests disabled, da V2 nur einfache forEach-Konvertierungen
- * unterstützt und eine andere Ausgabe produziert als V1 (stream-basiert vs. direkt forEach).</p>
- * 
- * <p>Jeder Test führt beide Implementierungen aus und vergleicht die Ergebnisse.
- * Diese Tests werden aktiviert, sobald V2 Feature-Parität erreicht hat (Phase 7).</p>
- * 
- * @see <a href="https://github.com/carstenartur/sandbox/issues/450">Issue #450</a>
- * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453 Phase 7</a>
+ * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
  */
 public class FeatureParityTest {
 
@@ -43,18 +39,18 @@ public class FeatureParityTest {
 	AbstractEclipseJava context = new EclipseJava22();
 
 	/**
-	 * Helper-Methode um V1 und V2 Ergebnisse zu vergleichen.
+	 * Helper method to verify both constants produce the same output.
 	 * 
-	 * @param input Der ursprüngliche Java-Code
-	 * @param expectedOutput Der erwartete Code nach der Transformation
-	 * @throws CoreException bei Fehlern während der Refactoring-Ausführung
+	 * @param input the original Java code
+	 * @param expectedOutput the expected code after transformation
+	 * @throws CoreException on errors during refactoring
 	 */
-	private void assertParityBetweenV1AndV2(String input, String expectedOutput) 
+	private void assertParityBetweenConstants(String input, String expectedOutput) 
 			throws CoreException {
 		IPackageFragment pack = context.getSourceFolder()
 			.createPackageFragment("test1", false, null);
 		
-		// Phase 1: V1 Test
+		// Test with original constant
 		ICompilationUnit cuV1 = pack.createCompilationUnit("TestV1.java", 
 			input.replace("MyTest", "TestV1"), false, null);
 		
@@ -65,7 +61,7 @@ public class FeatureParityTest {
 			new String[] { expectedOutput.replace("MyTest", "TestV1") }, 
 			null);
 		
-		// Phase 2: V2 Test
+		// Test with V2 constant (backward compatibility)
 		ICompilationUnit cuV2 = pack.createCompilationUnit("TestV2.java",
 			input.replace("MyTest", "TestV2"), false, null);
 		
@@ -75,17 +71,8 @@ public class FeatureParityTest {
 			new ICompilationUnit[] { cuV2 }, 
 			new String[] { expectedOutput.replace("MyTest", "TestV2") }, 
 			null);
-		
-		// Both V1 and V2 should produce identical results
-		// If we reach this point, both tests passed, so parity is established
 	}
 
-	/**
-	 * Simple forEach test - verifies that V1 and V2 both produce direct forEach output.
-	 * 
-	 * <p>Both V1 and V2 now use direct {@code list.forEach()} for simple forEach patterns
-	 * without intermediate operations, generating more idiomatic code.</p>
-	 */
 	@Test
 	void parity_SimpleForEachConversion() throws CoreException {
 		String input = """
@@ -108,18 +95,13 @@ public class FeatureParityTest {
 				}
 			}""";
 
-		assertParityBetweenV1AndV2(input, expected);
+		assertParityBetweenConstants(input, expected);
 	}
 
 	/**
-	 * Filter pattern test - DISABLED until V2 supports filter operations.
-	 * 
-	 * <p>V2 currently only supports simple forEach patterns. Filter pattern support
-	 * will be added in Phase 7 (Feature-Parität).</p>
-	 * 
-	 * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453 Phase 7</a>
+	 * Filter pattern test - now enabled since V2 supports all V1 patterns
+	 * through the Refactorer fallback.
 	 */
-	@org.junit.jupiter.api.Disabled("V2 does not support filter patterns yet - will be added in Phase 7")
 	@Test
 	void parity_FilterPattern() throws CoreException {
 		String input = """
@@ -135,8 +117,6 @@ public class FeatureParityTest {
 				}
 			}""";
 
-		// Erwartetes Ergebnis von V1 - wird später mit V2 verglichen
-		// V1 generiert Expression-Lambda, nicht Block-Lambda
 		String expected = """
 			package test1;
 			import java.util.List;
@@ -146,7 +126,7 @@ public class FeatureParityTest {
 				}
 			}""";
 
-		assertParityBetweenV1AndV2(input, expected);
+		assertParityBetweenConstants(input, expected);
 	}
 
 	@Test
@@ -163,7 +143,7 @@ public class FeatureParityTest {
 				}
 			}""";
 
-		// Sollte NICHT konvertiert werden - Input = Output
-		assertParityBetweenV1AndV2(input, input);
+		// Should NOT be converted - Input = Output
+		assertParityBetweenConstants(input, input);
 	}
 }

@@ -31,7 +31,6 @@ import org.sandbox.jdt.internal.corext.fix.helper.EnhancedForToIteratorWhile;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorWhileToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
-import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamConcatRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToIteratorWhile;
@@ -40,21 +39,6 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 public enum UseFunctionalCallFixCore {
 
 	LOOP(new LoopToFunctional()),
-	// V2 - ULR-based implementation running in parallel to LOOP (V1).
-	// Phase 1 uses a delegation pattern: LOOP_V2 delegates to the existing implementation
-	// to maintain feature parity while introducing the new ULR infrastructure.
-	// Roadmap for future ULR phases:
-	//   - Phase 2: Gradually switch individual loop patterns to ULR-native implementations.
-	//   - Phase 3: Make ULR the primary implementation and retire legacy paths once stable.
-	// Documentation note (per coding guidelines):
-	// sandbox_functional_converter/ARCHITECTURE.md and sandbox_functional_converter/TODO.md
-	// have been reviewed and updated to describe:
-	//   (1) the V2 parallel implementation strategy,
-	//   (2) the Phase 1 delegation pattern,
-	//   (3) the roadmap for future ULR implementation phases.
-	// Related issues: https://github.com/carstenartur/sandbox/issues/450
-	//                 https://github.com/carstenartur/sandbox/issues/453
-	LOOP_V2(new LoopToFunctionalV2()),
 	// ITERATOR_LOOP - Iterator-based loop conversion (from PR #449)
 	// Converts while-iterator and for-loop-iterator patterns to stream operations.
 	// Activated January 2026 - Phase 7: Iterator pattern support

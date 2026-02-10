@@ -5,99 +5,61 @@
 ## Overview
 The functional loop converter transforms imperative enhanced for-loops into functional Java 8 Stream pipelines. This document describes the architecture and implementation details of the `StreamPipelineBuilder` approach.
 
-## V2 Parallel Implementation Strategy (Phase 1 - January 2026)
+## V2 Parallel Implementation Strategy → Unified Implementation (February 2026)
 
-**Status**: 🆕 Phase 1 Complete - ULR infrastructure established
+**Status**: ✅ V2 is the complete implementation — All patterns via ULR pipeline
 
 ### Background
 Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the Unified Loop Representation (ULR) to enable:
 - AST-independent loop modeling for easier testing and maintenance
-- Parallel V1/V2 implementations for gradual migration
 - Better separation of concerns between AST parsing and transformation logic
 
-### Phase 1: Infrastructure Setup (COMPLETED)
-**Goal**: Establish V2 infrastructure without changing V1 behavior
+### Current Architecture
 
-**Completed Deliverables**:
-1. **Core Module** (`sandbox-functional-converter-core`):
-   - Pure Java 17 module with **zero Eclipse/JDT dependencies**
-   - ULR model classes: `LoopModel`, `SourceDescriptor`, `ElementDescriptor`, `LoopMetadata`
-   - Standalone Maven module (not part of Tycho build)
-   - Tests run independently: `mvn test`
+`LoopToFunctionalV2` uses the clean ULR pipeline for **all** patterns:
 
-2. **V2 Cleanup Infrastructure**:
-   - `LOOP_V2` enum entry in `UseFunctionalCallFixCore`
-   - `UseFunctionalCallCleanUpV2` class (mirrors V1 structure)
-   - `LoopToFunctionalV2` helper (delegates to V1 for feature parity)
-   - `USEFUNCTIONALLOOP_CLEANUP_V2` constant in `MYCleanUpConstants`
+```
+JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
+```
 
-3. **Delegation Pattern**:
-   - Phase 1 uses **delegation**: V2 delegates to existing V1 implementation
-   - Ensures identical behavior between V1 and V2
-   - `FeatureParityTest` validates both produce same output
+**`JdtLoopExtractor`** bridges JDT AST to the abstract `LoopModel`, detecting:
+- `if (cond) continue;` → `FilterOp` (negated)
+- `if (cond) { body }` → `FilterOp` + nested body operations
+- Variable declaration `Type x = expr;` → `MapOp`
+- `collection.add(expr)` → `CollectTerminal` (TO_LIST or TO_SET)
+- Accumulator patterns (`+=`, `++`, `*=`) → `ReduceTerminal`
+- `if (cond) return true/false;` → `MatchTerminal` (anyMatch/noneMatch)
+- Simple side effects → `ForEachTerminal`
 
-4. **V1 Isolation**:
-   - Modified `UseFunctionalCallCleanUpCore.computeFixSet()` to explicitly add only `LOOP`
-   - Prevents V1 from inadvertently running V2 conversions
-   - V1 and V2 operate independently based on which cleanup is enabled
+**`LoopModelTransformer`** drives the `ASTStreamRenderer` to produce JDT AST nodes.
 
-### Phase 2: ULR-Native Implementation (PLANNED)
-**Goal**: Gradually switch individual loop patterns to ULR-based implementations
+**Direct forEach optimization**: For simple forEach without operations on COLLECTION/ITERABLE sources, generates idiomatic `collection.forEach(...)` instead of `collection.stream().forEach(...)`.
 
-**Planned Activities**:
-1. Implement ULR extraction from AST in `LoopToFunctionalV2`
-2. Create ULR → Stream transformation logic independent of AST
-3. Migrate simple patterns first (forEach, basic map/filter)
+**Key Files**:
+- `LoopToFunctionalV2.java` — Loop-to-functional converter (orchestrator)
+- `JdtLoopExtractor.java` — JDT AST → LoopModel (pattern detection)
+- `ASTStreamRenderer.java` — LoopModel → JDT AST nodes (code generation)
+- `LoopModelTransformer.java` — Drives renderer through model operations
 
-### Phase 3: Operation Model (PLANNED)
-**Goal**: Enhance ULR with stream operation models
+**Core Module** (`sandbox-functional-converter-core`):
+- `LoopModel`, `SourceDescriptor`, `ElementDescriptor`, `LoopMetadata` — ULR data model
+- `FilterOp`, `MapOp`, `CollectTerminal`, `ReduceTerminal`, `MatchTerminal` — Operations/terminals
+- `LoopModelBuilder` — Fluent builder for constructing models
+- `StringRenderer` — Test renderer producing Java code strings (no OSGi needed)
+- `LoopModelTransformer` — Transformation engine (drives any renderer)
+- All testable without Eclipse/OSGi via `mvn test`
 
-### Phase 4: Transformation Engine (PLANNED)
-**Goal**: Implement ULR-to-Stream transformer with callback pattern
+### Phase History (Completed)
 
-### Phase 5: JDT AST Renderer (IN PROGRESS - January 2026)
-**Goal**: Create AST-based renderer for JDT integration
+The following phases were completed during the V1/V2 parallel development:
 
-**Status**: 🆕 Implementation started
-
-**Completed Deliverables**:
-1. **ASTStreamRenderer** (`org.sandbox.jdt.internal.corext.fix.helper`):
-   - Implements `StreamPipelineRenderer<Expression>` interface
-   - Generates JDT AST nodes instead of string concatenation
-   - Supports all source types (COLLECTION, ARRAY, ITERABLE, INT_RANGE, STREAM)
-   - Implements 14 render methods:
-     - **Source**: `renderSource()` - creates stream from various sources
-     - **Intermediate ops**: `renderFilter()`, `renderMap()`, `renderFlatMap()`, `renderPeek()`, `renderDistinct()`, `renderSorted()`, `renderLimit()`, `renderSkip()`
-     - **Terminal ops**: `renderForEach()`, `renderCollect()`, `renderReduce()`, `renderCount()`, `renderFind()`, `renderMatch()`
-   - Helper methods for AST node creation with proper validation
-   - Uses ASTParser for complex expression parsing
-
-2. **Integration with core module**:
-   - Added `org.sandbox.functional.core` as OSGi bundle dependency
-   - Exports helper package for test access
-   - Core module added to reactor build (parent pom.xml)
-
-3. **Test suite** (`ASTStreamRendererTest`):
-   - 25 test methods covering all operations
-   - Tests for all source types and terminal operations
-   - Complex pipeline construction validation
-   - Tests for edge cases (with/without identity in reduce, ordered forEach, etc.)
-
-**Implementation Notes**:
-- Uses Java's `Character.isJavaIdentifierStart/Part()` for robust identifier validation
-- Fails fast with descriptive errors instead of silent transformations
-- INT_RANGE parsing includes validation for format "start,end"
-- English comments for maintainability and Eclipse JDT contribution readiness
-
-**Next Steps for Phase 5**:
-- [x] Integrate ASTStreamRenderer with LoopToFunctionalV2
-- [x] Add end-to-end tests with actual loop transformations
-- [x] Validate AST node correctness beyond toString() comparisons
-
-**Success Criteria**:
-- All `FeatureParityTest` cases pass with ULR implementation
-- No regressions in existing V1 functionality
-- Code coverage maintained or improved
+1. **Phase 1**: Infrastructure Setup — V2 infrastructure alongside V1
+2. **Phase 2/6**: ULR-Native Implementation — JdtLoopExtractor + ASTStreamRenderer
+3. **Phase 5**: JDT AST Renderer — ASTStreamRenderer for JDT integration
+4. **Phase 7**: Iterator Loop Support — Iterator-based loop conversion
+5. **Phase 7.5**: Direct forEach Optimization — Idiomatic `collection.forEach(...)`
+6. **Phase 7.6**: V1/V2 Consolidation — Removed V1 classes
+7. **Phase 7.7**: Full V2 Body Analysis — JdtLoopExtractor detects all patterns natively
 
 ### Phase 6: Complete ULR Integration (COMPLETED - January 2026)
 **Goal**: Remove V1 delegation and implement native ULR pipeline in LoopToFunctionalV2
@@ -228,7 +190,7 @@ Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the 
 |-----------|-------|--------|
 | `IteratorLoopToStreamTest` | 5 enabled, 9 disabled | ✅ Simple forEach functional, safety bug + advanced patterns disabled |
 | `IteratorLoopConversionTest` | 6 | ✅ Enabled |
-| `LoopBidirectionalTransformationTest` | 2 active, 3 future | ✅ New |
+| `LoopBidirectionalTransformationTest` | 5 active | ✅ Complete |
 | `AdditionalLoopPatternsTest` | 6 active, 3 future | ✅ New |
 | **Total Active** | **19** | **11 iterator + 8 new tests** |
 
@@ -309,15 +271,18 @@ else
 - No unused imports added for direct forEach path
 - Array handling correctly falls back to stream-based approach
 
-### Phase 8: V1 Deprecation and Cleanup (FUTURE)
-**Goal**: Make ULR the primary implementation and retire legacy code
+### Phase 8: V1 Deprecation and V2 Full Implementation ✅ COMPLETED (February 2026)
+**Goal**: Make ULR the sole implementation — no V1 fallback
 
-**Planned Activities**:
-1. Mark V1 (`LOOP`) as deprecated
-2. Migrate all users to V2 (`LOOP_V2`)
-3. Remove V1 implementation and cleanup
-4. Remove delegation pattern from V2
-5. Consolidate documentation
+**Completed**:
+1. ✅ V1 (`LoopToFunctional`) removed, V2 (`LoopToFunctionalV2`) is the only implementation
+2. ✅ `LOOP` enum uses `LoopToFunctionalV2`, `LOOP_V2` removed
+3. ✅ V2-specific cleanup classes removed
+4. ✅ `JdtLoopExtractor.analyzeAndAddOperations()` detects all patterns natively
+   - Filter (if-continue, if-guard), Map, Collect, Reduce, Match, ForEach
+5. ✅ `LoopToFunctionalV2.rewrite()` uses `LoopModelTransformer` + `ASTStreamRenderer` for ALL patterns
+6. ✅ No dependency on V1's `Refactorer` / `PreconditionsChecker` / `StreamPipelineBuilder`
+7. ✅ 19 pattern transformation tests pass in core module without OSGi
 
 ### Architecture Benefits
 - **Testability**: ULR model can be tested without Eclipse runtime
@@ -1353,7 +1318,7 @@ All extend `AbstractFunctionalCall<ASTNode>` and implement:
 - `rewrite()` - Perform the transformation
 - `getPreview()` - Generate before/after preview
 
-**Transformer Implementations** (Currently stubs):
+**Transformer Implementations**:
 
 1. **StreamToEnhancedFor**
    - Pattern: `collection.forEach(x -> statement)` or `collection.stream().forEach(x -> statement)`
@@ -1366,7 +1331,7 @@ All extend `AbstractFunctionalCall<ASTNode>` and implement:
 3. **IteratorWhileToEnhancedFor**
    - Pattern: `Iterator<T> it = c.iterator(); while (it.hasNext()) { T x = it.next(); ... }`
    - Output: `for (T x : collection) { ... }`
-   - Challenge: Recovering collection reference from iterator
+   - Uses IteratorPatternDetector to recover collection reference from iterator
    
 4. **EnhancedForToIteratorWhile**
    - Pattern: `for (T x : collection) { ... }`
@@ -1428,39 +1393,27 @@ private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
     
     // Bidirectional mode
     if (isEnabled(LOOP_CONVERSION_ENABLED)) {
-        String targetFormat = getOptions().get(LOOP_CONVERSION_TARGET_FORMAT);
-        
-        // Enhanced-for as source
-        if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {
-            if ("stream".equals(targetFormat)) {
-                fixSet.add(LOOP); // Existing transformer
-            } else if ("iterator_while".equals(targetFormat)) {
-                fixSet.add(FOR_TO_ITERATOR); // New transformer
-            }
-        }
-        
-        // Iterator-while as source
-        if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {
-            if ("stream".equals(targetFormat)) {
-                fixSet.add(ITERATOR_LOOP); // Existing transformer
-            } else if ("enhanced_for".equals(targetFormat)) {
-                fixSet.add(ITERATOR_TO_FOR); // New transformer
-            }
-        }
-        
-        // Stream as source
-        if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {
-            if ("enhanced_for".equals(targetFormat)) {
-                fixSet.add(STREAM_TO_FOR); // New transformer
-            } else if ("iterator_while".equals(targetFormat)) {
-                fixSet.add(STREAM_TO_ITERATOR); // New transformer
-            }
-        }
+        String targetFormat = getTargetFormat(); // reads from stored optionsMap
+        addBidirectionalTransformers(fixSet, targetFormat);
     }
     
     return fixSet;
 }
+
+private String getTargetFormat() {
+    if (optionsMap != null) {
+        String value = optionsMap.get(LOOP_CONVERSION_TARGET_FORMAT);
+        if (value != null) return value;
+    }
+    return "stream"; // default
+}
 ```
+
+**Key Design**: Options map is stored in `UseFunctionalCallCleanUpCore` via:
+1. Constructor: `this.optionsMap = options;` when `Map<String, String>` is passed
+2. `setOptions(CleanUpOptions)` override: captures `MapCleanUpOptions.getMap()`
+
+This bypasses the limitation that `AbstractCleanUp.fOptions` is private and only exposes `isEnabled()` for boolean values.
 
 #### Transformation Matrix
 
@@ -1472,20 +1425,19 @@ private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
 
 ### Implementation Status
 
-#### Completed (January 31, 2026)
+#### Completed (February 2026)
 - ✅ All constants defined
 - ✅ UI components created and wired
 - ✅ Default options configured
-- ✅ computeFixSet() logic implemented
+- ✅ computeFixSet() logic implemented with optionsMap for string-value access
 - ✅ Enum values added
-- ✅ Stub transformer classes created
+- ✅ All 4 transformer classes fully implemented (find + rewrite)
 - ✅ Messages internationalized (English)
+- ✅ All 5 bidirectional tests enabled and passing
 
 #### Pending
-- ⏳ Transformer find() implementation
-- ⏳ Transformer rewrite() implementation
-- ⏳ Test enablement in LoopBidirectionalTransformationTest
 - ⏳ German translations (feature_de.properties)
+- ⏳ Complex scenario tests (nested lambdas, multiple statements)
 - ⏳ Stream.toList() immutability handling
 
 ### Design Decisions
@@ -1524,21 +1476,16 @@ private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
 
 ### Known Limitations
 
-1. **Stub Implementations**: All 4 new transformers are empty stubs
-   - They compile but do nothing
-   - Tests cannot be enabled until implemented
-
-2. **Iterator → Enhanced-for Challenge**: 
+1. **Iterator → Enhanced-for Challenge**: 
    - Pattern: `Iterator<T> it = collection.iterator(); while (...)`
-   - Problem: Need to recover `collection` reference from iterator
-   - Solution: Track variable through data flow analysis
+   - Uses IteratorPatternDetector to recover `collection` reference from iterator
 
-3. **Stream.toList() Immutability**:
+2. **Stream.toList() Immutability**:
    - `stream.toList()` creates immutable list (Java 16+)
    - If user later modifies list (.sort(), .add()), code breaks
    - Solution needed: Usage analysis or fallback to Collectors.toList()
 
-4. **Complex Lambda Bodies**:
+3. **Complex Lambda Bodies**:
    - Multi-statement lambdas harder to convert back to loops
    - May need to create block statements
    - Side effect analysis required

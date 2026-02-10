@@ -37,7 +37,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * 
  * <p><b>Current Implementation Status:</b></p>
  * <ul>
- *   <li>✅ Enhanced for-loops → Stream (LOOP, LOOP_V2)</li>
+ *   <li>✅ Enhanced for-loops → Stream (LOOP)</li>
  *   <li>✅ Iterator while-loops → Stream (ITERATOR_LOOP)</li>
  *   <li>❌ Classic while-loops → Stream (not pattern-based, needs analysis)</li>
  *   <li>❌ Do-while loops → Stream (incompatible - must execute at least once)</li>
