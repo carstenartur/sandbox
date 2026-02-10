@@ -307,12 +307,10 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
      * Checks if the index variable is used in the loop body for complex patterns
      * that go beyond simple counter semantics.
      * 
-     * <p>Detects patterns like:</p>
-     * <ul>
-     *   <li>{@code a[i+1]}, {@code a[i-1]} — neighbor element access</li>
-     *   <li>{@code i + 1}, {@code i - 1}, {@code i * 2} — index arithmetic in expressions</li>
-     *   <li>{@code i % 2} — modular index usage</li>
-     * </ul>
+     * <p>Detects the index variable participating in arithmetic InfixExpressions
+     * (e.g., {@code i + 1}, {@code i - 1}, {@code i * 2}, {@code i % 2}).
+     * This also catches array/list neighbor access patterns like {@code a[i+1]}
+     * because the subscript expression {@code i+1} is itself an InfixExpression.</p>
      * 
      * <p>These patterns indicate the loop relies on index relationships between
      * iterations, which may not be safely convertible to stream operations.</p>
