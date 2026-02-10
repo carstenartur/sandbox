@@ -81,7 +81,33 @@ public class LoopModelBuilder {
                                      boolean modifiesCollection, 
                                      boolean requiresOrdering) {
         this.metadata = new LoopMetadata(hasBreak, hasContinue, hasReturn, 
-                                         modifiesCollection, requiresOrdering);
+                                         modifiesCollection, requiresOrdering, false, false);
+        return this;
+    }
+    
+    /**
+     * Configures loop metadata with all safety flags.
+     * 
+     * @param hasBreak whether the loop contains break statements
+     * @param hasContinue whether the loop contains continue statements
+     * @param hasReturn whether the loop contains return statements
+     * @param modifiesCollection whether the loop modifies the collection being iterated
+     * @param requiresOrdering whether the loop requires ordering to be preserved
+     * @param hasIteratorRemove whether the loop calls iterator.remove()
+     * @param usesIndexBeyondGet whether the index variable is used beyond simple element access
+     * @return this builder
+     * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
+     */
+    public LoopModelBuilder metadata(boolean hasBreak,
+                                     boolean hasContinue,
+                                     boolean hasReturn,
+                                     boolean modifiesCollection,
+                                     boolean requiresOrdering,
+                                     boolean hasIteratorRemove,
+                                     boolean usesIndexBeyondGet) {
+        this.metadata = new LoopMetadata(hasBreak, hasContinue, hasReturn,
+                                         modifiesCollection, requiresOrdering,
+                                         hasIteratorRemove, usesIndexBeyondGet);
         return this;
     }
     

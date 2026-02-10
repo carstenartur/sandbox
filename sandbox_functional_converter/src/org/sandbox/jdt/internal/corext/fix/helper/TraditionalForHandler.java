@@ -229,6 +229,14 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
             return null;
         }
         
+        // Issue #670: Check if the index variable is used in the body for complex
+        // patterns like a[i+1], a[i-1], or i%2 that indicate neighbor access or
+        // non-trivial index semantics. These patterns suggest the loop relies on
+        // index arithmetic that may not be safely convertible.
+        if (usesIndexBeyondSimpleAccess(body, loopVarName)) {
+            return null;
+        }
+        
         return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);
     }
     
@@ -293,6 +301,73 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         });
         
         return hasUnconvertible[0];
+    }
+    
+    /**
+     * Checks if the index variable is used in the loop body for complex patterns
+     * that go beyond simple counter semantics.
+     * 
+     * <p>Detects patterns like:</p>
+     * <ul>
+     *   <li>{@code a[i+1]}, {@code a[i-1]} — neighbor element access</li>
+     *   <li>{@code i + 1}, {@code i - 1}, {@code i * 2} — index arithmetic in expressions</li>
+     *   <li>{@code i % 2} — modular index usage</li>
+     * </ul>
+     * 
+     * <p>These patterns indicate the loop relies on index relationships between
+     * iterations, which may not be safely convertible to stream operations.</p>
+     * 
+     * @param body the loop body statement
+     * @param indexVarName the name of the index variable
+     * @return true if the index is used in complex patterns
+     * 
+     * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
+     */
+    private boolean usesIndexBeyondSimpleAccess(Statement body, String indexVarName) {
+        final boolean[] hasComplexUsage = {false};
+        
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(InfixExpression node) {
+                // Check if the index variable is used in arithmetic operations
+                // like i+1, i-1, i*2, i%2
+                if (isIndexInArithmeticExpression(node, indexVarName)) {
+                    hasComplexUsage[0] = true;
+                    return false;
+                }
+                return true;
+            }
+        });
+        
+        return hasComplexUsage[0];
+    }
+    
+    /**
+     * Checks if an InfixExpression uses the index variable in arithmetic.
+     * Detects patterns: i+1, i-1, i*2, i%2, etc.
+     */
+    private boolean isIndexInArithmeticExpression(InfixExpression expr, String indexVarName) {
+        InfixExpression.Operator op = expr.getOperator();
+        
+        // Only check arithmetic operators
+        if (op != InfixExpression.Operator.PLUS
+                && op != InfixExpression.Operator.MINUS
+                && op != InfixExpression.Operator.TIMES
+                && op != InfixExpression.Operator.DIVIDE
+                && op != InfixExpression.Operator.REMAINDER) {
+            return false;
+        }
+        
+        // Check if either operand is the index variable
+        return isSimpleName(expr.getLeftOperand(), indexVarName)
+                || isSimpleName(expr.getRightOperand(), indexVarName);
+    }
+    
+    /**
+     * Checks if an expression is a SimpleName matching the given name.
+     */
+    private boolean isSimpleName(Expression expr, String name) {
+        return expr instanceof SimpleName && ((SimpleName) expr).getIdentifier().equals(name);
     }
     
     @Override

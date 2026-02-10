@@ -73,7 +73,7 @@ class LoopModelPipelineTest {
     @Test
     void testFluentApiMetadataReturnsThis() {
         LoopModel model = new LoopModel();
-        LoopMetadata metadata = new LoopMetadata(false, false, false, false, true);
+        LoopMetadata metadata = new LoopMetadata(false, false, false, false, true, false, false);
         LoopModel result = model.setMetadata(metadata);
         assertThat(result).isSameAs(model);
         assertThat(model.getMetadata()).isEqualTo(metadata);
