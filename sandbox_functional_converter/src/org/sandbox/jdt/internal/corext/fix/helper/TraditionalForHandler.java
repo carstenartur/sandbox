@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -23,584 +22,378 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.functional.core.builder.LoopModelBuilder;
+import org.sandbox.functional.core.model.ElementDescriptor;
+import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
+import org.sandbox.functional.core.transformer.LoopModelTransformer;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.CollectionThreadSafetyAnalyzer.SafetyLevel;
 
 /**
- * Converts traditional index-based for-loops to functional equivalents.
- *
- * <p>This handler supports two conversion patterns:</p>
+ * Handler for converting traditional index-based for-loops to IntStream.range() operations.
+ * 
+ * <p>This handler converts classic for-loops with integer counters to functional IntStream operations:</p>
+ * <pre>{@code
+ * // Before:
+ * for (int i = 0; i < 10; i++) {
+ *     System.out.println(i);
+ * }
+ * 
+ * // After:
+ * IntStream.range(0, 10).forEach(i -> System.out.println(i));
+ * }</pre>
+ * 
+ * <p><b>Supported Patterns:</b></p>
  * <ul>
- *   <li><b>IntStream.range():</b> {@code for (int i = 0; i < 10; i++) { println(i); }}
- *       → {@code IntStream.range(0, 10).forEach(i -> println(i))}</li>
- *   <li><b>Index elimination:</b> {@code for (int i = 0; i < items.size(); i++) { String s = items.get(i); println(s); }}
- *       → {@code items.forEach(s -> println(s))}</li>
+ *   <li>Initializer: {@code int i = start} (single variable declaration with int type)</li>
+ *   <li>Condition: {@code i < end} or {@code i <= end} (comparison with loop variable)</li>
+ *   <li>Updater: {@code i++} or {@code ++i} (increment operator)</li>
  * </ul>
- *
- * <p>Index elimination is only applied when:</p>
- * <ol>
- *   <li>The loop variable {@code i} is used <b>only</b> in {@code collection.get(i)} calls</li>
- *   <li>The collection matches the one in the condition ({@code collection.size()})</li>
- *   <li>The collection is thread-safe for conversion (local, immutable, or concurrent-safe)</li>
- * </ol>
+ * 
+ * <p><b>Infrastructure:</b></p>
+ * <ul>
+ *   <li>Uses {@link SourceDescriptor.SourceType#EXPLICIT_RANGE} for range representation</li>
+ *   <li>Leverages existing {@link ASTStreamRenderer} for IntStream.range() rendering</li>
+ *   <li>Builds {@link LoopModel} with {@link ForEachTerminal} for body statements</li>
+ * </ul>
+ * 
+ * <p><b>Naming Note:</b> This class is named after the <i>source</i> loop type (traditional for-loop),
+ * not the target format. The architecture supports bidirectional transformations, so the name
+ * describes what loop pattern this handler processes.</p>
+ * 
+ * @see SourceDescriptor.SourceType#INT_RANGE
+ * @see SourceDescriptor.SourceType#EXPLICIT_RANGE
+ * @see ASTStreamRenderer#renderSource(SourceDescriptor)
  */
 public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> {
-
-	private final CollectionThreadSafetyAnalyzer threadSafetyAnalyzer = new CollectionThreadSafetyAnalyzer();
-
-	/**
-	 * Holds the analysis result for a traditional for-loop pattern.
-	 */
-	static class ForLoopPattern {
-		Expression startExpr;
-		Expression endExpr;
-		String loopVarName;
-		boolean indexEliminable;
-		Expression collectionExpr;
-		String elementVarName;
-		/** The statements in the body that should be transformed */
-		List<Statement> bodyStatements;
-	}
-
-	@Override
-	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(ForStatement node) {
-				if (nodesprocessed.contains(node)) {
-					return false;
-				}
-
-				ForLoopPattern pattern = analyzeForLoop(node);
-				if (pattern == null) {
-					return true;
-				}
-
-				nodesprocessed.add(node);
-
-				ReferenceHolder<ASTNode, Object> holder = ReferenceHolder.create();
-				holder.put(node, pattern);
-				operations.add(fixcore.rewrite(node, holder));
-
-				return false;
-			}
-		});
-	}
-
-	/**
-	 * Analyzes a ForStatement to determine if it matches the traditional for-loop pattern.
-	 *
-	 * @param forStmt the for statement to analyze
-	 * @return a ForLoopPattern if the loop matches, or null if it doesn't
-	 */
-	ForLoopPattern analyzeForLoop(ForStatement forStmt) {
-		// Skip for-loops nested inside enhanced-for loops to avoid converting
-		// inner loops that the LoopToFunctional handler expects to remain unchanged
-		if (isNestedInsideLoop(forStmt)) {
-			return null;
-		}
-
-		// Step 1: Check initializer - must be a single variable declaration like "int i = start"
-		if (forStmt.initializers().size() != 1) {
-			return null;
-		}
-		Object init = forStmt.initializers().get(0);
-		if (!(init instanceof VariableDeclarationExpression varDeclExpr)) {
-			return null;
-		}
-		if (varDeclExpr.fragments().size() != 1) {
-			return null;
-		}
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDeclExpr.fragments().get(0);
-		String loopVarName = fragment.getName().getIdentifier();
-		Expression startExpr = fragment.getInitializer();
-		if (startExpr == null) {
-			return null;
-		}
-
-		// Step 2: Check condition - must be "i < end" (strict less-than only;
-		// "i <= end" would require rangeClosed which is not yet supported)
-		Expression condition = forStmt.getExpression();
-		if (!(condition instanceof InfixExpression infixExpr)) {
-			return null;
-		}
-		if (infixExpr.getOperator() != InfixExpression.Operator.LESS) {
-			return null;
-		}
-		Expression leftOperand = infixExpr.getLeftOperand();
-		if (!(leftOperand instanceof SimpleName leftName) || !leftName.getIdentifier().equals(loopVarName)) {
-			return null;
-		}
-		Expression endExpr = infixExpr.getRightOperand();
-
-		// Step 3: Check updater - must be "i++" or "i += 1" or "++i"
-		if (forStmt.updaters().size() != 1) {
-			return null;
-		}
-		if (!isIncrementByOne(forStmt.updaters().get(0), loopVarName)) {
-			return null;
-		}
-
-		// Step 4: Get body statements
-		Statement body = forStmt.getBody();
-		List<Statement> bodyStatements = getBodyStatements(body);
-		if (bodyStatements == null || bodyStatements.isEmpty()) {
-			return null;
-		}
-
-		// Step 5: Check for break/continue statements which prevent conversion
-		if (containsBreakOrContinue(body)) {
-			return null;
-		}
-
-		// Build basic pattern
-		ForLoopPattern pattern = new ForLoopPattern();
-		pattern.startExpr = startExpr;
-		pattern.endExpr = endExpr;
-		pattern.loopVarName = loopVarName;
-		pattern.bodyStatements = bodyStatements;
-		pattern.indexEliminable = false;
-
-		// Step 6: Analyze index usage for potential elimination
-		analyzeIndexUsage(forStmt, pattern);
-
-		return pattern;
-	}
-
-	/**
-	 * Analyzes whether the index variable can be eliminated by converting
-	 * to {@code collection.forEach()} instead of {@code IntStream.range()}.
-	 */
-	private void analyzeIndexUsage(ForStatement forStmt, ForLoopPattern pattern) {
-		Expression endExpr = pattern.endExpr;
-
-		// Check if the condition right operand is collection.size()
-		if (!(endExpr instanceof MethodInvocation sizeCall)) {
-			return;
-		}
-		if (!"size".equals(sizeCall.getName().getIdentifier())) { //$NON-NLS-1$
-			return;
-		}
-		Expression collectionExpr = sizeCall.getExpression();
-		if (collectionExpr == null) {
-			return;
-		}
-
-		// Check start expression is 0
-		if (!isZeroLiteral(pattern.startExpr)) {
-			return;
-		}
-
-		// Collect all references to the loop variable in the body
-		String loopVarName = pattern.loopVarName;
-		List<SimpleName> loopVarRefs = new ArrayList<>();
-		forStmt.getBody().accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SimpleName node) {
-				if (node.getIdentifier().equals(loopVarName)) {
-					loopVarRefs.add(node);
-				}
-				return true;
-			}
-		});
-
-		if (loopVarRefs.isEmpty()) {
-			return;
-		}
-
-		// Check if ALL references to the loop variable are inside collection.get(i) calls
-		String collectionName = getExpressionText(collectionExpr);
-		for (SimpleName ref : loopVarRefs) {
-			if (!isCollectionGetCall(ref, collectionName)) {
-				return; // found a non-get(i) usage, cannot eliminate index
-			}
-		}
-
-		// Verify first body statement is a variable declaration with get(i):
-		//   Type elem = collection.get(i);
-		// This ensures the remaining statements use the element variable name, not the index.
-		List<Statement> bodyStmts = getBodyStatements(forStmt.getBody());
-		if (bodyStmts == null || bodyStmts.isEmpty()) {
-			return;
-		}
-		Statement firstStmt = bodyStmts.get(0);
-		if (!(firstStmt instanceof VariableDeclarationStatement varDeclStmt)
-				|| varDeclStmt.fragments().size() != 1) {
-			return;
-		}
-		VariableDeclarationFragment frag = (VariableDeclarationFragment) varDeclStmt.fragments().get(0);
-		if (!(frag.getInitializer() instanceof MethodInvocation getCall)
-				|| !"get".equals(getCall.getName().getIdentifier())) { //$NON-NLS-1$
-			return;
-		}
-
-		// Verify there are no remaining collection.get(i) calls after the first statement.
-		// If there are, the conversion would produce uncompilable code since the index
-		// variable is eliminated.
-		String elemVarName = frag.getName().getIdentifier();
-		for (int idx = 1; idx < bodyStmts.size(); idx++) {
-			boolean[] hasGetCall = { false };
-			bodyStmts.get(idx).accept(new ASTVisitor() {
-				@Override
-				public boolean visit(MethodInvocation node) {
-					if ("get".equals(node.getName().getIdentifier()) //$NON-NLS-1$
-							&& node.arguments().size() == 1
-							&& node.arguments().get(0) instanceof SimpleName argName
-							&& argName.getIdentifier().equals(loopVarName)) {
-						hasGetCall[0] = true;
-					}
-					return true;
-				}
-			});
-			if (hasGetCall[0]) {
-				return; // remaining get(i) calls would become invalid after index elimination
-			}
-		}
-
-		// Thread-safety check: ensure the collection is safe for conversion
-		ASTNode enclosingMethod = getEnclosingMethod(forStmt);
-		SafetyLevel safetyLevel = threadSafetyAnalyzer.analyze(collectionExpr, enclosingMethod);
-		if (!threadSafetyAnalyzer.isSafeForConversion(safetyLevel)) {
-			return;
-		}
-
-		// Index can be eliminated
-		pattern.indexEliminable = true;
-		pattern.collectionExpr = collectionExpr;
-		pattern.elementVarName = elemVarName;
-	}
-
-	/**
-	 * Checks if a SimpleName reference to the loop variable is used as
-	 * the argument of a {@code collection.get(i)} call.
-	 */
-	private boolean isCollectionGetCall(SimpleName ref, String collectionName) {
-		ASTNode parent = ref.getParent();
-		if (!(parent instanceof MethodInvocation methodInv)) {
-			return false;
-		}
-		if (!"get".equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$
-			return false;
-		}
-		if (methodInv.arguments().size() != 1 || methodInv.arguments().get(0) != ref) {
-			return false;
-		}
-		Expression receiver = methodInv.getExpression();
-		if (receiver == null) {
-			return false;
-		}
-		return collectionName.equals(getExpressionText(receiver));
-	}
-
-	/**
-	 * Derives an element variable name from the loop body or collection name.
-	 * If the body starts with {@code Type elem = collection.get(i);}, use that variable name.
-	 * Otherwise, derive from the collection name (e.g., "items" → "item").
-	 */
-	private String deriveElementVarName(ForStatement forStmt, String collectionName) {
-		// Check if the first statement is a variable declaration like: Type elem = collection.get(i);
-		List<Statement> bodyStmts = getBodyStatements(forStmt.getBody());
-		if (bodyStmts != null && !bodyStmts.isEmpty()) {
-			Statement firstStmt = bodyStmts.get(0);
-			if (firstStmt instanceof VariableDeclarationStatement varDeclStmt) {
-				List<?> fragments = varDeclStmt.fragments();
-				if (fragments.size() == 1) {
-					VariableDeclarationFragment frag = (VariableDeclarationFragment) fragments.get(0);
-					Expression initializer = frag.getInitializer();
-					if (initializer instanceof MethodInvocation methodInv
-							&& "get".equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$
-						return frag.getName().getIdentifier();
-					}
-				}
-			}
-		}
-
-		// Derive from collection name: remove trailing 's' if present
-		if (collectionName.endsWith("s") && collectionName.length() > 1) { //$NON-NLS-1$
-			return collectionName.substring(0, collectionName.length() - 1);
-		}
-		return "element"; //$NON-NLS-1$
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public void rewrite(UseFunctionalCallFixCore upp, ForStatement visited,
-			CompilationUnitRewrite cuRewrite, TextEditGroup group,
-			ReferenceHolder<ASTNode, Object> data) throws CoreException {
-
-		Object obj = data.get(visited);
-		if (!(obj instanceof ForLoopPattern pattern)) {
-			return;
-		}
-
-		AST ast = cuRewrite.getRoot().getAST();
-		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-
-		if (pattern.indexEliminable) {
-			rewriteAsForEach(ast, rewrite, visited, pattern, group);
-		} else {
-			rewriteAsIntStreamRange(ast, rewrite, cuRewrite, visited, pattern, group);
-		}
-	}
-
-	/**
-	 * Rewrites the loop as {@code collection.forEach(element -> ...)}.
-	 */
-	@SuppressWarnings("unchecked")
-	private void rewriteAsForEach(AST ast, ASTRewrite rewrite, ForStatement visited,
-			ForLoopPattern pattern, TextEditGroup group) {
-
-		// collection.forEach(elementVar -> { ... })
-		MethodInvocation forEachCall = ast.newMethodInvocation();
-		forEachCall.setExpression((Expression) ASTNode.copySubtree(ast, pattern.collectionExpr));
-		forEachCall.setName(ast.newSimpleName("forEach")); //$NON-NLS-1$
-
-		// Create lambda: elementVar -> { ... }
-		LambdaExpression lambda = ast.newLambdaExpression();
-		VariableDeclarationFragment lambdaParam = ast.newVariableDeclarationFragment();
-		lambdaParam.setName(ast.newSimpleName(pattern.elementVarName));
-		lambda.parameters().add(lambdaParam);
-		lambda.setParentheses(false);
-
-		// Build lambda body - transform the original body
-		List<Statement> transformedBody = transformBodyForIndexElimination(
-				ast, pattern.bodyStatements, pattern.loopVarName,
-				getExpressionText(pattern.collectionExpr), pattern.elementVarName);
-
-		if (transformedBody.size() == 1 && transformedBody.get(0) instanceof ExpressionStatement exprStmt) {
-			lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
-		} else {
-			Block lambdaBlock = ast.newBlock();
-			for (Statement stmt : transformedBody) {
-				lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
-			}
-			lambda.setBody(lambdaBlock);
-		}
-
-		forEachCall.arguments().add(lambda);
-		ExpressionStatement newStmt = ast.newExpressionStatement(forEachCall);
-		rewrite.replace(visited, newStmt, group);
-	}
-
-	/**
-	 * Rewrites the loop as {@code IntStream.range(start, end).forEach(i -> ...)}.
-	 * 
-	 * <p>Note: Only strict less-than conditions ({@code i < end}) are matched by
-	 * {@code analyzeForLoop()}, so {@code IntStream.range()} is always correct here.
-	 * Also note that {@code IntStream.range()} evaluates {@code end} once, which is a
-	 * semantic change if the end expression has side effects or changes during iteration.
-	 * The handler currently accepts this trade-off for simplicity; a future enhancement
-	 * could restrict conversion to stable end expressions (literals, effectively-final locals).</p>
-	 */
-	@SuppressWarnings("unchecked")
-	private void rewriteAsIntStreamRange(AST ast, ASTRewrite rewrite,
-			CompilationUnitRewrite cuRewrite, ForStatement visited,
-			ForLoopPattern pattern, TextEditGroup group) {
-
-		// IntStream.range(start, end)
-		MethodInvocation rangeCall = ast.newMethodInvocation();
-		rangeCall.setExpression(ast.newSimpleName("IntStream")); //$NON-NLS-1$
-		rangeCall.setName(ast.newSimpleName("range")); //$NON-NLS-1$
-		rangeCall.arguments().add(ASTNode.copySubtree(ast, pattern.startExpr));
-		rangeCall.arguments().add(ASTNode.copySubtree(ast, pattern.endExpr));
-
-		// .forEach(i -> { ... })
-		MethodInvocation forEachCall = ast.newMethodInvocation();
-		forEachCall.setExpression(rangeCall);
-		forEachCall.setName(ast.newSimpleName("forEach")); //$NON-NLS-1$
-
-		// Lambda: i -> { ... }
-		LambdaExpression lambda = ast.newLambdaExpression();
-		VariableDeclarationFragment lambdaParam = ast.newVariableDeclarationFragment();
-		lambdaParam.setName(ast.newSimpleName(pattern.loopVarName));
-		lambda.parameters().add(lambdaParam);
-		lambda.setParentheses(false);
-
-		// Lambda body
-		if (pattern.bodyStatements.size() == 1
-				&& pattern.bodyStatements.get(0) instanceof ExpressionStatement exprStmt) {
-			lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
-		} else {
-			Block lambdaBlock = ast.newBlock();
-			for (Statement stmt : pattern.bodyStatements) {
-				lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
-			}
-			lambda.setBody(lambdaBlock);
-		}
-
-		forEachCall.arguments().add(lambda);
-		ExpressionStatement newStmt = ast.newExpressionStatement(forEachCall);
-		rewrite.replace(visited, newStmt, group);
-
-		// Add IntStream import
-		cuRewrite.getImportRewrite().addImport("java.util.stream.IntStream"); //$NON-NLS-1$
-	}
-
-	/**
-	 * Transforms the body statements for index elimination.
-	 * Removes the initial variable declaration {@code Type elem = collection.get(i);} since
-	 * the element variable becomes the lambda parameter.
-	 * 
-	 * <p>Note: Index elimination is only supported when the first body statement is a
-	 * variable declaration initialized with {@code collection.get(i)}. This ensures the
-	 * remaining statements already reference the element variable name, not the index.</p>
-	 */
-	private List<Statement> transformBodyForIndexElimination(AST ast,
-			List<Statement> originalBody, String loopVarName,
-			String collectionName, String elementVarName) {
-
-		List<Statement> result = new ArrayList<>();
-
-		// The first statement must be the element declaration (enforced by analyzeIndexUsage)
-		// Skip it since the element variable becomes the lambda parameter
-		int startIdx = 1;
-		for (int i = startIdx; i < originalBody.size(); i++) {
-			result.add(originalBody.get(i));
-		}
-
-		return result;
-	}
-
-	// ===== Helper methods =====
-
-	/**
-	 * Checks if the for-loop is nested inside another loop (enhanced-for, while, for, do-while).
-	 * Nested traditional for-loops are skipped to avoid interfering with the LoopToFunctional
-	 * handler's analysis of outer enhanced-for loops.
-	 */
-	private boolean isNestedInsideLoop(ForStatement forStmt) {
-		ASTNode parent = forStmt.getParent();
-		while (parent != null) {
-			if (parent instanceof EnhancedForStatement
-					|| parent instanceof ForStatement
-					|| parent instanceof WhileStatement
-					|| parent instanceof DoStatement) {
-				return true;
-			}
-			if (parent instanceof MethodDeclaration || parent instanceof TypeDeclaration) {
-				break;
-			}
-			parent = parent.getParent();
-		}
-		return false;
-	}
-
-	private boolean isIncrementByOne(Object updater, String varName) {
-		if (updater instanceof PostfixExpression postfix) {
-			return postfix.getOperator() == PostfixExpression.Operator.INCREMENT
-					&& postfix.getOperand() instanceof SimpleName name
-					&& name.getIdentifier().equals(varName);
-		}
-		if (updater instanceof PrefixExpression prefix) {
-			return prefix.getOperator() == PrefixExpression.Operator.INCREMENT
-					&& prefix.getOperand() instanceof SimpleName name
-					&& name.getIdentifier().equals(varName);
-		}
-		if (updater instanceof Assignment assignment) {
-			if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN
-					&& assignment.getLeftHandSide() instanceof SimpleName name
-					&& name.getIdentifier().equals(varName)
-					&& isOneLiteral(assignment.getRightHandSide())) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private boolean isZeroLiteral(Expression expr) {
-		if (expr instanceof NumberLiteral numLiteral) {
-			return "0".equals(numLiteral.getToken()); //$NON-NLS-1$
-		}
-		return false;
-	}
-
-	private boolean isOneLiteral(Expression expr) {
-		if (expr instanceof NumberLiteral numLiteral) {
-			return "1".equals(numLiteral.getToken()); //$NON-NLS-1$
-		}
-		return false;
-	}
-
-	@SuppressWarnings("unchecked")
-	private List<Statement> getBodyStatements(Statement body) {
-		if (body instanceof Block block) {
-			return block.statements();
-		}
-		List<Statement> list = new ArrayList<>();
-		list.add(body);
-		return list;
-	}
-
-	private boolean containsBreakOrContinue(Statement body) {
-		boolean[] found = { false };
-		body.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(BreakStatement node) {
-				found[0] = true;
-				return false;
-			}
-
-			@Override
-			public boolean visit(ContinueStatement node) {
-				found[0] = true;
-				return false;
-			}
-
-			// Don't descend into nested loops/switches
-			@Override
-			public boolean visit(ForStatement node) {
-				return false;
-			}
-
-			@Override
-			public boolean visit(EnhancedForStatement node) {
-				return false;
-			}
-
-			@Override
-			public boolean visit(WhileStatement node) {
-				return false;
-			}
-
-			@Override
-			public boolean visit(DoStatement node) {
-				return false;
-			}
-
-			@Override
-			public boolean visit(SwitchStatement node) {
-				return false;
-			}
-		});
-		return found[0];
-	}
-
-	private String getExpressionText(Expression expr) {
-		if (expr instanceof SimpleName simpleName) {
-			return simpleName.getIdentifier();
-		}
-		return expr.toString();
-	}
-
-	private ASTNode getEnclosingMethod(ASTNode node) {
-		ASTNode current = node.getParent();
-		while (current != null) {
-			if (current instanceof MethodDeclaration || current instanceof Initializer) {
-				return current;
-			}
-			current = current.getParent();
-		}
-		return node.getRoot();
-	}
-
-	@Override
-	public String getPreview(boolean afterRefactoring) {
-		if (afterRefactoring) {
-			return "IntStream.range(0, 10).forEach(i -> System.out.println(i));\n"; //$NON-NLS-1$
-		}
-		return "for (int i = 0; i < 10; i++)\n    System.out.println(i);\n"; //$NON-NLS-1$
-	}
+    
+    @Override
+    public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
+                     Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
+        
+        compilationUnit.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(ForStatement node) {
+                if (nodesprocessed.contains(node)) {
+                    return false;
+                }
+                
+                // Analyze the for-loop structure
+                ForLoopPattern pattern = analyzeForLoop(node);
+                if (pattern == null) {
+                    return true; // Not a convertible pattern, continue visiting
+                }
+                
+                // Mark as processed and add operation
+                nodesprocessed.add(node);
+                ReferenceHolder<ASTNode, Object> holder = ReferenceHolder.create();
+                holder.put(node, pattern);
+                operations.add(fixcore.rewrite(node, holder));
+                
+                return false; // Don't visit children of convertible loops
+            }
+        });
+    }
+    
+    /**
+     * Analyzes a ForStatement to determine if it follows the convertible pattern.
+     * 
+     * @param forStmt the ForStatement to analyze
+     * @return a ForLoopPattern if convertible, null otherwise
+     */
+    private ForLoopPattern analyzeForLoop(ForStatement forStmt) {
+        // Check initializer: must be single variable declaration of type int
+        List<?> initializers = forStmt.initializers();
+        if (initializers.size() != 1) {
+            return null;
+        }
+        
+        Object initObj = initializers.get(0);
+        if (!(initObj instanceof VariableDeclarationExpression)) {
+            return null;
+        }
+        
+        VariableDeclarationExpression varDecl = (VariableDeclarationExpression) initObj;
+        Type type = varDecl.getType();
+        if (!isPrimitiveInt(type)) {
+            return null;
+        }
+        
+        List<?> fragments = varDecl.fragments();
+        if (fragments.size() != 1) {
+            return null;
+        }
+        
+        VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragments.get(0);
+        String loopVarName = fragment.getName().getIdentifier();
+        Expression startExpr = fragment.getInitializer();
+        
+        if (startExpr == null) {
+            return null;
+        }
+        
+        // Check condition: must be infix comparison with loop variable
+        Expression condition = forStmt.getExpression();
+        if (!(condition instanceof InfixExpression)) {
+            return null;
+        }
+        
+        InfixExpression infixCond = (InfixExpression) condition;
+        InfixExpression.Operator operator = infixCond.getOperator();
+        
+        // Check that left operand is the loop variable
+        Expression leftOperand = infixCond.getLeftOperand();
+        if (!(leftOperand instanceof SimpleName)) {
+            return null;
+        }
+        
+        SimpleName leftName = (SimpleName) leftOperand;
+        if (!leftName.getIdentifier().equals(loopVarName)) {
+            return null;
+        }
+        
+        Expression endExpr = infixCond.getRightOperand();
+        if (endExpr == null) {
+            return null;
+        }
+        
+        boolean inclusive = false;
+        if (operator == InfixExpression.Operator.LESS) {
+            // i < end  →  IntStream.range(start, end)
+            inclusive = false;
+        } else if (operator == InfixExpression.Operator.LESS_EQUALS) {
+            // i <= end  →  IntStream.rangeClosed(start, end) or range(start, end+1)
+            inclusive = true;
+        } else {
+            return null; // Unsupported operator
+        }
+        
+        // Check updater: must be i++ or ++i
+        List<?> updaters = forStmt.updaters();
+        if (updaters.size() != 1) {
+            return null;
+        }
+        
+        Object updaterObj = updaters.get(0);
+        boolean isIncrement = false;
+        
+        if (updaterObj instanceof PostfixExpression) {
+            PostfixExpression postfix = (PostfixExpression) updaterObj;
+            if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {
+                Expression operand = postfix.getOperand();
+                if (operand instanceof SimpleName && ((SimpleName) operand).getIdentifier().equals(loopVarName)) {
+                    isIncrement = true;
+                }
+            }
+        } else if (updaterObj instanceof PrefixExpression) {
+            PrefixExpression prefix = (PrefixExpression) updaterObj;
+            if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {
+                Expression operand = prefix.getOperand();
+                if (operand instanceof SimpleName && ((SimpleName) operand).getIdentifier().equals(loopVarName)) {
+                    isIncrement = true;
+                }
+            }
+        }
+        
+        if (!isIncrement) {
+            return null;
+        }
+        
+        // Extract body
+        Statement body = forStmt.getBody();
+        
+        // Check if body contains unconvertible statements (break, continue, return)
+        if (containsUnconvertibleStatements(body)) {
+            return null;
+        }
+        
+        return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);
+    }
+    
+    /**
+     * Checks if a Type represents primitive int.
+     */
+    private boolean isPrimitiveInt(Type type) {
+        if (type instanceof PrimitiveType) {
+            PrimitiveType primType = (PrimitiveType) type;
+            return primType.getPrimitiveTypeCode() == PrimitiveType.INT;
+        }
+        return false;
+    }
+    
+    /**
+     * Checks if the loop body contains unconvertible statements.
+     * Statements containing break, continue, or return cannot be converted to lambda.
+     */
+    private boolean containsUnconvertibleStatements(Statement body) {
+        final boolean[] hasUnconvertible = {false};
+        
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(BreakStatement node) {
+                hasUnconvertible[0] = true;
+                return false;
+            }
+            
+            @Override
+            public boolean visit(ContinueStatement node) {
+                hasUnconvertible[0] = true;
+                return false;
+            }
+            
+            @Override
+            public boolean visit(ReturnStatement node) {
+                hasUnconvertible[0] = true;
+                return false;
+            }
+        });
+        
+        return hasUnconvertible[0];
+    }
+    
+    @Override
+    public void rewrite(UseFunctionalCallFixCore upp, ForStatement visited,
+                        CompilationUnitRewrite cuRewrite, TextEditGroup group,
+                        ReferenceHolder<ASTNode, Object> data) throws CoreException {
+        
+        Object patternObj = data.get(visited);
+        if (!(patternObj instanceof ForLoopPattern)) {
+            return;
+        }
+        
+        ForLoopPattern pattern = (ForLoopPattern) patternObj;
+        
+        AST ast = cuRewrite.getRoot().getAST();
+        ASTRewrite rewrite = cuRewrite.getASTRewrite();
+        
+        // Build LoopModel
+        LoopModel model = buildLoopModel(pattern, ast);
+        
+        // Create renderer
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body);
+        
+        // Transform using LoopModelTransformer
+        LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
+        Expression streamExpression = transformer.transform(model);
+        
+        if (streamExpression != null) {
+            // Wrap in ExpressionStatement
+            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);
+            rewrite.replace(visited, newStatement, group);
+            
+            // Add IntStream import
+            cuRewrite.getImportRewrite().addImport("java.util.stream.IntStream");
+        }
+    }
+    
+    /**
+     * Builds a LoopModel from the analyzed ForLoopPattern.
+     */
+    private LoopModel buildLoopModel(ForLoopPattern pattern, AST ast) {
+        // Get start and end expressions as strings
+        String startStr = pattern.startExpr.toString();
+        String endStr = pattern.endExpr.toString();
+        
+        // Adjust end expression for inclusive range (i <= end)
+        if (pattern.inclusive) {
+            // For i <= end, we need IntStream.range(start, (end) + 1)
+            // Parenthesize end expression to preserve operator precedence
+            endStr = "(" + endStr + ") + 1";
+        }
+        
+        // Build EXPLICIT_RANGE source descriptor
+        String rangeExpression = startStr + "," + endStr;
+        SourceDescriptor source = new SourceDescriptor(
+            SourceDescriptor.SourceType.EXPLICIT_RANGE,
+            rangeExpression,
+            "int"
+        );
+        
+        // Build element descriptor for the loop variable
+        ElementDescriptor element = new ElementDescriptor(
+            pattern.loopVarName,
+            "int",
+            false // not a collection element
+        );
+        
+        // Extract body statements and convert to strings
+        List<String> bodyStatements = extractBodyStatementsAsStrings(pattern.body);
+        
+        // Build ForEachTerminal
+        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // ordered = false for IntStream
+        
+        // Build and return LoopModel
+        return new LoopModelBuilder()
+            .source(source)
+            .element(element)
+            .terminal(terminal)
+            .build();
+    }
+    
+    /**
+     * Extracts statements from the loop body and converts them to expression strings.
+     * Trailing semicolons are stripped because ForEachTerminal / ASTStreamRenderer.createExpression()
+     * expects pure expressions, not statements.  This matches how
+     * {@code JdtLoopExtractor.addSimpleForEachTerminal()} produces body strings for
+     * the existing EnhancedForHandler.
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> extractBodyStatementsAsStrings(Statement body) {
+        List<String> bodyStmts = new java.util.ArrayList<>();
+        
+        if (body instanceof Block) {
+            Block block = (Block) body;
+            List<Statement> statements = block.statements();
+            for (Statement stmt : statements) {
+                bodyStmts.add(stripTrailingSemicolon(stmt.toString()));
+            }
+        } else {
+            // Single statement body
+            bodyStmts.add(stripTrailingSemicolon(body.toString()));
+        }
+        
+        return bodyStmts;
+    }
+    
+    /**
+     * Strips a trailing semicolon (and surrounding whitespace) from a statement string
+     * so that it can be parsed as an expression by {@code ASTStreamRenderer.createExpression()}.
+     */
+    private static String stripTrailingSemicolon(String stmtStr) {
+        String trimmed = stmtStr.trim();
+        if (trimmed.endsWith(";")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
+        }
+        return trimmed;
+    }
+    
+    @Override
+    public String getPreview(boolean afterRefactoring) {
+        if (afterRefactoring) {
+            return "IntStream.range(0, 10).forEach(i -> System.out.println(i));\n";
+        }
+        return "for (int i = 0; i < 10; i++)\n    System.out.println(i);\n";
+    }
+    
+    /**
+     * Represents an analyzed traditional for-loop pattern.
+     */
+    private static class ForLoopPattern {
+        final String loopVarName;
+        final Expression startExpr;
+        final Expression endExpr;
+        final boolean inclusive;  // true for <=, false for <
+        final Statement body;
+        
+        ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,
+                      boolean inclusive, Statement body) {
+            this.loopVarName = loopVarName;
+            this.startExpr = startExpr;
+            this.endExpr = endExpr;
+            this.inclusive = inclusive;
+            this.body = body;
+        }
+    }
 }

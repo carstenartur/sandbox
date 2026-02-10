@@ -27,7 +27,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopBodyParser.ParsedB
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.IteratorPattern;
 
 /**
- * Converts iterator-based loops to functional stream operations.
+ * Handler for converting iterator-based while-loops to functional stream operations.
  * 
  * <p>This converter handles:</p>
  * <ul>
@@ -36,9 +36,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
  * </ul>
  * 
  * <p>The conversion creates a synthetic EnhancedForStatement and delegates to the existing
- * LoopToFunctional infrastructure for the actual stream generation.</p>
+ * EnhancedForHandler infrastructure for the actual stream generation.</p>
  */
-public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
+public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
     
     private final IteratorPatternDetector patternDetector = new IteratorPatternDetector();
     private final IteratorLoopAnalyzer loopAnalyzer = new IteratorLoopAnalyzer();

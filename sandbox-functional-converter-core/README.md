@@ -90,4 +90,4 @@ The module has its own GitHub Actions workflow that runs on every push/PR affect
 
 - [Issue #450 - Unified Loop Representation](https://github.com/carstenartur/sandbox/issues/450)
 - [sandbox_functional_converter](../sandbox_functional_converter/) - Eclipse integration module
-- [LoopToFunctional.java](../sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/LoopToFunctional.java) - Current V1 implementation
+- [EnhancedForHandler.java](../sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/EnhancedForHandler.java) - Current V1 implementation

@@ -380,7 +380,7 @@ public final class PreconditionsChecker {
 		containsReturn = containsReturnInsideLoop;
 		
 		// NOTE: Effectively-final variable checks for nested loops are now handled
-		// by LoopToFunctional.endVisitLoop() using LoopTree/ScopeInfo, which properly
+		// by EnhancedForHandler.endVisitLoop() using LoopTree/ScopeInfo, which properly
 		// tracks modifications in ancestor scopes while allowing reducer patterns.
 	}
 

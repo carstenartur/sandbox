@@ -24,7 +24,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /**
- * Tests for the unified LoopToFunctional ULR Integration.
+ * Tests for the unified EnhancedForHandler ULR Integration.
  * 
  * <p>
  * This test class validates the Unified Loop Representation (ULR) based
@@ -33,12 +33,12 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * for complex patterns (filter, map, collect, reduce).
  * </p>
  * 
- * @see org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2
+ * @see org.sandbox.jdt.internal.corext.fix.helper.EnhancedForHandler
  * @see org.sandbox.jdt.internal.corext.fix.helper.JdtLoopExtractor
  * @see org.sandbox.jdt.internal.corext.fix.helper.ASTStreamRenderer
  */
-@DisplayName("LoopToFunctionalV2 ULR Integration Tests")
-public class LoopToFunctionalV2Test {
+@DisplayName("EnhancedForHandler ULR Integration Tests")
+public class EnhancedForHandlerTest {
     
     @RegisterExtension
     AbstractEclipseJava context = new EclipseJava22();
