@@ -63,7 +63,6 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * not the target format. The architecture supports bidirectional transformations, so the name
  * describes what loop pattern this handler processes.</p>
  * 
- * @see SourceDescriptor.SourceType#INT_RANGE
  * @see SourceDescriptor.SourceType#EXPLICIT_RANGE
  * @see ASTStreamRenderer#renderSource(SourceDescriptor)
  */
@@ -322,7 +321,7 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         List<String> bodyStatements = extractBodyStatementsAsStrings(pattern.body);
         
         // Build ForEachTerminal
-        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // ordered = false for IntStream
+        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // uses forEach (not forEachOrdered)
         
         // Build and return LoopModel
         return new LoopModelBuilder()
