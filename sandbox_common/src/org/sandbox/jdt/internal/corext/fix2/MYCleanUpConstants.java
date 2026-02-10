@@ -318,6 +318,19 @@ public class MYCleanUpConstants {
 	public static final String LOOP_CONVERSION_FROM_CLASSIC_FOR = "cleanup.loop_conversion.from.classic_for"; //$NON-NLS-1$
 
 	/**
+	 * Threading mode for loop conversion decisions.
+	 * Controls how the thread-safety analyzer handles potentially-shared collections
+	 * when converting index-based for-loops with collection.get(i) patterns.
+	 * <p>
+	 * Possible values: "safe_only", "always"
+	 * <ul>
+	 *   <li>"safe_only" (default): Only convert when collection is provably thread-safe</li>
+	 *   <li>"always": Convert regardless of thread-safety analysis</li>
+	 * </ul>
+	 */
+	public static final String LOOP_CONVERSION_THREADING_MODE = "cleanup.loop_conversion.threading_mode"; //$NON-NLS-1$
+
+	/**
 	 *
 	 */
 	public static final String METHOD_REUSE_CLEANUP= "cleanup.method_reuse"; //$NON-NLS-1$

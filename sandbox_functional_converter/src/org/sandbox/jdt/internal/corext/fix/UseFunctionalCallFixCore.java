@@ -34,6 +34,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamConcatRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToIteratorWhile;
+import org.sandbox.jdt.internal.corext.fix.helper.TraditionalForHandler;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
@@ -71,7 +72,14 @@ public enum UseFunctionalCallFixCore {
 	 * Enhanced for-loop → Iterator while-loop transformation.
 	 * Converts: {@code for (T item : collection) { ... }} to {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}
 	 */
-	FOR_TO_ITERATOR(new EnhancedForToIteratorWhile());
+	FOR_TO_ITERATOR(new EnhancedForToIteratorWhile()),
+	
+	/**
+	 * Traditional for-loop → IntStream.range() or collection.forEach() transformation.
+	 * Converts: {@code for (int i = 0; i < 10; i++) { ... }} to {@code IntStream.range(0, 10).forEach(i -> ...)}
+	 * When index is only used for collection.get(i), converts to: {@code collection.forEach(item -> ...)}
+	 */
+	TRADITIONAL_FOR_LOOP(new TraditionalForHandler());
 
 	AbstractFunctionalCall<ASTNode> functionalcall;
 

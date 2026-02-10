@@ -220,7 +220,6 @@ public class AdditionalLoopPatternsTest {
 	 * </ul>
 	 * Then convert to {@code IntStream.range(start, end)} or {@code IntStream.rangeClosed()}.</p>
 	 */
-	@Disabled("Index-based for-loops not yet supported - requires range analysis")
 	@Test
 	@DisplayName("Index-based for-loop to IntStream.range() (future)")
 	public void testIndexBasedForLoop_toIntStream() throws CoreException {
@@ -264,7 +263,6 @@ public class AdditionalLoopPatternsTest {
 	 * to enhanced for-loop first, then to stream. However, if index is used in computation,
 	 * would need {@code IntStream.range(0, list.size()).forEach(i -> ... list.get(i) ...)}.</p>
 	 */
-	@Disabled("Index-based collection access not yet supported")
 	@Test
 	@DisplayName("Index-based collection loop (future)")
 	public void testIndexBasedCollectionLoop_toStream() throws CoreException {
