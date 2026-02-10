@@ -1591,9 +1591,9 @@ ForStatement → analyzeForLoop() → ForLoopPattern
 
 ### API Constants
 
-- `LOOP_CONVERSION_THREADING_MODE` in `MYCleanUpConstants`: Controls thread-safety analysis mode
-  - `"safe_only"` (default): Only convert when collection is provably thread-safe
-  - `"always"`: Convert regardless of thread-safety analysis
+- `LOOP_CONVERSION_THREADING_MODE` in `MYCleanUpConstants`: Reserved for future thread-safety analysis configuration
+  - Current implementation: This option is defined but not yet read by the converter; changing it has no effect
+  - Planned semantics (not implemented): modes to restrict conversions to provably thread-safe collections vs. always converting
 
 ### Testing
 

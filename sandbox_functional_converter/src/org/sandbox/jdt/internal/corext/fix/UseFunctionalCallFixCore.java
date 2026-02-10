@@ -76,8 +76,9 @@ public enum UseFunctionalCallFixCore {
 	
 	/**
 	 * Traditional for-loop → IntStream.range() or collection.forEach() transformation.
-	 * Converts: {@code for (int i = 0; i < 10; i++) { ... }} to {@code IntStream.range(0, 10).forEach(i -> ...)}
-	 * When index is only used for collection.get(i), converts to: {@code collection.forEach(item -> ...)}
+	 * Converts: {@code for (int i = 0; i < 10; i++) { ... }} to {@code IntStream.range(0, 10).forEach(i -> ...)}.
+	 * When the index is only used in an initial statement of the form {@code T elem = collection.get(i)} and the
+	 * remainder of the loop body uses {@code elem}, converts to: {@code collection.forEach(elem -> ...)}.
 	 */
 	TRADITIONAL_FOR_LOOP(new TraditionalForHandler());
 

@@ -207,21 +207,20 @@ public class AdditionalLoopPatternsTest {
 	// ===========================================
 
 	/**
-	 * Tests traditional index-based for-loop (NOT YET SUPPORTED).
+	 * Tests traditional index-based for-loop conversion to IntStream.range().
 	 * 
 	 * <p><b>Pattern:</b> {@code for (int i = 0; i < n; i++) { ... }}</p>
-	 * <p><b>Potential conversion:</b> {@code IntStream.range(0, n).forEach(i -> ...)}</p>
+	 * <p><b>Conversion:</b> {@code IntStream.range(0, n).forEach(i -> ...)}</p>
 	 * 
-	 * <p><b>Implementation Note:</b> This would require analyzing the loop to detect:
+	 * <p>The handler detects:
 	 * <ul>
 	 *   <li>Initialization: {@code int i = start}</li>
-	 *   <li>Condition: {@code i < end} or {@code i <= end}</li>
-	 *   <li>Update: {@code i++} or {@code i += step}</li>
-	 * </ul>
-	 * Then convert to {@code IntStream.range(start, end)} or {@code IntStream.rangeClosed()}.</p>
+	 *   <li>Condition: {@code i < end}</li>
+	 *   <li>Update: {@code i++} or {@code i += 1}</li>
+	 * </ul></p>
 	 */
 	@Test
-	@DisplayName("Index-based for-loop to IntStream.range() (future)")
+	@DisplayName("Index-based for-loop to IntStream.range()")
 	public void testIndexBasedForLoop_toIntStream() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
@@ -254,17 +253,17 @@ public class AdditionalLoopPatternsTest {
 	}
 
 	/**
-	 * Tests index-based loop with collection access (NOT YET SUPPORTED).
+	 * Tests index-based loop with collection access and index elimination.
 	 * 
 	 * <p><b>Pattern:</b> {@code for (int i = 0; i < list.size(); i++) { T item = list.get(i); ... }}</p>
-	 * <p><b>Potential conversion:</b> {@code list.forEach(item -> ...)}</p>
+	 * <p><b>Conversion:</b> {@code list.forEach(item -> ...)}</p>
 	 * 
-	 * <p><b>Implementation Note:</b> Could detect {@code list.get(i)} pattern and convert
-	 * to enhanced for-loop first, then to stream. However, if index is used in computation,
-	 * would need {@code IntStream.range(0, list.size()).forEach(i -> ... list.get(i) ...)}.</p>
+	 * <p>When the index variable is only used in an initial {@code T elem = collection.get(i)}
+	 * statement and the rest of the body uses {@code elem}, the index is eliminated
+	 * and the loop is converted to {@code collection.forEach(elem -> ...)}.</p>
 	 */
 	@Test
-	@DisplayName("Index-based collection loop (future)")
+	@DisplayName("Index-based collection loop with index elimination")
 	public void testIndexBasedCollectionLoop_toStream() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 

@@ -121,13 +121,13 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
 			return null;
 		}
 
-		// Step 2: Check condition - must be "i < end" or "i <= end"
+		// Step 2: Check condition - must be "i < end" (strict less-than only;
+		// "i <= end" would require rangeClosed which is not yet supported)
 		Expression condition = forStmt.getExpression();
 		if (!(condition instanceof InfixExpression infixExpr)) {
 			return null;
 		}
-		if (infixExpr.getOperator() != InfixExpression.Operator.LESS
-				&& infixExpr.getOperator() != InfixExpression.Operator.LESS_EQUALS) {
+		if (infixExpr.getOperator() != InfixExpression.Operator.LESS) {
 			return null;
 		}
 		Expression leftOperand = infixExpr.getLeftOperand();
@@ -219,15 +219,9 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
 			}
 		}
 
-		// Thread-safety check: ensure the collection is safe for conversion
-		ASTNode enclosingMethod = getEnclosingMethod(forStmt);
-		SafetyLevel safetyLevel = threadSafetyAnalyzer.analyze(collectionExpr, enclosingMethod);
-		if (!threadSafetyAnalyzer.isSafeForConversion(safetyLevel)) {
-			return;
-		}
-
-		// All checks passed - verify first body statement is a variable declaration with get(i)
-		// This ensures the remaining statements already use the element variable name
+		// Verify first body statement is a variable declaration with get(i):
+		//   Type elem = collection.get(i);
+		// This ensures the remaining statements use the element variable name, not the index.
 		List<Statement> bodyStmts = getBodyStatements(forStmt.getBody());
 		if (bodyStmts == null || bodyStmts.isEmpty()) {
 			return;
@@ -243,10 +237,40 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
 			return;
 		}
 
+		// Verify there are no remaining collection.get(i) calls after the first statement.
+		// If there are, the conversion would produce uncompilable code since the index
+		// variable is eliminated.
+		String elemVarName = frag.getName().getIdentifier();
+		for (int idx = 1; idx < bodyStmts.size(); idx++) {
+			boolean[] hasGetCall = { false };
+			bodyStmts.get(idx).accept(new ASTVisitor() {
+				@Override
+				public boolean visit(MethodInvocation node) {
+					if ("get".equals(node.getName().getIdentifier()) //$NON-NLS-1$
+							&& node.arguments().size() == 1
+							&& node.arguments().get(0) instanceof SimpleName argName
+							&& argName.getIdentifier().equals(loopVarName)) {
+						hasGetCall[0] = true;
+					}
+					return true;
+				}
+			});
+			if (hasGetCall[0]) {
+				return; // remaining get(i) calls would become invalid after index elimination
+			}
+		}
+
+		// Thread-safety check: ensure the collection is safe for conversion
+		ASTNode enclosingMethod = getEnclosingMethod(forStmt);
+		SafetyLevel safetyLevel = threadSafetyAnalyzer.analyze(collectionExpr, enclosingMethod);
+		if (!threadSafetyAnalyzer.isSafeForConversion(safetyLevel)) {
+			return;
+		}
+
 		// Index can be eliminated
 		pattern.indexEliminable = true;
 		pattern.collectionExpr = collectionExpr;
-		pattern.elementVarName = frag.getName().getIdentifier();
+		pattern.elementVarName = elemVarName;
 	}
 
 	/**
@@ -363,6 +387,13 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
 
 	/**
 	 * Rewrites the loop as {@code IntStream.range(start, end).forEach(i -> ...)}.
+	 * 
+	 * <p>Note: Only strict less-than conditions ({@code i < end}) are matched by
+	 * {@code analyzeForLoop()}, so {@code IntStream.range()} is always correct here.
+	 * Also note that {@code IntStream.range()} evaluates {@code end} once, which is a
+	 * semantic change if the end expression has side effects or changes during iteration.
+	 * The handler currently accepts this trade-off for simplicity; a future enhancement
+	 * could restrict conversion to stable end expressions (literals, effectively-final locals).</p>
 	 */
 	@SuppressWarnings("unchecked")
 	private void rewriteAsIntStreamRange(AST ast, ASTRewrite rewrite,

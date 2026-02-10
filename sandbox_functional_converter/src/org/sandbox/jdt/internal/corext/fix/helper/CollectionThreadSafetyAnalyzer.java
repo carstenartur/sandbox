@@ -109,7 +109,9 @@ public class CollectionThreadSafetyAnalyzer {
 	 * @return true if the collection is safe for forEach conversion
 	 */
 	public boolean isSafeForConversion(SafetyLevel level) {
-		return level != SafetyLevel.POTENTIALLY_SHARED;
+		return level == SafetyLevel.LOCAL_ONLY
+			|| level == SafetyLevel.CONCURRENT_SAFE
+			|| level == SafetyLevel.IMMUTABLE;
 	}
 
 	private SafetyLevel analyzeVariable(SimpleName name, ASTNode scope) {
@@ -145,7 +147,9 @@ public class CollectionThreadSafetyAnalyzer {
 					return SafetyLevel.IMMUTABLE;
 				}
 				if (SYNCHRONIZED_WRAPPER_METHODS.contains(methodName)) {
-					return SafetyLevel.SYNCHRONIZED_WRAPPER;
+					// Synchronized wrappers still require external synchronization for
+					// safe iteration, which this analyzer does not track. Be conservative.
+					return SafetyLevel.POTENTIALLY_SHARED;
 				}
 			}
 			// Check for List.of(), Set.of(), etc.
@@ -163,10 +167,12 @@ public class CollectionThreadSafetyAnalyzer {
 	}
 
 	private boolean isLocallyCreated(IVariableBinding varBinding, ASTNode scope) {
-		// Local variables declared in the same method are safe.
-		// Parameters are also treated as safe because converting a for-loop to forEach
-		// on the same collection does not change thread-safety semantics - both forms
-		// iterate the same collection instance provided by the caller.
-		return !varBinding.isField() && !varBinding.isEnumConstant();
+		// Only non-field, non-parameter local variables are considered locally created.
+		// Parameters are potentially shared since they are passed from callers.
+		// Fields and enum constants are shared by definition.
+		if (varBinding.isField() || varBinding.isEnumConstant() || varBinding.isParameter()) {
+			return false;
+		}
+		return true;
 	}
 }
