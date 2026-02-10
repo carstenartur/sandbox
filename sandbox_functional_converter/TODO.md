@@ -10,7 +10,7 @@
 
 **Completed Deliverables**:
 - ✅ Core module `sandbox-functional-converter-core` with ULR model classes
-- ✅ V2 cleanup infrastructure (`LOOP_V2`, `UseFunctionalCallCleanUpV2`, `LoopToFunctionalV2`)
+- ✅ V2 cleanup infrastructure (`LOOP_V2`, `UseFunctionalCallCleanUpV2`, `EnhancedForHandler`)
 - ✅ Delegation pattern: V2 delegates to V1 for identical behavior
 - ✅ `FeatureParityTest` with 3 test methods validating V1/V2 equivalence
 - ✅ V1 isolation: Modified `computeFixSet()` to explicitly add only `LOOP`
@@ -39,12 +39,12 @@
    - ⚠️ Advanced patterns (complex map/filter/reduce) not yet migrated
    
 4. **Testing and Validation**
-   - ✅ Created `LoopToFunctionalV2Test` with 5 test cases
+   - ✅ Created `EnhancedForHandlerTest` with 5 test cases
    - ✅ Code coverage for basic scenarios (forEach, arrays, control flow)
    - ⚠️ Performance benchmarking not yet performed
 
 **Success Criteria Met**:
-- ✅ `LoopToFunctionalV2` uses ULR extraction + transformation (no delegation)
+- ✅ `EnhancedForHandler` uses ULR extraction + transformation (no delegation)
 - ✅ Basic test cases pass
 - ⚠️ Feature parity with V1 partial (simple forEach patterns only)
 
@@ -66,21 +66,21 @@
 - ✅ Fixed OSGi bundle dependency resolution (`org.sandbox.functional.core`)
 - ✅ Added core module to reactor build
 - ✅ Updated documentation (ARCHITECTURE.md, TODO.md)
-- ✅ Integrated ASTStreamRenderer with LoopToFunctionalV2
-- ✅ Added end-to-end integration tests (LoopToFunctionalV2Test)
+- ✅ Integrated ASTStreamRenderer with EnhancedForHandler
+- ✅ Added end-to-end integration tests (EnhancedForHandlerTest)
 
 ### Phase 6: Complete ULR Integration ✅ COMPLETED (January 2026)
 
-**Objective**: Remove V1 delegation and implement native ULR pipeline in LoopToFunctionalV2
+**Objective**: Remove V1 delegation and implement native ULR pipeline in EnhancedForHandler
 
 **Completed Tasks**:
 - ✅ Created `JdtLoopExtractor` to bridge JDT AST to ULR LoopModel
 - ✅ Implemented source type detection (ARRAY, COLLECTION, ITERABLE)
 - ✅ Implemented control flow analysis (break, continue, return detection)
-- ✅ Removed V1 delegation from LoopToFunctionalV2
+- ✅ Removed V1 delegation from EnhancedForHandler
 - ✅ Implemented native ULR pipeline: extract → transform → render
 - ✅ Added automatic import management (Arrays, StreamSupport, Collectors)
-- ✅ Created test suite (LoopToFunctionalV2Test) with positive and negative cases
+- ✅ Created test suite (EnhancedForHandlerTest) with positive and negative cases
 - ✅ Updated ARCHITECTURE.md with Phase 6 documentation
 - ✅ Updated TODO.md to reflect Phase 6 completion
 
@@ -112,7 +112,7 @@
 
 **Completed Tasks**:
 - ✅ Activated `ITERATOR_LOOP` enum in `UseFunctionalCallFixCore`
-- ✅ Added `IteratorLoopToFunctional` import
+- ✅ Added `IteratorEnhancedForHandler` import
 - ✅ Updated `UseFunctionalCallCleanUpCore` to include ITERATOR_LOOP in cleanup fixes
 - ✅ Enabled 14 disabled tests in `IteratorLoopToStreamTest` (removed @Disabled annotations)
 - ✅ Enabled 6 disabled tests in `IteratorLoopConversionTest` (removed @Disabled annotations)
@@ -128,7 +128,7 @@
 - ✅ Updated TODO.md with Phase 7 documentation
 
 **Implementation Highlights**:
-- `IteratorLoopToFunctional` class already fully implemented (from PR #449)
+- `IteratorEnhancedForHandler` class already fully implemented (from PR #449)
 - Pattern detectors: `IteratorPatternDetector`, `IteratorLoopAnalyzer`, `IteratorLoopBodyParser`
 - Supports both while-iterator and for-loop-iterator patterns
 - Converts recognized iterator loops directly to stream-based forms (e.g., `collection.stream().forEach(...)`)
@@ -157,7 +157,7 @@
 V2 initially generated `collection.stream().forEach(...)` for all forEach operations, while V1 optimized simple cases to direct `collection.forEach(...)`. This created output differences between V1 and V2 for the simplest forEach patterns, failing feature parity requirements.
 
 **Completed Tasks**:
-- ✅ Added `canUseDirectForEach()` method to `LoopToFunctionalV2`
+- ✅ Added `canUseDirectForEach()` method to `EnhancedForHandler`
   - Detects simple forEach patterns (no intermediate operations, ForEachTerminal, COLLECTION/ITERABLE source)
   - Returns `false` for arrays (no forEach method available)
 - ✅ Implemented `renderDirectForEach()` in `ASTStreamRenderer`
@@ -168,7 +168,7 @@ V2 initially generated `collection.stream().forEach(...)` for all forEach operat
   - Skips stream-related imports (`StreamSupport`, `Collectors`) when using direct forEach
   - Only adds `Arrays` import when array requires stream-based forEach
 - ✅ Updated test expectations:
-  - Fixed `LoopToFunctionalV2Test.test_SimpleForEach_V2`: Now expects `items.forEach(...)`
+  - Fixed `EnhancedForHandlerTest.test_SimpleForEach_V2`: Now expects `items.forEach(...)`
   - Re-enabled `FeatureParityTest.parity_SimpleForEachConversion`: Validates V1/V2 produce identical output
 - ✅ Added comprehensive test coverage:
   - 3 new tests in `ASTStreamRendererTest` for renderDirectForEach
@@ -207,9 +207,9 @@ Arrays.stream(array).forEach(item -> System.out.println(item));
 **Objective**: Remove V1 classes, consolidate into single implementation
 
 **Completed Tasks**:
-- ✅ Changed `LOOP` enum to use `LoopToFunctionalV2`
+- ✅ Changed `LOOP` enum to use `EnhancedForHandler`
 - ✅ Removed `LOOP_V2` enum, `UseFunctionalCallCleanUpCoreV2`, `UseFunctionalCallCleanUpV2`
-- ✅ Removed `LoopToFunctional.java` (old V1 helper)
+- ✅ Removed `EnhancedForHandler.java` (old V1 helper)
 - ✅ Updated `plugin.xml` and cleanup core to handle both constants
 
 ### Phase 7.7: Full V2 Body Analysis ✅ COMPLETED (February 2026)
@@ -217,7 +217,7 @@ Arrays.stream(array).forEach(item -> System.out.println(item));
 **Objective**: Implement all pattern detection natively in V2's ULR pipeline, remove V1 Refactorer fallback
 
 **Problem Statement**:
-Phase 7.6 had only removed V1 classes but kept the V1 `Refactorer` as a fallback in `LoopToFunctionalV2.rewrite()`. This created a confusing mix of two approaches — V2's ULR pipeline for simple forEach, and V1's Refactorer for everything else. The core transformation logic was untestable without OSGi.
+Phase 7.6 had only removed V1 classes but kept the V1 `Refactorer` as a fallback in `EnhancedForHandler.rewrite()`. This created a confusing mix of two approaches — V2's ULR pipeline for simple forEach, and V1's Refactorer for everything else. The core transformation logic was untestable without OSGi.
 
 **Completed Tasks**:
 - ✅ `JdtLoopExtractor.analyzeAndAddOperations()` now detects ALL loop patterns:
@@ -228,8 +228,8 @@ Phase 7.6 had only removed V1 classes but kept the V1 `Refactorer` as a fallback
   - `sum += x`, `count++`, `product *= x` → `ReduceTerminal`
   - `if (cond) return true/false;` → `MatchTerminal` (anyMatch/noneMatch)
   - Everything else → `ForEachTerminal` (with ordered flag when operations present)
-- ✅ `LoopToFunctionalV2.rewrite()` uses `LoopModelTransformer` + `ASTStreamRenderer` for ALL patterns
-- ✅ `LoopToFunctionalV2.endVisitLoop()` uses `LoopModel`-based convertibility (no more PreconditionsChecker/StreamPipelineBuilder)
+- ✅ `EnhancedForHandler.rewrite()` uses `LoopModelTransformer` + `ASTStreamRenderer` for ALL patterns
+- ✅ `EnhancedForHandler.endVisitLoop()` uses `LoopModel`-based convertibility (no more PreconditionsChecker/StreamPipelineBuilder)
 - ✅ Proper import handling based on LoopModel (Arrays, StreamSupport, Collectors)
 - ✅ Proper replacement type based on terminal (ExpressionStatement, Assignment, ReturnStatement)
 - ✅ 19 `PatternTransformationTest` cases in `sandbox-functional-converter-core` (no OSGi)
@@ -507,7 +507,7 @@ case TO_LIST -> ".collect(Collectors.toList())";
 **Planned Tasks**:
 - [ ] Mark `LOOP` (V1) as `@Deprecated`
 - [ ] Migrate all users to `LOOP_V2`
-- [ ] Remove V1 implementation (`LoopToFunctional` delegation code)
+- [ ] Remove V1 implementation (`EnhancedForHandler` delegation code)
 - [ ] Remove `USEFUNCTIONALLOOP_CLEANUP` constant (replace with V2)
 - [ ] Update documentation to reflect V2 as primary implementation
 - [ ] Remove `FeatureParityTest` (no longer needed)

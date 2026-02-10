@@ -134,6 +134,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 				// LOOP now uses the unified V2 implementation (ULR + Refactorer fallback)
 				fixSet.add(UseFunctionalCallFixCore.LOOP);
 				fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
+				fixSet.add(UseFunctionalCallFixCore.TRADITIONAL_FOR_LOOP);
 			}
 			// Note: FOR and WHILE format conversions are not yet implemented
 			// When they are, add the appropriate converters here

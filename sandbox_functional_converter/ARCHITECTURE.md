@@ -16,10 +16,12 @@ Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the 
 
 ### Current Architecture
 
-`LoopToFunctionalV2` uses the clean ULR pipeline for **all** patterns:
+All three loop-to-stream handlers use the ULR pipeline:
 
 ```
-JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
+EnhancedForHandler:    JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
+IteratorWhileHandler:  JDT AST → IteratorPatternDetector → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
+TraditionalForHandler: JDT AST → analyzeForLoop() → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
 ```
 
 **`JdtLoopExtractor`** bridges JDT AST to the abstract `LoopModel`, detecting:
@@ -36,7 +38,7 @@ JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStrea
 **Direct forEach optimization**: For simple forEach without operations on COLLECTION/ITERABLE sources, generates idiomatic `collection.forEach(...)` instead of `collection.stream().forEach(...)`.
 
 **Key Files**:
-- `LoopToFunctionalV2.java` — Loop-to-functional converter (orchestrator)
+- `EnhancedForHandler.java` — Loop-to-functional converter (orchestrator)
 - `JdtLoopExtractor.java` — JDT AST → LoopModel (pattern detection)
 - `ASTStreamRenderer.java` — LoopModel → JDT AST nodes (code generation)
 - `LoopModelTransformer.java` — Drives renderer through model operations
@@ -62,7 +64,7 @@ The following phases were completed during the V1/V2 parallel development:
 7. **Phase 7.7**: Full V2 Body Analysis — JdtLoopExtractor detects all patterns natively
 
 ### Phase 6: Complete ULR Integration (COMPLETED - January 2026)
-**Goal**: Remove V1 delegation and implement native ULR pipeline in LoopToFunctionalV2
+**Goal**: Remove V1 delegation and implement native ULR pipeline in EnhancedForHandler
 
 **Status**: ✅ Phase 6 Complete - Full ULR pipeline operational
 
@@ -80,7 +82,7 @@ The following phases were completed during the V1/V2 parallel development:
      - Collection modifications (add/remove/clear/set calls)
    - **Integration**: Delegates to `LoopModelBuilder` for model construction
    
-2. **LoopToFunctionalV2 Native Implementation**:
+2. **EnhancedForHandler Native Implementation**:
    - **Removed**: V1 delegation pattern (`v1Delegate` field removed)
    - **find() method**: 
      - Uses `JdtLoopExtractor` to extract `LoopModel` from AST
@@ -112,7 +114,7 @@ The following phases were completed during the V1/V2 parallel development:
    Expression (JDT AST - stream pipeline)
    ```
 
-4. **Test Suite** (`LoopToFunctionalV2Test`):
+4. **Test Suite** (`EnhancedForHandlerTest`):
    - Simple forEach conversion from List to `items.stream().forEach()`
    - Array iteration generates `Arrays.stream(array).forEach()`
    - Loops with break/continue/return remain unchanged (negative tests)
@@ -141,8 +143,8 @@ The following phases were completed during the V1/V2 parallel development:
 
 **Completed Deliverables**:
 1. **Activation in UseFunctionalCallFixCore**:
-   - Uncommented `ITERATOR_LOOP(new IteratorLoopToFunctional())` enum entry
-   - Added `IteratorLoopToFunctional` import
+   - Uncommented `ITERATOR_LOOP(new IteratorEnhancedForHandler())` enum entry
+   - Added `IteratorEnhancedForHandler` import
    - Updated comments to reflect Phase 7 activation status
 
 2. **Cleanup Integration**:
@@ -178,11 +180,12 @@ The following phases were completed during the V1/V2 parallel development:
    - Same forEach-only support as while-iterator
 
 **Implementation Architecture** (Phase 7):
-- `IteratorLoopToFunctional` extends `AbstractFunctionalCall<ASTNode>`
+- `IteratorWhileHandler` extends `AbstractFunctionalCall<ASTNode>`
 - Uses `IteratorPatternDetector` to identify iterator patterns in AST
 - Uses `IteratorLoopAnalyzer` to validate safety (no breaks, continues, etc.)
 - Uses `IteratorLoopBodyParser` to extract loop body and next() variable
-- Performs a direct AST rewrite of supported iterator loops into functional stream pipelines
+- Uses the ULR pipeline: `LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer`
+- Builds `LoopModel` with `COLLECTION` source type and `ForEachTerminal`
 - Marks both iterator declaration and loop statement as processed to prevent double conversion
 
 **Test Coverage** (Phase 7):
@@ -210,7 +213,7 @@ The following phases were completed during the V1/V2 parallel development:
 V2 initially generated `collection.stream().forEach(...)` for all forEach operations, while V1 optimized simple cases to use `collection.forEach(...)` directly. This phase aligns V2 with V1 to produce more idiomatic Java code for the simplest forEach patterns.
 
 **Completed Deliverables**:
-1. **Direct forEach Detection** (`LoopToFunctionalV2.canUseDirectForEach()`):
+1. **Direct forEach Detection** (`EnhancedForHandler.canUseDirectForEach()`):
    - Checks if loop has NO intermediate operations (no filter, map, etc.)
    - Verifies terminal operation is `ForEachTerminal`
    - Confirms source is COLLECTION or ITERABLE (arrays excluded - they lack forEach method)
@@ -232,7 +235,7 @@ V2 initially generated `collection.stream().forEach(...)` for all forEach operat
      - `testRenderDirectForEach_Collection`: Validates direct forEach on collections
      - `testRenderDirectForEach_Iterable`: Validates direct forEach on iterables
      - `testRenderDirectForEach_Array_FallbackToStream`: Validates array fallback to stream
-   - Updated `LoopToFunctionalV2Test.test_SimpleForEach_V2`: Now expects `items.forEach(...)` instead of `items.stream().forEach(...)`
+   - Updated `EnhancedForHandlerTest.test_SimpleForEach_V2`: Now expects `items.forEach(...)` instead of `items.stream().forEach(...)`
    - Re-enabled `FeatureParityTest.parity_SimpleForEachConversion`: Validates V1/V2 parity for simple forEach
 
 5. **Documentation**:
@@ -275,12 +278,12 @@ else
 **Goal**: Make ULR the sole implementation — no V1 fallback
 
 **Completed**:
-1. ✅ V1 (`LoopToFunctional`) removed, V2 (`LoopToFunctionalV2`) is the only implementation
-2. ✅ `LOOP` enum uses `LoopToFunctionalV2`, `LOOP_V2` removed
+1. ✅ V1 (`EnhancedForHandler`) removed, V2 (`EnhancedForHandler`) is the only implementation
+2. ✅ `LOOP` enum uses `EnhancedForHandler`, `LOOP_V2` removed
 3. ✅ V2-specific cleanup classes removed
 4. ✅ `JdtLoopExtractor.analyzeAndAddOperations()` detects all patterns natively
    - Filter (if-continue, if-guard), Map, Collect, Reduce, Match, ForEach
-5. ✅ `LoopToFunctionalV2.rewrite()` uses `LoopModelTransformer` + `ASTStreamRenderer` for ALL patterns
+5. ✅ `EnhancedForHandler.rewrite()` uses `LoopModelTransformer` + `ASTStreamRenderer` for ALL patterns
 6. ✅ No dependency on V1's `Refactorer` / `PreconditionsChecker` / `StreamPipelineBuilder`
 7. ✅ 19 pattern transformation tests pass in core module without OSGi
 
@@ -1006,7 +1009,126 @@ As part of the December 2025 improvements, significant dead code was removed:
 ### Current Implementation Status
 - **Primary implementation**: `StreamPipelineBuilder` (849 lines) - comprehensive, well-tested
 - **Fallback**: Legacy implementation removed - no longer needed
-- **Helper classes**: All necessary classes (`AbstractFunctionalCall`, `LoopToFunctional`, `PreconditionsChecker`, `ProspectiveOperation`) are in active use
+- **Helper classes**: All necessary classes (`AbstractFunctionalCall`, `EnhancedForHandler`, `PreconditionsChecker`, `ProspectiveOperation`) are in active use
+
+## Thread-Safety Analysis Architecture
+
+Converting loops to stream/functional operations introduces thread-safety concerns because lambdas
+and streams have different semantics than imperative loops (e.g., variable capture rules, lock scope,
+parallel execution). Rather than a single centralized analyzer, thread-safety is enforced by
+**distributed guards across the ULR pipeline**, each responsible for a specific class of concern.
+
+### Guard 1: Synchronized Block Detection (`JdtLoopExtractor`)
+
+**What it protects against**: Loops containing `synchronized` blocks have fundamentally different
+semantics when converted to streams. Lock scope, duration, and exception handling differ significantly
+between `synchronized` in a loop body vs. a lambda body (especially with `parallelStream`).
+
+**How it works**: The `LoopBodyAnalyzer` inner class visits the loop AST and sets `hasSynchronized = true`
+when a `SynchronizedStatement` is found. During extraction, if `hasSynchronized()` is true, the loop is
+marked as having unconvertible patterns and is skipped.
+
+```java
+// JdtLoopExtractor.LoopBodyAnalyzer
+@Override
+public boolean visit(SynchronizedStatement node) {
+    hasSynchronized = true;
+    return false;
+}
+```
+
+### Guard 2: Synchronized Block Detection (`PreconditionsChecker`)
+
+**What it protects against**: Same concern as Guard 1, but for the legacy (non-ULR) code path.
+
+**How it works**: Uses the `AstProcessorBuilder` visitor to detect `SynchronizedStatement` nodes
+and marks the loop as containing non-effectively-final patterns (NEFs), preventing conversion.
+
+```java
+// PreconditionsChecker.analyzeLoop()
+.onSynchronizedStatement((node, h) -> {
+    containsNEFs = true;
+    return true;
+})
+```
+
+### Guard 3: Effectively-Final Variable Enforcement (`LoopBodyScopeScanner`)
+
+**What it protects against**: Lambda expressions require captured variables to be effectively final.
+If a loop body modifies a variable declared outside the loop, converting to a lambda would fail
+to compile. This also prevents data races when the same variable is accessed from multiple threads.
+
+**How it works**: `LoopBodyScopeScanner` analyzes variable references in the loop body:
+- Detects direct assignments (`x = ...`)
+- Detects increment/decrement operators (`x++`, `--x`)
+- Tracks which variables are modified vs. only read
+- Reports modified variables via `ScopeInfo.getModifiedVariables()`
+
+The `EnhancedForHandler.endVisitLoop()` method uses this information to reject loops that capture
+variables modified in ancestor loop scopes.
+
+### Guard 4: Nested Loop Scope Analysis (`EnhancedForHandler` + `LoopTree`)
+
+**What it protects against**: When nested loops share mutable state, converting the inner loop
+to a lambda can violate effectively-final requirements or change observation order semantics.
+
+**How it works**: The `LoopTree` tracks parent-child relationships between loops. During
+`endVisitLoop()`, the handler walks up the tree checking if any referenced variable is modified
+in an ancestor scope:
+
+```java
+// EnhancedForHandler.endVisitLoop()
+LoopTreeNode parent = node.getParent();
+while (parent != null) {
+    for (String referencedVar : scanner.getReferencedVariables()) {
+        if (parent.getScopeInfo().getModifiedVariables().contains(referencedVar)) {
+            node.setDecision(ConversionDecision.NOT_CONVERTIBLE);
+            return;
+        }
+    }
+    parent = parent.getParent();
+}
+```
+
+### Guard 5: Nested Loop Guard (`TraditionalForHandler`)
+
+**What it protects against**: Converting a traditional for-loop nested inside another loop
+(enhanced-for, while, for, do-while) can interfere with the outer loop's conversion analysis.
+It also prevents generating `IntStream.range()` calls inside lambdas where the stream expression
+would capture mutable loop state.
+
+**How it works**: `isNestedInsideLoop()` walks up the AST and rejects the conversion if any
+ancestor node is a loop statement.
+
+### Guard 6: Unconvertible Statement Detection (`TraditionalForHandler` + `JdtLoopExtractor`)
+
+**What it protects against**: `break`, `continue`, `return`, and `throw` statements cannot be
+expressed in lambda bodies. Converting such loops would produce incorrect or non-compilable code.
+
+**How it works**: Both `TraditionalForHandler.containsUnconvertibleStatements()` and
+`JdtLoopExtractor.LoopBodyAnalyzer` visit the loop body to detect these statements and reject
+conversion when found.
+
+### Guard 7: Sequential-Only Stream Generation
+
+**What it protects against**: Parallel streams (`parallelStream()`) introduce complex
+synchronization requirements. All handlers generate sequential streams only, avoiding
+the need for thread-safe lambda bodies.
+
+**Current state**: The pipeline always generates `.stream()` (sequential), never `.parallelStream()`.
+This is documented as a future enhancement in the Limitations section below.
+
+### Summary Table
+
+| Guard | Component | Threat | Action |
+|-------|-----------|--------|--------|
+| Synchronized blocks | `JdtLoopExtractor` | Lock semantics change in lambdas | BLOCK conversion |
+| Synchronized blocks | `PreconditionsChecker` | Lock semantics change in lambdas | BLOCK conversion |
+| Non-effectively-final vars | `LoopBodyScopeScanner` | Lambda capture violation / data race | REJECT loop |
+| Nested loop shared state | `EnhancedForHandler` + `LoopTree` | Variable modified in ancestor scope | REJECT loop |
+| Nested loop interference | `TraditionalForHandler` | Inner conversion breaks outer analysis | SKIP inner loop |
+| Unconvertible statements | Multiple handlers | `break`/`continue`/`return` in lambda | BLOCK conversion |
+| Parallel streams | All handlers | Complex synchronization requirements | Sequential only |
 
 ## Limitations and Future Work
 
@@ -1247,7 +1369,7 @@ All tests verify that:
 ### Integration with Existing Features
 
 **Relationship to Phase 7 (Iterator Loop Support)**:
-- Phase 7 added `IteratorLoopToFunctional` which converts iterator-based while loops **TO** streams
+- Phase 7 added `IteratorEnhancedForHandler` which converts iterator-based while loops **TO** streams
 - Phase 9 adds the infrastructure to convert **FROM** streams to other formats
 - Together they enable bidirectional transformations
 
@@ -1527,4 +1649,60 @@ This bypasses the limitation that `AbstractCleanUp.fOptions` is private and only
 - **Issues**: #453, #549
 - **Test File**: `sandbox_functional_converter_test/.../LoopBidirectionalTransformationTest.java`
 - **Design Spec**: `TODO.md` Phase 9 section
+
+## Phase 10b: Traditional For-Loop Conversion (February 2026)
+
+### Overview
+
+Phase 10b extends loop conversion support to traditional index-based for-loops (`for (int i = 0; i < N; i++)`),
+converting them to `IntStream.range(start, end).forEach(i -> ...)` using the ULR pipeline.
+
+### Architecture Changes
+
+#### New Classes
+
+- **`TraditionalForHandler`** (`sandbox_functional_converter/.../helper/TraditionalForHandler.java`)
+  - Extends `AbstractFunctionalCall<ForStatement>`
+  - Registered as `TRADITIONAL_FOR_LOOP` in `UseFunctionalCallFixCore`
+  - Uses the ULR pipeline: `LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer`
+  - Contains `ForLoopPattern` inner class for analysis results
+  - Key methods:
+    - `analyzeForLoop()`: Validates the for-loop structure (initializer, condition, updater)
+    - `isNestedInsideLoop()`: Guards against converting loops nested inside other loops
+    - `buildLoopModel()`: Creates a `LoopModel` with `EXPLICIT_RANGE` source descriptor
+    - `rewrite()`: Uses `LoopModelTransformer` + `ASTStreamRenderer` to generate output
+
+#### Pattern Detection
+
+The `TraditionalForHandler` detects loops matching:
+```
+for (int i = START; i < END; i++) { BODY }
+for (int i = START; i <= END; i++) { BODY }
+```
+
+Where:
+- **START**: Any expression (typically `0`)
+- **END**: Any expression (e.g., `10`, `list.size()`)
+- **Updater**: `i++` or `++i`
+- **BODY**: Must not contain `break`, `continue`, or `return` statements
+- **Nesting**: Loop must NOT be nested inside another loop (enhanced-for, while, for, do-while)
+
+### Data Flow
+
+```
+ForStatement → analyzeForLoop() → ForLoopPattern
+  → buildLoopModel() → LoopModel (EXPLICIT_RANGE source)
+  → LoopModelTransformer.transform() → ASTStreamRenderer
+  → IntStream.range(start, end).forEach(i -> ...)
+```
+
+### Testing
+
+- `testIndexBasedForLoop_toIntStream`: Basic `for (int i = 0; i < 10; i++)` → `IntStream.range(0, 10).forEach()`
+- `testIndexBasedCollectionLoop_toStream`: `for (int i = 0; i < items.size(); i++) { ... }` → `IntStream.range(0, items.size()).forEach(i -> { ... })`
+
+### References
+
+- **PR**: #666 (based on #665)
+- **Test File**: `sandbox_functional_converter_test/.../AdditionalLoopPatternsTest.java`
 

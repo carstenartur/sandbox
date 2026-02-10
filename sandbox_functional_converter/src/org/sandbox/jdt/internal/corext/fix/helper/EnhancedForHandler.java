@@ -39,9 +39,9 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
 
 /**
- * Loop-to-functional converter using the Unified Loop Representation (ULR).
+ * Handler for converting enhanced for-loops to functional stream operations.
  * 
- * <p>This class implements the complete loop-to-functional conversion using the ULR pipeline:
+ * <p>This handler processes enhanced for-loops (for-each loops) using the Unified Loop Representation (ULR) pipeline:
  * {@code JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer}.</p>
  * 
  * <p>The {@link JdtLoopExtractor} bridges JDT AST nodes to the abstract {@link LoopModel},
@@ -57,7 +57,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.C
  * @see ASTStreamRenderer
  * @see LoopModelTransformer
  */
-public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatement> {
+public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatement> {
     
     private final JdtLoopExtractor extractor = new JdtLoopExtractor();
     
