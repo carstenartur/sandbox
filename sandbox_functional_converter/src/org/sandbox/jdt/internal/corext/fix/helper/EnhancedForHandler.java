@@ -39,10 +39,10 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
 
 /**
- * Loop-to-functional converter using the Unified Loop Representation (ULR).
+ * Handler for converting enhanced for-loops to functional stream operations.
  * 
- * <p>This class implements the complete loop-to-functional conversion using the ULR pipeline:
- * {@code JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer}.</p>
+ * <p>This handler processes enhanced for-loops (for-each loops) using the Unified Loop 
+ * Representation (ULR) pipeline: {@code JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer}.</p>
  * 
  * <p>The {@link JdtLoopExtractor} bridges JDT AST nodes to the abstract {@link LoopModel},
  * detecting all supported patterns (filter, map, collect, reduce, match, forEach).
@@ -52,12 +52,16 @@ import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.C
  * <p>The core transformation logic (pattern detection, model building) is testable
  * without OSGi via {@code sandbox-functional-converter-core}.</p>
  * 
+ * <p><b>Naming Note:</b> This class is named after the <i>source</i> loop type (enhanced for-loop),
+ * not the target format. The architecture supports bidirectional transformations, so the name
+ * describes what loop pattern this handler processes.</p>
+ * 
  * @see LoopModel
  * @see JdtLoopExtractor
  * @see ASTStreamRenderer
  * @see LoopModelTransformer
  */
-public class LoopToFunctional extends AbstractFunctionalCall<EnhancedForStatement> {
+public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatement> {
     
     private final JdtLoopExtractor extractor = new JdtLoopExtractor();
     

@@ -16,7 +16,7 @@ Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the 
 
 ### Current Architecture
 
-`LoopToFunctionalV2` uses the clean ULR pipeline for **all** patterns:
+`EnhancedForHandler` uses the clean ULR pipeline for **all** patterns:
 
 ```
 JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
@@ -36,7 +36,7 @@ JDT AST → JdtLoopExtractor → LoopModel → LoopModelTransformer → ASTStrea
 **Direct forEach optimization**: For simple forEach without operations on COLLECTION/ITERABLE sources, generates idiomatic `collection.forEach(...)` instead of `collection.stream().forEach(...)`.
 
 **Key Files**:
-- `LoopToFunctionalV2.java` — Loop-to-functional converter (orchestrator)
+- `EnhancedForHandler.java` — Loop-to-functional converter (orchestrator)
 - `JdtLoopExtractor.java` — JDT AST → LoopModel (pattern detection)
 - `ASTStreamRenderer.java` — LoopModel → JDT AST nodes (code generation)
 - `LoopModelTransformer.java` — Drives renderer through model operations
@@ -62,7 +62,7 @@ The following phases were completed during the V1/V2 parallel development:
 7. **Phase 7.7**: Full V2 Body Analysis — JdtLoopExtractor detects all patterns natively
 
 ### Phase 6: Complete ULR Integration (COMPLETED - January 2026)
-**Goal**: Remove V1 delegation and implement native ULR pipeline in LoopToFunctionalV2
+**Goal**: Remove V1 delegation and implement native ULR pipeline in EnhancedForHandler
 
 **Status**: ✅ Phase 6 Complete - Full ULR pipeline operational
 
@@ -80,7 +80,7 @@ The following phases were completed during the V1/V2 parallel development:
      - Collection modifications (add/remove/clear/set calls)
    - **Integration**: Delegates to `LoopModelBuilder` for model construction
    
-2. **LoopToFunctionalV2 Native Implementation**:
+2. **EnhancedForHandler Native Implementation**:
    - **Removed**: V1 delegation pattern (`v1Delegate` field removed)
    - **find() method**: 
      - Uses `JdtLoopExtractor` to extract `LoopModel` from AST
@@ -112,7 +112,7 @@ The following phases were completed during the V1/V2 parallel development:
    Expression (JDT AST - stream pipeline)
    ```
 
-4. **Test Suite** (`LoopToFunctionalV2Test`):
+4. **Test Suite** (`EnhancedForHandlerTest`):
    - Simple forEach conversion from List to `items.stream().forEach()`
    - Array iteration generates `Arrays.stream(array).forEach()`
    - Loops with break/continue/return remain unchanged (negative tests)
@@ -141,8 +141,8 @@ The following phases were completed during the V1/V2 parallel development:
 
 **Completed Deliverables**:
 1. **Activation in UseFunctionalCallFixCore**:
-   - Uncommented `ITERATOR_LOOP(new IteratorLoopToFunctional())` enum entry
-   - Added `IteratorLoopToFunctional` import
+   - Uncommented `ITERATOR_LOOP(new IteratorWhileHandler())` enum entry
+   - Added `IteratorWhileHandler` import
    - Updated comments to reflect Phase 7 activation status
 
 2. **Cleanup Integration**:
@@ -178,7 +178,7 @@ The following phases were completed during the V1/V2 parallel development:
    - Same forEach-only support as while-iterator
 
 **Implementation Architecture** (Phase 7):
-- `IteratorLoopToFunctional` extends `AbstractFunctionalCall<ASTNode>`
+- `IteratorWhileHandler` extends `AbstractFunctionalCall<ASTNode>`
 - Uses `IteratorPatternDetector` to identify iterator patterns in AST
 - Uses `IteratorLoopAnalyzer` to validate safety (no breaks, continues, etc.)
 - Uses `IteratorLoopBodyParser` to extract loop body and next() variable
@@ -210,7 +210,7 @@ The following phases were completed during the V1/V2 parallel development:
 V2 initially generated `collection.stream().forEach(...)` for all forEach operations, while V1 optimized simple cases to use `collection.forEach(...)` directly. This phase aligns V2 with V1 to produce more idiomatic Java code for the simplest forEach patterns.
 
 **Completed Deliverables**:
-1. **Direct forEach Detection** (`LoopToFunctionalV2.canUseDirectForEach()`):
+1. **Direct forEach Detection** (`EnhancedForHandler.canUseDirectForEach()`):
    - Checks if loop has NO intermediate operations (no filter, map, etc.)
    - Verifies terminal operation is `ForEachTerminal`
    - Confirms source is COLLECTION or ITERABLE (arrays excluded - they lack forEach method)
@@ -232,7 +232,7 @@ V2 initially generated `collection.stream().forEach(...)` for all forEach operat
      - `testRenderDirectForEach_Collection`: Validates direct forEach on collections
      - `testRenderDirectForEach_Iterable`: Validates direct forEach on iterables
      - `testRenderDirectForEach_Array_FallbackToStream`: Validates array fallback to stream
-   - Updated `LoopToFunctionalV2Test.test_SimpleForEach_V2`: Now expects `items.forEach(...)` instead of `items.stream().forEach(...)`
+   - Updated `EnhancedForHandlerTest.test_SimpleForEach_V2`: Now expects `items.forEach(...)` instead of `items.stream().forEach(...)`
    - Re-enabled `FeatureParityTest.parity_SimpleForEachConversion`: Validates V1/V2 parity for simple forEach
 
 5. **Documentation**:
@@ -275,12 +275,12 @@ else
 **Goal**: Make ULR the sole implementation — no V1 fallback
 
 **Completed**:
-1. ✅ V1 (`LoopToFunctional`) removed, V2 (`LoopToFunctionalV2`) is the only implementation
-2. ✅ `LOOP` enum uses `LoopToFunctionalV2`, `LOOP_V2` removed
+1. ✅ V1 (`LoopToFunctional`) removed, V2 (`EnhancedForHandler`) is the only implementation
+2. ✅ `LOOP` enum uses `EnhancedForHandler`, `LOOP_V2` removed
 3. ✅ V2-specific cleanup classes removed
 4. ✅ `JdtLoopExtractor.analyzeAndAddOperations()` detects all patterns natively
    - Filter (if-continue, if-guard), Map, Collect, Reduce, Match, ForEach
-5. ✅ `LoopToFunctionalV2.rewrite()` uses `LoopModelTransformer` + `ASTStreamRenderer` for ALL patterns
+5. ✅ `EnhancedForHandler.rewrite()` uses `LoopModelTransformer` + `ASTStreamRenderer` for ALL patterns
 6. ✅ No dependency on V1's `Refactorer` / `PreconditionsChecker` / `StreamPipelineBuilder`
 7. ✅ 19 pattern transformation tests pass in core module without OSGi
 
@@ -1247,7 +1247,7 @@ All tests verify that:
 ### Integration with Existing Features
 
 **Relationship to Phase 7 (Iterator Loop Support)**:
-- Phase 7 added `IteratorLoopToFunctional` which converts iterator-based while loops **TO** streams
+- Phase 7 added `IteratorWhileHandler` which converts iterator-based while loops **TO** streams
 - Phase 9 adds the infrastructure to convert **FROM** streams to other formats
 - Together they enable bidirectional transformations
 

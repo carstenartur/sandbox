@@ -27,18 +27,21 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopBodyParser.ParsedB
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.IteratorPattern;
 
 /**
- * Converts iterator-based loops to functional stream operations.
+ * Handler for converting iterator-based while-loops to functional stream operations.
  * 
- * <p>This converter handles:</p>
+ * <p>This handler processes:</p>
  * <ul>
  *   <li>while-iterator pattern: {@code Iterator<T> it = coll.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</li>
  *   <li>for-loop-iterator pattern: {@code for (Iterator<T> it = coll.iterator(); it.hasNext(); ) { T item = it.next(); ... }}</li>
  * </ul>
  * 
- * <p>The conversion creates a synthetic EnhancedForStatement and delegates to the existing
- * LoopToFunctional infrastructure for the actual stream generation.</p>
+ * <p>The conversion creates stream pipeline expressions directly.</p>
+ * 
+ * <p><b>Naming Note:</b> This class is named after the <i>source</i> loop type (iterator while-loop),
+ * not the target format. The architecture supports bidirectional transformations, so the name
+ * describes what loop pattern this handler processes.</p>
  */
-public class IteratorLoopToFunctional extends AbstractFunctionalCall<ASTNode> {
+public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
     
     private final IteratorPatternDetector patternDetector = new IteratorPatternDetector();
     private final IteratorLoopAnalyzer loopAnalyzer = new IteratorLoopAnalyzer();

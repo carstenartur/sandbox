@@ -33,12 +33,12 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  * for complex patterns (filter, map, collect, reduce).
  * </p>
  * 
- * @see org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctionalV2
+ * @see org.sandbox.jdt.internal.corext.fix.helper.EnhancedForHandler
  * @see org.sandbox.jdt.internal.corext.fix.helper.JdtLoopExtractor
  * @see org.sandbox.jdt.internal.corext.fix.helper.ASTStreamRenderer
  */
-@DisplayName("LoopToFunctionalV2 ULR Integration Tests")
-public class LoopToFunctionalV2Test {
+@DisplayName("EnhancedForHandler ULR Integration Tests")
+public class EnhancedForHandlerTest {
     
     @RegisterExtension
     AbstractEclipseJava context = new EclipseJava22();

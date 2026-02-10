@@ -249,7 +249,7 @@ To test the transformers manually:
 - **License**: All files include EPL-2.0 header
 - **Javadoc**: Each transformer has class-level documentation
 - **Naming**: Follows existing conventions (e.g., `StreamToEnhancedFor`)
-- **Structure**: Consistent with existing transformers (`LoopToFunctional`, `IteratorLoopToFunctional`)
+- **Structure**: Consistent with existing transformers (`EnhancedForHandler`, `IteratorWhileHandler`)
 
 ### Review Checklist
 

@@ -27,10 +27,10 @@ import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractFunctionalCall;
 import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
+import org.sandbox.jdt.internal.corext.fix.helper.EnhancedForHandler;
 import org.sandbox.jdt.internal.corext.fix.helper.EnhancedForToIteratorWhile;
-import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopToFunctional;
+import org.sandbox.jdt.internal.corext.fix.helper.IteratorWhileHandler;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorWhileToEnhancedFor;
-import org.sandbox.jdt.internal.corext.fix.helper.LoopToFunctional;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamConcatRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToEnhancedFor;
 import org.sandbox.jdt.internal.corext.fix.helper.StreamToIteratorWhile;
@@ -38,11 +38,11 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum UseFunctionalCallFixCore {
 
-	LOOP(new LoopToFunctional()),
+	LOOP(new EnhancedForHandler()),
 	// ITERATOR_LOOP - Iterator-based loop conversion (from PR #449)
 	// Converts while-iterator and for-loop-iterator patterns to stream operations.
 	// Activated January 2026 - Phase 7: Iterator pattern support
-	ITERATOR_LOOP(new IteratorLoopToFunctional()),
+	ITERATOR_LOOP(new IteratorWhileHandler()),
 	
 	// Bidirectional Loop Transformation Support (Phase 9)
 	// New enum values for bidirectional loop transformations

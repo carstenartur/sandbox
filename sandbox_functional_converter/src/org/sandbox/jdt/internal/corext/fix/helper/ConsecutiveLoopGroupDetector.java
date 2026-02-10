@@ -55,7 +55,7 @@ import org.eclipse.jdt.core.dom.Statement;
  * <li>Each loop body must contain only a simple add operation</li>
  * </ul>
  * 
- * @see LoopToFunctional
+ * @see EnhancedForHandler
  * @see StreamPipelineBuilder
  */
 public class ConsecutiveLoopGroupDetector {
