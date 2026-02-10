@@ -163,7 +163,10 @@ public class CollectionThreadSafetyAnalyzer {
 	}
 
 	private boolean isLocallyCreated(IVariableBinding varBinding, ASTNode scope) {
-		// Local variables declared in the same method are safe
-		return varBinding.isParameter() || (!varBinding.isField() && !varBinding.isEnumConstant());
+		// Local variables declared in the same method are safe.
+		// Parameters are also treated as safe because converting a for-loop to forEach
+		// on the same collection does not change thread-safety semantics - both forms
+		// iterate the same collection instance provided by the caller.
+		return !varBinding.isField() && !varBinding.isEnumConstant();
 	}
 }

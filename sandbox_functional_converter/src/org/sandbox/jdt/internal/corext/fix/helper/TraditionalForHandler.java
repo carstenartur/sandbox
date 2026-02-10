@@ -97,6 +97,12 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
 	 * @return a ForLoopPattern if the loop matches, or null if it doesn't
 	 */
 	ForLoopPattern analyzeForLoop(ForStatement forStmt) {
+		// Skip for-loops nested inside enhanced-for loops to avoid converting
+		// inner loops that the LoopToFunctional handler expects to remain unchanged
+		if (isNestedInsideLoop(forStmt)) {
+			return null;
+		}
+
 		// Step 1: Check initializer - must be a single variable declaration like "int i = start"
 		if (forStmt.initializers().size() != 1) {
 			return null;
@@ -220,10 +226,27 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
 			return;
 		}
 
-		// All checks passed - index can be eliminated
+		// All checks passed - verify first body statement is a variable declaration with get(i)
+		// This ensures the remaining statements already use the element variable name
+		List<Statement> bodyStmts = getBodyStatements(forStmt.getBody());
+		if (bodyStmts == null || bodyStmts.isEmpty()) {
+			return;
+		}
+		Statement firstStmt = bodyStmts.get(0);
+		if (!(firstStmt instanceof VariableDeclarationStatement varDeclStmt)
+				|| varDeclStmt.fragments().size() != 1) {
+			return;
+		}
+		VariableDeclarationFragment frag = (VariableDeclarationFragment) varDeclStmt.fragments().get(0);
+		if (!(frag.getInitializer() instanceof MethodInvocation getCall)
+				|| !"get".equals(getCall.getName().getIdentifier())) { //$NON-NLS-1$
+			return;
+		}
+
+		// Index can be eliminated
 		pattern.indexEliminable = true;
 		pattern.collectionExpr = collectionExpr;
-		pattern.elementVarName = deriveElementVarName(forStmt, collectionName);
+		pattern.elementVarName = frag.getName().getIdentifier();
 	}
 
 	/**
@@ -387,59 +410,52 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
 
 	/**
 	 * Transforms the body statements for index elimination.
-	 * Replaces {@code collection.get(i)} with the element variable,
-	 * and removes the initial variable declaration if it was just {@code Type elem = collection.get(i)}.
+	 * Removes the initial variable declaration {@code Type elem = collection.get(i);} since
+	 * the element variable becomes the lambda parameter.
+	 * 
+	 * <p>Note: Index elimination is only supported when the first body statement is a
+	 * variable declaration initialized with {@code collection.get(i)}. This ensures the
+	 * remaining statements already reference the element variable name, not the index.</p>
 	 */
 	private List<Statement> transformBodyForIndexElimination(AST ast,
 			List<Statement> originalBody, String loopVarName,
 			String collectionName, String elementVarName) {
 
 		List<Statement> result = new ArrayList<>();
-		boolean firstStmtIsDecl = false;
 
-		// Check if first statement is the element declaration
-		if (!originalBody.isEmpty()) {
-			Statement firstStmt = originalBody.get(0);
-			if (firstStmt instanceof VariableDeclarationStatement varDeclStmt
-					&& varDeclStmt.fragments().size() == 1) {
-				VariableDeclarationFragment frag = (VariableDeclarationFragment) varDeclStmt.fragments().get(0);
-				if (frag.getName().getIdentifier().equals(elementVarName)
-						&& frag.getInitializer() instanceof MethodInvocation methodInv
-						&& "get".equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$
-					firstStmtIsDecl = true;
-				}
-			}
-		}
-
-		// Copy statements, skipping the first if it's the element declaration
-		int startIdx = firstStmtIsDecl ? 1 : 0;
+		// The first statement must be the element declaration (enforced by analyzeIndexUsage)
+		// Skip it since the element variable becomes the lambda parameter
+		int startIdx = 1;
 		for (int i = startIdx; i < originalBody.size(); i++) {
 			result.add(originalBody.get(i));
-		}
-
-		// If first statement was not the element declaration, we need to replace
-		// collection.get(i) references in the body with the element variable
-		if (!firstStmtIsDecl) {
-			// Return the body as-is with get(i) calls that will need replacement
-			// For simplicity, we return the original body and the rewrite method
-			// handles the replacement via AST copy and modification
-			return replaceGetCallsInStatements(ast, result, loopVarName, collectionName, elementVarName);
 		}
 
 		return result;
 	}
 
-	/**
-	 * Replaces all {@code collection.get(i)} calls in the statements with the element variable.
-	 */
-	private List<Statement> replaceGetCallsInStatements(AST ast, List<Statement> statements,
-			String loopVarName, String collectionName, String elementVarName) {
-		// This is a simplified approach - copy the statements and replace get(i) calls
-		// For a full implementation, we'd use ASTRewrite to modify in place
-		return statements; // The body already has the transformed structure from deriveElementVarName
-	}
-
 	// ===== Helper methods =====
+
+	/**
+	 * Checks if the for-loop is nested inside another loop (enhanced-for, while, for, do-while).
+	 * Nested traditional for-loops are skipped to avoid interfering with the LoopToFunctional
+	 * handler's analysis of outer enhanced-for loops.
+	 */
+	private boolean isNestedInsideLoop(ForStatement forStmt) {
+		ASTNode parent = forStmt.getParent();
+		while (parent != null) {
+			if (parent instanceof EnhancedForStatement
+					|| parent instanceof ForStatement
+					|| parent instanceof WhileStatement
+					|| parent instanceof DoStatement) {
+				return true;
+			}
+			if (parent instanceof MethodDeclaration || parent instanceof TypeDeclaration) {
+				break;
+			}
+			parent = parent.getParent();
+		}
+		return false;
+	}
 
 	private boolean isIncrementByOne(Object updater, String varName) {
 		if (updater instanceof PostfixExpression postfix) {

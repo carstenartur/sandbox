@@ -1528,3 +1528,80 @@ This bypasses the limitation that `AbstractCleanUp.fOptions` is private and only
 - **Test File**: `sandbox_functional_converter_test/.../LoopBidirectionalTransformationTest.java`
 - **Design Spec**: `TODO.md` Phase 9 section
 
+## Phase 10b: Traditional For-Loop Conversion + Thread-Safety Analysis (February 2026)
+
+### Overview
+
+Phase 10b extends loop conversion support to traditional index-based for-loops (`for (int i = 0; i < N; i++)`).
+Two conversion strategies are supported:
+
+1. **IntStream.range()**: For loops where the index variable is used in the body
+2. **Index elimination**: For loops where the index is only used in `collection.get(i)` calls,
+   converting to `collection.forEach()` instead
+
+### Architecture Changes
+
+#### New Classes
+
+- **`TraditionalForHandler`** (`sandbox_functional_converter/.../helper/TraditionalForHandler.java`)
+  - Extends `AbstractFunctionalCall<ForStatement>`
+  - Registered as `TRADITIONAL_FOR_LOOP` in `UseFunctionalCallFixCore`
+  - Contains `ForLoopPattern` inner class for analysis results
+  - Key methods:
+    - `analyzeForLoop()`: Validates the for-loop structure (initializer, condition, updater)
+    - `analyzeIndexUsage()`: Determines if index elimination is possible
+    - `rewriteAsIntStreamRange()`: Generates `IntStream.range(start, end).forEach(i -> ...)`
+    - `rewriteAsForEach()`: Generates `collection.forEach(element -> ...)` with index elimination
+
+- **`CollectionThreadSafetyAnalyzer`** (`sandbox_functional_converter/.../helper/CollectionThreadSafetyAnalyzer.java`)
+  - Analyzes collection thread-safety for conversion decisions
+  - `SafetyLevel` enum: `LOCAL_ONLY`, `CONCURRENT_SAFE`, `IMMUTABLE`, `SYNCHRONIZED_WRAPPER`, `POTENTIALLY_SHARED`
+  - Only allows index elimination when the collection is provably safe (local, concurrent-safe, or immutable)
+  - Fields and unknown origins default to `POTENTIALLY_SHARED` (no index elimination, falls back to IntStream.range)
+
+#### Pattern Detection
+
+The `TraditionalForHandler` detects loops matching:
+```
+for (int i = START; i < END; i++) { BODY }
+```
+
+Where:
+- **START**: Any expression (typically `0`)
+- **END**: Any expression (e.g., `10`, `list.size()`)
+- **Updater**: `i++`, `++i`, or `i += 1`
+- **BODY**: Must not contain `break` or `continue` statements
+
+#### Index Elimination Logic
+
+When all of the following conditions are met, the index variable is eliminated:
+1. Start expression is `0`
+2. End expression is `collection.size()`
+3. ALL uses of `i` in the body are inside `collection.get(i)` calls
+4. The collection matches between the condition and body references
+5. The collection passes thread-safety analysis (`LOCAL_ONLY`, `CONCURRENT_SAFE`, `IMMUTABLE`, or `SYNCHRONIZED_WRAPPER`)
+
+### Data Flow
+
+```
+ForStatement → analyzeForLoop() → ForLoopPattern
+  ├── indexEliminable=true  → rewriteAsForEach()  → collection.forEach(elem -> ...)
+  └── indexEliminable=false → rewriteAsIntStreamRange() → IntStream.range(s,e).forEach(i -> ...)
+```
+
+### API Constants
+
+- `LOOP_CONVERSION_THREADING_MODE` in `MYCleanUpConstants`: Controls thread-safety analysis mode
+  - `"safe_only"` (default): Only convert when collection is provably thread-safe
+  - `"always"`: Convert regardless of thread-safety analysis
+
+### Testing
+
+- `testIndexBasedForLoop_toIntStream`: Basic `for (int i = 0; i < 10; i++)` → `IntStream.range(0, 10).forEach()`
+- `testIndexBasedCollectionLoop_toStream`: `for (int i = 0; i < items.size(); i++) { items.get(i) }` → `items.forEach()`
+
+### References
+
+- **PR**: #666 (based on #665)
+- **Test File**: `sandbox_functional_converter_test/.../AdditionalLoopPatternsTest.java`
+
