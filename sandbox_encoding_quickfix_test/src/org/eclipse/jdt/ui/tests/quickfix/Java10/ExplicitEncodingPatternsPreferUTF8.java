@@ -74,9 +74,10 @@ public enum ExplicitEncodingPatternsPreferUTF8 {
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
+				import java.io.UnsupportedEncodingException;
 
 				public class E1 {
-				    void method(String filename) {
+				    void method(String filename) throws UnsupportedEncodingException {
 				        ByteArrayOutputStream ba=new ByteArrayOutputStream();
 				        String result=ba.toString();
 				        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
@@ -400,7 +401,7 @@ public class E1 {
     }
 
     // Neue Methode: methodWithThrowsChange() - nach dem Cleanup wird keine UnsupportedEncodingException mehr geworfen
-    void methodWithThrowsChange(String filename) throws FileNotFoundException {
+    void methodWithThrowsChange(String filename) throws FileNotFoundException, UnsupportedEncodingException {
         // Nach dem Cleanup, der String "UTF-8" wird zu einer StandardCharset-Konstanten geändert
         OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), "UTF-8"); // wirft keine UnsupportedEncodingException mehr
     }
@@ -434,6 +435,7 @@ package test1;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 public class E1 {
@@ -695,6 +697,7 @@ public class E1 {
 """
 package test1;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 public class E1 {
@@ -714,7 +717,7 @@ public class E1 {
     }
 
     // Methode 2: Behandlung von getBytes mit einer expliziten Kodierung
-    void method2(String filename) {
+    void method2(String filename) throws UnsupportedEncodingException {
         String s = "asdf"; //$NON-NLS-1$
 
         // Vorher: getBytes mit expliziter Kodierung (UTF-8 als String-Literal)
@@ -728,7 +731,7 @@ public class E1 {
     }
 
     // Erweiterter Testfall: Verwendung von verschiedenen Kodierungen
-    void methodWithDifferentEncodings(String filename) {
+    void methodWithDifferentEncodings(String filename) throws UnsupportedEncodingException {
         String s = "asdf";
 
         // Testen von gängigen Kodierungen
@@ -772,6 +775,7 @@ public class E1 {
 """
 package test1;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 public class E1 {
@@ -913,7 +917,7 @@ public class E1 {
     }
 
     // Nach dem Cleanup sollte dies keine UnsupportedEncodingException mehr werfen
-    static void methodWithThrowsChange(String filename) throws FileNotFoundException {
+    static void methodWithThrowsChange(String filename) throws FileNotFoundException, UnsupportedEncodingException {
         byte[] b = {(byte) 59};
         String s1 = new String(b, "UTF-8"); // wirft keine UnsupportedEncodingException mehr
     }
@@ -946,6 +950,7 @@ public class E1 {
 package test1;
 
 import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -1135,6 +1140,7 @@ package test1;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
@@ -1431,6 +1437,7 @@ package test1;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
@@ -1508,6 +1515,7 @@ package test1;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
@@ -1643,7 +1651,7 @@ public class E1 {
     // Beispiel, bei dem das Encoding in einer Variablen gespeichert ist
     private String encodingVar = "UTF-8";
 
-    static void blg() throws FileNotFoundException {
+    static void blg() throws FileNotFoundException, UnsupportedEncodingException {
         String encoding = "UTF-8";
         Formatter s = new Formatter(new File("asdf"), encoding); // encoding als Variable
     }
@@ -1653,6 +1661,7 @@ package test1;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Formatter;
 
@@ -1710,7 +1719,7 @@ public class E1 {
     // Beispiel, bei dem das Encoding in einer Variablen gespeichert ist
     private String encodingVar = "UTF-8";
 
-    static void blg() throws FileNotFoundException {
+    static void blg() throws FileNotFoundException, UnsupportedEncodingException {
         String encoding = "UTF-8";
         Formatter s = new Formatter(new File("asdf"), encoding); // encoding als Variable
     }
@@ -1806,9 +1815,10 @@ public class E1 {
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
-						    void method(String filename) {
+						    void method(String filename) throws UnsupportedEncodingException {
 						        String s="asdf"; //$NON-NLS-1$
 						        //byte[] bytes= s.getBytes(StandardCharsets.UTF_8);
 						        byte[] bytes= s.getBytes("Utf-8");
