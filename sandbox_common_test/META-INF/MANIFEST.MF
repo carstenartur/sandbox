@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: sandbox_common tests
 Bundle-SymbolicName: sandbox_common_test;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.5
+Bundle-Version: 1.2.6.qualifier
 Fragment-Host: sandbox_common
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,

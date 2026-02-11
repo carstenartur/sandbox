@@ -2,7 +2,7 @@
 <feature
       id="sandbox_encoding_quickfix_feature"
       label="Sandbox encoding quickfix feature"
-      version="1.2.5"
+      version="1.2.6.qualifier"
       provider-name="sandbox">
 
    <description>

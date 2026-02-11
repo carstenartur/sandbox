@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: sandbox_usage_view
 Bundle-SymbolicName: sandbox_usage_view;singleton:=true
-Bundle-Version: 1.2.5
+Bundle-Version: 1.2.6.qualifier
 Bundle-Activator: org.sandbox.jdt.ui.helper.views.UsageViewPlugin
 Automatic-Module-Name: ui.sandbox.fragment
 Bundle-RequiredExecutionEnvironment: JavaSE-21
