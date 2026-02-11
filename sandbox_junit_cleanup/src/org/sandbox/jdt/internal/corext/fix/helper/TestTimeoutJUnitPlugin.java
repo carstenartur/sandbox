@@ -30,6 +30,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTestAnnotationParameterPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
@@ -130,8 +131,7 @@ public class TestTimeoutJUnitPlugin extends AbstractTestAnnotationParameterPlugi
 		// to avoid leaving an empty @Test() annotation.
 		List<MemberValuePair> testValues = testAnnotation.values();
 		if (testValues.size() == 1 && testValues.get(0) == timeoutPair) {
-			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();
-			markerTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
+			MarkerAnnotation markerTestAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
 			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);
 		} else {
 			rewriter.remove(timeoutPair, group);

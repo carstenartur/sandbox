@@ -39,6 +39,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -236,8 +237,7 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 				String annotationName = annotation.getTypeName().getFullyQualifiedName();
 				if ("Theory".equals(annotationName) || ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORY.equals(annotationName)) {
 					// Create @ParameterizedTest annotation
-					Annotation parameterizedTest = ast.newMarkerAnnotation();
-					parameterizedTest.setTypeName(ast.newSimpleName(ANNOTATION_PARAMETERIZED_TEST));
+					Annotation parameterizedTest= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_PARAMETERIZED_TEST);
 					
 					// Create @ValueSource annotation with data from @DataPoints
 					NormalAnnotation valueSource = createValueSourceAnnotation(ast, theoriesData);

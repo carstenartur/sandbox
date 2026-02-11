@@ -28,6 +28,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.HintContext;
 import org.sandbox.jdt.triggerpattern.api.Match;
@@ -401,9 +402,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             newAnnotation = singleMemberAnnotation;
         } else {
             // Create MarkerAnnotation (no parameters)
-            MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
-            markerAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-            newAnnotation = markerAnnotation;
+            newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
         }
         
         // Replace the old annotation with the new one
@@ -451,9 +450,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             newAnnotation = singleMemberAnnotation;
         } else {
             // Create MarkerAnnotation (no parameters)
-            MarkerAnnotation markerAnnotation = ast.newMarkerAnnotation();
-            markerAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-            newAnnotation = markerAnnotation;
+            newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
         }
         
         // Replace the old annotation with the new one
@@ -710,8 +707,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             String removeImport, 
             String addImport) {
         
-        MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
-        newAnnotation.setTypeName(ast.newSimpleName(newAnnotationName));
+        MarkerAnnotation newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, newAnnotationName);
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
         importRewriter.removeImport(removeImport);
         importRewriter.addImport(addImport);

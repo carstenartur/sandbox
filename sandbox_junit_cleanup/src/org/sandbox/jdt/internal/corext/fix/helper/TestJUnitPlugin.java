@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
@@ -81,8 +82,7 @@ public class TestJUnitPlugin extends TriggerPatternCleanupPlugin {
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
 		Annotation annotation = junitHolder.getAnnotation();
-		MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
-		newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
+		MarkerAnnotation newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
 		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);
 		importRewriter.removeImport(ORG_JUNIT_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);

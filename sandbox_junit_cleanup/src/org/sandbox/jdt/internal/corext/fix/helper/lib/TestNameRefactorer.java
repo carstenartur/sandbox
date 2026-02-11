@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 
 /**
@@ -414,8 +415,7 @@ public final class TestNameRefactorer {
 	 * @return the annotation
 	 */
 	private static MarkerAnnotation createBeforeEachAnnotation(AST ast) {
-		MarkerAnnotation annotation = ast.newMarkerAnnotation();
-		annotation.setTypeName(ast.newName("BeforeEach"));
+		MarkerAnnotation annotation= AnnotationUtils.createMarkerAnnotation(ast, "BeforeEach");
 		return annotation;
 	}
 

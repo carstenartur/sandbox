@@ -56,6 +56,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -251,8 +252,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			ASTRewrite rewrite, AST ast, TextEditGroup group) {
 		// Add annotation
 		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
-		MarkerAnnotation newMarkerAnnotation= ast.newMarkerAnnotation();
-		newMarkerAnnotation.setTypeName(ast.newSimpleName(annotation));
+		MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, annotation);
 		modifiers.insertFirst(newMarkerAnnotation, group);
 		importRewrite.addImport("org.junit.jupiter.api." + annotation.substring(1));
 	}
@@ -261,8 +261,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			ASTRewrite rewrite, AST ast, TextEditGroup group) {
 // Füge die Annotation zum Methodenkopf hinzu
 		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
-		MarkerAnnotation newMarkerAnnotation= ast.newMarkerAnnotation();
-		newMarkerAnnotation.setTypeName(ast.newSimpleName(annotation)); // annotation sollte nur den Namen enthalten, z.
+		MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, annotation); // annotation sollte nur den Namen enthalten, z.
 																		// B. "Test"
 		modifiers.insertFirst(newMarkerAnnotation, group);
 

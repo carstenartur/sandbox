@@ -34,6 +34,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTestAnnotationParameterPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
@@ -153,8 +154,7 @@ public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlug
 		
 		if (remainingParams == 0) {
 			// No other meaningful parameters remain, convert to marker annotation @Test
-			MarkerAnnotation markerTestAnnotation = ast.newMarkerAnnotation();
-			markerTestAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
+			MarkerAnnotation markerTestAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
 			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);
 		} else {
 			rewriter.remove(expectedPair, group);

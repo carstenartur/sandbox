@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
@@ -344,8 +345,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
             String removeImport, 
             String addImport) {
         
-        MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
-        newAnnotation.setTypeName(ast.newSimpleName(newAnnotationName));
+        MarkerAnnotation newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, newAnnotationName);
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
         importRewriter.removeImport(removeImport);
         importRewriter.addImport(addImport);
