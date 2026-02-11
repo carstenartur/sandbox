@@ -105,7 +105,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		public Set<ClassInstanceCreation> subProgressMonitorOnSubMonitor = new HashSet<>();
 		/** .done() calls on monitors to be removed after migration */
 		public Set<MethodInvocation> doneCallsToRemove = new HashSet<>();
-		/** Nodes that have been processed to avoid duplicate transformations */
+		/** Nodes that have been processed to avoid duplicate transformations (shared across all holders) */
 		public Set<ASTNode> nodesprocessed;
 	}
 
@@ -313,10 +313,10 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			return;
 		}
 		
-		Set<ASTNode> nodesprocessed = hit.get(hit.size() - 1).nodesprocessed;
 		for (Entry<Integer, MonitorHolder> entry : hit.entrySet()) {
 
 			MonitorHolder mh = entry.getValue();
+			Set<ASTNode> nodesprocessed = mh.nodesprocessed;
 			
 			// Handle SubProgressMonitor on already-SubMonitor variables (use split() directly)
 			if (!mh.subProgressMonitorOnSubMonitor.isEmpty()) {
@@ -401,7 +401,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					
 					// Create SubMonitor.convert(monitor) call
 					MethodInvocation convertCall = ast.newMethodInvocation();
-					convertCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));
+					convertCall.setExpression(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast));
 					convertCall.setName(ast.newSimpleName("convert")); //$NON-NLS-1$
 					convertCall.arguments().add(
 						ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((Expression) arguments.get(0))));
