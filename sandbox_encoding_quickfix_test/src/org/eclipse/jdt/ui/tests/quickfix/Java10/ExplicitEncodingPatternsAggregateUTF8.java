@@ -37,7 +37,6 @@ public enum ExplicitEncodingPatternsAggregateUTF8 {
 				        Charset cs6= Charset.forName("US-ASCII");
 				        String result= cs1.toString();
 				       }
-				    }
 				}
 				""",
 				"""
@@ -62,7 +61,6 @@ public enum ExplicitEncodingPatternsAggregateUTF8 {
 						        Charset cs6= Charset.forName("US-ASCII");
 						        String result= cs1.toString();
 						       }
-						    }
 						}
 						"""),
 		BYTEARRAYOUTSTREAM("""
@@ -83,7 +81,6 @@ public enum ExplicitEncodingPatternsAggregateUTF8 {
 				        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 				        String result2=ba2.toString("UTF-8");
 				       }
-				    }
 				}
 				""",
 
@@ -108,7 +105,6 @@ public class E1 {
         ByteArrayOutputStream ba2=new ByteArrayOutputStream();
         String result2=ba2.toString(E1.UTF_8);
        }
-    }
 }
 						"""),
 		FILEREADER("""
@@ -127,7 +123,6 @@ public class E1 {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				""",
@@ -152,7 +147,6 @@ public class E1 {
             } catch (FileNotFoundException e) {
             e.printStackTrace();
             }
-       }
     }
 }
 """),
@@ -170,7 +164,6 @@ public class E1 {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				""",
@@ -195,7 +188,6 @@ public class E1 {
             } catch (FileNotFoundException e) {
             e.printStackTrace();
             }
-       }
     }
 }
 						"""),
@@ -695,7 +687,6 @@ public class E1 {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				""",
@@ -721,7 +712,6 @@ public class E1 {
             } catch (FileNotFoundException e) {
             e.printStackTrace();
             }
-       }
     }
 }
 						"""),

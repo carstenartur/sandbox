@@ -71,7 +71,6 @@ public class E1 {
 				        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 				        String result2=ba2.toString("UTF-8");
 				       }
-				    }
 				}
 				""",
 
@@ -94,7 +93,6 @@ public class E1 {
 						        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						        String result2=ba2.toString(StandardCharsets.UTF_8);
 						       }
-						    }
 						}
 						"""),
 		FILEREADER("""
@@ -113,7 +111,6 @@ public class E1 {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				""",
@@ -135,7 +132,6 @@ public class E1 {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
-						       }
 						    }
 						}
 						"""),
@@ -153,7 +149,6 @@ public class E1 {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				""",
@@ -175,7 +170,6 @@ public class E1 {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
-						       }
 						    }
 						}
 						"""),
@@ -657,7 +651,6 @@ public class E1 {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				""",
@@ -680,7 +673,6 @@ public class E1 {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
-						       }
 						    }
 						}
 						"""),

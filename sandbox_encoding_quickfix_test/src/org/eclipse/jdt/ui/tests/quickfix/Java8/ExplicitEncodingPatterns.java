@@ -24,7 +24,6 @@ enum ExplicitEncodingPatterns {
 				        Charset cs6= Charset.forName("US-ASCII");
 				        String result= cs1.toString();
 				       }
-				    }
 				}
 				""",
 				"""
@@ -49,7 +48,6 @@ enum ExplicitEncodingPatterns {
 						        Charset cs6= Charset.forName("US-ASCII");
 						        String result= cs1.toString();
 						       }
-						    }
 						}
 						"""),
 		BYTEARRAYOUTSTREAM("""
@@ -70,7 +68,6 @@ enum ExplicitEncodingPatterns {
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						String result2=ba2.toString("UTF-8");
 						}
-					}
 				}
 				""",
 
@@ -92,7 +89,6 @@ enum ExplicitEncodingPatterns {
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						String result2=ba2.toString("UTF-8");
 						}
-					}
 				}
 						"""),
 		FILEREADER("""
@@ -111,7 +107,6 @@ enum ExplicitEncodingPatterns {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				""",
@@ -133,7 +128,6 @@ enum ExplicitEncodingPatterns {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
-						       }
 						    }
 						}
 						"""),
@@ -151,7 +145,6 @@ enum ExplicitEncodingPatterns {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				""",
@@ -173,7 +166,6 @@ enum ExplicitEncodingPatterns {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
-						       }
 						    }
 						}
 						"""),
@@ -196,7 +188,6 @@ enum ExplicitEncodingPatterns {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
-						       }
 						    }
 						}
 						""",
@@ -220,7 +211,6 @@ enum ExplicitEncodingPatterns {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
-						       }
 						    }
 						}
 						"""),
@@ -246,7 +236,6 @@ enum ExplicitEncodingPatterns {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
-						       }
 						    }
 						}
 						""",
@@ -273,7 +262,6 @@ enum ExplicitEncodingPatterns {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
-						       }
 						    }
 						}
 						"""),
@@ -295,7 +283,6 @@ enum ExplicitEncodingPatterns {
 				            ReadableByteChannel ch = null;
 				            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 				       }
-				    }
 				}
 				""",
 
@@ -317,7 +304,6 @@ enum ExplicitEncodingPatterns {
 						            ReadableByteChannel ch = null;
 						            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 						       }
-						    }
 						}
 						"""),
 		CHANNELSNEWWRITER("""
@@ -338,7 +324,6 @@ enum ExplicitEncodingPatterns {
 				            WritableByteChannel ch = null;
 				            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 				       }
-				    }
 				}
 				""",
 
@@ -360,7 +345,6 @@ enum ExplicitEncodingPatterns {
 						            WritableByteChannel ch = null;
 						            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 						       }
-						    }
 						}
 						"""),
 		PRINTWRITER("""
@@ -377,7 +361,6 @@ enum ExplicitEncodingPatterns {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				""",
@@ -396,7 +379,6 @@ enum ExplicitEncodingPatterns {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
-				       }
 				    }
 				}
 				"""),
@@ -418,7 +400,6 @@ enum ExplicitEncodingPatterns {
 				        byte[] bytes2= s.getBytes("UTF-8");
 				        System.out.println(bytes.length);
 				       }
-				    }
 				}
 				""",
 
@@ -441,7 +422,6 @@ enum ExplicitEncodingPatterns {
 						        byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
 						        System.out.println(bytes.length);
 						       }
-						    }
 						}
 						"""),
 		STRING("""
