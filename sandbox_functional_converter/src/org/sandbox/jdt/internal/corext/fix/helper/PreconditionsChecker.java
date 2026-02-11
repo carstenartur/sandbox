@@ -52,6 +52,7 @@ public final class PreconditionsChecker {
 	private Statement collectStatement = null;
 	private String collectTargetVariable = null;
 	private boolean modifiesIteratedCollection = false;
+	private boolean isConcurrentCollection = false;
 	/**
 	 * Constructor for PreconditionsChecker.
 	 * 
@@ -252,7 +253,8 @@ public final class PreconditionsChecker {
 	 * 
 	 * <p>
 	 * Detects calls to structural modification methods (remove, add, put, clear,
-	 * set, addAll, removeAll, retainAll) on the iterated collection. Such
+	 * set, addAll, removeAll, retainAll, removeIf, replaceAll, sort, and Map methods
+	 * like putIfAbsent, compute, merge, replace) on the iterated collection. Such
 	 * modifications cause ConcurrentModificationException with fail-fast iterators
 	 * and change iteration semantics.
 	 * </p>
@@ -264,6 +266,25 @@ public final class PreconditionsChecker {
 	 */
 	public boolean modifiesIteratedCollection() {
 		return modifiesIteratedCollection;
+	}
+	
+	/**
+	 * Checks if the iterated collection is a concurrent collection type.
+	 * 
+	 * <p>
+	 * Concurrent collections like {@code CopyOnWriteArrayList}, {@code ConcurrentHashMap},
+	 * etc. have different iteration semantics than standard collections. They use
+	 * weakly consistent iterators that never throw {@code ConcurrentModificationException}.
+	 * Additionally, many concurrent collections do not support {@code iterator.remove()}.
+	 * </p>
+	 * 
+	 * @return true if the iterated collection is a concurrent collection
+	 * 
+	 * @see ConcurrentCollectionDetector
+	 * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670 - Point 2.4</a>
+	 */
+	public boolean isConcurrentCollection() {
+		return isConcurrentCollection;
 	}
 
 	/**
@@ -286,8 +307,14 @@ public final class PreconditionsChecker {
 	 * </p>
 	 */
 	private void analyzeLoop() {
-		// Extract the iterated collection name for modification detection (Issue #670)
+		// Extract the iterated collection name and type for modification detection (Issue #670)
 		String iteratedCollectionName = extractIteratedCollectionName();
+		ITypeBinding iteratedCollectionType = extractIteratedCollectionType();
+		
+		// Check if iterating over a concurrent collection (Issue #670 - Point 2.4)
+		if (iteratedCollectionType != null) {
+			isConcurrentCollection = ConcurrentCollectionDetector.isConcurrentCollection(iteratedCollectionType);
+		}
 		
 		AstProcessorBuilder<String, Object> builder = AstProcessorBuilder.with(new ReferenceHolder<String, Object>());
 
@@ -753,6 +780,21 @@ public final class PreconditionsChecker {
 			if (expression instanceof SimpleName) {
 				return ((SimpleName) expression).getIdentifier();
 			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Extracts the type of the iterated collection from the loop statement.
+	 * 
+	 * <p>For enhanced for-loops: {@code for (String item : list)} → type of list</p>
+	 * 
+	 * @return the collection type binding, or null if not determinable
+	 */
+	private ITypeBinding extractIteratedCollectionType() {
+		if (loop instanceof EnhancedForStatement enhancedFor) {
+			Expression expression = enhancedFor.getExpression();
+			return expression.resolveTypeBinding();
 		}
 		return null;
 	}
