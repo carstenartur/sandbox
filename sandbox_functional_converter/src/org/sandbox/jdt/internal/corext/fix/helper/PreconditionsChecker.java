@@ -51,6 +51,7 @@ public final class PreconditionsChecker {
 	private boolean hasCollectPattern = false;
 	private Statement collectStatement = null;
 	private String collectTargetVariable = null;
+	private boolean modifiesIteratedCollection = false;
 	/**
 	 * Constructor for PreconditionsChecker.
 	 * 
@@ -118,8 +119,9 @@ public final class PreconditionsChecker {
 		// Note: Unlabeled continues are allowed and will be converted to filters by
 		// StreamPipelineBuilder
 		// Only labeled continues are rejected here
+		// Issue #670: Block conversion when the iterated collection is modified (add/remove/put/clear)
 		return !throwsException && !containsBreak && !containsLabeledContinue && (!containsReturn || allowedReturn)
-				&& !containsNEFs && !containsNestedLoop;
+				&& !containsNEFs && !containsNestedLoop && !modifiesIteratedCollection;
 	}
 
 	/**
@@ -246,6 +248,25 @@ public final class PreconditionsChecker {
 	}
 
 	/**
+	 * Checks if the loop modifies the collection being iterated over.
+	 * 
+	 * <p>
+	 * Detects calls to structural modification methods (remove, add, put, clear,
+	 * set, addAll, removeAll, retainAll) on the iterated collection. Such
+	 * modifications cause ConcurrentModificationException with fail-fast iterators
+	 * and change iteration semantics.
+	 * </p>
+	 * 
+	 * @return true if the iterated collection is modified in the loop body
+	 * 
+	 * @see CollectionModificationDetector
+	 * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
+	 */
+	public boolean modifiesIteratedCollection() {
+		return modifiesIteratedCollection;
+	}
+
+	/**
 	 * Analyzes the loop statement to identify relevant elements for refactoring.
 	 * 
 	 * <p>
@@ -265,6 +286,9 @@ public final class PreconditionsChecker {
 	 * </p>
 	 */
 	private void analyzeLoop() {
+		// Extract the iterated collection name for modification detection (Issue #670)
+		String iteratedCollectionName = extractIteratedCollectionName();
+		
 		AstProcessorBuilder<String, Object> builder = AstProcessorBuilder.with(new ReferenceHolder<String, Object>());
 
 		builder.onVariableDeclarationFragment((node, h) -> {
@@ -342,6 +366,11 @@ public final class PreconditionsChecker {
 			// Detect collection.add() patterns for collect operation
 			if (isCollectPattern(node)) {
 				markAsCollectPattern(node);
+			}
+			// Issue #670: Detect structural modifications on the iterated collection
+			if (iteratedCollectionName != null
+					&& CollectionModificationDetector.isModification(node, iteratedCollectionName)) {
+				modifiesIteratedCollection = true;
 			}
 			return true;
 		});
@@ -708,6 +737,23 @@ public final class PreconditionsChecker {
 			}
 		}
 		
+		return null;
+	}
+
+	/**
+	 * Extracts the name of the iterated collection from the loop statement.
+	 * 
+	 * <p>For enhanced for-loops: {@code for (String item : list)} → "list"</p>
+	 * 
+	 * @return the collection variable name, or null if not determinable
+	 */
+	private String extractIteratedCollectionName() {
+		if (loop instanceof EnhancedForStatement enhancedFor) {
+			Expression expression = enhancedFor.getExpression();
+			if (expression instanceof SimpleName) {
+				return ((SimpleName) expression).getIdentifier();
+			}
+		}
 		return null;
 	}
 }

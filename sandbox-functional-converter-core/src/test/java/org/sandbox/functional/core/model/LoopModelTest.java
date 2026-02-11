@@ -48,7 +48,7 @@ class LoopModelTest {
 			"String"
 		);
 		ElementDescriptor element = new ElementDescriptor("item", "String", false);
-		LoopMetadata metadata = new LoopMetadata(false, false, false, false, true);
+		LoopMetadata metadata = new LoopMetadata(false, false, false, false, true, false, false);
 		
 		LoopModel model = new LoopModel(source, element, metadata);
 		
@@ -81,7 +81,7 @@ class LoopModelTest {
 	
 	@Test
 	void testLoopMetadata() {
-		LoopMetadata metadata = new LoopMetadata(true, false, false, false, true);
+		LoopMetadata metadata = new LoopMetadata(true, false, false, false, true, false, false);
 		
 		assertThat(metadata.hasBreak()).isTrue();
 		assertThat(metadata.hasContinue()).isFalse();

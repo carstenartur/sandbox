@@ -598,6 +598,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	/**
 	 * Parses and validates a compilation unit for compilation errors.
 	 * 
+	 * <p>Uses the JDT {@link IProblem} API to provide detailed error diagnostics
+	 * including problem severity, source line number, and problem ID for
+	 * easier debugging of test input code.</p>
+	 * 
 	 * @param cu the compilation unit to check
 	 * @return the AST compilation unit root
 	 * @throws AssertionError if compilation errors (non-warnings) are found
@@ -620,9 +624,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			builder.append(cu.getElementName()).append(" has compilation problems: \n"); //$NON-NLS-1$
 			for (final IProblem prob : problems) {
 				if (!prob.isWarning() && !prob.isInfo()) {
-					builder.append("  line ").append(prob.getSourceLineNumber()) //$NON-NLS-1$
-							.append(" [id=").append(prob.getID()).append("]: ") //$NON-NLS-1$ //$NON-NLS-2$
-							.append(prob.getMessage()).append('\n');
+					builder.append("ERROR line "); //$NON-NLS-1$
+					builder.append(prob.getSourceLineNumber());
+					builder.append(": "); //$NON-NLS-1$
+					builder.append(prob.getMessage());
+					builder.append(" [id="); //$NON-NLS-1$
+					builder.append(prob.getID());
+					builder.append("]\n"); //$NON-NLS-1$
 				}
 			}
 			fail(builder.toString());
