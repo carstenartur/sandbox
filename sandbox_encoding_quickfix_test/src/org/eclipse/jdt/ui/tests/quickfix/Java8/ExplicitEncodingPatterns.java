@@ -24,6 +24,7 @@ enum ExplicitEncodingPatterns {
 				        Charset cs6= Charset.forName("US-ASCII");
 				        String result= cs1.toString();
 				       }
+				    }
 				}
 				""",
 				"""
@@ -48,6 +49,7 @@ enum ExplicitEncodingPatterns {
 						        Charset cs6= Charset.forName("US-ASCII");
 						        String result= cs1.toString();
 						       }
+						    }
 						}
 						"""),
 		BYTEARRAYOUTSTREAM("""
@@ -59,15 +61,15 @@ enum ExplicitEncodingPatterns {
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
-				import java.io.UnsupportedEncodingException;
 
 				public class E1 {
-					void method(String filename) throws UnsupportedEncodingException {
+					void method(String filename) {
 						ByteArrayOutputStream ba=new ByteArrayOutputStream();
 						String result=ba.toString();
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						String result2=ba2.toString("UTF-8");
 						}
+					}
 				}
 				""",
 
@@ -80,15 +82,15 @@ enum ExplicitEncodingPatterns {
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
-				import java.io.UnsupportedEncodingException;
 
 				public class E1 {
-					void method(String filename) throws UnsupportedEncodingException {
+					void method(String filename) {
 						ByteArrayOutputStream ba=new ByteArrayOutputStream();
 						String result=ba.toString();
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						String result2=ba2.toString("UTF-8");
 						}
+					}
 				}
 						"""),
 		FILEREADER("""
@@ -107,6 +109,7 @@ enum ExplicitEncodingPatterns {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
+				       }
 				    }
 				}
 				""",
@@ -128,6 +131,7 @@ enum ExplicitEncodingPatterns {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
+						       }
 						    }
 						}
 						"""),
@@ -145,6 +149,7 @@ enum ExplicitEncodingPatterns {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
+				       }
 				    }
 				}
 				""",
@@ -166,6 +171,7 @@ enum ExplicitEncodingPatterns {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
+						       }
 						    }
 						}
 						"""),
@@ -178,16 +184,16 @@ enum ExplicitEncodingPatterns {
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
-						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
-						    void method(String filename) throws UnsupportedEncodingException {
+						    void method(String filename) {
 						        try {
 						            InputStreamReader is1=new InputStreamReader(new FileInputStream("file1.txt")); //$NON-NLS-1$
 						            InputStreamReader is2=new InputStreamReader(new FileInputStream("file2.txt"), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
+						       }
 						    }
 						}
 						""",
@@ -211,6 +217,7 @@ enum ExplicitEncodingPatterns {
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
+						       }
 						    }
 						}
 						"""),
@@ -220,22 +227,20 @@ enum ExplicitEncodingPatterns {
 
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
-						import java.io.OutputStreamWriter;
 						import java.io.FileInputStream;
-						import java.io.FileOutputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
-						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
-						    void method(String filename) throws UnsupportedEncodingException {
+						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
-						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
+						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
+						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
+						       }
 						    }
 						}
 						""",
@@ -245,9 +250,7 @@ enum ExplicitEncodingPatterns {
 
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
-						import java.io.OutputStreamWriter;
 						import java.io.FileInputStream;
-						import java.io.FileOutputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.nio.charset.Charset;
@@ -257,11 +260,12 @@ enum ExplicitEncodingPatterns {
 						public class E1 {
 						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
-						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
+						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
+						       }
 						    }
 						}
 						"""),
@@ -280,9 +284,10 @@ enum ExplicitEncodingPatterns {
 
 				public class E1 {
 				    void method(String filename) {
-				            ReadableByteChannel ch = null;
+				            ReadableByteChannel ch;
 				            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 				       }
+				    }
 				}
 				""",
 
@@ -301,9 +306,10 @@ enum ExplicitEncodingPatterns {
 
 						public class E1 {
 						    void method(String filename) {
-						            ReadableByteChannel ch = null;
+						            ReadableByteChannel ch;
 						            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 						       }
+						    }
 						}
 						"""),
 		CHANNELSNEWWRITER("""
@@ -321,9 +327,10 @@ enum ExplicitEncodingPatterns {
 
 				public class E1 {
 				    void method(String filename) {
-				            WritableByteChannel ch = null;
+				            WritableByteChannel ch;
 				            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 				       }
+				    }
 				}
 				""",
 
@@ -342,9 +349,10 @@ enum ExplicitEncodingPatterns {
 
 						public class E1 {
 						    void method(String filename) {
-						            WritableByteChannel ch = null;
+						            WritableByteChannel ch;
 						            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 						       }
+						    }
 						}
 						"""),
 		PRINTWRITER("""
@@ -361,6 +369,7 @@ enum ExplicitEncodingPatterns {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
+				       }
 				    }
 				}
 				""",
@@ -379,6 +388,7 @@ enum ExplicitEncodingPatterns {
 				            } catch (FileNotFoundException e) {
 				            e.printStackTrace();
 				            }
+				       }
 				    }
 				}
 				"""),
@@ -391,15 +401,15 @@ enum ExplicitEncodingPatterns {
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
-				import java.io.UnsupportedEncodingException;
 
 				public class E1 {
-				    void method(String filename) throws UnsupportedEncodingException {
+				    void method(String filename) {
 				        String s="asdf"; //$NON-NLS-1$
 				        byte[] bytes= s.getBytes();
 				        byte[] bytes2= s.getBytes("UTF-8");
 				        System.out.println(bytes.length);
 				       }
+				    }
 				}
 				""",
 
@@ -422,6 +432,7 @@ enum ExplicitEncodingPatterns {
 						        byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
 						        System.out.println(bytes.length);
 						       }
+						    }
 						}
 						"""),
 		STRING("""
@@ -605,9 +616,7 @@ public class E4 {
 
 				import java.io.ByteArrayOutputStream;
 				import java.io.InputStreamReader;
-				import java.io.OutputStreamWriter;
 				import java.io.FileInputStream;
-				import java.io.FileOutputStream;
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
@@ -644,9 +653,7 @@ public class E4 {
 
 				import java.io.ByteArrayOutputStream;
 				import java.io.InputStreamReader;
-				import java.io.OutputStreamWriter;
 				import java.io.FileInputStream;
-				import java.io.FileOutputStream;
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.nio.charset.Charset;
@@ -684,16 +691,13 @@ public class E4 {
 
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
-						import java.io.OutputStreamWriter;
 						import java.io.FileInputStream;
-						import java.io.FileOutputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
-						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
-						    void method(String filename) throws UnsupportedEncodingException {
+						    void method(String filename) {
 						        String s="asdf"; //$NON-NLS-1$
 						        //byte[] bytes= s.getBytes(StandardCharsets.UTF_8);
 						        byte[] bytes= s.getBytes("Utf-8");
@@ -725,9 +729,7 @@ package test1;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
