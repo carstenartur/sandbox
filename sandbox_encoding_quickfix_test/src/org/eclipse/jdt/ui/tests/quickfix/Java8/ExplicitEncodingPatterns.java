@@ -61,9 +61,10 @@ enum ExplicitEncodingPatterns {
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
+				import java.io.UnsupportedEncodingException;
 
 				public class E1 {
-					void method(String filename) {
+					void method(String filename) throws UnsupportedEncodingException {
 						ByteArrayOutputStream ba=new ByteArrayOutputStream();
 						String result=ba.toString();
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
@@ -82,9 +83,10 @@ enum ExplicitEncodingPatterns {
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
+				import java.io.UnsupportedEncodingException;
 
 				public class E1 {
-					void method(String filename) {
+					void method(String filename) throws UnsupportedEncodingException {
 						ByteArrayOutputStream ba=new ByteArrayOutputStream();
 						String result=ba.toString();
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
@@ -184,9 +186,10 @@ enum ExplicitEncodingPatterns {
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
-						    void method(String filename) {
+						    void method(String filename) throws UnsupportedEncodingException {
 						        try {
 						            InputStreamReader is1=new InputStreamReader(new FileInputStream("file1.txt")); //$NON-NLS-1$
 						            InputStreamReader is2=new InputStreamReader(new FileInputStream("file2.txt"), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -405,9 +408,10 @@ enum ExplicitEncodingPatterns {
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
+				import java.io.UnsupportedEncodingException;
 
 				public class E1 {
-				    void method(String filename) {
+				    void method(String filename) throws UnsupportedEncodingException {
 				        String s="asdf"; //$NON-NLS-1$
 				        byte[] bytes= s.getBytes();
 				        byte[] bytes2= s.getBytes("UTF-8");
@@ -705,9 +709,10 @@ public class E4 {
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
-						    void method(String filename) {
+						    void method(String filename) throws UnsupportedEncodingException {
 						        String s="asdf"; //$NON-NLS-1$
 						        //byte[] bytes= s.getBytes(StandardCharsets.UTF_8);
 						        byte[] bytes= s.getBytes("Utf-8");
