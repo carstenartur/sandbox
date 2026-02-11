@@ -37,6 +37,7 @@ public enum ExplicitEncodingPatternsAggregateUTF8 {
 				        Charset cs6= Charset.forName("US-ASCII");
 				        String result= cs1.toString();
 				       }
+				    }
 				}
 				""",
 				"""
@@ -61,6 +62,7 @@ public enum ExplicitEncodingPatternsAggregateUTF8 {
 						        Charset cs6= Charset.forName("US-ASCII");
 						        String result= cs1.toString();
 						       }
+						    }
 						}
 						"""),
 		BYTEARRAYOUTSTREAM("""
@@ -80,6 +82,7 @@ public enum ExplicitEncodingPatternsAggregateUTF8 {
 				        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 				        String result2=ba2.toString("UTF-8");
 				       }
+				    }
 				}
 				""",
 
@@ -104,6 +107,7 @@ public class E1 {
         ByteArrayOutputStream ba2=new ByteArrayOutputStream();
         String result2=ba2.toString(E1.UTF_8);
        }
+    }
 }
 						"""),
 		FILEREADER("""
@@ -123,6 +127,7 @@ public class E1 {
 				            e.printStackTrace();
 				            }
 				       }
+				    }
 				}
 				""",
 
@@ -147,6 +152,7 @@ public class E1 {
             e.printStackTrace();
             }
        }
+    }
 }
 """),
 		FILEWRITER("""
@@ -164,6 +170,7 @@ public class E1 {
 				            e.printStackTrace();
 				            }
 				       }
+				    }
 				}
 				""",
 
@@ -188,6 +195,7 @@ public class E1 {
             e.printStackTrace();
             }
        }
+    }
 }
 						"""),
 		INPUTSTREAMREADER(
@@ -431,6 +439,7 @@ public class E1 {
             // Dieser Block wird nicht mehr erreicht, da keine UnsupportedEncodingException mehr geworfen wird
             e.printStackTrace();
         }
+    }
 }
 """,
 
@@ -526,8 +535,9 @@ public class E1 {
             // Nach dem Cleanup wird E1.UTF_8 ersetzt
 			OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), E1.UTF_8); // keine UnsupportedEncodingException
         }
+    }
 }
-""", true),
+"""),
 		CHANNELSNEWREADER(
 """
 package test1;
@@ -684,6 +694,7 @@ public class E1 {
 				            e.printStackTrace();
 				            }
 				       }
+				    }
 				}
 				""",
 
@@ -709,6 +720,7 @@ public class E1 {
             e.printStackTrace();
             }
        }
+    }
 }
 						"""),
 		STRINGGETBYTES(
@@ -785,6 +797,7 @@ public class E1 {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+    }
 }
 """,
 
@@ -867,8 +880,9 @@ public class E1 {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+    }
 }
-""", true),
+"""),
 		STRING(
 """
 package test1;
@@ -962,6 +976,7 @@ public class E1 {
             // Dieser Block wird nicht mehr erreicht, da keine UnsupportedEncodingException mehr geworfen wird
             e.printStackTrace();
         }
+    }
 }
 """,
 
@@ -1058,8 +1073,9 @@ public class E1 {
         try {
             String s1 = new String(b, E1.UTF_8); // keine UnsupportedEncodingException
         }
+    }
 }
-""", true),
+"""),
 		PROPERTIESSTORETOXML(
 """
 package test1;
@@ -1152,6 +1168,7 @@ public class E1 {
         } finally {
             os.close(); // Bleibt erhalten, um die Ressource korrekt zu schließen
         }
+    }
 }
 """,
 
@@ -1245,8 +1262,9 @@ public class E1 {
         } finally {
             os.close(); // Bleibt erhalten, um die Ressource korrekt zu schließen
         }
+    }
 }
-""", true),
+"""),
 		URLDECODER(
 """
 package test1;
@@ -1350,7 +1368,7 @@ public class E2 {
         String url = URLDecoder.decode("example", StandardCharsets.UTF_8);
     }
 }
-""", true),
+"""),
 		URLENCODER(
 """
 package test1;
@@ -2024,7 +2042,7 @@ public class E1 {
 		boolean skipCompileCheck;
 
 		ExplicitEncodingPatternsAggregateUTF8(String given, String expected) {
-			this(given, expected, false);
+			this(given, expected, true);
 		}
 
 		ExplicitEncodingPatternsAggregateUTF8(String given, String expected, boolean skipCompileCheck) {
