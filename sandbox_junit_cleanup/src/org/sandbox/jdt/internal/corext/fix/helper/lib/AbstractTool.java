@@ -26,12 +26,12 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.util.NamingUtils;
 
@@ -51,8 +51,7 @@ public abstract class AbstractTool<T> {
 	 * @return collection of variable names used in the node's scope
 	 */
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
-		CompilationUnit root = (CompilationUnit) node.getRoot();
-		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
+		return ASTNavigationUtils.getUsedVariableNames(node);
 	}
 
 	/**

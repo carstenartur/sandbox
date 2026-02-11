@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.corext.util;
 
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
 
 /**
  * Utility class for type-related checks and validations.
@@ -25,6 +26,25 @@ public final class TypeCheckingUtils {
 
 	private TypeCheckingUtils() {
 		// Utility class - prevent instantiation
+	}
+
+	/**
+	 * Checks if a type binding matches a given fully qualified type name.
+	 * If the type binding is an array type, the element type is checked.
+	 *
+	 * @param typeBinding the type binding to check
+	 * @param typename    the fully qualified type name to compare against
+	 * @return true if the type binding matches the given type name
+	 * @throws AbortSearchException if typeBinding is null
+	 */
+	public static boolean isOfType(ITypeBinding typeBinding, String typename) {
+		if (typeBinding == null) {
+			throw new AbortSearchException();
+		}
+		if (typeBinding.isArray()) {
+			typeBinding= typeBinding.getElementType();
+		}
+		return typeBinding.getQualifiedName().equals(typename);
 	}
 
 	/**
