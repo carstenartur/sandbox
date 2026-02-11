@@ -15,7 +15,7 @@ package org.sandbox.jdt.internal.corext.util;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Name;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 
 /**
  * Utility class for managing imports during AST transformations.
@@ -31,14 +31,14 @@ public final class ImportUtils {
 	 * Adds an import to the compilation unit and returns the name to use in code.
 	 * This method should be used for every class reference added to generated code.
 	 *
-	 * @param typeName  a fully qualified name of a type
-	 * @param cuRewrite CompilationUnitRewrite
-	 * @param ast       AST
+	 * @param typeName      a fully qualified name of a type
+	 * @param importRewrite the ImportRewrite to add the import to
+	 * @param ast           AST
 	 * @return simple name of a class if the import was added and fully qualified
 	 *         name if there was a conflict
 	 */
-	public static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		String importedName= cuRewrite.getImportRewrite().addImport(typeName);
+	public static Name addImport(String typeName, ImportRewrite importRewrite, AST ast) {
+		String importedName= importRewrite.addImport(typeName);
 		return ast.newName(importedName);
 	}
 }

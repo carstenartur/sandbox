@@ -194,7 +194,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 *         a conflict; never null
 	 */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		return ImportUtils.addImport(typeName, cuRewrite, ast);
+		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);
 	}
 
 	/**

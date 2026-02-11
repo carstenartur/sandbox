@@ -61,7 +61,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 	 *         name if there was a conflict
 	 */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		return ImportUtils.addImport(typeName, cuRewrite, ast);
+		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);
 	}
 
 	public abstract String getPreview(boolean afterRefactoring);

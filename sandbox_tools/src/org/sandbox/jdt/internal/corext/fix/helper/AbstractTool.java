@@ -56,7 +56,7 @@ public abstract class AbstractTool<T> {
 	 *         name if there was a conflict
 	 */
 	protected Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		return ImportUtils.addImport(typeName, cuRewrite, ast);
+		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);
 	}
 
 	public abstract String getPreview(boolean afterRefactoring);
