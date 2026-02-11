@@ -236,9 +236,10 @@ enum ExplicitEncodingPatterns {
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
-						    void method(String filename) {
+						    void method(String filename) throws UnsupportedEncodingException {
 						        try {
 						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
 						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
