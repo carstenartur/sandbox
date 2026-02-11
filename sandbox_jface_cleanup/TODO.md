@@ -58,31 +58,35 @@ Maps SubProgressMonitor flags to SubMonitor equivalents:
 - SuppressSubtaskLabelFlag test case
 - PrependMainLabelToSubtaskFlag test case
 
-### Remaining Features
+#### 3. Type-Aware SubMonitor Detection (instanceof check) ✅
+**Status**: Implemented and tested
 
-#### 3. Runtime instanceof SubMonitor Checks
-**Status**: Not implemented  
-**Priority**: Medium  
-**Effort**: 4-6 hours
-
-**Goal**: Detect when monitor variable is statically typed as SubMonitor and use split() directly instead of convert().split()
-
-**Pattern to detect**:
+Detects when SubProgressMonitor is created on a variable already typed as SubMonitor and uses split() directly:
 ```java
-SubMonitor monitor = SubMonitor.convert(pm, 100);
-// Later in code...
-IProgressMonitor sub = new SubProgressMonitor(monitor, 50); // Should → monitor.split(50)
+// Before
+SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+IProgressMonitor sub = new SubProgressMonitor(subMonitor, 50);
+
+// After
+SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+IProgressMonitor sub = subMonitor.split(50);
 ```
 
-**Implementation approach**:
-1. Track variable bindings and their declared types
-2. When encountering SubProgressMonitor, check if first arg is SubMonitor type
-3. If yes, use split() directly; if no, use convert().split()
+**Implementation Details**:
+- Uses ITypeBinding to check variable type at compile-time
+- Avoids unnecessary convert() when variable is already SubMonitor
+- Preserves flag mapping when using direct split()
+
+**Test Coverage**:
+- SubProgressMonitorOnSubMonitorVariable test case
+
+### Remaining Features
 
 #### 4. Removal of .done() Calls
-**Status**: Not implemented  
-**Priority**: Medium  
+**Status**: Not implemented (deferred)
+**Priority**: Low  
 **Effort**: 6-8 hours
+**Reason for deferral**: Complex scope and control flow tracking; may be better as separate cleanup pass
 
 **Goal**: Remove redundant .done() calls on monitors after migration to SubMonitor
 
@@ -117,9 +121,10 @@ try {
 - Don't remove done() on non-migrated monitors
 
 #### 5. Helper Method Detection
-**Status**: Not implemented  
+**Status**: Not implemented (deferred)
 **Priority**: Low  
 **Effort**: 8-10 hours
+**Reason for deferral**: Better suited as separate cleanup pass; requires method inlining analysis
 
 **Goal**: Detect and refactor helper methods that only wrap SubProgressMonitor creation
 
