@@ -1716,7 +1716,9 @@ public class E1 {
 
 				import java.io.ByteArrayOutputStream;
 				import java.io.InputStreamReader;
+				import java.io.OutputStreamWriter;
 				import java.io.FileInputStream;
+				import java.io.FileOutputStream;
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
@@ -1753,7 +1755,9 @@ public class E1 {
 
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
+						import java.io.OutputStreamWriter;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.nio.charset.Charset;
@@ -1791,7 +1795,9 @@ public class E1 {
 
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
+						import java.io.OutputStreamWriter;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
@@ -1829,7 +1835,9 @@ package test1;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.Reader;
 import java.nio.charset.Charset;

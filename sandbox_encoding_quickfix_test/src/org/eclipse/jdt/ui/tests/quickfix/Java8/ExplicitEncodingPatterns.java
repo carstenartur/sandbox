@@ -227,7 +227,9 @@ enum ExplicitEncodingPatterns {
 
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
+						import java.io.OutputStreamWriter;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
@@ -235,8 +237,8 @@ enum ExplicitEncodingPatterns {
 						public class E1 {
 						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
+						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
+						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
@@ -250,7 +252,9 @@ enum ExplicitEncodingPatterns {
 
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
+						import java.io.OutputStreamWriter;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.nio.charset.Charset;
@@ -260,8 +264,8 @@ enum ExplicitEncodingPatterns {
 						public class E1 {
 						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
+						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
@@ -616,7 +620,9 @@ public class E4 {
 
 				import java.io.ByteArrayOutputStream;
 				import java.io.InputStreamReader;
+				import java.io.OutputStreamWriter;
 				import java.io.FileInputStream;
+				import java.io.FileOutputStream;
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
@@ -653,7 +659,9 @@ public class E4 {
 
 				import java.io.ByteArrayOutputStream;
 				import java.io.InputStreamReader;
+				import java.io.OutputStreamWriter;
 				import java.io.FileInputStream;
+				import java.io.FileOutputStream;
 				import java.io.FileReader;
 				import java.io.Reader;
 				import java.nio.charset.Charset;
@@ -691,7 +699,9 @@ public class E4 {
 
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
+						import java.io.OutputStreamWriter;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
@@ -729,7 +739,9 @@ package test1;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
