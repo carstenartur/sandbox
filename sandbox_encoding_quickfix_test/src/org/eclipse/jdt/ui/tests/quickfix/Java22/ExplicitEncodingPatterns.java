@@ -928,9 +928,15 @@ public class E1 {
 
 		String given;
 		String expected;
+		boolean skipCompileCheck;
 
 		ExplicitEncodingPatterns(String given, String expected) {
+			this(given, expected, true);
+		}
+
+		ExplicitEncodingPatterns(String given, String expected, boolean skipCompileCheck) {
 			this.given= given;
 			this.expected= expected;
+			this.skipCompileCheck= skipCompileCheck;
 		}
 	}

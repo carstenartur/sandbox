@@ -517,10 +517,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations.
 	 * <p>
-	 * Note: This method does NOT validate compilation errors in the input code,
-	 * because many refactoring tests use intentionally incomplete Java code
-	 * (e.g., missing imports) as test fixtures. Use {@link #assertRefactoringHasNoChange}
-	 * for negative tests that require compilation-error-free input.
+	 * This method does NOT validate compilation errors in the input code.
+	 * Use {@link #assertRefactoringResultAsExpectedWithCompileCheck} when test fixtures
+	 * should be validated for compilation errors before refactoring.
 	 * </p>
 	 * 
 	 * @param cus the compilation units to refactor
@@ -539,6 +538,30 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 		assertEqualStringsIgnoreOrder(previews, expected);
 		return status;
+	}
+
+	/**
+	 * Executes the configured refactoring and asserts the result matches expectations,
+	 * after validating that the input compilation units have no compilation errors.
+	 * <p>
+	 * Use this variant when test fixtures should compile cleanly before refactoring.
+	 * Test fixtures with known compilation issues (e.g., multi-class patterns)
+	 * should use {@link #assertRefactoringResultAsExpected} instead, or set
+	 * the skip flag appropriately.
+	 * </p>
+	 * 
+	 * @param cus the compilation units to refactor
+	 * @param expected the expected source code after refactoring (one per CU)
+	 * @param setOfExpectedGroupCategories expected group category names, or null to skip validation
+	 * @return the refactoring status
+	 * @throws CoreException if the refactoring fails
+	 */
+	public RefactoringStatus assertRefactoringResultAsExpectedWithCompileCheck(final ICompilationUnit[] cus,
+			final String[] expected, final Set<String> setOfExpectedGroupCategories) throws CoreException {
+		for (final ICompilationUnit cu : cus) {
+			assertNoCompilationError(cu);
+		}
+		return assertRefactoringResultAsExpected(cus, expected, setOfExpectedGroupCategories);
 	}
 
 	/**

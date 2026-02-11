@@ -53,7 +53,11 @@ public class ExplicitEncodingCleanUpTest {
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		if (test.skipCompileCheck) {
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		} else {
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		}
 	}
 
 	@Test

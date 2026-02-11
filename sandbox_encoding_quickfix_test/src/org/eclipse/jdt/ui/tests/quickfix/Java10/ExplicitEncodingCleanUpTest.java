@@ -58,7 +58,11 @@ public class ExplicitEncodingCleanUpTest {
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
 //		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 //		context.enable(CleanUpConstants.REMOVE_UNNECESSARY_NLS_TAGS);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		if (test.skipCompileCheck) {
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		} else {
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		}
 	}
 
 	@ParameterizedTest
@@ -70,7 +74,11 @@ public class ExplicitEncodingCleanUpTest {
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		if (test.skipCompileCheck) {
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		} else {
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		}
 	}
 
 //	@Disabled("Not Implemented")
@@ -83,7 +91,11 @@ public class ExplicitEncodingCleanUpTest {
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		if (test.skipCompileCheck) {
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		} else {
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		}
 	}
 
 	@Test

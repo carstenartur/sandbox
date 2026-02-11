@@ -2039,9 +2039,15 @@ public class E1 {
 
 		String given;
 		String expected;
+		boolean skipCompileCheck;
 
 		ExplicitEncodingPatternsAggregateUTF8(String given, String expected) {
+			this(given, expected, true);
+		}
+
+		ExplicitEncodingPatternsAggregateUTF8(String given, String expected, boolean skipCompileCheck) {
 			this.given= given;
 			this.expected= expected;
+			this.skipCompileCheck= skipCompileCheck;
 		}
 	}

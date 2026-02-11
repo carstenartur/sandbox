@@ -1969,9 +1969,15 @@ public class E1 {
 
 		String given;
 		String expected;
+		boolean skipCompileCheck;
 
 		ExplicitEncodingPatternsPreferUTF8(String given, String expected) {
+			this(given, expected, true);
+		}
+
+		ExplicitEncodingPatternsPreferUTF8(String given, String expected, boolean skipCompileCheck) {
 			this.given= given;
 			this.expected= expected;
+			this.skipCompileCheck= skipCompileCheck;
 		}
 	}
