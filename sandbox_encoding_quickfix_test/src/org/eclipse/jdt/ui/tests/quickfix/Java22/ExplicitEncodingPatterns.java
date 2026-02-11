@@ -336,7 +336,7 @@ public class E1 {
 
 				public class E1 {
 				    void method(String filename) throws UnsupportedEncodingException {
-				            ReadableByteChannel ch;
+				            ReadableByteChannel ch = null;
 				            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 				       }
 				    }
@@ -358,7 +358,7 @@ public class E1 {
 
 						public class E1 {
 						    void method(String filename) {
-						            ReadableByteChannel ch;
+						            ReadableByteChannel ch = null;
 						            Reader r=Channels.newReader(ch,StandardCharsets.UTF_8);
 						       }
 						    }
@@ -380,7 +380,7 @@ public class E1 {
 
 				public class E1 {
 				    void method(String filename) throws UnsupportedEncodingException {
-				            WritableByteChannel ch;
+				            WritableByteChannel ch = null;
 				            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 				       }
 				    }
@@ -402,7 +402,7 @@ public class E1 {
 
 						public class E1 {
 						    void method(String filename) {
-						            WritableByteChannel ch;
+						            WritableByteChannel ch = null;
 						            Writer w=Channels.newWriter(ch,StandardCharsets.UTF_8); //$NON-NLS-1$
 						       }
 						    }
@@ -459,6 +459,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.Reader;
 import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 
 public class E1 {
     void method(String filename) {
@@ -466,7 +467,6 @@ public class E1 {
         byte[] bytes= s.getBytes();
         byte[] bytes2= s.getBytes("UTF-8");
         System.out.println(bytes.length);
-       }
     }
 
     void method2(String filename) {
@@ -501,15 +501,12 @@ public class E1 {
         byte[] bytes= s.getBytes(Charset.defaultCharset());
         byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
         System.out.println(bytes.length);
-       }
     }
 
     void method2(String filename) {
 		String s="asdf"; //$NON-NLS-1$
 		byte[] bytes= s.getBytes(Charset.defaultCharset());
-		try {
-			byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
-		}
+		byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
 		System.out.println(bytes.length);
 	}
 }

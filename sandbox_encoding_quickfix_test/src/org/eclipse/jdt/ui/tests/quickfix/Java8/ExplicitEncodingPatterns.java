@@ -288,7 +288,7 @@ enum ExplicitEncodingPatterns {
 
 				public class E1 {
 				    void method(String filename) {
-				            ReadableByteChannel ch;
+				            ReadableByteChannel ch = null;
 				            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 				       }
 				    }
@@ -310,7 +310,7 @@ enum ExplicitEncodingPatterns {
 
 						public class E1 {
 						    void method(String filename) {
-						            ReadableByteChannel ch;
+						            ReadableByteChannel ch = null;
 						            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 						       }
 						    }
@@ -331,7 +331,7 @@ enum ExplicitEncodingPatterns {
 
 				public class E1 {
 				    void method(String filename) {
-				            WritableByteChannel ch;
+				            WritableByteChannel ch = null;
 				            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 				       }
 				    }
@@ -353,7 +353,7 @@ enum ExplicitEncodingPatterns {
 
 						public class E1 {
 						    void method(String filename) {
-						            WritableByteChannel ch;
+						            WritableByteChannel ch = null;
 						            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 						       }
 						    }
