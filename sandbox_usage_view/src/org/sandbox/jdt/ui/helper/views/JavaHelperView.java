@@ -84,6 +84,7 @@ import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IProgressService;
+import org.sandbox.jdt.internal.corext.util.NamingUtils;
 import org.sandbox.jdt.ui.helper.views.colum.AbstractColumn;
 import org.sandbox.jdt.ui.helper.views.colum.ConflictHighlightingLabelProvider;
 import org.sandbox.jdt.ui.helper.views.colum.DeclaringMethodColumn;
@@ -296,7 +297,7 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 					if (newText == null || newText.trim().isEmpty()) {
 						return "Name cannot be empty"; //$NON-NLS-1$
 					}
-					if (!isValidJavaIdentifier(newText)) {
+					if (!NamingUtils.isValidJavaIdentifier(newText)) {
 						return "Invalid Java identifier"; //$NON-NLS-1$
 					}
 					return null;
@@ -308,27 +309,6 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 				performRename(javaElement, newName);
 			}
 		}
-	}
-	
-	/**
-	 * Checks if a string is a valid Java identifier.
-	 * 
-	 * @param name the name to check
-	 * @return true if the name is a valid Java identifier
-	 */
-	private boolean isValidJavaIdentifier(String name) {
-		if (name == null || name.isEmpty()) {
-			return false;
-		}
-		if (!Character.isJavaIdentifierStart(name.charAt(0))) {
-			return false;
-		}
-		for (int i = 1; i < name.length(); i++) {
-			if (!Character.isJavaIdentifierPart(name.charAt(i))) {
-				return false;
-			}
-		}
-		return true;
 	}
 	
 	/**

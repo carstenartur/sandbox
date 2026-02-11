@@ -57,6 +57,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -222,8 +223,7 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		ListRewrite modifiersRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);
 		
 		// Replace @RunWith(Categories.class) with @Suite
-		MarkerAnnotation suiteAnnotation = ast.newMarkerAnnotation();
-		suiteAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
+		MarkerAnnotation suiteAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_SUITE);
 		modifiersRewrite.replace(categoriesData.runWithAnnotation, suiteAnnotation, group);
 		
 		// Transform @IncludeCategory annotations

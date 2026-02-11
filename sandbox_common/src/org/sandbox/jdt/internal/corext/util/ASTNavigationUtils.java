@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.util;
 
+import java.util.Collection;
+
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
@@ -27,6 +29,7 @@ import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 
 /**
  * Utility class for navigating and finding nodes in the AST tree.
@@ -237,5 +240,17 @@ public final class ASTNavigationUtils {
 		parser.setSource(iCompilationUnit);
 		parser.setResolveBindings(true);
 		return (CompilationUnit) parser.createAST(null);
+	}
+
+	/**
+	 * Gets all variable names used in the scope of the given AST node.
+	 * Uses JDT's ScopeAnalyzer to find variable names visible at the node's position.
+	 *
+	 * @param node the AST node to analyze
+	 * @return collection of variable names used in the node's scope
+	 */
+	public static Collection<String> getUsedVariableNames(ASTNode node) {
+		CompilationUnit root= (CompilationUnit) node.getRoot();
+		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
 	}
 }

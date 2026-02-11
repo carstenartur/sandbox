@@ -520,6 +520,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * Also validates that the compilation units have no compilation errors before refactoring.
 	 * Use {@link #assertRefactoringResultAsExpectedSkipCompilationCheck} if the test fixtures
 	 * intentionally contain compilation errors.
+	 * Note: This method does NOT validate compilation errors in the input code,
+	 * because many refactoring tests use intentionally incomplete Java code
+	 * (e.g., missing imports) as test fixtures. Use {@link #assertRefactoringHasNoChange}
+	 * for negative tests that require compilation-error-free input.
 	 * </p>
 	 * 
 	 * @param cus the compilation units to refactor

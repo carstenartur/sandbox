@@ -21,12 +21,13 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Name;
-import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
-import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.XMLCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
+import org.sandbox.jdt.internal.corext.util.ImportUtils;
+import org.sandbox.jdt.internal.corext.util.TypeCheckingUtils;
 
 /**
  * @param <T> Type found in Visitor
@@ -34,13 +35,7 @@ import org.sandbox.jdt.internal.corext.fix.XMLCleanUpFixCore;
 public abstract class AbstractTool<T> {
 
 	protected static boolean isOfType(ITypeBinding typeBinding, String typename) {
-		if (typeBinding == null) {
-			throw new AbortSearchException();
-		}
-		if (typeBinding.isArray()) {
-			typeBinding= typeBinding.getElementType();
-		}
-		return typeBinding.getQualifiedName().equals(typename);
+		return TypeCheckingUtils.isOfType(typeBinding, typename);
 	}
 
 	public abstract void find(XMLCleanUpFixCore fixcore, CompilationUnit compilationUnit,
@@ -61,14 +56,12 @@ public abstract class AbstractTool<T> {
 	 *         name if there was a conflict
 	 */
 	protected Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		String importedName= cuRewrite.getImportRewrite().addImport(typeName);
-		return ast.newName(importedName);
+		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);
 	}
 
 	public abstract String getPreview(boolean afterRefactoring);
 
 	public static Collection<String> getUsedVariableNames(ASTNode node) {
-		CompilationUnit root= (CompilationUnit) node.getRoot();
-		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
+		return ASTNavigationUtils.getUsedVariableNames(node);
 	}
 }

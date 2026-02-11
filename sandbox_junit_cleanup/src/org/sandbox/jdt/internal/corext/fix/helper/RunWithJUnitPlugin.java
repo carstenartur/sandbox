@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -176,8 +177,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			importRewriter.removeImport(ORG_JUNIT_SUITE);
 		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.getValue())) {
 			// Handle @RunWith(Suite.class) migration
-			newAnnotation= ast.newMarkerAnnotation();
-			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));
+			newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_SUITE);
 			// Add new import FIRST, then remove old ones
 			importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
 			importRewriter.removeImport(ORG_JUNIT_SUITE);

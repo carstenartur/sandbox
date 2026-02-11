@@ -37,6 +37,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
@@ -275,8 +276,7 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 		
 		// Add @Test annotation
 		ListRewrite modifiers = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
-		MarkerAnnotation testAnnotation = ast.newMarkerAnnotation();
-		testAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));
+		MarkerAnnotation testAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
 		modifiers.insertFirst(testAnnotation, group);
 		
 		// Add import

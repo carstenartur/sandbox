@@ -22,11 +22,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.QualifiedName;
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -101,54 +97,6 @@ public class FilesReadStringExplicitEncoding extends AbstractExplicitEncoding<Me
 		}
 		
 		return false;
-	}
-
-	/**
-	 * Extracts the encoding value from various AST node types representing charset arguments.
-	 * 
-	 * @param encodingArg the AST node representing the charset argument
-	 * @param context the method invocation context for variable resolution
-	 * @return the uppercase encoding string (e.g., "UTF-8"), or null if not determinable
-	 */
-	private static String getEncodingValue(ASTNode encodingArg, MethodInvocation context) {
-		if (encodingArg instanceof StringLiteral literal) {
-			return literal.getLiteralValue().toUpperCase(java.util.Locale.ROOT);
-		} else if (encodingArg instanceof SimpleName simpleName) {
-			return findVariableValue(simpleName, context);
-		} else if (encodingArg instanceof QualifiedName qualifiedName) {
-			// Handle StandardCharsets.UTF_8 pattern
-			return extractStandardCharsetName(qualifiedName);
-		} else if (encodingArg instanceof FieldAccess fieldAccess) {
-			// Handle java.nio.charset.StandardCharsets.UTF_8 pattern
-			return extractStandardCharsetName(fieldAccess);
-		}
-		return null;
-	}
-
-	/**
-	 * Extracts charset name from QualifiedName like StandardCharsets.UTF_8.
-	 */
-	private static String extractStandardCharsetName(QualifiedName qualifiedName) {
-		String qualifier = qualifiedName.getQualifier().toString();
-		if ("StandardCharsets".equals(qualifier) || qualifier.endsWith(".StandardCharsets")) { //$NON-NLS-1$ //$NON-NLS-2$
-			String fieldName = qualifiedName.getName().getIdentifier();
-			// Convert field name format (UTF_8) to charset name format (UTF-8)
-			return fieldName.replace('_', '-');
-		}
-		return null;
-	}
-
-	/**
-	 * Extracts charset name from FieldAccess like StandardCharsets.UTF_8.
-	 */
-	private static String extractStandardCharsetName(FieldAccess fieldAccess) {
-		String expression = fieldAccess.getExpression().toString();
-		if ("StandardCharsets".equals(expression) || expression.endsWith(".StandardCharsets")) { //$NON-NLS-1$ //$NON-NLS-2$
-			String fieldName = fieldAccess.getName().getIdentifier();
-			// Convert field name format (UTF_8) to charset name format (UTF-8)
-			return fieldName.replace('_', '-');
-		}
-		return null;
 	}
 
 	@Override

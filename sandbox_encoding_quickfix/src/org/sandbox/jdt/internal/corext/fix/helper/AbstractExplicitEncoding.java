@@ -25,8 +25,10 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -47,6 +49,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
+import org.sandbox.jdt.internal.corext.util.ImportUtils;
 
 
 /**
@@ -193,8 +196,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 *         a conflict; never null
 	 */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-		String importedName = cuRewrite.getImportRewrite().addImport(typeName);
-		return ast.newName(importedName);
+		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);
 	}
 
 	/**
@@ -223,6 +225,58 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			return null;
 		}
 		return ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));
+	}
+
+	/**
+	 * Resolves the encoding value from various AST node types representing a charset argument.
+	 * Handles string literals, variable references, qualified names (e.g., StandardCharsets.UTF_8),
+	 * and field access expressions.
+	 *
+	 * @param encodingArg the AST node representing the charset argument
+	 * @param context the method invocation context for variable resolution
+	 * @return the uppercase encoding string (e.g., "UTF-8"), or null if not determinable
+	 */
+	protected static String getEncodingValue(ASTNode encodingArg, MethodInvocation context) {
+		if (encodingArg instanceof StringLiteral literal) {
+			return literal.getLiteralValue().toUpperCase(Locale.ROOT);
+		} else if (encodingArg instanceof SimpleName simpleName) {
+			return findVariableValue(simpleName, context);
+		} else if (encodingArg instanceof QualifiedName qualifiedName) {
+			return extractStandardCharsetName(qualifiedName);
+		} else if (encodingArg instanceof FieldAccess fieldAccess) {
+			return extractStandardCharsetName(fieldAccess);
+		}
+		return null;
+	}
+
+	/**
+	 * Extracts charset name from QualifiedName like StandardCharsets.UTF_8.
+	 *
+	 * @param qualifiedName the qualified name to extract from
+	 * @return the charset name (e.g., "UTF-8"), or null if not a StandardCharsets reference
+	 */
+	protected static String extractStandardCharsetName(QualifiedName qualifiedName) {
+		String qualifier = qualifiedName.getQualifier().toString();
+		if ("StandardCharsets".equals(qualifier) || qualifier.endsWith(".StandardCharsets")) { //$NON-NLS-1$ //$NON-NLS-2$
+			String fieldName = qualifiedName.getName().getIdentifier();
+			return fieldName.replace('_', '-');
+		}
+		return null;
+	}
+
+	/**
+	 * Extracts charset name from FieldAccess like StandardCharsets.UTF_8.
+	 *
+	 * @param fieldAccess the field access to extract from
+	 * @return the charset name (e.g., "UTF-8"), or null if not a StandardCharsets reference
+	 */
+	protected static String extractStandardCharsetName(FieldAccess fieldAccess) {
+		String expression = fieldAccess.getExpression().toString();
+		if ("StandardCharsets".equals(expression) || expression.endsWith(".StandardCharsets")) { //$NON-NLS-1$ //$NON-NLS-2$
+			String fieldName = fieldAccess.getName().getIdentifier();
+			return fieldName.replace('_', '-');
+		}
+		return null;
 	}
 
 	/**

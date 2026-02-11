@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
@@ -134,14 +135,12 @@ public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 				newAnnotation = newSingleMemberAnnotation;
 			} else {
 				// No value, treat as marker
-				MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();
-				newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
+				MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);
 				newAnnotation = newMarkerAnnotation;
 			}
 		} else {
 			// MarkerAnnotation - no reason to preserve
-			MarkerAnnotation newMarkerAnnotation = ast.newMarkerAnnotation();
-			newMarkerAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
+			MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);
 			newAnnotation = newMarkerAnnotation;
 		}
 		

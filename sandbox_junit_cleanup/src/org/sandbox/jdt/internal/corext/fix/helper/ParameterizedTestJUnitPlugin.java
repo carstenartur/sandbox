@@ -48,6 +48,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -428,8 +429,7 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		
 		if (testAnnotation != null) {
 			// Create @ParameterizedTest
-			MarkerAnnotation parameterizedTest = ast.newMarkerAnnotation();
-			parameterizedTest.setTypeName(ast.newSimpleName(ANNOTATION_PARAMETERIZED_TEST));
+			MarkerAnnotation parameterizedTest= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_PARAMETERIZED_TEST);
 			
 			// Create @MethodSource("methodName")
 			SingleMemberAnnotation methodSource = ast.newSingleMemberAnnotation();
