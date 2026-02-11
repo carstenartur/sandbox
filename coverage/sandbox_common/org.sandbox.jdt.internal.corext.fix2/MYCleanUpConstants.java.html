@@ -348,6 +348,23 @@
 	public static final String TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP= &quot;cleanup.string_simplification&quot;; //$NON-NLS-1$
 
 	/**
+	 * Enable threading cleanup using TriggerPattern hints.
+	 * &lt;p&gt;
+	 * Currently detects threading anti-patterns where {@code Thread.run()} is called
+	 * directly instead of {@code Thread.start()}.
+	 * &lt;p&gt;
+	 * Inspired by NetBeans' threading hints (Tiny.java).
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 * &lt;p&gt;
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 * @since 1.2.5
+	 */
+	public static final String TRIGGERPATTERN_THREADING_CLEANUP= &quot;cleanup.threading&quot;; //$NON-NLS-1$
+
+	/**
 	 * Convert integer constants used in if-else chains to enum with switch statement.
 	 * Improves type safety and code maintainability.
 	 * &lt;p&gt;

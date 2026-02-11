@@ -134,58 +134,59 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 				// LOOP now uses the unified V2 implementation (ULR + Refactorer fallback)
 <span class="fc" id="L135">				fixSet.add(UseFunctionalCallFixCore.LOOP);</span>
 <span class="fc" id="L136">				fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);</span>
+<span class="fc" id="L137">				fixSet.add(UseFunctionalCallFixCore.TRADITIONAL_FOR_LOOP);</span>
 			}
 			// Note: FOR and WHILE format conversions are not yet implemented
 			// When they are, add the appropriate converters here
 		}
 		
 		// Bidirectional Loop Conversion (Phase 9)
-<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (isEnabled(LOOP_CONVERSION_ENABLED)) {</span>
-<span class="fc" id="L144">			String targetFormat = getTargetFormat();</span>
-<span class="fc" id="L145">			addBidirectionalTransformers(fixSet, targetFormat);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		if (isEnabled(LOOP_CONVERSION_ENABLED)) {</span>
+<span class="fc" id="L145">			String targetFormat = getTargetFormat();</span>
+<span class="fc" id="L146">			addBidirectionalTransformers(fixSet, targetFormat);</span>
 		}
 		
-<span class="fc" id="L148">		return fixSet;</span>
+<span class="fc" id="L149">		return fixSet;</span>
 	}
 
 	private String getTargetFormat() {
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">		if (optionsMap != null) {</span>
-<span class="fc" id="L153">			String value = optionsMap.get(LOOP_CONVERSION_TARGET_FORMAT);</span>
-<span class="pc bpc" id="L154" title="1 of 2 branches missed.">			if (value != null) {</span>
-<span class="fc" id="L155">				return value;</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">		if (optionsMap != null) {</span>
+<span class="fc" id="L154">			String value = optionsMap.get(LOOP_CONVERSION_TARGET_FORMAT);</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">			if (value != null) {</span>
+<span class="fc" id="L156">				return value;</span>
 			}
 		}
-<span class="nc" id="L158">		return &quot;stream&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L159">		return &quot;stream&quot;; //$NON-NLS-1$</span>
 	}
 
 	private void addBidirectionalTransformers(EnumSet&lt;UseFunctionalCallFixCore&gt; fixSet, String targetFormat) {
-<span class="pc bpc" id="L162" title="1 of 3 branches missed.">		switch (targetFormat) {</span>
+<span class="pc bpc" id="L163" title="1 of 3 branches missed.">		switch (targetFormat) {</span>
 		case &quot;enhanced_for&quot;: //$NON-NLS-1$
-<span class="fc bfc" id="L164" title="All 2 branches covered.">			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {</span>
-<span class="fc" id="L165">				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_FOR);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {</span>
+<span class="fc" id="L166">				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_FOR);</span>
 			}
-<span class="fc bfc" id="L167" title="All 2 branches covered.">			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {</span>
-<span class="fc" id="L168">				fixSet.add(UseFunctionalCallFixCore.ITERATOR_TO_FOR);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {</span>
+<span class="fc" id="L169">				fixSet.add(UseFunctionalCallFixCore.ITERATOR_TO_FOR);</span>
 			}
-<span class="fc" id="L170">			break;</span>
+<span class="fc" id="L171">			break;</span>
 		case &quot;iterator_while&quot;: //$NON-NLS-1$
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {</span>
-<span class="fc" id="L173">				fixSet.add(UseFunctionalCallFixCore.FOR_TO_ITERATOR);</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {</span>
+<span class="fc" id="L174">				fixSet.add(UseFunctionalCallFixCore.FOR_TO_ITERATOR);</span>
 			}
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {</span>
-<span class="nc" id="L176">				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_ITERATOR);</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {</span>
+<span class="nc" id="L177">				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_ITERATOR);</span>
 			}
-<span class="nc" id="L178">			break;</span>
+<span class="nc" id="L179">			break;</span>
 		case &quot;stream&quot;: //$NON-NLS-1$
 		default:
-<span class="nc bnc" id="L181" title="All 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {</span>
-<span class="nc" id="L182">				fixSet.add(UseFunctionalCallFixCore.LOOP);</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {</span>
+<span class="nc" id="L183">				fixSet.add(UseFunctionalCallFixCore.LOOP);</span>
 			}
-<span class="nc bnc" id="L184" title="All 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {</span>
-<span class="nc" id="L185">				fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {</span>
+<span class="nc" id="L186">				fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);</span>
 			}
 			break;
 		}
-<span class="fc" id="L189">	}</span>
+<span class="fc" id="L190">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -90,7 +90,7 @@ public class StringSimplificationCleanUpCore extends AbstractCleanUp {
 	public String[] getStepDescriptions() {
 <span class="fc" id="L91">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
 <span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {</span>
-<span class="nc" id="L93">			result.add(&quot;Simplifies string concatenation with empty strings to String.valueOf()&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L93">			result.add(&quot;Simplifies code patterns (e.g., empty string concatenation, collection size checks, redundant String.format)&quot;); //$NON-NLS-1$</span>
 		}
 <span class="fc" id="L95">		return result.toArray(new String[0]);</span>
 	}
@@ -100,12 +100,12 @@ public class StringSimplificationCleanUpCore extends AbstractCleanUp {
 <span class="nc bnc" id="L100" title="All 2 branches missed.">		if (isEnabled(TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP)) {</span>
 <span class="nc" id="L101">			return &quot;&quot;&quot;</span>
 				String result = String.valueOf(value);
-				String message = String.valueOf(count);
+				boolean empty = list.isEmpty();
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
 <span class="nc" id="L106">		return &quot;&quot;&quot;</span>
 			String result = &quot;&quot; + value;
-			String message = count + &quot;&quot;;
+			boolean empty = list.size() == 0;
 			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 }

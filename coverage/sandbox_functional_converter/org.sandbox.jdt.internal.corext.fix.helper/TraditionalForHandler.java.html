@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TraditionalForHandler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">TraditionalForHandler.java</span></div><h1>TraditionalForHandler.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.functional.core.builder.LoopModelBuilder;
+import org.sandbox.functional.core.model.ElementDescriptor;
+import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
+import org.sandbox.functional.core.transformer.LoopModelTransformer;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
+
+/**
+ * Handler for converting traditional index-based for-loops to IntStream.range() operations.
+ * 
+ * &lt;p&gt;This handler converts classic for-loops with integer counters to functional IntStream operations:&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * // Before:
+ * for (int i = 0; i &lt; 10; i++) {
+ *     System.out.println(i);
+ * }
+ * 
+ * // After:
+ * IntStream.range(0, 10).forEach(i -&gt; System.out.println(i));
+ * }&lt;/pre&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Supported Patterns:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;Initializer: {@code int i = start} (single variable declaration with int type)&lt;/li&gt;
+ *   &lt;li&gt;Condition: {@code i &lt; end} or {@code i &lt;= end} (comparison with loop variable)&lt;/li&gt;
+ *   &lt;li&gt;Updater: {@code i++} or {@code ++i} (increment operator)&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Infrastructure:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;Uses {@link SourceDescriptor.SourceType#EXPLICIT_RANGE} for range representation&lt;/li&gt;
+ *   &lt;li&gt;Leverages existing {@link ASTStreamRenderer} for IntStream.range() rendering&lt;/li&gt;
+ *   &lt;li&gt;Builds {@link LoopModel} with {@link ForEachTerminal} for body statements&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Thread-Safety Guards:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;&lt;b&gt;Nested loop guard&lt;/b&gt;: {@code isNestedInsideLoop()} rejects loops inside other loops
+ *       to avoid interfering with the {@code EnhancedForHandler}'s scope analysis and to
+ *       prevent generating IntStream calls inside lambdas where mutable loop state could be captured&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Unconvertible statement detection&lt;/b&gt;: {@code containsUnconvertibleStatements()} rejects
+ *       loops with {@code break}, {@code continue}, or {@code return} which cannot be expressed
+ *       in lambda bodies&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Sequential-only streams&lt;/b&gt;: Always generates {@code IntStream.range()} (sequential),
+ *       never parallel streams, avoiding complex synchronization requirements&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Synchronized block detection&lt;/b&gt;: Handled upstream by {@code JdtLoopExtractor} and
+ *       {@code PreconditionsChecker}, which reject loops containing synchronized statements
+ *       before they reach this handler&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Naming Note:&lt;/b&gt; This class is named after the &lt;i&gt;source&lt;/i&gt; loop type (traditional for-loop),
+ * not the target format. The architecture supports bidirectional transformations, so the name
+ * describes what loop pattern this handler processes.&lt;/p&gt;
+ * 
+ * @see SourceDescriptor.SourceType#EXPLICIT_RANGE
+ * @see ASTStreamRenderer#renderSource(SourceDescriptor)
+ */
+<span class="fc" id="L84">public class TraditionalForHandler extends AbstractFunctionalCall&lt;ForStatement&gt; {</span>
+    
+    @Override
+    public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
+                     Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
+        
+<span class="fc" id="L90">        compilationUnit.accept(new ASTVisitor() {</span>
+            @Override
+            public boolean visit(ForStatement node) {
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                if (nodesprocessed.contains(node)) {</span>
+<span class="fc" id="L94">                    return false;</span>
+                }
+                
+                // Analyze the for-loop structure
+<span class="fc" id="L98">                ForLoopPattern pattern = analyzeForLoop(node);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">                if (pattern == null) {</span>
+<span class="fc" id="L100">                    return true; // Not a convertible pattern, continue visiting</span>
+                }
+                
+                // Mark as processed and add operation
+<span class="fc" id="L104">                nodesprocessed.add(node);</span>
+<span class="fc" id="L105">                ReferenceHolder&lt;ASTNode, Object&gt; holder = ReferenceHolder.create();</span>
+<span class="fc" id="L106">                holder.put(node, pattern);</span>
+<span class="fc" id="L107">                operations.add(fixcore.rewrite(node, holder));</span>
+                
+<span class="fc" id="L109">                return false; // Don't visit children of convertible loops</span>
+            }
+        });
+<span class="fc" id="L112">    }</span>
+    
+    /**
+     * Analyzes a ForStatement to determine if it follows the convertible pattern.
+     * 
+     * @param forStmt the ForStatement to analyze
+     * @return a ForLoopPattern if convertible, null otherwise
+     */
+    private ForLoopPattern analyzeForLoop(ForStatement forStmt) {
+        // Skip for-loops nested inside other loops to avoid converting
+        // inner loops that the EnhancedForHandler expects to remain unchanged
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (isNestedInsideLoop(forStmt)) {</span>
+<span class="fc" id="L124">            return null;</span>
+        }
+        
+        // Check initializer: must be single variable declaration of type int
+<span class="fc" id="L128">        List&lt;?&gt; initializers = forStmt.initializers();</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if (initializers.size() != 1) {</span>
+<span class="nc" id="L130">            return null;</span>
+        }
+        
+<span class="fc" id="L133">        Object initObj = initializers.get(0);</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        if (!(initObj instanceof VariableDeclarationExpression)) {</span>
+<span class="nc" id="L135">            return null;</span>
+        }
+        
+<span class="fc" id="L138">        VariableDeclarationExpression varDecl = (VariableDeclarationExpression) initObj;</span>
+<span class="fc" id="L139">        Type type = varDecl.getType();</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (!isPrimitiveInt(type)) {</span>
+<span class="nc" id="L141">            return null;</span>
+        }
+        
+<span class="fc" id="L144">        List&lt;?&gt; fragments = varDecl.fragments();</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (fragments.size() != 1) {</span>
+<span class="nc" id="L146">            return null;</span>
+        }
+        
+<span class="fc" id="L149">        VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragments.get(0);</span>
+<span class="fc" id="L150">        String loopVarName = fragment.getName().getIdentifier();</span>
+<span class="fc" id="L151">        Expression startExpr = fragment.getInitializer();</span>
+        
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        if (startExpr == null) {</span>
+<span class="nc" id="L154">            return null;</span>
+        }
+        
+        // Check condition: must be infix comparison with loop variable
+<span class="fc" id="L158">        Expression condition = forStmt.getExpression();</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">        if (!(condition instanceof InfixExpression)) {</span>
+<span class="nc" id="L160">            return null;</span>
+        }
+        
+<span class="fc" id="L163">        InfixExpression infixCond = (InfixExpression) condition;</span>
+<span class="fc" id="L164">        InfixExpression.Operator operator = infixCond.getOperator();</span>
+        
+        // Check that left operand is the loop variable
+<span class="fc" id="L167">        Expression leftOperand = infixCond.getLeftOperand();</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (!(leftOperand instanceof SimpleName)) {</span>
+<span class="nc" id="L169">            return null;</span>
+        }
+        
+<span class="fc" id="L172">        SimpleName leftName = (SimpleName) leftOperand;</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (!leftName.getIdentifier().equals(loopVarName)) {</span>
+<span class="nc" id="L174">            return null;</span>
+        }
+        
+<span class="fc" id="L177">        Expression endExpr = infixCond.getRightOperand();</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (endExpr == null) {</span>
+<span class="nc" id="L179">            return null;</span>
+        }
+        
+<span class="fc" id="L182">        boolean inclusive = false;</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (operator == InfixExpression.Operator.LESS) {</span>
+            // i &lt; end  →  IntStream.range(start, end)
+<span class="fc" id="L185">            inclusive = false;</span>
+<span class="pc bnc" id="L186" title="All 2 branches missed.">        } else if (operator == InfixExpression.Operator.LESS_EQUALS) {</span>
+            // i &lt;= end  →  IntStream.rangeClosed(start, end) or range(start, end+1)
+<span class="nc" id="L188">            inclusive = true;</span>
+<span class="nc" id="L189">        } else {</span>
+<span class="nc" id="L190">            return null; // Unsupported operator</span>
+        }
+        
+        // Check updater: must be i++ or ++i
+<span class="fc" id="L194">        List&lt;?&gt; updaters = forStmt.updaters();</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if (updaters.size() != 1) {</span>
+<span class="nc" id="L196">            return null;</span>
+        }
+        
+<span class="fc" id="L199">        Object updaterObj = updaters.get(0);</span>
+<span class="fc" id="L200">        boolean isIncrement = false;</span>
+        
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (updaterObj instanceof PostfixExpression) {</span>
+<span class="fc" id="L203">            PostfixExpression postfix = (PostfixExpression) updaterObj;</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">            if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT) {</span>
+<span class="fc" id="L205">                Expression operand = postfix.getOperand();</span>
+<span class="pc bpc" id="L206" title="2 of 4 branches missed.">                if (operand instanceof SimpleName &amp;&amp; ((SimpleName) operand).getIdentifier().equals(loopVarName)) {</span>
+<span class="fc" id="L207">                    isIncrement = true;</span>
+                }
+            }
+<span class="pc bnc" id="L210" title="All 2 branches missed.">        } else if (updaterObj instanceof PrefixExpression) {</span>
+<span class="nc" id="L211">            PrefixExpression prefix = (PrefixExpression) updaterObj;</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {</span>
+<span class="nc" id="L213">                Expression operand = prefix.getOperand();</span>
+<span class="nc bnc" id="L214" title="All 4 branches missed.">                if (operand instanceof SimpleName &amp;&amp; ((SimpleName) operand).getIdentifier().equals(loopVarName)) {</span>
+<span class="nc" id="L215">                    isIncrement = true;</span>
+                }
+            }
+        }
+        
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (!isIncrement) {</span>
+<span class="nc" id="L221">            return null;</span>
+        }
+        
+        // Extract body
+<span class="fc" id="L225">        Statement body = forStmt.getBody();</span>
+        
+        // Check if body contains unconvertible statements (break, continue, return)
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">        if (containsUnconvertibleStatements(body)) {</span>
+<span class="nc" id="L229">            return null;</span>
+        }
+        
+<span class="fc" id="L232">        return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);</span>
+    }
+    
+    /**
+     * Checks if a Type represents primitive int.
+     */
+    private boolean isPrimitiveInt(Type type) {
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">        if (type instanceof PrimitiveType) {</span>
+<span class="fc" id="L240">            PrimitiveType primType = (PrimitiveType) type;</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">            return primType.getPrimitiveTypeCode() == PrimitiveType.INT;</span>
+        }
+<span class="nc" id="L243">        return false;</span>
+    }
+    
+    /**
+     * Checks if the for-loop is nested inside another loop (enhanced-for, while, for, do-while).
+     * Nested traditional for-loops are skipped to avoid interfering with the EnhancedForHandler's
+     * analysis of outer enhanced-for loops.
+     */
+    private boolean isNestedInsideLoop(ForStatement forStmt) {
+<span class="fc" id="L252">        ASTNode parent = forStmt.getParent();</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        while (parent != null) {</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">            if (parent instanceof EnhancedForStatement</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">                    || parent instanceof ForStatement</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">                    || parent instanceof WhileStatement</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">                    || parent instanceof DoStatement) {</span>
+<span class="fc" id="L258">                return true;</span>
+            }
+<span class="pc bpc" id="L260" title="1 of 4 branches missed.">            if (parent instanceof MethodDeclaration || parent instanceof TypeDeclaration) {</span>
+<span class="nc" id="L261">                break;</span>
+            }
+<span class="fc" id="L263">            parent = parent.getParent();</span>
+        }
+<span class="fc" id="L265">        return false;</span>
+    }
+    
+    /**
+     * Checks if the loop body contains unconvertible statements.
+     * Statements containing break, continue, or return cannot be converted to lambda.
+     */
+    private boolean containsUnconvertibleStatements(Statement body) {
+<span class="fc" id="L273">        final boolean[] hasUnconvertible = {false};</span>
+        
+<span class="fc" id="L275">        body.accept(new ASTVisitor() {</span>
+            @Override
+            public boolean visit(BreakStatement node) {
+<span class="nc" id="L278">                hasUnconvertible[0] = true;</span>
+<span class="nc" id="L279">                return false;</span>
+            }
+            
+            @Override
+            public boolean visit(ContinueStatement node) {
+<span class="nc" id="L284">                hasUnconvertible[0] = true;</span>
+<span class="nc" id="L285">                return false;</span>
+            }
+            
+            @Override
+            public boolean visit(ReturnStatement node) {
+<span class="nc" id="L290">                hasUnconvertible[0] = true;</span>
+<span class="nc" id="L291">                return false;</span>
+            }
+        });
+        
+<span class="fc" id="L295">        return hasUnconvertible[0];</span>
+    }
+    
+    @Override
+    public void rewrite(UseFunctionalCallFixCore upp, ForStatement visited,
+                        CompilationUnitRewrite cuRewrite, TextEditGroup group,
+                        ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
+        
+<span class="fc" id="L303">        Object patternObj = data.get(visited);</span>
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">        if (!(patternObj instanceof ForLoopPattern)) {</span>
+<span class="nc" id="L305">            return;</span>
+        }
+        
+<span class="fc" id="L308">        ForLoopPattern pattern = (ForLoopPattern) patternObj;</span>
+        
+<span class="fc" id="L310">        AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L311">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+        
+        // Build LoopModel
+<span class="fc" id="L314">        LoopModel model = buildLoopModel(pattern, ast);</span>
+        
+        // Create renderer
+<span class="fc" id="L317">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body);</span>
+        
+        // Transform using LoopModelTransformer
+<span class="fc" id="L320">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
+<span class="fc" id="L321">        Expression streamExpression = transformer.transform(model);</span>
+        
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
+            // Wrap in ExpressionStatement
+<span class="fc" id="L325">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
+<span class="fc" id="L326">            rewrite.replace(visited, newStatement, group);</span>
+            
+            // Add IntStream import
+<span class="fc" id="L329">            cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.IntStream&quot;);</span>
+        }
+<span class="fc" id="L331">    }</span>
+    
+    /**
+     * Builds a LoopModel from the analyzed ForLoopPattern.
+     */
+    private LoopModel buildLoopModel(ForLoopPattern pattern, AST ast) {
+        // Get start and end expressions as strings
+<span class="fc" id="L338">        String startStr = pattern.startExpr.toString();</span>
+<span class="fc" id="L339">        String endStr = pattern.endExpr.toString();</span>
+        
+        // Adjust end expression for inclusive range (i &lt;= end)
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        if (pattern.inclusive) {</span>
+            // For i &lt;= end, we need IntStream.range(start, (end) + 1)
+            // Parenthesize end expression to preserve operator precedence
+<span class="nc" id="L345">            endStr = &quot;(&quot; + endStr + &quot;) + 1&quot;;</span>
+        }
+        
+        // Build EXPLICIT_RANGE source descriptor
+<span class="fc" id="L349">        String rangeExpression = startStr + &quot;,&quot; + endStr;</span>
+<span class="fc" id="L350">        SourceDescriptor source = new SourceDescriptor(</span>
+<span class="fc" id="L351">            SourceDescriptor.SourceType.EXPLICIT_RANGE,</span>
+<span class="fc" id="L352">            rangeExpression,</span>
+<span class="fc" id="L353">            &quot;int&quot;</span>
+        );
+        
+        // Build element descriptor for the loop variable
+<span class="fc" id="L357">        ElementDescriptor element = new ElementDescriptor(</span>
+<span class="fc" id="L358">            pattern.loopVarName,</span>
+<span class="fc" id="L359">            &quot;int&quot;,</span>
+<span class="fc" id="L360">            false // not a collection element</span>
+        );
+        
+        // Extract body statements and convert to strings
+<span class="fc" id="L364">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(pattern.body);</span>
+        
+        // Build ForEachTerminal
+<span class="fc" id="L367">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // uses forEach (not forEachOrdered)</span>
+        
+        // Build and return LoopModel
+<span class="fc" id="L370">        return new LoopModelBuilder()</span>
+<span class="fc" id="L371">            .source(source)</span>
+<span class="fc" id="L372">            .element(element)</span>
+<span class="fc" id="L373">            .terminal(terminal)</span>
+<span class="fc" id="L374">            .build();</span>
+    }
+    
+    /**
+     * Extracts statements from the loop body and converts them to expression strings.
+     * Trailing semicolons are stripped because ForEachTerminal / ASTStreamRenderer.createExpression()
+     * expects pure expressions, not statements.  This matches how
+     * {@code JdtLoopExtractor.addSimpleForEachTerminal()} produces body strings for
+     * the existing EnhancedForHandler.
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private List&lt;String&gt; extractBodyStatementsAsStrings(Statement body) {
+<span class="fc" id="L386">        List&lt;String&gt; bodyStmts = new java.util.ArrayList&lt;&gt;();</span>
+        
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        if (body instanceof Block) {</span>
+<span class="fc" id="L389">            Block block = (Block) body;</span>
+<span class="fc" id="L390">            List&lt;Statement&gt; statements = block.statements();</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">            for (Statement stmt : statements) {</span>
+<span class="fc" id="L392">                bodyStmts.add(stripTrailingSemicolon(stmt.toString()));</span>
+            }
+<span class="fc" id="L394">        } else {</span>
+            // Single statement body
+<span class="nc" id="L396">            bodyStmts.add(stripTrailingSemicolon(body.toString()));</span>
+        }
+        
+<span class="fc" id="L399">        return bodyStmts;</span>
+    }
+    
+    /**
+     * Strips a trailing semicolon (and surrounding whitespace) from a statement string
+     * so that it can be parsed as an expression by {@code ASTStreamRenderer.createExpression()}.
+     */
+    private static String stripTrailingSemicolon(String stmtStr) {
+<span class="fc" id="L407">        String trimmed = stmtStr.trim();</span>
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">        if (trimmed.endsWith(&quot;;&quot;)) {</span>
+<span class="fc" id="L409">            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();</span>
+        }
+<span class="fc" id="L411">        return trimmed;</span>
+    }
+    
+    @Override
+    public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L416" title="All 2 branches missed.">        if (afterRefactoring) {</span>
+<span class="nc" id="L417">            return &quot;IntStream.range(0, 10).forEach(i -&gt; System.out.println(i));\n&quot;;</span>
+        }
+<span class="nc" id="L419">        return &quot;for (int i = 0; i &lt; 10; i++)\n    System.out.println(i);\n&quot;;</span>
+    }
+    
+    /**
+     * Represents an analyzed traditional for-loop pattern.
+     */
+    private static class ForLoopPattern {
+        final String loopVarName;
+        final Expression startExpr;
+        final Expression endExpr;
+        final boolean inclusive;  // true for &lt;=, false for &lt;
+        final Statement body;
+        
+<span class="fc" id="L432">        ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,</span>
+                      boolean inclusive, Statement body) {
+<span class="fc" id="L434">            this.loopVarName = loopVarName;</span>
+<span class="fc" id="L435">            this.startExpr = startExpr;</span>
+<span class="fc" id="L436">            this.endExpr = endExpr;</span>
+<span class="fc" id="L437">            this.inclusive = inclusive;</span>
+<span class="fc" id="L438">            this.body = body;</span>
+<span class="fc" id="L439">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

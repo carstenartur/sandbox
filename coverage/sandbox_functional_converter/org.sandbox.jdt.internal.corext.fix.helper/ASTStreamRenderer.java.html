@@ -645,9 +645,9 @@ public class ASTStreamRenderer implements ASTAwareRenderer&lt;Expression, Statem
 <span class="fc" id="L645">        parser.setBindingsRecovery(true);  // Recover from binding errors</span>
         
         // Set up the environment from our compilation unit
-<span class="pc bpc" id="L648" title="3 of 4 branches missed.">        if (compilationUnit != null &amp;&amp; compilationUnit.getJavaElement() != null) {</span>
-<span class="nc" id="L649">            parser.setProject(compilationUnit.getJavaElement().getJavaProject());</span>
-<span class="nc" id="L650">            parser.setUnitName(&quot;__statement.java&quot;);  // Virtual file name</span>
+<span class="pc bpc" id="L648" title="1 of 4 branches missed.">        if (compilationUnit != null &amp;&amp; compilationUnit.getJavaElement() != null) {</span>
+<span class="fc" id="L649">            parser.setProject(compilationUnit.getJavaElement().getJavaProject());</span>
+<span class="fc" id="L650">            parser.setUnitName(&quot;__statement.java&quot;);  // Virtual file name</span>
         }
         
 <span class="fc" id="L653">        ASTNode result = parser.createAST(null);</span>

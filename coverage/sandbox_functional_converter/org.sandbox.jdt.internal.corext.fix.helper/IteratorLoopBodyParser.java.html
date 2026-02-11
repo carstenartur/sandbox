@@ -124,13 +124,13 @@ import org.eclipse.jdt.core.dom.*;
      * This is useful for AST transformations.
      */
     public Block createSyntheticBlock(AST ast, ParsedBody parsedBody) {
-<span class="fc" id="L127">        Block syntheticBlock = ast.newBlock();</span>
+<span class="nc" id="L127">        Block syntheticBlock = ast.newBlock();</span>
         
-<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (Statement stmt : parsedBody.actualBodyStatements) {</span>
-<span class="fc" id="L130">            syntheticBlock.statements().add(ASTNode.copySubtree(ast, stmt));</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        for (Statement stmt : parsedBody.actualBodyStatements) {</span>
+<span class="nc" id="L130">            syntheticBlock.statements().add(ASTNode.copySubtree(ast, stmt));</span>
         }
         
-<span class="fc" id="L133">        return syntheticBlock;</span>
+<span class="nc" id="L133">        return syntheticBlock;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

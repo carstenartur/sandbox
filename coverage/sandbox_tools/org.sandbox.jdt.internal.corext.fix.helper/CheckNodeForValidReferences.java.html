@@ -3,7 +3,6 @@
 import java.util.Iterator;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
@@ -18,147 +17,148 @@ import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.sandbox.ast.api.expr.ASTExpr;
+import org.sandbox.ast.api.expr.MethodInvocationExpr;
+import org.sandbox.ast.api.expr.SimpleNameExpr;
+import org.sandbox.ast.api.jdt.FluentASTVisitor;
+import org.sandbox.ast.api.jdt.JDTConverter;
 
 class CheckNodeForValidReferences {
-<span class="nc" id="L23">	private static final String ITERATOR_NAME= Iterator.class.getCanonicalName();</span>
+<span class="nc" id="L27">	private static final String ITERATOR_NAME= Iterator.class.getCanonicalName();</span>
 
 	private final ASTNode fASTNode;
 	private final boolean fLocalVarsOnly;
 
-<span class="nc" id="L28">	public CheckNodeForValidReferences(ASTNode node, boolean localVarsOnly) {</span>
-<span class="nc" id="L29">		fASTNode= node;</span>
-<span class="nc" id="L30">		fLocalVarsOnly= localVarsOnly;</span>
-<span class="nc" id="L31">	}</span>
+<span class="nc" id="L32">	public CheckNodeForValidReferences(ASTNode node, boolean localVarsOnly) {</span>
+<span class="nc" id="L33">		fASTNode= node;</span>
+<span class="nc" id="L34">		fLocalVarsOnly= localVarsOnly;</span>
+<span class="nc" id="L35">	}</span>
 
 	public boolean isValid() {
-<span class="nc" id="L34">		ASTVisitor visitor= new ASTVisitor() {</span>
+<span class="nc" id="L38">		FluentASTVisitor visitor= new FluentASTVisitor() {</span>
 
 			@Override
 			public boolean visit(FieldAccess visitedField) {
-<span class="nc" id="L38">				IVariableBinding binding= visitedField.resolveFieldBinding();</span>
-<span class="nc bnc" id="L39" title="All 2 branches missed.">				if (binding == null) {</span>
-<span class="nc" id="L40">					throw new AbortSearchException();</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">				if (visitedField.resolveFieldBinding() == null) {</span>
+<span class="nc" id="L43">					throw new AbortSearchException();</span>
 				}
-<span class="nc bnc" id="L42" title="All 4 branches missed.">				if (fLocalVarsOnly &amp;&amp; visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {</span>
-<span class="nc" id="L43">					MethodInvocation methodInvocation= ASTNodes.getParent(visitedField, MethodInvocation.class);</span>
-<span class="nc" id="L44">					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();</span>
-<span class="nc bnc" id="L45" title="All 2 branches missed.">					if (methodInvocationBinding == null) {</span>
-<span class="nc" id="L46">						throw new AbortSearchException();</span>
-					}
-<span class="nc" id="L48">					ITypeBinding methodTypeBinding= methodInvocationBinding.getReturnType();</span>
-<span class="nc bnc" id="L49" title="All 2 branches missed.">					if (AbstractTool.isOfType(methodTypeBinding, ITERATOR_NAME)) {</span>
-<span class="nc" id="L50">						throw new AbortSearchException();</span>
+<span class="nc bnc" id="L45" title="All 4 branches missed.">				if (fLocalVarsOnly &amp;&amp; visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {</span>
+<span class="nc" id="L46">					MethodInvocation methodInvocation= ASTNodes.getParent(visitedField, MethodInvocation.class);</span>
+<span class="nc" id="L47">					MethodInvocationExpr miExpr= JDTConverter.convert(methodInvocation);</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">					if (miExpr.returnsType(ITERATOR_NAME)) {</span>
+<span class="nc" id="L49">						throw new AbortSearchException();</span>
 					}
 				}
-<span class="nc" id="L53">				return true;</span>
+<span class="nc" id="L52">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(SuperFieldAccess visitedField) {
-<span class="nc" id="L58">				IVariableBinding binding= visitedField.resolveFieldBinding();</span>
-<span class="nc bnc" id="L59" title="All 2 branches missed.">				if (binding == null) {</span>
-<span class="nc" id="L60">					throw new AbortSearchException();</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">				if (visitedField.resolveFieldBinding() == null) {</span>
+<span class="nc" id="L58">					throw new AbortSearchException();</span>
 				}
-<span class="nc bnc" id="L62" title="All 4 branches missed.">				if (fLocalVarsOnly &amp;&amp; visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {</span>
-<span class="nc" id="L63">					MethodInvocation methodInvocation= ASTNodes.getParent(visitedField, MethodInvocation.class);</span>
-<span class="nc" id="L64">					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();</span>
-<span class="nc bnc" id="L65" title="All 2 branches missed.">					if (methodInvocationBinding == null) {</span>
-<span class="nc" id="L66">						throw new AbortSearchException();</span>
-					}
-<span class="nc" id="L68">					ITypeBinding methodTypeBinding= methodInvocationBinding.getReturnType();</span>
-<span class="nc bnc" id="L69" title="All 2 branches missed.">					if (AbstractTool.isOfType(methodTypeBinding, ITERATOR_NAME)) {</span>
-<span class="nc" id="L70">						throw new AbortSearchException();</span>
+<span class="nc bnc" id="L60" title="All 4 branches missed.">				if (fLocalVarsOnly &amp;&amp; visitedField.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {</span>
+<span class="nc" id="L61">					MethodInvocation methodInvocation= ASTNodes.getParent(visitedField, MethodInvocation.class);</span>
+<span class="nc" id="L62">					MethodInvocationExpr miExpr= JDTConverter.convert(methodInvocation);</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">					if (miExpr.returnsType(ITERATOR_NAME)) {</span>
+<span class="nc" id="L64">						throw new AbortSearchException();</span>
 					}
 				}
-<span class="nc" id="L73">				return true;</span>
+<span class="nc" id="L67">				return true;</span>
 			}
 
 			@Override
-			public boolean visit(MethodInvocation methodInvocation) {
-<span class="nc bnc" id="L78" title="All 2 branches missed.">				if (fLocalVarsOnly) {</span>
-<span class="nc" id="L79">					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();</span>
-<span class="nc bnc" id="L80" title="All 2 branches missed.">					if (methodInvocationBinding == null) {</span>
-<span class="nc" id="L81">						throw new AbortSearchException();</span>
+			protected boolean visitMethodInvocation(MethodInvocationExpr miExpr, MethodInvocation methodInvocation) {
+<span class="nc bnc" id="L72" title="All 2 branches missed.">				if (fLocalVarsOnly) {</span>
+<span class="nc" id="L73">					IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">					if (methodInvocationBinding == null) {</span>
+<span class="nc" id="L75">						throw new AbortSearchException();</span>
 					}
-<span class="nc" id="L83">					ITypeBinding methodTypeBinding= methodInvocationBinding.getReturnType();</span>
-<span class="nc bnc" id="L84" title="All 2 branches missed.">					if (AbstractTool.isOfType(methodTypeBinding, ITERATOR_NAME)) {</span>
-<span class="nc" id="L85">						Expression exp= methodInvocation.getExpression();</span>
-<span class="nc bnc" id="L86" title="All 2 branches missed.">						if (exp instanceof SimpleName) {</span>
-<span class="nc" id="L87">							IBinding binding= ((SimpleName) exp).resolveBinding();</span>
-<span class="nc bnc" id="L88" title="All 4 branches missed.">							if (binding instanceof IVariableBinding &amp;&amp; !((IVariableBinding) binding).isField()</span>
-<span class="nc bnc" id="L89" title="All 2 branches missed.">									&amp;&amp; !((IVariableBinding) binding).isParameter()</span>
-<span class="nc bnc" id="L90" title="All 2 branches missed.">									&amp;&amp; !((IVariableBinding) binding).isRecordComponent()) {</span>
-<span class="nc" id="L91">								ITypeBinding typeBinding= ((IVariableBinding) binding).getType();</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">								if (AbstractTool.isOfType(typeBinding, ITERATOR_NAME)) {</span>
-<span class="nc" id="L93">									return true;</span>
+<span class="nc" id="L77">					ITypeBinding methodTypeBinding= methodInvocationBinding.getReturnType();</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">					if (AbstractTool.isOfType(methodTypeBinding, ITERATOR_NAME)) {</span>
+<span class="nc" id="L79">						Expression exp= methodInvocation.getExpression();</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">						if (exp instanceof SimpleName simpleName) {</span>
+<span class="nc" id="L81">							SimpleNameExpr nameExpr= JDTConverter.convert(simpleName);</span>
+<span class="nc" id="L82">							IBinding binding= simpleName.resolveBinding();</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">							if (binding instanceof IVariableBinding varBinding) {</span>
+								// Check using fluent API for field and parameter, but use JDT for record component
+<span class="nc" id="L85">								if (nameExpr.resolveVariable()</span>
+<span class="nc bnc" id="L86" title="All 4 branches missed.">										.filter(var -&gt; !var.isField() &amp;&amp; !var.isParameter())</span>
+<span class="nc" id="L87">										.filter(var -&gt; var.hasType(ITERATOR_NAME))</span>
+<span class="nc bnc" id="L88" title="All 4 branches missed.">										.isPresent() &amp;&amp; !varBinding.isRecordComponent()) {</span>
+<span class="nc" id="L89">									return true;</span>
 								}
 							}
 						}
-<span class="nc" id="L97">						throw new AbortSearchException();</span>
+<span class="nc" id="L93">						throw new AbortSearchException();</span>
 					}
 				}
-<span class="nc" id="L100">				return true;</span>
+<span class="nc" id="L96">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(CastExpression castExpression) {
-<span class="nc" id="L105">				Type castType= castExpression.getType();</span>
-<span class="nc" id="L106">				ITypeBinding typeBinding= castType.resolveBinding();</span>
-<span class="nc bnc" id="L107" title="All 2 branches missed.">				if (AbstractTool.isOfType(typeBinding, ITERATOR_NAME)) {</span>
-<span class="nc" id="L108">					Expression exp= castExpression.getExpression();</span>
-<span class="nc bnc" id="L109" title="All 2 branches missed.">					if (exp instanceof Name) {</span>
-<span class="nc" id="L110">						IBinding binding= ((Name) exp).resolveBinding();</span>
-<span class="nc bnc" id="L111" title="All 2 branches missed.">						if (binding instanceof IVariableBinding simpleNameVarBinding) {</span>
-<span class="nc bnc" id="L112" title="All 2 branches missed.">							if (!fLocalVarsOnly) {</span>
-<span class="nc bnc" id="L113" title="All 4 branches missed.">								if (!simpleNameVarBinding.isField() &amp;&amp; !simpleNameVarBinding.isParameter()</span>
-<span class="nc bnc" id="L114" title="All 2 branches missed.">										&amp;&amp; !simpleNameVarBinding.isRecordComponent()) {</span>
-<span class="nc" id="L115">									throw new AbortSearchException();</span>
+<span class="nc" id="L101">				Type castType= castExpression.getType();</span>
+<span class="nc" id="L102">				ITypeBinding typeBinding= castType.resolveBinding();</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">				if (AbstractTool.isOfType(typeBinding, ITERATOR_NAME)) {</span>
+<span class="nc" id="L104">					Expression exp= castExpression.getExpression();</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">					if (exp instanceof Name) {</span>
+<span class="nc" id="L106">						SimpleNameExpr nameExpr= JDTConverter.convertExpression(exp)</span>
+<span class="nc" id="L107">								.flatMap(ASTExpr::asSimpleName)</span>
+<span class="nc" id="L108">								.orElse(null);</span>
+<span class="nc bnc" id="L109" title="All 4 branches missed.">						if (nameExpr != null &amp;&amp; nameExpr.isVariable()) {</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">							if (!fLocalVarsOnly) {</span>
+								// For non-local mode, require field, parameter, or record component
+<span class="nc bnc" id="L112" title="All 2 branches missed.">								if (nameExpr.isLocalVariable()) {</span>
+<span class="nc" id="L113">									throw new AbortSearchException();</span>
 								}
 							} else {
-<span class="nc bnc" id="L118" title="All 4 branches missed.">								if (simpleNameVarBinding.isField() || simpleNameVarBinding.isParameter()</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">										|| simpleNameVarBinding.isRecordComponent()) {</span>
-<span class="nc" id="L120">									throw new AbortSearchException();</span>
+								// For local-only mode, reject field, parameter, or record component
+<span class="nc bnc" id="L117" title="All 2 branches missed.">								if (!nameExpr.isLocalVariable()) {</span>
+<span class="nc" id="L118">									throw new AbortSearchException();</span>
 								}
 							}
+<span class="nc" id="L121">							return true;</span>
 						}
 					}
-<span class="nc" id="L125">					throw new AbortSearchException();</span>
+<span class="nc" id="L124">					throw new AbortSearchException();</span>
 				}
-<span class="nc" id="L127">				return true;</span>
+<span class="nc" id="L126">				return true;</span>
 			}
 
 			@Override
-			public boolean visit(SimpleName simpleName) {
-<span class="nc" id="L132">				IBinding simpleNameBinding= simpleName.resolveBinding();</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">				if (simpleNameBinding == null) {</span>
-<span class="nc" id="L134">					throw new AbortSearchException();</span>
+			protected boolean visitSimpleName(SimpleNameExpr nameExpr, SimpleName simpleName) {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">				if (!nameExpr.isVariable()) {</span>
+<span class="nc" id="L132">					return true;</span>
 				}
-<span class="nc bnc" id="L136" title="All 2 branches missed.">				if (simpleNameBinding instanceof IVariableBinding simpleNameVarBinding) {</span>
-<span class="nc" id="L137">					ITypeBinding simpleNameTypeBinding= simpleNameVarBinding.getType();</span>
-<span class="nc bnc" id="L138" title="All 2 branches missed.">					if (AbstractTool.isOfType(simpleNameTypeBinding, ITERATOR_NAME)) {</span>
-<span class="nc bnc" id="L139" title="All 2 branches missed.">						if (simpleName.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {</span>
-<span class="nc" id="L140">							MethodInvocation methodInvocation= ASTNodes.getParent(simpleName, MethodInvocation.class);</span>
-<span class="nc" id="L141">							IMethodBinding methodInvocationBinding= methodInvocation.resolveMethodBinding();</span>
-<span class="nc bnc" id="L142" title="All 2 branches missed.">							if (methodInvocationBinding == null) {</span>
-<span class="nc" id="L143">								throw new AbortSearchException();</span>
+				
+<span class="nc" id="L135">				return nameExpr.resolveVariable()</span>
+<span class="nc" id="L136">						.filter(var -&gt; var.hasType(ITERATOR_NAME))</span>
+<span class="nc" id="L137">						.map(var -&gt; {</span>
+							// Check if SimpleName is used as receiver for a method invocation
+<span class="nc bnc" id="L139" title="All 2 branches missed.">							if (simpleName.getLocationInParent() == MethodInvocation.EXPRESSION_PROPERTY) {</span>
+<span class="nc" id="L140">								MethodInvocation methodInvocation= ASTNodes.getParent(simpleName, MethodInvocation.class);</span>
+<span class="nc" id="L141">								MethodInvocationExpr miExpr= JDTConverter.convert(methodInvocation);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">								if (!miExpr.returnsType(ITERATOR_NAME)) {</span>
+<span class="nc" id="L143">									return true;</span>
+								}
 							}
-<span class="nc" id="L145">							ITypeBinding methodInvocationReturnType= methodInvocationBinding.getReturnType();</span>
-<span class="nc bnc" id="L146" title="All 2 branches missed.">							if (!AbstractTool.isOfType(methodInvocationReturnType, ITERATOR_NAME)) {</span>
-<span class="nc" id="L147">								return true;</span>
+							
+							// Check variable kind based on fLocalVarsOnly flag
+<span class="nc bnc" id="L148" title="All 2 branches missed.">							if (!fLocalVarsOnly) {</span>
+								// For non-local mode, require field, parameter, or record component
+<span class="nc bnc" id="L150" title="All 2 branches missed.">								if (nameExpr.isLocalVariable()) {</span>
+<span class="nc" id="L151">									throw new AbortSearchException();</span>
+								}
+							} else {
+								// For local-only mode, reject field, parameter, or record component
+<span class="nc bnc" id="L155" title="All 2 branches missed.">								if (!nameExpr.isLocalVariable()) {</span>
+<span class="nc" id="L156">									throw new AbortSearchException();</span>
+								}
 							}
-						}
-<span class="nc bnc" id="L150" title="All 2 branches missed.">						if (!fLocalVarsOnly) {</span>
-<span class="nc bnc" id="L151" title="All 4 branches missed.">							if (!simpleNameVarBinding.isField() &amp;&amp; !simpleNameVarBinding.isParameter()</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">									&amp;&amp; !simpleNameVarBinding.isRecordComponent()) {</span>
-<span class="nc" id="L153">								throw new AbortSearchException();</span>
-							}
-<span class="nc bnc" id="L155" title="All 4 branches missed.">						} else if (simpleNameVarBinding.isField() || simpleNameVarBinding.isParameter()</span>
-<span class="nc bnc" id="L156" title="All 2 branches missed.">								|| simpleNameVarBinding.isRecordComponent()) {</span>
-<span class="nc" id="L157">							throw new AbortSearchException();</span>
-						}
-					}
-				}
-<span class="nc" id="L161">				return true;</span>
+<span class="nc" id="L159">							return true;</span>
+						})
+<span class="nc" id="L161">						.orElse(true);</span>
 			}
 		};
 		try {
