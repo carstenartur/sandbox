@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -42,6 +43,11 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 
  * <p>Transformation: {@code for (T item : collection) { ... }} → {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</p>
  * 
+ * <p><b>Safety rules:</b></p>
+ * <ul>
+ *   <li>Rejects array sources — arrays don't have .iterator() method</li>
+ * </ul>
+ * 
  * <p><b>Status:</b> Stub implementation - Phase 9 bidirectional loop transformations</p>
  * 
  * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
@@ -54,7 +60,13 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
 		org.sandbox.jdt.internal.common.HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, 
 			new ReferenceHolder<Integer, Object>(), nodesprocessed, (visited, aholder) -> {
-				// Enhanced for-loops can always be converted to iterator while-loops
+				// Safety: reject arrays — arrays don't have .iterator() method
+				Expression iterable = visited.getExpression();
+				ITypeBinding typeBinding = iterable.resolveTypeBinding();
+				if (typeBinding != null && typeBinding.isArray()) {
+					return false;
+				}
+				
 				operations.add(fixcore.rewrite(visited, new ReferenceHolder<>()));
 				nodesprocessed.add(visited);
 				return false;

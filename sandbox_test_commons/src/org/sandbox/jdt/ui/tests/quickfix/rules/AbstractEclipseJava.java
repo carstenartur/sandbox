@@ -516,6 +516,12 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations.
+	 * <p>
+	 * Note: This method does NOT validate compilation errors in the input code,
+	 * because many refactoring tests use intentionally incomplete Java code
+	 * (e.g., missing imports) as test fixtures. Use {@link #assertRefactoringHasNoChange}
+	 * for negative tests that require compilation-error-free input.
+	 * </p>
 	 * 
 	 * @param cus the compilation units to refactor
 	 * @param expected the expected source code after refactoring (one per CU)
@@ -571,6 +577,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	/**
 	 * Parses and validates a compilation unit for compilation errors.
 	 * 
+	 * <p>Uses the JDT {@link IProblem} API to provide detailed error diagnostics
+	 * including problem severity, source line number, and problem ID for
+	 * easier debugging of test input code.</p>
+	 * 
 	 * @param cu the compilation unit to check
 	 * @return the AST compilation unit root
 	 * @throws AssertionError if compilation errors (non-warnings) are found
@@ -592,7 +602,15 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			final StringBuilder builder = new StringBuilder();
 			builder.append(cu.getElementName()).append(" has compilation problems: \n"); //$NON-NLS-1$
 			for (final IProblem prob : problems) {
-				builder.append(prob.getMessage()).append('\n');
+				if (!prob.isWarning() && !prob.isInfo()) {
+					builder.append("ERROR line "); //$NON-NLS-1$
+					builder.append(prob.getSourceLineNumber());
+					builder.append(": "); //$NON-NLS-1$
+					builder.append(prob.getMessage());
+					builder.append(" [id="); //$NON-NLS-1$
+					builder.append(prob.getID());
+					builder.append("]\n"); //$NON-NLS-1$
+				}
 			}
 			fail(builder.toString());
 		}

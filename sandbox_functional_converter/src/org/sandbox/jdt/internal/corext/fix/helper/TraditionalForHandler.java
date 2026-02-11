@@ -229,6 +229,14 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
             return null;
         }
         
+        // Issue #670: Check if the index variable is used in the body for complex
+        // patterns like a[i+1], a[i-1], or i%2 that indicate neighbor access or
+        // non-trivial index semantics. These patterns suggest the loop relies on
+        // index arithmetic that may not be safely convertible.
+        if (usesIndexBeyondSimpleAccess(body, loopVarName)) {
+            return null;
+        }
+        
         return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);
     }
     
@@ -293,6 +301,123 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         });
         
         return hasUnconvertible[0];
+    }
+    
+    /**
+     * Checks if the index variable is used in the loop body for complex patterns
+     * that go beyond simple counter semantics.
+     * 
+     * <p>Detects the index variable participating in arithmetic InfixExpressions
+     * (e.g., {@code i + 1}, {@code i - 1}, {@code i * 2}, {@code i % 2}).
+     * This also catches array/list neighbor access patterns like {@code a[i+1]}
+     * because the subscript expression {@code i+1} is itself an InfixExpression.</p>
+     * 
+     * <p>These patterns indicate the loop relies on index relationships between
+     * iterations, which may not be safely convertible to stream operations.</p>
+     * 
+     * @param body the loop body statement
+     * @param indexVarName the name of the index variable
+     * @return true if the index is used in complex patterns
+     * 
+     * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
+     */
+    private boolean usesIndexBeyondSimpleAccess(Statement body, String indexVarName) {
+        final boolean[] hasComplexUsage = {false};
+        
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(InfixExpression node) {
+                // Check if the index variable is used in arithmetic operations
+                // like i+1, i-1, i*2, i%2
+                if (isIndexInArithmeticExpression(node, indexVarName)) {
+                    hasComplexUsage[0] = true;
+                    return false;
+                }
+                return true;
+            }
+        });
+        
+        return hasComplexUsage[0];
+    }
+    
+    /**
+     * Checks if an InfixExpression uses the index variable in arithmetic.
+     * Detects patterns: i+1, i-1, i*2, i%2, etc., including nested and chained
+     * arithmetic expressions (e.g., (i + 1) + offset, multiplier * (i - 1)).
+     */
+    private boolean isIndexInArithmeticExpression(InfixExpression expr, String indexVarName) {
+        if (!isArithmeticOperator(expr.getOperator())) {
+            return false;
+        }
+
+        // Recursively inspect all operands (left, right, and extended) for
+        // arithmetic usage of the index variable.
+        if (containsIndexInArithmeticOperand(expr.getLeftOperand(), indexVarName)) {
+            return true;
+        }
+        if (containsIndexInArithmeticOperand(expr.getRightOperand(), indexVarName)) {
+            return true;
+        }
+        @SuppressWarnings("unchecked")
+        List<Expression> extended = expr.extendedOperands();
+        for (Expression operand : extended) {
+            if (containsIndexInArithmeticOperand(operand, indexVarName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns {@code true} if the given operator is an arithmetic operator
+     * relevant for index arithmetic detection.
+     */
+    private boolean isArithmeticOperator(InfixExpression.Operator op) {
+        return op == InfixExpression.Operator.PLUS
+                || op == InfixExpression.Operator.MINUS
+                || op == InfixExpression.Operator.TIMES
+                || op == InfixExpression.Operator.DIVIDE
+                || op == InfixExpression.Operator.REMAINDER;
+    }
+
+    /**
+     * Recursively checks whether the given expression contains an arithmetic
+     * use of the index variable.
+     */
+    private boolean containsIndexInArithmeticOperand(Expression expr, String indexVarName) {
+        if (expr == null) {
+            return false;
+        }
+
+        if (expr instanceof SimpleName) {
+            return ((SimpleName) expr).getIdentifier().equals(indexVarName);
+        }
+
+        if (expr instanceof ParenthesizedExpression) {
+            Expression inner = ((ParenthesizedExpression) expr).getExpression();
+            return containsIndexInArithmeticOperand(inner, indexVarName);
+        }
+
+        if (expr instanceof InfixExpression infix) {
+            if (!isArithmeticOperator(infix.getOperator())) {
+                return false;
+            }
+            if (containsIndexInArithmeticOperand(infix.getLeftOperand(), indexVarName)) {
+                return true;
+            }
+            if (containsIndexInArithmeticOperand(infix.getRightOperand(), indexVarName)) {
+                return true;
+            }
+            @SuppressWarnings("unchecked")
+            List<Expression> extended = infix.extendedOperands();
+            for (Expression operand : extended) {
+                if (containsIndexInArithmeticOperand(operand, indexVarName)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
     
     @Override

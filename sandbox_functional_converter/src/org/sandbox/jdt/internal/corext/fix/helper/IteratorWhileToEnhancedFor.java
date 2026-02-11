@@ -40,14 +40,21 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
  * 
  * <p>Transformation: {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }} → {@code for (T item : collection) { ... }}</p>
  * 
- * <p><b>Status:</b> Stub implementation - Phase 9 bidirectional loop transformations</p>
+ * <p><b>Safety rules (Issue #670):</b></p>
+ * <ul>
+ *   <li>Rejects conversion when iterator.remove() is used (cannot be expressed in enhanced for)</li>
+ *   <li>Rejects conversion when multiple iterator.next() calls are detected</li>
+ *   <li>Rejects conversion when break or labeled continue is present</li>
+ * </ul>
  * 
  * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
  * @see <a href="https://github.com/carstenartur/sandbox/issues/549">Issue #549</a>
+ * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
  */
 public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
 
 	private final IteratorPatternDetector patternDetector = new IteratorPatternDetector();
+	private final IteratorLoopAnalyzer loopAnalyzer = new IteratorLoopAnalyzer();
 	
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
@@ -69,6 +76,14 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 				
 				IteratorPattern pattern = patternDetector.detectWhilePattern(node, previousStmt);
 				if (pattern == null) {
+					return true;
+				}
+				
+				// Issue #670: Safety check - reject conversion if iterator has unsafe usage
+				// (remove(), multiple next(), break, labeled continue)
+				IteratorLoopAnalyzer.SafetyAnalysis analysis = loopAnalyzer.analyze(
+						node.getBody(), pattern.iteratorVariableName);
+				if (!analysis.isSafe) {
 					return true;
 				}
 				

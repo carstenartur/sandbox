@@ -72,6 +72,12 @@ public class StreamToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
 					return false;
 				}
 				
+				// Safety: reject chained stream operations (map/filter/reduce/flatMap/sorted/distinct)
+				// Only simple collection.forEach() or collection.stream().forEach() can be converted
+				if (StreamOperationDetector.hasChainedStreamOperations(visited)) {
+					return false;
+				}
+				
 				operations.add(fixcore.rewrite(visited, new ReferenceHolder<>()));
 				nodesprocessed.add(visited);
 				return false;

@@ -404,4 +404,92 @@ context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 }
 
+/**
+ * Tests that loops modifying the iterated collection should NOT convert (Issue #670).
+ * 
+ * <p>Structural modifications (add/remove/put/clear) on the collection being
+ * iterated cause ConcurrentModificationException with fail-fast iterators.
+ * The cleanup must detect and reject these patterns.</p>
+ * 
+ * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
+ */
+@Test
+@DisplayName("Loop modifying iterated collection (list.remove) - should NOT convert")
+void test_ModifiesIteratedCollection_Remove_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+			package test1;
+			import java.util.List;
+			import java.util.ArrayList;
+			class MyTest {
+				public void process(List<String> items) {
+					for (String item : items) {
+						if (item.isEmpty()) {
+							items.remove(item);
+						}
+					}
+				}
+			}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that loops adding to the iterated collection should NOT convert (Issue #670).
+ * 
+ * <p>Adding to the same collection being iterated is a structural modification
+ * that would cause ConcurrentModificationException.</p>
+ * 
+ * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
+ */
+@Test
+@DisplayName("Loop adding to iterated collection (list.add) - should NOT convert")
+void test_ModifiesIteratedCollection_Add_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+			package test1;
+			import java.util.List;
+			import java.util.ArrayList;
+			class MyTest {
+				public void process(List<String> items) {
+					for (String item : items) {
+						items.add(item.toUpperCase());
+					}
+				}
+			}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
+/**
+ * Tests that loops calling clear() on the iterated collection should NOT convert (Issue #670).
+ * 
+ * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
+ */
+@Test
+@DisplayName("Loop clearing iterated collection (list.clear) - should NOT convert")
+void test_ModifiesIteratedCollection_Clear_ShouldNotConvert() throws CoreException {
+String sourceCode = """
+			package test1;
+			import java.util.List;
+			class MyTest {
+				public void process(List<String> items) {
+					for (String item : items) {
+						if (item.isEmpty()) {
+							items.clear();
+						}
+					}
+				}
+			}""";
+
+IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+ICompilationUnit cu = pack.createCompilationUnit("Test.java", sourceCode, true, null);
+context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+}
+
 }

@@ -293,4 +293,99 @@ public class LoopBidirectionalTransformationTest {
 		context.enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
+
+	// ===========================================
+	// NEGATIVE TESTS - SAFETY GUARDS
+	// ===========================================
+
+	/**
+	 * Tests that Stream→for rejects chained stream operations.
+	 * 
+	 * <p>{@code list.stream().filter(...).forEach(...)} has an intermediate
+	 * filter operation that would be lost if converted to a plain for-loop.
+	 * The guard must reject this pattern.</p>
+	 */
+	@Test
+	@DisplayName("Stream → for: chained stream ops (filter) should NOT convert")
+	public void testStreamToFor_chainedFilter_notConverted() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+				package test1;
+				import java.util.*;
+				public class MyTest {
+					void process(List<String> items) {
+						items.stream().filter(item -> !item.isEmpty()).forEach(item -> System.out.println(item));
+					}
+				}
+				""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_ENABLED);
+		context.set(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, "enhanced_for");
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	/**
+	 * Tests that Stream→for rejects chained map operations.
+	 * 
+	 * <p>{@code list.stream().map(...).forEach(...)} has an intermediate
+	 * map operation that would be lost if converted to a plain for-loop.</p>
+	 */
+	@Test
+	@DisplayName("Stream → for: chained stream ops (map) should NOT convert")
+	public void testStreamToFor_chainedMap_notConverted() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+				package test1;
+				import java.util.*;
+				public class MyTest {
+					void process(List<String> items) {
+						items.stream().map(String::toUpperCase).forEach(item -> System.out.println(item));
+					}
+				}
+				""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_ENABLED);
+		context.set(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, "enhanced_for");
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	/**
+	 * Tests that while→for rejects iterator loops with iterator.remove().
+	 * 
+	 * <p>Iterator.remove() cannot be expressed in enhanced for-loops.
+	 * The safety guard must detect and reject this pattern.</p>
+	 */
+	@Test
+	@DisplayName("while → for: iterator.remove() should NOT convert")
+	public void testWhileToFor_iteratorRemove_notConverted() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+
+		String given = """
+				package test1;
+				import java.util.*;
+				public class MyTest {
+					void removeEmpty(List<String> items) {
+						Iterator<String> it = items.iterator();
+						while (it.hasNext()) {
+							String item = it.next();
+							if (item.isEmpty()) {
+								it.remove();
+							}
+						}
+					}
+				}
+				""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_ENABLED);
+		context.set(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, "enhanced_for");
+		context.enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
 }
