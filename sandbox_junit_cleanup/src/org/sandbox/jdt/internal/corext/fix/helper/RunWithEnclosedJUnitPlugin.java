@@ -56,6 +56,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -181,8 +182,7 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 				}
 				
 				// Add @Nested annotation
-				MarkerAnnotation nestedAnnotation = ast.newMarkerAnnotation();
-				nestedAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_NESTED));
+				MarkerAnnotation nestedAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_NESTED);
 				modifiersRewrite.insertFirst(nestedAnnotation, group);
 			}
 		}

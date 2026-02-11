@@ -542,8 +542,7 @@ public final class ExternalResourceRefactorer {
 						.getTypeName().getFullyQualifiedName().equals(ANNOTATION_REGISTER_EXTENSION));
 
 		if (!hasRegisterExtension && !hasPendingRegisterExtension) {
-			MarkerAnnotation registerExtensionAnnotation = ast.newMarkerAnnotation();
-			registerExtensionAnnotation.setTypeName(ast.newName(ANNOTATION_REGISTER_EXTENSION));
+			MarkerAnnotation registerExtensionAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_REGISTER_EXTENSION);
 			listRewrite.insertFirst(registerExtensionAnnotation, group);
 			importRewrite.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
 		}

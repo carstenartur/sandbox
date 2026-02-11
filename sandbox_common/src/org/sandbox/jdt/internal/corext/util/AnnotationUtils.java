@@ -15,9 +15,11 @@ package org.sandbox.jdt.internal.corext.util;
 
 import java.util.List;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.Modifier;
 
 /**
@@ -29,6 +31,20 @@ public final class AnnotationUtils {
 
 	private AnnotationUtils() {
 		// Utility class - prevent instantiation
+	}
+
+	/**
+	 * Creates a new MarkerAnnotation AST node with the given annotation name.
+	 * This centralizes the common pattern of creating a marker annotation and setting its type name.
+	 *
+	 * @param ast the AST to create the annotation in
+	 * @param annotationName the simple or qualified name of the annotation (e.g., "Test", "BeforeEach")
+	 * @return the created MarkerAnnotation
+	 */
+	public static MarkerAnnotation createMarkerAnnotation(AST ast, String annotationName) {
+		MarkerAnnotation annotation= ast.newMarkerAnnotation();
+		annotation.setTypeName(ast.newName(annotationName));
+		return annotation;
 	}
 
 	/**

@@ -24,7 +24,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 
 /**
  * Builder class for constructing stream pipelines from enhanced for-loops.
@@ -226,7 +226,7 @@ public class StreamPipelineBuilder {
 
 		// Initialize the pipeline assembler for building the final pipeline
 		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);
-		pipelineAssembler.setUsedVariableNames(getUsedVariableNames(forLoop));
+		pipelineAssembler.setUsedVariableNames(ASTNavigationUtils.getUsedVariableNames(forLoop));
 		pipelineAssembler.setReduceDetector(reduceDetector);
 		pipelineAssembler.setCollectDetector(collectDetector);
 
@@ -479,7 +479,7 @@ public class StreamPipelineBuilder {
 		
 		// Add all variables from outer scope (method parameters, fields, etc.)
 		// These are always available in lambdas
-		Collection<String> outerScopeVars = getUsedVariableNames(forLoop);
+		Collection<String> outerScopeVars = ASTNavigationUtils.getUsedVariableNames(forLoop);
 		availableVars.addAll(outerScopeVars);
 		
 		// Track if we've moved past the loop variable to a mapped variable
@@ -554,18 +554,6 @@ public class StreamPipelineBuilder {
 		return false;
 	}
 
-	/**
-	 * Gets all variable names used in the scope of the given AST node.
-	 * This is used to generate unique lambda parameter names that don't clash
-	 * with existing variables in scope.
-	 * 
-	 * @param node the AST node to analyze
-	 * @return collection of variable names used in the node's scope
-	 */
-	private static Collection<String> getUsedVariableNames(ASTNode node) {
-		CompilationUnit root = (CompilationUnit) node.getRoot();
-		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());
-	}
 	
 	/**
 	 * Checks if the analyzed operations include a REDUCE operation.

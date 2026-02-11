@@ -23,6 +23,7 @@ import org.sandbox.functional.core.operation.MapOp;
 import org.sandbox.functional.core.renderer.ASTAwareRenderer;
 import org.sandbox.functional.core.renderer.StreamPipelineRenderer;
 import org.sandbox.functional.core.terminal.*;
+import org.sandbox.jdt.internal.corext.util.NamingUtils;
 
 /**
  * JDT AST-based renderer for stream pipeline generation.
@@ -585,7 +586,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         }
         
         // Check for simple identifiers using Java's identifier validation
-        if (isValidJavaIdentifier(expressionText)) {
+        if (NamingUtils.isValidJavaIdentifier(expressionText)) {
             return ast.newSimpleName(expressionText);
         }
         
@@ -612,24 +613,6 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         throw new IllegalArgumentException("Unable to parse expression: " + expressionText);
     }
     
-    /**
-     * Validates if a string is a valid Java identifier.
-     * Supports Unicode identifiers, underscores, and dollar signs.
-     */
-    private boolean isValidJavaIdentifier(String str) {
-        if (str == null || str.isEmpty()) {
-            return false;
-        }
-        if (!Character.isJavaIdentifierStart(str.charAt(0))) {
-            return false;
-        }
-        for (int i = 1; i < str.length(); i++) {
-            if (!Character.isJavaIdentifierPart(str.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
     
     private Statement createStatement(String statementText) {
         // Ensure statement ends with semicolon for proper parsing
