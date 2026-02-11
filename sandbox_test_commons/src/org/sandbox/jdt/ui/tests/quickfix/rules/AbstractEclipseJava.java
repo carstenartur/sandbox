@@ -517,13 +517,11 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations.
 	 * <p>
-	 * Also validates that the compilation units have no compilation errors before refactoring.
-	 * Use {@link #assertRefactoringResultAsExpectedSkipCompilationCheck} if the test fixtures
-	 * intentionally contain compilation errors.
 	 * Note: This method does NOT validate compilation errors in the input code,
 	 * because many refactoring tests use intentionally incomplete Java code
 	 * (e.g., missing imports) as test fixtures. Use {@link #assertRefactoringHasNoChange}
-	 * for negative tests that require compilation-error-free input.
+	 * for negative tests that require compilation-error-free input, or call
+	 * {@link #assertNoCompilationError} explicitly before this method to opt in.
 	 * </p>
 	 * 
 	 * @param cus the compilation units to refactor
@@ -534,28 +532,6 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpected(final ICompilationUnit[] cus, final String[] expected,
 			final Set<String> setOfExpectedGroupCategories) throws CoreException {
-		for (final ICompilationUnit cu : cus) {
-			assertNoCompilationError(cu);
-		}
-		return assertRefactoringResultAsExpectedSkipCompilationCheck(cus, expected, setOfExpectedGroupCategories);
-	}
-
-	/**
-	 * Executes the configured refactoring and asserts the result matches expectations,
-	 * skipping the compilation error check on input compilation units.
-	 * <p>
-	 * Use this variant when test fixtures intentionally contain compilation errors.
-	 * Prefer {@link #assertRefactoringResultAsExpected} for normal tests.
-	 * </p>
-	 * 
-	 * @param cus the compilation units to refactor
-	 * @param expected the expected source code after refactoring (one per CU)
-	 * @param setOfExpectedGroupCategories expected group category names, or null to skip validation
-	 * @return the refactoring status
-	 * @throws CoreException if the refactoring fails
-	 */
-	public RefactoringStatus assertRefactoringResultAsExpectedSkipCompilationCheck(final ICompilationUnit[] cus,
-			final String[] expected, final Set<String> setOfExpectedGroupCategories) throws CoreException {
 		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
 		final String[] previews = new String[cus.length];
 		for (int i = 0; i < cus.length; i++) {
@@ -596,7 +572,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		for (int i = 0; i < cus.length; i++) {
 			expected[i] = cus[i].getBuffer().getContents();
 		}
-		return assertRefactoringResultAsExpectedSkipCompilationCheck(cus, expected, null);
+		return assertRefactoringResultAsExpected(cus, expected, null);
 	}
 
 	/**
