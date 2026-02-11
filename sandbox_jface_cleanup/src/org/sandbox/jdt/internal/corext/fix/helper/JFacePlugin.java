@@ -101,6 +101,8 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		public Set<ClassInstanceCreation> setofcic = new HashSet<>();
 		/** Standalone SubProgressMonitor constructions (without associated beginTask) */
 		public Set<ClassInstanceCreation> standaloneSubProgressMonitors = new HashSet<>();
+		/** SubProgressMonitor on already-SubMonitor variables (use split() directly) */
+		public Set<ClassInstanceCreation> subProgressMonitorOnSubMonitor = new HashSet<>();
 		/** .done() calls on monitors to be removed after migration */
 		public Set<MethodInvocation> doneCallsToRemove = new HashSet<>();
 		/** Nodes that have been processed to avoid duplicate transformations */
@@ -210,6 +212,31 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					firstArgName = sn.getIdentifier();
 				}
 				
+				// Check if the variable is already a SubMonitor type
+				boolean isSubMonitorType = false;
+				if (sn != null) {
+					IBinding binding = sn.resolveBinding();
+					if (binding != null && binding.getKind() == IBinding.VARIABLE) {
+						org.eclipse.jdt.core.dom.ITypeBinding typeBinding = 
+							((org.eclipse.jdt.core.dom.IVariableBinding) binding).getType();
+						if (typeBinding != null) {
+							String qualifiedName = typeBinding.getQualifiedName();
+							isSubMonitorType = SubMonitor.class.getCanonicalName().equals(qualifiedName);
+						}
+					}
+				}
+				
+				// If already SubMonitor type, handle separately (use split() directly)
+				if (isSubMonitorType && firstArgName != null) {
+					logDebug("Found SubProgressMonitor on already-SubMonitor variable at position " + node.getStartPosition() + " for variable '" + firstArgName + "'"); //$NON-NLS-1$ //$NON-NLS-2$
+					MonitorHolder mh = new MonitorHolder();
+					mh.minvname = firstArgName;
+					mh.nodesprocessed = nodesprocessed;
+					mh.subProgressMonitorOnSubMonitor.add(node);
+					standaloneHolder.put(standaloneHolder.size(), mh);
+					return true;
+				}
+				
 				// Check if this SubProgressMonitor is associated with a beginTask
 				boolean foundAssociation = false;
 				if (!holder.isEmpty() && firstArgName != null) {
@@ -290,6 +317,62 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		for (Entry<Integer, MonitorHolder> entry : hit.entrySet()) {
 
 			MonitorHolder mh = entry.getValue();
+			
+			// Handle SubProgressMonitor on already-SubMonitor variables (use split() directly)
+			if (!mh.subProgressMonitorOnSubMonitor.isEmpty()) {
+				for (ClassInstanceCreation submon : mh.subProgressMonitorOnSubMonitor) {
+					if (nodesprocessed.contains(submon)) {
+						continue;
+					}
+					nodesprocessed.add(submon);
+					
+					List<?> arguments = submon.arguments();
+					if (arguments.size() < 2) {
+						continue;
+					}
+					
+					logDebug("Rewriting SubProgressMonitor on SubMonitor variable at position " + submon.getStartPosition()); //$NON-NLS-1$
+					
+					/**
+					 * SubProgressMonitor on SubMonitor variable transformation:
+					 * 
+					 * When the first argument is already a SubMonitor type:
+					 * 2-arg: new SubProgressMonitor(subMonitor, work)
+					 *   -> subMonitor.split(work)
+					 *   
+					 * 3-arg: new SubProgressMonitor(subMonitor, work, flags)
+					 *   -> subMonitor.split(work, mappedFlags)
+					 */
+					
+					// Create subMonitor.split(work [, flags]) call
+					MethodInvocation splitCall = ast.newMethodInvocation();
+					splitCall.setExpression(ASTNodes.createMoveTarget(rewrite, 
+						ASTNodes.getUnparenthesedExpression((Expression) arguments.get(0))));
+					splitCall.setName(ast.newSimpleName("split")); //$NON-NLS-1$
+					List<ASTNode> splitArgs = splitCall.arguments();
+					
+					// Add work amount (second argument)
+					splitArgs.add(ASTNodes.createMoveTarget(rewrite, 
+						ASTNodes.getUnparenthesedExpression((Expression) arguments.get(1))));
+					
+					// Handle flags if present (3-arg constructor)
+					if (arguments.size() >= 3) {
+						Expression flagsArg = (Expression) arguments.get(2);
+						Expression mappedFlag = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);
+						
+						// Only add the flag if it wasn't dropped
+						if (mappedFlag != null) {
+							splitArgs.add(mappedFlag);
+						}
+					}
+					
+					ASTNodes.replaceButKeepComment(rewrite, submon, splitCall, group);
+					importRemover.removeImport("org.eclipse.core.runtime.SubProgressMonitor"); //$NON-NLS-1$
+				}
+				
+				// After handling, skip the rest of the loop for this entry
+				continue;
+			}
 			
 			// Handle standalone SubProgressMonitor (without beginTask)
 			if (!mh.standaloneSubProgressMonitors.isEmpty()) {
