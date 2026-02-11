@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: sandbox_cleanup_application
 Bundle-SymbolicName: sandbox_cleanup_application;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.5.qualifier
+Bundle-Version: 1.2.6.qualifier
 Automatic-Module-Name: ui.sandbox.fragment
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy

@@ -2,7 +2,7 @@
 <feature
       id="sandbox_extra_search_feature"
       label="Sandbox extra_search feature"
-      version="1.2.5.qualifier"
+      version="1.2.6.qualifier"
       provider-name="sandbox"
       plugin="sandbox_extra_search">
 
