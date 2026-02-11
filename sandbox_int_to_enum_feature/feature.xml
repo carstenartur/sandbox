@@ -2,7 +2,7 @@
 <feature
       id="sandbox_int_to_enum_feature"
       label="Sandbox int to enum feature"
-      version="1.2.5.qualifier"
+      version="1.2.5"
       provider-name="sandbox">
 
    <description>

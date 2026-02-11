@@ -6,7 +6,7 @@
 	<groupId>org.sandbox</groupId>
 	<artifactId>central</artifactId>
 	<name>Sandbox central</name>
-	<version>1.2.5-SNAPSHOT</version>
+	<version>1.2.5</version>
 	<packaging>pom</packaging>
 	<properties>
 		<!-- Upgraded to Tycho 5.0.0 – resolves CodeQL autobuild TargetPlatformArtifactResolver injection error (mixed Tycho versions). -->

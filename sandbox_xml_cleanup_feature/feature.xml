@@ -2,7 +2,7 @@
 <feature
       id="sandbox_xml_cleanup_feature"
       label="Sandbox xml cleanup feature"
-      version="1.2.5.qualifier"
+      version="1.2.5"
       provider-name="sandbox"
       plugin="sandbox_xml_cleanup">
 

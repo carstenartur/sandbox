@@ -4,7 +4,7 @@ Automatic-Module-Name: sandbox.platform.helper
 Bundle-Name: sandbox plaform helper
 Bundle-SymbolicName: sandbox_platform_helper;singleton:=true
 Bundle-Vendor: sandbox
-Bundle-Version: 1.2.5.qualifier
+Bundle-Version: 1.2.5
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.filebuffers,
