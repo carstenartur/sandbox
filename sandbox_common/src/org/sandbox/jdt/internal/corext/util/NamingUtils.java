@@ -39,6 +39,30 @@ public final class NamingUtils {
 	}
 
 	/**
+	 * Checks if a string is a valid Java identifier.
+	 * A valid Java identifier starts with a character for which
+	 * {@link Character#isJavaIdentifierStart(char)} returns true,
+	 * followed by characters for which {@link Character#isJavaIdentifierPart(char)} returns true.
+	 *
+	 * @param name the string to check, may be null
+	 * @return true if the string is a valid Java identifier, false otherwise
+	 */
+	public static boolean isValidJavaIdentifier(String name) {
+		if (name == null || name.isEmpty()) {
+			return false;
+		}
+		if (!Character.isJavaIdentifierStart(name.charAt(0))) {
+			return false;
+		}
+		for (int i = 1; i < name.length(); i++) {
+			if (!Character.isJavaIdentifierPart(name.charAt(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * Capitalizes the first letter of a string.
 	 * 
 	 * @param input the string to capitalize
