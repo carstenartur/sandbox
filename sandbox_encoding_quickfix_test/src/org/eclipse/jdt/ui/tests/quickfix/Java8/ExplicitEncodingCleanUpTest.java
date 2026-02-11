@@ -54,9 +54,9 @@ public class ExplicitEncodingCleanUpTest {
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
 		if (test.skipCompileCheck) {
-			context.assertRefactoringResultAsExpectedSkipCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
-		} else {
 			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		} else {
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 		}
 	}
 

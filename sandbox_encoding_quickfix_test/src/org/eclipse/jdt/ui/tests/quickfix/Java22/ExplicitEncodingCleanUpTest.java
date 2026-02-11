@@ -64,9 +64,9 @@ public class ExplicitEncodingCleanUpTest {
 //		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 //		context.enable(CleanUpConstants.REMOVE_UNNECESSARY_NLS_TAGS);
 		if (test.skipCompileCheck) {
-			context.assertRefactoringResultAsExpectedSkipCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
-		} else {
 			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		} else {
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 		}
 	}
 

@@ -517,9 +517,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations.
 	 * <p>
-	 * Also validates that the compilation units have no compilation errors before refactoring.
-	 * Use {@link #assertRefactoringResultAsExpectedSkipCompileCheck} if the test fixtures
-	 * intentionally contain compilation errors (e.g., multi-class patterns).
+	 * This method does NOT validate compilation errors in the input code.
+	 * Use {@link #assertRefactoringResultAsExpectedWithCompileCheck} when test fixtures
+	 * should be validated for compilation errors before refactoring.
 	 * </p>
 	 * 
 	 * @param cus the compilation units to refactor
@@ -530,29 +530,6 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpected(final ICompilationUnit[] cus, final String[] expected,
 			final Set<String> setOfExpectedGroupCategories) throws CoreException {
-		for (final ICompilationUnit cu : cus) {
-			assertNoCompilationError(cu);
-		}
-		return assertRefactoringResultAsExpectedSkipCompileCheck(cus, expected, setOfExpectedGroupCategories);
-	}
-
-	/**
-	 * Executes the configured refactoring and asserts the result matches expectations,
-	 * without validating compilation errors in the input code.
-	 * <p>
-	 * Use this variant when test fixtures intentionally contain compilation errors
-	 * that cannot be easily fixed (e.g., multi-class patterns, missing external dependencies).
-	 * Prefer {@link #assertRefactoringResultAsExpected} for normal tests.
-	 * </p>
-	 * 
-	 * @param cus the compilation units to refactor
-	 * @param expected the expected source code after refactoring (one per CU)
-	 * @param setOfExpectedGroupCategories expected group category names, or null to skip validation
-	 * @return the refactoring status
-	 * @throws CoreException if the refactoring fails
-	 */
-	public RefactoringStatus assertRefactoringResultAsExpectedSkipCompileCheck(final ICompilationUnit[] cus,
-			final String[] expected, final Set<String> setOfExpectedGroupCategories) throws CoreException {
 		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
 		final String[] previews = new String[cus.length];
 		for (int i = 0; i < cus.length; i++) {
@@ -561,6 +538,30 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 		assertEqualStringsIgnoreOrder(previews, expected);
 		return status;
+	}
+
+	/**
+	 * Executes the configured refactoring and asserts the result matches expectations,
+	 * after validating that the input compilation units have no compilation errors.
+	 * <p>
+	 * Use this variant when test fixtures should compile cleanly before refactoring.
+	 * Test fixtures with known compilation issues (e.g., multi-class patterns)
+	 * should use {@link #assertRefactoringResultAsExpected} instead, or set
+	 * the skip flag appropriately.
+	 * </p>
+	 * 
+	 * @param cus the compilation units to refactor
+	 * @param expected the expected source code after refactoring (one per CU)
+	 * @param setOfExpectedGroupCategories expected group category names, or null to skip validation
+	 * @return the refactoring status
+	 * @throws CoreException if the refactoring fails
+	 */
+	public RefactoringStatus assertRefactoringResultAsExpectedWithCompileCheck(final ICompilationUnit[] cus,
+			final String[] expected, final Set<String> setOfExpectedGroupCategories) throws CoreException {
+		for (final ICompilationUnit cu : cus) {
+			assertNoCompilationError(cu);
+		}
+		return assertRefactoringResultAsExpected(cus, expected, setOfExpectedGroupCategories);
 	}
 
 	/**
@@ -593,7 +594,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		for (int i = 0; i < cus.length; i++) {
 			expected[i] = cus[i].getBuffer().getContents();
 		}
-		return assertRefactoringResultAsExpectedSkipCompileCheck(cus, expected, null);
+		return assertRefactoringResultAsExpected(cus, expected, null);
 	}
 
 	/**
