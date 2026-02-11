@@ -4,20 +4,154 @@
 
 ## Status Summary
 
-**Current State**: Experimental implementation for JFace code modernization
+**Current State**: Active development of SubProgressMonitor → SubMonitor migration cleanup
 
 ### Completed
 - ✅ Basic plugin structure
 - ✅ Test infrastructure
+- ✅ SubProgressMonitor → SubMonitor migration for beginTask pattern
+- ✅ Flag translation (SUPPRESS_SUBTASK_LABEL → SUPPRESS_SUBTASK, PREPEND_MAIN_LABEL_TO_SUBTASK dropped)
+- ✅ Standalone SubProgressMonitor conversion (without beginTask)
+- ✅ ViewerSorter → ViewerComparator migration
 
-### In Progress
-- [ ] Identify high-value JFace cleanup opportunities
-- [ ] Implement core transformations
+### In Progress (PR #xxxx - Eclipse JDT UI SubMonitor Migration Gaps)
+- [ ] Runtime instanceof SubMonitor checks
+- [ ] Removal of .done() calls after SubMonitor migration
+- [ ] Helper method detection and cleanup
 
 ### Pending
-- [ ] Comprehensive JFace API coverage
+- [ ] Comprehensive JFace API coverage beyond progress monitoring
 - [ ] SWT integration
 - [ ] Community feedback on transformations
+
+## Current Work: SubMonitor Migration Enhancements
+
+### Reference
+Based on Eclipse JDT UI PR #2641 analysis, addressing gaps in SubProgressMonitor → SubMonitor migration.
+
+### Completed Features
+
+#### 1. Standalone SubProgressMonitor Conversion ✅
+**Status**: Implemented and tested
+
+Transforms SubProgressMonitor instances that don't have an associated beginTask() call:
+```java
+// Before
+IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
+
+// After  
+IProgressMonitor sub = SubMonitor.convert(monitor).split(50);
+```
+
+**Test Coverage**:
+- StandaloneSubProgressMonitor test case
+- StandaloneSubProgressMonitorWithFlags test case
+
+#### 2. Flag Translation ✅
+**Status**: Implemented and tested
+
+Maps SubProgressMonitor flags to SubMonitor equivalents:
+- `SUPPRESS_SUBTASK_LABEL` → `SUPPRESS_SUBTASK`
+- `PREPEND_MAIN_LABEL_TO_SUBTASK` → dropped (no equivalent)
+
+**Test Coverage**:
+- SuppressSubtaskLabelFlag test case
+- PrependMainLabelToSubtaskFlag test case
+
+### Remaining Features
+
+#### 3. Runtime instanceof SubMonitor Checks
+**Status**: Not implemented  
+**Priority**: Medium  
+**Effort**: 4-6 hours
+
+**Goal**: Detect when monitor variable is statically typed as SubMonitor and use split() directly instead of convert().split()
+
+**Pattern to detect**:
+```java
+SubMonitor monitor = SubMonitor.convert(pm, 100);
+// Later in code...
+IProgressMonitor sub = new SubProgressMonitor(monitor, 50); // Should → monitor.split(50)
+```
+
+**Implementation approach**:
+1. Track variable bindings and their declared types
+2. When encountering SubProgressMonitor, check if first arg is SubMonitor type
+3. If yes, use split() directly; if no, use convert().split()
+
+#### 4. Removal of .done() Calls
+**Status**: Not implemented  
+**Priority**: Medium  
+**Effort**: 6-8 hours
+
+**Goal**: Remove redundant .done() calls on monitors after migration to SubMonitor
+
+**Pattern to detect**:
+```java
+// Before migration
+IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
+try {
+    // work
+} finally {
+    sub.done(); // Should be removed after migration
+}
+
+// After migration
+IProgressMonitor sub = subMonitor.split(50);
+try {
+    // work  
+} finally {
+    // .done() call removed - SubMonitor handles cleanup automatically
+}
+```
+
+**Implementation approach**:
+1. Track variables created from SubProgressMonitor migration
+2. Find .done() method invocations on those variables
+3. Remove the done() calls as they're redundant with SubMonitor
+4. Consider scope and control flow to avoid removing unrelated done() calls
+
+**Challenges**:
+- Need to track variable usage across scope
+- Must handle control flow (try-finally, if-else, loops)
+- Don't remove done() on non-migrated monitors
+
+#### 5. Helper Method Detection
+**Status**: Not implemented  
+**Priority**: Low  
+**Effort**: 8-10 hours
+
+**Goal**: Detect and refactor helper methods that only wrap SubProgressMonitor creation
+
+**Pattern to detect**:
+```java
+// Helper method that becomes obsolete after migration
+private IProgressMonitor getSubProgressMonitor(IProgressMonitor monitor, int work) {
+    return new SubProgressMonitor(monitor, work);
+}
+
+// Usage
+IProgressMonitor sub = getSubProgressMonitor(monitor, 50);
+```
+
+**After refactoring**:
+```java
+// Helper could be removed or updated
+IProgressMonitor sub = SubMonitor.convert(monitor).split(50);
+```
+
+**Implementation approach**:
+1. Detect private methods that only create and return SubProgressMonitor
+2. Find all call sites
+3. Either:
+   - Inline the helper (replace calls with direct SubMonitor usage)
+   - Update the helper to use SubMonitor
+   - Suggest removal in code review
+
+**Challenges**:
+- Identifying "only wraps SubProgressMonitor" pattern
+- Ensuring safe inlining across different call sites
+- May be better as a separate cleanup pass
 
 ## Priority Tasks
 
