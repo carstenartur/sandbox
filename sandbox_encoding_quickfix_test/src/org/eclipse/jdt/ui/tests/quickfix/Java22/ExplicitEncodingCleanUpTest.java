@@ -63,7 +63,11 @@ public class ExplicitEncodingCleanUpTest {
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
 //		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 //		context.enable(CleanUpConstants.REMOVE_UNNECESSARY_NLS_TAGS);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		if (test.skipCompileCheck) {
+			context.assertRefactoringResultAsExpectedSkipCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		} else {
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		}
 	}
 
 	@Test

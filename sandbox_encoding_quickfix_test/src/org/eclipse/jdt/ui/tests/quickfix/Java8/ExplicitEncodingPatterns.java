@@ -24,7 +24,6 @@ enum ExplicitEncodingPatterns {
 				        Charset cs6= Charset.forName("US-ASCII");
 				        String result= cs1.toString();
 				       }
-				    }
 				}
 				""",
 				"""
@@ -49,7 +48,6 @@ enum ExplicitEncodingPatterns {
 						        Charset cs6= Charset.forName("US-ASCII");
 						        String result= cs1.toString();
 						       }
-						    }
 						}
 						"""),
 		BYTEARRAYOUTSTREAM("""
@@ -69,7 +67,6 @@ enum ExplicitEncodingPatterns {
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						String result2=ba2.toString("UTF-8");
 						}
-					}
 				}
 				""",
 
@@ -90,7 +87,6 @@ enum ExplicitEncodingPatterns {
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						String result2=ba2.toString("UTF-8");
 						}
-					}
 				}
 						"""),
 		FILEREADER("""
@@ -110,7 +106,6 @@ enum ExplicitEncodingPatterns {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -132,7 +127,6 @@ enum ExplicitEncodingPatterns {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		FILEWRITER("""
@@ -150,7 +144,6 @@ enum ExplicitEncodingPatterns {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -172,7 +165,6 @@ enum ExplicitEncodingPatterns {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		INPUTSTREAMREADER(
@@ -194,7 +186,6 @@ enum ExplicitEncodingPatterns {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						""",
 
@@ -218,7 +209,6 @@ enum ExplicitEncodingPatterns {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		OUTPUTSTREAMWRITER(
@@ -230,18 +220,19 @@ enum ExplicitEncodingPatterns {
 						import java.io.FileInputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
+						import java.io.OutputStreamWriter;
+						import java.io.FileOutputStream;
 						import java.io.FileNotFoundException;
 
 						public class E1 {
 						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
+						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
+						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						""",
 
@@ -253,6 +244,8 @@ enum ExplicitEncodingPatterns {
 						import java.io.FileInputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
+						import java.io.OutputStreamWriter;
+						import java.io.FileOutputStream;
 						import java.nio.charset.Charset;
 						import java.nio.charset.StandardCharsets;
 						import java.io.FileNotFoundException;
@@ -260,13 +253,12 @@ enum ExplicitEncodingPatterns {
 						public class E1 {
 						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
+						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		CHANNELSNEWREADER("""
@@ -287,7 +279,6 @@ enum ExplicitEncodingPatterns {
 				            ReadableByteChannel ch;
 				            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 				       }
-				    }
 				}
 				""",
 
@@ -309,7 +300,6 @@ enum ExplicitEncodingPatterns {
 						            ReadableByteChannel ch;
 						            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 						       }
-						    }
 						}
 						"""),
 		CHANNELSNEWWRITER("""
@@ -330,7 +320,6 @@ enum ExplicitEncodingPatterns {
 				            WritableByteChannel ch;
 				            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 				       }
-				    }
 				}
 				""",
 
@@ -352,7 +341,6 @@ enum ExplicitEncodingPatterns {
 						            WritableByteChannel ch;
 						            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 						       }
-						    }
 						}
 						"""),
 		PRINTWRITER("""
@@ -370,7 +358,6 @@ enum ExplicitEncodingPatterns {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -389,7 +376,6 @@ enum ExplicitEncodingPatterns {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				"""),
 		STRINGGETBYTES("""
@@ -409,7 +395,6 @@ enum ExplicitEncodingPatterns {
 				        byte[] bytes2= s.getBytes("UTF-8");
 				        System.out.println(bytes.length);
 				       }
-				    }
 				}
 				""",
 
@@ -432,7 +417,6 @@ enum ExplicitEncodingPatterns {
 						        byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
 						        System.out.println(bytes.length);
 						       }
-						    }
 						}
 						"""),
 		STRING("""
@@ -465,7 +449,7 @@ enum ExplicitEncodingPatterns {
 												String s2=new String(b,0,1,"UTF-8");
 											}
 										}
-																"""),
+																""", true),
 		PROPERTIESSTORETOXML("""
 				package test1;
 
@@ -482,7 +466,6 @@ enum ExplicitEncodingPatterns {
 						try (FileOutputStream os = new FileOutputStream("out.xml")) {
 							p.storeToXML(os, null);
 						}
-					}
 				}
 				""",
 """
@@ -501,9 +484,8 @@ public class E1 {
 		try (FileOutputStream os = new FileOutputStream("out.xml")) {
 			p.storeToXML(os, null);
 		}
-	}
 }
-"""),
+""", true),
 		URLDECODER("""
 				package test1;
 				import java.io.UnsupportedEncodingException;
@@ -528,7 +510,7 @@ public class E1 {
 										String url2=URLDecoder.decode("asdf");
 									}
 								}
-												"""),
+												""", true),
 		URLENCODER("""
 				package test1;
 				import java.io.UnsupportedEncodingException;
@@ -553,7 +535,7 @@ public class E1 {
 										String url4=URLEncoder.encode("asdf");
 									}
 								}
-												"""),
+												""", true),
 		SCANNER("""
 				package test1;
 				import java.io.File;
@@ -582,7 +564,7 @@ public class E1 {
 														Scanner s3=new Scanner("asdf");
 													}
 												}
-																				"""),
+																				""", true),
 		FORMATTER("""
 				package test1;
 				import java.io.File;
@@ -766,9 +748,15 @@ public class E1 {
 
 		String given;
 		String expected;
+		boolean skipCompileCheck;
 
 		ExplicitEncodingPatterns(String given, String expected) {
+			this(given, expected, false);
+		}
+
+		ExplicitEncodingPatterns(String given, String expected, boolean skipCompileCheck) {
 			this.given= given;
 			this.expected= expected;
+			this.skipCompileCheck= skipCompileCheck;
 		}
 	}

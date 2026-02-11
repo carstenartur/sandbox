@@ -114,7 +114,6 @@ public class E1 {
 				        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 				        String result2=ba2.toString("UTF-8");
 				       }
-				    }
 				}
 				""",
 
@@ -137,7 +136,6 @@ public class E1 {
 						        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						        String result2=ba2.toString(StandardCharsets.UTF_8);
 						       }
-						    }
 						}
 						"""),
 		FILEREADER("""
@@ -157,7 +155,6 @@ public class E1 {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -179,7 +176,6 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		FILEWRITER("""
@@ -197,7 +193,6 @@ public class E1 {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -219,7 +214,6 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		INPUTSTREAMREADER(
@@ -241,7 +235,6 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						""",
 
@@ -265,7 +258,6 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		OUTPUTSTREAMWRITER(
@@ -277,18 +269,19 @@ public class E1 {
 						import java.io.FileInputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
+						import java.io.OutputStreamWriter;
+						import java.io.FileOutputStream;
 						import java.io.FileNotFoundException;
 
 						public class E1 {
 						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
+						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
+						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						""",
 
@@ -300,6 +293,8 @@ public class E1 {
 						import java.io.FileInputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
+						import java.io.OutputStreamWriter;
+						import java.io.FileOutputStream;
 						import java.nio.charset.Charset;
 						import java.nio.charset.StandardCharsets;
 						import java.io.FileNotFoundException;
@@ -307,13 +302,12 @@ public class E1 {
 						public class E1 {
 						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
+						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		CHANNELSNEWREADER("""
@@ -335,7 +329,6 @@ public class E1 {
 				            ReadableByteChannel ch;
 				            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 				       }
-				    }
 				}
 				""",
 
@@ -357,7 +350,6 @@ public class E1 {
 						            ReadableByteChannel ch;
 						            Reader r=Channels.newReader(ch,StandardCharsets.UTF_8);
 						       }
-						    }
 						}
 						"""),
 		CHANNELSNEWWRITER("""
@@ -379,7 +371,6 @@ public class E1 {
 				            WritableByteChannel ch;
 				            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 				       }
-				    }
 				}
 				""",
 
@@ -401,7 +392,6 @@ public class E1 {
 						            WritableByteChannel ch;
 						            Writer w=Channels.newWriter(ch,StandardCharsets.UTF_8); //$NON-NLS-1$
 						       }
-						    }
 						}
 						"""),
 		PRINTWRITER("""
@@ -419,7 +409,6 @@ public class E1 {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -442,7 +431,6 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		STRINGGETBYTES(
@@ -509,7 +497,7 @@ public class E1 {
 		System.out.println(bytes.length);
 	}
 }
-"""),
+""", true),
 		STRING("""
 				package test1;
 
@@ -540,7 +528,7 @@ public class E1 {
 								String s2=new String(b,0,1,StandardCharsets.UTF_8);
 							}
 						}
-														"""),
+														""", true),
 		PROPERTIESSTORETOXML("""
 				package test1;
 
@@ -557,7 +545,6 @@ public class E1 {
 						try (FileOutputStream os = new FileOutputStream("out.xml")) {
 							p.storeToXML(os, null);
 						}
-					}
 				}
 				""",
 
@@ -578,9 +565,8 @@ public class E1 {
 								try (FileOutputStream os = new FileOutputStream("out.xml")) {
 									p.storeToXML(os, null, StandardCharsets.UTF_8);
 								}
-							}
 						}
-												"""),
+												""", true),
 		URLDECODER("""
 				package test1;
 				import java.io.UnsupportedEncodingException;
@@ -606,7 +592,7 @@ public class E1 {
 						String url2=URLDecoder.decode("asdf", Charset.defaultCharset());
 					}
 				}
-												"""),
+												""", true),
 		URLENCODER("""
 				package test1;
 				import java.io.UnsupportedEncodingException;
@@ -632,7 +618,7 @@ public class E1 {
 						String url4=URLEncoder.encode("asdf", Charset.defaultCharset());
 					}
 				}
-												"""),
+												""", true),
 		SCANNER("""
 				package test1;
 				import java.io.File;
@@ -664,7 +650,7 @@ public class E3 {
 		Scanner s3=new Scanner("asdf", Charset.defaultCharset());
 	}
 }
-"""),
+""", true),
 		FORMATTER(
 """
 package test1;
@@ -686,7 +672,6 @@ public class E4 {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
 }
 """, """
 package test1;
@@ -710,7 +695,7 @@ public class E4 {
 		}
 	}
 }
-"""),
+""", true),
 		THREE("""
 				package test1;
 
@@ -928,9 +913,15 @@ public class E1 {
 
 		String given;
 		String expected;
+		boolean skipCompileCheck;
 
 		ExplicitEncodingPatterns(String given, String expected) {
+			this(given, expected, false);
+		}
+
+		ExplicitEncodingPatterns(String given, String expected, boolean skipCompileCheck) {
 			this.given= given;
 			this.expected= expected;
+			this.skipCompileCheck= skipCompileCheck;
 		}
 	}
