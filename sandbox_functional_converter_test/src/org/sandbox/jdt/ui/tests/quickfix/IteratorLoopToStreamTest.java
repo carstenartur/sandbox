@@ -739,8 +739,8 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				public class MyTest {
 					void process(List<String> items) {
-						outer:
 						Iterator<String> it = items.iterator();
+						outer:
 						while (it.hasNext()) {
 							String item = it.next();
 							if (item == null) {

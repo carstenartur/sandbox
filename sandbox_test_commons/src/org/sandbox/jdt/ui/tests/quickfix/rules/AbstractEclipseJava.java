@@ -516,6 +516,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations.
+	 * <p>
+	 * Also validates that the input compilation units have no compilation errors,
+	 * catching invalid test input early with detailed diagnostics.
+	 * </p>
 	 * 
 	 * @param cus the compilation units to refactor
 	 * @param expected the expected source code after refactoring (one per CU)
@@ -525,6 +529,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpected(final ICompilationUnit[] cus, final String[] expected,
 			final Set<String> setOfExpectedGroupCategories) throws CoreException {
+		for (final ICompilationUnit cu : cus) {
+			assertNoCompilationError(cu);
+		}
 		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
 		final String[] previews = new String[cus.length];
 		for (int i = 0; i < cus.length; i++) {
@@ -565,11 +572,35 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		for (int i = 0; i < cus.length; i++) {
 			expected[i] = cus[i].getBuffer().getContents();
 		}
-		return assertRefactoringResultAsExpected(cus, expected, null);
+		return assertRefactoringResultAsExpectedSkipCompilationCheck(cus, expected, null);
+	}
+
+	/**
+	 * Executes the configured refactoring and asserts the result matches expectations.
+	 * <p>
+	 * Does NOT validate compilation errors - used internally by
+	 * {@link #assertRefactoringHasNoChangeEventWithError} which deliberately
+	 * tests refactoring behavior on code with compilation errors.
+	 * </p>
+	 */
+	private RefactoringStatus assertRefactoringResultAsExpectedSkipCompilationCheck(final ICompilationUnit[] cus,
+			final String[] expected, final Set<String> setOfExpectedGroupCategories) throws CoreException {
+		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
+		final String[] previews = new String[cus.length];
+		for (int i = 0; i < cus.length; i++) {
+			final ICompilationUnit cu = cus[i];
+			previews[i] = cu.getBuffer().getContents();
+		}
+		assertEqualStringsIgnoreOrder(previews, expected);
+		return status;
 	}
 
 	/**
 	 * Parses and validates a compilation unit for compilation errors.
+	 * 
+	 * <p>Uses the JDT {@link IProblem} API to provide detailed error diagnostics
+	 * including problem severity, source line number, and problem ID for
+	 * easier debugging of test input code.</p>
 	 * 
 	 * @param cu the compilation unit to check
 	 * @return the AST compilation unit root
@@ -592,7 +623,15 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			final StringBuilder builder = new StringBuilder();
 			builder.append(cu.getElementName()).append(" has compilation problems: \n"); //$NON-NLS-1$
 			for (final IProblem prob : problems) {
-				builder.append(prob.getMessage()).append('\n');
+				if (!prob.isWarning() && !prob.isInfo()) {
+					builder.append("ERROR line "); //$NON-NLS-1$
+					builder.append(prob.getSourceLineNumber());
+					builder.append(": "); //$NON-NLS-1$
+					builder.append(prob.getMessage());
+					builder.append(" [id="); //$NON-NLS-1$
+					builder.append(prob.getID());
+					builder.append("]\n"); //$NON-NLS-1$
+				}
 			}
 			fail(builder.toString());
 		}
