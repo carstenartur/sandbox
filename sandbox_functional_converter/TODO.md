@@ -419,6 +419,51 @@ The original Phase 9 target format selection using radio buttons (`USEFUNCTIONAL
 
 The legacy radio-button based target format selection remains supported in existing cleanup preferences so that current workspaces, exported preferences, and headless builds keep their behavior unchanged. V1 configuration keys and behavior are preserved; V2 bidirectional transformations are opt-in and must not alter the output for users who have not enabled the new options.
 
+### Phase 10: Comment Preservation 🚧 IN PROGRESS (February 2026)
+
+**Objective**: Preserve source code comments during loop-to-stream transformations by embedding them into the generated stream pipeline using block-lambda syntax.
+
+**Status**: 🚧 **In Progress** - Core infrastructure complete, StringRenderer comment-aware rendering implemented
+
+#### Completed Tasks ✅
+
+1. **Core Model — Comment Infrastructure**
+   - ✅ `FilterOp.addComment()` / `hasComments()` / `getComments()` methods
+   - ✅ `MapOp.addComment()` / `hasComments()` / `getComments()` methods
+   - ✅ `StreamPipelineRenderer.renderFilterOp()` / `renderMapOp()` default methods with Operation context
+
+2. **JDT Plugin — ASTStreamRenderer**
+   - ✅ `renderFilterWithComments()` — block-lambda with comments for filter operations
+   - ✅ `renderMapWithComments()` — block-lambda with comments for map operations
+   - ✅ `JdtLoopExtractor` extracts AST comments and attaches them to operations
+
+3. **Core Module — StringRenderer Comment-Aware Rendering** (February 2026)
+   - ✅ `renderFilterOp()` override — generates block-lambda with comments when present
+   - ✅ `renderMapOp()` override — generates block-lambda with comments (side-effect maps take priority)
+   - ✅ `renderBlockLambda()` helper for consistent block-lambda comment formatting
+   - ✅ Tests: `StringRendererTest` (8 new tests for comment-aware rendering)
+   - ✅ Tests: `CommentPreservationTest` updated to verify StringRenderer comment output
+
+4. **Tests**
+   - ✅ `CommentPreservationTest` (Core, 4 tests, without OSGi)
+   - ✅ `CommentPreservationIntegrationTest` (Plugin, 8 tests)
+
+#### Remaining Tasks ⏳
+
+1. **Comment-Aware Rendering for Other Operations**
+   - [ ] Extend comment support to `FlatMapOp`, `PeekOp`, etc.
+   - [ ] Consider comment support for terminal operations
+
+2. **Comment Preservation Tests — Missing for 5 of 6 Transformation Directions**
+   - [ ] Iterator-while → Stream
+   - [ ] Stream → Enhanced-for
+   - [ ] Stream → Iterator-while
+   - [ ] Iterator-while → Enhanced-for
+   - [ ] Enhanced-for → Iterator-while
+
+3. **End-to-End Comment Rendering**
+   - [ ] Loop with comments → Stream with comments in generated output (full integration)
+
 ### Issue #453: Output-Format Alignment und vollständigen Support für 'collect'-Pattern ✅ PARTIALLY COMPLETE (January 2026)
 
 **Objective**: Optimize V2 renderer to produce idiomatic, modern Java code for collect-loops

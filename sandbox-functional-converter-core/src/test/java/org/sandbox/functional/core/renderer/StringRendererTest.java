@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.sandbox.functional.core.model.*;
+import org.sandbox.functional.core.operation.*;
 import org.sandbox.functional.core.terminal.*;
 
 class StringRendererTest {
@@ -288,5 +289,71 @@ class StringRendererTest {
         var terminal = new MatchTerminal(MatchTerminal.MatchType.NONE_MATCH, "x.isEmpty()");
         String result = renderer.renderMatch("stream", terminal, "x");
         assertThat(result).isEqualTo("stream.noneMatch(x -> x.isEmpty())");
+    }
+    
+    @Test
+    void testRenderFilterOpWithoutComments() {
+        var filterOp = new FilterOp("x > 0");
+        String result = renderer.renderFilterOp("stream", filterOp, "x");
+        assertThat(result).isEqualTo("stream.filter(x -> x > 0)");
+    }
+    
+    @Test
+    void testRenderFilterOpWithComments() {
+        var filterOp = new FilterOp("x > 0");
+        filterOp.addComment("Only positive values");
+        String result = renderer.renderFilterOp("stream", filterOp, "x");
+        assertThat(result).contains(".filter(x -> {");
+        assertThat(result).contains("// Only positive values");
+        assertThat(result).contains("return x > 0;");
+        assertThat(result).endsWith("})");
+    }
+    
+    @Test
+    void testRenderFilterOpWithMultipleComments() {
+        var filterOp = new FilterOp("x != null");
+        filterOp.addComment("Remove null values");
+        filterOp.addComment("Ensure non-null processing");
+        String result = renderer.renderFilterOp("stream", filterOp, "x");
+        assertThat(result).contains("// Remove null values");
+        assertThat(result).contains("// Ensure non-null processing");
+        assertThat(result).contains("return x != null;");
+    }
+    
+    @Test
+    void testRenderMapOpWithoutComments() {
+        var mapOp = new MapOp("x.toUpperCase()");
+        String result = renderer.renderMapOp("stream", mapOp, "x");
+        assertThat(result).isEqualTo("stream.map(x -> x.toUpperCase())");
+    }
+    
+    @Test
+    void testRenderMapOpWithComments() {
+        var mapOp = new MapOp("x.toUpperCase()");
+        mapOp.addComment("Convert to uppercase");
+        String result = renderer.renderMapOp("stream", mapOp, "x");
+        assertThat(result).contains(".map(x -> {");
+        assertThat(result).contains("// Convert to uppercase");
+        assertThat(result).contains("return x.toUpperCase();");
+        assertThat(result).endsWith("})");
+    }
+    
+    @Test
+    void testRenderMapOpSideEffect() {
+        var mapOp = new MapOp("list.add(x)", null, null, true);
+        String result = renderer.renderMapOp("stream", mapOp, "x");
+        assertThat(result).contains(".map(x -> {");
+        assertThat(result).contains("list.add(x)");
+        assertThat(result).contains("return x;");
+    }
+    
+    @Test
+    void testRenderMapOpSideEffectTakesPriorityOverComments() {
+        var mapOp = new MapOp("list.add(x)", null, null, true);
+        mapOp.addComment("Side-effect comment");
+        String result = renderer.renderMapOp("stream", mapOp, "x");
+        // Side-effect rendering takes priority
+        assertThat(result).contains("list.add(x)");
+        assertThat(result).contains("return x;");
     }
 }

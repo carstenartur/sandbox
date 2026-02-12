@@ -15,6 +15,7 @@ package org.sandbox.functional.core.renderer;
 
 import java.util.List;
 import org.sandbox.functional.core.model.*;
+import org.sandbox.functional.core.operation.*;
 import org.sandbox.functional.core.terminal.*;
 
 /**
@@ -55,8 +56,29 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     }
     
     @Override
+    public String renderFilterOp(String pipeline, FilterOp filterOp, String variableName) {
+        if (filterOp.hasComments()) {
+            return renderBlockLambda(pipeline, "filter", filterOp.getComments(),
+                    "return " + filterOp.expression() + ";", variableName);
+        }
+        return renderFilter(pipeline, filterOp.expression(), variableName);
+    }
+    
+    @Override
     public String renderMap(String pipeline, String expression, String variableName, String targetType) {
         return pipeline + ".map(" + variableName + " -> " + expression + ")";
+    }
+    
+    @Override
+    public String renderMapOp(String pipeline, MapOp mapOp, String variableName) {
+        if (mapOp.isSideEffect()) {
+            return pipeline + ".map(" + variableName + " -> { " + mapOp.expression() + "; return " + variableName + "; })";
+        }
+        if (mapOp.hasComments()) {
+            return renderBlockLambda(pipeline, "map", mapOp.getComments(),
+                    "return " + mapOp.expression() + ";", variableName);
+        }
+        return renderMap(pipeline, mapOp.expression(), variableName, mapOp.targetType());
     }
     
     @Override
@@ -134,5 +156,21 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     @Override
     public String renderMatch(String pipeline, MatchTerminal terminal, String variableName) {
         return pipeline + "." + terminal.operationType() + "(" + variableName + " -> " + terminal.predicate() + ")";
+    }
+    
+    /**
+     * Renders a block-lambda with comments.
+     * Generates code like: {@code pipeline.method(var -> { // comment\n return expr; })}
+     */
+    private String renderBlockLambda(String pipeline, String method, List<String> comments,
+                                      String returnStatement, String variableName) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(pipeline).append('.').append(method).append('(').append(variableName).append(" -> {\n");
+        for (String comment : comments) {
+            sb.append("    // ").append(comment).append('\n');
+        }
+        sb.append("    ").append(returnStatement).append('\n');
+        sb.append("})");
+        return sb.toString();
     }
 }
