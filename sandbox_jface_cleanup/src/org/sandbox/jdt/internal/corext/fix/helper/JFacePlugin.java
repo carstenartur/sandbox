@@ -342,6 +342,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			return;
 		}
 		
+		// Track whether any flag was passed through unmapped (may still reference SubProgressMonitor)
+		boolean hasUnmappedFlags = false;
+		
 		for (Entry<Integer, MonitorHolder> entry : hit.entrySet()) {
 
 			MonitorHolder mh = entry.getValue();
@@ -376,15 +379,20 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					// Handle flags if present (3-arg constructor)
 					if (arguments.size() >= 3) {
 						Expression flagsArg = (Expression) arguments.get(2);
-						Expression mappedFlag = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);
+						FlagMappingResult flagResult = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);
 						
-						if (mappedFlag != null) {
-							splitArgs.add(mappedFlag);
+						if (flagResult.mappedExpression() != null) {
+							splitArgs.add(flagResult.mappedExpression());
+							if (flagResult.referencesSubMonitor()) {
+								importRemover.addImport("org.eclipse.core.runtime.SubMonitor"); //$NON-NLS-1$
+							}
+						}
+						if (flagResult.passedThrough()) {
+							hasUnmappedFlags = true;
 						}
 					}
 					
 					ASTNodes.replaceButKeepComment(rewrite, submon, splitCall, group);
-					importRemover.removeImport("org.eclipse.core.runtime.SubProgressMonitor"); //$NON-NLS-1$
 				}
 				
 				continue;
@@ -425,15 +433,20 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					// Handle flags if present (3-arg constructor)
 					if (arguments.size() >= 3) {
 						Expression flagsArg = (Expression) arguments.get(2);
-						Expression mappedFlag = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);
+						FlagMappingResult flagResult = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);
 						
-						if (mappedFlag != null) {
-							splitArgs.add(mappedFlag);
+						if (flagResult.mappedExpression() != null) {
+							splitArgs.add(flagResult.mappedExpression());
+							if (flagResult.referencesSubMonitor()) {
+								importRemover.addImport("org.eclipse.core.runtime.SubMonitor"); //$NON-NLS-1$
+							}
+						}
+						if (flagResult.passedThrough()) {
+							hasUnmappedFlags = true;
 						}
 					}
 					
 					ASTNodes.replaceButKeepComment(rewrite, submon, splitCall, group);
-					importRemover.removeImport("org.eclipse.core.runtime.SubProgressMonitor"); //$NON-NLS-1$
 				}
 				
 				continue;
@@ -536,17 +549,27 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				// Check for 3-arg constructor (with flags)
 				if (arguments.size() >= 3) {
 					Expression flagsArg = (Expression) arguments.get(2);
-					Expression mappedFlag = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);
+					FlagMappingResult flagResult = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);
 					
 					// Only add the flag if it wasn't dropped (PREPEND_MAIN_LABEL_TO_SUBTASK is dropped)
-					if (mappedFlag != null) {
-						splitCallArguments.add(mappedFlag);
+					if (flagResult.mappedExpression() != null) {
+						splitCallArguments.add(flagResult.mappedExpression());
+						if (flagResult.referencesSubMonitor()) {
+							importRemover.addImport("org.eclipse.core.runtime.SubMonitor"); //$NON-NLS-1$
+						}
+					}
+					if (flagResult.passedThrough()) {
+						hasUnmappedFlags = true;
 					}
 				}
 				
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
-				importRemover.removeImport("org.eclipse.core.runtime.SubProgressMonitor"); //$NON-NLS-1$
 			}
+		}
+		
+		// Only remove SubProgressMonitor import if no unmapped flags may still reference it
+		if (!hasUnmappedFlags) {
+			importRemover.removeImport("org.eclipse.core.runtime.SubProgressMonitor"); //$NON-NLS-1$
 		}
 	}
 	
@@ -580,6 +603,18 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	}
 
 	/**
+	 * Result of mapping SubProgressMonitor flags to SubMonitor flags.
+	 */
+	private record FlagMappingResult(
+		/** The mapped expression, or null if the flag should be dropped */
+		Expression mappedExpression,
+		/** True if the mapped expression references SubMonitor (needs import) */
+		boolean referencesSubMonitor,
+		/** True if the flag was passed through unchanged (may still reference SubProgressMonitor) */
+		boolean passedThrough
+	) {}
+
+	/**
 	 * Maps SubProgressMonitor flags to SubMonitor flags.
 	 * 
 	 * <p>Flag mappings:</p>
@@ -590,14 +625,15 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	 * 
 	 * <p><b>Limitations:</b> This method only handles single flag constants. Combined flag expressions
 	 * using bitwise OR (e.g., {@code FLAG1 | FLAG2}) or numeric literals are not mapped and will be
-	 * passed through unchanged, which may result in incorrect behavior. Such cases require manual review.</p>
+	 * passed through unchanged. When flags are passed through, the SubProgressMonitor import is
+	 * preserved to avoid breaking references in the unmapped expression.</p>
 	 * 
 	 * @param flagExpr the original flag expression from SubProgressMonitor constructor
 	 * @param ast the AST to create new nodes
 	 * @param cuRewrite the compilation unit rewrite context
-	 * @return the mapped flag expression for SubMonitor, or null if flag should be dropped
+	 * @return the flag mapping result containing the mapped expression and metadata
 	 */
-	private Expression mapSubProgressMonitorFlags(Expression flagExpr, AST ast, CompilationUnitRewrite cuRewrite) {
+	private FlagMappingResult mapSubProgressMonitorFlags(Expression flagExpr, AST ast, CompilationUnitRewrite cuRewrite) {
 		// Handle field access: SubProgressMonitor.SUPPRESS_SUBTASK_LABEL
 		if (flagExpr instanceof QualifiedName) {
 			QualifiedName qn = (QualifiedName) flagExpr;
@@ -608,10 +644,10 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				QualifiedName newFlag = ast.newQualifiedName(
 					ast.newSimpleName(SubMonitor.class.getSimpleName()),
 					ast.newSimpleName("SUPPRESS_SUBTASK")); //$NON-NLS-1$
-				return newFlag;
+				return new FlagMappingResult(newFlag, true, false);
 			} else if ("PREPEND_MAIN_LABEL_TO_SUBTASK".equals(fieldName)) { //$NON-NLS-1$
 				// Drop this flag - no equivalent in SubMonitor
-				return null;
+				return new FlagMappingResult(null, false, false);
 			}
 		}
 		
@@ -625,15 +661,17 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				FieldAccess newFlag = ast.newFieldAccess();
 				newFlag.setExpression(ast.newSimpleName(SubMonitor.class.getSimpleName()));
 				newFlag.setName(ast.newSimpleName("SUPPRESS_SUBTASK")); //$NON-NLS-1$
-				return newFlag;
+				return new FlagMappingResult(newFlag, true, false);
 			} else if ("PREPEND_MAIN_LABEL_TO_SUBTASK".equals(fieldName)) { //$NON-NLS-1$
 				// Drop this flag - no equivalent in SubMonitor
-				return null;
+				return new FlagMappingResult(null, false, false);
 			}
 		}
 		
-		// For other expressions (constants, variables), pass through unchanged
-		return ASTNodes.createMoveTarget(cuRewrite.getASTRewrite(), ASTNodes.getUnparenthesedExpression(flagExpr));
+		// For other expressions (constants, variables, bitwise OR), pass through unchanged
+		// Mark as passedThrough so SubProgressMonitor import is preserved
+		Expression passedExpr = ASTNodes.createMoveTarget(cuRewrite.getASTRewrite(), ASTNodes.getUnparenthesedExpression(flagExpr));
+		return new FlagMappingResult(passedExpr, false, true);
 	}
 
 	@Override
