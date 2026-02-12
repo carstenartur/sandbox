@@ -448,22 +448,9 @@ public class Test {
 		IProgressMonitor sub = subMonitor.split(50);
 	}
 }
-"""); //$NON-NLS-1$
-
-		String given;
-		String expected;
-		
-		// New test cases for addressing issue gaps
-		JFaceCleanupCases(String given, String expected) {
-			this.given=given;
-			this.expected=expected;
-		}
-	}
-	
-	// Additional test cases for missing transformation scenarios
-	enum AdditionalJFaceCleanupCases {
-		// Test field declaration with SubProgressMonitor type
-		FieldDeclaration(
+"""), //$NON-NLS-1$
+	// Test field declaration with SubProgressMonitor type
+	FieldDeclaration(
 """
 package test;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -488,8 +475,8 @@ public class Test {
 	}
 }
 """), //$NON-NLS-1$
-		// Test method parameter with SubProgressMonitor type
-		MethodParameterType(
+	// Test method parameter with SubProgressMonitor type
+	MethodParameterType(
 """
 package test;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -518,8 +505,8 @@ public class Test {
 	}
 }
 """), //$NON-NLS-1$
-		// Test method return type with SubProgressMonitor
-		MethodReturnType(
+	// Test method return type with SubProgressMonitor
+	MethodReturnType(
 """
 package test;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -542,8 +529,8 @@ public class Test {
 	}
 }
 """), //$NON-NLS-1$
-		// Test cast expression with SubProgressMonitor
-		CastExpression(
+	// Test cast expression with SubProgressMonitor
+	CastExpression(
 """
 package test;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -566,8 +553,8 @@ public class Test {
 	}
 }
 """), //$NON-NLS-1$
-		// Test nested constructor call (as method argument)
-		NestedConstructorInMethodArgument(
+	// Test nested constructor call (as method argument)
+	NestedConstructorInMethodArgument(
 """
 package test;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -596,8 +583,8 @@ public class Test {
 	}
 }
 """), //$NON-NLS-1$
-		// Test constructor with non-trivial arguments (method calls)
-		ConstructorWithMethodCallArguments(
+	// Test constructor with non-trivial arguments (method calls)
+	ConstructorWithMethodCallArguments(
 """
 package test;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -628,19 +615,10 @@ public class Test {
 		String given;
 		String expected;
 
-		AdditionalJFaceCleanupCases(String given, String expected) {
-			this.given = given;
-			this.expected = expected;
+		JFaceCleanupCases(String given, String expected) {
+			this.given=given;
+			this.expected=expected;
 		}
-	}
-
-	@ParameterizedTest
-	@EnumSource(AdditionalJFaceCleanupCases.class)
-	public void testAdditionalJFaceCleanup(AdditionalJFaceCleanupCases test) throws CoreException {
-		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
-		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
-		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
 	//	@Disabled
