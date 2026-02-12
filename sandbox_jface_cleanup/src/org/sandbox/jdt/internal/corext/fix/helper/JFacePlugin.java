@@ -160,7 +160,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			boolean createForOnlyIfVarUsed) {
 		ReferenceHolder<Integer, MonitorHolder> dataholder = new ReferenceHolder<>();
 		
-		// Track which SubProgressMonitor nodes are associated with beginTask
+		// Track which SubProgressMonitor nodes are associated with beginTask (prevents Pass 2 from re-processing them)
 		Set<ASTNode> beginTaskAssociated = new HashSet<>();
 		
 		// Pass 1: Find beginTask + SubProgressMonitor patterns (chained visitors)
