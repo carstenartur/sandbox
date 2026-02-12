@@ -229,18 +229,26 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="nc" id="L229">            return null;</span>
         }
         
-<span class="fc" id="L232">        return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);</span>
+        // Issue #670: Check if the index variable is used in the body for complex
+        // patterns like a[i+1], a[i-1], or i%2 that indicate neighbor access or
+        // non-trivial index semantics. These patterns suggest the loop relies on
+        // index arithmetic that may not be safely convertible.
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (usesIndexBeyondSimpleAccess(body, loopVarName)) {</span>
+<span class="nc" id="L237">            return null;</span>
+        }
+        
+<span class="fc" id="L240">        return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);</span>
     }
     
     /**
      * Checks if a Type represents primitive int.
      */
     private boolean isPrimitiveInt(Type type) {
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">        if (type instanceof PrimitiveType) {</span>
-<span class="fc" id="L240">            PrimitiveType primType = (PrimitiveType) type;</span>
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">            return primType.getPrimitiveTypeCode() == PrimitiveType.INT;</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">        if (type instanceof PrimitiveType) {</span>
+<span class="fc" id="L248">            PrimitiveType primType = (PrimitiveType) type;</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">            return primType.getPrimitiveTypeCode() == PrimitiveType.INT;</span>
         }
-<span class="nc" id="L243">        return false;</span>
+<span class="nc" id="L251">        return false;</span>
     }
     
     /**
@@ -249,20 +257,20 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      * analysis of outer enhanced-for loops.
      */
     private boolean isNestedInsideLoop(ForStatement forStmt) {
-<span class="fc" id="L252">        ASTNode parent = forStmt.getParent();</span>
-<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        while (parent != null) {</span>
-<span class="fc bfc" id="L254" title="All 2 branches covered.">            if (parent instanceof EnhancedForStatement</span>
-<span class="pc bpc" id="L255" title="1 of 2 branches missed.">                    || parent instanceof ForStatement</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">                    || parent instanceof WhileStatement</span>
-<span class="pc bpc" id="L257" title="1 of 2 branches missed.">                    || parent instanceof DoStatement) {</span>
-<span class="fc" id="L258">                return true;</span>
+<span class="fc" id="L260">        ASTNode parent = forStmt.getParent();</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">        while (parent != null) {</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">            if (parent instanceof EnhancedForStatement</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">                    || parent instanceof ForStatement</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">                    || parent instanceof WhileStatement</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">                    || parent instanceof DoStatement) {</span>
+<span class="fc" id="L266">                return true;</span>
             }
-<span class="pc bpc" id="L260" title="1 of 4 branches missed.">            if (parent instanceof MethodDeclaration || parent instanceof TypeDeclaration) {</span>
-<span class="nc" id="L261">                break;</span>
+<span class="pc bpc" id="L268" title="1 of 4 branches missed.">            if (parent instanceof MethodDeclaration || parent instanceof TypeDeclaration) {</span>
+<span class="nc" id="L269">                break;</span>
             }
-<span class="fc" id="L263">            parent = parent.getParent();</span>
+<span class="fc" id="L271">            parent = parent.getParent();</span>
         }
-<span class="fc" id="L265">        return false;</span>
+<span class="fc" id="L273">        return false;</span>
     }
     
     /**
@@ -270,29 +278,146 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      * Statements containing break, continue, or return cannot be converted to lambda.
      */
     private boolean containsUnconvertibleStatements(Statement body) {
-<span class="fc" id="L273">        final boolean[] hasUnconvertible = {false};</span>
+<span class="fc" id="L281">        final boolean[] hasUnconvertible = {false};</span>
         
-<span class="fc" id="L275">        body.accept(new ASTVisitor() {</span>
+<span class="fc" id="L283">        body.accept(new ASTVisitor() {</span>
             @Override
             public boolean visit(BreakStatement node) {
-<span class="nc" id="L278">                hasUnconvertible[0] = true;</span>
-<span class="nc" id="L279">                return false;</span>
+<span class="nc" id="L286">                hasUnconvertible[0] = true;</span>
+<span class="nc" id="L287">                return false;</span>
             }
             
             @Override
             public boolean visit(ContinueStatement node) {
-<span class="nc" id="L284">                hasUnconvertible[0] = true;</span>
-<span class="nc" id="L285">                return false;</span>
+<span class="nc" id="L292">                hasUnconvertible[0] = true;</span>
+<span class="nc" id="L293">                return false;</span>
             }
             
             @Override
             public boolean visit(ReturnStatement node) {
-<span class="nc" id="L290">                hasUnconvertible[0] = true;</span>
-<span class="nc" id="L291">                return false;</span>
+<span class="nc" id="L298">                hasUnconvertible[0] = true;</span>
+<span class="nc" id="L299">                return false;</span>
             }
         });
         
-<span class="fc" id="L295">        return hasUnconvertible[0];</span>
+<span class="fc" id="L303">        return hasUnconvertible[0];</span>
+    }
+    
+    /**
+     * Checks if the index variable is used in the loop body for complex patterns
+     * that go beyond simple counter semantics.
+     * 
+     * &lt;p&gt;Detects the index variable participating in arithmetic InfixExpressions
+     * (e.g., {@code i + 1}, {@code i - 1}, {@code i * 2}, {@code i % 2}).
+     * This also catches array/list neighbor access patterns like {@code a[i+1]}
+     * because the subscript expression {@code i+1} is itself an InfixExpression.&lt;/p&gt;
+     * 
+     * &lt;p&gt;These patterns indicate the loop relies on index relationships between
+     * iterations, which may not be safely convertible to stream operations.&lt;/p&gt;
+     * 
+     * @param body the loop body statement
+     * @param indexVarName the name of the index variable
+     * @return true if the index is used in complex patterns
+     * 
+     * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/670&quot;&gt;Issue #670&lt;/a&gt;
+     */
+    private boolean usesIndexBeyondSimpleAccess(Statement body, String indexVarName) {
+<span class="fc" id="L325">        final boolean[] hasComplexUsage = {false};</span>
+        
+<span class="fc" id="L327">        body.accept(new ASTVisitor() {</span>
+            @Override
+            public boolean visit(InfixExpression node) {
+                // Check if the index variable is used in arithmetic operations
+                // like i+1, i-1, i*2, i%2
+<span class="nc bnc" id="L332" title="All 2 branches missed.">                if (isIndexInArithmeticExpression(node, indexVarName)) {</span>
+<span class="nc" id="L333">                    hasComplexUsage[0] = true;</span>
+<span class="nc" id="L334">                    return false;</span>
+                }
+<span class="nc" id="L336">                return true;</span>
+            }
+        });
+        
+<span class="fc" id="L340">        return hasComplexUsage[0];</span>
+    }
+    
+    /**
+     * Checks if an InfixExpression uses the index variable in arithmetic.
+     * Detects patterns: i+1, i-1, i*2, i%2, etc., including nested and chained
+     * arithmetic expressions (e.g., (i + 1) + offset, multiplier * (i - 1)).
+     */
+    private boolean isIndexInArithmeticExpression(InfixExpression expr, String indexVarName) {
+<span class="nc bnc" id="L349" title="All 2 branches missed.">        if (!isArithmeticOperator(expr.getOperator())) {</span>
+<span class="nc" id="L350">            return false;</span>
+        }
+
+        // Recursively inspect all operands (left, right, and extended) for
+        // arithmetic usage of the index variable.
+<span class="nc bnc" id="L355" title="All 2 branches missed.">        if (containsIndexInArithmeticOperand(expr.getLeftOperand(), indexVarName)) {</span>
+<span class="nc" id="L356">            return true;</span>
+        }
+<span class="nc bnc" id="L358" title="All 2 branches missed.">        if (containsIndexInArithmeticOperand(expr.getRightOperand(), indexVarName)) {</span>
+<span class="nc" id="L359">            return true;</span>
+        }
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L362">        List&lt;Expression&gt; extended = expr.extendedOperands();</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">        for (Expression operand : extended) {</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">            if (containsIndexInArithmeticOperand(operand, indexVarName)) {</span>
+<span class="nc" id="L365">                return true;</span>
+            }
+        }
+<span class="nc" id="L368">        return false;</span>
+    }
+
+    /**
+     * Returns {@code true} if the given operator is an arithmetic operator
+     * relevant for index arithmetic detection.
+     */
+    private boolean isArithmeticOperator(InfixExpression.Operator op) {
+<span class="nc bnc" id="L376" title="All 2 branches missed.">        return op == InfixExpression.Operator.PLUS</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">                || op == InfixExpression.Operator.MINUS</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">                || op == InfixExpression.Operator.TIMES</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">                || op == InfixExpression.Operator.DIVIDE</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">                || op == InfixExpression.Operator.REMAINDER;</span>
+    }
+
+    /**
+     * Recursively checks whether the given expression contains an arithmetic
+     * use of the index variable.
+     */
+    private boolean containsIndexInArithmeticOperand(Expression expr, String indexVarName) {
+<span class="nc bnc" id="L388" title="All 2 branches missed.">        if (expr == null) {</span>
+<span class="nc" id="L389">            return false;</span>
+        }
+
+<span class="nc bnc" id="L392" title="All 2 branches missed.">        if (expr instanceof SimpleName) {</span>
+<span class="nc" id="L393">            return ((SimpleName) expr).getIdentifier().equals(indexVarName);</span>
+        }
+
+<span class="nc bnc" id="L396" title="All 2 branches missed.">        if (expr instanceof ParenthesizedExpression) {</span>
+<span class="nc" id="L397">            Expression inner = ((ParenthesizedExpression) expr).getExpression();</span>
+<span class="nc" id="L398">            return containsIndexInArithmeticOperand(inner, indexVarName);</span>
+        }
+
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (expr instanceof InfixExpression infix) {</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">            if (!isArithmeticOperator(infix.getOperator())) {</span>
+<span class="nc" id="L403">                return false;</span>
+            }
+<span class="nc bnc" id="L405" title="All 2 branches missed.">            if (containsIndexInArithmeticOperand(infix.getLeftOperand(), indexVarName)) {</span>
+<span class="nc" id="L406">                return true;</span>
+            }
+<span class="nc bnc" id="L408" title="All 2 branches missed.">            if (containsIndexInArithmeticOperand(infix.getRightOperand(), indexVarName)) {</span>
+<span class="nc" id="L409">                return true;</span>
+            }
+            @SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L412">            List&lt;Expression&gt; extended = infix.extendedOperands();</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">            for (Expression operand : extended) {</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">                if (containsIndexInArithmeticOperand(operand, indexVarName)) {</span>
+<span class="nc" id="L415">                    return true;</span>
+                }
+            }
+        }
+
+<span class="nc" id="L420">        return false;</span>
     }
     
     @Override
@@ -300,78 +425,78 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
                         CompilationUnitRewrite cuRewrite, TextEditGroup group,
                         ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
         
-<span class="fc" id="L303">        Object patternObj = data.get(visited);</span>
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">        if (!(patternObj instanceof ForLoopPattern)) {</span>
-<span class="nc" id="L305">            return;</span>
+<span class="fc" id="L428">        Object patternObj = data.get(visited);</span>
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">        if (!(patternObj instanceof ForLoopPattern)) {</span>
+<span class="nc" id="L430">            return;</span>
         }
         
-<span class="fc" id="L308">        ForLoopPattern pattern = (ForLoopPattern) patternObj;</span>
+<span class="fc" id="L433">        ForLoopPattern pattern = (ForLoopPattern) patternObj;</span>
         
-<span class="fc" id="L310">        AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L311">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L435">        AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L436">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
         
         // Build LoopModel
-<span class="fc" id="L314">        LoopModel model = buildLoopModel(pattern, ast);</span>
+<span class="fc" id="L439">        LoopModel model = buildLoopModel(pattern, ast);</span>
         
         // Create renderer
-<span class="fc" id="L317">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body);</span>
+<span class="fc" id="L442">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body);</span>
         
         // Transform using LoopModelTransformer
-<span class="fc" id="L320">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
-<span class="fc" id="L321">        Expression streamExpression = transformer.transform(model);</span>
+<span class="fc" id="L445">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
+<span class="fc" id="L446">        Expression streamExpression = transformer.transform(model);</span>
         
-<span class="pc bpc" id="L323" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
+<span class="pc bpc" id="L448" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
             // Wrap in ExpressionStatement
-<span class="fc" id="L325">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
-<span class="fc" id="L326">            rewrite.replace(visited, newStatement, group);</span>
+<span class="fc" id="L450">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
+<span class="fc" id="L451">            rewrite.replace(visited, newStatement, group);</span>
             
             // Add IntStream import
-<span class="fc" id="L329">            cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.IntStream&quot;);</span>
+<span class="fc" id="L454">            cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.IntStream&quot;);</span>
         }
-<span class="fc" id="L331">    }</span>
+<span class="fc" id="L456">    }</span>
     
     /**
      * Builds a LoopModel from the analyzed ForLoopPattern.
      */
     private LoopModel buildLoopModel(ForLoopPattern pattern, AST ast) {
         // Get start and end expressions as strings
-<span class="fc" id="L338">        String startStr = pattern.startExpr.toString();</span>
-<span class="fc" id="L339">        String endStr = pattern.endExpr.toString();</span>
+<span class="fc" id="L463">        String startStr = pattern.startExpr.toString();</span>
+<span class="fc" id="L464">        String endStr = pattern.endExpr.toString();</span>
         
         // Adjust end expression for inclusive range (i &lt;= end)
-<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        if (pattern.inclusive) {</span>
+<span class="pc bpc" id="L467" title="1 of 2 branches missed.">        if (pattern.inclusive) {</span>
             // For i &lt;= end, we need IntStream.range(start, (end) + 1)
             // Parenthesize end expression to preserve operator precedence
-<span class="nc" id="L345">            endStr = &quot;(&quot; + endStr + &quot;) + 1&quot;;</span>
+<span class="nc" id="L470">            endStr = &quot;(&quot; + endStr + &quot;) + 1&quot;;</span>
         }
         
         // Build EXPLICIT_RANGE source descriptor
-<span class="fc" id="L349">        String rangeExpression = startStr + &quot;,&quot; + endStr;</span>
-<span class="fc" id="L350">        SourceDescriptor source = new SourceDescriptor(</span>
-<span class="fc" id="L351">            SourceDescriptor.SourceType.EXPLICIT_RANGE,</span>
-<span class="fc" id="L352">            rangeExpression,</span>
-<span class="fc" id="L353">            &quot;int&quot;</span>
+<span class="fc" id="L474">        String rangeExpression = startStr + &quot;,&quot; + endStr;</span>
+<span class="fc" id="L475">        SourceDescriptor source = new SourceDescriptor(</span>
+<span class="fc" id="L476">            SourceDescriptor.SourceType.EXPLICIT_RANGE,</span>
+<span class="fc" id="L477">            rangeExpression,</span>
+<span class="fc" id="L478">            &quot;int&quot;</span>
         );
         
         // Build element descriptor for the loop variable
-<span class="fc" id="L357">        ElementDescriptor element = new ElementDescriptor(</span>
-<span class="fc" id="L358">            pattern.loopVarName,</span>
-<span class="fc" id="L359">            &quot;int&quot;,</span>
-<span class="fc" id="L360">            false // not a collection element</span>
+<span class="fc" id="L482">        ElementDescriptor element = new ElementDescriptor(</span>
+<span class="fc" id="L483">            pattern.loopVarName,</span>
+<span class="fc" id="L484">            &quot;int&quot;,</span>
+<span class="fc" id="L485">            false // not a collection element</span>
         );
         
         // Extract body statements and convert to strings
-<span class="fc" id="L364">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(pattern.body);</span>
+<span class="fc" id="L489">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(pattern.body);</span>
         
         // Build ForEachTerminal
-<span class="fc" id="L367">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // uses forEach (not forEachOrdered)</span>
+<span class="fc" id="L492">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // uses forEach (not forEachOrdered)</span>
         
         // Build and return LoopModel
-<span class="fc" id="L370">        return new LoopModelBuilder()</span>
-<span class="fc" id="L371">            .source(source)</span>
-<span class="fc" id="L372">            .element(element)</span>
-<span class="fc" id="L373">            .terminal(terminal)</span>
-<span class="fc" id="L374">            .build();</span>
+<span class="fc" id="L495">        return new LoopModelBuilder()</span>
+<span class="fc" id="L496">            .source(source)</span>
+<span class="fc" id="L497">            .element(element)</span>
+<span class="fc" id="L498">            .terminal(terminal)</span>
+<span class="fc" id="L499">            .build();</span>
     }
     
     /**
@@ -383,20 +508,20 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      */
     @SuppressWarnings(&quot;unchecked&quot;)
     private List&lt;String&gt; extractBodyStatementsAsStrings(Statement body) {
-<span class="fc" id="L386">        List&lt;String&gt; bodyStmts = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L511">        List&lt;String&gt; bodyStmts = new java.util.ArrayList&lt;&gt;();</span>
         
-<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        if (body instanceof Block) {</span>
-<span class="fc" id="L389">            Block block = (Block) body;</span>
-<span class="fc" id="L390">            List&lt;Statement&gt; statements = block.statements();</span>
-<span class="fc bfc" id="L391" title="All 2 branches covered.">            for (Statement stmt : statements) {</span>
-<span class="fc" id="L392">                bodyStmts.add(stripTrailingSemicolon(stmt.toString()));</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">        if (body instanceof Block) {</span>
+<span class="fc" id="L514">            Block block = (Block) body;</span>
+<span class="fc" id="L515">            List&lt;Statement&gt; statements = block.statements();</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">            for (Statement stmt : statements) {</span>
+<span class="fc" id="L517">                bodyStmts.add(stripTrailingSemicolon(stmt.toString()));</span>
             }
-<span class="fc" id="L394">        } else {</span>
+<span class="fc" id="L519">        } else {</span>
             // Single statement body
-<span class="nc" id="L396">            bodyStmts.add(stripTrailingSemicolon(body.toString()));</span>
+<span class="nc" id="L521">            bodyStmts.add(stripTrailingSemicolon(body.toString()));</span>
         }
         
-<span class="fc" id="L399">        return bodyStmts;</span>
+<span class="fc" id="L524">        return bodyStmts;</span>
     }
     
     /**
@@ -404,19 +529,19 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      * so that it can be parsed as an expression by {@code ASTStreamRenderer.createExpression()}.
      */
     private static String stripTrailingSemicolon(String stmtStr) {
-<span class="fc" id="L407">        String trimmed = stmtStr.trim();</span>
-<span class="pc bpc" id="L408" title="1 of 2 branches missed.">        if (trimmed.endsWith(&quot;;&quot;)) {</span>
-<span class="fc" id="L409">            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();</span>
+<span class="fc" id="L532">        String trimmed = stmtStr.trim();</span>
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        if (trimmed.endsWith(&quot;;&quot;)) {</span>
+<span class="fc" id="L534">            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();</span>
         }
-<span class="fc" id="L411">        return trimmed;</span>
+<span class="fc" id="L536">        return trimmed;</span>
     }
     
     @Override
     public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L416" title="All 2 branches missed.">        if (afterRefactoring) {</span>
-<span class="nc" id="L417">            return &quot;IntStream.range(0, 10).forEach(i -&gt; System.out.println(i));\n&quot;;</span>
+<span class="nc bnc" id="L541" title="All 2 branches missed.">        if (afterRefactoring) {</span>
+<span class="nc" id="L542">            return &quot;IntStream.range(0, 10).forEach(i -&gt; System.out.println(i));\n&quot;;</span>
         }
-<span class="nc" id="L419">        return &quot;for (int i = 0; i &lt; 10; i++)\n    System.out.println(i);\n&quot;;</span>
+<span class="nc" id="L544">        return &quot;for (int i = 0; i &lt; 10; i++)\n    System.out.println(i);\n&quot;;</span>
     }
     
     /**
@@ -429,14 +554,14 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
         final boolean inclusive;  // true for &lt;=, false for &lt;
         final Statement body;
         
-<span class="fc" id="L432">        ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,</span>
+<span class="fc" id="L557">        ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,</span>
                       boolean inclusive, Statement body) {
-<span class="fc" id="L434">            this.loopVarName = loopVarName;</span>
-<span class="fc" id="L435">            this.startExpr = startExpr;</span>
-<span class="fc" id="L436">            this.endExpr = endExpr;</span>
-<span class="fc" id="L437">            this.inclusive = inclusive;</span>
-<span class="fc" id="L438">            this.body = body;</span>
-<span class="fc" id="L439">        }</span>
+<span class="fc" id="L559">            this.loopVarName = loopVarName;</span>
+<span class="fc" id="L560">            this.startExpr = startExpr;</span>
+<span class="fc" id="L561">            this.endExpr = endExpr;</span>
+<span class="fc" id="L562">            this.inclusive = inclusive;</span>
+<span class="fc" id="L563">            this.body = body;</span>
+<span class="fc" id="L564">        }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

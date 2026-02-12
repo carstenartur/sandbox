@@ -21,26 +21,21 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Name;
-import org.eclipse.jdt.internal.corext.dom.AbortSearchException;
-import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
+import org.sandbox.jdt.internal.corext.util.ImportUtils;
+import org.sandbox.jdt.internal.corext.util.TypeCheckingUtils;
 
 /**
  * @param &lt;T&gt; Type found in Visitor
  */
-<span class="fc" id="L34">public abstract class AbstractTool&lt;T&gt; {</span>
+<span class="fc" id="L35">public abstract class AbstractTool&lt;T&gt; {</span>
 
 	protected static boolean isOfType(ITypeBinding typeBinding, String typename) {
-<span class="nc bnc" id="L37" title="All 2 branches missed.">		if (typeBinding == null) {</span>
-<span class="nc" id="L38">			throw new AbortSearchException();</span>
-		}
-<span class="nc bnc" id="L40" title="All 2 branches missed.">		if (typeBinding.isArray()) {</span>
-<span class="nc" id="L41">			typeBinding= typeBinding.getElementType();</span>
-		}
-<span class="nc" id="L43">		return typeBinding.getQualifiedName().equals(typename);</span>
+<span class="nc" id="L38">		return TypeCheckingUtils.isOfType(typeBinding, typename);</span>
 	}
 
 	public abstract void find(UseIteratorToForLoopFixCore fixcore, CompilationUnit compilationUnit,
@@ -61,15 +56,13 @@ import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
 	 *         name if there was a conflict
 	 */
 	protected Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-<span class="fc" id="L64">		String importedName= cuRewrite.getImportRewrite().addImport(typeName);</span>
-<span class="fc" id="L65">		return ast.newName(importedName);</span>
+<span class="fc" id="L59">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
 	}
 
 	public abstract String getPreview(boolean afterRefactoring);
 
 	public static Collection&lt;String&gt; getUsedVariableNames(ASTNode node) {
-<span class="nc" id="L71">		CompilationUnit root= (CompilationUnit) node.getRoot();</span>
-<span class="nc" id="L72">		return (new ScopeAnalyzer(root)).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
+<span class="nc" id="L65">		return ASTNavigationUtils.getUsedVariableNames(node);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

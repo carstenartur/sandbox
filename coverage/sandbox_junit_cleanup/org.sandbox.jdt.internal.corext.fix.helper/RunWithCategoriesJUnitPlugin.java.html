@@ -57,6 +57,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -66,164 +67,163 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 /**
  * Plugin to migrate JUnit 4 @RunWith(Categories.class) to JUnit 5 @Suite with @IncludeTags/@ExcludeTags.
  */
-<span class="fc" id="L69">public class RunWithCategoriesJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L70">public class RunWithCategoriesJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
-<span class="fc" id="L71">	private static class CategoriesData {</span>
+<span class="fc" id="L72">	private static class CategoriesData {</span>
 		Annotation runWithAnnotation;
 		TypeDeclaration typeDeclaration;
-<span class="fc" id="L74">		List&lt;Annotation&gt; includeCategories = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L75">		List&lt;Annotation&gt; excludeCategories = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L75">		List&lt;Annotation&gt; includeCategories = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L76">		List&lt;Annotation&gt; excludeCategories = new ArrayList&lt;&gt;();</span>
 		Annotation suiteClasses;
 	}
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L82">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L83">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
 		
 		// Find @RunWith(Categories.class) annotations
-<span class="fc" id="L85">		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)</span>
-<span class="fc" id="L86">			.in(compilationUnit)</span>
-<span class="fc" id="L87">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L88">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">				if (visited instanceof SingleMemberAnnotation) {</span>
-<span class="fc" id="L90">					return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);</span>
+<span class="fc" id="L86">		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)</span>
+<span class="fc" id="L87">			.in(compilationUnit)</span>
+<span class="fc" id="L88">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L89">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				if (visited instanceof SingleMemberAnnotation) {</span>
+<span class="fc" id="L91">					return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);</span>
 				}
-<span class="nc" id="L92">				return true;</span>
+<span class="nc" id="L93">				return true;</span>
 			});
-<span class="fc" id="L94">	}</span>
+<span class="fc" id="L95">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Annotation node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder, Set&lt;ASTNode&gt; nodesprocessed) {
 		
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (!(node instanceof SingleMemberAnnotation mynode)) {</span>
-<span class="nc" id="L101">			return true;</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">		if (!(node instanceof SingleMemberAnnotation mynode)) {</span>
+<span class="nc" id="L102">			return true;</span>
 		}
 		
-<span class="fc" id="L104">		Expression value= mynode.getValue();</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (!(value instanceof TypeLiteral myvalue)) {</span>
-<span class="nc" id="L106">			return true;</span>
+<span class="fc" id="L105">		Expression value= mynode.getValue();</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		if (!(value instanceof TypeLiteral myvalue)) {</span>
+<span class="nc" id="L107">			return true;</span>
 		}
 		
 		// Check if it's Categories.class
-<span class="fc" id="L110">		String runnerQualifiedName = getRunnerQualifiedName(myvalue);</span>
+<span class="fc" id="L111">		String runnerQualifiedName = getRunnerQualifiedName(myvalue);</span>
 		
 		// Only handle Categories runner
-<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (!ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES.equals(runnerQualifiedName)) {</span>
-<span class="fc" id="L114">			return true;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">		if (!ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES.equals(runnerQualifiedName)) {</span>
+<span class="fc" id="L115">			return true;</span>
 		}
 		
 		// Find the enclosing TypeDeclaration
-<span class="fc" id="L118">		TypeDeclaration typeDecl = null;</span>
-<span class="fc" id="L119">		ASTNode parent = node.getParent();</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		while (parent != null) {</span>
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">			if (parent instanceof TypeDeclaration) {</span>
-<span class="fc" id="L122">				typeDecl = (TypeDeclaration) parent;</span>
-<span class="fc" id="L123">				break;</span>
+<span class="fc" id="L119">		TypeDeclaration typeDecl = null;</span>
+<span class="fc" id="L120">		ASTNode parent = node.getParent();</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">		while (parent != null) {</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">			if (parent instanceof TypeDeclaration) {</span>
+<span class="fc" id="L123">				typeDecl = (TypeDeclaration) parent;</span>
+<span class="fc" id="L124">				break;</span>
 			}
-<span class="nc" id="L125">			parent = parent.getParent();</span>
+<span class="nc" id="L126">			parent = parent.getParent();</span>
 		}
 		
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
-<span class="nc" id="L129">			return true;</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
+<span class="nc" id="L130">			return true;</span>
 		}
 		
 		// Find @IncludeCategory, @ExcludeCategory, and @SuiteClasses annotations
-<span class="fc" id="L133">		CategoriesData categoriesData = new CategoriesData();</span>
-<span class="fc" id="L134">		categoriesData.runWithAnnotation = node;</span>
-<span class="fc" id="L135">		categoriesData.typeDeclaration = typeDecl;</span>
-<span class="fc" id="L136">		findCategoryAnnotations(typeDecl, categoriesData);</span>
+<span class="fc" id="L134">		CategoriesData categoriesData = new CategoriesData();</span>
+<span class="fc" id="L135">		categoriesData.runWithAnnotation = node;</span>
+<span class="fc" id="L136">		categoriesData.typeDeclaration = typeDecl;</span>
+<span class="fc" id="L137">		findCategoryAnnotations(typeDecl, categoriesData);</span>
 		
 		// Mark for transformation
-<span class="fc" id="L139">		nodesprocessed.add(node);</span>
-<span class="fc bfc" id="L140" title="All 2 branches covered.">		for (Annotation annotation : categoriesData.includeCategories) {</span>
-<span class="fc" id="L141">			nodesprocessed.add(annotation);</span>
+<span class="fc" id="L140">		nodesprocessed.add(node);</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">		for (Annotation annotation : categoriesData.includeCategories) {</span>
+<span class="fc" id="L142">			nodesprocessed.add(annotation);</span>
 		}
-<span class="fc bfc" id="L143" title="All 2 branches covered.">		for (Annotation annotation : categoriesData.excludeCategories) {</span>
-<span class="fc" id="L144">			nodesprocessed.add(annotation);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		for (Annotation annotation : categoriesData.excludeCategories) {</span>
+<span class="fc" id="L145">			nodesprocessed.add(annotation);</span>
 		}
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (categoriesData.suiteClasses != null) {</span>
-<span class="fc" id="L147">			nodesprocessed.add(categoriesData.suiteClasses);</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		if (categoriesData.suiteClasses != null) {</span>
+<span class="fc" id="L148">			nodesprocessed.add(categoriesData.suiteClasses);</span>
 		}
 		
-<span class="fc" id="L150">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L151">		mh.setMinv(node);</span>
-<span class="fc" id="L152">		mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
-<span class="fc" id="L153">		mh.setValue(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES);</span>
-<span class="fc" id="L154">		mh.setAdditionalInfo(categoriesData);</span>
-<span class="fc" id="L155">		dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L156">		operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L151">		JunitHolder mh= new JunitHolder();</span>
+<span class="fc" id="L152">		mh.setMinv(node);</span>
+<span class="fc" id="L153">		mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
+<span class="fc" id="L154">		mh.setValue(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES);</span>
+<span class="fc" id="L155">		mh.setAdditionalInfo(categoriesData);</span>
+<span class="fc" id="L156">		dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L157">		operations.add(fixcore.rewrite(dataHolder));</span>
 		
-<span class="fc" id="L158">		return true;</span>
+<span class="fc" id="L159">		return true;</span>
 	}
 
 	private String getRunnerQualifiedName(TypeLiteral myvalue) {
-<span class="fc" id="L162">		ITypeBinding classBinding= myvalue.resolveTypeBinding();</span>
-<span class="fc" id="L163">		String runnerQualifiedName = null;</span>
+<span class="fc" id="L163">		ITypeBinding classBinding= myvalue.resolveTypeBinding();</span>
+<span class="fc" id="L164">		String runnerQualifiedName = null;</span>
 		
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">		if (classBinding != null) {</span>
-<span class="fc" id="L166">			Type type = myvalue.getType();</span>
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">			if (type != null) {</span>
-<span class="fc" id="L168">				ITypeBinding typeBinding = type.resolveBinding();</span>
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">				if (typeBinding != null) {</span>
-<span class="fc" id="L170">					runnerQualifiedName = typeBinding.getQualifiedName();</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (classBinding != null) {</span>
+<span class="fc" id="L167">			Type type = myvalue.getType();</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">			if (type != null) {</span>
+<span class="fc" id="L169">				ITypeBinding typeBinding = type.resolveBinding();</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">				if (typeBinding != null) {</span>
+<span class="fc" id="L171">					runnerQualifiedName = typeBinding.getQualifiedName();</span>
 				}
 			}
 		}
 		
 		// Fallback to AST name if binding resolution failed
-<span class="pc bpc" id="L176" title="2 of 4 branches missed.">		if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {</span>
-<span class="nc" id="L177">			Type runnerType = myvalue.getType();</span>
-<span class="nc bnc" id="L178" title="All 2 branches missed.">			if (runnerType != null) {</span>
-<span class="nc" id="L179">				String typeName = runnerType.toString();</span>
-<span class="nc bnc" id="L180" title="All 2 branches missed.">				if (&quot;Categories&quot;.equals(typeName)) {</span>
-<span class="nc" id="L181">					runnerQualifiedName = ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES;</span>
+<span class="pc bpc" id="L177" title="2 of 4 branches missed.">		if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {</span>
+<span class="nc" id="L178">			Type runnerType = myvalue.getType();</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">			if (runnerType != null) {</span>
+<span class="nc" id="L180">				String typeName = runnerType.toString();</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">				if (&quot;Categories&quot;.equals(typeName)) {</span>
+<span class="nc" id="L182">					runnerQualifiedName = ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES;</span>
 				}
 			}
 		}
 		
-<span class="fc" id="L186">		return runnerQualifiedName;</span>
+<span class="fc" id="L187">		return runnerQualifiedName;</span>
 	}
 
 	private void findCategoryAnnotations(TypeDeclaration typeDecl, CategoriesData data) {
-<span class="fc" id="L190">		List&lt;?&gt; modifiers = typeDecl.modifiers();</span>
-<span class="fc bfc" id="L191" title="All 2 branches covered.">		for (Object modifier : modifiers) {</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L193">				String annotationName = annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="fc" id="L191">		List&lt;?&gt; modifiers = typeDecl.modifiers();</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">		for (Object modifier : modifiers) {</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L194">				String annotationName = annotation.getTypeName().getFullyQualifiedName();</span>
 				
 				// Check for @IncludeCategory
-<span class="fc bfc" id="L196" title="All 2 branches covered.">				if (&quot;IncludeCategory&quot;.equals(annotationName) || </span>
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">						ORG_JUNIT_EXPERIMENTAL_CATEGORIES_INCLUDE_CATEGORY.equals(annotationName) ||</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">						&quot;Categories.IncludeCategory&quot;.equals(annotationName)) {</span>
-<span class="fc" id="L199">					data.includeCategories.add(annotation);</span>
-<span class="fc" id="L200">				}</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">				if (&quot;IncludeCategory&quot;.equals(annotationName) || </span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">						ORG_JUNIT_EXPERIMENTAL_CATEGORIES_INCLUDE_CATEGORY.equals(annotationName) ||</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">						&quot;Categories.IncludeCategory&quot;.equals(annotationName)) {</span>
+<span class="fc" id="L200">					data.includeCategories.add(annotation);</span>
+<span class="fc" id="L201">				}</span>
 				// Check for @ExcludeCategory
-<span class="fc bfc" id="L202" title="All 2 branches covered.">				else if (&quot;ExcludeCategory&quot;.equals(annotationName) || </span>
-<span class="pc bpc" id="L203" title="1 of 2 branches missed.">						ORG_JUNIT_EXPERIMENTAL_CATEGORIES_EXCLUDE_CATEGORY.equals(annotationName) ||</span>
-<span class="pc bpc" id="L204" title="1 of 2 branches missed.">						&quot;Categories.ExcludeCategory&quot;.equals(annotationName)) {</span>
-<span class="fc" id="L205">					data.excludeCategories.add(annotation);</span>
-<span class="fc" id="L206">				}</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">				else if (&quot;ExcludeCategory&quot;.equals(annotationName) || </span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">						ORG_JUNIT_EXPERIMENTAL_CATEGORIES_EXCLUDE_CATEGORY.equals(annotationName) ||</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">						&quot;Categories.ExcludeCategory&quot;.equals(annotationName)) {</span>
+<span class="fc" id="L206">					data.excludeCategories.add(annotation);</span>
+<span class="fc" id="L207">				}</span>
 				// Check for @SuiteClasses
-<span class="fc bfc" id="L208" title="All 2 branches covered.">				else if (&quot;SuiteClasses&quot;.equals(annotationName) || </span>
-<span class="pc bpc" id="L209" title="1 of 2 branches missed.">						ORG_JUNIT_SUITE_SUITECLASSES.equals(annotationName) ||</span>
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">						&quot;Suite.SuiteClasses&quot;.equals(annotationName)) {</span>
-<span class="fc" id="L211">					data.suiteClasses = annotation;</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">				else if (&quot;SuiteClasses&quot;.equals(annotationName) || </span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">						ORG_JUNIT_SUITE_SUITECLASSES.equals(annotationName) ||</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">						&quot;Suite.SuiteClasses&quot;.equals(annotationName)) {</span>
+<span class="fc" id="L212">					data.suiteClasses = annotation;</span>
 				}
 			}
 		}
-<span class="fc" id="L215">	}</span>
+<span class="fc" id="L216">	}</span>
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L220">		CategoriesData categoriesData = (CategoriesData) junitHolder.getAdditionalInfo();</span>
-<span class="fc" id="L221">		TypeDeclaration typeDecl = categoriesData.typeDeclaration;</span>
-<span class="fc" id="L222">		ListRewrite modifiersRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L221">		CategoriesData categoriesData = (CategoriesData) junitHolder.getAdditionalInfo();</span>
+<span class="fc" id="L222">		TypeDeclaration typeDecl = categoriesData.typeDeclaration;</span>
+<span class="fc" id="L223">		ListRewrite modifiersRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
 		
 		// Replace @RunWith(Categories.class) with @Suite
-<span class="fc" id="L225">		MarkerAnnotation suiteAnnotation = ast.newMarkerAnnotation();</span>
-<span class="fc" id="L226">		suiteAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SUITE));</span>
+<span class="fc" id="L226">		MarkerAnnotation suiteAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_SUITE);</span>
 <span class="fc" id="L227">		modifiersRewrite.replace(categoriesData.runWithAnnotation, suiteAnnotation, group);</span>
 		
 		// Transform @IncludeCategory annotations

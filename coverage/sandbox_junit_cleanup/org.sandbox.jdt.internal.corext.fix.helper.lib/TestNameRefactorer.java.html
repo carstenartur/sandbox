@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 
 /**
@@ -54,8 +55,8 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 public final class TestNameRefactorer {
 
 	// Private constructor to prevent instantiation
-<span class="nc" id="L57">	private TestNameRefactorer() {</span>
-<span class="nc" id="L58">		throw new UnsupportedOperationException(&quot;Utility class&quot;);</span>
+<span class="nc" id="L58">	private TestNameRefactorer() {</span>
+<span class="nc" id="L59">		throw new UnsupportedOperationException(&quot;Utility class&quot;);</span>
 	}
 
 	/**
@@ -70,27 +71,27 @@ public final class TestNameRefactorer {
 	 */
 	public static void refactorTestnameInClass(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewrite, FieldDeclaration node) {
-<span class="pc bpc" id="L73" title="4 of 8 branches missed.">		if (node == null || rewriter == null || ast == null || importRewrite == null) {</span>
-<span class="nc" id="L74">			return;</span>
+<span class="pc bpc" id="L74" title="4 of 8 branches missed.">		if (node == null || rewriter == null || ast == null || importRewrite == null) {</span>
+<span class="nc" id="L75">			return;</span>
 		}
 
 		// Remove the old @Rule TestName field
-<span class="fc" id="L78">		rewriter.remove(node, group);</span>
+<span class="fc" id="L79">		rewriter.remove(node, group);</span>
 
 		// Add new infrastructure: @BeforeEach init method and private String testName field
-<span class="fc" id="L81">		TypeDeclaration parentClass = ASTNodes.getParent(node, TypeDeclaration.class);</span>
-<span class="fc" id="L82">		addBeforeEachInitMethod(parentClass, rewriter, group);</span>
-<span class="fc" id="L83">		addTestNameField(parentClass, rewriter, group);</span>
+<span class="fc" id="L82">		TypeDeclaration parentClass = ASTNodes.getParent(node, TypeDeclaration.class);</span>
+<span class="fc" id="L83">		addBeforeEachInitMethod(parentClass, rewriter, group);</span>
+<span class="fc" id="L84">		addTestNameField(parentClass, rewriter, group);</span>
 
 		// Update method references from testNameField.getMethodName() to just testName
-<span class="fc" id="L86">		updateMethodReferences(parentClass, ast, rewriter, group);</span>
+<span class="fc" id="L87">		updateMethodReferences(parentClass, ast, rewriter, group);</span>
 
 		// Update imports
-<span class="fc" id="L89">		importRewrite.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);</span>
-<span class="fc" id="L90">		importRewrite.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);</span>
-<span class="fc" id="L91">		importRewrite.removeImport(ORG_JUNIT_RULE);</span>
-<span class="fc" id="L92">		importRewrite.removeImport(ORG_JUNIT_RULES_TEST_NAME);</span>
-<span class="fc" id="L93">	}</span>
+<span class="fc" id="L90">		importRewrite.addImport(ORG_JUNIT_JUPITER_API_TEST_INFO);</span>
+<span class="fc" id="L91">		importRewrite.addImport(ORG_JUNIT_JUPITER_API_BEFORE_EACH);</span>
+<span class="fc" id="L92">		importRewrite.removeImport(ORG_JUNIT_RULE);</span>
+<span class="fc" id="L93">		importRewrite.removeImport(ORG_JUNIT_RULES_TEST_NAME);</span>
+<span class="fc" id="L94">	}</span>
 
 	/**
 	 * Refactors TestName usage in a class and all its subclasses.
@@ -103,30 +104,30 @@ public final class TestNameRefactorer {
 	 */
 	public static void refactorTestnameInClassAndSubclasses(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewrite, FieldDeclaration node) {
-<span class="fc" id="L106">		refactorTestnameInClass(group, rewriter, ast, importRewrite, node);</span>
+<span class="fc" id="L107">		refactorTestnameInClass(group, rewriter, ast, importRewrite, node);</span>
 
-<span class="fc" id="L108">		TypeDeclaration parentClass = ASTNodes.getParent(node, TypeDeclaration.class);</span>
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (parentClass == null) {</span>
-<span class="nc" id="L110">			return;</span>
+<span class="fc" id="L109">		TypeDeclaration parentClass = ASTNodes.getParent(node, TypeDeclaration.class);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (parentClass == null) {</span>
+<span class="nc" id="L111">			return;</span>
 		}
-<span class="fc" id="L112">		ITypeBinding typeBinding = parentClass.resolveBinding();</span>
-<span class="fc" id="L113">		List&lt;ITypeBinding&gt; subclasses = getAllSubclasses(typeBinding);</span>
+<span class="fc" id="L113">		ITypeBinding typeBinding = parentClass.resolveBinding();</span>
+<span class="fc" id="L114">		List&lt;ITypeBinding&gt; subclasses = getAllSubclasses(typeBinding);</span>
 
-<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		for (ITypeBinding subclassBinding : subclasses) {</span>
-<span class="nc" id="L116">			IType subclassType = (IType) subclassBinding.getJavaElement();</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">		for (ITypeBinding subclassBinding : subclasses) {</span>
+<span class="nc" id="L117">			IType subclassType = (IType) subclassBinding.getJavaElement();</span>
 
-<span class="nc" id="L118">			CompilationUnit subclassUnit = ASTNavigationUtils.parseCompilationUnit(subclassType.getCompilationUnit());</span>
-<span class="nc" id="L119">			subclassUnit.accept(new ASTVisitor() {</span>
+<span class="nc" id="L119">			CompilationUnit subclassUnit = ASTNavigationUtils.parseCompilationUnit(subclassType.getCompilationUnit());</span>
+<span class="nc" id="L120">			subclassUnit.accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(TypeDeclaration subclassNode) {
-<span class="nc bnc" id="L122" title="All 2 branches missed.">					if (subclassNode.resolveBinding().equals(subclassBinding)) {</span>
-<span class="nc" id="L123">						refactorTestnameInClass(group, rewriter, subclassNode.getAST(), importRewrite, node);</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">					if (subclassNode.resolveBinding().equals(subclassBinding)) {</span>
+<span class="nc" id="L124">						refactorTestnameInClass(group, rewriter, subclassNode.getAST(), importRewrite, node);</span>
 					}
-<span class="nc" id="L125">					return false;</span>
+<span class="nc" id="L126">					return false;</span>
 				}
 			});
 		}
-<span class="fc" id="L129">	}</span>
+<span class="fc" id="L130">	}</span>
 
 	/**
 	 * Adds a @BeforeEach init method that captures the test name from TestInfo.
@@ -136,13 +137,13 @@ public final class TestNameRefactorer {
 	 * @param group the text edit group
 	 */
 	public static void addBeforeEachInitMethod(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
-<span class="fc" id="L139">		AST ast = parentClass.getAST();</span>
+<span class="fc" id="L140">		AST ast = parentClass.getAST();</span>
 
-<span class="fc" id="L141">		MethodDeclaration methodDeclaration = createInitMethod(ast);</span>
-<span class="fc" id="L142">		MarkerAnnotation beforeEachAnnotation = createBeforeEachAnnotation(ast);</span>
+<span class="fc" id="L142">		MethodDeclaration methodDeclaration = createInitMethod(ast);</span>
+<span class="fc" id="L143">		MarkerAnnotation beforeEachAnnotation = createBeforeEachAnnotation(ast);</span>
 
-<span class="fc" id="L144">		addMethodToClass(parentClass, methodDeclaration, beforeEachAnnotation, rewriter, group);</span>
-<span class="fc" id="L145">	}</span>
+<span class="fc" id="L145">		addMethodToClass(parentClass, methodDeclaration, beforeEachAnnotation, rewriter, group);</span>
+<span class="fc" id="L146">	}</span>
 
 	/**
 	 * Adds a private String field named 'testName' to the class.
@@ -153,17 +154,17 @@ public final class TestNameRefactorer {
 	 * @param group the text edit group
 	 */
 	public static void addTestNameField(TypeDeclaration parentClass, ASTRewrite rewriter, TextEditGroup group) {
-<span class="fc" id="L156">		AST ast = parentClass.getAST();</span>
-<span class="fc" id="L157">		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L158">		fragment.setName(ast.newSimpleName(TEST_NAME));</span>
+<span class="fc" id="L157">		AST ast = parentClass.getAST();</span>
+<span class="fc" id="L158">		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L159">		fragment.setName(ast.newSimpleName(TEST_NAME));</span>
 
-<span class="fc" id="L160">		FieldDeclaration fieldDeclaration = ast.newFieldDeclaration(fragment);</span>
-<span class="fc" id="L161">		fieldDeclaration.setType(ast.newSimpleType(ast.newName(&quot;String&quot;)));</span>
-<span class="fc" id="L162">		fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
+<span class="fc" id="L161">		FieldDeclaration fieldDeclaration = ast.newFieldDeclaration(fragment);</span>
+<span class="fc" id="L162">		fieldDeclaration.setType(ast.newSimpleType(ast.newName(&quot;String&quot;)));</span>
+<span class="fc" id="L163">		fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
 
-<span class="fc" id="L164">		ListRewrite listRewrite = rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
-<span class="fc" id="L165">		listRewrite.insertFirst(fieldDeclaration, group);</span>
-<span class="fc" id="L166">	}</span>
+<span class="fc" id="L165">		ListRewrite listRewrite = rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc" id="L166">		listRewrite.insertFirst(fieldDeclaration, group);</span>
+<span class="fc" id="L167">	}</span>
 
 	/**
 	 * Updates method references from testNameField.getMethodName() to just testName.
@@ -175,24 +176,24 @@ public final class TestNameRefactorer {
 	 */
 	public static void updateMethodReferences(TypeDeclaration parentClass, AST ast, ASTRewrite rewriter,
 			TextEditGroup group) {
-<span class="fc bfc" id="L178" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">			if (method.getBody() != null) {</span>
-<span class="fc" id="L180">				method.getBody().accept(new ASTVisitor() {</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">			if (method.getBody() != null) {</span>
+<span class="fc" id="L181">				method.getBody().accept(new ASTVisitor() {</span>
 					@Override
 					public boolean visit(MethodInvocation node) {
-<span class="fc bfc" id="L183" title="All 2 branches covered.">						if (node.getExpression() != null) {</span>
-<span class="fc" id="L184">							ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();</span>
-<span class="pc bpc" id="L185" title="1 of 4 branches missed.">							if (typeBinding != null &amp;&amp; ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName())) {</span>
-<span class="fc" id="L186">								SimpleName newFieldAccess = ast.newSimpleName(TEST_NAME);</span>
-<span class="fc" id="L187">								rewriter.replace(node, newFieldAccess, group);</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">						if (node.getExpression() != null) {</span>
+<span class="fc" id="L185">							ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();</span>
+<span class="pc bpc" id="L186" title="1 of 4 branches missed.">							if (typeBinding != null &amp;&amp; ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName())) {</span>
+<span class="fc" id="L187">								SimpleName newFieldAccess = ast.newSimpleName(TEST_NAME);</span>
+<span class="fc" id="L188">								rewriter.replace(node, newFieldAccess, group);</span>
 							}
 						}
-<span class="fc" id="L190">						return super.visit(node);</span>
+<span class="fc" id="L191">						return super.visit(node);</span>
 					}
 				});
 			}
 		}
-<span class="fc" id="L195">	}</span>
+<span class="fc" id="L196">	}</span>
 
 	/**
 	 * Copies an AST subtree and transforms TestName.getMethodName() calls to just the field name.
@@ -206,51 +207,51 @@ public final class TestNameRefactorer {
 	 * @return the transformed copy of the node
 	 */
 	public static ASTNode copyAndTransformTestNameReferences(ASTNode originalNode, AST ast) {
-<span class="pc bpc" id="L209" title="2 of 4 branches missed.">		if (originalNode == null || ast == null) {</span>
-<span class="nc" id="L210">			return originalNode;</span>
+<span class="pc bpc" id="L210" title="2 of 4 branches missed.">		if (originalNode == null || ast == null) {</span>
+<span class="nc" id="L211">			return originalNode;</span>
 		}
 		
 		// First, find all TestName.getMethodName() calls in the original and record their positions
-<span class="fc" id="L214">		final java.util.Set&lt;MethodInvocation&gt; testNameCalls = new java.util.HashSet&lt;&gt;();</span>
-<span class="fc" id="L215">		originalNode.accept(new ASTVisitor() {</span>
+<span class="fc" id="L215">		final java.util.Set&lt;MethodInvocation&gt; testNameCalls = new java.util.HashSet&lt;&gt;();</span>
+<span class="fc" id="L216">		originalNode.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodInvocation node) {
-<span class="pc bpc" id="L218" title="2 of 4 branches missed.">				if (node.getExpression() != null &amp;&amp; &quot;getMethodName&quot;.equals(node.getName().getIdentifier())) {</span>
-<span class="fc" id="L219">					ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();</span>
-<span class="pc bpc" id="L220" title="2 of 4 branches missed.">					if (typeBinding != null &amp;&amp; ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName())) {</span>
-<span class="fc" id="L221">						testNameCalls.add(node);</span>
+<span class="pc bpc" id="L219" title="2 of 4 branches missed.">				if (node.getExpression() != null &amp;&amp; &quot;getMethodName&quot;.equals(node.getName().getIdentifier())) {</span>
+<span class="fc" id="L220">					ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();</span>
+<span class="pc bpc" id="L221" title="2 of 4 branches missed.">					if (typeBinding != null &amp;&amp; ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName())) {</span>
+<span class="fc" id="L222">						testNameCalls.add(node);</span>
 					}
 				}
-<span class="fc" id="L224">				return super.visit(node);</span>
+<span class="fc" id="L225">				return super.visit(node);</span>
 			}
 		});
 		
 		// If no TestName calls found, just return a simple copy
-<span class="fc bfc" id="L229" title="All 2 branches covered.">		if (testNameCalls.isEmpty()) {</span>
-<span class="fc" id="L230">			return ASTNode.copySubtree(ast, originalNode);</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">		if (testNameCalls.isEmpty()) {</span>
+<span class="fc" id="L231">			return ASTNode.copySubtree(ast, originalNode);</span>
 		}
 		
 		// Create the copy and transform TestName references
-<span class="fc" id="L234">		ASTNode copiedNode = ASTNode.copySubtree(ast, originalNode);</span>
+<span class="fc" id="L235">		ASTNode copiedNode = ASTNode.copySubtree(ast, originalNode);</span>
 		
 		// Now transform the copy - we need to find the corresponding nodes in the copy
 		// by matching the pattern (since we know from the original which ones need transformation)
-<span class="fc" id="L238">		copiedNode.accept(new ASTVisitor() {</span>
+<span class="fc" id="L239">		copiedNode.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodInvocation node) {
-<span class="pc bpc" id="L241" title="2 of 4 branches missed.">				if (node.getExpression() != null &amp;&amp; &quot;getMethodName&quot;.equals(node.getName().getIdentifier())) {</span>
+<span class="pc bpc" id="L242" title="2 of 4 branches missed.">				if (node.getExpression() != null &amp;&amp; &quot;getMethodName&quot;.equals(node.getName().getIdentifier())) {</span>
 					// In the copy, we can't check type bindings, but we know from the original
 					// that getMethodName() calls on SimpleName expressions should be transformed
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">					if (node.getExpression() instanceof SimpleName) {</span>
-<span class="fc" id="L245">						SimpleName replacement = ast.newSimpleName(TEST_NAME);</span>
-<span class="fc" id="L246">						replaceInParent(node, replacement);</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">					if (node.getExpression() instanceof SimpleName) {</span>
+<span class="fc" id="L246">						SimpleName replacement = ast.newSimpleName(TEST_NAME);</span>
+<span class="fc" id="L247">						replaceInParent(node, replacement);</span>
 					}
 				}
-<span class="fc" id="L249">				return super.visit(node);</span>
+<span class="fc" id="L250">				return super.visit(node);</span>
 			}
 		});
 		
-<span class="fc" id="L253">		return copiedNode;</span>
+<span class="fc" id="L254">		return copiedNode;</span>
 	}
 	
 	/**
@@ -267,34 +268,34 @@ public final class TestNameRefactorer {
 	 */
 	@Deprecated
 	public static ASTNode transformTestNameReferencesInCopy(ASTNode copiedNode, AST ast) {
-<span class="nc bnc" id="L270" title="All 4 branches missed.">		if (copiedNode == null || ast == null) {</span>
-<span class="nc" id="L271">			return copiedNode;</span>
+<span class="nc bnc" id="L271" title="All 4 branches missed.">		if (copiedNode == null || ast == null) {</span>
+<span class="nc" id="L272">			return copiedNode;</span>
 		}
 		
-<span class="nc" id="L274">		copiedNode.accept(new ASTVisitor() {</span>
+<span class="nc" id="L275">		copiedNode.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodInvocation node) {
 				// Check if this is a getMethodName() call on a TestName-typed expression
-<span class="nc bnc" id="L278" title="All 4 branches missed.">				if (node.getExpression() != null &amp;&amp; &quot;getMethodName&quot;.equals(node.getName().getIdentifier())) {</span>
-<span class="nc" id="L279">					ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();</span>
-<span class="nc bnc" id="L280" title="All 4 branches missed.">					boolean isTestNameType = typeBinding != null &amp;&amp; ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName());</span>
+<span class="nc bnc" id="L279" title="All 4 branches missed.">				if (node.getExpression() != null &amp;&amp; &quot;getMethodName&quot;.equals(node.getName().getIdentifier())) {</span>
+<span class="nc" id="L280">					ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();</span>
+<span class="nc bnc" id="L281" title="All 4 branches missed.">					boolean isTestNameType = typeBinding != null &amp;&amp; ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName());</span>
 					
 					// Also check by pattern: if expression is a SimpleName, it might be a TestName field
 					// This handles copied nodes where type bindings are not resolved
-<span class="nc" id="L284">					boolean isTestNamePattern = node.getExpression() instanceof SimpleName;</span>
+<span class="nc" id="L285">					boolean isTestNamePattern = node.getExpression() instanceof SimpleName;</span>
 					
-<span class="nc bnc" id="L286" title="All 4 branches missed.">					if (isTestNameType || isTestNamePattern) {</span>
+<span class="nc bnc" id="L287" title="All 4 branches missed.">					if (isTestNameType || isTestNamePattern) {</span>
 						// Replace the entire method invocation with just the field name
-<span class="nc" id="L288">						SimpleName replacement = ast.newSimpleName(TEST_NAME);</span>
+<span class="nc" id="L289">						SimpleName replacement = ast.newSimpleName(TEST_NAME);</span>
 						// We need to replace node in its parent
-<span class="nc" id="L290">						replaceInParent(node, replacement);</span>
+<span class="nc" id="L291">						replaceInParent(node, replacement);</span>
 					}
 				}
-<span class="nc" id="L293">				return super.visit(node);</span>
+<span class="nc" id="L294">				return super.visit(node);</span>
 			}
 		});
 		
-<span class="nc" id="L297">		return copiedNode;</span>
+<span class="nc" id="L298">		return copiedNode;</span>
 	}
 	
 	/**
@@ -306,22 +307,22 @@ public final class TestNameRefactorer {
 	 */
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static void replaceInParent(ASTNode oldNode, ASTNode newNode) {
-<span class="fc" id="L309">		ASTNode parent = oldNode.getParent();</span>
-<span class="pc bpc" id="L310" title="1 of 2 branches missed.">		if (parent == null) {</span>
-<span class="nc" id="L311">			return;</span>
+<span class="fc" id="L310">		ASTNode parent = oldNode.getParent();</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">		if (parent == null) {</span>
+<span class="nc" id="L312">			return;</span>
 		}
 		
-<span class="fc" id="L314">		StructuralPropertyDescriptor location = oldNode.getLocationInParent();</span>
-<span class="pc bpc" id="L315" title="1 of 2 branches missed.">		if (location.isChildProperty()) {</span>
-<span class="fc" id="L316">			parent.setStructuralProperty(location, newNode);</span>
-<span class="pc bnc" id="L317" title="All 2 branches missed.">		} else if (location.isChildListProperty()) {</span>
-<span class="nc" id="L318">			List&lt;ASTNode&gt; list = (List&lt;ASTNode&gt;) parent.getStructuralProperty(location);</span>
-<span class="nc" id="L319">			int index = list.indexOf(oldNode);</span>
-<span class="nc bnc" id="L320" title="All 2 branches missed.">			if (index &gt;= 0) {</span>
-<span class="nc" id="L321">				list.set(index, newNode);</span>
+<span class="fc" id="L315">		StructuralPropertyDescriptor location = oldNode.getLocationInParent();</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">		if (location.isChildProperty()) {</span>
+<span class="fc" id="L317">			parent.setStructuralProperty(location, newNode);</span>
+<span class="pc bnc" id="L318" title="All 2 branches missed.">		} else if (location.isChildListProperty()) {</span>
+<span class="nc" id="L319">			List&lt;ASTNode&gt; list = (List&lt;ASTNode&gt;) parent.getStructuralProperty(location);</span>
+<span class="nc" id="L320">			int index = list.indexOf(oldNode);</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">			if (index &gt;= 0) {</span>
+<span class="nc" id="L322">				list.set(index, newNode);</span>
 			}
 		}
-<span class="fc" id="L324">	}</span>
+<span class="fc" id="L325">	}</span>
 
 	/**
 	 * Gets all direct and indirect subclasses of the given type.
@@ -331,28 +332,28 @@ public final class TestNameRefactorer {
 	 * @return list of type bindings for all subclasses
 	 */
 	public static List&lt;ITypeBinding&gt; getAllSubclasses(ITypeBinding typeBinding) {
-<span class="fc" id="L334">		List&lt;ITypeBinding&gt; subclasses = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L335">		List&lt;ITypeBinding&gt; subclasses = new ArrayList&lt;&gt;();</span>
 
 		try {
 			// Create the corresponding IType of the given ITypeBinding
-<span class="fc" id="L338">			IType type = (IType) typeBinding.getJavaElement();</span>
+<span class="fc" id="L339">			IType type = (IType) typeBinding.getJavaElement();</span>
 
 			// Create the type hierarchy for the given type within the project (null uses entire project)
-<span class="fc" id="L341">			ITypeHierarchy typeHierarchy = type.newTypeHierarchy(null);</span>
+<span class="fc" id="L342">			ITypeHierarchy typeHierarchy = type.newTypeHierarchy(null);</span>
 
 			// Iterate through all direct and indirect subtypes and add them to the list
-<span class="pc bpc" id="L344" title="1 of 2 branches missed.">			for (IType subtype : typeHierarchy.getAllSubtypes(type)) {</span>
-<span class="nc" id="L345">				ITypeBinding subtypeBinding = subtype.getAdapter(ITypeBinding.class);</span>
-<span class="nc bnc" id="L346" title="All 2 branches missed.">				if (subtypeBinding != null) {</span>
-<span class="nc" id="L347">					subclasses.add(subtypeBinding);</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">			for (IType subtype : typeHierarchy.getAllSubtypes(type)) {</span>
+<span class="nc" id="L346">				ITypeBinding subtypeBinding = subtype.getAdapter(ITypeBinding.class);</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">				if (subtypeBinding != null) {</span>
+<span class="nc" id="L348">					subclasses.add(subtypeBinding);</span>
 				}
 			}
-<span class="pc" id="L350">		} catch (JavaModelException e) {</span>
-<span class="nc" id="L351">			System.err.println(&quot;Failed to get subclasses for type: &quot; + typeBinding.getQualifiedName());</span>
-<span class="nc" id="L352">			e.printStackTrace();</span>
-<span class="nc" id="L353">			return new ArrayList&lt;&gt;();</span>
+<span class="pc" id="L351">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L352">			System.err.println(&quot;Failed to get subclasses for type: &quot; + typeBinding.getQualifiedName());</span>
+<span class="nc" id="L353">			e.printStackTrace();</span>
+<span class="nc" id="L354">			return new ArrayList&lt;&gt;();</span>
 		}
-<span class="fc" id="L355">		return subclasses;</span>
+<span class="fc" id="L356">		return subclasses;</span>
 	}
 
 	/**
@@ -362,21 +363,21 @@ public final class TestNameRefactorer {
 	 * @return the method declaration
 	 */
 	private static MethodDeclaration createInitMethod(AST ast) {
-<span class="fc" id="L365">		MethodDeclaration methodDeclaration = ast.newMethodDeclaration();</span>
-<span class="fc" id="L366">		methodDeclaration.setName(ast.newSimpleName(&quot;init&quot;));</span>
-<span class="fc" id="L367">		methodDeclaration.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));</span>
+<span class="fc" id="L366">		MethodDeclaration methodDeclaration = ast.newMethodDeclaration();</span>
+<span class="fc" id="L367">		methodDeclaration.setName(ast.newSimpleName(&quot;init&quot;));</span>
+<span class="fc" id="L368">		methodDeclaration.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));</span>
 
 		// Add parameter: TestInfo testInfo
-<span class="fc" id="L370">		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();</span>
-<span class="fc" id="L371">		param.setType(ast.newSimpleType(ast.newName(&quot;TestInfo&quot;)));</span>
-<span class="fc" id="L372">		param.setName(ast.newSimpleName(&quot;testInfo&quot;));</span>
-<span class="fc" id="L373">		methodDeclaration.parameters().add(param);</span>
+<span class="fc" id="L371">		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L372">		param.setType(ast.newSimpleType(ast.newName(&quot;TestInfo&quot;)));</span>
+<span class="fc" id="L373">		param.setName(ast.newSimpleName(&quot;testInfo&quot;));</span>
+<span class="fc" id="L374">		methodDeclaration.parameters().add(param);</span>
 
 		// Create method body
-<span class="fc" id="L376">		Block body = createInitMethodBody(ast);</span>
-<span class="fc" id="L377">		methodDeclaration.setBody(body);</span>
+<span class="fc" id="L377">		Block body = createInitMethodBody(ast);</span>
+<span class="fc" id="L378">		methodDeclaration.setBody(body);</span>
 
-<span class="fc" id="L379">		return methodDeclaration;</span>
+<span class="fc" id="L380">		return methodDeclaration;</span>
 	}
 
 	/**
@@ -386,25 +387,25 @@ public final class TestNameRefactorer {
 	 * @return the method body block
 	 */
 	private static Block createInitMethodBody(AST ast) {
-<span class="fc" id="L389">		Block body = ast.newBlock();</span>
+<span class="fc" id="L390">		Block body = ast.newBlock();</span>
 
 		// Create assignment: this.testName = testInfo.getDisplayName()
-<span class="fc" id="L392">		Assignment assignment = ast.newAssignment();</span>
+<span class="fc" id="L393">		Assignment assignment = ast.newAssignment();</span>
 
 		// Left side: this.testName
-<span class="fc" id="L395">		FieldAccess fieldAccess = ast.newFieldAccess();</span>
-<span class="fc" id="L396">		fieldAccess.setExpression(ast.newThisExpression());</span>
-<span class="fc" id="L397">		fieldAccess.setName(ast.newSimpleName(TEST_NAME));</span>
-<span class="fc" id="L398">		assignment.setLeftHandSide(fieldAccess);</span>
+<span class="fc" id="L396">		FieldAccess fieldAccess = ast.newFieldAccess();</span>
+<span class="fc" id="L397">		fieldAccess.setExpression(ast.newThisExpression());</span>
+<span class="fc" id="L398">		fieldAccess.setName(ast.newSimpleName(TEST_NAME));</span>
+<span class="fc" id="L399">		assignment.setLeftHandSide(fieldAccess);</span>
 
 		// Right side: testInfo.getDisplayName()
-<span class="fc" id="L401">		MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
-<span class="fc" id="L402">		methodInvocation.setExpression(ast.newSimpleName(&quot;testInfo&quot;));</span>
-<span class="fc" id="L403">		methodInvocation.setName(ast.newSimpleName(&quot;getDisplayName&quot;));</span>
-<span class="fc" id="L404">		assignment.setRightHandSide(methodInvocation);</span>
+<span class="fc" id="L402">		MethodInvocation methodInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L403">		methodInvocation.setExpression(ast.newSimpleName(&quot;testInfo&quot;));</span>
+<span class="fc" id="L404">		methodInvocation.setName(ast.newSimpleName(&quot;getDisplayName&quot;));</span>
+<span class="fc" id="L405">		assignment.setRightHandSide(methodInvocation);</span>
 
-<span class="fc" id="L406">		body.statements().add(ast.newExpressionStatement(assignment));</span>
-<span class="fc" id="L407">		return body;</span>
+<span class="fc" id="L407">		body.statements().add(ast.newExpressionStatement(assignment));</span>
+<span class="fc" id="L408">		return body;</span>
 	}
 
 	/**
@@ -414,8 +415,7 @@ public final class TestNameRefactorer {
 	 * @return the annotation
 	 */
 	private static MarkerAnnotation createBeforeEachAnnotation(AST ast) {
-<span class="fc" id="L417">		MarkerAnnotation annotation = ast.newMarkerAnnotation();</span>
-<span class="fc" id="L418">		annotation.setTypeName(ast.newName(&quot;BeforeEach&quot;));</span>
+<span class="fc" id="L418">		MarkerAnnotation annotation= AnnotationUtils.createMarkerAnnotation(ast, &quot;BeforeEach&quot;);</span>
 <span class="fc" id="L419">		return annotation;</span>
 	}
 

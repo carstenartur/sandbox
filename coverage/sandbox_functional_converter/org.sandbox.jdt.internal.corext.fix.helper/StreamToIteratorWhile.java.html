@@ -76,153 +76,159 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="nc" id="L76">					return false;</span>
 				}
 				
-<span class="nc" id="L79">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
-<span class="nc" id="L80">				nodesprocessed.add(visited);</span>
-<span class="nc" id="L81">				return false;</span>
+				// Safety: reject chained stream operations (map/filter/reduce/flatMap/sorted/distinct)
+				// Only simple collection.forEach() or collection.stream().forEach() can be converted
+<span class="nc bnc" id="L81" title="All 2 branches missed.">				if (StreamOperationDetector.hasChainedStreamOperations(visited)) {</span>
+<span class="nc" id="L82">					return false;</span>
+				}
+				
+<span class="nc" id="L85">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
+<span class="nc" id="L86">				nodesprocessed.add(visited);</span>
+<span class="nc" id="L87">				return false;</span>
 			});
-<span class="nc" id="L83">	}</span>
+<span class="nc" id="L89">	}</span>
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data)
 			throws CoreException {
-<span class="nc bnc" id="L89" title="All 2 branches missed.">		if (!(visited instanceof MethodInvocation)) {</span>
-<span class="nc" id="L90">			return;</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">		if (!(visited instanceof MethodInvocation)) {</span>
+<span class="nc" id="L96">			return;</span>
 		}
 		
-<span class="nc" id="L93">		MethodInvocation forEach = (MethodInvocation) visited;</span>
+<span class="nc" id="L99">		MethodInvocation forEach = (MethodInvocation) visited;</span>
 		
 		// Get the lambda expression
-<span class="nc bnc" id="L96" title="All 4 branches missed.">		if (forEach.arguments().isEmpty() || !(forEach.arguments().get(0) instanceof LambdaExpression)) {</span>
-<span class="nc" id="L97">			return;</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">		if (forEach.arguments().isEmpty() || !(forEach.arguments().get(0) instanceof LambdaExpression)) {</span>
+<span class="nc" id="L103">			return;</span>
 		}
 		
-<span class="nc" id="L100">		LambdaExpression lambda = (LambdaExpression) forEach.arguments().get(0);</span>
+<span class="nc" id="L106">		LambdaExpression lambda = (LambdaExpression) forEach.arguments().get(0);</span>
 		
 		// Extract collection expression (either collection or collection.stream())
-<span class="nc" id="L103">		Expression collectionExpr = forEach.getExpression();</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">		if (collectionExpr instanceof MethodInvocation) {</span>
-<span class="nc" id="L105">			MethodInvocation methodInv = (MethodInvocation) collectionExpr;</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">			if (&quot;stream&quot;.equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L109">		Expression collectionExpr = forEach.getExpression();</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">		if (collectionExpr instanceof MethodInvocation) {</span>
+<span class="nc" id="L111">			MethodInvocation methodInv = (MethodInvocation) collectionExpr;</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">			if (&quot;stream&quot;.equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$</span>
 				// It's collection.stream().forEach(...), use the collection part
-<span class="nc" id="L108">				collectionExpr = methodInv.getExpression();</span>
+<span class="nc" id="L114">				collectionExpr = methodInv.getExpression();</span>
 			}
 		}
 		
-<span class="nc bnc" id="L112" title="All 2 branches missed.">		if (collectionExpr == null) {</span>
-<span class="nc" id="L113">			return;</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">		if (collectionExpr == null) {</span>
+<span class="nc" id="L119">			return;</span>
 		}
 		
-<span class="nc" id="L116">		AST ast = cuRewrite.getAST();</span>
-<span class="nc" id="L117">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="nc" id="L122">		AST ast = cuRewrite.getAST();</span>
+<span class="nc" id="L123">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
 		
 		// Extract parameter name and type from lambda
-<span class="nc bnc" id="L120" title="All 2 branches missed.">		if (lambda.parameters().isEmpty()) {</span>
-<span class="nc" id="L121">			return;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (lambda.parameters().isEmpty()) {</span>
+<span class="nc" id="L127">			return;</span>
 		}
 		
-<span class="nc" id="L124">		VariableDeclaration param = (VariableDeclaration) lambda.parameters().get(0);</span>
-<span class="nc" id="L125">		SimpleName paramName = param.getName();</span>
+<span class="nc" id="L130">		VariableDeclaration param = (VariableDeclaration) lambda.parameters().get(0);</span>
+<span class="nc" id="L131">		SimpleName paramName = param.getName();</span>
 		
 		// Determine parameter type
 		Type paramType;
-<span class="nc bnc" id="L129" title="All 2 branches missed.">		if (param instanceof SingleVariableDeclaration) {</span>
-<span class="nc" id="L130">			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;</span>
-<span class="nc bnc" id="L131" title="All 2 branches missed.">			if (svd.getType() != null) {</span>
-<span class="nc" id="L132">				paramType = (Type) ASTNode.copySubtree(ast, svd.getType());</span>
-<span class="nc" id="L133">			} else {</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">		if (param instanceof SingleVariableDeclaration) {</span>
+<span class="nc" id="L136">			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">			if (svd.getType() != null) {</span>
+<span class="nc" id="L138">				paramType = (Type) ASTNode.copySubtree(ast, svd.getType());</span>
+<span class="nc" id="L139">			} else {</span>
 				// Use String as fallback
-<span class="nc" id="L135">				paramType = ast.newSimpleType(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L141">				paramType = ast.newSimpleType(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L137">		} else {</span>
+<span class="nc" id="L143">		} else {</span>
 			// Simple parameter, use String as fallback
-<span class="nc" id="L139">			paramType = ast.newSimpleType(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L145">			paramType = ast.newSimpleType(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
 		}
 		
-<span class="nc" id="L142">		String iteratorName = &quot;it&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L148">		String iteratorName = &quot;it&quot;; //$NON-NLS-1$</span>
 		
 		// Create Iterator&lt;T&gt; it = collection.iterator();
-<span class="nc" id="L145">		ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(&quot;Iterator&quot;))); //$NON-NLS-1$</span>
-<span class="nc" id="L146">		iteratorType.typeArguments().add(ASTNode.copySubtree(ast, paramType));</span>
+<span class="nc" id="L151">		ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(&quot;Iterator&quot;))); //$NON-NLS-1$</span>
+<span class="nc" id="L152">		iteratorType.typeArguments().add(ASTNode.copySubtree(ast, paramType));</span>
 		
-<span class="nc" id="L148">		VariableDeclarationFragment iterFragment = ast.newVariableDeclarationFragment();</span>
-<span class="nc" id="L149">		iterFragment.setName(ast.newSimpleName(iteratorName));</span>
+<span class="nc" id="L154">		VariableDeclarationFragment iterFragment = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L155">		iterFragment.setName(ast.newSimpleName(iteratorName));</span>
 		
-<span class="nc" id="L151">		MethodInvocation iteratorCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L152">		iteratorCall.setExpression((Expression) ASTNode.copySubtree(ast, collectionExpr));</span>
-<span class="nc" id="L153">		iteratorCall.setName(ast.newSimpleName(&quot;iterator&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L154">		iterFragment.setInitializer(iteratorCall);</span>
+<span class="nc" id="L157">		MethodInvocation iteratorCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L158">		iteratorCall.setExpression((Expression) ASTNode.copySubtree(ast, collectionExpr));</span>
+<span class="nc" id="L159">		iteratorCall.setName(ast.newSimpleName(&quot;iterator&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L160">		iterFragment.setInitializer(iteratorCall);</span>
 		
-<span class="nc" id="L156">		VariableDeclarationStatement iteratorDecl = ast.newVariableDeclarationStatement(iterFragment);</span>
-<span class="nc" id="L157">		iteratorDecl.setType(iteratorType);</span>
+<span class="nc" id="L162">		VariableDeclarationStatement iteratorDecl = ast.newVariableDeclarationStatement(iterFragment);</span>
+<span class="nc" id="L163">		iteratorDecl.setType(iteratorType);</span>
 		
 		// Create while (it.hasNext())
-<span class="nc" id="L160">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L161">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="nc" id="L162">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L166">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L167">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="nc" id="L168">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
 		
-<span class="nc" id="L164">		WhileStatement whileStmt = ast.newWhileStatement();</span>
-<span class="nc" id="L165">		whileStmt.setExpression(hasNextCall);</span>
+<span class="nc" id="L170">		WhileStatement whileStmt = ast.newWhileStatement();</span>
+<span class="nc" id="L171">		whileStmt.setExpression(hasNextCall);</span>
 		
 		// Create T item = it.next();
-<span class="nc" id="L168">		MethodInvocation nextCall = ast.newMethodInvocation();</span>
-<span class="nc" id="L169">		nextCall.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="nc" id="L170">		nextCall.setName(ast.newSimpleName(&quot;next&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L174">		MethodInvocation nextCall = ast.newMethodInvocation();</span>
+<span class="nc" id="L175">		nextCall.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="nc" id="L176">		nextCall.setName(ast.newSimpleName(&quot;next&quot;)); //$NON-NLS-1$</span>
 		
-<span class="nc" id="L172">		VariableDeclarationFragment itemFragment = ast.newVariableDeclarationFragment();</span>
-<span class="nc" id="L173">		itemFragment.setName((SimpleName) ASTNode.copySubtree(ast, paramName));</span>
-<span class="nc" id="L174">		itemFragment.setInitializer(nextCall);</span>
+<span class="nc" id="L178">		VariableDeclarationFragment itemFragment = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L179">		itemFragment.setName((SimpleName) ASTNode.copySubtree(ast, paramName));</span>
+<span class="nc" id="L180">		itemFragment.setInitializer(nextCall);</span>
 		
-<span class="nc" id="L176">		VariableDeclarationStatement itemDecl = ast.newVariableDeclarationStatement(itemFragment);</span>
-<span class="nc" id="L177">		itemDecl.setType((Type) ASTNode.copySubtree(ast, paramType));</span>
+<span class="nc" id="L182">		VariableDeclarationStatement itemDecl = ast.newVariableDeclarationStatement(itemFragment);</span>
+<span class="nc" id="L183">		itemDecl.setType((Type) ASTNode.copySubtree(ast, paramType));</span>
 		
 		// Create while body with item declaration and lambda body
-<span class="nc" id="L180">		Block whileBody = ast.newBlock();</span>
-<span class="nc" id="L181">		whileBody.statements().add(itemDecl);</span>
+<span class="nc" id="L186">		Block whileBody = ast.newBlock();</span>
+<span class="nc" id="L187">		whileBody.statements().add(itemDecl);</span>
 		
 		// Extract lambda body
-<span class="nc" id="L184">		ASTNode lambdaBody = lambda.getBody();</span>
-<span class="nc bnc" id="L185" title="All 2 branches missed.">		if (lambdaBody instanceof Block) {</span>
+<span class="nc" id="L190">		ASTNode lambdaBody = lambda.getBody();</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">		if (lambdaBody instanceof Block) {</span>
 			// Lambda has block body
-<span class="nc" id="L187">			Block lambdaBlock = (Block) lambdaBody;</span>
-<span class="nc bnc" id="L188" title="All 2 branches missed.">			for (Object stmt : lambdaBlock.statements()) {</span>
-<span class="nc" id="L189">				whileBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));</span>
+<span class="nc" id="L193">			Block lambdaBlock = (Block) lambdaBody;</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">			for (Object stmt : lambdaBlock.statements()) {</span>
+<span class="nc" id="L195">				whileBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));</span>
 			}
-<span class="nc bnc" id="L191" title="All 2 branches missed.">		} else if (lambdaBody instanceof Expression) {</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">		} else if (lambdaBody instanceof Expression) {</span>
 			// Lambda has expression body - wrap in expression statement
-<span class="nc" id="L193">			ExpressionStatement exprStmt = ast.newExpressionStatement(</span>
-<span class="nc" id="L194">				(Expression) ASTNode.copySubtree(ast, (Expression) lambdaBody));</span>
-<span class="nc" id="L195">			whileBody.statements().add(exprStmt);</span>
+<span class="nc" id="L199">			ExpressionStatement exprStmt = ast.newExpressionStatement(</span>
+<span class="nc" id="L200">				(Expression) ASTNode.copySubtree(ast, (Expression) lambdaBody));</span>
+<span class="nc" id="L201">			whileBody.statements().add(exprStmt);</span>
 		}
 		
-<span class="nc" id="L198">		whileStmt.setBody(whileBody);</span>
+<span class="nc" id="L204">		whileStmt.setBody(whileBody);</span>
 		
 		// Replace the forEach statement with iterator declaration + while-loop
-<span class="nc" id="L201">		ExpressionStatement forEachStmt = (ExpressionStatement) forEach.getParent();</span>
-<span class="nc" id="L202">		ASTNode parent = forEachStmt.getParent();</span>
+<span class="nc" id="L207">		ExpressionStatement forEachStmt = (ExpressionStatement) forEach.getParent();</span>
+<span class="nc" id="L208">		ASTNode parent = forEachStmt.getParent();</span>
 		
-<span class="nc bnc" id="L204" title="All 2 branches missed.">		if (parent instanceof Block) {</span>
-<span class="nc" id="L205">			Block parentBlock = (Block) parent;</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">		if (parent instanceof Block) {</span>
+<span class="nc" id="L211">			Block parentBlock = (Block) parent;</span>
 			
-<span class="nc" id="L207">			org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
-<span class="nc" id="L208">			listRewrite.insertBefore(iteratorDecl, forEachStmt, group);</span>
-<span class="nc" id="L209">			listRewrite.replace(forEachStmt, whileStmt, group);</span>
-<span class="nc" id="L210">		} else {</span>
+<span class="nc" id="L213">			org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
+<span class="nc" id="L214">			listRewrite.insertBefore(iteratorDecl, forEachStmt, group);</span>
+<span class="nc" id="L215">			listRewrite.replace(forEachStmt, whileStmt, group);</span>
+<span class="nc" id="L216">		} else {</span>
 			// If not in a block, create one
-<span class="nc" id="L212">			Block newBlock = ast.newBlock();</span>
-<span class="nc" id="L213">			newBlock.statements().add(iteratorDecl);</span>
-<span class="nc" id="L214">			newBlock.statements().add(whileStmt);</span>
-<span class="nc" id="L215">			rewrite.replace(forEachStmt, newBlock, group);</span>
+<span class="nc" id="L218">			Block newBlock = ast.newBlock();</span>
+<span class="nc" id="L219">			newBlock.statements().add(iteratorDecl);</span>
+<span class="nc" id="L220">			newBlock.statements().add(whileStmt);</span>
+<span class="nc" id="L221">			rewrite.replace(forEachStmt, newBlock, group);</span>
 		}
 		
 		// Add Iterator import
-<span class="nc" id="L219">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L220">	}</span>
+<span class="nc" id="L225">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L226">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L225">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L231">			return &quot;&quot;&quot;</span>
 					Iterator&lt;String&gt; it = items.iterator();
 					while (it.hasNext()) {
 						String item = it.next();
@@ -230,7 +236,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 					}
 					&quot;&quot;&quot;;
 		}
-<span class="nc" id="L233">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L239">		return &quot;&quot;&quot;</span>
 				items.forEach(item -&gt; System.out.println(item));
 				&quot;&quot;&quot;;
 	}

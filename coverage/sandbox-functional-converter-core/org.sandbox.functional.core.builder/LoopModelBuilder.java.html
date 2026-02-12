@@ -81,34 +81,60 @@ public class LoopModelBuilder {
                                      boolean modifiesCollection, 
                                      boolean requiresOrdering) {
 <span class="fc" id="L83">        this.metadata = new LoopMetadata(hasBreak, hasContinue, hasReturn, </span>
-                                         modifiesCollection, requiresOrdering);
+                                         modifiesCollection, requiresOrdering, false, false);
 <span class="fc" id="L85">        return this;</span>
     }
     
+    /**
+     * Configures loop metadata with all safety flags.
+     * 
+     * @param hasBreak whether the loop contains break statements
+     * @param hasContinue whether the loop contains continue statements
+     * @param hasReturn whether the loop contains return statements
+     * @param modifiesCollection whether the loop modifies the collection being iterated
+     * @param requiresOrdering whether the loop requires ordering to be preserved
+     * @param hasIteratorRemove whether the loop calls iterator.remove()
+     * @param usesIndexBeyondGet whether the index variable is used beyond simple element access
+     * @return this builder
+     * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/670&quot;&gt;Issue #670&lt;/a&gt;
+     */
+    public LoopModelBuilder metadata(boolean hasBreak,
+                                     boolean hasContinue,
+                                     boolean hasReturn,
+                                     boolean modifiesCollection,
+                                     boolean requiresOrdering,
+                                     boolean hasIteratorRemove,
+                                     boolean usesIndexBeyondGet) {
+<span class="nc" id="L108">        this.metadata = new LoopMetadata(hasBreak, hasContinue, hasReturn,</span>
+                                         modifiesCollection, requiresOrdering,
+                                         hasIteratorRemove, usesIndexBeyondGet);
+<span class="nc" id="L111">        return this;</span>
+    }
+    
     public LoopModelBuilder metadata(LoopMetadata metadata) {
-<span class="nc" id="L89">        this.metadata = metadata;</span>
-<span class="nc" id="L90">        return this;</span>
+<span class="nc" id="L115">        this.metadata = metadata;</span>
+<span class="nc" id="L116">        return this;</span>
     }
     
     // Operation shortcuts
     public LoopModelBuilder filter(String expression) {
-<span class="fc" id="L95">        this.operations.add(new FilterOp(expression));</span>
-<span class="fc" id="L96">        return this;</span>
+<span class="fc" id="L121">        this.operations.add(new FilterOp(expression));</span>
+<span class="fc" id="L122">        return this;</span>
     }
     
     public LoopModelBuilder map(String expression, String targetType) {
-<span class="fc" id="L100">        this.operations.add(new MapOp(expression, targetType));</span>
-<span class="fc" id="L101">        return this;</span>
+<span class="fc" id="L126">        this.operations.add(new MapOp(expression, targetType));</span>
+<span class="fc" id="L127">        return this;</span>
     }
     
     public LoopModelBuilder map(String expression, String targetType, String outputVariableName) {
-<span class="fc" id="L105">        this.operations.add(new MapOp(expression, targetType, outputVariableName));</span>
-<span class="fc" id="L106">        return this;</span>
+<span class="fc" id="L131">        this.operations.add(new MapOp(expression, targetType, outputVariableName));</span>
+<span class="fc" id="L132">        return this;</span>
     }
     
     public LoopModelBuilder map(String expression) {
-<span class="fc" id="L110">        this.operations.add(new MapOp(expression, null));</span>
-<span class="fc" id="L111">        return this;</span>
+<span class="fc" id="L136">        this.operations.add(new MapOp(expression, null));</span>
+<span class="fc" id="L137">        return this;</span>
     }
     
     /**
@@ -118,48 +144,48 @@ public class LoopModelBuilder {
      * @param outputVariableName the variable to return from the map
      */
     public LoopModelBuilder sideEffectMap(String statementsBlock, String outputVariableName) {
-<span class="fc" id="L121">        this.operations.add(new MapOp(statementsBlock, null, outputVariableName, true));</span>
-<span class="fc" id="L122">        return this;</span>
+<span class="fc" id="L147">        this.operations.add(new MapOp(statementsBlock, null, outputVariableName, true));</span>
+<span class="fc" id="L148">        return this;</span>
     }
     
     public LoopModelBuilder flatMap(String expression) {
-<span class="fc" id="L126">        this.operations.add(new FlatMapOp(expression));</span>
-<span class="fc" id="L127">        return this;</span>
+<span class="fc" id="L152">        this.operations.add(new FlatMapOp(expression));</span>
+<span class="fc" id="L153">        return this;</span>
     }
     
     public LoopModelBuilder peek(String expression) {
-<span class="fc" id="L131">        this.operations.add(new PeekOp(expression));</span>
-<span class="fc" id="L132">        return this;</span>
+<span class="fc" id="L157">        this.operations.add(new PeekOp(expression));</span>
+<span class="fc" id="L158">        return this;</span>
     }
     
     public LoopModelBuilder distinct() {
-<span class="fc" id="L136">        this.operations.add(new DistinctOp());</span>
-<span class="fc" id="L137">        return this;</span>
+<span class="fc" id="L162">        this.operations.add(new DistinctOp());</span>
+<span class="fc" id="L163">        return this;</span>
     }
     
     public LoopModelBuilder sorted() {
-<span class="fc" id="L141">        this.operations.add(new SortOp(null));</span>
-<span class="fc" id="L142">        return this;</span>
+<span class="fc" id="L167">        this.operations.add(new SortOp(null));</span>
+<span class="fc" id="L168">        return this;</span>
     }
     
     public LoopModelBuilder sorted(String comparatorExpression) {
-<span class="fc" id="L146">        this.operations.add(new SortOp(comparatorExpression));</span>
-<span class="fc" id="L147">        return this;</span>
+<span class="fc" id="L172">        this.operations.add(new SortOp(comparatorExpression));</span>
+<span class="fc" id="L173">        return this;</span>
     }
     
     public LoopModelBuilder limit(long maxSize) {
-<span class="fc" id="L151">        this.operations.add(new LimitOp(maxSize));</span>
-<span class="fc" id="L152">        return this;</span>
+<span class="fc" id="L177">        this.operations.add(new LimitOp(maxSize));</span>
+<span class="fc" id="L178">        return this;</span>
     }
     
     public LoopModelBuilder skip(long count) {
-<span class="fc" id="L156">        this.operations.add(new SkipOp(count));</span>
-<span class="fc" id="L157">        return this;</span>
+<span class="fc" id="L182">        this.operations.add(new SkipOp(count));</span>
+<span class="fc" id="L183">        return this;</span>
     }
     
     public LoopModelBuilder operation(Operation op) {
-<span class="fc" id="L161">        this.operations.add(op);</span>
-<span class="fc" id="L162">        return this;</span>
+<span class="fc" id="L187">        this.operations.add(op);</span>
+<span class="fc" id="L188">        return this;</span>
     }
     
     /**
@@ -168,10 +194,10 @@ public class LoopModelBuilder {
      * @return the last added Operation, or null
      */
     public Operation getLastOperation() {
-<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (this.operations.isEmpty()) {</span>
-<span class="nc" id="L172">            return null;</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (this.operations.isEmpty()) {</span>
+<span class="nc" id="L198">            return null;</span>
         }
-<span class="fc" id="L174">        return this.operations.get(this.operations.size() - 1);</span>
+<span class="fc" id="L200">        return this.operations.get(this.operations.size() - 1);</span>
     }
     
     /**
@@ -179,81 +205,81 @@ public class LoopModelBuilder {
      * @return true if operations exist
      */
     public boolean hasOperations() {
-<span class="fc bfc" id="L182" title="All 2 branches covered.">        return !this.operations.isEmpty();</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        return !this.operations.isEmpty();</span>
     }
     
     // Terminal shortcuts
     public LoopModelBuilder forEach(List&lt;String&gt; bodyStatements, boolean ordered) {
-<span class="fc" id="L187">        this.terminal = new ForEachTerminal(bodyStatements, ordered);</span>
-<span class="fc" id="L188">        return this;</span>
+<span class="fc" id="L213">        this.terminal = new ForEachTerminal(bodyStatements, ordered);</span>
+<span class="fc" id="L214">        return this;</span>
     }
     
     public LoopModelBuilder forEach(List&lt;String&gt; bodyStatements) {
-<span class="fc" id="L192">        return forEach(bodyStatements, false);</span>
+<span class="fc" id="L218">        return forEach(bodyStatements, false);</span>
     }
     
     public LoopModelBuilder collect(CollectTerminal.CollectorType type, 
                                     String targetVariable) {
-<span class="fc" id="L197">        this.terminal = new CollectTerminal(type, targetVariable);</span>
-<span class="fc" id="L198">        return this;</span>
+<span class="fc" id="L223">        this.terminal = new CollectTerminal(type, targetVariable);</span>
+<span class="fc" id="L224">        return this;</span>
     }
     
     public LoopModelBuilder reduce(String identity, 
                                    String accumulator, 
                                    String combiner,
                                    ReduceTerminal.ReduceType type) {
-<span class="fc" id="L205">        this.terminal = new ReduceTerminal(identity, accumulator, combiner, type);</span>
-<span class="fc" id="L206">        return this;</span>
+<span class="fc" id="L231">        this.terminal = new ReduceTerminal(identity, accumulator, combiner, type);</span>
+<span class="fc" id="L232">        return this;</span>
     }
     
     public LoopModelBuilder count() {
-<span class="fc" id="L210">        this.terminal = new CountTerminal();</span>
-<span class="fc" id="L211">        return this;</span>
+<span class="fc" id="L236">        this.terminal = new CountTerminal();</span>
+<span class="fc" id="L237">        return this;</span>
     }
     
     public LoopModelBuilder findFirst() {
-<span class="fc" id="L215">        this.terminal = new FindTerminal(true);</span>
-<span class="fc" id="L216">        return this;</span>
+<span class="fc" id="L241">        this.terminal = new FindTerminal(true);</span>
+<span class="fc" id="L242">        return this;</span>
     }
     
     public LoopModelBuilder findAny() {
-<span class="fc" id="L220">        this.terminal = new FindTerminal(false);</span>
-<span class="fc" id="L221">        return this;</span>
+<span class="fc" id="L246">        this.terminal = new FindTerminal(false);</span>
+<span class="fc" id="L247">        return this;</span>
     }
     
     public LoopModelBuilder anyMatch(String predicate) {
-<span class="fc" id="L225">        this.terminal = new MatchTerminal(MatchTerminal.MatchType.ANY_MATCH, predicate);</span>
-<span class="fc" id="L226">        return this;</span>
+<span class="fc" id="L251">        this.terminal = new MatchTerminal(MatchTerminal.MatchType.ANY_MATCH, predicate);</span>
+<span class="fc" id="L252">        return this;</span>
     }
     
     public LoopModelBuilder allMatch(String predicate) {
-<span class="fc" id="L230">        this.terminal = new MatchTerminal(MatchTerminal.MatchType.ALL_MATCH, predicate);</span>
-<span class="fc" id="L231">        return this;</span>
+<span class="fc" id="L256">        this.terminal = new MatchTerminal(MatchTerminal.MatchType.ALL_MATCH, predicate);</span>
+<span class="fc" id="L257">        return this;</span>
     }
     
     public LoopModelBuilder noneMatch(String predicate) {
-<span class="fc" id="L235">        this.terminal = new MatchTerminal(MatchTerminal.MatchType.NONE_MATCH, predicate);</span>
-<span class="fc" id="L236">        return this;</span>
+<span class="fc" id="L261">        this.terminal = new MatchTerminal(MatchTerminal.MatchType.NONE_MATCH, predicate);</span>
+<span class="fc" id="L262">        return this;</span>
     }
     
     public LoopModelBuilder terminal(TerminalOperation terminal) {
-<span class="fc" id="L240">        this.terminal = terminal;</span>
-<span class="fc" id="L241">        return this;</span>
+<span class="fc" id="L266">        this.terminal = terminal;</span>
+<span class="fc" id="L267">        return this;</span>
     }
     
     // Build
     public LoopModel build() {
-<span class="fc" id="L246">        LoopModel model = new LoopModel(source, element, metadata);</span>
-<span class="fc" id="L247">        operations.forEach(model::addOperation);</span>
-<span class="fc bfc" id="L248" title="All 2 branches covered.">        if (terminal != null) {</span>
-<span class="fc" id="L249">            model.withTerminal(terminal);</span>
+<span class="fc" id="L272">        LoopModel model = new LoopModel(source, element, metadata);</span>
+<span class="fc" id="L273">        operations.forEach(model::addOperation);</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        if (terminal != null) {</span>
+<span class="fc" id="L275">            model.withTerminal(terminal);</span>
         }
-<span class="fc" id="L251">        return model;</span>
+<span class="fc" id="L277">        return model;</span>
     }
     
     // Validation
     public boolean isValid() {
-<span class="pc bpc" id="L256" title="1 of 4 branches missed.">        return source != null &amp;&amp; element != null;</span>
+<span class="pc bpc" id="L282" title="1 of 4 branches missed.">        return source != null &amp;&amp; element != null;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

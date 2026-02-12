@@ -39,16 +39,40 @@ public final class NamingUtils {
 	}
 
 	/**
+	 * Checks if a string is a valid Java identifier.
+	 * A valid Java identifier starts with a character for which
+	 * {@link Character#isJavaIdentifierStart(char)} returns true,
+	 * followed by characters for which {@link Character#isJavaIdentifierPart(char)} returns true.
+	 *
+	 * @param name the string to check, may be null
+	 * @return true if the string is a valid Java identifier, false otherwise
+	 */
+	public static boolean isValidJavaIdentifier(String name) {
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">		if (name == null || name.isEmpty()) {</span>
+<span class="nc" id="L52">			return false;</span>
+		}
+<span class="fc bfc" id="L54" title="All 2 branches covered.">		if (!Character.isJavaIdentifierStart(name.charAt(0))) {</span>
+<span class="fc" id="L55">			return false;</span>
+		}
+<span class="fc bfc" id="L57" title="All 2 branches covered.">		for (int i = 1; i &lt; name.length(); i++) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">			if (!Character.isJavaIdentifierPart(name.charAt(i))) {</span>
+<span class="fc" id="L59">				return false;</span>
+			}
+		}
+<span class="fc" id="L62">		return true;</span>
+	}
+
+	/**
 	 * Capitalizes the first letter of a string.
 	 * 
 	 * @param input the string to capitalize
 	 * @return the string with first letter capitalized, or the original string if null or empty
 	 */
 	public static String capitalizeFirstLetter(String input) {
-<span class="pc bpc" id="L48" title="2 of 4 branches missed.">		if (input == null || input.isEmpty()) {</span>
-<span class="nc" id="L49">			return input;</span>
+<span class="pc bpc" id="L72" title="2 of 4 branches missed.">		if (input == null || input.isEmpty()) {</span>
+<span class="nc" id="L73">			return input;</span>
 		}
-<span class="fc" id="L51">		return Character.toUpperCase(input.charAt(0)) + input.substring(1);</span>
+<span class="fc" id="L75">		return Character.toUpperCase(input.charAt(0)) + input.substring(1);</span>
 	}
 
 	/**
@@ -61,13 +85,13 @@ public final class NamingUtils {
 	 */
 	public static String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass, String baseName) {
 		// Convert anonymous class to string for checksum generation to ensure unique naming
-<span class="fc" id="L64">		String anonymousCode = anonymousClass.toString();</span>
-<span class="fc" id="L65">		String checksum = generateChecksum(anonymousCode);</span>
+<span class="fc" id="L88">		String anonymousCode = anonymousClass.toString();</span>
+<span class="fc" id="L89">		String checksum = generateChecksum(anonymousCode);</span>
 
 		// Capitalize field name for class naming convention
-<span class="fc" id="L68">		String capitalizedBaseName = capitalizeFirstLetter(baseName);</span>
+<span class="fc" id="L92">		String capitalizedBaseName = capitalizeFirstLetter(baseName);</span>
 
-<span class="fc" id="L70">		return capitalizedBaseName + &quot;_&quot; + checksum; //$NON-NLS-1$</span>
+<span class="fc" id="L94">		return capitalizedBaseName + &quot;_&quot; + checksum; //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -79,19 +103,19 @@ public final class NamingUtils {
 	 */
 	public static String generateChecksum(String input) {
 		try {
-<span class="fc" id="L82">			MessageDigest md = MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L83">			byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L84">			StringBuilder hexString = new StringBuilder();</span>
-<span class="fc bfc" id="L85" title="All 2 branches covered.">			for (byte b : hashBytes) {</span>
-<span class="fc" id="L86">				String hex = Integer.toHexString(0xff &amp; b);</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">				if (hex.length() == 1) {</span>
-<span class="fc" id="L88">					hexString.append('0');</span>
+<span class="fc" id="L106">			MessageDigest md = MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L107">			byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L108">			StringBuilder hexString = new StringBuilder();</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">			for (byte b : hashBytes) {</span>
+<span class="fc" id="L110">				String hex = Integer.toHexString(0xff &amp; b);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">				if (hex.length() == 1) {</span>
+<span class="fc" id="L112">					hexString.append('0');</span>
 				}
-<span class="fc" id="L90">				hexString.append(hex);</span>
+<span class="fc" id="L114">				hexString.append(hex);</span>
 			}
-<span class="fc" id="L92">			return hexString.toString().substring(0, GENERATED_CLASS_NAME_CHECKSUM_LENGTH);</span>
-<span class="nc" id="L93">		} catch (NoSuchAlgorithmException e) {</span>
-<span class="nc" id="L94">			throw new RuntimeException(&quot;SHA-256 algorithm not found&quot;, e); //$NON-NLS-1$</span>
+<span class="fc" id="L116">			return hexString.toString().substring(0, GENERATED_CLASS_NAME_CHECKSUM_LENGTH);</span>
+<span class="nc" id="L117">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L118">			throw new RuntimeException(&quot;SHA-256 algorithm not found&quot;, e); //$NON-NLS-1$</span>
 		}
 	}
 
@@ -102,16 +126,16 @@ public final class NamingUtils {
 	 * @return the class name, or null if not found
 	 */
 	public static String extractClassNameFromField(FieldDeclaration field) {
-<span class="nc bnc" id="L105" title="All 2 branches missed.">		for (Object fragmentObj : field.fragments()) {</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">			if (fragmentObj instanceof VariableDeclarationFragment) {</span>
-<span class="nc" id="L107">				VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;</span>
-<span class="nc bnc" id="L108" title="All 2 branches missed.">				if (fragment.getInitializer() instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
-<span class="nc" id="L109">					return extractTypeName(</span>
-<span class="nc" id="L110">							((org.eclipse.jdt.core.dom.ClassInstanceCreation) fragment.getInitializer()).getType());</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		for (Object fragmentObj : field.fragments()) {</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">			if (fragmentObj instanceof VariableDeclarationFragment) {</span>
+<span class="nc" id="L131">				VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">				if (fragment.getInitializer() instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
+<span class="nc" id="L133">					return extractTypeName(</span>
+<span class="nc" id="L134">							((org.eclipse.jdt.core.dom.ClassInstanceCreation) fragment.getInitializer()).getType());</span>
 				}
 			}
 		}
-<span class="nc" id="L114">		return null;</span>
+<span class="nc" id="L138">		return null;</span>
 	}
 
 	/**
@@ -121,11 +145,11 @@ public final class NamingUtils {
 	 * @return the field name, or &quot;UnnamedField&quot; if not found
 	 */
 	public static String extractFieldName(FieldDeclaration fieldDeclaration) {
-<span class="fc" id="L124">		return (String) fieldDeclaration.fragments().stream()</span>
-<span class="fc" id="L125">				.filter(VariableDeclarationFragment.class::isInstance)</span>
-<span class="fc" id="L126">				.map(fragment -&gt; ((VariableDeclarationFragment) fragment).getName().getIdentifier())</span>
-<span class="fc" id="L127">				.findFirst()</span>
-<span class="fc" id="L128">				.orElse(&quot;UnnamedField&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L148">		return (String) fieldDeclaration.fragments().stream()</span>
+<span class="fc" id="L149">				.filter(VariableDeclarationFragment.class::isInstance)</span>
+<span class="fc" id="L150">				.map(fragment -&gt; ((VariableDeclarationFragment) fragment).getName().getIdentifier())</span>
+<span class="fc" id="L151">				.findFirst()</span>
+<span class="fc" id="L152">				.orElse(&quot;UnnamedField&quot;); //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -135,18 +159,18 @@ public final class NamingUtils {
 	 * @return the fully qualified class name
 	 */
 	public static String extractQualifiedTypeName(QualifiedType qualifiedType) {
-<span class="nc" id="L138">		StringBuilder fullClassName = new StringBuilder();</span>
-<span class="nc" id="L139">		Type currentType = qualifiedType;</span>
+<span class="nc" id="L162">		StringBuilder fullClassName = new StringBuilder();</span>
+<span class="nc" id="L163">		Type currentType = qualifiedType;</span>
 
-<span class="nc bnc" id="L141" title="All 2 branches missed.">		while (currentType instanceof QualifiedType) {</span>
-<span class="nc" id="L142">			QualifiedType currentQualified = (QualifiedType) currentType;</span>
-<span class="nc bnc" id="L143" title="All 2 branches missed.">			if (fullClassName.length() &gt; 0) {</span>
-<span class="nc" id="L144">				fullClassName.insert(0, &quot;.&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">		while (currentType instanceof QualifiedType) {</span>
+<span class="nc" id="L166">			QualifiedType currentQualified = (QualifiedType) currentType;</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">			if (fullClassName.length() &gt; 0) {</span>
+<span class="nc" id="L168">				fullClassName.insert(0, &quot;.&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L146">			fullClassName.insert(0, currentQualified.getName().getFullyQualifiedName());</span>
-<span class="nc" id="L147">			currentType = currentQualified.getQualifier();</span>
+<span class="nc" id="L170">			fullClassName.insert(0, currentQualified.getName().getFullyQualifiedName());</span>
+<span class="nc" id="L171">			currentType = currentQualified.getQualifier();</span>
 		}
-<span class="nc" id="L149">		return fullClassName.toString();</span>
+<span class="nc" id="L173">		return fullClassName.toString();</span>
 	}
 
 	/**
@@ -156,12 +180,12 @@ public final class NamingUtils {
 	 * @return the type name, or null if not a recognized type
 	 */
 	public static String extractTypeName(Type type) {
-<span class="nc bnc" id="L159" title="All 2 branches missed.">		if (type instanceof QualifiedType) {</span>
-<span class="nc" id="L160">			return extractQualifiedTypeName((QualifiedType) type);</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">		} else if (type instanceof SimpleType) {</span>
-<span class="nc" id="L162">			return ((SimpleType) type).getName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">		if (type instanceof QualifiedType) {</span>
+<span class="nc" id="L184">			return extractQualifiedTypeName((QualifiedType) type);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">		} else if (type instanceof SimpleType) {</span>
+<span class="nc" id="L186">			return ((SimpleType) type).getName().getFullyQualifiedName();</span>
 		}
-<span class="nc" id="L164">		return null;</span>
+<span class="nc" id="L188">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -16,33 +16,57 @@ package org.sandbox.functional.core.model;
 /**
  * Metadata about loop characteristics and constraints.
  * 
+ * &lt;p&gt;Enforces strict rules for loop refactoring safety (thread-safety and semantics):&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;Collection modifications (add/remove/put/clear) on the iterated structure block conversion&lt;/li&gt;
+ *   &lt;li&gt;Iterator.remove() usage blocks conversion to enhanced for or stream&lt;/li&gt;
+ *   &lt;li&gt;Index variable usage beyond simple element access blocks conversion&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
  * @param hasBreak whether the loop contains break statements
  * @param hasContinue whether the loop contains continue statements
  * @param hasReturn whether the loop contains return statements
  * @param modifiesCollection whether the loop modifies the collection being iterated
  * @param requiresOrdering whether the loop requires ordering to be preserved
+ * @param hasIteratorRemove whether the loop calls iterator.remove()
+ * @param usesIndexBeyondGet whether the index variable is used for more than simple element access
  * @since 1.0.0
+ * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/670&quot;&gt;Issue #670&lt;/a&gt;
  */
-<span class="fc" id="L26">public record LoopMetadata(</span>
+<span class="fc" id="L36">public record LoopMetadata(</span>
     boolean hasBreak,
     boolean hasContinue,
     boolean hasReturn,
     boolean modifiesCollection,
-    boolean requiresOrdering
+    boolean requiresOrdering,
+    boolean hasIteratorRemove,
+    boolean usesIndexBeyondGet
 ) {
     /**
      * Creates a LoopMetadata with all flags set to false.
      */
     public static LoopMetadata safe() {
-<span class="nc" id="L37">        return new LoopMetadata(false, false, false, false, false);</span>
+<span class="fc" id="L49">        return new LoopMetadata(false, false, false, false, false, false, false);</span>
     }
     
     /**
-     * Checks if the loop can be converted to a stream.
-     * @return true if convertible (no break, no return)
+     * Checks if the loop can be converted to a stream or enhanced for.
+     * 
+     * &lt;p&gt;A loop is not convertible if any of the following conditions hold:&lt;/p&gt;
+     * &lt;ul&gt;
+     *   &lt;li&gt;Contains break statements (cannot be expressed in lambdas)&lt;/li&gt;
+     *   &lt;li&gt;Contains return statements (changes control flow)&lt;/li&gt;
+     *   &lt;li&gt;Modifies the iterated collection (add/remove/put/clear cause ConcurrentModificationException)&lt;/li&gt;
+     *   &lt;li&gt;Uses iterator.remove() (not expressible in enhanced for or stream)&lt;/li&gt;
+     *   &lt;li&gt;Uses the index variable beyond simple element access (semantics change in enhanced for)&lt;/li&gt;
+     * &lt;/ul&gt;
+     * 
+     * @return true if convertible
+     * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/670&quot;&gt;Issue #670&lt;/a&gt;
      */
     public boolean isConvertible() {
-<span class="fc bfc" id="L45" title="All 4 branches covered.">        return !hasBreak &amp;&amp; !hasReturn;</span>
+<span class="fc bfc" id="L68" title="All 10 branches covered.">        return !hasBreak &amp;&amp; !hasReturn &amp;&amp; !modifiesCollection </span>
+            &amp;&amp; !hasIteratorRemove &amp;&amp; !usesIndexBeyondGet;
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

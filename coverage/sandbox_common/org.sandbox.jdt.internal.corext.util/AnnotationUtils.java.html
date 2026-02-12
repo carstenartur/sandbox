@@ -15,9 +15,11 @@ package org.sandbox.jdt.internal.corext.util;
 
 import java.util.List;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.Modifier;
 
 /**
@@ -32,6 +34,20 @@ public final class AnnotationUtils {
 	}
 
 	/**
+	 * Creates a new MarkerAnnotation AST node with the given annotation name.
+	 * This centralizes the common pattern of creating a marker annotation and setting its type name.
+	 *
+	 * @param ast the AST to create the annotation in
+	 * @param annotationName the simple or qualified name of the annotation (e.g., &quot;Test&quot;, &quot;BeforeEach&quot;)
+	 * @return the created MarkerAnnotation
+	 */
+	public static MarkerAnnotation createMarkerAnnotation(AST ast, String annotationName) {
+<span class="fc" id="L45">		MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L46">		annotation.setTypeName(ast.newName(annotationName));</span>
+<span class="fc" id="L47">		return annotation;</span>
+	}
+
+	/**
 	 * Checks if a field has the specified annotation.
 	 * 
 	 * @param field the field declaration to check
@@ -39,7 +55,7 @@ public final class AnnotationUtils {
 	 * @return true if the field has the annotation
 	 */
 	public static boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
-<span class="fc" id="L42">		return hasAnnotation(field.modifiers(), annotationClass);</span>
+<span class="fc" id="L58">		return hasAnnotation(field.modifiers(), annotationClass);</span>
 	}
 
 	/**
@@ -50,7 +66,7 @@ public final class AnnotationUtils {
 	 * @return true if the declaration has the annotation
 	 */
 	public static boolean isAnnotatedWith(BodyDeclaration declaration, String annotationClass) {
-<span class="fc" id="L53">		return hasAnnotation(declaration.modifiers(), annotationClass);</span>
+<span class="fc" id="L69">		return hasAnnotation(declaration.modifiers(), annotationClass);</span>
 	}
 
 	/**
@@ -61,11 +77,11 @@ public final class AnnotationUtils {
 	 * @return true if the annotation is present
 	 */
 	public static boolean hasAnnotation(List&lt;?&gt; modifiers, String annotationClass) {
-<span class="fc" id="L64">		return modifiers.stream()</span>
-<span class="fc" id="L65">				.filter(Annotation.class::isInstance)</span>
-<span class="fc" id="L66">				.map(Annotation.class::cast)</span>
-<span class="fc" id="L67">				.map(Annotation::resolveTypeBinding)</span>
-<span class="pc bpc" id="L68" title="1 of 4 branches missed.">				.anyMatch(binding -&gt; binding != null &amp;&amp; annotationClass.equals(binding.getQualifiedName()));</span>
+<span class="fc" id="L80">		return modifiers.stream()</span>
+<span class="fc" id="L81">				.filter(Annotation.class::isInstance)</span>
+<span class="fc" id="L82">				.map(Annotation.class::cast)</span>
+<span class="fc" id="L83">				.map(Annotation::resolveTypeBinding)</span>
+<span class="pc bpc" id="L84" title="1 of 4 branches missed.">				.anyMatch(binding -&gt; binding != null &amp;&amp; annotationClass.equals(binding.getQualifiedName()));</span>
 	}
 
 	/**
@@ -76,9 +92,9 @@ public final class AnnotationUtils {
 	 * @return true if the annotation is present
 	 */
 	public static boolean hasAnnotationBySimpleName(List&lt;?&gt; modifiers, String annotationSimpleName) {
-<span class="fc" id="L79">		return modifiers.stream()</span>
-<span class="fc bfc" id="L80" title="All 2 branches covered.">				.anyMatch(modifier -&gt; modifier instanceof Annotation &amp;&amp; ((Annotation) modifier).getTypeName()</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">						.getFullyQualifiedName().equals(annotationSimpleName));</span>
+<span class="fc" id="L95">		return modifiers.stream()</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">				.anyMatch(modifier -&gt; modifier instanceof Annotation &amp;&amp; ((Annotation) modifier).getTypeName()</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">						.getFullyQualifiedName().equals(annotationSimpleName));</span>
 	}
 
 	/**
@@ -88,7 +104,7 @@ public final class AnnotationUtils {
 	 * @return true if the field is static
 	 */
 	public static boolean isFieldStatic(FieldDeclaration field) {
-<span class="nc" id="L91">		return hasModifier(field.modifiers(), Modifier.ModifierKeyword.STATIC_KEYWORD);</span>
+<span class="nc" id="L107">		return hasModifier(field.modifiers(), Modifier.ModifierKeyword.STATIC_KEYWORD);</span>
 	}
 
 	/**
@@ -99,10 +115,10 @@ public final class AnnotationUtils {
 	 * @return true if the modifier is present
 	 */
 	public static boolean hasModifier(List&lt;?&gt; modifiers, Modifier.ModifierKeyword keyword) {
-<span class="nc" id="L102">		return modifiers.stream()</span>
-<span class="nc" id="L103">				.filter(Modifier.class::isInstance)</span>
-<span class="nc" id="L104">				.map(Modifier.class::cast)</span>
-<span class="nc" id="L105">				.anyMatch(modifier -&gt; modifier.getKeyword().equals(keyword));</span>
+<span class="nc" id="L118">		return modifiers.stream()</span>
+<span class="nc" id="L119">				.filter(Modifier.class::isInstance)</span>
+<span class="nc" id="L120">				.map(Modifier.class::cast)</span>
+<span class="nc" id="L121">				.anyMatch(modifier -&gt; modifier.getKeyword().equals(keyword));</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

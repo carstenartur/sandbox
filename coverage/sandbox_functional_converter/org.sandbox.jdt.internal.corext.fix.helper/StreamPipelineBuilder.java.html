@@ -24,7 +24,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
+import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 
 /**
  * Builder class for constructing stream pipelines from enhanced for-loops.
@@ -226,7 +226,7 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 
 		// Initialize the pipeline assembler for building the final pipeline
 <span class="fc" id="L228">		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);</span>
-<span class="fc" id="L229">		pipelineAssembler.setUsedVariableNames(getUsedVariableNames(forLoop));</span>
+<span class="fc" id="L229">		pipelineAssembler.setUsedVariableNames(ASTNavigationUtils.getUsedVariableNames(forLoop));</span>
 <span class="fc" id="L230">		pipelineAssembler.setReduceDetector(reduceDetector);</span>
 <span class="fc" id="L231">		pipelineAssembler.setCollectDetector(collectDetector);</span>
 
@@ -479,7 +479,7 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 		
 		// Add all variables from outer scope (method parameters, fields, etc.)
 		// These are always available in lambdas
-<span class="fc" id="L482">		Collection&lt;String&gt; outerScopeVars = getUsedVariableNames(forLoop);</span>
+<span class="fc" id="L482">		Collection&lt;String&gt; outerScopeVars = ASTNavigationUtils.getUsedVariableNames(forLoop);</span>
 <span class="fc" id="L483">		availableVars.addAll(outerScopeVars);</span>
 		
 		// Track if we've moved past the loop variable to a mapped variable
@@ -554,18 +554,6 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 <span class="fc" id="L554">		return false;</span>
 	}
 
-	/**
-	 * Gets all variable names used in the scope of the given AST node.
-	 * This is used to generate unique lambda parameter names that don't clash
-	 * with existing variables in scope.
-	 * 
-	 * @param node the AST node to analyze
-	 * @return collection of variable names used in the node's scope
-	 */
-	private static Collection&lt;String&gt; getUsedVariableNames(ASTNode node) {
-<span class="fc" id="L566">		CompilationUnit root = (CompilationUnit) node.getRoot();</span>
-<span class="fc" id="L567">		return new ScopeAnalyzer(root).getUsedVariableNames(node.getStartPosition(), node.getLength());</span>
-	}
 	
 	/**
 	 * Checks if the analyzed operations include a REDUCE operation.
@@ -573,11 +561,11 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return true if there is a REDUCE operation, false otherwise
 	 */
 	public boolean hasReduceOperation() {
-<span class="nc bnc" id="L576" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
-<span class="nc" id="L577">			return false;</span>
+<span class="nc bnc" id="L564" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
+<span class="nc" id="L565">			return false;</span>
 		}
-<span class="nc" id="L579">		return operations.stream()</span>
-<span class="nc bnc" id="L580" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.REDUCE);</span>
+<span class="nc" id="L567">		return operations.stream()</span>
+<span class="nc bnc" id="L568" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.REDUCE);</span>
 	}
 	
 	/**
@@ -586,15 +574,15 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return the accumulator variable name, or null if no REDUCE operation exists
 	 */
 	public String getAccumulatorVariableName() {
-<span class="nc bnc" id="L589" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
-<span class="nc" id="L590">			return null;</span>
+<span class="nc bnc" id="L577" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
+<span class="nc" id="L578">			return null;</span>
 		}
-<span class="nc bnc" id="L592" title="All 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
-<span class="nc bnc" id="L593" title="All 2 branches missed.">			if (op.getOperationType() == OperationType.REDUCE) {</span>
-<span class="nc" id="L594">				return op.getAccumulatorVariableName();</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
+<span class="nc bnc" id="L581" title="All 2 branches missed.">			if (op.getOperationType() == OperationType.REDUCE) {</span>
+<span class="nc" id="L582">				return op.getAccumulatorVariableName();</span>
 			}
 		}
-<span class="nc" id="L597">		return null;</span>
+<span class="nc" id="L585">		return null;</span>
 	}
 	
 	/**
@@ -603,10 +591,10 @@ import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 	 * @return the target variable name, or null if no COLLECT operation exists
 	 */
 	public String getCollectTargetVariable() {
-<span class="nc bnc" id="L606" title="All 6 branches missed.">		if (!analyzed || !convertible || collectDetector == null) {</span>
-<span class="nc" id="L607">			return null;</span>
+<span class="nc bnc" id="L594" title="All 6 branches missed.">		if (!analyzed || !convertible || collectDetector == null) {</span>
+<span class="nc" id="L595">			return null;</span>
 		}
-<span class="nc" id="L609">		return collectDetector.getTargetVariable();</span>
+<span class="nc" id="L597">		return collectDetector.getTargetVariable();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

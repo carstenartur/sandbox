@@ -36,6 +36,7 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
+import org.sandbox.jdt.internal.corext.util.ImportUtils;
 
 /**
  * @param &lt;T&gt; Type found in Visitor
@@ -44,10 +45,10 @@ public abstract class AbstractSimplifyPlatformStatus&lt;T extends ASTNode&gt; {
 	String methodName;
 	String expectedStatusLiteral;
 
-<span class="fc" id="L47">	public AbstractSimplifyPlatformStatus(String methodName, String expectedStatusLiteral) {</span>
-<span class="fc" id="L48">		this.methodName= methodName;</span>
-<span class="fc" id="L49">		this.expectedStatusLiteral= expectedStatusLiteral;</span>
-<span class="fc" id="L50">	}</span>
+<span class="fc" id="L48">	public AbstractSimplifyPlatformStatus(String methodName, String expectedStatusLiteral) {</span>
+<span class="fc" id="L49">		this.methodName= methodName;</span>
+<span class="fc" id="L50">		this.expectedStatusLiteral= expectedStatusLiteral;</span>
+<span class="fc" id="L51">	}</span>
 
 	/**
 	 * Adds an import to the class. This method should be used for every class
@@ -60,8 +61,7 @@ public abstract class AbstractSimplifyPlatformStatus&lt;T extends ASTNode&gt; {
 	 *         name if there was a conflict
 	 */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-<span class="fc" id="L63">		String importedName= cuRewrite.getImportRewrite().addImport(typeName);</span>
-<span class="fc" id="L64">		return ast.newName(importedName);</span>
+<span class="fc" id="L64">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
 	}
 
 	public abstract String getPreview(boolean afterRefactoring);

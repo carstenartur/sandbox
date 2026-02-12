@@ -72,113 +72,119 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="nc" id="L72">					return false;</span>
 				}
 				
-<span class="fc" id="L75">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
-<span class="fc" id="L76">				nodesprocessed.add(visited);</span>
-<span class="fc" id="L77">				return false;</span>
+				// Safety: reject chained stream operations (map/filter/reduce/flatMap/sorted/distinct)
+				// Only simple collection.forEach() or collection.stream().forEach() can be converted
+<span class="fc bfc" id="L77" title="All 2 branches covered.">				if (StreamOperationDetector.hasChainedStreamOperations(visited)) {</span>
+<span class="fc" id="L78">					return false;</span>
+				}
+				
+<span class="fc" id="L81">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
+<span class="fc" id="L82">				nodesprocessed.add(visited);</span>
+<span class="fc" id="L83">				return false;</span>
 			});
-<span class="fc" id="L79">	}</span>
+<span class="fc" id="L85">	}</span>
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data)
 			throws CoreException {
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (!(visited instanceof MethodInvocation)) {</span>
-<span class="nc" id="L86">			return;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">		if (!(visited instanceof MethodInvocation)) {</span>
+<span class="nc" id="L92">			return;</span>
 		}
 		
-<span class="fc" id="L89">		MethodInvocation forEach = (MethodInvocation) visited;</span>
+<span class="fc" id="L95">		MethodInvocation forEach = (MethodInvocation) visited;</span>
 		
 		// Get the lambda expression
-<span class="pc bpc" id="L92" title="2 of 4 branches missed.">		if (forEach.arguments().isEmpty() || !(forEach.arguments().get(0) instanceof LambdaExpression)) {</span>
-<span class="nc" id="L93">			return;</span>
+<span class="pc bpc" id="L98" title="2 of 4 branches missed.">		if (forEach.arguments().isEmpty() || !(forEach.arguments().get(0) instanceof LambdaExpression)) {</span>
+<span class="nc" id="L99">			return;</span>
 		}
 		
-<span class="fc" id="L96">		LambdaExpression lambda = (LambdaExpression) forEach.arguments().get(0);</span>
+<span class="fc" id="L102">		LambdaExpression lambda = (LambdaExpression) forEach.arguments().get(0);</span>
 		
 		// Extract collection expression (either collection or collection.stream())
-<span class="fc" id="L99">		Expression collectionExpr = forEach.getExpression();</span>
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (collectionExpr instanceof MethodInvocation) {</span>
-<span class="fc" id="L101">			MethodInvocation methodInv = (MethodInvocation) collectionExpr;</span>
-<span class="pc bpc" id="L102" title="1 of 2 branches missed.">			if (&quot;stream&quot;.equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L105">		Expression collectionExpr = forEach.getExpression();</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		if (collectionExpr instanceof MethodInvocation) {</span>
+<span class="fc" id="L107">			MethodInvocation methodInv = (MethodInvocation) collectionExpr;</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">			if (&quot;stream&quot;.equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$</span>
 				// It's collection.stream().forEach(...), use the collection part
-<span class="fc" id="L104">				collectionExpr = methodInv.getExpression();</span>
+<span class="fc" id="L110">				collectionExpr = methodInv.getExpression();</span>
 			}
 		}
 		
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (collectionExpr == null) {</span>
-<span class="nc" id="L109">			return;</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">		if (collectionExpr == null) {</span>
+<span class="nc" id="L115">			return;</span>
 		}
 		
-<span class="fc" id="L112">		AST ast = cuRewrite.getAST();</span>
-<span class="fc" id="L113">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L118">		AST ast = cuRewrite.getAST();</span>
+<span class="fc" id="L119">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
 		
 		// Extract parameter name and type from lambda
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">		if (lambda.parameters().isEmpty()) {</span>
-<span class="nc" id="L117">			return;</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">		if (lambda.parameters().isEmpty()) {</span>
+<span class="nc" id="L123">			return;</span>
 		}
 		
-<span class="fc" id="L120">		VariableDeclaration param = (VariableDeclaration) lambda.parameters().get(0);</span>
-<span class="fc" id="L121">		SimpleName paramName = param.getName();</span>
+<span class="fc" id="L126">		VariableDeclaration param = (VariableDeclaration) lambda.parameters().get(0);</span>
+<span class="fc" id="L127">		SimpleName paramName = param.getName();</span>
 		
 		// Determine parameter type (use var or infer from context)
 		org.eclipse.jdt.core.dom.Type paramType;
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (param instanceof SingleVariableDeclaration) {</span>
-<span class="nc" id="L126">			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">			if (svd.getType() != null) {</span>
-<span class="nc" id="L128">				paramType = (org.eclipse.jdt.core.dom.Type) ASTNode.copySubtree(ast, svd.getType());</span>
-<span class="nc" id="L129">			} else {</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (param instanceof SingleVariableDeclaration) {</span>
+<span class="nc" id="L132">			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">			if (svd.getType() != null) {</span>
+<span class="nc" id="L134">				paramType = (org.eclipse.jdt.core.dom.Type) ASTNode.copySubtree(ast, svd.getType());</span>
+<span class="nc" id="L135">			} else {</span>
 				// Use String as fallback
-<span class="nc" id="L131">				paramType = ast.newSimpleType(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L137">				paramType = ast.newSimpleType(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L133">		} else {</span>
+<span class="nc" id="L139">		} else {</span>
 			// Simple parameter, use String as fallback
-<span class="fc" id="L135">			paramType = ast.newSimpleType(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L141">			paramType = ast.newSimpleType(ast.newName(&quot;String&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Create enhanced for parameter
-<span class="fc" id="L139">		SingleVariableDeclaration forParam = ast.newSingleVariableDeclaration();</span>
-<span class="fc" id="L140">		forParam.setType(paramType);</span>
-<span class="fc" id="L141">		forParam.setName((SimpleName) ASTNode.copySubtree(ast, paramName));</span>
+<span class="fc" id="L145">		SingleVariableDeclaration forParam = ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L146">		forParam.setType(paramType);</span>
+<span class="fc" id="L147">		forParam.setName((SimpleName) ASTNode.copySubtree(ast, paramName));</span>
 		
 		// Create enhanced for-loop
-<span class="fc" id="L144">		EnhancedForStatement forStmt = ast.newEnhancedForStatement();</span>
-<span class="fc" id="L145">		forStmt.setParameter(forParam);</span>
-<span class="fc" id="L146">		forStmt.setExpression((Expression) ASTNode.copySubtree(ast, collectionExpr));</span>
+<span class="fc" id="L150">		EnhancedForStatement forStmt = ast.newEnhancedForStatement();</span>
+<span class="fc" id="L151">		forStmt.setParameter(forParam);</span>
+<span class="fc" id="L152">		forStmt.setExpression((Expression) ASTNode.copySubtree(ast, collectionExpr));</span>
 		
 		// Extract lambda body
-<span class="fc" id="L149">		ASTNode lambdaBody = lambda.getBody();</span>
-<span class="fc" id="L150">		Block forBody = ast.newBlock();</span>
+<span class="fc" id="L155">		ASTNode lambdaBody = lambda.getBody();</span>
+<span class="fc" id="L156">		Block forBody = ast.newBlock();</span>
 		
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">		if (lambdaBody instanceof Block) {</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">		if (lambdaBody instanceof Block) {</span>
 			// Lambda has block body
-<span class="nc" id="L154">			Block lambdaBlock = (Block) lambdaBody;</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">			for (Object stmt : lambdaBlock.statements()) {</span>
-<span class="nc" id="L156">				forBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));</span>
+<span class="nc" id="L160">			Block lambdaBlock = (Block) lambdaBody;</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">			for (Object stmt : lambdaBlock.statements()) {</span>
+<span class="nc" id="L162">				forBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));</span>
 			}
-<span class="pc bpc" id="L158" title="1 of 2 branches missed.">		} else if (lambdaBody instanceof Expression) {</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		} else if (lambdaBody instanceof Expression) {</span>
 			// Lambda has expression body - wrap in expression statement
-<span class="fc" id="L160">			ExpressionStatement exprStmt = ast.newExpressionStatement(</span>
-<span class="fc" id="L161">				(Expression) ASTNode.copySubtree(ast, (Expression) lambdaBody));</span>
-<span class="fc" id="L162">			forBody.statements().add(exprStmt);</span>
+<span class="fc" id="L166">			ExpressionStatement exprStmt = ast.newExpressionStatement(</span>
+<span class="fc" id="L167">				(Expression) ASTNode.copySubtree(ast, (Expression) lambdaBody));</span>
+<span class="fc" id="L168">			forBody.statements().add(exprStmt);</span>
 		}
 		
-<span class="fc" id="L165">		forStmt.setBody(forBody);</span>
+<span class="fc" id="L171">		forStmt.setBody(forBody);</span>
 		
 		// Replace the forEach statement with the for-loop
-<span class="fc" id="L168">		ExpressionStatement forEachStmt = (ExpressionStatement) forEach.getParent();</span>
-<span class="fc" id="L169">		rewrite.replace(forEachStmt, forStmt, group);</span>
-<span class="fc" id="L170">	}</span>
+<span class="fc" id="L174">		ExpressionStatement forEachStmt = (ExpressionStatement) forEach.getParent();</span>
+<span class="fc" id="L175">		rewrite.replace(forEachStmt, forStmt, group);</span>
+<span class="fc" id="L176">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L174" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L175">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L181">			return &quot;&quot;&quot;</span>
 					for (String item : items) {
 						System.out.println(item);
 					}
 					&quot;&quot;&quot;;
 		}
-<span class="nc" id="L181">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L187">		return &quot;&quot;&quot;</span>
 				items.forEach(item -&gt; System.out.println(item));
 				&quot;&quot;&quot;;
 	}

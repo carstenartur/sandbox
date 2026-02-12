@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -42,121 +43,132 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 
  * &lt;p&gt;Transformation: {@code for (T item : collection) { ... }} → {@code Iterator&lt;T&gt; it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}&lt;/p&gt;
  * 
+ * &lt;p&gt;&lt;b&gt;Safety rules:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;Rejects array sources — arrays don't have .iterator() method&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
  * &lt;p&gt;&lt;b&gt;Status:&lt;/b&gt; Stub implementation - Phase 9 bidirectional loop transformations&lt;/p&gt;
  * 
  * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/453&quot;&gt;Issue #453&lt;/a&gt;
  * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/549&quot;&gt;Issue #549&lt;/a&gt;
  */
-<span class="fc" id="L50">public class EnhancedForToIteratorWhile extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
+<span class="fc" id="L56">public class EnhancedForToIteratorWhile extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L55">		org.sandbox.jdt.internal.common.HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, </span>
-<span class="fc" id="L56">			new ReferenceHolder&lt;Integer, Object&gt;(), nodesprocessed, (visited, aholder) -&gt; {</span>
-				// Enhanced for-loops can always be converted to iterator while-loops
-<span class="fc" id="L58">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
-<span class="fc" id="L59">				nodesprocessed.add(visited);</span>
-<span class="fc" id="L60">				return false;</span>
+<span class="fc" id="L61">		org.sandbox.jdt.internal.common.HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, </span>
+<span class="fc" id="L62">			new ReferenceHolder&lt;Integer, Object&gt;(), nodesprocessed, (visited, aholder) -&gt; {</span>
+				// Safety: reject arrays — arrays don't have .iterator() method
+<span class="fc" id="L64">				Expression iterable = visited.getExpression();</span>
+<span class="fc" id="L65">				ITypeBinding typeBinding = iterable.resolveTypeBinding();</span>
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">				if (typeBinding != null &amp;&amp; typeBinding.isArray()) {</span>
+<span class="nc" id="L67">					return false;</span>
+				}
+				
+<span class="fc" id="L70">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
+<span class="fc" id="L71">				nodesprocessed.add(visited);</span>
+<span class="fc" id="L72">				return false;</span>
 			});
-<span class="fc" id="L62">	}</span>
+<span class="fc" id="L74">	}</span>
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data)
 			throws CoreException {
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (!(visited instanceof EnhancedForStatement)) {</span>
-<span class="nc" id="L69">			return;</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">		if (!(visited instanceof EnhancedForStatement)) {</span>
+<span class="nc" id="L81">			return;</span>
 		}
 		
-<span class="fc" id="L72">		EnhancedForStatement forStmt = (EnhancedForStatement) visited;</span>
-<span class="fc" id="L73">		AST ast = cuRewrite.getAST();</span>
-<span class="fc" id="L74">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L84">		EnhancedForStatement forStmt = (EnhancedForStatement) visited;</span>
+<span class="fc" id="L85">		AST ast = cuRewrite.getAST();</span>
+<span class="fc" id="L86">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
 		
 		// Extract components from enhanced for-loop
-<span class="fc" id="L77">		SimpleName paramName = forStmt.getParameter().getName();</span>
-<span class="fc" id="L78">		Type paramType = forStmt.getParameter().getType();</span>
-<span class="fc" id="L79">		Expression collection = forStmt.getExpression();</span>
-<span class="fc" id="L80">		Statement body = forStmt.getBody();</span>
+<span class="fc" id="L89">		SimpleName paramName = forStmt.getParameter().getName();</span>
+<span class="fc" id="L90">		Type paramType = forStmt.getParameter().getType();</span>
+<span class="fc" id="L91">		Expression collection = forStmt.getExpression();</span>
+<span class="fc" id="L92">		Statement body = forStmt.getBody();</span>
 		
 		// Create iterator variable name
-<span class="fc" id="L83">		String iteratorName = &quot;it&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L95">		String iteratorName = &quot;it&quot;; //$NON-NLS-1$</span>
 		
 		// Create Iterator&lt;T&gt; it = collection.iterator();
-<span class="fc" id="L86">		ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(&quot;Iterator&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L87">		iteratorType.typeArguments().add(ASTNode.copySubtree(ast, paramType));</span>
+<span class="fc" id="L98">		ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(&quot;Iterator&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L99">		iteratorType.typeArguments().add(ASTNode.copySubtree(ast, paramType));</span>
 		
-<span class="fc" id="L89">		VariableDeclarationFragment iterFragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L90">		iterFragment.setName(ast.newSimpleName(iteratorName));</span>
+<span class="fc" id="L101">		VariableDeclarationFragment iterFragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L102">		iterFragment.setName(ast.newSimpleName(iteratorName));</span>
 		
-<span class="fc" id="L92">		MethodInvocation iteratorCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L93">		iteratorCall.setExpression((Expression) ASTNode.copySubtree(ast, collection));</span>
-<span class="fc" id="L94">		iteratorCall.setName(ast.newSimpleName(&quot;iterator&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L95">		iterFragment.setInitializer(iteratorCall);</span>
+<span class="fc" id="L104">		MethodInvocation iteratorCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L105">		iteratorCall.setExpression((Expression) ASTNode.copySubtree(ast, collection));</span>
+<span class="fc" id="L106">		iteratorCall.setName(ast.newSimpleName(&quot;iterator&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L107">		iterFragment.setInitializer(iteratorCall);</span>
 		
-<span class="fc" id="L97">		VariableDeclarationStatement iteratorDecl = ast.newVariableDeclarationStatement(iterFragment);</span>
-<span class="fc" id="L98">		iteratorDecl.setType(iteratorType);</span>
+<span class="fc" id="L109">		VariableDeclarationStatement iteratorDecl = ast.newVariableDeclarationStatement(iterFragment);</span>
+<span class="fc" id="L110">		iteratorDecl.setType(iteratorType);</span>
 		
 		// Create while (it.hasNext())
-<span class="fc" id="L101">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L102">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="fc" id="L103">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L113">		MethodInvocation hasNextCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L114">		hasNextCall.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="fc" id="L115">		hasNextCall.setName(ast.newSimpleName(&quot;hasNext&quot;)); //$NON-NLS-1$</span>
 		
-<span class="fc" id="L105">		WhileStatement whileStmt = ast.newWhileStatement();</span>
-<span class="fc" id="L106">		whileStmt.setExpression(hasNextCall);</span>
+<span class="fc" id="L117">		WhileStatement whileStmt = ast.newWhileStatement();</span>
+<span class="fc" id="L118">		whileStmt.setExpression(hasNextCall);</span>
 		
 		// Create T item = it.next();
-<span class="fc" id="L109">		MethodInvocation nextCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L110">		nextCall.setExpression(ast.newSimpleName(iteratorName));</span>
-<span class="fc" id="L111">		nextCall.setName(ast.newSimpleName(&quot;next&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L121">		MethodInvocation nextCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L122">		nextCall.setExpression(ast.newSimpleName(iteratorName));</span>
+<span class="fc" id="L123">		nextCall.setName(ast.newSimpleName(&quot;next&quot;)); //$NON-NLS-1$</span>
 		
-<span class="fc" id="L113">		VariableDeclarationFragment itemFragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L114">		itemFragment.setName((SimpleName) ASTNode.copySubtree(ast, paramName));</span>
-<span class="fc" id="L115">		itemFragment.setInitializer(nextCall);</span>
+<span class="fc" id="L125">		VariableDeclarationFragment itemFragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L126">		itemFragment.setName((SimpleName) ASTNode.copySubtree(ast, paramName));</span>
+<span class="fc" id="L127">		itemFragment.setInitializer(nextCall);</span>
 		
-<span class="fc" id="L117">		VariableDeclarationStatement itemDecl = ast.newVariableDeclarationStatement(itemFragment);</span>
-<span class="fc" id="L118">		itemDecl.setType((Type) ASTNode.copySubtree(ast, paramType));</span>
+<span class="fc" id="L129">		VariableDeclarationStatement itemDecl = ast.newVariableDeclarationStatement(itemFragment);</span>
+<span class="fc" id="L130">		itemDecl.setType((Type) ASTNode.copySubtree(ast, paramType));</span>
 		
 		// Create while body with item declaration and original body
-<span class="fc" id="L121">		Block whileBody = ast.newBlock();</span>
-<span class="fc" id="L122">		whileBody.statements().add(itemDecl);</span>
+<span class="fc" id="L133">		Block whileBody = ast.newBlock();</span>
+<span class="fc" id="L134">		whileBody.statements().add(itemDecl);</span>
 		
 		// Copy original body statements into while body
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (body instanceof Block) {</span>
-<span class="fc" id="L126">			Block origBlock = (Block) body;</span>
-<span class="fc bfc" id="L127" title="All 2 branches covered.">			for (Object stmt : origBlock.statements()) {</span>
-<span class="fc" id="L128">				whileBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		if (body instanceof Block) {</span>
+<span class="fc" id="L138">			Block origBlock = (Block) body;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">			for (Object stmt : origBlock.statements()) {</span>
+<span class="fc" id="L140">				whileBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));</span>
 			}
-<span class="fc" id="L130">		} else {</span>
-<span class="nc" id="L131">			whileBody.statements().add(ASTNode.copySubtree(ast, body));</span>
+<span class="fc" id="L142">		} else {</span>
+<span class="nc" id="L143">			whileBody.statements().add(ASTNode.copySubtree(ast, body));</span>
 		}
 		
-<span class="fc" id="L134">		whileStmt.setBody(whileBody);</span>
+<span class="fc" id="L146">		whileStmt.setBody(whileBody);</span>
 		
 		// Replace the for-loop with iterator declaration followed by while-loop
-<span class="fc" id="L137">		ASTNode parent = forStmt.getParent();</span>
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		if (parent instanceof Block) {</span>
-<span class="fc" id="L139">			Block parentBlock = (Block) parent;</span>
+<span class="fc" id="L149">		ASTNode parent = forStmt.getParent();</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (parent instanceof Block) {</span>
+<span class="fc" id="L151">			Block parentBlock = (Block) parent;</span>
 			
-<span class="fc" id="L141">			org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
-<span class="fc" id="L142">			listRewrite.insertBefore(iteratorDecl, forStmt, group);</span>
-<span class="fc" id="L143">			listRewrite.replace(forStmt, whileStmt, group);</span>
-<span class="fc" id="L144">		} else {</span>
+<span class="fc" id="L153">			org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
+<span class="fc" id="L154">			listRewrite.insertBefore(iteratorDecl, forStmt, group);</span>
+<span class="fc" id="L155">			listRewrite.replace(forStmt, whileStmt, group);</span>
+<span class="fc" id="L156">		} else {</span>
 			// If not in a block, we need to create one
-<span class="nc" id="L146">			Block newBlock = ast.newBlock();</span>
-<span class="nc" id="L147">			newBlock.statements().add(iteratorDecl);</span>
-<span class="nc" id="L148">			newBlock.statements().add(whileStmt);</span>
-<span class="nc" id="L149">			rewrite.replace(forStmt, newBlock, group);</span>
+<span class="nc" id="L158">			Block newBlock = ast.newBlock();</span>
+<span class="nc" id="L159">			newBlock.statements().add(iteratorDecl);</span>
+<span class="nc" id="L160">			newBlock.statements().add(whileStmt);</span>
+<span class="nc" id="L161">			rewrite.replace(forStmt, newBlock, group);</span>
 		}
 		
 		// Add Iterator import
-<span class="fc" id="L153">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L154">	}</span>
+<span class="fc" id="L165">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L166">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L158" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L159">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L171">			return &quot;&quot;&quot;</span>
 					Iterator&lt;String&gt; it = items.iterator();
 					while (it.hasNext()) {
 						String item = it.next();
@@ -164,7 +176,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 					}
 					&quot;&quot;&quot;;
 		}
-<span class="nc" id="L167">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L179">		return &quot;&quot;&quot;</span>
 				for (String item : items) {
 					System.out.println(item);
 				}

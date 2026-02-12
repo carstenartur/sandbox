@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
@@ -56,10 +57,10 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
  * 
  * @since 1.3.0
  */
-<span class="fc" id="L59">public abstract class TriggerPatternCleanupPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L60">public abstract class TriggerPatternCleanupPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
     
-<span class="fc" id="L61">    private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();</span>
-<span class="fc" id="L62">    private final PatternCleanupHelper helper = new PatternCleanupHelper(this.getClass());</span>
+<span class="fc" id="L62">    private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();</span>
+<span class="fc" id="L63">    private final PatternCleanupHelper helper = new PatternCleanupHelper(this.getClass());</span>
     
     /**
      * Returns the Pattern extracted from the @CleanupPattern annotation.
@@ -70,7 +71,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * @return the pattern for matching, or null if no @CleanupPattern annotation is present
      */
     public Pattern getPattern() {
-<span class="fc" id="L73">        return helper.getPattern();</span>
+<span class="fc" id="L74">        return helper.getPattern();</span>
     }
     
     /**
@@ -84,13 +85,13 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * @throws IllegalStateException if neither @CleanupPattern annotation is present nor getPatterns() is overridden
      */
     protected List&lt;Pattern&gt; getPatterns() {
-<span class="fc" id="L87">        List&lt;Pattern&gt; patterns = helper.getPatterns();</span>
-<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (patterns.isEmpty()) {</span>
-<span class="nc" id="L89">            throw new IllegalStateException(</span>
-<span class="nc" id="L90">                &quot;Plugin &quot; + getClass().getSimpleName() + </span>
+<span class="fc" id="L88">        List&lt;Pattern&gt; patterns = helper.getPatterns();</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (patterns.isEmpty()) {</span>
+<span class="nc" id="L90">            throw new IllegalStateException(</span>
+<span class="nc" id="L91">                &quot;Plugin &quot; + getClass().getSimpleName() + </span>
                 &quot; must either be annotated with @CleanupPattern or override getPatterns() method to define patterns&quot;);
         }
-<span class="fc" id="L93">        return patterns;</span>
+<span class="fc" id="L94">        return patterns;</span>
     }
     
     /**
@@ -101,7 +102,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * @return the cleanup ID, or empty string if annotation is not present or cleanupId is not set
      */
     public String getCleanupId() {
-<span class="fc" id="L104">        return helper.getCleanupId();</span>
+<span class="fc" id="L105">        return helper.getCleanupId();</span>
     }
     
     /**
@@ -112,7 +113,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * @return the description, or empty string if annotation is not present or description is not set
      */
     public String getDescription() {
-<span class="fc" id="L115">        return helper.getDescription();</span>
+<span class="fc" id="L116">        return helper.getDescription();</span>
     }
     
     /**
@@ -124,10 +125,10 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * @return a JunitHolder containing match information, or null to skip this match
      */
     protected JunitHolder createHolder(Match match) {
-<span class="fc" id="L127">        JunitHolder holder = new JunitHolder();</span>
-<span class="fc" id="L128">        holder.setMinv(match.getMatchedNode());</span>
-<span class="fc" id="L129">        holder.setBindings(match.getBindings());</span>
-<span class="fc" id="L130">        return holder;</span>
+<span class="fc" id="L128">        JunitHolder holder = new JunitHolder();</span>
+<span class="fc" id="L129">        holder.setMinv(match.getMatchedNode());</span>
+<span class="fc" id="L130">        holder.setBindings(match.getBindings());</span>
+<span class="fc" id="L131">        return holder;</span>
     }
     
     /**
@@ -139,7 +140,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * @return true if this match should be processed
      */
     protected boolean shouldProcess(Match match, Pattern pattern) {
-<span class="fc" id="L142">        return true;</span>
+<span class="fc" id="L143">        return true;</span>
     }
     
     /**
@@ -155,55 +156,55 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
     protected boolean processMatch(Match match, JUnitCleanUpFixCore fixcore,
             Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations,
             ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L158">        JunitHolder holder = createHolder(match);</span>
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">        if (holder != null) {</span>
-<span class="fc" id="L160">            dataHolder.put(dataHolder.size(), holder);</span>
-<span class="fc" id="L161">            operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L159">        JunitHolder holder = createHolder(match);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (holder != null) {</span>
+<span class="fc" id="L161">            dataHolder.put(dataHolder.size(), holder);</span>
+<span class="fc" id="L162">            operations.add(fixcore.rewrite(dataHolder));</span>
         }
-<span class="fc" id="L163">        return false;</span>
+<span class="fc" id="L164">        return false;</span>
     }
     
     @Override
     public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
             Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
         
-<span class="fc" id="L170">        ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L171">        ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
         
-<span class="fc bfc" id="L172" title="All 2 branches covered.">        for (Pattern pattern : getPatterns()) {</span>
-<span class="fc" id="L173">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (Pattern pattern : getPatterns()) {</span>
+<span class="fc" id="L174">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
             
-<span class="fc bfc" id="L175" title="All 2 branches covered.">            for (Match match : matches) {</span>
-<span class="fc" id="L176">                ASTNode node = match.getMatchedNode();</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            for (Match match : matches) {</span>
+<span class="fc" id="L177">                ASTNode node = match.getMatchedNode();</span>
                 
                 // Skip already processed nodes
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">                if (nodesprocessed.contains(node)) {</span>
-<span class="nc" id="L180">                    continue;</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">                if (nodesprocessed.contains(node)) {</span>
+<span class="nc" id="L181">                    continue;</span>
                 }
                 
                 // Validate qualified type if specified
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">                if (pattern.getQualifiedType() != null) {</span>
-<span class="fc bfc" id="L185" title="All 2 branches covered.">                    if (!validateQualifiedType(node, pattern.getQualifiedType())) {</span>
-<span class="fc" id="L186">                        continue;</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">                if (pattern.getQualifiedType() != null) {</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">                    if (!validateQualifiedType(node, pattern.getQualifiedType())) {</span>
+<span class="fc" id="L187">                        continue;</span>
                     }
                 }
                 
                 // Mark node as processed once it passes basic type validation
                 // so it is not re-evaluated in subsequent find() calls, even if
                 // shouldProcess() decides to skip it.
-<span class="fc" id="L193">                nodesprocessed.add(node);</span>
+<span class="fc" id="L194">                nodesprocessed.add(node);</span>
                 
                 // Allow subclasses to add additional validation
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">                if (!shouldProcess(match, pattern)) {</span>
-<span class="nc" id="L197">                    continue;</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">                if (!shouldProcess(match, pattern)) {</span>
+<span class="nc" id="L198">                    continue;</span>
                 }
                 
-<span class="fc" id="L200">                boolean stop = processMatch(match, fixcore, operations, dataHolder);</span>
-<span class="pc bpc" id="L201" title="1 of 2 branches missed.">                if (stop) {</span>
-<span class="nc" id="L202">                    return;</span>
+<span class="fc" id="L201">                boolean stop = processMatch(match, fixcore, operations, dataHolder);</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">                if (stop) {</span>
+<span class="nc" id="L203">                    return;</span>
                 }
             }
         }
-<span class="fc" id="L206">    }</span>
+<span class="fc" id="L207">    }</span>
     
     /**
      * Validates that the node's type binding matches the expected qualified type.
@@ -215,14 +216,14 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * @return true if types match, false otherwise
      */
     protected boolean validateQualifiedType(ASTNode node, String qualifiedType) {
-<span class="fc" id="L218">        return helper.validateQualifiedType(node, qualifiedType);</span>
+<span class="fc" id="L219">        return helper.validateQualifiedType(node, qualifiedType);</span>
     }
     
     /**
      * Helper delegate for rewrite rule processing.
      * Provides access to AbstractPatternCleanupPlugin's consolidated rewrite logic.
      */
-<span class="fc" id="L225">    private final RewriteRuleDelegate rewriteRuleDelegate = new RewriteRuleDelegate();</span>
+<span class="fc" id="L226">    private final RewriteRuleDelegate rewriteRuleDelegate = new RewriteRuleDelegate();</span>
     
     /**
      * Provides default implementation of process2Rewrite using @RewriteRule annotation.
@@ -256,8 +257,8 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
         
         // Delegate to the consolidated rewrite logic in AbstractPatternCleanupPlugin
         // JunitHolder now implements MatchHolder, enabling type-safe delegation
-<span class="fc" id="L259">        rewriteRuleDelegate.doRewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
-<span class="fc" id="L260">    }</span>
+<span class="fc" id="L260">        rewriteRuleDelegate.doRewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
+<span class="fc" id="L261">    }</span>
     
     /**
      * Inner class that provides access to AbstractPatternCleanupPlugin's processRewriteWithRule.
@@ -265,7 +266,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * TriggerPatternCleanupPlugin to extend AbstractPatternCleanupPlugin (which would
      * break the existing AbstractTool inheritance).
      */
-<span class="fc" id="L268">    private class RewriteRuleDelegate extends AbstractPatternCleanupPlugin&lt;JunitHolder&gt; {</span>
+<span class="fc" id="L269">    private class RewriteRuleDelegate extends AbstractPatternCleanupPlugin&lt;JunitHolder&gt; {</span>
         
         /**
          * Public method to invoke the protected processRewriteWithRule.
@@ -273,25 +274,25 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
          */
         public void doRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
                 ImportRewrite importRewriter, JunitHolder holder) {
-<span class="fc" id="L276">            processRewriteWithRule(group, rewriter, ast, importRewriter, holder);</span>
-<span class="fc" id="L277">        }</span>
+<span class="fc" id="L277">            processRewriteWithRule(group, rewriter, ast, importRewriter, holder);</span>
+<span class="fc" id="L278">        }</span>
         
         @Override
         protected JunitHolder createHolder(Match match) {
             // Not used - delegation only for processRewriteWithRule
-<span class="nc" id="L282">            return null;</span>
+<span class="nc" id="L283">            return null;</span>
         }
         
         @Override
         protected void processRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
                 ImportRewrite importRewriter, JunitHolder holder) {
             // Not used - we call processRewriteWithRule directly
-<span class="nc" id="L289">        }</span>
+<span class="nc" id="L290">        }</span>
         
         @Override
         public String getPreview(boolean afterRefactoring) {
             // Delegate to the outer class's getPreview method
-<span class="nc" id="L294">            return TriggerPatternCleanupPlugin.this.getPreview(afterRefactoring);</span>
+<span class="nc" id="L295">            return TriggerPatternCleanupPlugin.this.getPreview(afterRefactoring);</span>
         }
         
         /**
@@ -300,7 +301,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
          */
         @Override
         protected RewriteRule getRewriteRule() {
-<span class="fc" id="L303">            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(RewriteRule.class);</span>
+<span class="fc" id="L304">            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(RewriteRule.class);</span>
         }
     }
     
@@ -344,8 +345,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
             String removeImport, 
             String addImport) {
         
-<span class="nc" id="L347">        MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();</span>
-<span class="nc" id="L348">        newAnnotation.setTypeName(ast.newSimpleName(newAnnotationName));</span>
+<span class="nc" id="L348">        MarkerAnnotation newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, newAnnotationName);</span>
 <span class="nc" id="L349">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
 <span class="nc" id="L350">        importRewriter.removeImport(removeImport);</span>
 <span class="nc" id="L351">        importRewriter.addImport(addImport);</span>

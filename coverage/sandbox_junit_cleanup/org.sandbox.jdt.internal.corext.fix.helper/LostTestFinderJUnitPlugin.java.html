@@ -37,6 +37,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
@@ -51,90 +52,90 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
  * - Public void signature with no parameters
  * - Not annotated with lifecycle annotations
  */
-<span class="fc" id="L54">public class LostTestFinderJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L55">public class LostTestFinderJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
-<span class="fc" id="L56">	private static final Set&lt;String&gt; LIFECYCLE_ANNOTATIONS = Set.of(</span>
-<span class="fc" id="L57">			&quot;Before&quot;, &quot;After&quot;, &quot;BeforeClass&quot;, &quot;AfterClass&quot;,  // JUnit 4</span>
-<span class="fc" id="L58">			&quot;BeforeEach&quot;, &quot;AfterEach&quot;, &quot;BeforeAll&quot;, &quot;AfterAll&quot;,  // JUnit 5</span>
-<span class="fc" id="L59">			&quot;Ignore&quot;, &quot;Disabled&quot;  // Skip annotations</span>
-<span class="fc" id="L60">	);</span>
+<span class="fc" id="L57">	private static final Set&lt;String&gt; LIFECYCLE_ANNOTATIONS = Set.of(</span>
+<span class="fc" id="L58">			&quot;Before&quot;, &quot;After&quot;, &quot;BeforeClass&quot;, &quot;AfterClass&quot;,  // JUnit 4</span>
+<span class="fc" id="L59">			&quot;BeforeEach&quot;, &quot;AfterEach&quot;, &quot;BeforeAll&quot;, &quot;AfterAll&quot;,  // JUnit 5</span>
+<span class="fc" id="L60">			&quot;Ignore&quot;, &quot;Disabled&quot;  // Skip annotations</span>
+<span class="fc" id="L61">	);</span>
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 		
 		// Visit all type declarations to find classes that have @Test methods
-<span class="fc" id="L67">		compilationUnit.accept(new ASTVisitor() {</span>
+<span class="fc" id="L68">		compilationUnit.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(TypeDeclaration node) {
 				// Check if this class has any @Test methods (including inherited)
-<span class="fc bfc" id="L71" title="All 2 branches covered.">				if (classHasTestMethods(node)) {</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">				if (classHasTestMethods(node)) {</span>
 					// Find lost test methods in this class
-<span class="fc" id="L73">					findLostTestMethods(fixcore, node, operations, nodesprocessed);</span>
+<span class="fc" id="L74">					findLostTestMethods(fixcore, node, operations, nodesprocessed);</span>
 				}
-<span class="fc" id="L75">				return true;</span>
+<span class="fc" id="L76">				return true;</span>
 			}
 		});
-<span class="fc" id="L78">	}</span>
+<span class="fc" id="L79">	}</span>
 
 	/**
 	 * Checks if the class or any of its superclasses contains @Test annotated methods
 	 */
 	private boolean classHasTestMethods(TypeDeclaration typeDecl) {
 		// Check current class methods
-<span class="fc bfc" id="L85" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
-<span class="fc bfc" id="L86" title="All 2 branches covered.">			if (hasTestAnnotation(method)) {</span>
-<span class="fc" id="L87">				return true;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			if (hasTestAnnotation(method)) {</span>
+<span class="fc" id="L88">				return true;</span>
 			}
 		}
 		
 		// Check superclass hierarchy using ITypeBinding
-<span class="fc" id="L92">		ITypeBinding binding = typeDecl.resolveBinding();</span>
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">		if (binding != null) {</span>
-<span class="fc" id="L94">			ITypeBinding superclass = binding.getSuperclass();</span>
-<span class="fc bfc" id="L95" title="All 2 branches covered.">			while (superclass != null) {</span>
-<span class="fc bfc" id="L96" title="All 2 branches covered.">				for (IMethodBinding method : superclass.getDeclaredMethods()) {</span>
-<span class="fc bfc" id="L97" title="All 2 branches covered.">					if (hasTestAnnotationOnBinding(method)) {</span>
-<span class="fc" id="L98">						return true;</span>
+<span class="fc" id="L93">		ITypeBinding binding = typeDecl.resolveBinding();</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="fc" id="L95">			ITypeBinding superclass = binding.getSuperclass();</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">			while (superclass != null) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">				for (IMethodBinding method : superclass.getDeclaredMethods()) {</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">					if (hasTestAnnotationOnBinding(method)) {</span>
+<span class="fc" id="L99">						return true;</span>
 					}
 				}
-<span class="fc" id="L101">				superclass = superclass.getSuperclass();</span>
+<span class="fc" id="L102">				superclass = superclass.getSuperclass();</span>
 			}
 		}
 		
-<span class="fc" id="L105">		return false;</span>
+<span class="fc" id="L106">		return false;</span>
 	}
 
 	/**
 	 * Checks if a method has a @Test annotation
 	 */
 	private boolean hasTestAnnotation(MethodDeclaration method) {
-<span class="fc bfc" id="L112" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">			if (modifier instanceof Annotation) {</span>
-<span class="fc" id="L114">				Annotation ann = (Annotation) modifier;</span>
-<span class="fc" id="L115">				String name = ann.getTypeName().getFullyQualifiedName();</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">				if (name.equals(&quot;Test&quot;) || </span>
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">					name.equals(&quot;org.junit.Test&quot;) || </span>
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">					name.equals(&quot;org.junit.jupiter.api.Test&quot;)) {</span>
-<span class="fc" id="L119">					return true;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">			if (modifier instanceof Annotation) {</span>
+<span class="fc" id="L115">				Annotation ann = (Annotation) modifier;</span>
+<span class="fc" id="L116">				String name = ann.getTypeName().getFullyQualifiedName();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">				if (name.equals(&quot;Test&quot;) || </span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">					name.equals(&quot;org.junit.Test&quot;) || </span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">					name.equals(&quot;org.junit.jupiter.api.Test&quot;)) {</span>
+<span class="fc" id="L120">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L123">		return false;</span>
+<span class="fc" id="L124">		return false;</span>
 	}
 
 	/**
 	 * Checks if a method binding has a @Test annotation
 	 */
 	private boolean hasTestAnnotationOnBinding(IMethodBinding methodBinding) {
-<span class="fc bfc" id="L130" title="All 2 branches covered.">		for (org.eclipse.jdt.core.dom.IAnnotationBinding annotation : methodBinding.getAnnotations()) {</span>
-<span class="fc" id="L131">			String annotationName = annotation.getAnnotationType().getQualifiedName();</span>
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">			if (annotationName.equals(&quot;org.junit.Test&quot;) || </span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">				annotationName.equals(&quot;org.junit.jupiter.api.Test&quot;)) {</span>
-<span class="fc" id="L134">				return true;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		for (org.eclipse.jdt.core.dom.IAnnotationBinding annotation : methodBinding.getAnnotations()) {</span>
+<span class="fc" id="L132">			String annotationName = annotation.getAnnotationType().getQualifiedName();</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">			if (annotationName.equals(&quot;org.junit.Test&quot;) || </span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">				annotationName.equals(&quot;org.junit.jupiter.api.Test&quot;)) {</span>
+<span class="fc" id="L135">				return true;</span>
 			}
 		}
-<span class="fc" id="L137">		return false;</span>
+<span class="fc" id="L138">		return false;</span>
 	}
 
 	/**
@@ -143,140 +144,139 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	private void findLostTestMethods(JUnitCleanUpFixCore fixcore, TypeDeclaration typeDecl,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 		
-<span class="fc bfc" id="L146" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
-<span class="pc bpc" id="L147" title="1 of 4 branches missed.">			if (isLostTestMethod(method) &amp;&amp; !nodesprocessed.contains(method)) {</span>
-<span class="fc" id="L148">				nodesprocessed.add(method);</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">			if (isLostTestMethod(method) &amp;&amp; !nodesprocessed.contains(method)) {</span>
+<span class="fc" id="L149">				nodesprocessed.add(method);</span>
 				
-<span class="fc" id="L150">				ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
-<span class="fc" id="L151">				JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L152">				mh.setMinv(method);</span>
-<span class="fc" id="L153">				dataHolder.put(0, mh);</span>
-<span class="fc" id="L154">				operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L151">				ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L152">				JunitHolder mh = new JunitHolder();</span>
+<span class="fc" id="L153">				mh.setMinv(method);</span>
+<span class="fc" id="L154">				dataHolder.put(0, mh);</span>
+<span class="fc" id="L155">				operations.add(fixcore.rewrite(dataHolder));</span>
 			}
 		}
-<span class="fc" id="L157">	}</span>
+<span class="fc" id="L158">	}</span>
 
 	/**
 	 * Determines if a method is a lost test method
 	 */
 	private boolean isLostTestMethod(MethodDeclaration method) {
 		// Must start with &quot;test&quot;
-<span class="fc" id="L164">		String methodName = method.getName().getIdentifier();</span>
-<span class="fc bfc" id="L165" title="All 2 branches covered.">		if (!methodName.startsWith(&quot;test&quot;)) {</span>
-<span class="fc" id="L166">			return false;</span>
+<span class="fc" id="L165">		String methodName = method.getName().getIdentifier();</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		if (!methodName.startsWith(&quot;test&quot;)) {</span>
+<span class="fc" id="L167">			return false;</span>
 		}
 		
 		// Must not already have @Test annotation
-<span class="fc bfc" id="L170" title="All 2 branches covered.">		if (hasTestAnnotation(method)) {</span>
-<span class="fc" id="L171">			return false;</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">		if (hasTestAnnotation(method)) {</span>
+<span class="fc" id="L172">			return false;</span>
 		}
 		
 		// Must be public void with no parameters
-<span class="fc bfc" id="L175" title="All 2 branches covered.">		if (!Modifier.isPublic(method.getModifiers())) {</span>
-<span class="fc" id="L176">			return false;</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">		if (!Modifier.isPublic(method.getModifiers())) {</span>
+<span class="fc" id="L177">			return false;</span>
 		}
 		
 		// Check for void return type using bindings when available, with a safe AST fallback
-<span class="fc" id="L180">		org.eclipse.jdt.core.dom.ITypeBinding returnBinding = null;</span>
-<span class="fc" id="L181">		org.eclipse.jdt.core.dom.IMethodBinding methodBinding = method.resolveBinding();</span>
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		if (methodBinding != null) {</span>
-<span class="fc" id="L183">			returnBinding = methodBinding.getReturnType();</span>
+<span class="fc" id="L181">		org.eclipse.jdt.core.dom.ITypeBinding returnBinding = null;</span>
+<span class="fc" id="L182">		org.eclipse.jdt.core.dom.IMethodBinding methodBinding = method.resolveBinding();</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		if (methodBinding != null) {</span>
+<span class="fc" id="L184">			returnBinding = methodBinding.getReturnType();</span>
 		}
 
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		if (returnBinding != null) {</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">		if (returnBinding != null) {</span>
 			// Binding-based check: require primitive void
-<span class="fc bfc" id="L188" title="All 4 branches covered.">			if (!returnBinding.isPrimitive() || !&quot;void&quot;.equals(returnBinding.getName())) {</span>
-<span class="fc" id="L189">				return false;</span>
+<span class="fc bfc" id="L189" title="All 4 branches covered.">			if (!returnBinding.isPrimitive() || !&quot;void&quot;.equals(returnBinding.getName())) {</span>
+<span class="fc" id="L190">				return false;</span>
 			}
 		} else {
 			// Fallback: inspect the AST return type node defensively
-<span class="nc" id="L193">			org.eclipse.jdt.core.dom.Type astReturnType = method.getReturnType2();</span>
-<span class="nc bnc" id="L194" title="All 2 branches missed.">			if (astReturnType == null) {</span>
-<span class="nc" id="L195">				return false;</span>
+<span class="nc" id="L194">			org.eclipse.jdt.core.dom.Type astReturnType = method.getReturnType2();</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">			if (astReturnType == null) {</span>
+<span class="nc" id="L196">				return false;</span>
 			}
-<span class="nc bnc" id="L197" title="All 2 branches missed.">			if (astReturnType.isPrimitiveType()) {</span>
-<span class="nc" id="L198">				org.eclipse.jdt.core.dom.PrimitiveType primitiveType = (org.eclipse.jdt.core.dom.PrimitiveType) astReturnType;</span>
-<span class="nc bnc" id="L199" title="All 2 branches missed.">				if (primitiveType.getPrimitiveTypeCode() != org.eclipse.jdt.core.dom.PrimitiveType.VOID) {</span>
-<span class="nc" id="L200">					return false;</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">			if (astReturnType.isPrimitiveType()) {</span>
+<span class="nc" id="L199">				org.eclipse.jdt.core.dom.PrimitiveType primitiveType = (org.eclipse.jdt.core.dom.PrimitiveType) astReturnType;</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">				if (primitiveType.getPrimitiveTypeCode() != org.eclipse.jdt.core.dom.PrimitiveType.VOID) {</span>
+<span class="nc" id="L201">					return false;</span>
 				}
 			} else {
 				// Only PrimitiveType with VOID is valid - any other return type is not a lost test
-<span class="nc" id="L204">				return false;</span>
+<span class="nc" id="L205">				return false;</span>
 			}
 		}
 		
-<span class="fc bfc" id="L208" title="All 2 branches covered.">		if (!method.parameters().isEmpty()) {</span>
-<span class="fc" id="L209">			return false;</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">		if (!method.parameters().isEmpty()) {</span>
+<span class="fc" id="L210">			return false;</span>
 		}
 		
 		// Must not have lifecycle annotations
-<span class="fc bfc" id="L213" title="All 2 branches covered.">		if (hasLifecycleAnnotation(method)) {</span>
-<span class="fc" id="L214">			return false;</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">		if (hasLifecycleAnnotation(method)) {</span>
+<span class="fc" id="L215">			return false;</span>
 		}
 		
-<span class="fc" id="L217">		return true;</span>
+<span class="fc" id="L218">		return true;</span>
 	}
 
 	/**
 	 * Checks if a method has a lifecycle annotation that would prevent it from being a test
 	 */
 	private boolean hasLifecycleAnnotation(MethodDeclaration method) {
-<span class="fc bfc" id="L224" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
-<span class="fc bfc" id="L225" title="All 2 branches covered.">			if (modifier instanceof Annotation) {</span>
-<span class="fc" id="L226">				Annotation ann = (Annotation) modifier;</span>
-<span class="fc" id="L227">				String name = ann.getTypeName().getFullyQualifiedName();</span>
-<span class="fc" id="L228">				int lastDot = name.lastIndexOf('.');</span>
-<span class="pc bpc" id="L229" title="1 of 2 branches missed.">				String simpleName = lastDot == -1 ? name : name.substring(lastDot + 1);</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">			if (modifier instanceof Annotation) {</span>
+<span class="fc" id="L227">				Annotation ann = (Annotation) modifier;</span>
+<span class="fc" id="L228">				String name = ann.getTypeName().getFullyQualifiedName();</span>
+<span class="fc" id="L229">				int lastDot = name.lastIndexOf('.');</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">				String simpleName = lastDot == -1 ? name : name.substring(lastDot + 1);</span>
 				// Check simple name and fully qualified JUnit names
-<span class="pc bpc" id="L231" title="1 of 2 branches missed.">				if (LIFECYCLE_ANNOTATIONS.contains(name)</span>
-<span class="nc bnc" id="L232" title="All 4 branches missed.">						|| ((name.startsWith(&quot;org.junit.&quot;) || name.startsWith(&quot;org.junit.jupiter.api.&quot;))</span>
-<span class="nc bnc" id="L233" title="All 2 branches missed.">								&amp;&amp; LIFECYCLE_ANNOTATIONS.contains(simpleName))) {</span>
-<span class="fc" id="L234">					return true;</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">				if (LIFECYCLE_ANNOTATIONS.contains(name)</span>
+<span class="nc bnc" id="L233" title="All 4 branches missed.">						|| ((name.startsWith(&quot;org.junit.&quot;) || name.startsWith(&quot;org.junit.jupiter.api.&quot;))</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">								&amp;&amp; LIFECYCLE_ANNOTATIONS.contains(simpleName))) {</span>
+<span class="fc" id="L235">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L238">		return false;</span>
+<span class="fc" id="L239">		return false;</span>
 	}
 
 	/**
 	 * Determines which @Test annotation to add based on imports in the compilation unit
 	 */
 	private boolean shouldUseJUnit5(CompilationUnit compilationUnit) {
-<span class="fc" id="L245">		final boolean[] hasJUnit5Import = {false};</span>
-<span class="fc" id="L246">		final boolean[] hasJUnit4Import = {false};</span>
+<span class="fc" id="L246">		final boolean[] hasJUnit5Import = {false};</span>
+<span class="fc" id="L247">		final boolean[] hasJUnit4Import = {false};</span>
 		
 		// Check imports
-<span class="fc" id="L249">		List&lt;?&gt; imports = compilationUnit.imports();</span>
-<span class="fc bfc" id="L250" title="All 2 branches covered.">		for (Object obj : imports) {</span>
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">			if (obj instanceof ImportDeclaration) {</span>
-<span class="fc" id="L252">				ImportDeclaration imp = (ImportDeclaration) obj;</span>
-<span class="fc" id="L253">				String importName = imp.getName().getFullyQualifiedName();</span>
-<span class="fc bfc" id="L254" title="All 2 branches covered.">				if (importName.startsWith(&quot;org.junit.jupiter.api&quot;)) {</span>
-<span class="fc" id="L255">					hasJUnit5Import[0] = true;</span>
-<span class="fc bfc" id="L256" title="All 2 branches covered.">				} else if (importName.equals(&quot;org.junit.Test&quot;)</span>
-<span class="pc bpc" id="L257" title="1 of 4 branches missed.">						|| (importName.equals(&quot;org.junit&quot;) &amp;&amp; imp.isOnDemand())) {</span>
-<span class="fc" id="L258">					hasJUnit4Import[0] = true;</span>
+<span class="fc" id="L250">		List&lt;?&gt; imports = compilationUnit.imports();</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">		for (Object obj : imports) {</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">			if (obj instanceof ImportDeclaration) {</span>
+<span class="fc" id="L253">				ImportDeclaration imp = (ImportDeclaration) obj;</span>
+<span class="fc" id="L254">				String importName = imp.getName().getFullyQualifiedName();</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">				if (importName.startsWith(&quot;org.junit.jupiter.api&quot;)) {</span>
+<span class="fc" id="L256">					hasJUnit5Import[0] = true;</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">				} else if (importName.equals(&quot;org.junit.Test&quot;)</span>
+<span class="pc bpc" id="L258" title="1 of 4 branches missed.">						|| (importName.equals(&quot;org.junit&quot;) &amp;&amp; imp.isOnDemand())) {</span>
+<span class="fc" id="L259">					hasJUnit4Import[0] = true;</span>
 				}
 			}
 		}
 		
 		// Prefer JUnit 5 if both are imported or neither
-<span class="fc bfc" id="L264" title="All 4 branches covered.">		return hasJUnit5Import[0] || !hasJUnit4Import[0];</span>
+<span class="fc bfc" id="L265" title="All 4 branches covered.">		return hasJUnit5Import[0] || !hasJUnit4Import[0];</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L270">		MethodDeclaration method = (MethodDeclaration) junitHolder.getMinv();</span>
-<span class="fc" id="L271">		CompilationUnit cu = (CompilationUnit) method.getRoot();</span>
+<span class="fc" id="L271">		MethodDeclaration method = (MethodDeclaration) junitHolder.getMinv();</span>
+<span class="fc" id="L272">		CompilationUnit cu = (CompilationUnit) method.getRoot();</span>
 		
 		// Determine which @Test to use
-<span class="fc" id="L274">		boolean useJUnit5 = shouldUseJUnit5(cu);</span>
+<span class="fc" id="L275">		boolean useJUnit5 = shouldUseJUnit5(cu);</span>
 		
 		// Add @Test annotation
-<span class="fc" id="L277">		ListRewrite modifiers = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="fc" id="L278">		MarkerAnnotation testAnnotation = ast.newMarkerAnnotation();</span>
-<span class="fc" id="L279">		testAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST));</span>
+<span class="fc" id="L278">		ListRewrite modifiers = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L279">		MarkerAnnotation testAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);</span>
 <span class="fc" id="L280">		modifiers.insertFirst(testAnnotation, group);</span>
 		
 		// Add import
