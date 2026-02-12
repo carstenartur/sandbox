@@ -1143,6 +1143,177 @@ This is documented as a future enhancement in the Limitations section below.
 | Unconvertible statements | Multiple handlers | `break`/`continue`/`return` in lambda | BLOCK conversion |
 | Parallel streams | All handlers | Complex synchronization requirements | Sequential only |
 
+## Strict Loop Refactoring Rules (Issue #670)
+
+The cleanup implements strict rules to prevent subtle bugs caused by semantic changes or thread-safety violations during loop-to-stream conversions. These rules are distributed across multiple components and work together to ensure conservative, semantics-preserving transformations.
+
+### Rule Categories
+
+The refactoring rules are organized into three categories based on the type of collection being iterated:
+
+#### Category A: Arrays (T[])
+
+**Safety Principle**: Index-based array loops can only be converted to `IntStream.range()` when the index variable is used exclusively for simple element access.
+
+**Rules**:
+1. **Neighbor access detection** (`i+1`, `i-1`): When the index is used to access adjacent elements, conversion is blocked because enhanced for-loops don't provide index information.
+2. **Conditional logic with index** (`i%2==0`, `i<n/2`): When the index participates in conditional logic beyond array bounds, conversion is blocked because the semantic meaning relies on position.
+3. **Index arithmetic** (`i*2`, `i+offset`): When the index is used in arithmetic operations, conversion is blocked because these patterns indicate positional dependencies.
+
+**Implementation**: `TraditionalForHandler.usesIndexBeyondSimpleAccess()` detects these patterns by analyzing `InfixExpression` nodes in the loop body. The method recursively inspects arithmetic operators (`+`, `-`, `*`, `/`, `%`) to catch both direct usage (e.g., `i+1`) and indirect usage in array subscripts (e.g., `array[i+1]`).
+
+```java
+// Blocked: Neighbor access
+for (int i = 0; i < array.length - 1; i++) {
+    int current = array[i];
+    int next = array[i + 1];  // i+1 detected → BLOCK conversion
+}
+
+// Blocked: Conditional logic with index
+for (int i = 0; i < array.length; i++) {
+    if (i % 2 == 0) {  // i%2 detected → BLOCK conversion
+        process(array[i]);
+    }
+}
+
+// Allowed: Simple element access
+for (int i = 0; i < array.length; i++) {
+    System.out.println(array[i]);  // Only array[i] → ALLOW conversion to IntStream.range()
+}
+```
+
+**Thread-Safety Note**: Arrays don't provide synchronization. Enhanced for-loops on arrays don't prevent data races, but they also don't make things worse. The index detection rules are purely about preserving iteration semantics, not thread-safety.
+
+#### Category B: Normal Collections (ArrayList, HashMap, etc.)
+
+**Safety Principle**: Fail-fast iterators throw `ConcurrentModificationException` when the collection is structurally modified during iteration. Converting to enhanced for-loop or stream maintains this behavior, but conversion must be blocked when structural modifications are detected.
+
+**Rules**:
+1. **Structural modification detection**: Calls to `add()`, `remove()`, `clear()`, `set()`, `addAll()`, `removeAll()`, `retainAll()`, `removeIf()`, `replaceAll()`, `sort()` on the iterated collection block conversion.
+2. **Map modifications**: Calls to `put()`, `putAll()`, `putIfAbsent()`, `compute()`, `computeIfAbsent()`, `computeIfPresent()`, `merge()`, `replace()`, `replaceAll()` on the iterated map block conversion.
+3. **Receiver type checking**: The modification detection checks three receiver types:
+   - Simple names: `list.remove(x)`
+   - Field access: `this.list.remove(x)`
+   - Method invocation (getter pattern): `getList().remove(x)` (heuristic matching)
+
+**Implementation**: `CollectionModificationDetector.isModification()` analyzes `MethodInvocation` nodes and matches the method name against the set of modifying methods. It extracts the receiver expression and compares it to the iterated collection name. The method supports field access (`this.field`) and getter method patterns (`getField()`, `fetchField()`).
+
+```java
+// Blocked: Modification on iterated collection
+for (String item : list) {
+    if (item == null) {
+        list.remove(item);  // list.remove() detected → BLOCK conversion
+    }
+}
+
+// Blocked: Field access receiver
+for (String item : this.list) {
+    this.list.add(item.toUpperCase());  // this.list.add() detected → BLOCK conversion
+}
+
+// Allowed: Modification on different collection
+for (String item : source) {
+    target.add(item.toUpperCase());  // target != source → ALLOW conversion
+}
+```
+
+**Integration**: `PreconditionsChecker.analyzeLoop()` calls `CollectionModificationDetector.isModification()` for every `MethodInvocation` in the loop body. If modification is detected, `modifiesIteratedCollection` is set to `true`, causing `isSafeToRefactor()` to return `false`.
+
+**Thread-Safety Note**: Fail-fast iterators are NOT a thread-safety mechanism. They detect modifications made by the same thread. The rules here prevent semantic changes (avoid `ConcurrentModificationException`), not data races.
+
+#### Category C: Concurrent Collections (CopyOnWriteArrayList, ConcurrentHashMap, etc.)
+
+**Safety Principle**: Concurrent collections have different iteration semantics than normal collections. Their iterators are weakly consistent and never throw `ConcurrentModificationException`. Many concurrent collections don't support `iterator.remove()`.
+
+**Rules**:
+1. **Iterator.remove() restriction**: Conversion to enhanced for-loop is blocked when `iterator.remove()` is used, because enhanced for-loops don't provide access to the iterator.
+2. **CopyOnWrite restriction**: For `CopyOnWriteArrayList` and `CopyOnWriteArraySet`, never generate code that calls `iterator.remove()` (throws `UnsupportedOperationException`).
+3. **Read-only iteration**: Simple forEach operations on concurrent collections are ALLOWED because they're read-only and thread-safe.
+
+**Implementation**: 
+- `ConcurrentCollectionDetector.isConcurrentCollection()` checks type bindings against a set of known concurrent collection types.
+- `IteratorLoopAnalyzer.analyze()` detects `iterator.remove()` calls and blocks conversion when found.
+- `PreconditionsChecker.isConcurrentCollection()` provides collection type information to other components.
+
+```java
+// Blocked: iterator.remove() on CopyOnWriteArrayList
+CopyOnWriteArrayList<String> list = ...;
+Iterator<String> it = list.iterator();
+while (it.hasNext()) {
+    String item = it.next();
+    if (item == null) {
+        it.remove();  // iterator.remove() detected → BLOCK conversion
+    }
+}
+
+// Allowed: Read-only iteration on concurrent collection
+CopyOnWriteArrayList<String> list = ...;
+for (String item : list) {
+    System.out.println(item);  // Read-only → ALLOW conversion to forEach()
+}
+
+// Allowed: ConcurrentHashMap forEach
+ConcurrentHashMap<String, Integer> map = ...;
+for (Integer value : map.values()) {
+    System.out.println(value);  // Read-only → ALLOW conversion to forEach()
+}
+```
+
+**Thread-Safety Note**: Concurrent collections provide their own thread-safety guarantees. The conversion rules preserve these guarantees by ensuring that generated code doesn't call unsupported operations like `iterator.remove()`.
+
+### Safety Decision Matrix
+
+| Pattern | Arrays | Collections | Concurrent Collections | Action |
+|---------|--------|-------------|----------------------|--------|
+| Index used in arithmetic (`i+1`, `i%2`) | ❌ | N/A | N/A | BLOCK conversion |
+| Simple element access (`array[i]`) | ✅ | N/A | N/A | Convert to IntStream.range() |
+| Structural modification (`add`/`remove`/`put`) | N/A | ❌ | ❌ | BLOCK conversion |
+| Read-only iteration | ✅ | ✅ | ✅ | ALLOW conversion |
+| iterator.remove() | N/A | ✅* | ❌ | BLOCK enhanced-for conversion |
+| Simple forEach | ✅ | ✅ | ✅ | ALLOW conversion to forEach() |
+
+\* Allowed for regular collections with proper handling, blocked for concurrent collections
+
+### Component Interaction
+
+The strict rules are enforced through collaboration between multiple components:
+
+1. **Pattern Detection**:
+   - `TraditionalForHandler`: Detects index usage patterns in traditional for-loops
+   - `CollectionModificationDetector`: Detects structural modifications on collections
+   - `IteratorLoopAnalyzer`: Detects iterator.remove() and multiple next() calls
+   - `ConcurrentCollectionDetector`: Identifies concurrent collection types
+
+2. **Safety Validation**:
+   - `PreconditionsChecker`: Aggregates safety checks and provides `isSafeToRefactor()`
+   - `JdtLoopExtractor`: ULR-based safety validation for enhanced for-loops
+   - `IteratorWhileToEnhancedFor`: Safety validation for iterator pattern conversions
+
+3. **Conservative Decision Making**:
+   - When in doubt, don't convert (fail-safe principle)
+   - Semantic preservation takes priority over code modernization
+   - Thread-safety implications are documented but not enforced (user responsibility)
+
+### Testing
+
+Comprehensive test coverage is provided in `Issue670StrictLoopRefactoringTest.java`:
+- **16 test methods** covering all three categories plus edge cases
+- **Negative tests** verify that unsafe patterns are correctly rejected
+- **Positive tests** verify that safe patterns are correctly converted
+- **Edge case tests** verify combined scenarios (e.g., index arithmetic + modification)
+
+See also:
+- `CollectionModificationDetectorTest.java` — Unit tests for modification detection
+- `FunctionalLoopNegativeTest.java` — Negative tests for loop conversion
+- `AdditionalLoopPatternsTest.java` — Tests for traditional for-loops
+
+### References
+
+- [Issue #670](https://github.com/carstenartur/sandbox/issues/670) — Original issue describing strict rules
+- [CollectionModificationDetector](../src/org/sandbox/jdt/internal/corext/fix/helper/CollectionModificationDetector.java) — Modification detection implementation
+- [TraditionalForHandler](../src/org/sandbox/jdt/internal/corext/fix/helper/TraditionalForHandler.java) — Index usage detection implementation
+- [IteratorLoopAnalyzer](../src/org/sandbox/jdt/internal/corext/fix/helper/IteratorLoopAnalyzer.java) — Iterator safety analysis
+
 ## Limitations and Future Work
 
 ### Current Limitations
