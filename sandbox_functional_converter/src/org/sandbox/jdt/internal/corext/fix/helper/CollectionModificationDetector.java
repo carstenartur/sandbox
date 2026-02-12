@@ -32,11 +32,16 @@ import org.eclipse.jdt.core.dom.ThisExpression;
  * <ul>
  * <li>Simple names: {@code list.remove(x)}</li>
  * <li>Field access: {@code this.list.remove(x)}</li>
+ * <li>Method invocation (getter pattern): {@code getList().remove(x)}</li>
  * </ul>
  * 
- * <p><b>Limitation:</b> Does not detect modifications via method return values
- * ({@code getList().remove(x)}) or array access ({@code arrays[0].clear()}).
- * This is an intentional conservative limitation.</p>
+ * <p><b>Method Invocation Heuristic:</b> For method invocations, matches getter
+ * method names against collection names. For example, {@code getList().add(x)}
+ * is detected when iterating over {@code list}. Supports common getter patterns:
+ * {@code getXxx()}, {@code fetchXxx()}, {@code retrieveXxx()}, etc.</p>
+ * 
+ * <p><b>Limitation:</b> Does not detect modifications via array access
+ * ({@code arrays[0].clear()}). This is an intentional conservative limitation.</p>
  * 
  * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
  * @since 1.0.0
@@ -73,8 +78,9 @@ public final class CollectionModificationDetector {
 	 * Checks if a method invocation is a structural modification on a named collection.
 	 * 
 	 * <p>Detects calls to structural modification methods on the given collection variable.
-	 * Supports both simple names ({@code list.remove(x)}) and field access
-	 * ({@code this.list.remove(x)}).</p>
+	 * Supports simple names ({@code list.remove(x)}), field access
+	 * ({@code this.list.remove(x)}), and method invocation receivers
+	 * ({@code getList().remove(x)}).</p>
 	 * 
 	 * @param methodInv the method invocation to check
 	 * @param collectionName the name of the iterated collection variable
@@ -100,6 +106,57 @@ public final class CollectionModificationDetector {
 				if (collectionName.equals(fieldName.getIdentifier())) {
 					String methodName = methodInv.getName().getIdentifier();
 					return MODIFYING_METHODS.contains(methodName);
+				}
+			}
+		}
+		
+		// Check for method invocation receiver: getList().remove(x)
+		if (receiver instanceof MethodInvocation getterInvocation) {
+			if (matchesGetterPattern(getterInvocation, collectionName)) {
+				String methodName = methodInv.getName().getIdentifier();
+				return MODIFYING_METHODS.contains(methodName);
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Checks if a method invocation matches a getter pattern for the given collection name.
+	 * 
+	 * <p>Matches common getter patterns like:</p>
+	 * <ul>
+	 * <li>{@code getList()} → {@code list}</li>
+	 * <li>{@code fetchItems()} → {@code items}</li>
+	 * <li>{@code retrieveMap()} → {@code map}</li>
+	 * </ul>
+	 * 
+	 * @param methodInv the method invocation to check
+	 * @param collectionName the expected collection name
+	 * @return {@code true} if the method name matches a getter pattern for the collection
+	 */
+	private static boolean matchesGetterPattern(MethodInvocation methodInv, String collectionName) {
+		// Only consider no-arg methods (simple getters)
+		if (!methodInv.arguments().isEmpty()) {
+			return false;
+		}
+		
+		String methodName = methodInv.getName().getIdentifier();
+		
+		// Common getter prefixes
+		String[] prefixes = { "get", "fetch", "retrieve", "obtain" };
+		
+		for (String prefix : prefixes) {
+			if (methodName.startsWith(prefix) && methodName.length() > prefix.length()) {
+				// Extract the property name after the prefix (e.g., "List" from "getList")
+				String propertyName = methodName.substring(prefix.length());
+				
+				// Convert first char to lowercase to get the expected variable name
+				String expectedName = Character.toLowerCase(propertyName.charAt(0)) + 
+						propertyName.substring(1);
+				
+				if (collectionName.equals(expectedName)) {
+					return true;
 				}
 			}
 		}

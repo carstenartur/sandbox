@@ -321,4 +321,117 @@ public class CollectionModificationDetectorTest {
 		MethodInvocation inv = parseMethodInvocation(code);
 		assertFalse(CollectionModificationDetector.isModification(inv, "list"));
 	}
+	
+	@Test
+	@DisplayName("Should detect getList().remove() modification")
+	void testGetterMethodInvocationRemove() {
+		String code = """
+				import java.util.List;
+				class Test {
+					List<String> getList() { return null; }
+					void test() {
+						getList().remove(0);
+					}
+				}
+				""";
+		MethodInvocation inv = parseMethodInvocation(code);
+		assertTrue(CollectionModificationDetector.isModification(inv, "list"));
+	}
+	
+	@Test
+	@DisplayName("Should detect getItems().add() modification")
+	void testGetterMethodInvocationAdd() {
+		String code = """
+				import java.util.List;
+				class Test {
+					List<String> getItems() { return null; }
+					void test() {
+						getItems().add("item");
+					}
+				}
+				""";
+		MethodInvocation inv = parseMethodInvocation(code);
+		assertTrue(CollectionModificationDetector.isModification(inv, "items"));
+	}
+	
+	@Test
+	@DisplayName("Should detect fetchMap().put() modification")
+	void testFetchMapPut() {
+		String code = """
+				import java.util.Map;
+				class Test {
+					Map<String, String> fetchMap() { return null; }
+					void test() {
+						fetchMap().put("key", "value");
+					}
+				}
+				""";
+		MethodInvocation inv = parseMethodInvocation(code);
+		assertTrue(CollectionModificationDetector.isModification(inv, "map"));
+	}
+	
+	@Test
+	@DisplayName("Should detect retrieveData().clear() modification")
+	void testRetrieveDataClear() {
+		String code = """
+				import java.util.List;
+				class Test {
+					List<String> retrieveData() { return null; }
+					void test() {
+						retrieveData().clear();
+					}
+				}
+				""";
+		MethodInvocation inv = parseMethodInvocation(code);
+		assertTrue(CollectionModificationDetector.isModification(inv, "data"));
+	}
+	
+	@Test
+	@DisplayName("Should NOT detect getList().get() - non-modifying method")
+	void testGetterNonModifyingMethod() {
+		String code = """
+				import java.util.List;
+				class Test {
+					List<String> getList() { return null; }
+					void test() {
+						getList().get(0);
+					}
+				}
+				""";
+		MethodInvocation inv = parseMethodInvocation(code);
+		assertFalse(CollectionModificationDetector.isModification(inv, "list"));
+	}
+	
+	@Test
+	@DisplayName("Should NOT detect getter with arguments")
+	void testGetterWithArguments() {
+		String code = """
+				import java.util.List;
+				class Test {
+					List<String> getList(int index) { return null; }
+					void test() {
+						getList(0).remove(0);
+					}
+				}
+				""";
+		MethodInvocation inv = parseMethodInvocation(code);
+		assertFalse(CollectionModificationDetector.isModification(inv, "list"));
+	}
+	
+	@Test
+	@DisplayName("Should NOT detect non-matching getter name")
+	void testNonMatchingGetterName() {
+		String code = """
+				import java.util.List;
+				class Test {
+					List<String> getItems() { return null; }
+					void test() {
+						getItems().remove(0);
+					}
+				}
+				""";
+		MethodInvocation inv = parseMethodInvocation(code);
+		// Looking for "list" but getter is "getItems()"
+		assertFalse(CollectionModificationDetector.isModification(inv, "list"));
+	}
 }

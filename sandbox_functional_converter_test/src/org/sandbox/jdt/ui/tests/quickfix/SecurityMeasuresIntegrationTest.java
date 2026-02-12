@@ -369,4 +369,62 @@ public class SecurityMeasuresIntegrationTest {
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
+	
+	/**
+	 * Tests that getList().remove() getter method invocation blocks conversion.
+	 */
+	@Test
+	@DisplayName("getList().remove() should block conversion")
+	void testGetterMethodInvocationBlocksConversion() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		
+		String input = """
+				package test;
+				import java.util.List;
+				import java.util.ArrayList;
+				public class E {
+					private List<String> getList() {
+						return new ArrayList<>();
+					}
+					public void foo(List<String> list) {
+						for (String item : list) {
+							getList().add(item);
+						}
+					}
+				}
+				""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+	
+	/**
+	 * Tests that getItems().clear() blocks conversion when iterating over items.
+	 */
+	@Test
+	@DisplayName("getItems().clear() should block conversion when iterating items")
+	void testGetItemsClearBlocksConversion() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		
+		String input = """
+				package test;
+				import java.util.List;
+				import java.util.ArrayList;
+				public class E {
+					private List<String> getItems() {
+						return new ArrayList<>();
+					}
+					public void foo(List<String> items) {
+						for (String item : items) {
+							getItems().clear();
+						}
+					}
+				}
+				""";
+
+		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
 }
