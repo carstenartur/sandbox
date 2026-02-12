@@ -122,7 +122,7 @@ public static IJavaCompletionProposal detectMissingDispose(HintContext ctx) {
 
 ## Implementation Status
 
-### ✅ Completed (Phase 1 & 2)
+### ✅ Completed (Phase 1, 2 & 3)
 
 1. **METHOD_DECLARATION Pattern Kind**
    - Added `PatternKind.METHOD_DECLARATION` enum value
@@ -137,19 +137,17 @@ public static IJavaCompletionProposal detectMissingDispose(HintContext ctx) {
    - Created `@BodyConstraint` annotation
    - Example code in `MissingSuperDisposePlugin` (sandbox_jface_cleanup plugin)
 
-### 🚧 In Progress (Phase 3)
-
 3. **Override Detection Implementation**
-   - [ ] Enable conditional binding resolution in `TriggerPatternEngine`
-   - [ ] Implement override checking using ITypeHierarchy
-   - [ ] Filter matches based on override constraint
-   - [ ] Add tests for override detection
+   - [x] Enable conditional binding resolution in `TriggerPatternEngine`
+   - [x] Implement override checking using IMethodBinding and ITypeBinding
+   - [x] Filter matches based on override constraint
+   - [x] Add tests for override detection
 
 4. **Body Constraint Implementation**
-   - [ ] Parse body constraint patterns
-   - [ ] Implement body content matching
-   - [ ] Handle negation (`negate = true`)
-   - [ ] Add tests for body constraints
+   - [x] Parse body constraint patterns
+   - [x] Implement body content matching via `findMatchesWithConstraints()`
+   - [x] Handle negation (`negate = true`)
+   - [x] Add tests for body constraints
 
 ## Usage Examples
 
@@ -238,61 +236,74 @@ Hint method receives HintContext with Match
 Create and return IJavaCompletionProposal
 ```
 
-### Override Detection (Planned)
+### Override Detection (Implemented)
 
-Override detection requires enabling binding resolution:
+Override detection is enabled conditionally when a pattern has an `overridesType` constraint:
 
 ```java
-// In TriggerPatternEngine
+// In TriggerPatternEngine.findMatches(ICompilationUnit, Pattern)
+boolean needsBindings = pattern.getOverridesType() != null;
 ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
 astParser.setSource(icu);
-astParser.setResolveBindings(true);  // Enable for override detection
-astParser.setProject(icu.getJavaProject());
-```
-
-Then check hierarchy:
-
-```java
-IMethodBinding methodBinding = methodDecl.resolveBinding();
-if (methodBinding != null) {
-    IMethodBinding[] overriddenMethods = 
-        Bindings.findOverriddenMethods(methodBinding, true);
-    
-    for (IMethodBinding overridden : overriddenMethods) {
-        ITypeBinding declaringType = overridden.getDeclaringClass();
-        if (pattern.getOverridesType().equals(
-            declaringType.getQualifiedName())) {
-            // Match found!
-        }
-    }
+astParser.setResolveBindings(needsBindings);
+if (needsBindings) {
+    astParser.setProject(icu.getJavaProject());
 }
 ```
 
-### Body Constraint Checking (Planned)
-
-Body constraints are checked after signature and override matching:
+The engine then checks the type hierarchy:
 
 ```java
-if (pattern.hasBodyConstraint()) {
-    BodyConstraint constraint = getBodyConstraint(hintMethod);
-    Pattern bodyPattern = new Pattern(
-        constraint.mustContain(),
-        constraint.kind()
-    );
-    
-    MethodDeclaration method = (MethodDeclaration) candidateNode;
-    Block body = method.getBody();
-    
-    if (body != null) {
-        List<Match> bodyMatches = findMatches(body, bodyPattern);
-        boolean found = !bodyMatches.isEmpty();
-        boolean shouldMatch = !constraint.negate();
-        
-        if (found != shouldMatch) {
-            // Constraint not satisfied, skip this match
-            continue;
+// In TriggerPatternEngine.checkOverrides()
+IMethodBinding methodBinding = method.resolveBinding();
+ITypeBinding declaringClass = methodBinding.getDeclaringClass();
+ITypeBinding superClass = declaringClass.getSuperclass();
+while (superClass != null) {
+    if (overridesType.equals(superClass.getQualifiedName())) {
+        for (IMethodBinding superMethod : superClass.getDeclaredMethods()) {
+            if (methodBinding.overrides(superMethod)) {
+                return true;
+            }
         }
     }
+    superClass = superClass.getSuperclass();
+}
+```
+
+### Body Constraint Checking (Implemented)
+
+Body constraints are checked via `findMatchesWithConstraints()`:
+
+```java
+// Usage:
+List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+    "super.dispose();",        // body constraint pattern
+    PatternKind.STATEMENT,     // kind of body pattern
+    true);                     // negate=true: trigger when NOT found
+```
+
+The engine implementation:
+
+```java
+public List<Match> findMatchesWithConstraints(CompilationUnit cu, Pattern pattern,
+        String bodyConstraintPattern, PatternKind bodyConstraintKind, boolean negate) {
+    List<Match> signatureMatches = findMatches(cu, pattern);
+
+    Pattern bodyPattern = new Pattern(bodyConstraintPattern, bodyConstraintKind);
+    ASTNode bodyPatternNode = parser.parse(bodyPattern);
+
+    List<Match> result = new ArrayList<>();
+    for (Match match : signatureMatches) {
+        MethodDeclaration methodDecl = (MethodDeclaration) match.getMatchedNode();
+        Block body = methodDecl.getBody();
+        if (body != null) {
+            boolean found = containsPattern(body, bodyPatternNode);
+            if (found != negate) {
+                result.add(match);
+            }
+        }
+    }
+    return result;
 }
 ```
 
@@ -319,15 +330,17 @@ Tests in `NewPatternKindsTest` and related test classes cover:
 - ✅ Multi-placeholder parameters
 - ✅ Return type matching
 
-### Integration Tests (Planned)
+### Integration Tests
 
-Tests for complete flow:
+Tests in `NewPatternKindsTest` covering the complete flow:
 
-- [ ] Override detection with binding resolution
-- [ ] Body constraint positive matching
-- [ ] Body constraint negative matching (missing call detection)
-- [ ] Complete missing super call detection flow
-- [ ] Fix generation and application
+- [x] Override detection with binding resolution (falls back gracefully without bindings)
+- [x] Body constraint positive matching (trigger when pattern IS found)
+- [x] Body constraint negative matching (trigger when pattern is NOT found)
+- [x] Body constraint with multiple methods (only matches affected methods)
+- [x] Body constraint with empty method body
+- [x] Body constraint with nested blocks (searches entire body subtree)
+- [x] Body constraint with method call patterns
 
 ## Performance Considerations
 
