@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -21,16 +23,16 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.EnhancedForStatement;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.functional.core.builder.LoopModelBuilder;
+import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.IteratorPattern;
@@ -40,6 +42,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
  * 
  * <p>Transformation: {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }} → {@code for (T item : collection) { ... }}</p>
  * 
+ * <p>Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → ASTEnhancedForRenderer}.</p>
+ * 
  * <p><b>Safety rules (Issue #670):</b></p>
  * <ul>
  *   <li>Rejects conversion when iterator.remove() is used (cannot be expressed in enhanced for)</li>
@@ -47,6 +51,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
  *   <li>Rejects conversion when break or labeled continue is present</li>
  * </ul>
  * 
+ * @see LoopModel
+ * @see ASTEnhancedForRenderer
  * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
  * @see <a href="https://github.com/carstenartur/sandbox/issues/549">Issue #549</a>
  * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
@@ -124,58 +130,59 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 		Block parentBlock = (Block) whileStmt.getParent();
 		Statement iteratorDecl = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);
 		
-		// Parse the element type
-		Type elementType;
-		if (pattern.elementType != null && !"Object".equals(pattern.elementType)) { //$NON-NLS-1$
-			elementType = (Type) rewrite.createStringPlaceholder(pattern.elementType, ASTNode.SIMPLE_TYPE);
-		} else {
-			elementType = ast.newSimpleType(ast.newName("Object")); //$NON-NLS-1$
-		}
+		// Build LoopModel from the iterator-while pattern using ULR pipeline
+		LoopModel model = buildLoopModel(pattern);
 		
-		// Create the enhanced for-loop parameter
-		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-		param.setType(elementType);
-		param.setName(ast.newSimpleName("item")); //$NON-NLS-1$
+		// Extract body statements (skip the first item = it.next() declaration)
+		List<Statement> bodyStatements = extractBodyStatements(whileStmt);
 		
-		// Create enhanced for-loop
-		EnhancedForStatement forStmt = ast.newEnhancedForStatement();
-		forStmt.setParameter(param);
-		forStmt.setExpression((Expression) ASTNode.copySubtree(ast, pattern.collectionExpression));
+		// Render enhanced for-loop using ULR-based renderer
+		ASTEnhancedForRenderer renderer = new ASTEnhancedForRenderer(ast, rewrite);
+		renderer.render(model, whileStmt, iteratorDecl, bodyStatements, group);
+	}
+
+	/**
+	 * Builds a LoopModel from an iterator-while pattern using the ULR pipeline.
+	 */
+	private LoopModel buildLoopModel(IteratorPattern pattern) {
+		String collectionExpr = pattern.collectionExpression.toString();
+		String elementType = pattern.elementType != null ? pattern.elementType : "Object"; //$NON-NLS-1$
+		String elementName = "item"; //$NON-NLS-1$
 		
-		// Copy the while body, but skip the first item = it.next() declaration if present
+		return new LoopModelBuilder()
+			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr, elementType)
+			.element(elementName, elementType, false)
+			.terminal(new ForEachTerminal(List.of(), false))
+			.build();
+	}
+
+	/**
+	 * Extracts the actual body statements from the while loop, skipping the
+	 * first {@code T item = it.next()} variable declaration.
+	 */
+	private List<Statement> extractBodyStatements(WhileStatement whileStmt) {
+		List<Statement> result = new ArrayList<>();
 		Statement whileBody = whileStmt.getBody();
-		Block forBody = ast.newBlock();
 		
-		if (whileBody instanceof Block) {
-			Block block = (Block) whileBody;
+		if (whileBody instanceof Block block) {
 			boolean skipFirst = false;
 			
 			// Check if first statement is item = it.next()
 			if (!block.statements().isEmpty()) {
 				Object firstStmt = block.statements().get(0);
 				if (firstStmt instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {
-					// This is likely the item = it.next() statement, skip it
 					skipFirst = true;
 				}
 			}
 			
 			int startIdx = skipFirst ? 1 : 0;
 			for (int i = startIdx; i < block.statements().size(); i++) {
-				Statement stmt = (Statement) block.statements().get(i);
-				forBody.statements().add(ASTNode.copySubtree(ast, stmt));
+				result.add((Statement) block.statements().get(i));
 			}
 		} else {
-			forBody.statements().add(ASTNode.copySubtree(ast, whileBody));
+			result.add(whileBody);
 		}
-		
-		forStmt.setBody(forBody);
-		
-		// Replace while with for-loop and remove iterator declaration
-		org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
-		if (iteratorDecl != null) {
-			listRewrite.remove(iteratorDecl, group);
-		}
-		listRewrite.replace(whileStmt, forStmt, group);
+		return result;
 	}
 
 	@Override

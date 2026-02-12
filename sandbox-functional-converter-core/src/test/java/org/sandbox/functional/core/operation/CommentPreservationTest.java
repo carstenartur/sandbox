@@ -70,14 +70,15 @@ class CommentPreservationTest {
         assertThat(filter.hasComments()).isTrue();
         assertThat(filter.getComments()).hasSize(2);
         
-        // Note: StringRenderer uses default implementation which doesn't handle comments yet
-        // This test demonstrates that the infrastructure is in place
+        // StringRenderer now generates block lambda with comments
         StringRenderer renderer = new StringRenderer();
         LoopModelTransformer<String> transformer = new LoopModelTransformer<>(renderer);
         String result = transformer.transform(model);
         
-        // StringRenderer still generates compact lambda (default behavior)
-        assertThat(result).contains("filter(x -> x > 0)");
+        // Should use block lambda with comments
+        assertThat(result).contains("// Filter out negative values");
+        assertThat(result).contains("// Only process positive integers");
+        assertThat(result).contains("return x > 0;");
     }
     
     @Test

@@ -370,6 +370,22 @@ No V1 Refactorer fallback. See Phase 7.6 and 7.7 above.
    - [ ] Detect subsequent modifications (.sort(), .add(), etc.)
    - [ ] Warn or prevent transformation when immutable list would break code
 
+3. **Migrate Bidirectional Transformers to ULR**
+   - [x] Create `ASTIteratorWhileRenderer` for iterator-while output (uses LoopModel directly)
+   - [x] Create `ASTEnhancedForRenderer` for enhanced-for output (uses LoopModel directly)
+   - [x] Refactor `StreamToEnhancedFor` to use ULR: `LoopModelBuilder → LoopModel → ASTEnhancedForRenderer`
+   - [x] Refactor `StreamToIteratorWhile` to use ULR: `LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer`
+   - [x] Refactor `IteratorWhileToEnhancedFor` to use ULR: `LoopModelBuilder → LoopModel → ASTEnhancedForRenderer`
+   - [x] Refactor `EnhancedForToIteratorWhile` to use ULR: `LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer`
+   - ✅ All 4 bidirectional transformers now use ULR pipeline
+
+4. **ULR Diagnostic Visualization**
+   - [x] Create `LoopModelVisualizer` utility class with three views:
+     - `toAsciiPipeline(LoopModel)` — compact pipeline diagram
+     - `toDetailedDump(LoopModel)` — full component dump with metadata
+     - `toTreeDiagram(LoopTree)` — tree structure with decisions
+   - [x] Add 18 tests for visualizer in `LoopModelVisualizerTest`
+
 **GUI Design Philosophy**:
 - **Global Target Format**: Single selection for desired output format
 - **Source Format Filters**: Individual toggles for which inputs to convert
@@ -418,6 +434,56 @@ The original Phase 9 target format selection using radio buttons (`USEFUNCTIONAL
 #### Backward Compatibility
 
 The legacy radio-button based target format selection remains supported in existing cleanup preferences so that current workspaces, exported preferences, and headless builds keep their behavior unchanged. V1 configuration keys and behavior are preserved; V2 bidirectional transformations are opt-in and must not alter the output for users who have not enabled the new options.
+
+### Phase 10: Comment Preservation 🚧 IN PROGRESS (February 2026)
+
+**Objective**: Preserve source code comments during all loop transformations — both loop-to-stream (via FilterOp/MapOp block-lambdas) and bidirectional loop-to-loop/stream-to-loop transformations (via `ASTRewrite.createCopyTarget`).
+
+**Status**: 🚧 **In Progress** - Core infrastructure complete, bidirectional transformers now preserve body comments
+
+#### Completed Tasks ✅
+
+1. **Core Model — Comment Infrastructure**
+   - ✅ `FilterOp.addComment()` / `hasComments()` / `getComments()` methods
+   - ✅ `MapOp.addComment()` / `hasComments()` / `getComments()` methods
+   - ✅ `StreamPipelineRenderer.renderFilterOp()` / `renderMapOp()` default methods with Operation context
+
+2. **JDT Plugin — ASTStreamRenderer**
+   - ✅ `renderFilterWithComments()` — block-lambda with comments for filter operations
+   - ✅ `renderMapWithComments()` — block-lambda with comments for map operations
+   - ✅ `JdtLoopExtractor` extracts AST comments and attaches them to operations
+
+3. **Core Module — StringRenderer Comment-Aware Rendering** (February 2026)
+   - ✅ `renderFilterOp()` override — generates block-lambda with comments when present
+   - ✅ `renderMapOp()` override — generates block-lambda with comments (side-effect maps take priority)
+   - ✅ `renderBlockLambda()` helper for consistent block-lambda comment formatting
+   - ✅ Tests: `StringRendererTest` (8 new tests for comment-aware rendering)
+   - ✅ Tests: `CommentPreservationTest` updated to verify StringRenderer comment output
+
+4. **Bidirectional Transformers — Body Comment Preservation** (February 2026)
+   - ✅ `EnhancedForToIteratorWhile` uses `rewrite.createCopyTarget()` to preserve body comments
+   - ✅ `IteratorWhileToEnhancedFor` uses `rewrite.createCopyTarget()` to preserve body comments
+   - ✅ `StreamToEnhancedFor` uses `rewrite.createCopyTarget()` for lambda body statements
+   - ✅ `StreamToIteratorWhile` uses `rewrite.createCopyTarget()` for lambda body statements
+   - ✅ Tests: `LoopBidirectionalTransformationTest` — 5 new comment preservation tests
+
+5. **Tests**
+   - ✅ `CommentPreservationTest` (Core, 4 tests, without OSGi)
+   - ✅ `CommentPreservationIntegrationTest` (Plugin, 8 tests)
+   - ✅ `LoopBidirectionalTransformationTest` — comment tests for all 5 directions
+
+#### Remaining Tasks ⏳
+
+1. **Comment-Aware Rendering for Other Operations**
+   - [ ] Extend comment support to `FlatMapOp`, `PeekOp`, etc.
+   - [ ] Consider comment support for terminal operations
+
+2. **Iterator/Traditional For → Stream Comment Preservation**
+   - [ ] `IteratorWhileHandler`: Use `JdtLoopExtractor` for comment extraction (currently converts body via `stmt.toString()`)
+   - [ ] `TraditionalForHandler`: Use `JdtLoopExtractor` for comment extraction
+
+3. **End-to-End Comment Rendering**
+   - [ ] Loop with comments → Stream with comments in generated output (full integration)
 
 ### Issue #453: Output-Format Alignment und vollständigen Support für 'collect'-Pattern ✅ PARTIALLY COMPLETE (January 2026)
 

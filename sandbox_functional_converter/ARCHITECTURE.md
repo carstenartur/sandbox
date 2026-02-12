@@ -7,7 +7,7 @@ The functional loop converter transforms imperative enhanced for-loops into func
 
 ## V2 Parallel Implementation Strategy → Unified Implementation (February 2026)
 
-**Status**: ✅ V2 is the complete implementation — All patterns via ULR pipeline
+**Status**: ✅ V2 is the complete implementation — All loop-to-stream patterns via ULR pipeline
 
 ### Background
 Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the Unified Loop Representation (ULR) to enable:
@@ -23,6 +23,17 @@ EnhancedForHandler:    JDT AST → JdtLoopExtractor → LoopModel → LoopModelT
 IteratorWhileHandler:  JDT AST → IteratorPatternDetector → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
 TraditionalForHandler: JDT AST → analyzeForLoop() → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
 ```
+
+The bidirectional transformers (Phase 9) are all migrated to ULR:
+
+```
+EnhancedForToIteratorWhile: JDT AST → LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer → JDT AST (ULR)
+IteratorWhileToEnhancedFor: JDT AST → LoopModelBuilder → LoopModel → ASTEnhancedForRenderer  → JDT AST (ULR)
+StreamToEnhancedFor:        JDT AST → LoopModelBuilder → LoopModel → ASTEnhancedForRenderer   → JDT AST (ULR)
+StreamToIteratorWhile:      JDT AST → LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer  → JDT AST (ULR)
+```
+
+All seven transformers (3 loop→stream + 4 bidirectional) now use the ULR pipeline.
 
 **`JdtLoopExtractor`** bridges JDT AST to the abstract `LoopModel`, detecting:
 - `if (cond) continue;` → `FilterOp` (negated)
@@ -47,7 +58,8 @@ TraditionalForHandler: JDT AST → analyzeForLoop() → LoopModelBuilder → Loo
 - `LoopModel`, `SourceDescriptor`, `ElementDescriptor`, `LoopMetadata` — ULR data model
 - `FilterOp`, `MapOp`, `CollectTerminal`, `ReduceTerminal`, `MatchTerminal` — Operations/terminals
 - `LoopModelBuilder` — Fluent builder for constructing models
-- `StringRenderer` — Test renderer producing Java code strings (no OSGi needed)
+- `StringRenderer` — Test renderer producing Java code strings (no OSGi needed), supports comment-aware block-lambda rendering
+- `LoopModelVisualizer` — Diagnostic ASCII visualization for debugging (pipeline diagrams, detailed dumps, tree diagrams)
 - `LoopModelTransformer` — Transformation engine (drives any renderer)
 - All testable without Eclipse/OSGi via `mvn test`
 
@@ -62,6 +74,7 @@ The following phases were completed during the V1/V2 parallel development:
 5. **Phase 7.5**: Direct forEach Optimization — Idiomatic `collection.forEach(...)`
 6. **Phase 7.6**: V1/V2 Consolidation — Removed V1 classes
 7. **Phase 7.7**: Full V2 Body Analysis — JdtLoopExtractor detects all patterns natively
+8. **Phase 10**: Comment Preservation — Operations carry comments, renderers emit block-lambdas; bidirectional transformers use `createCopyTarget` for body comments
 
 ### Phase 6: Complete ULR Integration (COMPLETED - January 2026)
 **Goal**: Remove V1 delegation and implement native ULR pipeline in EnhancedForHandler
@@ -1374,9 +1387,10 @@ All tests verify that:
 - Together they enable bidirectional transformations
 
 **Relationship to V2 (ULR)**:
-- Format transformers could leverage ULR's abstract loop model
-- ULR → Format renderer pattern would enable easier format generation
-- Current implementation is V1-based (direct AST manipulation)
+- The four bidirectional transformers do **not** use ULR — they use direct AST manipulation
+- A future enhancement could introduce ULR renderers for non-stream targets (enhanced-for, iterator-while)
+- This would enable unified transformation: `LoopModel → LoopModelTransformer → TargetRenderer`
+- Current implementation uses V1-style direct `ASTRewrite` calls for syntactic loop restructuring
 
 ### API Constants
 
