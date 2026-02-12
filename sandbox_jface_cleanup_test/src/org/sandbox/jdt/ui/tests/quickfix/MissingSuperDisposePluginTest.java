@@ -22,28 +22,225 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  * Tests for MissingSuperDisposePlugin.
  * 
- * <p>This test suite validates the helper methods in MissingSuperDisposePlugin,
- * particularly the containsSuperDisposeCall() method that detects super.dispose()
- * calls in method bodies.</p>
+ * <p>This test suite validates the MissingSuperDisposePlugin that detects missing
+ * super.dispose() calls in SWT Widget subclasses.</p>
  * 
- * <p><b>Note:</b> Full integration tests for TriggerPattern-based detection
- * (pattern matching with {@code @TriggerPattern}, {@code @BodyConstraint})
- * require TriggerPattern engine enhancements:</p>
+ * <p><b>Current Status:</b> Most tests are disabled because they require
+ * TriggerPattern engine enhancements that are not yet implemented:</p>
  * <ul>
- * <li>Override detection (checking if method overrides specific parent class)</li>
- * <li>Body constraint validation (automatically checking for patterns in method bodies)</li>
+ * <li>Override detection - checking if a method overrides a specific parent class method</li>
+ * <li>Body constraint validation - automatically checking for patterns in method bodies</li>
+ * <li>TriggerPattern-based cleanup integration - running cleanups via @TriggerPattern annotations</li>
  * </ul>
  * 
- * <p>These tests focus on the helper method logic that can be tested independently.</p>
+ * <p>The tests are written following the standard cleanup test pattern used in
+ * other plugins (before/after code comparison with enum-based test cases), but
+ * are currently disabled until the TriggerPattern engine is complete.</p>
  * 
  * @see org.sandbox.jdt.internal.corext.fix.helper.MissingSuperDisposePlugin
  */
 public class MissingSuperDisposePluginTest {
+
+	/**
+	 * Test cases for missing super.dispose() detection.
+	 * 
+	 * <p>Following the standard pattern used in other cleanup tests (e.g., Java8CleanUpTest),
+	 * each enum value contains the input code (with missing super call) and expected output
+	 * (with super.dispose() added).</p>
+	 * 
+	 * <p><b>Note:</b> These tests are currently disabled because the TriggerPattern engine
+	 * doesn't yet support override detection and body constraints.</p>
+	 */
+	enum MissingSuperDisposeTestCases {
+		/**
+		 * Basic case: Widget subclass with dispose() that lacks super.dispose()
+		 */
+		BasicMissingSuperCall(
+"""
+package test;
+import org.eclipse.swt.widgets.Widget;
+
+public class MyWidget extends Widget {
+	@Override
+	public void dispose() {
+		cleanup();
+	}
+	
+	private void cleanup() {
+		System.out.println("Cleaning up");
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.swt.widgets.Widget;
+
+public class MyWidget extends Widget {
+	@Override
+	public void dispose() {
+		cleanup();
+		super.dispose();
+	}
+	
+	private void cleanup() {
+		System.out.println("Cleaning up");
+	}
+}
+"""), //$NON-NLS-1$
+		
+		/**
+		 * Case where super.dispose() already exists - should not be modified
+		 */
+		AlreadyHasSuperCall(
+"""
+package test;
+import org.eclipse.swt.widgets.Widget;
+
+public class MyWidget extends Widget {
+	@Override
+	public void dispose() {
+		cleanup();
+		super.dispose();
+	}
+	
+	private void cleanup() {
+		System.out.println("Cleaning up");
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.swt.widgets.Widget;
+
+public class MyWidget extends Widget {
+	@Override
+	public void dispose() {
+		cleanup();
+		super.dispose();
+	}
+	
+	private void cleanup() {
+		System.out.println("Cleaning up");
+	}
+}
+"""), //$NON-NLS-1$
+		
+		/**
+		 * Case with empty dispose() method - should add super.dispose()
+		 */
+		EmptyDisposeMethod(
+"""
+package test;
+import org.eclipse.swt.widgets.Widget;
+
+public class MyWidget extends Widget {
+	@Override
+	public void dispose() {
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.swt.widgets.Widget;
+
+public class MyWidget extends Widget {
+	@Override
+	public void dispose() {
+		super.dispose();
+	}
+}
+"""), //$NON-NLS-1$
+		
+		/**
+		 * Multiple Widget subclasses in same file - should fix all
+		 */
+		MultipleWidgets(
+"""
+package test;
+import org.eclipse.swt.widgets.Widget;
+
+public class MyWidget extends Widget {
+	@Override
+	public void dispose() {
+		cleanup();
+	}
+	
+	private void cleanup() {
+		System.out.println("Cleaning up");
+	}
+}
+
+class AnotherWidget extends Widget {
+	@Override
+	public void dispose() {
+		System.out.println("Disposing");
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.swt.widgets.Widget;
+
+public class MyWidget extends Widget {
+	@Override
+	public void dispose() {
+		cleanup();
+		super.dispose();
+	}
+	
+	private void cleanup() {
+		System.out.println("Cleaning up");
+	}
+}
+
+class AnotherWidget extends Widget {
+	@Override
+	public void dispose() {
+		System.out.println("Disposing");
+		super.dispose();
+	}
+}
+"""); //$NON-NLS-1$
+		
+		public final String given;
+		public final String expected;
+		
+		MissingSuperDisposeTestCases(String given, String expected) {
+			this.given = given;
+			this.expected = expected;
+		}
+	}
+
+	/**
+	 * Disabled: Full cleanup test following the standard pattern.
+	 * 
+	 * <p>This test would run the MissingSuperDisposePlugin cleanup on code with
+	 * missing super.dispose() calls and verify the fix is applied correctly.</p>
+	 * 
+	 * <p><b>Requires:</b> TriggerPattern engine with override detection and body constraints.</p>
+	 * 
+	 * <p><b>Pattern:</b> Same as Java8CleanUpTest - parameterized test with enum cases,
+	 * before/after code comparison.</p>
+	 */
+	@Test
+	@Disabled("Requires TriggerPattern engine enhancements: override detection and body constraints")
+	public void testMissingSuperDisposeCleanup() {
+		// Pattern when implemented:
+		// @ParameterizedTest
+		// @EnumSource(MissingSuperDisposeTestCases.class)
+		// public void testMissingSuperDisposeCleanup(MissingSuperDisposeTestCases test) throws CoreException {
+		//     IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+		//     ICompilationUnit cu = pack.createCompilationUnit("MyWidget.java", test.given, false, null);
+		//     context.enable(MYCleanUpConstants.MISSING_SUPER_DISPOSE_CLEANUP); // Constant TBD
+		//     context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+		// }
+	}
 
 	/**
 	 * Tests that containsSuperDisposeCall correctly identifies super.dispose() calls.
@@ -140,7 +337,7 @@ public class MissingSuperDisposePluginTest {
 		cu.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
 			@Override
 			public boolean visit(MethodDeclaration node) {
-				if ("dispose".equals(node.getName().getIdentifier())) {
+				if ("dispose".equals(node.getName().getIdentifier())) { //$NON-NLS-1$
 					disposeCount[0]++;
 				}
 				return super.visit(node);
