@@ -135,7 +135,7 @@ public static IJavaCompletionProposal detectMissingDispose(HintContext ctx) {
    - Added `overrides` attribute to `@TriggerPattern` annotation
    - Added `overridesType` field to `Pattern` class
    - Created `@BodyConstraint` annotation
-   - Example code in `MissingSuperCallHintProvider`
+   - Example code in `MissingSuperDisposePlugin` (sandbox_jface_cleanup plugin)
 
 ### 🚧 In Progress (Phase 3)
 
@@ -413,13 +413,15 @@ This extends Eclipse's Quick Assist infrastructure with pattern-based matching, 
 
 To add a new missing super call detector:
 
-1. Define the pattern in a hint provider class
+1. Create a new class in the appropriate plugin (e.g., `sandbox_jface_cleanup` for JFace/SWT-specific detectors)
 2. Annotate with `@TriggerPattern`, `@BodyConstraint`, `@Hint`
 3. Implement the hint method to create the fix
-4. Add tests in the test module
+4. Add tests in the corresponding test module
 5. Document in this README
 
-Example contribution:
+**Example:** See `MissingSuperDisposePlugin` in `sandbox_jface_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/`
+
+Example pattern:
 
 ```java
 @TriggerPattern(

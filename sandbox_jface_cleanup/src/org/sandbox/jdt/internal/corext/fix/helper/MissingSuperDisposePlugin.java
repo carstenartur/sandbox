@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.triggerpattern.examples;
+package org.sandbox.jdt.internal.corext.fix.helper;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -29,36 +29,57 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 
 /**
- * Example hint provider demonstrating missing super call detection.
+ * TriggerPattern-based helper for detecting missing super.dispose() calls in SWT Widget subclasses.
  * 
- * <p>This class shows how to use METHOD_DECLARATION patterns with override
- * and body constraints to detect missing super calls in overridden methods.</p>
+ * <p>This plugin demonstrates the TriggerPattern framework for detecting missing super calls
+ * in overridden methods. It specifically targets the common pattern in SWT/JFace where
+ * Widget.dispose() must call super.dispose().</p>
  * 
- * <p><b>Note:</b> This is a demonstration of the API. The actual implementation
+ * <p><b>Pattern Detected:</b> Methods that override {@code org.eclipse.swt.widgets.Widget.dispose()}
+ * but don't call {@code super.dispose()}.</p>
+ * 
+ * <p><b>Example:</b></p>
+ * <pre>
+ * class MyWidget extends Widget {
+ *     {@literal @}Override
+ *     public void dispose() {
+ *         // Missing super.dispose() call
+ *         cleanup();
+ *     }
+ * }
+ * </pre>
+ * 
+ * <p><b>Note:</b> This is a demonstration of the TriggerPattern API. The actual implementation
  * of override detection and body constraint checking is not yet fully implemented
- * in the TriggerPattern engine.</p>
+ * in the TriggerPattern engine and will be completed in future updates.</p>
  * 
+ * @see org.eclipse.swt.widgets.Widget#dispose()
  * @since 1.2.6
  */
-public class MissingSuperCallHintProvider {
+public class MissingSuperDisposePlugin {
 	
 	/**
 	 * Detects missing super.dispose() call in dispose() method overrides.
 	 * 
-	 * <p>This example demonstrates the proposed API for detecting missing super calls.
-	 * When fully implemented, this would match any dispose() method that overrides
-	 * a dispose() method but doesn't call super.dispose().</p>
+	 * <p>This method demonstrates the proposed API for detecting missing super calls.
+	 * When the TriggerPattern engine is fully implemented, this will automatically match
+	 * any dispose() method that overrides Widget.dispose() but doesn't call super.dispose().</p>
 	 * 
-	 * <p>Example code that would trigger this hint:</p>
-	 * <pre>
-	 * class MyWidget extends Widget {
-	 *     {@literal @}Override
-	 *     public void dispose() {
-	 *         // Missing super.dispose() call
-	 *         System.out.println("disposing");
-	 *     }
-	 * }
-	 * </pre>
+	 * <p>The {@code @TriggerPattern} annotation specifies:</p>
+	 * <ul>
+	 * <li>Pattern: {@code void dispose()} - matches methods with this signature</li>
+	 * <li>Kind: METHOD_DECLARATION - matches method declarations (not invocations)</li>
+	 * <li>Overrides: org.eclipse.swt.widgets.Widget - only matches if overriding Widget.dispose()</li>
+	 * </ul>
+	 * 
+	 * <p>The {@code @BodyConstraint} annotation specifies:</p>
+	 * <ul>
+	 * <li>mustContain: {@code super.dispose()} - the pattern to look for in method body</li>
+	 * <li>negate: true - triggers when the pattern is NOT found (i.e., missing super call)</li>
+	 * </ul>
+	 * 
+	 * @param ctx the hint context containing the matched node and rewrite utilities
+	 * @return a completion proposal to add the missing super.dispose() call, or null if not applicable
 	 */
 	@TriggerPattern(
 		value = "void dispose()",
@@ -68,7 +89,7 @@ public class MissingSuperCallHintProvider {
 	@BodyConstraint(mustContain = "super.dispose()", negate = true)
 	@Hint(
 		displayName = "Missing super.dispose() call",
-		description = "Methods overriding dispose() should call super.dispose()"
+		description = "Methods overriding Widget.dispose() should call super.dispose()"
 	)
 	public static IJavaCompletionProposal detectMissingDisposeCall(HintContext ctx) {
 		ASTNode matchedNode = ctx.getMatch().getMatchedNode();
@@ -117,6 +138,10 @@ public class MissingSuperCallHintProvider {
 	
 	/**
 	 * Helper method to check if a method body contains a super.dispose() call.
+	 * 
+	 * <p>This is a simple implementation that only checks top-level statements.
+	 * A production implementation would need to handle nested blocks, conditional
+	 * statements, and other control flow structures.</p>
 	 * 
 	 * @param body the method body to check
 	 * @return true if super.dispose() is called, false otherwise

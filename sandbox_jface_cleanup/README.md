@@ -4,9 +4,11 @@
 
 ## Overview
 
-The **JFace Cleanup** plugin modernizes Eclipse JFace code by migrating deprecated `SubProgressMonitor` usage to the recommended `SubMonitor` API. This improves code maintainability and follows Eclipse Platform best practices.
+The **JFace Cleanup** plugin modernizes Eclipse JFace/SWT code with automated transformations and code quality improvements.
 
 ## Key Features
+
+### Production Features
 
 - 🔄 **SubProgressMonitor → SubMonitor** - Automatic migration to modern progress API
 - 🎯 **Style Flag Mapping** - Maps `SUPPRESS_SUBTASK_LABEL` to `SUPPRESS_SUBTASK`
@@ -14,6 +16,13 @@ The **JFace Cleanup** plugin modernizes Eclipse JFace code by migrating deprecat
 - 📦 **Variable Name Management** - Generates unique variable names to avoid conflicts
 - ♻️ **Idempotent** - Running cleanup multiple times produces the same result
 - 🔌 **Eclipse Integration** - Works seamlessly with Eclipse RCP/JFace code
+
+### Experimental Features (TriggerPattern Framework)
+
+- 🚨 **Missing super.dispose() Detection** - Detects SWT Widget subclasses that override `dispose()` without calling `super.dispose()`
+  - See `MissingSuperDisposePlugin` for TriggerPattern-based implementation
+  - Demonstrates declarative pattern matching for missing super calls
+  - *Note: Requires TriggerPattern engine enhancements (override detection, body constraints)*
 
 ## Quick Start
 
