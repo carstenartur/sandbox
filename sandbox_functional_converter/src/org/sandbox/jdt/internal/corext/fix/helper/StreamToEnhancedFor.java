@@ -151,7 +151,7 @@ public class StreamToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
 		forStmt.setParameter(forParam);
 		forStmt.setExpression((Expression) ASTNode.copySubtree(ast, collectionExpr));
 		
-		// Extract lambda body
+		// Extract lambda body, preserving comments via createCopyTarget
 		ASTNode lambdaBody = lambda.getBody();
 		Block forBody = ast.newBlock();
 		
@@ -159,7 +159,7 @@ public class StreamToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
 			// Lambda has block body
 			Block lambdaBlock = (Block) lambdaBody;
 			for (Object stmt : lambdaBlock.statements()) {
-				forBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+				forBody.statements().add(rewrite.createCopyTarget((Statement) stmt));
 			}
 		} else if (lambdaBody instanceof Expression) {
 			// Lambda has expression body - wrap in expression statement

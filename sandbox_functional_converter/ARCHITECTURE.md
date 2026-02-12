@@ -62,7 +62,7 @@ The following phases were completed during the V1/V2 parallel development:
 5. **Phase 7.5**: Direct forEach Optimization — Idiomatic `collection.forEach(...)`
 6. **Phase 7.6**: V1/V2 Consolidation — Removed V1 classes
 7. **Phase 7.7**: Full V2 Body Analysis — JdtLoopExtractor detects all patterns natively
-8. **Phase 10**: Comment Preservation — Operations carry comments, renderers emit block-lambdas with comments
+8. **Phase 10**: Comment Preservation — Operations carry comments, renderers emit block-lambdas; bidirectional transformers use `createCopyTarget` for body comments
 
 ### Phase 6: Complete ULR Integration (COMPLETED - January 2026)
 **Goal**: Remove V1 delegation and implement native ULR pipeline in EnhancedForHandler

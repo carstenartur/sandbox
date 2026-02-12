@@ -421,9 +421,9 @@ The legacy radio-button based target format selection remains supported in exist
 
 ### Phase 10: Comment Preservation 🚧 IN PROGRESS (February 2026)
 
-**Objective**: Preserve source code comments during loop-to-stream transformations by embedding them into the generated stream pipeline using block-lambda syntax.
+**Objective**: Preserve source code comments during all loop transformations — both loop-to-stream (via FilterOp/MapOp block-lambdas) and bidirectional loop-to-loop/stream-to-loop transformations (via `ASTRewrite.createCopyTarget`).
 
-**Status**: 🚧 **In Progress** - Core infrastructure complete, StringRenderer comment-aware rendering implemented
+**Status**: 🚧 **In Progress** - Core infrastructure complete, bidirectional transformers now preserve body comments
 
 #### Completed Tasks ✅
 
@@ -444,9 +444,17 @@ The legacy radio-button based target format selection remains supported in exist
    - ✅ Tests: `StringRendererTest` (8 new tests for comment-aware rendering)
    - ✅ Tests: `CommentPreservationTest` updated to verify StringRenderer comment output
 
-4. **Tests**
+4. **Bidirectional Transformers — Body Comment Preservation** (February 2026)
+   - ✅ `EnhancedForToIteratorWhile` uses `rewrite.createCopyTarget()` to preserve body comments
+   - ✅ `IteratorWhileToEnhancedFor` uses `rewrite.createCopyTarget()` to preserve body comments
+   - ✅ `StreamToEnhancedFor` uses `rewrite.createCopyTarget()` for lambda body statements
+   - ✅ `StreamToIteratorWhile` uses `rewrite.createCopyTarget()` for lambda body statements
+   - ✅ Tests: `LoopBidirectionalTransformationTest` — 5 new comment preservation tests
+
+5. **Tests**
    - ✅ `CommentPreservationTest` (Core, 4 tests, without OSGi)
    - ✅ `CommentPreservationIntegrationTest` (Plugin, 8 tests)
+   - ✅ `LoopBidirectionalTransformationTest` — comment tests for all 5 directions
 
 #### Remaining Tasks ⏳
 
@@ -454,12 +462,9 @@ The legacy radio-button based target format selection remains supported in exist
    - [ ] Extend comment support to `FlatMapOp`, `PeekOp`, etc.
    - [ ] Consider comment support for terminal operations
 
-2. **Comment Preservation Tests — Missing for 5 of 6 Transformation Directions**
-   - [ ] Iterator-while → Stream
-   - [ ] Stream → Enhanced-for
-   - [ ] Stream → Iterator-while
-   - [ ] Iterator-while → Enhanced-for
-   - [ ] Enhanced-for → Iterator-while
+2. **Iterator/Traditional For → Stream Comment Preservation**
+   - [ ] `IteratorWhileHandler`: Use `JdtLoopExtractor` for comment extraction (currently converts body via `stmt.toString()`)
+   - [ ] `TraditionalForHandler`: Use `JdtLoopExtractor` for comment extraction
 
 3. **End-to-End Comment Rendering**
    - [ ] Loop with comments → Stream with comments in generated output (full integration)

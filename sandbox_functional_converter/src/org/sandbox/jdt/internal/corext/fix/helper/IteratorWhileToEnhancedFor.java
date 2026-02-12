@@ -162,10 +162,10 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 			int startIdx = skipFirst ? 1 : 0;
 			for (int i = startIdx; i < block.statements().size(); i++) {
 				Statement stmt = (Statement) block.statements().get(i);
-				forBody.statements().add(ASTNode.copySubtree(ast, stmt));
+				forBody.statements().add(rewrite.createCopyTarget(stmt));
 			}
 		} else {
-			forBody.statements().add(ASTNode.copySubtree(ast, whileBody));
+			forBody.statements().add(rewrite.createCopyTarget(whileBody));
 		}
 		
 		forStmt.setBody(forBody);

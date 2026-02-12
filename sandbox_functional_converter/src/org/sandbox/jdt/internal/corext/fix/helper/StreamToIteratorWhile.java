@@ -186,13 +186,13 @@ public class StreamToIteratorWhile extends AbstractFunctionalCall<ASTNode> {
 		Block whileBody = ast.newBlock();
 		whileBody.statements().add(itemDecl);
 		
-		// Extract lambda body
+		// Extract lambda body, preserving comments via createCopyTarget
 		ASTNode lambdaBody = lambda.getBody();
 		if (lambdaBody instanceof Block) {
 			// Lambda has block body
 			Block lambdaBlock = (Block) lambdaBody;
 			for (Object stmt : lambdaBlock.statements()) {
-				whileBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+				whileBody.statements().add(rewrite.createCopyTarget((Statement) stmt));
 			}
 		} else if (lambdaBody instanceof Expression) {
 			// Lambda has expression body - wrap in expression statement

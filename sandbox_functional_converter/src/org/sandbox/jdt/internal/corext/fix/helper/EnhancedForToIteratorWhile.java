@@ -133,14 +133,14 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 		Block whileBody = ast.newBlock();
 		whileBody.statements().add(itemDecl);
 		
-		// Copy original body statements into while body
+		// Copy original body statements into while body, preserving comments
 		if (body instanceof Block) {
 			Block origBlock = (Block) body;
 			for (Object stmt : origBlock.statements()) {
-				whileBody.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
+				whileBody.statements().add(rewrite.createCopyTarget((Statement) stmt));
 			}
 		} else {
-			whileBody.statements().add(ASTNode.copySubtree(ast, body));
+			whileBody.statements().add(rewrite.createCopyTarget(body));
 		}
 		
 		whileStmt.setBody(whileBody);
