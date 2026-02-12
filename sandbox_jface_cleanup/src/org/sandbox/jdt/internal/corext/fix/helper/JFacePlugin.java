@@ -159,8 +159,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
 		ReferenceHolder<Integer, MonitorHolder> dataholder = new ReferenceHolder<>();
-		ReferenceHolder<Integer, MonitorHolder> standaloneHolder = new ReferenceHolder<>();
 		
+		// Track which SubProgressMonitor nodes are associated with beginTask
+		Set<ASTNode> beginTaskAssociated = new HashSet<>();
+		
+		// Pass 1: Find beginTask + SubProgressMonitor patterns (chained visitors)
 		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.processor()
 			.callMethodInvocationVisitor(IProgressMonitor.class, "beginTask", (node, holder) -> { //$NON-NLS-1$
@@ -210,6 +213,51 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					firstArgName = sn.getIdentifier();
 				}
 				
+				// Check if this SubProgressMonitor is associated with a beginTask
+				if (!holder.isEmpty() && firstArgName != null) {
+					MonitorHolder mh = holder.get(holder.size() - 1);
+					if (mh.minvname.equals(firstArgName)) {
+						logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "' with beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
+						mh.setofcic.add(node);
+						beginTaskAssociated.add(node);
+					}
+				}
+				
+				return true;
+			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
+			.build(compilationUnit);
+		
+		// Add operations for beginTask-associated monitors
+		if (!dataholder.isEmpty()) {
+			operations.add(fixcore.rewrite(dataholder));
+		}
+		
+		// Pass 2: Find standalone SubProgressMonitor instances (independent traversal)
+		ReferenceHolder<Integer, MonitorHolder> standaloneHolder = new ReferenceHolder<>();
+		
+		AstProcessorBuilder.with(standaloneHolder, nodesprocessed)
+			.processor()
+			.callClassInstanceCreationVisitor("org.eclipse.core.runtime.SubProgressMonitor", (node, holder) -> { //$NON-NLS-1$
+				// Skip nodes already associated with beginTask from pass 1
+				if (beginTaskAssociated.contains(node)) {
+					return true;
+				}
+				
+				List<?> arguments = node.arguments();
+				if (arguments.isEmpty()) {
+					return true;
+				}
+				
+				// Safe handling of first argument - extract identifier from expression
+				Expression firstArg = (Expression) arguments.get(0);
+				String firstArgName = null;
+				
+				// Try to extract SimpleName from the expression
+				SimpleName sn = ASTNodes.as(firstArg, SimpleName.class);
+				if (sn != null) {
+					firstArgName = sn.getIdentifier();
+				}
+				
 				// Check if the variable is already a SubMonitor type
 				boolean isSubMonitorType = false;
 				if (sn != null) {
@@ -231,40 +279,22 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					mh.minvname = firstArgName;
 					mh.nodesprocessed = nodesprocessed;
 					mh.subProgressMonitorOnSubMonitor.add(node);
-					standaloneHolder.put(standaloneHolder.size(), mh);
+					holder.put(holder.size(), mh);
 					return true;
 				}
 				
-				// Check if this SubProgressMonitor is associated with a beginTask
-				boolean foundAssociation = false;
-				if (!holder.isEmpty() && firstArgName != null) {
-					MonitorHolder mh = holder.get(holder.size() - 1);
-					if (mh.minvname.equals(firstArgName)) {
-						logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "' with beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
-						mh.setofcic.add(node);
-						foundAssociation = true;
-					}
-				}
-				
-				// If not associated with beginTask, mark as standalone for different handling
-				if (!foundAssociation) {
-					String varName = firstArgName != null ? firstArgName : "monitor"; //$NON-NLS-1$
-					logDebug("Found standalone SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + varName + "' without beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
-					MonitorHolder mh = new MonitorHolder();
-					mh.minvname = varName;
-					mh.nodesprocessed = nodesprocessed;
-					mh.standaloneSubProgressMonitors.add(node);
-					standaloneHolder.put(standaloneHolder.size(), mh);
-				}
+				// Standalone SubProgressMonitor (not associated with beginTask)
+				String varName = firstArgName != null ? firstArgName : "monitor"; //$NON-NLS-1$
+				logDebug("Found standalone SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + varName + "' without beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
+				MonitorHolder mh = new MonitorHolder();
+				mh.minvname = varName;
+				mh.nodesprocessed = nodesprocessed;
+				mh.standaloneSubProgressMonitors.add(node);
+				holder.put(holder.size(), mh);
 				
 				return true;
 			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.build(compilationUnit);
-		
-		// Add operations for beginTask-associated monitors
-		if (!dataholder.isEmpty()) {
-			operations.add(fixcore.rewrite(dataholder));
-		}
 		
 		// Add operations for standalone SubProgressMonitor
 		if (!standaloneHolder.isEmpty()) {
