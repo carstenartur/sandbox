@@ -103,7 +103,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		public Set<ClassInstanceCreation> standaloneSubProgressMonitors = new HashSet<>();
 		/** SubProgressMonitor on already-SubMonitor variables (use split() directly) */
 		public Set<ClassInstanceCreation> subProgressMonitorOnSubMonitor = new HashSet<>();
-		/** Nodes that have been processed to avoid duplicate transformations (shared across all holders) */
+		/** Nodes that have been processed to avoid duplicate transformations (references shared Set passed during construction) */
 		public Set<ASTNode> nodesprocessed;
 	}
 

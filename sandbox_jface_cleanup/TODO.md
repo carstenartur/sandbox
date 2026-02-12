@@ -58,7 +58,7 @@ Maps SubProgressMonitor flags to SubMonitor equivalents:
 - SuppressSubtaskLabelFlag test case
 - PrependMainLabelToSubtaskFlag test case
 
-#### 3. Type-Aware SubMonitor Detection (ITypeBinding-based type check) ✅
+#### 3. ITypeBinding-based SubMonitor Type Detection ✅
 **Status**: Implemented and tested
 
 Detects when SubProgressMonitor is created on a variable already typed as SubMonitor and uses split() directly:
