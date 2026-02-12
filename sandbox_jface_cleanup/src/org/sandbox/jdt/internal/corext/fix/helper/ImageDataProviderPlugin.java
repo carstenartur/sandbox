@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -253,15 +254,15 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 	}
 
 	/**
-	 * Counts how many times a variable is referenced in the enclosing method/block.
+	 * Counts how many times a variable is referenced in the enclosing method.
 	 * 
 	 * @param varName the variable name to count references for
-	 * @return the number of references to the variable
+	 * @return the number of references to the variable (excluding the declaration itself)
 	 */
 	private int countVariableReferences(SimpleName varName) {
-		// Navigate up to find the enclosing method or block
+		// Navigate up to find the enclosing method
 		ASTNode parent = varName.getParent();
-		while (parent != null && !(parent instanceof MethodDeclaration) && !(parent instanceof Block)) {
+		while (parent != null && !(parent instanceof MethodDeclaration)) {
 			parent = parent.getParent();
 		}
 		
@@ -269,18 +270,32 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 			return 0;
 		}
 		
-		// Count references to the variable
+		// Get the binding of the variable we're looking for
+		final IBinding varBinding = varName.resolveBinding();
+		if (varBinding == null) {
+			return 0;
+		}
+		
+		// Count references to the variable (excluding the declaration)
 		final int[] count = new int[1];
-		final String varIdentifier = varName.getIdentifier();
 		
 		parent.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName node) {
-				// Check if this is a reference to our variable (not the declaration)
-				if (node.getIdentifier().equals(varIdentifier)) {
-					// Make sure it's actually referencing a variable, not declaring it
+				// Check if this node refers to the same variable binding
+				IBinding nodeBinding = node.resolveBinding();
+				if (nodeBinding != null && nodeBinding.equals(varBinding)) {
+					// Check if this is a reference (not the declaration itself)
 					ASTNode nodeParent = node.getParent();
-					if (!(nodeParent instanceof VariableDeclarationFragment)) {
+					// Exclude the name in the VariableDeclarationFragment (the declaration)
+					if (nodeParent instanceof VariableDeclarationFragment) {
+						VariableDeclarationFragment fragment = (VariableDeclarationFragment) nodeParent;
+						// Only count if it's not the name being declared
+						if (!node.equals(fragment.getName())) {
+							count[0]++;
+						}
+					} else {
+						// All other occurrences are references
 						count[0]++;
 					}
 				}
