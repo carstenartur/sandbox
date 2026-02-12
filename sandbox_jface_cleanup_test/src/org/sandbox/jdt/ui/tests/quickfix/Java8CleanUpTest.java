@@ -942,7 +942,7 @@ public class Test {
 
 	@ParameterizedTest
 	@EnumSource(NOImageDataProviderCleanupCases.class)
-	public void testImageDataProviderCleanupdonttouch(NOImageDataProviderCleanupCases test) throws CoreException {
+	public void testImageDataProviderCleanupDoNotTouch(NOImageDataProviderCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
