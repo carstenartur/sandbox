@@ -28,12 +28,12 @@ The bidirectional transformers (Phase 9) are being migrated to ULR:
 
 ```
 EnhancedForToIteratorWhile: JDT AST → LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer → JDT AST (ULR)
+IteratorWhileToEnhancedFor: JDT AST → LoopModelBuilder → LoopModel → ASTEnhancedForRenderer  → JDT AST (ULR)
 StreamToEnhancedFor:        JDT AST → direct ASTRewrite → JDT AST (no ULR)
 StreamToIteratorWhile:      JDT AST → direct ASTRewrite → JDT AST (no ULR)
-IteratorWhileToEnhancedFor: JDT AST → direct ASTRewrite → JDT AST (no ULR)
 ```
 
-The remaining three bidirectional transformers perform syntactic restructuring between loop forms
+The remaining two bidirectional transformers perform syntactic restructuring between loop forms
 without intermediate operations. Future work will migrate them to ULR-based renderers as well.
 
 **`JdtLoopExtractor`** bridges JDT AST to the abstract `LoopModel`, detecting:
