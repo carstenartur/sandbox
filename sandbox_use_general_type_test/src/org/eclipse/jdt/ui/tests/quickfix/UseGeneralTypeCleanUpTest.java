@@ -104,7 +104,7 @@ public class UseGeneralTypeCleanUpTest {
 	}
 
 	@Test
-	public void testLinkedListToList() throws CoreException {
+	public void testLinkedListToDeque() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("Test.java", //$NON-NLS-1$
 				"""
@@ -124,12 +124,12 @@ public class UseGeneralTypeCleanUpTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {
 				"""
 				package test;
+				import java.util.Deque;
 				import java.util.LinkedList;
-				import java.util.List;
 				
 				public class Test {
 				    public void method() {
-				        List<String> list = new LinkedList<>();
+				        Deque<String> list = new LinkedList<>();
 				        list.add("a");
 				        list.size();
 				    }
@@ -207,7 +207,7 @@ public class UseGeneralTypeCleanUpTest {
 	}
 
 	@Test
-	public void testTreeSetToSet() throws CoreException {
+	public void testTreeSetToNavigableSet() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("Test.java", //$NON-NLS-1$
 				"""
@@ -226,12 +226,12 @@ public class UseGeneralTypeCleanUpTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {
 				"""
 				package test;
-				import java.util.Set;
+				import java.util.NavigableSet;
 				import java.util.TreeSet;
 				
 				public class Test {
 				    public void method() {
-				        Set<String> set = new TreeSet<>();
+				        NavigableSet<String> set = new TreeSet<>();
 				        set.add("a");
 				    }
 				}
@@ -392,17 +392,16 @@ public class UseGeneralTypeCleanUpTest {
 	}
 
 	@Test
-	public void testNoChangeWithVar() throws CoreException {
+	public void testNoChangeWithArray() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("Test.java", //$NON-NLS-1$
 				"""
 				package test;
-				import java.util.ArrayList;
 				
 				public class Test {
 				    public void method() {
-				        var list = new ArrayList<String>();
-				        list.add("a");
+				        String[] array = new String[5];
+				        array[0] = "a";
 				    }
 				}
 				""",
