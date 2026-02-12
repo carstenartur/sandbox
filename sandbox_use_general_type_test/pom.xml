@@ -27,6 +27,7 @@
 				<configuration>
 					<useJDK>BREE</useJDK>
 					<useUIHarness>true</useUIHarness>
+					<failIfNoTests>false</failIfNoTests>
 					<dependencies>
 						<dependency>
 							<type>eclipse-plugin</type>
