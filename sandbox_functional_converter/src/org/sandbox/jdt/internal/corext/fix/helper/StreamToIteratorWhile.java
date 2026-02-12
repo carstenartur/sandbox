@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -24,19 +26,17 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.ParameterizedType;
-import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclaration;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
-import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.functional.core.builder.LoopModelBuilder;
+import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
@@ -46,10 +46,10 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 
  * <p>Transformation: {@code collection.forEach(item -> ...)} → {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</p>
  * 
- * <p><b>Note:</b> This transformer uses direct AST manipulation, not the ULR pipeline.
- * A future enhancement could introduce a ULR-based {@code IteratorWhileRenderer} to unify
- * all transformations through the ULR pipeline.</p>
+ * <p>Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer}.</p>
  * 
+ * @see LoopModel
+ * @see ASTIteratorWhileRenderer
  * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
  * @see <a href="https://github.com/carstenartur/sandbox/issues/549">Issue #549</a>
  */
@@ -109,10 +109,8 @@ public class StreamToIteratorWhile extends AbstractFunctionalCall<ASTNode> {
 		
 		// Extract collection expression (either collection or collection.stream())
 		Expression collectionExpr = forEach.getExpression();
-		if (collectionExpr instanceof MethodInvocation) {
-			MethodInvocation methodInv = (MethodInvocation) collectionExpr;
+		if (collectionExpr instanceof MethodInvocation methodInv) {
 			if ("stream".equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$
-				// It's collection.stream().forEach(...), use the collection part
 				collectionExpr = methodInv.getExpression();
 			}
 		}
@@ -130,101 +128,55 @@ public class StreamToIteratorWhile extends AbstractFunctionalCall<ASTNode> {
 		}
 		
 		VariableDeclaration param = (VariableDeclaration) lambda.parameters().get(0);
-		SimpleName paramName = param.getName();
+		String paramName = param.getName().getIdentifier();
+		String paramType = extractParamType(param);
 		
-		// Determine parameter type
-		Type paramType;
-		if (param instanceof SingleVariableDeclaration) {
-			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;
-			if (svd.getType() != null) {
-				paramType = (Type) ASTNode.copySubtree(ast, svd.getType());
-			} else {
-				// Use String as fallback
-				paramType = ast.newSimpleType(ast.newName("String")); //$NON-NLS-1$
-			}
-		} else {
-			// Simple parameter, use String as fallback
-			paramType = ast.newSimpleType(ast.newName("String")); //$NON-NLS-1$
-		}
+		// Build LoopModel using ULR pipeline
+		LoopModel model = new LoopModelBuilder()
+			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr.toString(), paramType)
+			.element(paramName, paramType, false)
+			.terminal(new ForEachTerminal(List.of(), false))
+			.build();
 		
-		String iteratorName = "it"; //$NON-NLS-1$
+		// Extract body statements from lambda
+		List<Statement> bodyStatements = extractLambdaBodyStatements(lambda, ast);
 		
-		// Create Iterator<T> it = collection.iterator();
-		ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName("Iterator"))); //$NON-NLS-1$
-		iteratorType.typeArguments().add(ASTNode.copySubtree(ast, paramType));
-		
-		VariableDeclarationFragment iterFragment = ast.newVariableDeclarationFragment();
-		iterFragment.setName(ast.newSimpleName(iteratorName));
-		
-		MethodInvocation iteratorCall = ast.newMethodInvocation();
-		iteratorCall.setExpression((Expression) ASTNode.copySubtree(ast, collectionExpr));
-		iteratorCall.setName(ast.newSimpleName("iterator")); //$NON-NLS-1$
-		iterFragment.setInitializer(iteratorCall);
-		
-		VariableDeclarationStatement iteratorDecl = ast.newVariableDeclarationStatement(iterFragment);
-		iteratorDecl.setType(iteratorType);
-		
-		// Create while (it.hasNext())
-		MethodInvocation hasNextCall = ast.newMethodInvocation();
-		hasNextCall.setExpression(ast.newSimpleName(iteratorName));
-		hasNextCall.setName(ast.newSimpleName("hasNext")); //$NON-NLS-1$
-		
-		WhileStatement whileStmt = ast.newWhileStatement();
-		whileStmt.setExpression(hasNextCall);
-		
-		// Create T item = it.next();
-		MethodInvocation nextCall = ast.newMethodInvocation();
-		nextCall.setExpression(ast.newSimpleName(iteratorName));
-		nextCall.setName(ast.newSimpleName("next")); //$NON-NLS-1$
-		
-		VariableDeclarationFragment itemFragment = ast.newVariableDeclarationFragment();
-		itemFragment.setName((SimpleName) ASTNode.copySubtree(ast, paramName));
-		itemFragment.setInitializer(nextCall);
-		
-		VariableDeclarationStatement itemDecl = ast.newVariableDeclarationStatement(itemFragment);
-		itemDecl.setType((Type) ASTNode.copySubtree(ast, paramType));
-		
-		// Create while body with item declaration and lambda body
-		Block whileBody = ast.newBlock();
-		whileBody.statements().add(itemDecl);
-		
-		// Extract lambda body, preserving comments via createCopyTarget
-		ASTNode lambdaBody = lambda.getBody();
-		if (lambdaBody instanceof Block) {
-			// Lambda has block body
-			Block lambdaBlock = (Block) lambdaBody;
-			for (Object stmt : lambdaBlock.statements()) {
-				whileBody.statements().add(rewrite.createCopyTarget((Statement) stmt));
-			}
-		} else if (lambdaBody instanceof Expression) {
-			// Lambda has expression body - wrap in expression statement
-			ExpressionStatement exprStmt = ast.newExpressionStatement(
-				(Expression) ASTNode.copySubtree(ast, (Expression) lambdaBody));
-			whileBody.statements().add(exprStmt);
-		}
-		
-		whileStmt.setBody(whileBody);
-		
-		// Replace the forEach statement with iterator declaration + while-loop
+		// Render iterator-while loop using ULR-based renderer
 		ExpressionStatement forEachStmt = (ExpressionStatement) forEach.getParent();
-		ASTNode parent = forEachStmt.getParent();
-		
-		if (parent instanceof Block) {
-			Block parentBlock = (Block) parent;
-			
-			org.eclipse.jdt.core.dom.rewrite.ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
-			listRewrite.insertBefore(iteratorDecl, forEachStmt, group);
-			listRewrite.replace(forEachStmt, whileStmt, group);
-		} else {
-			// If not in a block, create one
-			Block newBlock = ast.newBlock();
-			newBlock.statements().add(iteratorDecl);
-			newBlock.statements().add(whileStmt);
-			rewrite.replace(forEachStmt, newBlock, group);
-		}
+		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(ast, rewrite);
+		renderer.renderWithBodyStatements(model, forEachStmt, bodyStatements, group);
 		
 		// Add Iterator import
 		cuRewrite.getImportRewrite().addImport("java.util.Iterator"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Extracts the parameter type name from a lambda parameter.
+	 */
+	private String extractParamType(VariableDeclaration param) {
+		if (param instanceof SingleVariableDeclaration svd && svd.getType() != null) {
+			return svd.getType().toString();
+		}
+		return "String"; //$NON-NLS-1$
+	}
+
+	/**
+	 * Extracts body statements from a lambda expression as AST Statement nodes.
+	 */
+	private List<Statement> extractLambdaBodyStatements(LambdaExpression lambda, AST ast) {
+		List<Statement> statements = new ArrayList<>();
+		ASTNode lambdaBody = lambda.getBody();
+		
+		if (lambdaBody instanceof Block block) {
+			for (Object stmt : block.statements()) {
+				statements.add((Statement) stmt);
+			}
+		} else if (lambdaBody instanceof Expression expr) {
+			ExpressionStatement exprStmt = ast.newExpressionStatement(
+				(Expression) ASTNode.copySubtree(ast, expr));
+			statements.add(exprStmt);
+		}
+		return statements;
 	}
 
 	@Override

@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -20,12 +22,10 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclaration;
@@ -33,6 +33,10 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.functional.core.builder.LoopModelBuilder;
+import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
@@ -42,10 +46,10 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 
  * <p>Transformation: {@code collection.forEach(item -> ...)} → {@code for (T item : collection) { ... }}</p>
  * 
- * <p><b>Note:</b> This transformer uses direct AST manipulation, not the ULR pipeline.
- * A future enhancement could introduce a ULR-based {@code EnhancedForRenderer} to unify
- * all transformations through the ULR pipeline.</p>
+ * <p>Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → ASTEnhancedForRenderer}.</p>
  * 
+ * @see LoopModel
+ * @see ASTEnhancedForRenderer
  * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
  * @see <a href="https://github.com/carstenartur/sandbox/issues/549">Issue #549</a>
  */
@@ -105,10 +109,8 @@ public class StreamToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
 		
 		// Extract collection expression (either collection or collection.stream())
 		Expression collectionExpr = forEach.getExpression();
-		if (collectionExpr instanceof MethodInvocation) {
-			MethodInvocation methodInv = (MethodInvocation) collectionExpr;
+		if (collectionExpr instanceof MethodInvocation methodInv) {
 			if ("stream".equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$
-				// It's collection.stream().forEach(...), use the collection part
 				collectionExpr = methodInv.getExpression();
 			}
 		}
@@ -126,55 +128,53 @@ public class StreamToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
 		}
 		
 		VariableDeclaration param = (VariableDeclaration) lambda.parameters().get(0);
-		SimpleName paramName = param.getName();
+		String paramName = param.getName().getIdentifier();
+		String paramType = extractParamType(param);
 		
-		// Determine parameter type (use var or infer from context)
-		org.eclipse.jdt.core.dom.Type paramType;
-		if (param instanceof SingleVariableDeclaration) {
-			SingleVariableDeclaration svd = (SingleVariableDeclaration) param;
-			if (svd.getType() != null) {
-				paramType = (org.eclipse.jdt.core.dom.Type) ASTNode.copySubtree(ast, svd.getType());
-			} else {
-				// Use String as fallback
-				paramType = ast.newSimpleType(ast.newName("String")); //$NON-NLS-1$
-			}
-		} else {
-			// Simple parameter, use String as fallback
-			paramType = ast.newSimpleType(ast.newName("String")); //$NON-NLS-1$
-		}
+		// Build LoopModel using ULR pipeline
+		LoopModel model = new LoopModelBuilder()
+			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr.toString(), paramType)
+			.element(paramName, paramType, false)
+			.terminal(new ForEachTerminal(List.of(), false))
+			.build();
 		
-		// Create enhanced for parameter
-		SingleVariableDeclaration forParam = ast.newSingleVariableDeclaration();
-		forParam.setType(paramType);
-		forParam.setName((SimpleName) ASTNode.copySubtree(ast, paramName));
+		// Extract body statements from lambda
+		List<Statement> bodyStatements = extractLambdaBodyStatements(lambda, ast);
 		
-		// Create enhanced for-loop
-		EnhancedForStatement forStmt = ast.newEnhancedForStatement();
-		forStmt.setParameter(forParam);
-		forStmt.setExpression((Expression) ASTNode.copySubtree(ast, collectionExpr));
-		
-		// Extract lambda body, preserving comments via createCopyTarget
-		ASTNode lambdaBody = lambda.getBody();
-		Block forBody = ast.newBlock();
-		
-		if (lambdaBody instanceof Block) {
-			// Lambda has block body
-			Block lambdaBlock = (Block) lambdaBody;
-			for (Object stmt : lambdaBlock.statements()) {
-				forBody.statements().add(rewrite.createCopyTarget((Statement) stmt));
-			}
-		} else if (lambdaBody instanceof Expression) {
-			// Lambda has expression body - wrap in expression statement
-			ExpressionStatement exprStmt = ast.newExpressionStatement(
-				(Expression) ASTNode.copySubtree(ast, (Expression) lambdaBody));
-			forBody.statements().add(exprStmt);
-		}
-		
-		forStmt.setBody(forBody);
-		
-		// Replace the forEach statement with the for-loop
+		// Render enhanced for-loop using ULR-based renderer
 		ExpressionStatement forEachStmt = (ExpressionStatement) forEach.getParent();
-		rewrite.replace(forEachStmt, forStmt, group);
+		ASTEnhancedForRenderer renderer = new ASTEnhancedForRenderer(ast, rewrite);
+		renderer.renderReplace(model, forEachStmt, bodyStatements, group);
+	}
+
+	/**
+	 * Extracts the parameter type name from a lambda parameter.
+	 */
+	private String extractParamType(VariableDeclaration param) {
+		if (param instanceof SingleVariableDeclaration svd && svd.getType() != null) {
+			return svd.getType().toString();
+		}
+		return "String"; //$NON-NLS-1$
+	}
+
+	/**
+	 * Extracts body statements from a lambda expression as AST Statement nodes.
+	 */
+	private List<Statement> extractLambdaBodyStatements(LambdaExpression lambda, AST ast) {
+		List<Statement> statements = new ArrayList<>();
+		ASTNode lambdaBody = lambda.getBody();
+		
+		if (lambdaBody instanceof Block block) {
+			for (Object stmt : block.statements()) {
+				statements.add((Statement) stmt);
+			}
+		} else if (lambdaBody instanceof Expression expr) {
+			// Expression body: wrap in ExpressionStatement (newly created, not part of original AST)
+			ExpressionStatement exprStmt = ast.newExpressionStatement(
+				(Expression) ASTNode.copySubtree(ast, expr));
+			statements.add(exprStmt);
+		}
+		return statements;
 	}
 
 	@Override

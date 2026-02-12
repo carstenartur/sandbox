@@ -60,6 +60,35 @@ public class ASTEnhancedForRenderer {
 	@SuppressWarnings("unchecked")
 	public void render(LoopModel model, WhileStatement whileStatement, Statement iteratorDecl,
 			java.util.List<Statement> bodyStatements, TextEditGroup group) {
+		EnhancedForStatement forStmt = buildEnhancedFor(model, bodyStatements);
+
+		// Replace while with for-loop and remove iterator declaration
+		Block parentBlock = (Block) whileStatement.getParent();
+		ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
+		if (iteratorDecl != null) {
+			listRewrite.remove(iteratorDecl, group);
+		}
+		listRewrite.replace(whileStatement, forStmt, group);
+	}
+
+	/**
+	 * Renders the given LoopModel as an enhanced for-loop, replacing an ExpressionStatement
+	 * (e.g., a forEach call).
+	 * 
+	 * @param model the ULR LoopModel to render
+	 * @param originalStatement the original statement to replace (e.g., ExpressionStatement containing forEach)
+	 * @param bodyStatements the body statements to include in the for-loop
+	 * @param group the text edit group
+	 */
+	@SuppressWarnings("unchecked")
+	public void renderReplace(LoopModel model, Statement originalStatement,
+			java.util.List<Statement> bodyStatements, TextEditGroup group) {
+		EnhancedForStatement forStmt = buildEnhancedFor(model, bodyStatements);
+		rewrite.replace(originalStatement, forStmt, group);
+	}
+
+	@SuppressWarnings("unchecked")
+	private EnhancedForStatement buildEnhancedFor(LoopModel model, java.util.List<Statement> bodyStatements) {
 		String elementType = model.getElement().typeName();
 		String elementName = model.getElement().variableName();
 		String collectionExpr = model.getSource().expression();
@@ -81,20 +110,18 @@ public class ASTEnhancedForRenderer {
 		forStmt.setParameter(param);
 		forStmt.setExpression(createExpression(collectionExpr));
 
-		// Copy body statements, preserving comments via createCopyTarget
+		// Copy body statements: use createCopyTarget for original AST nodes,
+		// add directly for newly created nodes (e.g., from expression lambdas)
 		Block forBody = ast.newBlock();
 		for (Statement stmt : bodyStatements) {
-			forBody.statements().add(rewrite.createCopyTarget(stmt));
+			if (stmt.getParent() != null) {
+				forBody.statements().add(rewrite.createCopyTarget(stmt));
+			} else {
+				forBody.statements().add(stmt);
+			}
 		}
 		forStmt.setBody(forBody);
-
-		// Replace while with for-loop and remove iterator declaration
-		Block parentBlock = (Block) whileStatement.getParent();
-		ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
-		if (iteratorDecl != null) {
-			listRewrite.remove(iteratorDecl, group);
-		}
-		listRewrite.replace(whileStatement, forStmt, group);
+		return forStmt;
 	}
 
 	/**

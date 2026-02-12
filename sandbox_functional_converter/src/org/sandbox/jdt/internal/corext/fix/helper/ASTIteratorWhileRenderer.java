@@ -118,6 +118,60 @@ public class ASTIteratorWhileRenderer {
 		}
 	}
 
+	/**
+	 * Renders the given LoopModel as an iterator-while loop with body from AST statement nodes.
+	 * Used when the body is available as AST nodes (e.g., from a lambda body) for createCopyTarget.
+	 * 
+	 * @param model the ULR LoopModel to render
+	 * @param originalStatement the original statement to replace
+	 * @param bodyStatements the body statements to copy into the while-loop
+	 * @param group the text edit group
+	 */
+	@SuppressWarnings("unchecked")
+	public void renderWithBodyStatements(LoopModel model, Statement originalStatement,
+			java.util.List<Statement> bodyStatements, TextEditGroup group) {
+		String elementType = model.getElement().typeName();
+		String elementName = model.getElement().variableName();
+		String collectionExpr = model.getSource().expression();
+
+		// Create Iterator<T> it = collection.iterator();
+		VariableDeclarationStatement iteratorDecl = createIteratorDeclaration(elementType, collectionExpr);
+
+		// Create while statement with body from provided statements
+		MethodInvocation hasNextCall = ast.newMethodInvocation();
+		hasNextCall.setExpression(ast.newSimpleName(ITERATOR_NAME));
+		hasNextCall.setName(ast.newSimpleName("hasNext")); //$NON-NLS-1$
+
+		WhileStatement whileStmt = ast.newWhileStatement();
+		whileStmt.setExpression(hasNextCall);
+
+		Block whileBody = ast.newBlock();
+		whileBody.statements().add(createItemDeclaration(elementType, elementName));
+
+		for (Statement stmt : bodyStatements) {
+			if (stmt.getParent() != null) {
+				whileBody.statements().add(rewrite.createCopyTarget(stmt));
+			} else {
+				whileBody.statements().add(stmt);
+			}
+		}
+
+		whileStmt.setBody(whileBody);
+
+		// Replace the original statement with iterator decl + while
+		ASTNode parent = originalStatement.getParent();
+		if (parent instanceof Block parentBlock) {
+			ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
+			listRewrite.insertBefore(iteratorDecl, originalStatement, group);
+			listRewrite.replace(originalStatement, whileStmt, group);
+		} else {
+			Block newBlock = ast.newBlock();
+			newBlock.statements().add(iteratorDecl);
+			newBlock.statements().add(whileStmt);
+			rewrite.replace(originalStatement, newBlock, group);
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	private VariableDeclarationStatement createIteratorDeclaration(String elementType, String collectionExpr) {
 		// Iterator<T>

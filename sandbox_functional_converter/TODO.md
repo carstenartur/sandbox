@@ -373,11 +373,11 @@ No V1 Refactorer fallback. See Phase 7.6 and 7.7 above.
 3. **Migrate Bidirectional Transformers to ULR**
    - [x] Create `ASTIteratorWhileRenderer` for iterator-while output (uses LoopModel directly)
    - [x] Create `ASTEnhancedForRenderer` for enhanced-for output (uses LoopModel directly)
-   - [ ] Refactor `StreamToEnhancedFor` to extract `LoopModel` from stream AST, then render via `ASTEnhancedForRenderer`
-   - [ ] Refactor `StreamToIteratorWhile` to use `ASTIteratorWhileRenderer`
+   - [x] Refactor `StreamToEnhancedFor` to use ULR: `LoopModelBuilder → LoopModel → ASTEnhancedForRenderer`
+   - [x] Refactor `StreamToIteratorWhile` to use ULR: `LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer`
    - [x] Refactor `IteratorWhileToEnhancedFor` to use ULR: `LoopModelBuilder → LoopModel → ASTEnhancedForRenderer`
    - [x] Refactor `EnhancedForToIteratorWhile` to use ULR: `LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer`
-   - 2 remaining transformers still use direct AST manipulation (V1-style)
+   - ✅ All 4 bidirectional transformers now use ULR pipeline
 
 **GUI Design Philosophy**:
 - **Global Target Format**: Single selection for desired output format
