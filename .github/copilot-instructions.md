@@ -296,6 +296,49 @@ All Java files must include the Eclipse Public License 2.0 header:
 - Prefer `final` for immutable variables
 - Use Java 8+ functional constructs where appropriate
 
+### Import Management and NLS Comments
+
+⚠️ **CRITICAL**: Eclipse Tycho compiler enforces strict import and NLS rules.
+
+**Unused Imports:**
+- Remove all unused imports immediately after code changes
+- Tycho treats unused imports as compilation errors, not warnings
+- Example error: `The import org.eclipse.jdt.core.dom.MethodInvocation is never used`
+- **Prevention**: After removing code, always check and remove associated imports
+
+**NLS (Non-Language String) Comments:**
+- String literals in Eclipse plugins require `//$NON-NLS-1$` comments for internationalization
+- Add NLS comments to all user-facing string literals
+- Example: `String message = "Hello"; //$NON-NLS-1$`
+- Internal identifiers and code strings typically don't need NLS markers
+- **When in doubt**: Check similar files in the same module for NLS usage patterns
+
+**Best Practices:**
+```java
+// ✅ Good - NLS marker for user-facing string
+String errorMessage = "File not found"; //$NON-NLS-1$
+
+// ✅ Good - Multiple NLS markers
+logger.log(Level.ERROR, "Error: {0}", new Object[] { fileName }); //$NON-NLS-1$
+
+// ✅ Good - Internal identifiers don't need NLS
+if (node instanceof SimpleName) {
+    String identifier = "dispose"; // No NLS needed for code identifiers
+}
+
+// ❌ Bad - Unused import
+import org.eclipse.jdt.core.dom.UnusedClass; // Will cause build failure
+
+// ❌ Bad - Missing NLS comment for user message  
+String userMessage = "Operation completed successfully"; // Should have //$NON-NLS-1$
+```
+
+**Quick Fix Checklist:**
+1. After code changes, review all imports and remove unused ones
+2. Check string literals - add NLS comments where appropriate
+3. Run `mvn compile` to catch import/NLS issues before commit
+4. If uncertain about NLS, examine existing code in the same package
+
 ### Testing Conventions
 
 - Use JUnit 5 (`org.junit.jupiter.api.*`)

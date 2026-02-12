@@ -333,6 +333,129 @@ public class NewPatternKindsTest {
 		}
 	}
 	
+	// ========== METHOD_DECLARATION PATTERN TESTS ==========
+	
+	@Test
+	public void testSimpleMethodDeclaration() {
+		String code = """
+			class Test {
+				void dispose() {
+					System.out.println("dispose");
+				}
+				
+				void setup() {
+					System.out.println("setup");
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size(), "Should find one dispose method");
+		
+		Match match = matches.get(0);
+		assertNotNull(match.getMatchedNode());
+		assertTrue(match.getMatchedNode() instanceof org.eclipse.jdt.core.dom.MethodDeclaration);
+	}
+	
+	@Test
+	public void testMethodDeclarationWithPlaceholderName() {
+		String code = """
+			class Test {
+				void dispose() {}
+				void setup() {}
+				void tearDown() {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void $name()", PatternKind.METHOD_DECLARATION);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(3, matches.size(), "Should find three void methods");
+		
+		for (Match match : matches) {
+			Map<String, Object> bindings = match.getBindings();
+			assertTrue(bindings.containsKey("$name"), "Should have binding for $name");
+			ASTNode nameNode = match.getBinding("$name");
+			assertTrue(nameNode instanceof SimpleName);
+		}
+	}
+	
+	@Test
+	public void testMethodDeclarationWithParameters() {
+		String code = """
+			class Test {
+				void processEvent(int type) {
+					System.out.println(type);
+				}
+				
+				void processEvent(int type, String message) {
+					System.out.println(type + ": " + message);
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void processEvent(int type)", PatternKind.METHOD_DECLARATION);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size(), "Should find one processEvent(int) method");
+	}
+	
+	@Test
+	public void testMethodDeclarationWithMultiPlaceholderParameters() {
+		String code = """
+			class Test {
+				void method1() {}
+				void method2(int x) {}
+				void method3(int x, String y) {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void $name($params$)", PatternKind.METHOD_DECLARATION);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(3, matches.size(), "Should find three methods");
+		
+		for (Match match : matches) {
+			Map<String, Object> bindings = match.getBindings();
+			assertTrue(bindings.containsKey("$name"), "Should have binding for $name");
+			assertTrue(bindings.containsKey("$params$"), "Should have binding for $params$");
+		}
+	}
+	
+	@Test
+	public void testMethodDeclarationWithReturnType() {
+		String code = """
+			class Test {
+				String getName() { return "test"; }
+				int getCount() { return 42; }
+				void doSomething() {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("String $name()", PatternKind.METHOD_DECLARATION);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size(), "Should find one String-returning method");
+		
+		Match match = matches.get(0);
+		Map<String, Object> bindings = match.getBindings();
+		ASTNode nameNode = match.getBinding("$name");
+		assertTrue(nameNode instanceof SimpleName);
+		assertEquals("getName", ((SimpleName) nameNode).getIdentifier());
+	}
+	
 	// ========== HELPER METHODS ==========
 	
 	private CompilationUnit parse(String code) {

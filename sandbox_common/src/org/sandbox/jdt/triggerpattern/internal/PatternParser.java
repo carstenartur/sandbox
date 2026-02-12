@@ -45,7 +45,8 @@ public class PatternParser {
 	 * Parses a pattern into an AST node.
 	 * 
 	 * @param pattern the pattern to parse
-	 * @return the parsed AST node (Expression or Statement), or {@code null} if parsing fails
+	 * @return the parsed AST node (Expression, Statement, Annotation, MethodInvocation, ImportDeclaration, 
+	 *         FieldDeclaration, ClassInstanceCreation, or MethodDeclaration), or {@code null} if parsing fails
 	 */
 	public ASTNode parse(Pattern pattern) {
 		if (pattern == null) {
@@ -69,6 +70,8 @@ public class PatternParser {
 			return parseField(patternValue);
 		} else if (kind == PatternKind.CONSTRUCTOR) {
 			return parseConstructor(patternValue);
+		} else if (kind == PatternKind.METHOD_DECLARATION) {
+			return parseMethodDeclaration(patternValue);
 		}
 		
 		return null;
@@ -348,5 +351,46 @@ public class PatternParser {
 		}
 		
 		return null;
+	}
+	
+	/**
+	 * Parses a method declaration pattern.
+	 * 
+	 * @param methodSnippet the method declaration snippet (e.g., {@code "void dispose()"}, {@code "void $name($params$)"})
+	 * @return the parsed MethodDeclaration node, or {@code null} if parsing fails
+	 * @since 1.2.6
+	 */
+	private MethodDeclaration parseMethodDeclaration(String methodSnippet) {
+		// Normalize the snippet: add empty body if not present
+		String normalizedSnippet = methodSnippet.trim();
+		if (!normalizedSnippet.endsWith("}") && !normalizedSnippet.endsWith(";")) { //$NON-NLS-1$ //$NON-NLS-2$
+			normalizedSnippet = normalizedSnippet + " {}"; //$NON-NLS-1$
+		}
+		
+		// Handle multi-placeholder parameters: "$params$" -> "Object... $params$"
+		// This makes the pattern syntactically valid for the Java parser
+		normalizedSnippet = normalizedSnippet.replaceAll("\\(\\s*\\$([a-zA-Z_][a-zA-Z0-9_]*)\\$\\s*\\)", "(Object... \\$$1\\$)"); //$NON-NLS-1$ //$NON-NLS-2$
+		
+		// Wrap the method declaration in a class context
+		String source = "class _Pattern { " + normalizedSnippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+		
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setCompilerOptions(JavaCore.getOptions());
+		
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		
+		// Navigate to the method: CompilationUnit -> TypeDeclaration -> MethodDeclaration
+		if (cu.types().isEmpty()) {
+			return null;
+		}
+		
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		if (typeDecl.getMethods().length == 0) {
+			return null;
+		}
+		
+		return typeDecl.getMethods()[0];
 	}
 }

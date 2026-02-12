@@ -25,11 +25,13 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TypeLiteral;
@@ -500,6 +502,106 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 				return false;
 			}
 		}
+		
+		return true;
+	}
+	
+	/**
+	 * Matches method declarations with support for placeholders in method name, parameters, and body.
+	 * 
+	 * <p><b>Note:</b> For METHOD_DECLARATION patterns, this matcher focuses on signature matching
+	 * (name, return type, parameters) and intentionally skips body comparison. Body constraints
+	 * should be handled separately via {@code @BodyConstraint} annotations.</p>
+	 * 
+	 * @param patternNode the pattern method declaration
+	 * @param other the candidate node
+	 * @return {@code true} if the methods match
+	 * @since 1.2.6
+	 */
+	@Override
+	public boolean match(MethodDeclaration patternNode, Object other) {
+		if (!(other instanceof MethodDeclaration)) {
+			return false;
+		}
+		MethodDeclaration otherMethod = (MethodDeclaration) other;
+		
+		// Match method name (with placeholder support)
+		if (!safeSubtreeMatch(patternNode.getName(), otherMethod.getName())) {
+			return false;
+		}
+		
+		// Match return type (null for constructors, or a Type for methods)
+		if (!safeSubtreeMatch(patternNode.getReturnType2(), otherMethod.getReturnType2())) {
+			return false;
+		}
+		
+		// Match parameters with multi-placeholder support
+		@SuppressWarnings("unchecked")
+		List<SingleVariableDeclaration> patternParams = patternNode.parameters();
+		@SuppressWarnings("unchecked")
+		List<SingleVariableDeclaration> otherParams = otherMethod.parameters();
+		
+		// Check for multi-placeholder in parameters (e.g., $params$)
+		// Pattern like "void $name($params$)" is normalized to "void $name(Object... $params$)"
+		if (patternParams.size() == 1) {
+			SingleVariableDeclaration firstPatternParam = patternParams.get(0);
+			SimpleName paramName = firstPatternParam.getName();
+			String name = paramName.getIdentifier();
+			
+			// Check if this is a multi-placeholder parameter (varargs with placeholder name)
+			if (name != null && name.startsWith("$") && firstPatternParam.isVarargs()) { //$NON-NLS-1$
+				PlaceholderInfo info = parsePlaceholder(name);
+				
+				if (info.isMulti()) {
+					// Multi-placeholder: bind to list of all parameters
+					String placeholderName = info.name();
+					
+					// Check if already bound
+					if (bindings.containsKey(placeholderName)) {
+						Object boundValue = bindings.get(placeholderName);
+						if (boundValue instanceof List<?>) {
+							@SuppressWarnings("unchecked")
+							List<ASTNode> boundList = (List<ASTNode>) boundValue;
+							if (boundList.size() != otherParams.size()) {
+								return false;
+							}
+							for (int i = 0; i < boundList.size(); i++) {
+								if (!boundList.get(i).subtreeMatch(reusableMatcher, otherParams.get(i))) {
+									return false;
+								}
+							}
+							// Multi-placeholder matched successfully
+						} else {
+							return false;
+						}
+					} else {
+						// First occurrence - bind to list
+						bindings.put(placeholderName, new ArrayList<>(otherParams));
+					}
+					
+					// Note: We do NOT match the body here. For METHOD_DECLARATION patterns,
+					// body constraints should be handled via @BodyConstraint annotation.
+					return true;
+				}
+			}
+		}
+		
+		// Standard parameter matching: same number of parameters, each matching
+		if (patternParams.size() != otherParams.size()) {
+			return false;
+		}
+		
+		for (int i = 0; i < patternParams.size(); i++) {
+			if (!safeSubtreeMatch(patternParams.get(i), otherParams.get(i))) {
+				return false;
+			}
+		}
+		
+		// Note: We intentionally do NOT match method bodies for METHOD_DECLARATION patterns.
+		// Method declaration matching focuses on signature (name, return type, parameters).
+		// Body constraints should be handled separately via @BodyConstraint annotations.
+		// This allows patterns like "void dispose()" to match any dispose() method
+		// regardless of body content.
 		
 		return true;
 	}

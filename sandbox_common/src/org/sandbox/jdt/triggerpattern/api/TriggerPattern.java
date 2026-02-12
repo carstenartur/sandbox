@@ -76,4 +76,26 @@ public @interface TriggerPattern {
 	 * @return array of type constraints
 	 */
 	ConstraintVariableType[] constraints() default {};
+	
+	/**
+	 * Specifies that a METHOD_DECLARATION pattern must override a method from the specified type.
+	 * 
+	 * <p>This is only applicable for METHOD_DECLARATION patterns. When specified, the pattern
+	 * will only match methods that override a method from the given fully qualified type.</p>
+	 * 
+	 * <p>Example:</p>
+	 * <pre>
+	 * {@code @TriggerPattern(
+	 *     value = "void dispose()",
+	 *     kind = PatternKind.METHOD_DECLARATION,
+	 *     overrides = "org.eclipse.swt.widgets.Widget"
+	 * )}
+	 * </pre>
+	 * 
+	 * <p><b>Note:</b> Override detection requires binding resolution to be enabled.</p>
+	 * 
+	 * @return fully qualified type name that must be overridden, or empty string if not applicable
+	 * @since 1.2.6
+	 */
+	String overrides() default "";
 }

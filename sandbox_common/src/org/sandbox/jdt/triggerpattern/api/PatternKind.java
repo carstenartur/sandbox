@@ -57,5 +57,11 @@ public enum PatternKind {
 	 * Pattern represents a constructor invocation (e.g., {@code new String($bytes, $enc)})
 	 * @since 1.2.5
 	 */
-	CONSTRUCTOR
+	CONSTRUCTOR,
+	
+	/**
+	 * Pattern represents a method declaration (e.g., {@code void dispose()}, {@code void $name($params$)})
+	 * @since 1.2.6
+	 */
+	METHOD_DECLARATION
 }
