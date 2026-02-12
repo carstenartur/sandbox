@@ -106,6 +106,8 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		public Set<ClassInstanceCreation> standaloneSubProgressMonitors = new HashSet<>();
 		/** SubProgressMonitor on already-SubMonitor variables (use split() directly) */
 		public Set<ClassInstanceCreation> subProgressMonitorOnSubMonitor = new HashSet<>();
+		/** SubProgressMonitor type references to be replaced with IProgressMonitor */
+		public Set<org.eclipse.jdt.core.dom.Type> typesToReplace = new HashSet<>();
 		/** Nodes that have been processed to avoid duplicate transformations (references shared Set passed during construction) */
 		public Set<ASTNode> nodesprocessed;
 	}
@@ -307,6 +309,109 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		// Add operations for standalone SubProgressMonitor
 		if (!standaloneHolder.isEmpty()) {
 			operations.add(fixcore.rewrite(standaloneHolder));
+		}
+		
+		// Pass 3: Find SubProgressMonitor type references for type replacement
+		ReferenceHolder<Integer, MonitorHolder> typeReplacementHolder = new ReferenceHolder<>();
+		MonitorHolder typeHolder = new MonitorHolder();
+		typeHolder.nodesprocessed = nodesprocessed;
+		
+		compilationUnit.accept(new ASTVisitor() {
+			/**
+			 * Helper to check if a Type is SubProgressMonitor
+			 */
+			private boolean isSubProgressMonitorType(org.eclipse.jdt.core.dom.Type type) {
+				if (type == null) {
+					return false;
+				}
+				
+				// First try binding (most reliable)
+				ITypeBinding binding = type.resolveBinding();
+				if (binding != null && !binding.isRecovered()) {
+					return "org.eclipse.core.runtime.SubProgressMonitor".equals(binding.getQualifiedName()); //$NON-NLS-1$
+				}
+				
+				// Fallback: check type name
+				String typeName = getTypeName(type);
+				return "SubProgressMonitor".equals(typeName) || //$NON-NLS-1$
+					   "org.eclipse.core.runtime.SubProgressMonitor".equals(typeName); //$NON-NLS-1$
+			}
+			
+			/**
+			 * Extract type name from Type node
+			 */
+			private String getTypeName(org.eclipse.jdt.core.dom.Type type) {
+				if (type.isSimpleType()) {
+					org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;
+					return simpleType.getName().getFullyQualifiedName();
+				}
+				if (type.isQualifiedType()) {
+					org.eclipse.jdt.core.dom.QualifiedType qualifiedType = (org.eclipse.jdt.core.dom.QualifiedType) type;
+					return qualifiedType.getName().getFullyQualifiedName();
+				}
+				if (type.isNameQualifiedType()) {
+					org.eclipse.jdt.core.dom.NameQualifiedType nameQualifiedType = (org.eclipse.jdt.core.dom.NameQualifiedType) type;
+					return nameQualifiedType.getName().getFullyQualifiedName();
+				}
+				return type.toString();
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.FieldDeclaration node) {
+				org.eclipse.jdt.core.dom.Type fieldType = node.getType();
+				if (isSubProgressMonitorType(fieldType)) {
+					logDebug("Found SubProgressMonitor field declaration at position " + node.getStartPosition()); //$NON-NLS-1$
+					typeHolder.typesToReplace.add(fieldType);
+				}
+				return true;
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.VariableDeclarationStatement node) {
+				org.eclipse.jdt.core.dom.Type varType = node.getType();
+				if (isSubProgressMonitorType(varType)) {
+					logDebug("Found SubProgressMonitor variable declaration at position " + node.getStartPosition()); //$NON-NLS-1$
+					typeHolder.typesToReplace.add(varType);
+				}
+				return true;
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.MethodDeclaration node) {
+				org.eclipse.jdt.core.dom.Type returnType = node.getReturnType2();
+				if (isSubProgressMonitorType(returnType)) {
+					logDebug("Found SubProgressMonitor return type at position " + node.getStartPosition()); //$NON-NLS-1$
+					typeHolder.typesToReplace.add(returnType);
+				}
+				return true;
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.SingleVariableDeclaration node) {
+				org.eclipse.jdt.core.dom.Type paramType = node.getType();
+				if (isSubProgressMonitorType(paramType)) {
+					logDebug("Found SubProgressMonitor parameter type at position " + node.getStartPosition()); //$NON-NLS-1$
+					typeHolder.typesToReplace.add(paramType);
+				}
+				return true;
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.CastExpression node) {
+				org.eclipse.jdt.core.dom.Type castType = node.getType();
+				if (isSubProgressMonitorType(castType)) {
+					logDebug("Found SubProgressMonitor cast at position " + node.getStartPosition()); //$NON-NLS-1$
+					typeHolder.typesToReplace.add(castType);
+				}
+				return true;
+			}
+		});
+		
+		// Add operations for type replacement if any types were found
+		if (!typeHolder.typesToReplace.isEmpty()) {
+			typeReplacementHolder.put(0, typeHolder);
+			operations.add(fixcore.rewrite(typeReplacementHolder));
+		}
 		}
 	}
 
@@ -572,6 +677,32 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);
+			}
+		}
+		
+		// Handle type replacements (fields, parameters, return types, casts)
+		for (Entry<Integer, MonitorHolder> entry : hit.entrySet()) {
+			MonitorHolder mh = entry.getValue();
+			
+			if (!mh.typesToReplace.isEmpty()) {
+				logDebug("Processing " + mh.typesToReplace.size() + " SubProgressMonitor type replacements"); //$NON-NLS-1$ //$NON-NLS-2$
+				
+				for (org.eclipse.jdt.core.dom.Type typeToReplace : mh.typesToReplace) {
+					// Skip if already processed
+					if (mh.nodesprocessed.contains(typeToReplace)) {
+						continue;
+					}
+					mh.nodesprocessed.add(typeToReplace);
+					
+					logDebug("Replacing SubProgressMonitor type at position " + typeToReplace.getStartPosition()); //$NON-NLS-1$
+					
+					// Create replacement type: IProgressMonitor
+					org.eclipse.jdt.core.dom.Type newType = ast.newSimpleType(
+						addImport(IProgressMonitor.class.getCanonicalName(), cuRewrite, ast));
+					
+					// Replace the type in AST
+					rewrite.replace(typeToReplace, newType, group);
+				}
 			}
 		}
 		
