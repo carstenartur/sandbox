@@ -85,6 +85,8 @@ public class TriggerPatternEngine {
 					checkMatch(node, patternNode, matches);
 				} else if (pattern.getKind() == PatternKind.CONSTRUCTOR && node instanceof ClassInstanceCreation) {
 					checkMatch(node, patternNode, matches);
+				} else if (pattern.getKind() == PatternKind.METHOD_DECLARATION && node instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
+					checkMatch(node, patternNode, matches);
 				}
 			}
 		});

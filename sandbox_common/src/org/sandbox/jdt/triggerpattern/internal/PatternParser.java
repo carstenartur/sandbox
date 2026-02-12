@@ -69,6 +69,8 @@ public class PatternParser {
 			return parseField(patternValue);
 		} else if (kind == PatternKind.CONSTRUCTOR) {
 			return parseConstructor(patternValue);
+		} else if (kind == PatternKind.METHOD_DECLARATION) {
+			return parseMethodDeclaration(patternValue);
 		}
 		
 		return null;
@@ -348,5 +350,36 @@ public class PatternParser {
 		}
 		
 		return null;
+	}
+	
+	/**
+	 * Parses a method declaration pattern.
+	 * 
+	 * @param methodSnippet the method declaration snippet (e.g., {@code "void dispose()"}, {@code "void $name($params$)"})
+	 * @return the parsed MethodDeclaration node, or {@code null} if parsing fails
+	 * @since 1.2.6
+	 */
+	private MethodDeclaration parseMethodDeclaration(String methodSnippet) {
+		// Wrap the method declaration in a class context
+		String source = "class _Pattern { " + methodSnippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+		
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setCompilerOptions(JavaCore.getOptions());
+		
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		
+		// Navigate to the method: CompilationUnit -> TypeDeclaration -> MethodDeclaration
+		if (cu.types().isEmpty()) {
+			return null;
+		}
+		
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		if (typeDecl.getMethods().length == 0) {
+			return null;
+		}
+		
+		return typeDecl.getMethods()[0];
 	}
 }
