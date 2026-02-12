@@ -387,4 +387,19 @@ public class MYCleanUpConstants {
 	 * @since 1.2.5
 	 */
 	public static final String SHIFT_OUT_OF_RANGE_CLEANUP= "cleanup.shift_out_of_range"; //$NON-NLS-1$
+
+	/**
+	 * Widen variable declaration types to more general supertypes/interfaces based on usage.
+	 * Analyzes variable usage and changes the declared type to the most general type
+	 * (highest in hierarchy) that still declares all used methods/fields.
+	 * Only affects local variables, not fields or method parameters.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 * @since 1.2.6
+	 */
+	public static final String USE_GENERAL_TYPE_CLEANUP= "cleanup.use_general_type"; //$NON-NLS-1$
 }

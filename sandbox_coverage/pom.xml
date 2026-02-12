@@ -161,5 +161,35 @@
 			<artifactId>sandbox_usage_view_test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_css_cleanup</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_css_cleanup_test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_int_to_enum</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_int_to_enum_test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_use_general_type</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_use_general_type_test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>
