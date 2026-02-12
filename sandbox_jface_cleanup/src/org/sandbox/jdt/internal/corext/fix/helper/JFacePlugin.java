@@ -125,7 +125,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	 */
 	private static void logDebug(String message) {
 		// Always print to console for debugging
-		System.out.println("JFacePlugin DEBUG: " + message); //$NON-NLS-1$
 		
 		if (isDebugEnabled()) {
 			try {
@@ -201,9 +200,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
 			.callClassInstanceCreationVisitor("org.eclipse.core.runtime.SubProgressMonitor", (node, holder) -> { //$NON-NLS-1$
 				List<?> arguments = node.arguments();
-				System.out.println("JFacePlugin: Visiting SubProgressMonitor at position " + node.getStartPosition()); //$NON-NLS-1$
 				if (arguments.isEmpty()) {
-					System.out.println("JFacePlugin: Skipping - empty arguments"); //$NON-NLS-1$
 					return true;
 				}
 				
@@ -215,23 +212,19 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				SimpleName sn = ASTNodes.as(firstArg, SimpleName.class);
 				if (sn != null) {
 					firstArgName = sn.getIdentifier();
-					System.out.println("JFacePlugin: First arg name = " + firstArgName); //$NON-NLS-1$
 				} else {
-					System.out.println("JFacePlugin: First arg is not a SimpleName, it's a " + firstArg.getClass().getSimpleName()); //$NON-NLS-1$
 				}
 				
 				// Check if the variable is already a SubMonitor type
 				boolean isSubMonitorType = false;
 				if (sn != null) {
 					IBinding binding = sn.resolveBinding();
-					System.out.println("JFacePlugin: Checking binding for " + firstArgName + ", binding = " + binding); //$NON-NLS-1$
 					if (binding != null && binding.getKind() == IBinding.VARIABLE) {
 						org.eclipse.jdt.core.dom.ITypeBinding typeBinding = 
 							((org.eclipse.jdt.core.dom.IVariableBinding) binding).getType();
 						if (typeBinding != null) {
 							String qualifiedName = typeBinding.getQualifiedName();
 							isSubMonitorType = SubMonitor.class.getCanonicalName().equals(qualifiedName);
-							System.out.println("JFacePlugin: Type = " + qualifiedName + ", isSubMonitorType = " + isSubMonitorType); //$NON-NLS-1$
 						}
 					}
 				}
@@ -249,10 +242,8 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				
 				// Check if this SubProgressMonitor is associated with a beginTask
 				boolean foundAssociation = false;
-				System.out.println("JFacePlugin: Checking for association, holder.isEmpty() = " + holder.isEmpty() + ", firstArgName = " + firstArgName); //$NON-NLS-1$
 				if (!holder.isEmpty() && firstArgName != null) {
 					MonitorHolder mh = holder.get(holder.size() - 1);
-					System.out.println("JFacePlugin: Comparing minvname '" + mh.minvname + "' with firstArgName '" + firstArgName + "'"); //$NON-NLS-1$
 					if (mh.minvname.equals(firstArgName)) {
 						logDebug("Found SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "' with beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
 						mh.setofcic.add(node);
@@ -261,11 +252,13 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				
 				// If not associated with beginTask, mark as standalone for different handling
-				System.out.println("JFacePlugin: foundAssociation = " + foundAssociation + ", firstArgName = " + firstArgName); //$NON-NLS-1$
-				if (!foundAssociation && firstArgName != null) {
-					logDebug("Found standalone SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + firstArgName + "' without beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
+				// This handles cases where there is no beginTask call at all
+				if (!foundAssociation) {
+					// Extract the variable name from first argument for standalone case
+					String varName = firstArgName != null ? firstArgName : "monitor"; //$NON-NLS-1$
+					logDebug("Found standalone SubProgressMonitor construction at position " + node.getStartPosition() + " for variable '" + varName + "' without beginTask"); //$NON-NLS-1$ //$NON-NLS-2$
 					MonitorHolder mh = new MonitorHolder();
-					mh.minvname = firstArgName;
+					mh.minvname = varName;
 					mh.nodesprocessed = nodesprocessed;
 					mh.standaloneSubProgressMonitors.add(node);
 					standaloneHolder.put(standaloneHolder.size(), mh);
@@ -277,13 +270,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		
 		// Add operations for beginTask-associated monitors
 		if (!dataholder.isEmpty()) {
-			System.out.println("JFacePlugin: Adding " + dataholder.size() + " dataholder operations"); //$NON-NLS-1$
 			operations.add(fixcore.rewrite(dataholder));
 		}
 		
 		// Add operations for standalone SubProgressMonitor
 		if (!standaloneHolder.isEmpty()) {
-			System.out.println("JFacePlugin: Adding " + standaloneHolder.size() + " standalone operations"); //$NON-NLS-1$
 			operations.add(fixcore.rewrite(standaloneHolder));
 		}
 	}
