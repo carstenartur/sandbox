@@ -509,6 +509,10 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	/**
 	 * Matches method declarations with support for placeholders in method name, parameters, and body.
 	 * 
+	 * <p><b>Note:</b> For METHOD_DECLARATION patterns, this matcher focuses on signature matching
+	 * (name, return type, parameters) and intentionally skips body comparison. Body constraints
+	 * should be handled separately via {@code @BodyConstraint} annotations.</p>
+	 * 
 	 * @param patternNode the pattern method declaration
 	 * @param other the candidate node
 	 * @return {@code true} if the methods match
@@ -564,15 +568,18 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 									return false;
 								}
 							}
-							return true;
+							// Multi-placeholder matched successfully, continue to signature matching
+						} else {
+							return false;
 						}
-						return false;
+					} else {
+						// First occurrence - bind to list
+						bindings.put(placeholderName, new ArrayList<>(otherParams));
 					}
-					// First occurrence - bind to list
-					bindings.put(placeholderName, new ArrayList<>(otherParams));
 					
-					// Match method body after binding parameters
-					return safeSubtreeMatch(patternNode.getBody(), otherMethod.getBody());
+					// Note: We do NOT match the body here. For METHOD_DECLARATION patterns,
+					// body constraints should be handled via @BodyConstraint annotation.
+					return true;
 				}
 			}
 		}
@@ -588,10 +595,11 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			}
 		}
 		
-		// Match method body (may be null for abstract methods)
-		if (!safeSubtreeMatch(patternNode.getBody(), otherMethod.getBody())) {
-			return false;
-		}
+		// Note: We intentionally do NOT match method bodies for METHOD_DECLARATION patterns.
+		// Method declaration matching focuses on signature (name, return type, parameters).
+		// Body constraints should be handled separately via @BodyConstraint annotations.
+		// This allows patterns like "void dispose()" to match any dispose() method
+		// regardless of body content.
 		
 		return true;
 	}

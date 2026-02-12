@@ -81,9 +81,14 @@ public class MissingSuperCallHintProvider {
 		MethodDeclaration method = (MethodDeclaration) matchedNode;
 		Block body = method.getBody();
 		
+		// Cannot add super call if there's no body (e.g., abstract/interface method)
+		if (body == null) {
+			return null;
+		}
+		
 		// For now, we manually check if super.dispose() is called
 		// In the future, this would be handled by the BodyConstraint annotation
-		if (body != null && containsSuperDisposeCall(body)) {
+		if (containsSuperDisposeCall(body)) {
 			return null; // Super call already present
 		}
 		
@@ -96,10 +101,8 @@ public class MissingSuperCallHintProvider {
 		ExpressionStatement superCallStmt = ast.newExpressionStatement(superCall);
 		
 		// Add the super call as the last statement in the method
-		if (body != null) {
-			ctx.getASTRewrite().getListRewrite(body, Block.STATEMENTS_PROPERTY)
-				.insertLast(superCallStmt, null);
-		}
+		ctx.getASTRewrite().getListRewrite(body, Block.STATEMENTS_PROPERTY)
+			.insertLast(superCallStmt, null);
 		
 		String label = "Add missing super.dispose() call"; //$NON-NLS-1$
 		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(
@@ -131,14 +134,6 @@ public class MissingSuperCallHintProvider {
 				if (exprStmt.getExpression() instanceof SuperMethodInvocation) {
 					SuperMethodInvocation superCall = (SuperMethodInvocation) exprStmt.getExpression();
 					if ("dispose".equals(superCall.getName().getIdentifier())) { //$NON-NLS-1$
-						return true;
-					}
-				} else if (exprStmt.getExpression() instanceof MethodInvocation) {
-					MethodInvocation methodCall = (MethodInvocation) exprStmt.getExpression();
-					// Check for this.dispose() which might delegate to super
-					if (methodCall.getExpression() != null &&
-						"super".equals(methodCall.getExpression().toString()) && //$NON-NLS-1$
-						"dispose".equals(methodCall.getName().getIdentifier())) { //$NON-NLS-1$
 						return true;
 					}
 				}

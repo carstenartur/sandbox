@@ -440,6 +440,6 @@ Eclipse Public License 2.0
 
 ## References
 
-- [TriggerPattern Architecture](../sandbox_common/ARCHITECTURE.md#triggerpattern-hint-engine)
+- [TriggerPattern Architecture](sandbox_common/ARCHITECTURE.md#triggerpattern-hint-engine)
 - [Eclipse JDT AST Documentation](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/reference/api/org/eclipse/jdt/core/dom/package-summary.html)
-- [Issue: Missing Super Call Detector](https://github.com/carstenartur/sandbox/issues/XXX)
+- [GitHub Issues: Missing Super Call Detector](https://github.com/carstenartur/sandbox/issues?q=is%3Aissue+%22Missing+Super+Call+Detector%22)

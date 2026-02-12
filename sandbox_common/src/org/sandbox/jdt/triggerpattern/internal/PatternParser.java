@@ -45,7 +45,8 @@ public class PatternParser {
 	 * Parses a pattern into an AST node.
 	 * 
 	 * @param pattern the pattern to parse
-	 * @return the parsed AST node (Expression or Statement), or {@code null} if parsing fails
+	 * @return the parsed AST node (Expression, Statement, Annotation, MethodInvocation, ImportDeclaration, 
+	 *         FieldDeclaration, ClassInstanceCreation, or MethodDeclaration), or {@code null} if parsing fails
 	 */
 	public ASTNode parse(Pattern pattern) {
 		if (pattern == null) {
@@ -360,8 +361,14 @@ public class PatternParser {
 	 * @since 1.2.6
 	 */
 	private MethodDeclaration parseMethodDeclaration(String methodSnippet) {
+		// Normalize the snippet: add empty body if not present
+		String normalizedSnippet = methodSnippet.trim();
+		if (!normalizedSnippet.endsWith("}") && !normalizedSnippet.endsWith(";")) { //$NON-NLS-1$ //$NON-NLS-2$
+			normalizedSnippet = normalizedSnippet + " {}"; //$NON-NLS-1$
+		}
+		
 		// Wrap the method declaration in a class context
-		String source = "class _Pattern { " + methodSnippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+		String source = "class _Pattern { " + normalizedSnippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
 		
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(source.toCharArray());

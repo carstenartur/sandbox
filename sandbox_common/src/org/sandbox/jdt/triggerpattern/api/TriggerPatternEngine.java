@@ -39,8 +39,21 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
  * Engine for finding pattern matches in Java code.
  * 
  * <p>This engine traverses a compilation unit and identifies all occurrences
- * that match a given pattern. It supports both expression and statement patterns
+ * that match a given pattern. It supports expression, statement, annotation,
+ * method call, import, field, constructor, and method declaration patterns
  * with placeholder binding.</p>
+ * 
+ * <p><b>Supported Pattern Kinds:</b></p>
+ * <ul>
+ *   <li>{@link PatternKind#EXPRESSION} - Expressions like {@code $x + 1}</li>
+ *   <li>{@link PatternKind#STATEMENT} - Statements like {@code return $x;}</li>
+ *   <li>{@link PatternKind#ANNOTATION} - Annotations like {@code @Before}</li>
+ *   <li>{@link PatternKind#METHOD_CALL} - Method invocations like {@code assertEquals($a, $b)}</li>
+ *   <li>{@link PatternKind#IMPORT} - Import declarations</li>
+ *   <li>{@link PatternKind#FIELD} - Field declarations</li>
+ *   <li>{@link PatternKind#CONSTRUCTOR} - Constructor invocations like {@code new String($bytes)}</li>
+ *   <li>{@link PatternKind#METHOD_DECLARATION} - Method declarations like {@code void dispose()}</li>
+ * </ul>
  * 
  * @since 1.2.2
  */
