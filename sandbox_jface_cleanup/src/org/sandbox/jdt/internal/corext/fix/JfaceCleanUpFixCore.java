@@ -84,8 +84,14 @@ public enum JfaceCleanUpFixCore {
 					// For standalone SubProgressMonitor, use the ClassInstanceCreation node instead of minv
 					if (monitorHolder.minv != null) {
 						rangeComputer.addTightSourceNode(monitorHolder.minv);
+					} else if (!monitorHolder.standaloneSubProgressMonitors.isEmpty()) {
+						// Use the first standalone SubProgressMonitor creation
+						rangeComputer.addTightSourceNode(monitorHolder.standaloneSubProgressMonitors.iterator().next());
+					} else if (!monitorHolder.subProgressMonitorOnSubMonitor.isEmpty()) {
+						// Use the first SubProgressMonitor on SubMonitor variable
+						rangeComputer.addTightSourceNode(monitorHolder.subProgressMonitorOnSubMonitor.iterator().next());
 					} else if (!monitorHolder.setofcic.isEmpty()) {
-						// Use the first SubProgressMonitor creation for standalone case
+						// Use the first SubProgressMonitor creation for other cases
 						rangeComputer.addTightSourceNode(monitorHolder.setofcic.iterator().next());
 					}
 					rewrite.setTargetSourceRangeComputer(rangeComputer);

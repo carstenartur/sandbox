@@ -373,6 +373,81 @@ public class Test {
 		IProgressMonitor sub= subMonitor.split(50);
 	}
 }
+"""), //$NON-NLS-1$
+	// Test standalone SubProgressMonitor without beginTask
+	StandaloneSubProgressMonitor(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		// No beginTask call, just standalone SubProgressMonitor
+		IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
+		sub.worked(10);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		// No beginTask call, just standalone SubProgressMonitor
+		IProgressMonitor sub = SubMonitor.convert(monitor).split(50);
+		sub.worked(10);
+	}
+}
+"""), //$NON-NLS-1$
+	// Test standalone SubProgressMonitor with flags
+	StandaloneSubProgressMonitorWithFlags(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		IProgressMonitor sub = new SubProgressMonitor(monitor, 50, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		IProgressMonitor sub = SubMonitor.convert(monitor).split(50, SubMonitor.SUPPRESS_SUBTASK);
+	}
+}
+"""), //$NON-NLS-1$
+	// Test SubProgressMonitor on already-SubMonitor variable
+	SubProgressMonitorOnSubMonitorVariable(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+		// This should use split() directly, not convert().split()
+		IProgressMonitor sub = new SubProgressMonitor(subMonitor, 50);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+		// This should use split() directly, not convert().split()
+		IProgressMonitor sub = subMonitor.split(50);
+	}
+}
 """); //$NON-NLS-1$
 
 		String given;
