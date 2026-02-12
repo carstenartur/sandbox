@@ -27,6 +27,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -34,6 +35,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -232,12 +234,18 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			operations.add(fixcore.rewrite(dataholder));
 		}
 		
-		// Pass 2: Find standalone SubProgressMonitor instances (independent traversal)
+		// Pass 2: Find standalone SubProgressMonitor instances using direct ASTVisitor
 		ReferenceHolder<Integer, MonitorHolder> standaloneHolder = new ReferenceHolder<>();
 		
-		AstProcessorBuilder.with(standaloneHolder, nodesprocessed)
-			.processor()
-			.callClassInstanceCreationVisitor("org.eclipse.core.runtime.SubProgressMonitor", (node, holder) -> { //$NON-NLS-1$
+		compilationUnit.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(ClassInstanceCreation node) {
+				// Check if this is a SubProgressMonitor construction
+				ITypeBinding binding = node.resolveTypeBinding();
+				if (binding == null || !"org.eclipse.core.runtime.SubProgressMonitor".equals(binding.getQualifiedName())) { //$NON-NLS-1$
+					return true;
+				}
+				
 				// Skip nodes already associated with beginTask from pass 1
 				if (beginTaskAssociated.contains(node)) {
 					return true;
@@ -261,10 +269,10 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				// Check if the variable is already a SubMonitor type
 				boolean isSubMonitorType = false;
 				if (sn != null) {
-					IBinding binding = sn.resolveBinding();
-					if (binding != null && binding.getKind() == IBinding.VARIABLE) {
-						org.eclipse.jdt.core.dom.ITypeBinding typeBinding = 
-							((org.eclipse.jdt.core.dom.IVariableBinding) binding).getType();
+					IBinding snBinding = sn.resolveBinding();
+					if (snBinding != null && snBinding.getKind() == IBinding.VARIABLE) {
+						ITypeBinding typeBinding = 
+							((org.eclipse.jdt.core.dom.IVariableBinding) snBinding).getType();
 						if (typeBinding != null) {
 							String qualifiedName = typeBinding.getQualifiedName();
 							isSubMonitorType = SubMonitor.class.getCanonicalName().equals(qualifiedName);
@@ -279,7 +287,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					mh.minvname = firstArgName;
 					mh.nodesprocessed = nodesprocessed;
 					mh.subProgressMonitorOnSubMonitor.add(node);
-					holder.put(holder.size(), mh);
+					standaloneHolder.put(standaloneHolder.size(), mh);
 					return true;
 				}
 				
@@ -290,11 +298,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				mh.minvname = varName;
 				mh.nodesprocessed = nodesprocessed;
 				mh.standaloneSubProgressMonitors.add(node);
-				holder.put(holder.size(), mh);
+				standaloneHolder.put(standaloneHolder.size(), mh);
 				
 				return true;
-			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
-			.build(compilationUnit);
+			}
+		});
 		
 		// Add operations for standalone SubProgressMonitor
 		if (!standaloneHolder.isEmpty()) {
