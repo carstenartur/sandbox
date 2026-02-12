@@ -300,7 +300,18 @@ if (pattern.hasBodyConstraint()) {
 
 ### Unit Tests
 
-Tests in `NewPatternKindsTest` cover:
+**Location**: `sandbox_jface_cleanup_test/src/org/sandbox/jdt/ui/tests/quickfix/MissingSuperDisposePluginTest.java`
+
+Tests for the MissingSuperDisposePlugin implementation:
+- Method body parsing and analysis
+- Pattern matching for dispose() methods  
+- Helper method validation
+
+### TriggerPattern Framework Tests
+
+**Location**: `sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/`
+
+Tests in `NewPatternKindsTest` and related test classes cover:
 
 - ✅ Simple method declaration matching
 - ✅ Method name placeholders
