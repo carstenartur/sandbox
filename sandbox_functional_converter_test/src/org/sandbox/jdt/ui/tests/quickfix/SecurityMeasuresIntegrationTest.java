@@ -52,7 +52,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("CopyOnWriteArrayList - simple forEach conversion should work")
 	void testCopyOnWriteArrayListSimpleForEach() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -77,7 +77,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 
@@ -87,7 +87,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("list.removeIf() should block conversion")
 	void testRemoveIfBlocksConversion() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -102,7 +102,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -112,7 +112,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("list.replaceAll() should block conversion")
 	void testReplaceAllBlocksConversion() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -127,7 +127,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -137,7 +137,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("list.sort() should block conversion")
 	void testSortBlocksConversion() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -152,7 +152,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -162,7 +162,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("map.putIfAbsent() should block conversion")
 	void testMapPutIfAbsentBlocksConversion() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -178,7 +178,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -188,7 +188,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("map.compute() should block conversion")
 	void testMapComputeBlocksConversion() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -204,7 +204,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -214,7 +214,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("map.computeIfAbsent() should block conversion")
 	void testMapComputeIfAbsentBlocksConversion() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -230,7 +230,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -240,7 +240,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("map.merge() should block conversion")
 	void testMapMergeBlocksConversion() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -256,7 +256,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -266,7 +266,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("this.list.remove() should block conversion")
 	void testFieldAccessModificationBlocksConversion() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -284,7 +284,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -294,7 +294,7 @@ public class SecurityMeasuresIntegrationTest {
 	@Test
 	@DisplayName("ConcurrentHashMap - simple forEach conversion should work")
 	void testConcurrentHashMapSimpleForEach() throws CoreException {
-		IPackageFragment pack = context.getfSourceFolder().createPackageFragment("test", false, null);
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
 		String input = """
 				package test;
@@ -321,7 +321,7 @@ public class SecurityMeasuresIntegrationTest {
 				""";
 
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
-		context.enable(MYCleanUpConstants.USE_FUNCTIONAL_LOOP);
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 }
