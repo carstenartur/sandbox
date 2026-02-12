@@ -931,6 +931,40 @@ public class Test {
 		return new Image(device, data);
 	}
 }
+"""),
+		ImageDataUsedMultipleTimes(
+"""
+package test;
+import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
+public class Test {
+	public void createImages(Device device) {
+		PaletteData palette = new PaletteData(new RGB(0, 0, 0));
+		ImageData imageData = new ImageData(1, 1, 1, palette);
+		Image image1 = new Image(device, imageData);
+		Image image2 = new Image(device, imageData);
+	}
+}
+"""),
+		ImageDataWithMultipleFragments(
+"""
+package test;
+import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
+public class Test {
+	public Image createPattern(Device device) {
+		PaletteData palette = new PaletteData(new RGB(0, 0, 0));
+		ImageData imageData1 = new ImageData(1, 1, 1, palette), imageData2 = new ImageData(2, 2, 1, palette);
+		Image image = new Image(device, imageData1);
+		return image;
+	}
+}
 """);
 
 		String given;
@@ -947,5 +981,66 @@ public class Test {
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	enum ImageDataProviderMultipleCleanupCases {
+		MultipleIndependentImageData(
+"""
+package test;
+import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
+public class Test {
+	public void createPatterns(Device device) {
+		PaletteData palette1 = new PaletteData(new RGB(0, 0, 0));
+		ImageData imageData1 = new ImageData(1, 1, 1, palette1);
+		Image image1 = new Image(device, imageData1);
+		
+		PaletteData palette2 = new PaletteData(new RGB(255, 255, 255));
+		ImageData imageData2 = new ImageData(2, 2, 1, palette2);
+		Image image2 = new Image(device, imageData2);
+	}
+}
+""",
+"""
+package test;
+import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageDataProvider;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
+public class Test {
+	public void createPatterns(Device device) {
+		PaletteData palette1 = new PaletteData(new RGB(0, 0, 0));
+		Image image1 = new Image(device, (ImageDataProvider) zoom -> {
+			return new ImageData(1, 1, 1, palette1);
+		});
+		
+		PaletteData palette2 = new PaletteData(new RGB(255, 255, 255));
+		Image image2 = new Image(device, (ImageDataProvider) zoom -> {
+			return new ImageData(2, 2, 1, palette2);
+		});
+	}
+}
+""");
+
+		String given;
+		String expected;
+
+		ImageDataProviderMultipleCleanupCases(String given, String expected) {
+			this.given = given;
+			this.expected = expected;
+		}
+	}
+
+	@ParameterizedTest
+	@EnumSource(ImageDataProviderMultipleCleanupCases.class)
+	public void testImageDataProviderMultipleCleanup(ImageDataProviderMultipleCleanupCases test) throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 }

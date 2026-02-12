@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -99,29 +98,6 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 	}
 
 	/**
-	 * Checks if a type binding is or extends a given type.
-	 * 
-	 * @param typeBinding the type binding to check
-	 * @param typeName the fully qualified type name
-	 * @return {@code true} if the type matches, {@code false} otherwise
-	 */
-	private static boolean isOfType(ITypeBinding typeBinding, String typeName) {
-		if (typeBinding == null) {
-			return false;
-		}
-		String qualifiedName = typeBinding.getQualifiedName();
-		if (typeName.equals(qualifiedName)) {
-			return true;
-		}
-		// Check superclass
-		ITypeBinding superclass = typeBinding.getSuperclass();
-		if (superclass != null && isOfType(superclass, typeName)) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
 	 * Finds and identifies Image(Device, ImageData) patterns to be transformed.
 	 * 
 	 * <p>This method scans the compilation unit for:</p>
@@ -189,6 +165,13 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 				// Get the initializer expression
 				VariableDeclarationFragment fragment = findFragment(varDecl, imageDataVar);
 				if (fragment == null || fragment.getInitializer() == null) {
+					return true;
+				}
+				
+				// Check that the ImageData variable is only used once (in this Image constructor)
+				// This ensures it's safe to remove the variable declaration
+				int usageCount = countVariableReferences(imageDataVar);
+				if (usageCount != 1) {
 					return true;
 				}
 				
@@ -267,6 +250,45 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Counts how many times a variable is referenced in the enclosing method/block.
+	 * 
+	 * @param varName the variable name to count references for
+	 * @return the number of references to the variable
+	 */
+	private int countVariableReferences(SimpleName varName) {
+		// Navigate up to find the enclosing method or block
+		ASTNode parent = varName.getParent();
+		while (parent != null && !(parent instanceof MethodDeclaration) && !(parent instanceof Block)) {
+			parent = parent.getParent();
+		}
+		
+		if (parent == null) {
+			return 0;
+		}
+		
+		// Count references to the variable
+		final int[] count = new int[1];
+		final String varIdentifier = varName.getIdentifier();
+		
+		parent.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				// Check if this is a reference to our variable (not the declaration)
+				if (node.getIdentifier().equals(varIdentifier)) {
+					// Make sure it's actually referencing a variable, not declaring it
+					ASTNode nodeParent = node.getParent();
+					if (!(nodeParent instanceof VariableDeclarationFragment)) {
+						count[0]++;
+					}
+				}
+				return true;
+			}
+		});
+		
+		return count[0];
 	}
 
 	/**
