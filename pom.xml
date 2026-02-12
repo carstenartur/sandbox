@@ -70,6 +70,9 @@
 		<module>sandbox_int_to_enum</module>
 		<module>sandbox_int_to_enum_feature</module>
 		<module>sandbox_int_to_enum_test</module>
+		<module>sandbox_use_general_type</module>
+		<module>sandbox_use_general_type_feature</module>
+		<module>sandbox_use_general_type_test</module>
 		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to profiles below -->
 	</modules>
 	<repositories>
@@ -576,6 +579,21 @@ See README.md for more information.
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_int_to_enum_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_use_general_type</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_use_general_type_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_use_general_type_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
