@@ -17,6 +17,10 @@
       %license
    </license>
 
+   <requires>
+      <import plugin="org.eclipse.jdt.ui"/>
+   </requires>
+
    <plugin
          id="sandbox_use_general_type"
          download-size="0"
