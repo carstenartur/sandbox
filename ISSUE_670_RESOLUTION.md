@@ -153,7 +153,7 @@ This PR resolves the confusion by:
 - ✅ Map modification methods (completed earlier)
 - ✅ Additional collection methods (completed earlier)
 - ✅ Field access support (completed earlier)
-- ✅ Method invocation receivers (completed in PR #XXX)
+- ✅ Method invocation receivers (now fully implemented)
 
 The issue text mentioned several items as missing, but investigation showed only method invocation receivers (`getList().remove()`) was actually missing. All other items were already implemented and tested. This PR closes the final gap."
 

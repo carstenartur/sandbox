@@ -122,6 +122,13 @@ public final class CollectionModificationDetector {
 	}
 	
 	/**
+	 * Common getter method prefixes used in heuristic matching.
+	 */
+	private static final String[] GETTER_PREFIXES = { 
+			"get", "fetch", "retrieve", "obtain" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	};
+	
+	/**
 	 * Checks if a method invocation matches a getter pattern for the given collection name.
 	 * 
 	 * <p>Matches common getter patterns like:</p>
@@ -143,10 +150,7 @@ public final class CollectionModificationDetector {
 		
 		String methodName = methodInv.getName().getIdentifier();
 		
-		// Common getter prefixes
-		String[] prefixes = { "get", "fetch", "retrieve", "obtain" };
-		
-		for (String prefix : prefixes) {
+		for (String prefix : GETTER_PREFIXES) {
 			if (methodName.startsWith(prefix) && methodName.length() > prefix.length()) {
 				// Extract the property name after the prefix (e.g., "List" from "getList")
 				String propertyName = methodName.substring(prefix.length());

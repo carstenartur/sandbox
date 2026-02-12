@@ -383,12 +383,13 @@ public class SecurityMeasuresIntegrationTest {
 				import java.util.List;
 				import java.util.ArrayList;
 				public class E {
+					private final List<String> list = new ArrayList<>();
 					private List<String> getList() {
-						return new ArrayList<>();
+						return list;
 					}
-					public void foo(List<String> list) {
+					public void foo() {
 						for (String item : list) {
-							getList().add(item);
+							getList().remove(item);
 						}
 					}
 				}
@@ -412,10 +413,11 @@ public class SecurityMeasuresIntegrationTest {
 				import java.util.List;
 				import java.util.ArrayList;
 				public class E {
+					private final List<String> items = new ArrayList<>();
 					private List<String> getItems() {
-						return new ArrayList<>();
+						return items;
 					}
-					public void foo(List<String> items) {
+					public void foo() {
 						for (String item : items) {
 							getItems().clear();
 						}

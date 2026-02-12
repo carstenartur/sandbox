@@ -215,27 +215,17 @@ This is documented in the "⚠️ Teilweise umgesetzt" section of Issue #670 but
 
 ## Limitations (Documented in Code)
 
-### 1. Method Return Values Not Detected
-
-**Issue**: `getList().add(x)` is not detected as a modification.
-
-**Reason**: Conservative approach - detecting method returns requires inter-procedural analysis.
-
-**Documentation**: See CollectionModificationDetector.java lines 37-39.
-
----
-
-### 2. Array Access Receivers Not Detected  
+### 1. Array Access Receivers Not Detected  
 
 **Issue**: `arrays[0].add(x)` is not detected.
 
 **Reason**: Array indexing adds complexity; rare in practice.
 
-**Documentation**: See CollectionModificationDetector.java line 39.
+**Documentation**: See `CollectionModificationDetector.java` for inline comments.
 
 ---
 
-### 3. Indirect Modifications Not Detected
+### 2. Indirect Modifications Not Detected
 
 **Issue**: Calling a method that internally modifies the collection is not detected.
 
