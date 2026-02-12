@@ -394,12 +394,11 @@ public class LoopBidirectionalTransformationTest {
 	// ===========================================
 
 	/**
-	 * Tests that enhanced for-loop to stream transformation works correctly.
+	 * Tests that enhanced for-loop to forEach transformation works correctly.
+	 * This is the same as testForToStream_forEach but is grouped with
+	 * the comment preservation tests to document the current limitation.
 	 * 
 	 * <p><b>Direction:</b> for → Stream</p>
-	 * <p><b>Note:</b> Body comments before simple statements (not filter/map patterns)
-	 * are not yet preserved in for→Stream direction. Comment preservation for
-	 * filter/map operations works via FilterOp/MapOp comment attachment.</p>
 	 */
 	@Test
 	@DisplayName("for → Stream: basic transformation succeeds")
