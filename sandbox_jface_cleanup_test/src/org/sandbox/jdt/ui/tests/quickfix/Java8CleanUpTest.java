@@ -452,11 +452,195 @@ public class Test {
 
 		String given;
 		String expected;
-
+		
+		// New test cases for addressing issue gaps
 		JFaceCleanupCases(String given, String expected) {
 			this.given=given;
 			this.expected=expected;
 		}
+	}
+	
+	// Additional test cases for missing transformation scenarios
+	enum AdditionalJFaceCleanupCases {
+		// Test field declaration with SubProgressMonitor type
+		FieldDeclaration(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	private SubProgressMonitor field;
+	public void doWork(IProgressMonitor monitor) {
+		monitor.beginTask("Task", 100);
+		field = new SubProgressMonitor(monitor, 50);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	private IProgressMonitor field;
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+		field = subMonitor.split(50);
+	}
+}
+"""), //$NON-NLS-1$
+		// Test method parameter with SubProgressMonitor type
+		MethodParameterType(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void processMonitor(SubProgressMonitor sub) {
+		sub.worked(10);
+	}
+	public void doWork(IProgressMonitor monitor) {
+		monitor.beginTask("Task", 100);
+		processMonitor(new SubProgressMonitor(monitor, 50));
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void processMonitor(IProgressMonitor sub) {
+		sub.worked(10);
+	}
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+		processMonitor(subMonitor.split(50));
+	}
+}
+"""), //$NON-NLS-1$
+		// Test method return type with SubProgressMonitor
+		MethodReturnType(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public SubProgressMonitor createMonitor(IProgressMonitor monitor) {
+		monitor.beginTask("Task", 100);
+		return new SubProgressMonitor(monitor, 50);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public IProgressMonitor createMonitor(IProgressMonitor monitor) {
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+		return subMonitor.split(50);
+	}
+}
+"""), //$NON-NLS-1$
+		// Test cast expression with SubProgressMonitor
+		CastExpression(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		monitor.beginTask("Task", 100);
+		IProgressMonitor sub = (SubProgressMonitor) new SubProgressMonitor(monitor, 50);
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+		IProgressMonitor sub = subMonitor.split(50);
+	}
+}
+"""), //$NON-NLS-1$
+		// Test nested constructor call (as method argument)
+		NestedConstructorInMethodArgument(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	public void process(IProgressMonitor mon) {
+		mon.worked(10);
+	}
+	public void doWork(IProgressMonitor monitor) {
+		monitor.beginTask("Task", 100);
+		process(new SubProgressMonitor(monitor, 50));
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	public void process(IProgressMonitor mon) {
+		mon.worked(10);
+	}
+	public void doWork(IProgressMonitor monitor) {
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+		process(subMonitor.split(50));
+	}
+}
+"""), //$NON-NLS-1$
+		// Test constructor with non-trivial arguments (method calls)
+		ConstructorWithMethodCallArguments(
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+public class Test {
+	private IProgressMonitor getMonitor() { return null; }
+	private int computeTicks() { return 50; }
+	public void doWork() {
+		getMonitor().beginTask("Task", 100);
+		IProgressMonitor sub = new SubProgressMonitor(getMonitor(), computeTicks());
+	}
+}
+""", //$NON-NLS-1$
+"""
+package test;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+public class Test {
+	private IProgressMonitor getMonitor() { return null; }
+	private int computeTicks() { return 50; }
+	public void doWork() {
+		SubMonitor subMonitor = SubMonitor.convert(getMonitor(), "Task", 100);
+		IProgressMonitor sub = subMonitor.split(computeTicks());
+	}
+}
+"""); //$NON-NLS-1$
+
+		String given;
+		String expected;
+
+		AdditionalJFaceCleanupCases(String given, String expected) {
+			this.given = given;
+			this.expected = expected;
+		}
+	}
+
+	@ParameterizedTest
+	@EnumSource(AdditionalJFaceCleanupCases.class)
+	public void testAdditionalJFaceCleanup(AdditionalJFaceCleanupCases test) throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
 	//	@Disabled
