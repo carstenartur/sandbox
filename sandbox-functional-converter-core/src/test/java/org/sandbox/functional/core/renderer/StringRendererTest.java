@@ -352,8 +352,23 @@ class StringRendererTest {
         var mapOp = new MapOp("list.add(x)", null, null, true);
         mapOp.addComment("Side-effect comment");
         String result = renderer.renderMapOp("stream", mapOp, "x");
-        // Side-effect rendering takes priority
+        // Side-effect rendering takes priority, comment is not rendered
         assertThat(result).contains("list.add(x)");
         assertThat(result).contains("return x;");
+        assertThat(result).doesNotContain("Side-effect comment");
+    }
+    
+    @Test
+    void testRenderFilterOpWithMultiLineBlockComment() {
+        var filterOp = new FilterOp("x > 0");
+        filterOp.addComment("First line\n * Second line\n * Third line");
+        String result = renderer.renderFilterOp("stream", filterOp, "x");
+        assertThat(result).contains("// First line");
+        assertThat(result).contains("// Second line");
+        assertThat(result).contains("// Third line");
+        assertThat(result).contains("return x > 0;");
+        // Should not contain raw block-comment artifacts
+        assertThat(result).doesNotContain("* Second");
+        assertThat(result).doesNotContain("* Third");
     }
 }

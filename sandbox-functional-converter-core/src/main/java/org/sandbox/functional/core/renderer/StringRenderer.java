@@ -167,10 +167,29 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
         StringBuilder sb = new StringBuilder();
         sb.append(pipeline).append('.').append(method).append('(').append(variableName).append(" -> {\n");
         for (String comment : comments) {
-            sb.append("    // ").append(comment).append('\n');
+            appendNormalizedCommentLines(sb, comment);
         }
         sb.append("    ").append(returnStatement).append('\n');
         sb.append("})");
         return sb.toString();
+    }
+    
+    /**
+     * Appends a raw comment string as one or more normalized single-line comments.
+     * Handles block/Javadoc comments with embedded newlines by splitting on line
+     * boundaries, stripping leading whitespace and {@code *} prefixes, and emitting
+     * each resulting line as a {@code //} comment indented by four spaces.
+     */
+    private void appendNormalizedCommentLines(StringBuilder sb, String rawComment) {
+        if (rawComment == null || rawComment.isEmpty()) {
+            return;
+        }
+        for (String line : rawComment.split("\\R")) {
+            String normalized = line.stripLeading();
+            if (!normalized.isEmpty() && normalized.charAt(0) == '*') {
+                normalized = normalized.substring(1).stripLeading();
+            }
+            sb.append("    // ").append(normalized).append('\n');
+        }
     }
 }
