@@ -456,6 +456,239 @@ public class NewPatternKindsTest {
 		assertEquals("getName", ((SimpleName) nameNode).getIdentifier());
 	}
 	
+	// ========== BODY CONSTRAINT TESTS ==========
+	
+	@Test
+	public void testBodyConstraintNegative_MissingSuperCall() {
+		String code = """
+			class MyWidget {
+				void dispose() {
+					cleanup();
+				}
+				
+				void cleanup() {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		// negate=true means: trigger when pattern is NOT found (missing super call)
+		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+				"super.dispose();", PatternKind.STATEMENT, true);
+		
+		assertEquals(1, matches.size(), "Should find one dispose() method missing super.dispose()");
+	}
+	
+	@Test
+	public void testBodyConstraintNegative_SuperCallPresent() {
+		String code = """
+			class MyWidget {
+				void dispose() {
+					cleanup();
+					super.dispose();
+				}
+				
+				void cleanup() {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		// negate=true: should NOT match when super.dispose() IS present
+		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+				"super.dispose();", PatternKind.STATEMENT, true);
+		
+		assertEquals(0, matches.size(), "Should not match when super.dispose() is present");
+	}
+	
+	@Test
+	public void testBodyConstraintPositive_SuperCallPresent() {
+		String code = """
+			class MyWidget {
+				void dispose() {
+					cleanup();
+					super.dispose();
+				}
+				
+				void cleanup() {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		// negate=false means: trigger when pattern IS found
+		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+				"super.dispose();", PatternKind.STATEMENT, false);
+		
+		assertEquals(1, matches.size(), "Should match when super.dispose() is present");
+	}
+	
+	@Test
+	public void testBodyConstraintPositive_SuperCallMissing() {
+		String code = """
+			class MyWidget {
+				void dispose() {
+					cleanup();
+				}
+				
+				void cleanup() {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		// negate=false: should NOT match when super.dispose() is missing
+		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+				"super.dispose();", PatternKind.STATEMENT, false);
+		
+		assertEquals(0, matches.size(), "Should not match when super.dispose() is missing");
+	}
+	
+	@Test
+	public void testBodyConstraintMultipleMethods() {
+		String code = """
+			class MyWidget {
+				void dispose() {
+					cleanup();
+				}
+				
+				void cleanup() {}
+			}
+			
+			class AnotherWidget {
+				void dispose() {
+					super.dispose();
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		// negate=true: find dispose() methods missing super.dispose()
+		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+				"super.dispose();", PatternKind.STATEMENT, true);
+		
+		assertEquals(1, matches.size(), "Should find only the dispose() method missing super.dispose()");
+	}
+	
+	@Test
+	public void testBodyConstraintEmptyMethod() {
+		String code = """
+			class MyWidget {
+				void dispose() {
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		// negate=true: empty body has no super call
+		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+				"super.dispose();", PatternKind.STATEMENT, true);
+		
+		assertEquals(1, matches.size(), "Should find empty dispose() method as missing super call");
+	}
+	
+	@Test
+	public void testBodyConstraintSuperCallInNestedBlock() {
+		String code = """
+			class MyWidget {
+				void dispose() {
+					if (true) {
+						super.dispose();
+					}
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		// negate=true: super.dispose() is inside nested block, should still be found
+		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+				"super.dispose();", PatternKind.STATEMENT, true);
+		
+		assertEquals(0, matches.size(), "Should not match when super.dispose() is in nested block");
+	}
+	
+	@Test
+	public void testBodyConstraintMethodCallInBody() {
+		String code = """
+			class MyWidget {
+				void process() {
+					System.out.println("hello");
+					doWork();
+				}
+				
+				void doWork() {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void process()", PatternKind.METHOD_DECLARATION);
+		
+		// Check for presence of println call using METHOD_CALL kind
+		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+				"System.out.println($msg)", PatternKind.METHOD_CALL, false);
+		
+		assertEquals(1, matches.size(), "Should find process() with println call");
+	}
+	
+	// ========== OVERRIDE DETECTION TESTS ==========
+	// Note: Override detection requires binding resolution which needs ICompilationUnit.
+	// Without a real project context, bindings are not available, so override checks
+	// return false. These tests verify that the engine correctly filters out matches
+	// when override constraints are specified but bindings are unavailable.
+	
+	@Test
+	public void testOverrideConstraint_NoBindings() {
+		String code = """
+			class MyWidget {
+				void dispose() {
+					cleanup();
+				}
+				
+				void cleanup() {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		// Pattern with override constraint - without bindings, no matches expected
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION,
+				null, null, null, "org.eclipse.swt.widgets.Widget"); //$NON-NLS-1$
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(0, matches.size(), "Should find no matches when override bindings are not available");
+	}
+	
+	@Test
+	public void testMethodDeclarationWithoutOverrideConstraint() {
+		String code = """
+			class MyWidget {
+				void dispose() {
+					cleanup();
+				}
+				
+				void cleanup() {}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		// Pattern without override constraint - should match normally
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size(), "Should find one dispose() method without override constraint");
+	}
+	
 	// ========== HELPER METHODS ==========
 	
 	private CompilationUnit parse(String code) {
