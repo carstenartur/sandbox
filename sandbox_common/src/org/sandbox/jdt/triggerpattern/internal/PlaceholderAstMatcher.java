@@ -542,12 +542,14 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		List<SingleVariableDeclaration> otherParams = otherMethod.parameters();
 		
 		// Check for multi-placeholder in parameters (e.g., $params$)
-		if (!patternParams.isEmpty()) {
+		// Pattern like "void $name($params$)" is normalized to "void $name(Object... $params$)"
+		if (patternParams.size() == 1) {
 			SingleVariableDeclaration firstPatternParam = patternParams.get(0);
 			SimpleName paramName = firstPatternParam.getName();
 			String name = paramName.getIdentifier();
 			
-			if (name != null && name.startsWith("$")) { //$NON-NLS-1$
+			// Check if this is a multi-placeholder parameter (varargs with placeholder name)
+			if (name != null && name.startsWith("$") && firstPatternParam.isVarargs()) { //$NON-NLS-1$
 				PlaceholderInfo info = parsePlaceholder(name);
 				
 				if (info.isMulti()) {
@@ -568,7 +570,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 									return false;
 								}
 							}
-							// Multi-placeholder matched successfully, continue to signature matching
+							// Multi-placeholder matched successfully
 						} else {
 							return false;
 						}

@@ -367,6 +367,10 @@ public class PatternParser {
 			normalizedSnippet = normalizedSnippet + " {}"; //$NON-NLS-1$
 		}
 		
+		// Handle multi-placeholder parameters: "$params$" -> "Object... $params$"
+		// This makes the pattern syntactically valid for the Java parser
+		normalizedSnippet = normalizedSnippet.replaceAll("\\(\\s*\\$([a-zA-Z_][a-zA-Z0-9_]*)\\$\\s*\\)", "(Object... \\$$1\\$)"); //$NON-NLS-1$ //$NON-NLS-2$
+		
 		// Wrap the method declaration in a class context
 		String source = "class _Pattern { " + normalizedSnippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
 		
