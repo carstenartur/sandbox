@@ -278,18 +278,25 @@ public final class PreconditionsChecker {
 	 * Additionally, many concurrent collections do not support {@code iterator.remove()}.
 	 * </p>
 	 * 
-	 * <p><b>Note:</b> This flag is currently detected but not yet integrated into conversion
-	 * decisions. Future implementation should use this to:
+	 * <p><b>Current Integration:</b> This flag is detected and available for use.
+	 * Concurrent collections are currently <b>allowed</b> for simple forEach conversions
+	 * (see {@link #isSafeToRefactor()}), which is safe for read-only iteration.
+	 * The existing {@link #modifiesIteratedCollection()} check already blocks unsafe
+	 * modifications on concurrent collections.
+	 * </p>
+	 * 
+	 * <p><b>Future Enhancements:</b> This flag could be used for:
 	 * <ul>
-	 * <li>Never generate {@code iterator.remove()} for concurrent collections</li>
-	 * <li>Consider different safety rules for weakly-consistent iterators</li>
-	 * <li>Account for threading implications when iterating concurrent types</li>
+	 * <li>Preventing iterator-to-enhanced-for conversions that use {@code iterator.remove()}</li>
+	 * <li>Different safety rules for weakly-consistent iterator semantics</li>
+	 * <li>Special handling based on threading context (field vs local variable)</li>
 	 * </ul>
 	 * </p>
 	 * 
 	 * @return true if the iterated collection is a concurrent collection
 	 * 
 	 * @see ConcurrentCollectionDetector
+	 * @see #modifiesIteratedCollection()
 	 * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670 - Point 2.4</a>
 	 */
 	public boolean isConcurrentCollection() {
