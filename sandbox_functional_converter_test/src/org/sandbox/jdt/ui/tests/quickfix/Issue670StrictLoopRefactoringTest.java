@@ -16,6 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -384,9 +385,9 @@ public class Issue670StrictLoopRefactoringTest {
 	/**
 	 * Tests that iterator loops on CopyOnWriteArrayList with iterator.remove() should NOT convert.
 	 * 
-	 * <p><b>Rule:</b> CopyOnWriteArrayList iterators don't support remove().
-	 * Converting to enhanced for-loop would be safe, but the IteratorLoopAnalyzer
-	 * correctly blocks this conversion.</p>
+	 * <p><b>Rule:</b> In the functional-loop (stream) cleanup, iterator-while patterns are
+	 * handled by the {@code IteratorWhileHandler}, and {@code iterator.remove()} cannot be
+	 * represented in the resulting stream-based refactoring, so this conversion is correctly blocked.</p>
 	 */
 	@Test
 	@DisplayName("Iterator loop on CopyOnWriteArrayList with iterator.remove() - should NOT convert")

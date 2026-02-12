@@ -1310,9 +1310,9 @@ See also:
 ### References
 
 - [Issue #670](https://github.com/carstenartur/sandbox/issues/670) — Original issue describing strict rules
-- [CollectionModificationDetector](../src/org/sandbox/jdt/internal/corext/fix/helper/CollectionModificationDetector.java) — Modification detection implementation
-- [TraditionalForHandler](../src/org/sandbox/jdt/internal/corext/fix/helper/TraditionalForHandler.java) — Index usage detection implementation
-- [IteratorLoopAnalyzer](../src/org/sandbox/jdt/internal/corext/fix/helper/IteratorLoopAnalyzer.java) — Iterator safety analysis
+- [CollectionModificationDetector](src/org/sandbox/jdt/internal/corext/fix/helper/CollectionModificationDetector.java) — Modification detection implementation
+- [TraditionalForHandler](src/org/sandbox/jdt/internal/corext/fix/helper/TraditionalForHandler.java) — Index usage detection implementation
+- [IteratorLoopAnalyzer](src/org/sandbox/jdt/internal/corext/fix/helper/IteratorLoopAnalyzer.java) — Iterator safety analysis
 
 ## Limitations and Future Work
 
