@@ -16,6 +16,7 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -49,6 +50,13 @@ public class Java8CleanUpTest {
 
 	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava8();
+
+	@BeforeEach
+	public void setup() throws CoreException {
+		// SWT classes (Image, ImageData, Device, etc.) need to be on the test project classpath
+		// for the ImageDataProvider cleanup tests to compile
+		context.addBundleToClasspath("org.eclipse.swt"); //$NON-NLS-1$
+	}
 
 	enum JFaceCleanupCases{
 		PositiveCase(

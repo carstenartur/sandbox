@@ -56,10 +56,13 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 
 import org.eclipse.core.resources.IContainer;
@@ -512,6 +515,54 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		System.arraycopy(oldEntries, 0, newEntries, 0, nEntries);
 		newEntries[nEntries] = cpe;
 		jproject.setRawClasspath(newEntries, null);
+	}
+
+	/**
+	 * Adds an Eclipse platform bundle to the test project's classpath.
+	 * <p>
+	 * This is needed when test input source code references classes from
+	 * platform bundles (e.g., org.eclipse.swt, org.eclipse.jface).
+	 * </p>
+	 * 
+	 * @param bundleSymbolicName the symbolic name of the bundle (e.g., "org.eclipse.swt")
+	 * @throws CoreException if the bundle cannot be found or added
+	 */
+	public void addBundleToClasspath(String bundleSymbolicName) throws CoreException {
+		Bundle bundle = Platform.getBundle(bundleSymbolicName);
+		if (bundle == null) {
+			throw new CoreException(Status.error("Bundle not found: " + bundleSymbolicName)); //$NON-NLS-1$
+		}
+		
+		// Get the bundle's file location
+		File bundleFile;
+		try {
+			bundleFile = FileLocator.getBundleFile(bundle);
+		} catch (Exception e) {
+			throw new CoreException(Status.error("Cannot locate bundle file: " + bundleSymbolicName, e)); //$NON-NLS-1$
+		}
+		
+		if (bundleFile == null || !bundleFile.exists()) {
+			throw new CoreException(Status.error("Bundle file does not exist: " + bundleSymbolicName)); //$NON-NLS-1$
+		}
+		
+		IPath bundlePath = new Path(bundleFile.getAbsolutePath());
+		IClasspathEntry cpe;
+		
+		// If the bundle is a directory (exploded), we may need to handle it differently
+		if (bundleFile.isDirectory()) {
+			// For directory bundles, add the bin folder or the directory itself
+			File binDir = new File(bundleFile, "bin"); //$NON-NLS-1$
+			if (binDir.exists() && binDir.isDirectory()) {
+				cpe = JavaCore.newLibraryEntry(new Path(binDir.getAbsolutePath()), null, null);
+			} else {
+				cpe = JavaCore.newLibraryEntry(bundlePath, null, null);
+			}
+		} else {
+			// For JAR bundles, add directly
+			cpe = JavaCore.newLibraryEntry(bundlePath, null, null);
+		}
+		
+		addToClasspath(getJavaProject(), cpe);
 	}
 
 	/**
