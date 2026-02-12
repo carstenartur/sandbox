@@ -30,6 +30,7 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.HelperVisitor;
@@ -525,5 +526,69 @@ public class ClassInstanceCreationVisitorTest {
 		hv.build(cu);
 		
 		assertEquals(2, found.size(), "Should find both ClassInstanceCreation nodes including deeply nested one");
+	}
+	
+	/**
+	 * Reproduces the AstProcessorBuilder chained visitor bug from PR #678.
+	 * 
+	 * <p>When using chained visitors (MethodInvocation → ClassInstanceCreation), 
+	 * if the first visitor (beginTask) does NOT match anything, the second visitor 
+	 * (ClassInstanceCreation) is never called because the chain progression happens 
+	 * inside the first visitor's match callback in {@code ASTProcessor.process()}.</p>
+	 * 
+	 * <p>This means standalone ClassInstanceCreation nodes (without a preceding 
+	 * beginTask) are never detected by the chained visitor.</p>
+	 * 
+	 * <p>The workaround used in JFacePlugin.java is to use a direct ASTVisitor for 
+	 * the second pass instead of relying on chained visitors.</p>
+	 * 
+	 * @see <a href="https://github.com/carstenartur/sandbox/pull/678">PR #678</a>
+	 */
+	@Disabled("AstProcessorBuilder bug: chained ClassInstanceCreation visitor not called when first MethodInvocation visitor has no match (PR #678)")
+	@Test
+	public void testChainedVisitorWithoutFirstMatchBug() {
+		// Code WITHOUT beginTask() - only standalone ClassInstanceCreation nodes
+		String code = """
+			package test;
+			import org.sandbox.jdt.ui.tests.quickfix.mock.MockProgressMonitor;
+			import org.sandbox.jdt.ui.tests.quickfix.mock.MockSubProgressMonitor;
+			
+			public class Test {
+				public void doWork(MockProgressMonitor monitor) {
+					// No beginTask() call here - standalone SubProgressMonitor usage
+					MockProgressMonitor sub1 = new MockSubProgressMonitor(monitor, 50);
+					MockProgressMonitor sub2 = new MockSubProgressMonitor(monitor, 30);
+				}
+			}
+			""";
+		
+		CompilationUnit cu = createUnit(code, "Test");
+		
+		List<ClassInstanceCreation> cicNodes = new ArrayList<>();
+		Set<ASTNode> nodesprocessed = null;
+		ReferenceHolder<String, Object> dataholder = new ReferenceHolder<>();
+		
+		// Use the same chained pattern as JFacePlugin: MethodInvocation -> ClassInstanceCreation
+		// Since there's no beginTask(), the first visitor will have ZERO matches.
+		// BUG: The second visitor should still be able to find ClassInstanceCreation nodes,
+		// but due to the chaining architecture, it is never called.
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
+			.processor()
+			.callMethodInvocationVisitor(MockProgressMonitor.class, "beginTask", (node, holder) -> {
+				// This callback is never triggered (no beginTask in the code)
+				return true;
+			}, s -> ASTNodes.getTypedAncestor(s, Block.class))
+			.callClassInstanceCreationVisitor(MockSubProgressMonitor.class, (node, holder) -> {
+				cicNodes.add(node);
+				return true;
+			})
+			.build(cu);
+		
+		// This assertion FAILS because the chained ClassInstanceCreation visitor
+		// is never called when the MethodInvocation visitor has no matches.
+		// The workaround is to use a separate ASTVisitor for standalone detection.
+		assertEquals(2, cicNodes.size(), 
+			"Chained ClassInstanceCreation visitor should find nodes even when " +
+			"the first MethodInvocation visitor has no matches");
 	}
 }

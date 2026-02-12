@@ -232,6 +232,64 @@ subMonitor.split(60, SubMonitor.SUPPRESS_SUBTASK_LABEL)
 - **Rejected**: Would create mixed API usage (old + new)
 - **Rejected**: Misses opportunity to modernize progress tracking
 
+### Standalone SubProgressMonitor Handling
+
+**Decision**: Convert standalone `SubProgressMonitor` (without preceding `beginTask()`)
+
+**Pattern**:
+```java
+// Before: Standalone SubProgressMonitor without beginTask()
+IProgressMonitor sub = new SubProgressMonitor(monitor, 50);
+
+// After: Chained convert().split() call
+IProgressMonitor sub = SubMonitor.convert(monitor).split(50);
+```
+
+**Rationale**:
+- Not all SubProgressMonitor instances are preceded by beginTask()
+- These instances still need migration to SubMonitor
+- Chaining convert().split() provides equivalent functionality
+- No variable declaration needed for intermediate SubMonitor
+
+**Implementation**:
+- Separate tracking for standalone vs. beginTask-associated instances
+- Standalone instances transformed to `SubMonitor.convert(monitor).split(work)`
+- Flag mapping applies equally to standalone instances
+- 3-arg constructor: `SubMonitor.convert(monitor).split(work, flags)`
+
+### Flag Mapping Strategy
+
+**Decision**: Map SubProgressMonitor flags to SubMonitor equivalents
+
+**Mappings**:
+- `SUPPRESS_SUBTASK_LABEL` → `SUPPRESS_SUBTASK`
+- `PREPEND_MAIN_LABEL_TO_SUBTASK` → **dropped** (no SubMonitor equivalent)
+
+**Rationale**:
+- SubMonitor uses different flag naming
+- SUPPRESS_SUBTASK_LABEL behavior maps to SUPPRESS_SUBTASK
+- PREPEND_MAIN_LABEL_TO_SUBTASK has no equivalent; dropping is safe
+
+**Transformation Examples**:
+```java
+// Before: 3-arg with SUPPRESS_SUBTASK_LABEL
+new SubProgressMonitor(monitor, 50, SubProgressMonitor.SUPPRESS_SUBTASK_LABEL)
+
+// After: Flag mapped to SUPPRESS_SUBTASK
+subMonitor.split(50, SubMonitor.SUPPRESS_SUBTASK)
+
+// Before: 3-arg with PREPEND_MAIN_LABEL_TO_SUBTASK
+new SubProgressMonitor(monitor, 50, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_SUBTASK)
+
+// After: Flag dropped, becomes 1-arg split()
+subMonitor.split(50)
+```
+
+**Limitations**:
+- Combined flags (bitwise OR) not currently mapped
+- Numeric literals passed through unchanged
+- Manual review may be needed for complex flag expressions
+
 ## Cross-References
 
 ### Root README Sections
