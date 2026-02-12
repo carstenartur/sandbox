@@ -864,4 +864,88 @@ public class Test {
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
+
+	enum ImageDataProviderCleanupCases {
+		SimpleImageDataLocal(
+"""
+package test;
+import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
+public class Test {
+	public Image createPattern(Device device) {
+		PaletteData palette = new PaletteData(new RGB(0, 0, 0));
+		ImageData imageData = new ImageData(1, 1, 1, palette);
+		Image image = new Image(device, imageData);
+		return image;
+	}
+}
+""",
+"""
+package test;
+import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageDataProvider;
+import org.eclipse.swt.graphics.PaletteData;
+import org.eclipse.swt.graphics.RGB;
+public class Test {
+	public Image createPattern(Device device) {
+		PaletteData palette = new PaletteData(new RGB(0, 0, 0));
+		Image image = new Image(device, (ImageDataProvider) zoom -> {
+			return new ImageData(1, 1, 1, palette);
+		});
+		return image;
+	}
+}
+""");
+
+		String given;
+		String expected;
+
+		ImageDataProviderCleanupCases(String given, String expected) {
+			this.given = given;
+			this.expected = expected;
+		}
+	}
+
+	@ParameterizedTest
+	@EnumSource(ImageDataProviderCleanupCases.class)
+	public void testImageDataProviderCleanup(ImageDataProviderCleanupCases test) throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+	}
+
+	enum NOImageDataProviderCleanupCases {
+		ImageDataParameter(
+"""
+package test;
+import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+public class Test {
+	public Image createImage(Device device, ImageData data) {
+		return new Image(device, data);
+	}
+}
+""");
+
+		String given;
+
+		NOImageDataProviderCleanupCases(String given) {
+			this.given = given;
+		}
+	}
+
+	@ParameterizedTest
+	@EnumSource(NOImageDataProviderCleanupCases.class)
+	public void testImageDataProviderCleanupdonttouch(NOImageDataProviderCleanupCases test) throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
 }

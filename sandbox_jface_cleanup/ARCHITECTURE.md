@@ -290,6 +290,54 @@ subMonitor.split(50)
 - Numeric literals passed through unchanged
 - Manual review may be needed for complex flag expressions
 
+### ImageDataProvider Migration (IMAGE_DPI)
+
+**Purpose**: Replace `new Image(Device, ImageData)` with `new Image(Device, ImageDataProvider)` for DPI/zoom correctness.
+
+**Motivation**: Eclipse Platform UI PR #3004 demonstrated that using `ImageDataProvider` allows drawn patterns to adapt their dimensions based on zoom level (100% vs 150%/200%). The old `Image(Device, ImageData)` constructor creates images at a fixed size regardless of DPI.
+
+**Pattern**:
+- **Before**: `new Image(device, imageData)` where imageData is a locally created `ImageData`
+- **After**: `new Image(device, (ImageDataProvider) zoom -> { return new ImageData(...); })`
+
+**Safety Preconditions**:
+1. ImageData argument must be a local variable (not a parameter or field)
+2. ImageData must be created in the same block with a visible initializer
+3. The transformation is currently limited to simple cases where the ImageData variable is only used for the Image constructor
+
+**Implementation**: `ImageDataProviderPlugin` extends `AbstractTool`
+
+**Algorithm**:
+```
+1. Find ClassInstanceCreation: new Image(device, imageData)
+2. Verify first arg is Device type, second arg is ImageData type
+3. Check imageData is a SimpleName (variable reference)
+4. Locate imageData variable declaration in same method/block
+5. Extract initializer expression from variable declaration
+6. Create lambda: (ImageDataProvider) zoom -> { return <initializer>; }
+7. Replace Image constructor with new lambda-based version
+8. Remove now-unused ImageData variable declaration
+9. Add ImageDataProvider import
+```
+
+**Transformation Example**:
+```java
+// Before
+ImageData imageData = new ImageData(1, 1, 1, palette);
+Image image = new Image(device, imageData);
+
+// After
+Image image = new Image(device, (ImageDataProvider) zoom -> {
+    return new ImageData(1, 1, 1, palette);
+});
+```
+
+**Future Enhancements**:
+- Scale dimensions based on zoom parameter: `(int)(width * zoom / 100.0)`
+- Support ImageData from method calls or field access
+- Handle more complex ImageData initialization patterns
+- Add heuristics to detect when zoom-awareness is beneficial
+
 ## Cross-References
 
 ### Root README Sections

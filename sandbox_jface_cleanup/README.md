@@ -11,11 +11,12 @@ The **JFace Cleanup** plugin modernizes Eclipse JFace/SWT code with automated tr
 ### Production Features
 
 - 🔄 **SubProgressMonitor → SubMonitor** - Automatic migration to modern progress API
-- 🎯 **Style Flag Mapping** - Maps `SUPPRESS_SUBTASK_LABEL` to `SUPPRESS_SUBTASK`
+- 🖼️ **Image(Device, ImageData) → Image(Device, ImageDataProvider)** - DPI/zoom-aware image creation
+- 🎯 **ViewerSorter → ViewerComparator** - Migrate deprecated viewer sorting API
 - 🗑️ **Flag Dropping** - Removes `PREPEND_MAIN_LABEL_TO_SUBTASK` (no SubMonitor equivalent)
 - 📦 **Variable Name Management** - Generates unique variable names to avoid conflicts
 - ♻️ **Idempotent** - Running cleanup multiple times produces the same result
-- 🔌 **Eclipse Integration** - Works seamlessly with Eclipse RCP/JFace code
+- 🔌 **Eclipse Integration** - Works seamlessly with Eclipse RCP/JFace/SWT code
 
 ### Experimental Features (TriggerPattern Framework)
 
@@ -82,7 +83,19 @@ SubMonitor subMonitor2 = SubMonitor.convert(monitor, "Task", 100);
 IProgressMonitor sub = subMonitor2.split(50);  // Unique name generated
 ```
 
-## Migration Pattern
+**ImageDataProvider for DPI Awareness:**
+```java
+// Before
+ImageData imageData = new ImageData(1, 1, 1, palette);
+Image image = new Image(device, imageData);
+
+// After - zoom-aware image creation
+Image image = new Image(device, (ImageDataProvider) zoom -> {
+    return new ImageData(1, 1, 1, palette);
+});
+```
+
+## Migration Patterns
 
 The cleanup transforms `beginTask` + `SubProgressMonitor` to `SubMonitor.convert` + `split`:
 
@@ -109,6 +122,23 @@ new SubProgressMonitor(monitor, ticks, SubProgressMonitor.PREPEND_MAIN_LABEL_TO_
     ↓ (flag is dropped - no equivalent in SubMonitor)
 subMonitor.split(ticks)
 ```
+
+### ImageDataProvider for DPI/Zoom Awareness
+
+The cleanup transforms `Image(Device, ImageData)` to `Image(Device, ImageDataProvider)`:
+
+```java
+// Before: Fixed-size image
+ImageData imageData = new ImageData(width, height, depth, palette);
+Image image = new Image(device, imageData);
+
+// After: Zoom-aware image (lambda receives zoom level)
+Image image = new Image(device, (ImageDataProvider) zoom -> {
+    return new ImageData(width, height, depth, palette);
+});
+```
+
+**Why?** The `ImageDataProvider` interface receives a zoom parameter (100, 150, 200, etc.) allowing images to scale appropriately for high-DPI displays. This is especially important for patterns, icons, and UI decorations that should remain crisp at different zoom levels.
 
 ## Why Migrate?
 
