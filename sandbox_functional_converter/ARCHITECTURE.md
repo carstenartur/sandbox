@@ -59,6 +59,7 @@ All seven transformers (3 loop→stream + 4 bidirectional) now use the ULR pipel
 - `FilterOp`, `MapOp`, `CollectTerminal`, `ReduceTerminal`, `MatchTerminal` — Operations/terminals
 - `LoopModelBuilder` — Fluent builder for constructing models
 - `StringRenderer` — Test renderer producing Java code strings (no OSGi needed), supports comment-aware block-lambda rendering
+- `LoopModelVisualizer` — Diagnostic ASCII visualization for debugging (pipeline diagrams, detailed dumps, tree diagrams)
 - `LoopModelTransformer` — Transformation engine (drives any renderer)
 - All testable without Eclipse/OSGi via `mvn test`
 

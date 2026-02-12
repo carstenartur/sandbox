@@ -379,6 +379,13 @@ No V1 Refactorer fallback. See Phase 7.6 and 7.7 above.
    - [x] Refactor `EnhancedForToIteratorWhile` to use ULR: `LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer`
    - ✅ All 4 bidirectional transformers now use ULR pipeline
 
+4. **ULR Diagnostic Visualization**
+   - [x] Create `LoopModelVisualizer` utility class with three views:
+     - `toAsciiPipeline(LoopModel)` — compact pipeline diagram
+     - `toDetailedDump(LoopModel)` — full component dump with metadata
+     - `toTreeDiagram(LoopTree)` — tree structure with decisions
+   - [x] Add 18 tests for visualizer in `LoopModelVisualizerTest`
+
 **GUI Design Philosophy**:
 - **Global Target Format**: Single selection for desired output format
 - **Source Format Filters**: Individual toggles for which inputs to convert
