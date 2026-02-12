@@ -412,7 +412,6 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			typeReplacementHolder.put(0, typeHolder);
 			operations.add(fixcore.rewrite(typeReplacementHolder));
 		}
-		}
 	}
 
 	/**

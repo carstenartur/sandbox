@@ -549,7 +549,7 @@ import org.eclipse.core.runtime.SubMonitor;
 public class Test {
 	public void doWork(IProgressMonitor monitor) {
 		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
-		IProgressMonitor sub = subMonitor.split(50);
+		IProgressMonitor sub = (IProgressMonitor) subMonitor.split(50);
 	}
 }
 """), //$NON-NLS-1$
