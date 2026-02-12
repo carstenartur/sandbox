@@ -24,19 +24,17 @@ IteratorWhileHandler:  JDT AST → IteratorPatternDetector → LoopModelBuilder 
 TraditionalForHandler: JDT AST → analyzeForLoop() → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
 ```
 
-The four bidirectional transformers (Phase 9) do **not** use ULR — they use direct AST manipulation:
+The bidirectional transformers (Phase 9) are being migrated to ULR:
 
 ```
+EnhancedForToIteratorWhile: JDT AST → LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer → JDT AST (ULR)
 StreamToEnhancedFor:        JDT AST → direct ASTRewrite → JDT AST (no ULR)
 StreamToIteratorWhile:      JDT AST → direct ASTRewrite → JDT AST (no ULR)
 IteratorWhileToEnhancedFor: JDT AST → direct ASTRewrite → JDT AST (no ULR)
-EnhancedForToIteratorWhile: JDT AST → direct ASTRewrite → JDT AST (no ULR)
 ```
 
-These bidirectional transformers perform syntactic restructuring between loop forms without
-intermediate operations (filter/map/collect). A future enhancement could introduce ULR-based
-renderers (e.g., `EnhancedForRenderer`, `IteratorWhileRenderer`) to unify all transformations
-through the ULR pipeline.
+The remaining three bidirectional transformers perform syntactic restructuring between loop forms
+without intermediate operations. Future work will migrate them to ULR-based renderers as well.
 
 **`JdtLoopExtractor`** bridges JDT AST to the abstract `LoopModel`, detecting:
 - `if (cond) continue;` → `FilterOp` (negated)
