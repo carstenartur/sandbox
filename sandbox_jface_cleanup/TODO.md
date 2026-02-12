@@ -80,6 +80,58 @@ IProgressMonitor sub = subMonitor.split(50);
 **Test Coverage**:
 - SubProgressMonitorOnSubMonitorVariable test case
 
+#### 4. Type Replacement Consistency ✅
+**Status**: Implemented (tests pending verification)
+**Priority**: High
+**Completed**: 2026-02-12
+
+Replaces SubProgressMonitor type references with IProgressMonitor in all contexts:
+```java
+// Before
+public class Monitor {
+    private SubProgressMonitor field;
+    public SubProgressMonitor createMonitor(SubProgressMonitor param) {
+        return new SubProgressMonitor(monitor, 50);
+    }
+}
+
+// After
+public class Monitor {
+    private IProgressMonitor field;
+    public IProgressMonitor createMonitor(IProgressMonitor param) {
+        SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+        return subMonitor.split(50);
+    }
+}
+```
+
+**Implementation Details**:
+- Added Pass 3 visitor in `find()` method to collect SubProgressMonitor type references
+- Collects types from:
+  - Field declarations (`FieldDeclaration`)
+  - Variable declarations (`VariableDeclarationStatement`)
+  - Method return types (`MethodDeclaration.getReturnType2()`)
+  - Method parameters (`SingleVariableDeclaration`)
+  - Cast expressions (`CastExpression`)
+- Type detection with fallback:
+  - Attempts ITypeBinding resolution first (most reliable)
+  - Falls back to type name string matching when binding unavailable
+  - Handles SimpleType, QualifiedType, and NameQualifiedType
+- Type replacement in `rewrite()` method:
+  - Replaces all collected types with IProgressMonitor
+  - Adds IProgressMonitor import automatically
+  - Removes SubProgressMonitor import (if no unmapped flags remain)
+
+**Pattern**: Follows ViewerSorterPlugin architecture for comprehensive type replacement
+
+**Test Coverage (Added)**:
+- FieldDeclaration test case - Field with SubProgressMonitor type
+- MethodParameterType test case - Method parameter with SubProgressMonitor type
+- MethodReturnType test case - Method return type with SubProgressMonitor
+- CastExpression test case - Cast expression with SubProgressMonitor
+- NestedConstructorInMethodArgument test case - Constructor as method argument
+- ConstructorWithMethodCallArguments test case - Constructor with method call arguments
+
 ### Remaining Features
 
 #### 4. Removal of .done() Calls
