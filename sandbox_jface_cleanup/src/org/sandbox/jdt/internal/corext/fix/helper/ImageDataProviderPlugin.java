@@ -169,7 +169,7 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 					return true;
 				}
 				
-				// Check that the ImageData variable is only used once (in this Image constructor)
+				// Check that the ImageData variable is referenced exactly once (excluding its declaration)
 				// This ensures it's safe to remove the variable declaration
 				int usageCount = countVariableReferences(imageDataVar);
 				if (usageCount != 1) {
@@ -256,7 +256,7 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 	/**
 	 * Counts how many times a variable is referenced in the enclosing method.
 	 * 
-	 * @param varName the variable name to count references for
+	 * @param varName the SimpleName node of the variable to count references for
 	 * @return the number of references to the variable (excluding the declaration itself)
 	 */
 	private int countVariableReferences(SimpleName varName) {
