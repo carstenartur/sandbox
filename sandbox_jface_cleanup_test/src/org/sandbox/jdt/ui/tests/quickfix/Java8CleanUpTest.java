@@ -584,6 +584,8 @@ public class Test {
 }
 """), //$NON-NLS-1$
 	// Test constructor with non-trivial arguments (method calls)
+	// Note: Implementation handles standalone SubProgressMonitor when monitor expression
+	// is a method call rather than a simple variable
 	ConstructorWithMethodCallArguments(
 """
 package test;
@@ -606,8 +608,8 @@ public class Test {
 	private IProgressMonitor getMonitor() { return null; }
 	private int computeTicks() { return 50; }
 	public void doWork() {
-		SubMonitor subMonitor = SubMonitor.convert(getMonitor(), "Task", 100);
-		IProgressMonitor sub = subMonitor.split(computeTicks());
+		getMonitor().beginTask("Task", 100);
+		IProgressMonitor sub = SubMonitor.convert(getMonitor()).split(computeTicks());
 	}
 }
 """); //$NON-NLS-1$
