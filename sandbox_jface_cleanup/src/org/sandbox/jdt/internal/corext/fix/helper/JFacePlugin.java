@@ -124,6 +124,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 	 * @param message the message to log
 	 */
 	private static void logDebug(String message) {
+		// Always print to console for debugging
+		System.out.println("JFacePlugin DEBUG: " + message); //$NON-NLS-1$
+		
 		if (isDebugEnabled()) {
 			try {
 				Bundle bundle = Platform.getBundle(BUNDLE_ID);
@@ -264,11 +267,13 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		
 		// Add operations for beginTask-associated monitors
 		if (!dataholder.isEmpty()) {
+			System.out.println("JFacePlugin: Adding " + dataholder.size() + " dataholder operations"); //$NON-NLS-1$
 			operations.add(fixcore.rewrite(dataholder));
 		}
 		
 		// Add operations for standalone SubProgressMonitor
 		if (!standaloneHolder.isEmpty()) {
+			System.out.println("JFacePlugin: Adding " + standaloneHolder.size() + " standalone operations"); //$NON-NLS-1$
 			operations.add(fixcore.rewrite(standaloneHolder));
 		}
 	}
