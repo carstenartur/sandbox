@@ -278,6 +278,15 @@ public final class PreconditionsChecker {
 	 * Additionally, many concurrent collections do not support {@code iterator.remove()}.
 	 * </p>
 	 * 
+	 * <p><b>Note:</b> This flag is currently detected but not yet integrated into conversion
+	 * decisions. Future implementation should use this to:
+	 * <ul>
+	 * <li>Never generate {@code iterator.remove()} for concurrent collections</li>
+	 * <li>Consider different safety rules for weakly-consistent iterators</li>
+	 * <li>Account for threading implications when iterating concurrent types</li>
+	 * </ul>
+	 * </p>
+	 * 
 	 * @return true if the iterated collection is a concurrent collection
 	 * 
 	 * @see ConcurrentCollectionDetector
@@ -788,12 +797,35 @@ public final class PreconditionsChecker {
 	 * Extracts the type of the iterated collection from the loop statement.
 	 * 
 	 * <p>For enhanced for-loops: {@code for (String item : list)} → type of list</p>
+	 * <p>Unwraps common map view-producing calls like {@code map.entrySet()}, 
+	 * {@code map.keySet()}, {@code map.values()} to detect the underlying map type.</p>
 	 * 
 	 * @return the collection type binding, or null if not determinable
 	 */
 	private ITypeBinding extractIteratedCollectionType() {
 		if (loop instanceof EnhancedForStatement enhancedFor) {
 			Expression expression = enhancedFor.getExpression();
+			
+			// Unwrap common map view-producing calls like map.entrySet(), map.keySet(), map.values()
+			if (expression instanceof MethodInvocation methodInvocation) {
+				SimpleName name = methodInvocation.getName();
+				if (name != null) {
+					String identifier = name.getIdentifier();
+					if ("entrySet".equals(identifier) || "keySet".equals(identifier) || "values".equals(identifier)) {
+						// Only consider the simple, no-arg variants
+						if (methodInvocation.arguments().isEmpty()) {
+							Expression qualifier = methodInvocation.getExpression();
+							if (qualifier != null) {
+								ITypeBinding qualifierBinding = qualifier.resolveTypeBinding();
+								if (qualifierBinding != null) {
+									return qualifierBinding;
+								}
+							}
+						}
+					}
+				}
+			}
+			
 			return expression.resolveTypeBinding();
 		}
 		return null;

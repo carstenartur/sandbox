@@ -26,7 +26,6 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.fix.helper.CollectionModificationDetector;
@@ -46,13 +45,6 @@ import org.sandbox.jdt.internal.corext.fix.helper.CollectionModificationDetector
  */
 @DisplayName("CollectionModificationDetector Tests")
 public class CollectionModificationDetectorTest {
-
-	private static AST ast;
-
-	@BeforeAll
-	static void setUp() {
-		ast = AST.newAST(AST.getJLSLatest());
-	}
 
 	/**
 	 * Parses a Java code snippet and extracts the first MethodInvocation.

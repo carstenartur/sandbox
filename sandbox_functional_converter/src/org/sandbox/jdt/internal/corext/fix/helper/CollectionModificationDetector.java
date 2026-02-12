@@ -52,7 +52,7 @@ public final class CollectionModificationDetector {
 	 * <ul>
 	 * <li>Collection methods: add, remove, clear, addAll, removeAll, retainAll, removeIf, replaceAll, sort</li>
 	 * <li>List methods: set</li>
-	 * <li>Map methods: put, putIfAbsent, compute, computeIfAbsent, computeIfPresent, merge, replace, replaceAll</li>
+	 * <li>Map methods: put, putAll, putIfAbsent, compute, computeIfAbsent, computeIfPresent, merge, replace, replaceAll</li>
 	 * </ul>
 	 */
 	private static final Set<String> MODIFYING_METHODS = Set.of(
@@ -61,7 +61,7 @@ public final class CollectionModificationDetector {
 			"addAll", "removeAll", "retainAll", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			"removeIf", "replaceAll", "sort", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			// Map methods
-			"put", "putIfAbsent", //$NON-NLS-1$ //$NON-NLS-2$
+			"put", "putAll", "putIfAbsent", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			"compute", "computeIfAbsent", "computeIfPresent", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			"merge", "replace"); //$NON-NLS-1$ //$NON-NLS-2$
 
