@@ -208,6 +208,11 @@ United States, other countries, or both.
       <feature id="sandbox_junit_cleanup_feature"/>
       <feature id="sandbox_functional_converter_feature"/>
       <feature id="sandbox_method_reuse_feature"/>
+      <feature id="sandbox_int_to_enum_feature"/>
+      <feature id="sandbox_cleanup_application_feature"/>
+      <feature id="sandbox_triggerpattern_feature"/>
+      <feature id="sandbox_triggerpattern_string_feature"/>
+      <feature id="sandbox_use_general_type_feature"/>
       <feature id="org.eclipse.pde" installMode="root"/>
       <feature id="org.eclipse.jdt" installMode="root"/>
       <feature id="org.eclipse.equinox.p2.user.ui" installMode="root"/>
