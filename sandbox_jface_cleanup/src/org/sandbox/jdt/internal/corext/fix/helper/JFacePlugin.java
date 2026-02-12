@@ -267,7 +267,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					firstArgName = sn.getIdentifier();
 				}
 				
-				// Check if the variable is already a SubMonitor type
+				// Check if the variable is already a SubMonitor type (use simple name like Pass 1)
 				boolean isSubMonitorType = false;
 				if (sn != null) {
 					IBinding snBinding = sn.resolveBinding();
@@ -275,8 +275,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 						ITypeBinding typeBinding = 
 							((org.eclipse.jdt.core.dom.IVariableBinding) snBinding).getType();
 						if (typeBinding != null) {
-							String qualifiedName = typeBinding.getQualifiedName();
-							isSubMonitorType = SubMonitor.class.getCanonicalName().equals(qualifiedName);
+							isSubMonitorType = "SubMonitor".equals(typeBinding.getName()); //$NON-NLS-1$
 						}
 					}
 				}
