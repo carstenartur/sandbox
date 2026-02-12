@@ -789,6 +789,21 @@ public final class PreconditionsChecker {
 			if (expression instanceof SimpleName) {
 				return ((SimpleName) expression).getIdentifier();
 			}
+			// Unwrap common map view-producing calls like map.entrySet(), map.keySet(), map.values()
+			if (expression instanceof MethodInvocation methodInvocation) {
+				SimpleName name = methodInvocation.getName();
+				if (name != null) {
+					String identifier = name.getIdentifier();
+					if ("entrySet".equals(identifier) || "keySet".equals(identifier) || "values".equals(identifier)) {
+						if (methodInvocation.arguments().isEmpty()) {
+							Expression qualifier = methodInvocation.getExpression();
+							if (qualifier instanceof SimpleName qualifierName) {
+								return qualifierName.getIdentifier();
+							}
+						}
+					}
+				}
+			}
 		}
 		return null;
 	}

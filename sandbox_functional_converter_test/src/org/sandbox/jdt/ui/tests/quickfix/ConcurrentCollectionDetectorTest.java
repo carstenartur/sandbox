@@ -52,12 +52,14 @@ public class ConcurrentCollectionDetectorTest {
 		parser.setSource(code.toCharArray());
 		parser.setUnitName("Test.java");
 		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(true);
 		parser.setEnvironment(null, null, null, true);
 		
 		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 		TypeDeclaration type = (TypeDeclaration) cu.types().get(0);
 		FieldDeclaration field = type.getFields()[0];
 		VariableDeclarationFragment fragment = (VariableDeclarationFragment) field.fragments().get(0);
+		assertNotNull(fragment.resolveBinding(), "Expected field binding to be resolved for test source code.");
 		return fragment.resolveBinding().getType();
 	}
 
