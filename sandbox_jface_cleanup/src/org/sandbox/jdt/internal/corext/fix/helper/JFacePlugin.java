@@ -37,6 +37,7 @@ import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -240,9 +241,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(ClassInstanceCreation node) {
-				// Check if this is a SubProgressMonitor construction
+				// Check if this is a SubProgressMonitor construction (use simple name like Pass 1)
 				ITypeBinding binding = node.resolveTypeBinding();
-				if (binding == null || !"org.eclipse.core.runtime.SubProgressMonitor".equals(binding.getQualifiedName())) { //$NON-NLS-1$
+				if (binding == null || !"SubProgressMonitor".equals(binding.getName())) { //$NON-NLS-1$
 					return true;
 				}
 				
@@ -676,7 +677,14 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			}
 		}
 		
-		// For other expressions (constants, variables, bitwise OR), pass through unchanged
+		// For numeric literals, pass through unchanged but don't mark as passedThrough
+		// since they don't reference SubProgressMonitor (safe to remove import)
+		if (flagExpr instanceof NumberLiteral) {
+			Expression passedExpr = ASTNodes.createMoveTarget(cuRewrite.getASTRewrite(), ASTNodes.getUnparenthesedExpression(flagExpr));
+			return new FlagMappingResult(passedExpr, false, false);
+		}
+		
+		// For other expressions (variables, bitwise OR), pass through unchanged
 		// Mark as passedThrough so SubProgressMonitor import is preserved
 		Expression passedExpr = ASTNodes.createMoveTarget(cuRewrite.getASTRewrite(), ASTNodes.getUnparenthesedExpression(flagExpr));
 		return new FlagMappingResult(passedExpr, false, true);
