@@ -74,8 +74,9 @@ public enum UseGeneralTypeFixCore {
 					rangeComputer= new TightSourceRangeComputer();
 				}
 	
-				if (!hit.isEmpty() && hit.values().stream().findFirst().orElse(null) instanceof TypeWidenHolder holder) {
-					if (holder.variableDeclarationStatement != null) {
+				if (!hit.isEmpty()) {
+					TypeWidenHolder holder = hit.values().stream().findFirst().orElse(null);
+					if (holder != null && holder.variableDeclarationStatement != null) {
 						rangeComputer.addTightSourceNode(holder.variableDeclarationStatement);
 					}
 					rewrite.setTargetSourceRangeComputer(rangeComputer);
