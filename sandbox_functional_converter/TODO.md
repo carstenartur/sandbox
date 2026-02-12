@@ -483,7 +483,7 @@ The legacy radio-button based target format selection remains supported in exist
    - [ ] `TraditionalForHandler`: Use `JdtLoopExtractor` for comment extraction
 
 3. **End-to-End Comment Rendering**
-   - [ ] Loop with comments → Stream with comments in generated output (full integration)
+   - [x] Loop with comments → Stream with comments in generated output (full integration)
 
 ### Issue #453: Output-Format Alignment und vollständigen Support für 'collect'-Pattern ✅ PARTIALLY COMPLETE (January 2026)
 
