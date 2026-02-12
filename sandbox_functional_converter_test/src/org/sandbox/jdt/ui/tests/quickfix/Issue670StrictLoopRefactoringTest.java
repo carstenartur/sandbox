@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -265,13 +264,10 @@ public class Issue670StrictLoopRefactoringTest {
 
 	/**
 	 * Tests that loops with map.put() on the iterated map should NOT convert.
-	 * 
-	 * <p><b>NOTE:</b> Current implementation DOES convert this. This test documents
-	 * the actual behavior. Future enhancement should block this conversion as per Issue #670.</p>
 	 */
 	@Test
-	@DisplayName("Loop with map.put() on iterated map - currently DOES convert (Issue #670)")
-	void testLoopWithMapPut_CurrentlyConverts() throws CoreException {
+	@DisplayName("Loop with map.put() on iterated map - should NOT convert")
+	void testLoopWithMapPut_ShouldNotConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
@@ -286,19 +282,9 @@ public class Issue670StrictLoopRefactoringTest {
 				}
 				""";
 
-		String expected = """
-				package test1;
-				import java.util.*;
-				public class MyTest {
-					void process(Map<String, Integer> map) {
-						map.keySet().forEach(key -> map.put(key + "_new", map.get(key)));
-					}
-				}
-				""";
-
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	/**
@@ -333,8 +319,6 @@ public class Issue670StrictLoopRefactoringTest {
 	 * 
 	 * <p><b>Rule:</b> Only modifications to the ITERATED collection block conversion.
 	 * Modifications to other collections are safe.</p>
-	 * 
-	 * <p><b>NOTE:</b> Current implementation converts this to collect() pattern.</p>
 	 */
 	@Test
 	@DisplayName("Loop modifying different collection - CAN convert")
@@ -356,10 +340,9 @@ public class Issue670StrictLoopRefactoringTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				public class MyTest {
 					void process(List<String> source, List<String> target) {
-						target = source.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
+						source.forEach(item -> target.add(item.toUpperCase()));
 					}
 				}
 				""";
@@ -411,11 +394,9 @@ public class Issue670StrictLoopRefactoringTest {
 	 * Tests that simple iterator loops on CopyOnWriteArrayList (without remove) CAN convert.
 	 * 
 	 * <p><b>Rule:</b> Read-only iteration on concurrent collections is safe.</p>
-	 * 
-	 * <p><b>NOTE:</b> Current implementation converts to stream().forEach().</p>
 	 */
 	@Test
-	@DisplayName("Simple iterator loop on CopyOnWriteArrayList - converts to stream")
+	@DisplayName("Simple iterator loop on CopyOnWriteArrayList - CAN convert")
 	void testConcurrentCollection_SimpleIteration_CanConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
@@ -440,7 +421,9 @@ public class Issue670StrictLoopRefactoringTest {
 				import java.util.concurrent.CopyOnWriteArrayList;
 				public class MyTest {
 					void process(CopyOnWriteArrayList<String> list) {
-						list.stream().forEach(item -> System.out.println(item));
+						for (String item : list) {
+							System.out.println(item);
+						}
 					}
 				}
 				""";
@@ -519,14 +502,11 @@ public class Issue670StrictLoopRefactoringTest {
 	}
 
 	/**
-	 * Tests that loops with field access receiver (this.list.remove).
-	 * 
-	 * <p><b>NOTE:</b> Current implementation DOES convert this. Future enhancement
-	 * should block this as per Issue #670.</p>
+	 * Tests that loops with field access receiver (this.list.remove) should NOT convert.
 	 */
 	@Test
-	@DisplayName("Loop with field access receiver - currently DOES convert (Issue #670)")
-	void testFieldAccessReceiverModification_CurrentlyConverts() throws CoreException {
+	@DisplayName("Loop with field access receiver (this.list.remove) - should NOT convert")
+	void testFieldAccessReceiverModification_ShouldNotConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
@@ -545,38 +525,19 @@ public class Issue670StrictLoopRefactoringTest {
 				}
 				""";
 
-		String expected = """
-				package test1;
-				import java.util.*;
-				public class MyTest {
-					private List<String> list = new ArrayList<>();
-					
-					void process() {
-						this.list.stream().filter(item -> (item == null)).forEachOrdered(item -> this.list.remove(item));
-					}
-				}
-				""";
-
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	/**
-	 * Tests that loops with getter method receiver (getList().add).
+	 * Tests that loops with getter method receiver (getList().add) should NOT convert.
 	 * 
-	 * <p><b>NOTE:</b> This test is disabled because the current implementation causes an error:
-	 * "Invalid identifier : >getList()<". This is a known issue that needs to be fixed.</p>
-	 * 
-	 * <p><b>Issue:</b> The refactoring tries to convert {@code for (item : getList())} to a stream,
-	 * but fails when trying to create an AST SimpleName from "getList()" which includes parentheses.</p>
-	 * 
-	 * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
+	 * <p><b>Rule:</b> CollectionModificationDetector uses heuristic matching for getter patterns.</p>
 	 */
 	@Test
-	@Disabled("Causes IllegalArgumentException: Invalid identifier - needs fix in EnhancedForHandler")
-	@DisplayName("Loop with getter method receiver - causes error (needs fix)")
-	void testGetterMethodReceiverModification_CausesError() throws CoreException {
+	@DisplayName("Loop with getter method receiver (getList().add) - should NOT convert")
+	void testGetterMethodReceiverModification_ShouldNotConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
