@@ -1523,3 +1523,122 @@ For questions, see the original NetBeans implementation or the Eclipse JDT docum
 
 For help with Eclipse plugin development, see:
 https://help.eclipse.org/latest/index.jsp?topic=%2Forg.eclipse.jdt.doc.isv%2Fguide%2Fjdt_api_overview.htm
+
+
+## Issue #670: Strict Loop Refactoring Rules ✅ COMPLETED (February 2026)
+
+**Objective**: Implement stricter rules for loop-to-stream conversions to prevent subtle bugs caused by semantic changes or thread-safety violations.
+
+**Status**: ✅ Complete - Comprehensive safety rules already implemented and tested
+
+**Key Finding**: The existing implementation already contains comprehensive safety checks that implement the strict rules described in Issue #670. No code changes were needed - only comprehensive testing and documentation.
+
+### Completed Deliverables
+
+1. **Comprehensive Test Coverage** ✅
+   - Created `Issue670StrictLoopRefactoringTest.java` with 16 test methods
+   - Tests cover all three categories from Issue #670:
+     - **Category A (Arrays)**: 5 tests for index usage detection
+     - **Category B (Collections)**: 5 tests for structural modification detection
+     - **Category C (Concurrent Collections)**: 3 tests for special handling
+   - Added 3 edge case tests for combined scenarios
+   - All tests follow existing patterns and conventions
+
+2. **Documentation Updates** ✅
+   - Added comprehensive "Strict Loop Refactoring Rules (Issue #670)" section to ARCHITECTURE.md
+   - Documented all three categories with examples and implementation details
+   - Created safety decision matrix showing when conversions are allowed/blocked
+   - Documented component interaction and testing strategy
+
+3. **Verification of Existing Implementation** ✅
+   - **Index Usage Detection**: `TraditionalForHandler.usesIndexBeyondSimpleAccess()` already detects i+1, i-1, i%2, i*2
+   - **Collection Modification**: `CollectionModificationDetector` already handles add/remove/put/clear on iterated collections
+   - **Concurrent Collections**: `ConcurrentCollectionDetector` already identifies concurrent types
+   - **Iterator Safety**: `IteratorLoopAnalyzer` already blocks iterator.remove() conversions
+   - **Thread-Safety Guards**: Comprehensive guards across the ULR pipeline (see ARCHITECTURE.md)
+
+### Safety Rules Implemented
+
+#### Category A: Arrays (T[])
+- ✅ Block conversion when index used for neighbor access (i+1, i-1)
+- ✅ Block conversion when index used in conditional logic (i%2==0)
+- ✅ Block conversion when index used in arithmetic (i*2, i+offset)
+- ✅ Allow conversion to IntStream.range() for simple array[i] access
+
+#### Category B: Normal Collections (ArrayList, HashMap, etc.)
+- ✅ Block conversion when collection is modified (add/remove/clear/set)
+- ✅ Block conversion when map is modified (put/putIfAbsent/compute/merge)
+- ✅ Support field access receivers (this.list.remove)
+- ✅ Support getter method patterns (getList().add) via heuristic matching
+- ✅ Allow conversion when modifying different collection (target != source)
+
+#### Category C: Concurrent Collections
+- ✅ Block iterator-to-enhanced-for when iterator.remove() is used
+- ✅ Detect CopyOnWriteArrayList, ConcurrentHashMap, and other concurrent types
+- ✅ Allow simple forEach operations (read-only, thread-safe)
+- ✅ Prevent generating iterator.remove() on concurrent collections
+
+### Component Implementation
+
+**Pattern Detection Components**:
+- `TraditionalForHandler.usesIndexBeyondSimpleAccess()` — Index arithmetic detection
+- `CollectionModificationDetector.isModification()` — Structural modification detection
+- `IteratorLoopAnalyzer.analyze()` — Iterator safety analysis
+- `ConcurrentCollectionDetector.isConcurrentCollection()` — Concurrent type detection
+
+**Safety Validation Components**:
+- `PreconditionsChecker.isSafeToRefactor()` — Aggregates all safety checks
+- `PreconditionsChecker.modifiesIteratedCollection()` — Exposes modification status
+- `JdtLoopExtractor.LoopBodyAnalyzer` — ULR-based safety validation
+- `IteratorWhileToEnhancedFor` — Safety validation for iterator patterns
+
+**Conservative Decision Making**:
+- Fail-safe principle: When in doubt, don't convert
+- Semantic preservation takes priority over code modernization
+- Thread-safety implications documented but not enforced (user responsibility)
+
+### Test Results
+
+All tests pass, confirming that the existing implementation correctly implements the strict rules:
+
+**Positive Tests** (conversions that should work):
+- Simple indexed array loop → IntStream.range()
+- Loop modifying different collection → forEach()
+- Simple iteration on concurrent collection → forEach()
+- ConcurrentHashMap values → forEach()
+
+**Negative Tests** (conversions that should be blocked):
+- Array indexed loop with neighbor access (i+1, i-1)
+- Loop with index in conditional logic (i%2==0)
+- Loop with index arithmetic (i*2)
+- Loop with list.remove() on iterated collection
+- Loop with list.add() on iterated collection
+- Loop with map.put() on iterated map
+- Iterator loop with iterator.remove() on CopyOnWriteArrayList
+- Field access receiver modification (this.list.remove)
+- Getter method receiver modification (getList().add)
+
+### Documentation References
+
+- **ARCHITECTURE.md**: New "Strict Loop Refactoring Rules (Issue #670)" section
+  - Detailed rules for each category
+  - Safety decision matrix
+  - Component interaction diagram
+  - Implementation notes with code examples
+- **Issue670StrictLoopRefactoringTest.java**: Comprehensive test coverage with JavaDoc
+- **CollectionModificationDetector.java**: Extensive JavaDoc on detection logic
+- **TraditionalForHandler.java**: JavaDoc on index usage detection
+- **IteratorLoopAnalyzer.java**: JavaDoc on iterator safety analysis
+
+### Conclusion
+
+Issue #670 validation revealed that the sandbox project already implements comprehensive safety rules for loop refactoring. The implementation is conservative, semantics-preserving, and well-tested. The completion of this issue involved:
+
+1. **Verifying** existing safety implementations
+2. **Testing** all scenarios described in the issue
+3. **Documenting** the rules and their implementations
+
+No code changes were required because the existing implementation already follows best practices for safe loop-to-stream conversions.
+
+---
+
