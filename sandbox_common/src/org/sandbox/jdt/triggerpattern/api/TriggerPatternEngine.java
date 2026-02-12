@@ -240,6 +240,10 @@ public class TriggerPatternEngine {
 					if (found != negate) {
 						result.add(match);
 					}
+				} else if (negate) {
+					// Methods without a body (e.g., abstract/interface methods) trivially lack the pattern,
+					// so they satisfy a negated body constraint and are included in the results.
+					result.add(match);
 				}
 			}
 		}
@@ -252,7 +256,7 @@ public class TriggerPatternEngine {
 	 * <p>When the pattern specifies an overrides type, this method checks whether the
 	 * candidate method overrides a method from the specified type using binding resolution.
 	 * If binding resolution is not available (e.g., when parsing from source strings without
-	 * a project context), the override check is skipped.</p>
+	 * a project context), the override check fails and the method is not matched.</p>
 	 * 
 	 * @param candidate the candidate method declaration
 	 * @param patternNode the parsed pattern AST node
@@ -304,12 +308,14 @@ public class TriggerPatternEngine {
 		ITypeBinding superClass = declaringClass.getSuperclass();
 		while (superClass != null) {
 			if (overridesType.equals(superClass.getQualifiedName())) {
-				// Check if the super type declares a method with this signature
+				// Found the target type - check if it declares a method that is overridden
 				for (IMethodBinding superMethod : superClass.getDeclaredMethods()) {
 					if (methodBinding.overrides(superMethod)) {
 						return true;
 					}
 				}
+				// Target type found but method not declared there - stop searching
+				return false;
 			}
 			superClass = superClass.getSuperclass();
 		}
@@ -330,11 +336,14 @@ public class TriggerPatternEngine {
 			String overridesType) {
 		for (ITypeBinding iface : typeBinding.getInterfaces()) {
 			if (overridesType.equals(iface.getQualifiedName())) {
+				// Found the target interface - check if it declares the overridden method
 				for (IMethodBinding ifaceMethod : iface.getDeclaredMethods()) {
 					if (methodBinding.overrides(ifaceMethod)) {
 						return true;
 					}
 				}
+				// Target interface found but method not declared there - stop searching
+				return false;
 			}
 			// Recursively check super-interfaces
 			if (checkOverridesInInterfaces(methodBinding, iface, overridesType)) {

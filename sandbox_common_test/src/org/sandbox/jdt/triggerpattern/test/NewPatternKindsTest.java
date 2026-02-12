@@ -596,6 +596,24 @@ public class NewPatternKindsTest {
 	}
 	
 	@Test
+	public void testBodyConstraintAbstractMethod_Negated() {
+		String code = """
+			abstract class MyWidget {
+				abstract void dispose();
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		
+		// negate=true: abstract methods have no body and trivially lack the pattern
+		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
+				"super.dispose();", PatternKind.STATEMENT, true);
+		
+		assertEquals(1, matches.size(), "Abstract method should be included when negate=true");
+	}
+	
+	@Test
 	public void testBodyConstraintSuperCallInNestedBlock() {
 		String code = """
 			class MyWidget {
