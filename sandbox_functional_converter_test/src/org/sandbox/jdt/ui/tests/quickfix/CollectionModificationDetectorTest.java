@@ -328,10 +328,10 @@ public class CollectionModificationDetectorTest {
 		String code = """
 				import java.util.List;
 				class Test {
-					List<String> getList() { return null; }
 					void test() {
 						getList().remove(0);
 					}
+					List<String> getList() { return null; }
 				}
 				""";
 		MethodInvocation inv = parseMethodInvocation(code);
@@ -344,10 +344,10 @@ public class CollectionModificationDetectorTest {
 		String code = """
 				import java.util.List;
 				class Test {
-					List<String> getItems() { return null; }
 					void test() {
 						getItems().add("item");
 					}
+					List<String> getItems() { return null; }
 				}
 				""";
 		MethodInvocation inv = parseMethodInvocation(code);
@@ -360,10 +360,10 @@ public class CollectionModificationDetectorTest {
 		String code = """
 				import java.util.Map;
 				class Test {
-					Map<String, String> fetchMap() { return null; }
 					void test() {
 						fetchMap().put("key", "value");
 					}
+					Map<String, String> fetchMap() { return null; }
 				}
 				""";
 		MethodInvocation inv = parseMethodInvocation(code);
@@ -376,10 +376,10 @@ public class CollectionModificationDetectorTest {
 		String code = """
 				import java.util.List;
 				class Test {
-					List<String> retrieveData() { return null; }
 					void test() {
 						retrieveData().clear();
 					}
+					List<String> retrieveData() { return null; }
 				}
 				""";
 		MethodInvocation inv = parseMethodInvocation(code);
@@ -392,10 +392,10 @@ public class CollectionModificationDetectorTest {
 		String code = """
 				import java.util.List;
 				class Test {
-					List<String> getList() { return null; }
 					void test() {
 						getList().get(0);
 					}
+					List<String> getList() { return null; }
 				}
 				""";
 		MethodInvocation inv = parseMethodInvocation(code);
@@ -408,10 +408,10 @@ public class CollectionModificationDetectorTest {
 		String code = """
 				import java.util.List;
 				class Test {
-					List<String> getList(int index) { return null; }
 					void test() {
 						getList(0).remove(0);
 					}
+					List<String> getList(int index) { return null; }
 				}
 				""";
 		MethodInvocation inv = parseMethodInvocation(code);
@@ -424,10 +424,10 @@ public class CollectionModificationDetectorTest {
 		String code = """
 				import java.util.List;
 				class Test {
-					List<String> getItems() { return null; }
 					void test() {
 						getItems().remove(0);
 					}
+					List<String> getItems() { return null; }
 				}
 				""";
 		MethodInvocation inv = parseMethodInvocation(code);
