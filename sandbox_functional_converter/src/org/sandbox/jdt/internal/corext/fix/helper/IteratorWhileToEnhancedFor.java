@@ -40,6 +40,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
  * 
  * <p>Transformation: {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }} → {@code for (T item : collection) { ... }}</p>
  * 
+ * <p><b>Note:</b> This transformer uses direct AST manipulation, not the ULR pipeline.
+ * A future enhancement could introduce a ULR-based {@code EnhancedForRenderer} to unify
+ * all transformations through the ULR pipeline.</p>
+ * 
  * <p><b>Safety rules (Issue #670):</b></p>
  * <ul>
  *   <li>Rejects conversion when iterator.remove() is used (cannot be expressed in enhanced for)</li>

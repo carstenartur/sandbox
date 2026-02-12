@@ -370,6 +370,15 @@ No V1 Refactorer fallback. See Phase 7.6 and 7.7 above.
    - [ ] Detect subsequent modifications (.sort(), .add(), etc.)
    - [ ] Warn or prevent transformation when immutable list would break code
 
+3. **Migrate Bidirectional Transformers to ULR**
+   - [ ] Create `EnhancedForRenderer` implementing `StreamPipelineRenderer` for enhanced-for output
+   - [ ] Create `IteratorWhileRenderer` implementing `StreamPipelineRenderer` for iterator-while output
+   - [ ] Refactor `StreamToEnhancedFor` to extract `LoopModel` from stream AST, then render via `EnhancedForRenderer`
+   - [ ] Refactor `StreamToIteratorWhile` to use `IteratorWhileRenderer`
+   - [ ] Refactor `IteratorWhileToEnhancedFor` to parse iterator pattern into `LoopModel`, then render via `EnhancedForRenderer`
+   - [ ] Refactor `EnhancedForToIteratorWhile` to parse enhanced-for into `LoopModel`, then render via `IteratorWhileRenderer`
+   - Currently these 4 transformers use direct AST manipulation (V1-style) instead of the ULR pipeline
+
 **GUI Design Philosophy**:
 - **Global Target Format**: Single selection for desired output format
 - **Source Format Filters**: Individual toggles for which inputs to convert

@@ -7,7 +7,7 @@ The functional loop converter transforms imperative enhanced for-loops into func
 
 ## V2 Parallel Implementation Strategy → Unified Implementation (February 2026)
 
-**Status**: ✅ V2 is the complete implementation — All patterns via ULR pipeline
+**Status**: ✅ V2 is the complete implementation — All loop-to-stream patterns via ULR pipeline
 
 ### Background
 Issue [#450](https://github.com/carstenartur/sandbox/issues/450) introduced the Unified Loop Representation (ULR) to enable:
@@ -23,6 +23,20 @@ EnhancedForHandler:    JDT AST → JdtLoopExtractor → LoopModel → LoopModelT
 IteratorWhileHandler:  JDT AST → IteratorPatternDetector → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
 TraditionalForHandler: JDT AST → analyzeForLoop() → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
 ```
+
+The four bidirectional transformers (Phase 9) do **not** use ULR — they use direct AST manipulation:
+
+```
+StreamToEnhancedFor:        JDT AST → direct ASTRewrite → JDT AST (no ULR)
+StreamToIteratorWhile:      JDT AST → direct ASTRewrite → JDT AST (no ULR)
+IteratorWhileToEnhancedFor: JDT AST → direct ASTRewrite → JDT AST (no ULR)
+EnhancedForToIteratorWhile: JDT AST → direct ASTRewrite → JDT AST (no ULR)
+```
+
+These bidirectional transformers perform syntactic restructuring between loop forms without
+intermediate operations (filter/map/collect). A future enhancement could introduce ULR-based
+renderers (e.g., `EnhancedForRenderer`, `IteratorWhileRenderer`) to unify all transformations
+through the ULR pipeline.
 
 **`JdtLoopExtractor`** bridges JDT AST to the abstract `LoopModel`, detecting:
 - `if (cond) continue;` → `FilterOp` (negated)
@@ -1375,9 +1389,10 @@ All tests verify that:
 - Together they enable bidirectional transformations
 
 **Relationship to V2 (ULR)**:
-- Format transformers could leverage ULR's abstract loop model
-- ULR → Format renderer pattern would enable easier format generation
-- Current implementation is V1-based (direct AST manipulation)
+- The four bidirectional transformers do **not** use ULR — they use direct AST manipulation
+- A future enhancement could introduce ULR renderers for non-stream targets (enhanced-for, iterator-while)
+- This would enable unified transformation: `LoopModel → LoopModelTransformer → TargetRenderer`
+- Current implementation uses V1-style direct `ASTRewrite` calls for syntactic loop restructuring
 
 ### API Constants
 

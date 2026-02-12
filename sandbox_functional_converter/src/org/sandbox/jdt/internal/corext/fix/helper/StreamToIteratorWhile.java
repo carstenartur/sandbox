@@ -46,7 +46,9 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 
  * <p>Transformation: {@code collection.forEach(item -> ...)} → {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</p>
  * 
- * <p><b>Status:</b> Stub implementation - Phase 9 bidirectional loop transformations</p>
+ * <p><b>Note:</b> This transformer uses direct AST manipulation, not the ULR pipeline.
+ * A future enhancement could introduce a ULR-based {@code IteratorWhileRenderer} to unify
+ * all transformations through the ULR pipeline.</p>
  * 
  * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
  * @see <a href="https://github.com/carstenartur/sandbox/issues/549">Issue #549</a>

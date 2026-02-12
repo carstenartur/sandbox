@@ -43,6 +43,10 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 
  * <p>Transformation: {@code for (T item : collection) { ... }} → {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</p>
  * 
+ * <p><b>Note:</b> This transformer uses direct AST manipulation, not the ULR pipeline.
+ * A future enhancement could introduce a ULR-based {@code IteratorWhileRenderer} to unify
+ * all transformations through the ULR pipeline.</p>
+ * 
  * <p><b>Safety rules:</b></p>
  * <ul>
  *   <li>Rejects array sources — arrays don't have .iterator() method</li>
