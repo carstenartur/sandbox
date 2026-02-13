@@ -420,9 +420,14 @@ Package structure mirrors Eclipse JDT for seamless integration.
 
 ## References
 
+### Documentation
+- [FAQ](FAQ.md) - Frequently Asked Questions (Deutsch/English) - **Start here for quick answers!**
 - [Comment Preservation Guide](COMMENT_PRESERVATION.md) - Detailed guide on comment preservation feature
+- [Before/After Examples](EXAMPLES.md) - Real-world transformation examples with comments
 - [Architecture Documentation](ARCHITECTURE.md) - Complete design and implementation details
 - [TODO and Roadmap](TODO.md) - Future enhancements and development phases
+
+### External Resources
 - [NetBeans Implementation](https://github.com/apache/netbeans/tree/master/java/java.hints/src/org/netbeans/modules/java/hints/jdk/mapreduce)
 - [Eclipse JDT AST](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/reference/api/org/eclipse/jdt/core/dom/package-summary.html)
 - [Java 8 Streams](https://docs.oracle.com/javase/8/docs/api/java/util/stream/Stream.html)
