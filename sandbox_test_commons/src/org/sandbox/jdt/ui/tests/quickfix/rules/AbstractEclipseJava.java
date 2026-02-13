@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -539,7 +540,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		File bundleFile;
 		try {
 			bundleFile = FileLocator.getBundleFile(bundle);
-		} catch (Exception e) {
+		} catch (IOException e) {
 			throw new CoreException(Status.error("Cannot locate bundle file: " + bundleSymbolicName, e)); //$NON-NLS-1$
 		}
 
@@ -586,7 +587,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 						}
 						addToClasspath(getJavaProject(), fragmentCpe);
 					}
-				} catch (Exception e) {
+				} catch (IOException e) {
 					// Skip fragments that can't be resolved
 				}
 			}
