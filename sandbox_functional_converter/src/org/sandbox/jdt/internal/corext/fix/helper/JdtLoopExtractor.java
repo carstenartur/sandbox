@@ -67,6 +67,9 @@ public class JdtLoopExtractor {
         }
         body.accept(analyzer);
         
+        // Issue #670: Check if the iterated collection is a concurrent collection type
+        boolean isConcurrentCollection = checkConcurrentCollection(iterable);
+        
         // If the body contains unconvertible patterns, don't even try to build operations
         // Note: external variable modifications (for reduce) and if-statements (for filter/match)
         // are handled by analyzeAndAddOperations() and should NOT be blocked here
@@ -76,7 +79,8 @@ public class JdtLoopExtractor {
                 || analyzer.hasSynchronized()
                 || analyzer.hasNestedLoop()
                 || analyzer.hasVoidReturn()
-                || analyzer.modifiesIteratedCollection();
+                || analyzer.modifiesIteratedCollection()
+                || isConcurrentCollection;
         
         // Build model — mark as unconvertible if any patterns detected
         LoopModelBuilder builder = new LoopModelBuilder()
@@ -142,6 +146,47 @@ public class JdtLoopExtractor {
         }
         
         return false;
+    }
+    
+    /**
+     * Checks if the iterated expression refers to a concurrent collection type.
+     * Concurrent collections (e.g., CopyOnWriteArrayList, ConcurrentHashMap) have
+     * iteration semantics that may not translate correctly to stream operations.
+     * 
+     * @param iterable the iterable expression from the enhanced for loop
+     * @return true if the iterable is a concurrent collection type
+     * @see ConcurrentCollectionDetector
+     */
+    private boolean checkConcurrentCollection(Expression iterable) {
+        ITypeBinding typeBinding = resolveIteratedCollectionType(iterable);
+        if (typeBinding != null) {
+            return ConcurrentCollectionDetector.isConcurrentCollection(typeBinding);
+        }
+        return false;
+    }
+    
+    /**
+     * Resolves the type binding of the iterated collection, unwrapping map view
+     * methods (entrySet, keySet, values) to get the underlying map type.
+     */
+    private ITypeBinding resolveIteratedCollectionType(Expression iterable) {
+        if (iterable instanceof MethodInvocation methodInvocation) {
+            SimpleName name = methodInvocation.getName();
+            if (name != null) {
+                String identifier = name.getIdentifier();
+                if (("entrySet".equals(identifier) || "keySet".equals(identifier) || "values".equals(identifier)) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                        && methodInvocation.arguments().isEmpty()) {
+                    Expression qualifier = methodInvocation.getExpression();
+                    if (qualifier != null) {
+                        ITypeBinding qualifierBinding = qualifier.resolveTypeBinding();
+                        if (qualifierBinding != null) {
+                            return qualifierBinding;
+                        }
+                    }
+                }
+            }
+        }
+        return iterable.resolveTypeBinding();
     }
     
     /**

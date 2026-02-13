@@ -43,11 +43,12 @@ public class SecurityMeasuresIntegrationTest {
 	AbstractEclipseJava context = new EclipseJava22();
 
 	/**
-	 * Tests that loops over CopyOnWriteArrayList are handled correctly.
-	 * The cleanup produces a lambda form, not a method reference.
+	 * Tests that loops over CopyOnWriteArrayList are blocked from conversion.
+	 * Concurrent collections have snapshot-based or weakly-consistent iterator
+	 * semantics that may not translate correctly to stream operations (Issue #670).
 	 */
 	@Test
-	@DisplayName("CopyOnWriteArrayList - simple forEach conversion should work")
+	@DisplayName("CopyOnWriteArrayList - should NOT convert (concurrent collection)")
 	void testCopyOnWriteArrayListSimpleForEach() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
@@ -63,19 +64,9 @@ public class SecurityMeasuresIntegrationTest {
 				}
 				""";
 
-		String expected = """
-				package test;
-				import java.util.concurrent.CopyOnWriteArrayList;
-				public class E {
-					public void foo(CopyOnWriteArrayList<String> list) {
-						list.forEach(item -> System.out.println(item));
-					}
-				}
-				""";
-
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	/**
@@ -334,10 +325,12 @@ public class SecurityMeasuresIntegrationTest {
 	}
 
 	/**
-	 * Tests that ConcurrentHashMap iteration works for simple cases.
+	 * Tests that ConcurrentHashMap iteration is blocked from conversion.
+	 * Concurrent collections have weakly-consistent iterator semantics that
+	 * may not translate correctly to stream operations (Issue #670).
 	 */
 	@Test
-	@DisplayName("ConcurrentHashMap - simple forEach conversion should work")
+	@DisplayName("ConcurrentHashMap - should NOT convert (concurrent collection)")
 	void testConcurrentHashMapSimpleForEach() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
 		
@@ -354,20 +347,9 @@ public class SecurityMeasuresIntegrationTest {
 				}
 				""";
 
-		String expected = """
-				package test;
-				import java.util.concurrent.ConcurrentHashMap;
-				import java.util.Map;
-				public class E {
-					public void foo(ConcurrentHashMap<String, String> map) {
-						map.entrySet().forEach(entry -> System.out.println(entry.getKey()));
-					}
-				}
-				""";
-
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 	
 	/**
