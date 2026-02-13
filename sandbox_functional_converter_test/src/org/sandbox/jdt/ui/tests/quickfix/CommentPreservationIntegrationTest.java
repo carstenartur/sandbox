@@ -333,4 +333,140 @@ public class CommentPreservationIntegrationTest {
         assertTrue(filter2.hasComments());
         assertEquals(List.of("Only long strings"), filter2.getComments());
     }
+    
+    /**
+     * End-to-end test: verifies that trailing comments (inline comments on same line after code)
+     * are extracted from the AST and attached to the corresponding operation in the model.
+     * This validates that inline comments like "statement(); // comment" are preserved.
+     */
+    @Test
+    @DisplayName("End-to-end: trailing inline comments are attached to operations")
+    void test_EndToEnd_TrailingInlineCommentsAttached() throws CoreException {
+        String input = """
+            package test;
+            import java.util.List;
+            public class Test {
+                public void method(List<String> items) {
+                    for (String item : items) {
+                        System.out.println(item); // Print the item
+                    }
+                }
+            }
+            """;
+        
+        IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+        ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, false, null);
+        
+        // Parse to get AST with bindings
+        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+        parser.setSource(cu);
+        parser.setResolveBindings(true);
+        CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
+        
+        // Find the for loop
+        EnhancedForStatement[] forLoop = new EnhancedForStatement[1];
+        compilationUnit.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
+            @Override
+            public boolean visit(EnhancedForStatement node) {
+                forLoop[0] = node;
+                return false;
+            }
+        });
+        
+        assertNotNull(forLoop[0]);
+        
+        // Extract loop with compilation unit to enable comment extraction
+        JdtLoopExtractor extractor = new JdtLoopExtractor();
+        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(forLoop[0], compilationUnit);
+        
+        assertNotNull(extracted);
+        assertNotNull(extracted.model);
+        
+        // The println statement should have a trailing comment attached
+        // Check if any operation (likely a side-effect operation) has the comment
+        boolean foundTrailingComment = false;
+        for (org.sandbox.functional.core.operation.Operation op : extracted.model.getOperations()) {
+            if (op instanceof org.sandbox.functional.core.operation.MapOp mapOp) {
+                if (mapOp.hasComments()) {
+                    java.util.List<String> comments = mapOp.getComments();
+                    for (String comment : comments) {
+                        if (comment.contains("Print the item")) {
+                            foundTrailingComment = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        assertTrue(foundTrailingComment, 
+            "Expected to find 'Print the item' trailing comment attached to an operation. " +
+            "Operations: " + extracted.model.getOperations());
+    }
+    
+    /**
+     * End-to-end test: verifies that filter operations with trailing comments preserve them.
+     */
+    @Test
+    @DisplayName("End-to-end: filter with trailing comment preserved")
+    void test_EndToEnd_FilterWithTrailingComment() throws CoreException {
+        String input = """
+            package test;
+            import java.util.List;
+            public class Test {
+                public void method(List<String> items) {
+                    for (String item : items) {
+                        if (item.isEmpty()) continue; // Skip empty
+                        System.out.println(item);
+                    }
+                }
+            }
+            """;
+        
+        IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
+        ICompilationUnit cu = pack.createCompilationUnit("Test.java", input, false, null);
+        
+        // Parse to get AST with bindings
+        ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+        parser.setSource(cu);
+        parser.setResolveBindings(true);
+        CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
+        
+        // Find the for loop
+        EnhancedForStatement[] forLoop = new EnhancedForStatement[1];
+        compilationUnit.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
+            @Override
+            public boolean visit(EnhancedForStatement node) {
+                forLoop[0] = node;
+                return false;
+            }
+        });
+        
+        assertNotNull(forLoop[0]);
+        
+        // Extract loop with compilation unit to enable comment extraction
+        JdtLoopExtractor extractor = new JdtLoopExtractor();
+        JdtLoopExtractor.ExtractedLoop extracted = extractor.extract(forLoop[0], compilationUnit);
+        
+        assertNotNull(extracted);
+        assertNotNull(extracted.model);
+        
+        // The if-continue should produce a FilterOp with trailing comment
+        assertFalse(extracted.model.getOperations().isEmpty());
+        org.sandbox.functional.core.operation.Operation firstOp = extracted.model.getOperations().get(0);
+        assertTrue(firstOp instanceof FilterOp, "First operation should be FilterOp");
+        
+        FilterOp filterOp = (FilterOp) firstOp;
+        assertTrue(filterOp.hasComments(), "FilterOp should have the trailing comment");
+        
+        boolean foundSkipEmpty = false;
+        for (String comment : filterOp.getComments()) {
+            if (comment.contains("Skip empty")) {
+                foundSkipEmpty = true;
+                break;
+            }
+        }
+        assertTrue(foundSkipEmpty, 
+            "FilterOp should contain 'Skip empty' trailing comment. Comments: " + filterOp.getComments());
+    }
 }
