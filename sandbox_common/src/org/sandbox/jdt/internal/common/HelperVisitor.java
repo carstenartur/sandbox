@@ -221,8 +221,8 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	 */
 	@Deprecated
 	public BiPredicate<? extends ASTNode, E> add(Object object, VisitorEnum key, BiPredicate<? extends ASTNode, E> bs) {
-		// For backward compatibility, create an empty VisitorConfigData
-		this.predicatedata.put(key, null);
+		// For backward compatibility, store an empty VisitorConfigData to avoid NPE
+		this.predicatedata.put(key, VisitorConfigData.builder().build());
 		return predicatemap.put(key, bs);
 	}
 
