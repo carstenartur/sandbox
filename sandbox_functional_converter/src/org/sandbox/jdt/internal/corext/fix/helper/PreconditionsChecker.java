@@ -95,6 +95,7 @@ public final class PreconditionsChecker {
 	 * <li>Does not contain return statements OR contains only pattern-matching
 	 * returns (anyMatch/noneMatch/allMatch)</li>
 	 * <li>All variables are effectively final (containsNEFs == false)</li>
+	 * <li>Does not iterate over concurrent collections (isConcurrentCollection == false)</li>
 	 * </ul>
 	 * 
 	 * <p>
@@ -110,6 +111,14 @@ public final class PreconditionsChecker {
 	 * the corresponding terminal stream operations.
 	 * </p>
 	 * 
+	 * <p>
+	 * <b>Concurrent collections:</b> Loops over concurrent collections (e.g.,
+	 * {@code CopyOnWriteArrayList}, {@code ConcurrentHashMap}) are blocked
+	 * conservatively to prevent unsafe conversions. Concurrent collections have
+	 * different iteration semantics (weakly-consistent iterators) that may not
+	 * translate correctly to stream operations.
+	 * </p>
+	 * 
 	 * @return true if the loop can be safely converted to stream operations, false
 	 *         otherwise
 	 * @see StreamPipelineBuilder#parseLoopBody
@@ -121,8 +130,9 @@ public final class PreconditionsChecker {
 		// StreamPipelineBuilder
 		// Only labeled continues are rejected here
 		// Issue #670: Block conversion when the iterated collection is modified (add/remove/put/clear)
+		// Issue #670: Block conversion when iterating over concurrent collections (conservative approach)
 		return !throwsException && !containsBreak && !containsLabeledContinue && (!containsReturn || allowedReturn)
-				&& !containsNEFs && !containsNestedLoop && !modifiesIteratedCollection;
+				&& !containsNEFs && !containsNestedLoop && !modifiesIteratedCollection && !isConcurrentCollection;
 	}
 
 	/**
@@ -278,25 +288,25 @@ public final class PreconditionsChecker {
 	 * Additionally, many concurrent collections do not support {@code iterator.remove()}.
 	 * </p>
 	 * 
-	 * <p><b>Current Integration:</b> This flag is detected and available for use.
-	 * Concurrent collections are currently <b>allowed</b> for simple forEach conversions
-	 * (see {@link #isSafeToRefactor()}), which is safe for read-only iteration.
-	 * The existing {@link #modifiesIteratedCollection()} check already blocks unsafe
-	 * modifications on concurrent collections.
+	 * <p><b>Current Integration:</b> Loops over concurrent collections are <b>blocked</b>
+	 * from conversion by {@link #isSafeToRefactor()}. This conservative approach prevents
+	 * potential issues with weakly-consistent iterator semantics that may not translate
+	 * correctly to stream operations.
 	 * </p>
 	 * 
-	 * <p><b>Future Enhancements:</b> This flag could be used for:
+	 * <p><b>Rationale for Blocking:</b>
 	 * <ul>
-	 * <li>Preventing iterator-to-enhanced-for conversions that use {@code iterator.remove()}</li>
-	 * <li>Different safety rules for weakly-consistent iterator semantics</li>
-	 * <li>Special handling based on threading context (field vs local variable)</li>
+	 * <li>Weakly-consistent iterators may see inconsistent state during iteration</li>
+	 * <li>Iterator behavior differs significantly from standard collections</li>
+	 * <li>Many concurrent collections don't support {@code iterator.remove()}</li>
+	 * <li>Conservative approach ensures correctness over convenience</li>
 	 * </ul>
 	 * </p>
 	 * 
 	 * @return true if the iterated collection is a concurrent collection
 	 * 
 	 * @see ConcurrentCollectionDetector
-	 * @see #modifiesIteratedCollection()
+	 * @see #isSafeToRefactor()
 	 * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670 - Point 2.4</a>
 	 */
 	public boolean isConcurrentCollection() {

@@ -468,12 +468,13 @@ public class Issue670StrictLoopRefactoringTest {
 	}
 
 	/**
-	 * Tests that enhanced for-loops on ConcurrentHashMap values CAN convert to forEach.
+	 * Tests that enhanced for-loops on ConcurrentHashMap values should NOT convert.
 	 * 
-	 * <p><b>Rule:</b> Simple forEach operations are safe on concurrent collections.</p>
+	 * <p><b>Rule:</b> Concurrent collections are blocked conservatively due to
+	 * weakly-consistent iterator semantics (Issue #670).</p>
 	 */
 	@Test
-	@DisplayName("Enhanced for-loop on ConcurrentHashMap values - CAN convert")
+	@DisplayName("Enhanced for-loop on ConcurrentHashMap values - should NOT convert")
 	void testConcurrentHashMap_EnhancedFor_CanConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
@@ -489,19 +490,9 @@ public class Issue670StrictLoopRefactoringTest {
 				}
 				""";
 
-		String expected = """
-				package test1;
-				import java.util.concurrent.ConcurrentHashMap;
-				public class MyTest {
-					void process(ConcurrentHashMap<String, Integer> map) {
-						map.values().forEach(value -> System.out.println(value));
-					}
-				}
-				""";
-
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", given, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	// ===========================================
