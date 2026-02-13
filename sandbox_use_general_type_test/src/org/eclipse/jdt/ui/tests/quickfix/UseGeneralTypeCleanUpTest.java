@@ -286,7 +286,7 @@ public class UseGeneralTypeCleanUpTest {
 	}
 
 	@Test
-	public void testNoChangeWithSpecificMethod() throws CoreException {
+	public void testLinkedListToDequeWithAddFirst() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("Test.java", //$NON-NLS-1$
 				"""
@@ -424,7 +424,7 @@ public class UseGeneralTypeCleanUpTest {
 	}
 
 	@Test
-	public void testNoChangeAlreadyInterface() throws CoreException {
+	public void testListToCollection() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu = pack.createCompilationUnit("Test.java", //$NON-NLS-1$
 				"""
