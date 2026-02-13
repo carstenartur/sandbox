@@ -36,13 +36,28 @@ import org.eclipse.jface.viewers.Viewer;
 /**
  * Content provider for the variable table viewer that extracts variable bindings
  * from Java compilation units using AST parsing.
+ * Also populates a {@link TypeWideningCache} with type widening analysis results.
  */
 public class JHViewContentProvider implements IStructuredContentProvider {
 	
 	private static final ILog logger = UsageViewPlugin.getDefault().getLog();
 
+	private TypeWideningCache typeWideningCache;
+
+	/**
+	 * Sets the type widening cache to populate during content loading.
+	 *
+	 * @param cache the cache to populate, or null to disable caching
+	 */
+	public void setTypeWideningCache(TypeWideningCache cache) {
+		this.typeWideningCache = cache;
+	}
+
 	@Override
 	public Object[] getElements(Object inputElement) {
+		if (typeWideningCache != null) {
+			typeWideningCache.clear();
+		}
 		VariableBindingVisitor variableVisitor = new VariableBindingVisitor();
 		
 		if (inputElement instanceof List list) {
@@ -61,6 +76,7 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 						// now create the AST for the ICompilationUnits
 						CompilationUnit astRoot = parseCompilationUnit(compilationUnit);
 						variableVisitor.process(astRoot);
+						analyzeForWidening(astRoot);
 					} else if (javaElement instanceof IJavaProject javaProject) {
 						// now create the AST for the ICompilationUnits
 						try {
@@ -104,9 +120,16 @@ public class JHViewContentProvider implements IStructuredContentProvider {
 				// now create the AST for the ICompilationUnits
 				CompilationUnit astRoot = parseCompilationUnit(compilationUnit);
 				variableVisitor.process(astRoot);
+				analyzeForWidening(astRoot);
 			}
 		} catch (JavaModelException e1) {
 			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, "Failed to process compilation units", e1));
+		}
+	}
+
+	private void analyzeForWidening(CompilationUnit astRoot) {
+		if (typeWideningCache != null) {
+			typeWideningCache.analyzeAndCache(astRoot);
 		}
 	}
 

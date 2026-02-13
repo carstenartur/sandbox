@@ -34,13 +34,16 @@ import org.eclipse.jdt.internal.core.JavaElement;
 /**
  * Content provider with progress monitoring support for processing large numbers
  * of compilation units in packages, source folders, or projects.
- * Extracts variable bindings from AST nodes.
+ * Extracts variable bindings from AST nodes and optionally populates
+ * a {@link TypeWideningCache} with type widening analysis results.
  */
 public class VariableBindingContentProviderWithProgress {
 	
 	private static final ILog logger = UsageViewPlugin.getDefault().getLog();
 
 	private final IProgressMonitor progressMonitor;
+
+	private TypeWideningCache typeWideningCache;
 
 	/**
 	 * Creates a new content provider with progress monitoring.
@@ -49,6 +52,15 @@ public class VariableBindingContentProviderWithProgress {
 	 */
 	public VariableBindingContentProviderWithProgress(IProgressMonitor progressMonitor) {
 		this.progressMonitor = progressMonitor;
+	}
+
+	/**
+	 * Sets the type widening cache to populate during content loading.
+	 *
+	 * @param cache the cache to populate, or null to disable caching
+	 */
+	public void setTypeWideningCache(TypeWideningCache cache) {
+		this.typeWideningCache = cache;
 	}
 
 	/**
@@ -143,6 +155,9 @@ public class VariableBindingContentProviderWithProgress {
 		progressMonitor.subTask("Processing " + compilationUnit.getElementName()); //$NON-NLS-1$
 		CompilationUnit astRoot = parseCompilationUnit(compilationUnit);
 		variableVisitor.process(astRoot);
+		if (typeWideningCache != null) {
+			typeWideningCache.analyzeAndCache(astRoot);
+		}
 		progressMonitor.worked(1);
 	}
 

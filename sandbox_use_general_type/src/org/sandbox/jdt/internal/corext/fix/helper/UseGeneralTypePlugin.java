@@ -21,20 +21,9 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.FieldAccess;
-import org.eclipse.jdt.core.dom.IBinding;
-import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.InstanceofExpression;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.QualifiedName;
-import org.eclipse.jdt.core.dom.ReturnStatement;
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
@@ -44,6 +33,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseGeneralTypeFixCore;
+import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
 
 /**
  * Plugin that widens variable declaration types to more general supertypes/interfaces
@@ -93,308 +83,75 @@ public class UseGeneralTypePlugin {
 	public void find(UseGeneralTypeFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean createForIfVarNotUsed) {
-		
-		// Single-pass visitor for better performance: collect all variable usage info in one traversal
-		Map<IVariableBinding, VariableInfo> variableUsages = new HashMap<>();
-		Map<IVariableBinding, VariableDeclarationInfo> variableDeclarations = new HashMap<>();
-		
+
+		// Use shared TypeWideningAnalyzer from sandbox_common
+		Map<String, TypeWideningAnalyzer.TypeWideningResult> analysisResults =
+				TypeWideningAnalyzer.analyzeCompilationUnit(compilationUnit);
+
+		if (analysisResults.isEmpty()) {
+			return;
+		}
+
+		// Collect VariableDeclarationStatement info needed for rewriting
+		Map<String, StatementInfo> statementsByKey = new HashMap<>();
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(VariableDeclarationStatement node) {
-				// Skip if already processed
-				if (nodesprocessed.contains(node)) {
+				if (nodesprocessed.contains(node) || node.fragments().size() > 1) {
 					return true;
 				}
-				
-				// Skip multi-fragment declarations to avoid breaking compilation
-				if (node.fragments().size() > 1) {
-					return true;
-				}
-				
-				// Only process local variables with explicit concrete types
 				Type type = node.getType();
 				if (type == null || type.isVar()) {
 					return true;
 				}
-				
-				ITypeBinding typeBinding = type.resolveBinding();
-				if (typeBinding == null || typeBinding.isPrimitive() || typeBinding.isArray()) {
-					return true;
-				}
-				
-				// Process the single fragment
 				for (Object fragObj : node.fragments()) {
 					VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragObj;
 					IVariableBinding varBinding = fragment.resolveBinding();
-					if (varBinding == null || varBinding.isField() || varBinding.isParameter()) {
-						continue;
+					if (varBinding != null) {
+						statementsByKey.put(varBinding.getKey(), new StatementInfo(node, fragment));
 					}
-					
-					// Store declaration info
-					variableDeclarations.put(varBinding, new VariableDeclarationInfo(node, fragment, typeBinding));
-					variableUsages.put(varBinding, new VariableInfo());
 				}
-				
-				return true;
-			}
-			
-			@Override
-			public boolean visit(SimpleName node) {
-				IBinding binding = node.resolveBinding();
-				if (!(binding instanceof IVariableBinding)) {
-					return true;
-				}
-				
-				IVariableBinding varBinding = (IVariableBinding) binding;
-				VariableInfo info = variableUsages.get(varBinding);
-				if (info == null) {
-					return true;
-				}
-				
-				ASTNode parent = node.getParent();
-				
-				// Check for casts and instanceof
-				if (parent instanceof CastExpression) {
-					info.hasCast = true;
-				} else if (parent instanceof InstanceofExpression) {
-					info.hasInstanceof = true;
-				} else if (parent instanceof MethodInvocation) {
-					MethodInvocation mi = (MethodInvocation) parent;
-					if (mi.getExpression() == node) {
-						// Variable is the receiver of a method call
-						IMethodBinding methodBinding = mi.resolveMethodBinding();
-						if (methodBinding != null) {
-							info.usedMethodSignatures.add(createMethodSignature(methodBinding));
-						}
-					} else {
-						// Variable is passed as an argument - this is unsafe
-						info.hasUnsafeUsage = true;
-					}
-				} else if (parent instanceof FieldAccess) {
-					FieldAccess fa = (FieldAccess) parent;
-					if (fa.getExpression() == node) {
-						info.usedFields.add(fa.getName().getIdentifier());
-					}
-				} else if (parent instanceof QualifiedName) {
-					// Handle qualified field access: obj.field
-					QualifiedName qn = (QualifiedName) parent;
-					if (qn.getQualifier() == node) {
-						info.usedFields.add(qn.getName().getIdentifier());
-					}
-				} else if (parent instanceof SuperFieldAccess) {
-					// Handle super.field access
-					SuperFieldAccess sfa = (SuperFieldAccess) parent;
-					info.usedFields.add(sfa.getName().getIdentifier());
-				} else if (parent instanceof Assignment) {
-					// Check if assigned to a variable with narrower type
-					Assignment assignment = (Assignment) parent;
-					if (assignment.getRightHandSide() == node) {
-						info.hasUnsafeUsage = true;
-					}
-				} else if (parent instanceof ReturnStatement) {
-					// Variable is returned - unsafe
-					info.hasUnsafeUsage = true;
-				}
-				
 				return true;
 			}
 		});
-		
-		// Now analyze each variable and determine if it can be widened
+
+		// Build TypeWidenHolder entries from analysis results
 		ReferenceHolder<Integer, TypeWidenHolder> holder = new ReferenceHolder<>();
-		
-		for (Map.Entry<IVariableBinding, VariableDeclarationInfo> entry : variableDeclarations.entrySet()) {
-			IVariableBinding varBinding = entry.getKey();
-			VariableDeclarationInfo declInfo = entry.getValue();
-			VariableInfo usageInfo = variableUsages.get(varBinding);
-			
-			if (usageInfo == null) {
+
+		for (TypeWideningAnalyzer.TypeWideningResult result : analysisResults.values()) {
+			StatementInfo stmtInfo = statementsByKey.get(result.getVariableBinding().getKey());
+			if (stmtInfo == null) {
 				continue;
 			}
-			
-			// Skip if has unsafe usage patterns
-			if (usageInfo.hasCast || usageInfo.hasInstanceof || usageInfo.hasUnsafeUsage) {
-				continue;
-			}
-			
-			// Find the most general type
-			ITypeBinding widenedType = findMostGeneralType(declInfo.typeBinding, usageInfo.usedMethodSignatures, usageInfo.usedFields);
-			
-			if (widenedType != null && !widenedType.equals(declInfo.typeBinding)) {
-				TypeWidenHolder typeHolder = new TypeWidenHolder();
-				typeHolder.variableDeclarationStatement = declInfo.statement;
-				typeHolder.fragment = declInfo.fragment;
-				typeHolder.currentType = declInfo.typeBinding;
-				typeHolder.widenedType = widenedType;
-				typeHolder.usedMethodSignatures = usageInfo.usedMethodSignatures;
-				typeHolder.usedFields = usageInfo.usedFields;
-				typeHolder.nodesprocessed = nodesprocessed;
-				
-				holder.put(holder.size(), typeHolder);
-			}
+
+			TypeWidenHolder typeHolder = new TypeWidenHolder();
+			typeHolder.variableDeclarationStatement = stmtInfo.statement;
+			typeHolder.fragment = stmtInfo.fragment;
+			typeHolder.currentType = result.getCurrentType();
+			typeHolder.widenedType = result.getWidestType();
+			typeHolder.usedMethodSignatures = new HashSet<>();
+			typeHolder.usedFields = new HashSet<>();
+			typeHolder.nodesprocessed = nodesprocessed;
+
+			holder.put(holder.size(), typeHolder);
 		}
-		
+
 		if (!holder.isEmpty()) {
 			operations.add(fixcore.rewrite(holder));
 		}
 	}
-	
+
 	/**
-	 * Helper class to store variable declaration information.
+	 * Helper class to store variable declaration statement information needed for rewriting.
 	 */
-	private static class VariableDeclarationInfo {
+	private static class StatementInfo {
 		final VariableDeclarationStatement statement;
 		final VariableDeclarationFragment fragment;
-		final ITypeBinding typeBinding;
-		
-		VariableDeclarationInfo(VariableDeclarationStatement statement, VariableDeclarationFragment fragment, ITypeBinding typeBinding) {
+
+		StatementInfo(VariableDeclarationStatement statement, VariableDeclarationFragment fragment) {
 			this.statement = statement;
 			this.fragment = fragment;
-			this.typeBinding = typeBinding;
 		}
-	}
-	
-	/**
-	 * Helper class to store variable usage information.
-	 */
-	private static class VariableInfo {
-		Set<String> usedMethodSignatures = new HashSet<>();
-		Set<String> usedFields = new HashSet<>();
-		boolean hasCast;
-		boolean hasInstanceof;
-		boolean hasUnsafeUsage;
-	}
-	
-	/**
-	 * Creates a method signature string from a method binding.
-	 * Format: methodName(param1Type,param2Type):returnType
-	 */
-	private String createMethodSignature(IMethodBinding methodBinding) {
-		StringBuilder signature = new StringBuilder();
-		signature.append(methodBinding.getName()).append('(');
-		ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();
-		for (int i = 0; i < parameterTypes.length; i++) {
-			if (i > 0) {
-				signature.append(',');
-			}
-			ITypeBinding paramType = parameterTypes[i];
-			if (paramType != null) {
-				ITypeBinding erasure = paramType.getErasure();
-				signature.append(erasure != null ? erasure.getQualifiedName() : "java.lang.Object"); //$NON-NLS-1$
-			}
-		}
-		signature.append(')');
-		ITypeBinding returnType = methodBinding.getReturnType();
-		if (returnType != null) {
-			signature.append(':').append(returnType.getQualifiedName());
-		}
-		return signature.toString();
-	}
-
-	/**
-	 * Walks the type hierarchy to find the most general type that declares
-	 * all the required method signatures and fields.
-	 */
-	private ITypeBinding findMostGeneralType(ITypeBinding currentType, Set<String> usedMethodSignatures, Set<String> usedFields) {
-		if (currentType == null) {
-			return null;
-		}
-		
-		ITypeBinding mostGeneral = currentType;
-		
-		// Check superclass
-		ITypeBinding superclass = currentType.getSuperclass();
-		if (superclass != null && declaresAllMembers(currentType, superclass, usedMethodSignatures, usedFields)) {
-			ITypeBinding candidate = findMostGeneralType(superclass, usedMethodSignatures, usedFields);
-			if (candidate != null) {
-				mostGeneral = candidate;
-			}
-		}
-		
-		// Check interfaces - prefer interfaces over classes
-		for (ITypeBinding iface : currentType.getInterfaces()) {
-			if (declaresAllMembers(currentType, iface, usedMethodSignatures, usedFields)) {
-				mostGeneral = iface;
-			}
-		}
-		
-		return mostGeneral;
-	}
-
-	/**
-	 * Checks if a candidate type declares all the required method signatures and fields
-	 * that are available on the original type.
-	 */
-	private boolean declaresAllMembers(ITypeBinding originalType, ITypeBinding candidateType, Set<String> usedMethodSignatures, Set<String> usedFields) {
-		if (originalType == null || candidateType == null) {
-			return false;
-		}
-		
-		// Collect method signatures from the original type hierarchy
-		Map<String, Set<String>> originalMethodSignatures = new HashMap<>();
-		collectMethodSignatures(originalType, new HashSet<>(), originalMethodSignatures);
-		
-		// Collect method signatures from the candidate type hierarchy
-		Map<String, Set<String>> candidateMethodSignatures = new HashMap<>();
-		collectMethodSignatures(candidateType, new HashSet<>(), candidateMethodSignatures);
-		
-		// Check if all used method signatures exist in the candidate type
-		for (String usedSignature : usedMethodSignatures) {
-			// Extract method name from signature (before the '(' character)
-			int parenIndex = usedSignature.indexOf('(');
-			if (parenIndex < 0) {
-				continue;
-			}
-			String methodName = usedSignature.substring(0, parenIndex);
-			
-			Set<String> candidateSignatures = candidateMethodSignatures.get(methodName);
-			if (candidateSignatures == null || !candidateSignatures.contains(usedSignature)) {
-				return false;
-			}
-		}
-		
-		// Check fields
-		Set<String> declaredFields = new HashSet<>();
-		collectFields(candidateType, new HashSet<>(), declaredFields);
-		
-		return declaredFields.containsAll(usedFields);
-	}
-
-	/**
-	 * Recursively collects method signatures for a type and its supertypes/interfaces.
-	 */
-	private void collectMethodSignatures(ITypeBinding type, Set<ITypeBinding> visited, Map<String, Set<String>> signaturesByName) {
-		if (type == null || !visited.add(type)) {
-			return;
-		}
-
-		for (IMethodBinding method : type.getDeclaredMethods()) {
-			String signature = createMethodSignature(method);
-			String name = method.getName();
-			signaturesByName.computeIfAbsent(name, k -> new HashSet<>()).add(signature);
-		}
-
-		// Recurse into superclass and interfaces
-		collectMethodSignatures(type.getSuperclass(), visited, signaturesByName);
-		for (ITypeBinding iface : type.getInterfaces()) {
-			collectMethodSignatures(iface, visited, signaturesByName);
-		}
-	}
-
-	/**
-	 * Recursively collects field names for a type and its supertypes.
-	 */
-	private void collectFields(ITypeBinding type, Set<ITypeBinding> visited, Set<String> fieldNames) {
-		if (type == null || !visited.add(type)) {
-			return;
-		}
-
-		for (IVariableBinding field : type.getDeclaredFields()) {
-			fieldNames.add(field.getName());
-		}
-
-		// Recurse into superclass (interfaces don't have fields typically)
-		collectFields(type.getSuperclass(), visited, fieldNames);
 	}
 
 	public void rewrite(UseGeneralTypeFixCore fixcore, ReferenceHolder<Integer, TypeWidenHolder> holder,
