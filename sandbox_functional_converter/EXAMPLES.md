@@ -283,12 +283,55 @@ for (String item : items) {
 
 ## Comment Types Supported
 
-### Line Comments
+### Leading Comments (Before Statement)
 ```java
 for (String s : list) {
     // This is preserved
     System.out.println(s);
 }
+```
+
+**Transformed:**
+```java
+list.stream()
+    .forEachOrdered(s -> {
+        // This is preserved
+        System.out.println(s);
+    });
+```
+
+### Trailing/Inline Comments (After Statement) ✨ NEW!
+```java
+for (String s : list) {
+    System.out.println(s); // Print the item
+}
+```
+
+**Transformed:**
+```java
+list.stream()
+    .forEachOrdered(s -> {
+        System.out.println(s); // Print the item
+    });
+```
+
+### Filter with Trailing Comment
+```java
+for (String s : list) {
+    if (s.isEmpty()) continue; // Skip empty strings
+    System.out.println(s);
+}
+```
+
+**Transformed:**
+```java
+list.stream()
+    .filter(s -> {
+        return !(s.isEmpty()); // Skip empty strings
+    })
+    .forEachOrdered(s -> {
+        System.out.println(s);
+    });
 ```
 
 ### Block Comments
@@ -299,12 +342,30 @@ for (String s : list) {
 }
 ```
 
+**Transformed:**
+```java
+list.stream()
+    .forEachOrdered(s -> {
+        /* This is also preserved */
+        System.out.println(s);
+    });
+```
+
 ### Javadoc Comments
 ```java
 for (String s : list) {
     /** Even Javadoc is preserved */
     System.out.println(s);
 }
+```
+
+**Transformed:**
+```java
+list.stream()
+    .forEachOrdered(s -> {
+        /** Even Javadoc is preserved */
+        System.out.println(s);
+    });
 ```
 
 ### Multiple Comments

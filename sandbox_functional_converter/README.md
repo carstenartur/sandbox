@@ -42,10 +42,25 @@ items.stream()
 
 **Features:**
 - ✅ Preserves line comments (`//`), block comments (`/* */`), and Javadoc (`/** */`)
+- ✅ Supports leading, trailing/inline, and embedded comments ✨ **NEW: Inline comments!**
 - ✅ Comments appear in generated block lambdas
 - ✅ Works for filter, map, and forEach operations
 - ✅ Bidirectional transformations preserve loop body comments
 - ✅ Enabled by default - no configuration needed
+
+**What's inline/trailing comments?**
+```java
+// Before:
+for (String item : items) {
+    System.out.println(item); // Print the item (inline comment!)
+}
+
+// After:
+items.stream()
+    .forEachOrdered(item -> {
+        System.out.println(item); // Print the item (preserved!)
+    });
+```
 
 **Supported:** Enhanced-for loops, bidirectional transformations  
 **Coming soon:** Iterator-while and traditional for-loops
@@ -64,10 +79,11 @@ For detailed examples and technical information, see [COMMENT_PRESERVATION.md](C
   - Better tracking of produced/consumed variables across pipeline stages
 ✅ **Comment Preservation** (February 2026 - Phase 10):
   - Automatically preserves source code comments during transformations
+  - Supports leading, trailing/inline, and embedded comments
   - Comments appear in generated block lambdas
   - Full support for enhanced-for loops to streams
   - Bidirectional transformations preserve loop body comments
-  - See [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md) for details
+  - See [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md) and [FAQ.md](FAQ.md#was-ist-mit-inline-kommentaren--what-about-inline-comments) for details
 
 ## Target Format Selection (New!)
 

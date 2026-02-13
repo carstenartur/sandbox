@@ -100,6 +100,50 @@ items.stream()
 
 ---
 
+### Q: Was ist mit inline Kommentaren? / What about inline comments?
+
+**A (DE)**: Inline-Kommentare (auch "trailing comments" genannt) werden jetzt vollständig unterstützt! Das sind Kommentare, die auf derselben Zeile nach dem Code stehen:
+
+```java
+// Vorher:
+for (String item : items) {
+    System.out.println(item); // Print the item
+}
+
+// Nachher:
+items.stream()
+    .forEachOrdered(item -> {
+        System.out.println(item); // Print the item
+    });
+```
+
+Das Plugin erfasst drei Arten von Kommentaren:
+- **Leading**: Kommentare vor dem Statement
+- **Trailing/Inline**: Kommentare nach dem Statement auf derselben Zeile ✨ **NEU!**
+- **Embedded**: Kommentare innerhalb des Statements
+
+**A (EN)**: Inline comments (also called "trailing comments") are now fully supported! These are comments that appear on the same line after the code:
+
+```java
+// Before:
+for (String item : items) {
+    System.out.println(item); // Print the item
+}
+
+// After:
+items.stream()
+    .forEachOrdered(item -> {
+        System.out.println(item); // Print the item
+    });
+```
+
+The plugin captures three types of comments:
+- **Leading**: Comments before the statement
+- **Trailing/Inline**: Comments after the statement on the same line ✨ **NEW!**
+- **Embedded**: Comments inside the statement
+
+---
+
 ### Q: Muss ich etwas konfigurieren?
 
 **A (DE)**: Nein! Die Kommentarerhaltung ist standardmäßig aktiviert. Aktivieren Sie einfach die "Use functional call"-Cleanup in Eclipse.

@@ -285,9 +285,30 @@ renderFilterOp(pipeline, filterOp, variableName)
 
 ### Comment Position Rules
 
-- **Leading comments**: Comments on the line(s) immediately before a statement
-- **Trailing comments**: Comments on the same line after a statement
-- **Embedded comments**: Comments inside complex statements (limited support)
+- **Leading comments**: Comments on the line(s) immediately before a statement ✅ Fully supported
+- **Trailing/inline comments**: Comments on the same line after a statement ✅ **Fully supported (NEW!)**
+- **Embedded comments**: Comments inside complex statements ⚠️ Limited support
+
+**Example of all three types:**
+```java
+for (String item : items) {
+    // Leading comment - appears before the statement
+    if (/* embedded */ item.isEmpty()) continue; // Trailing/inline comment
+    System.out.println(item);
+}
+```
+
+**After transformation:**
+```java
+items.stream()
+    .filter(item -> {
+        // Leading comment - appears before the statement
+        return !(/* embedded */ item.isEmpty()); // Trailing/inline comment
+    })
+    .forEachOrdered(item -> {
+        System.out.println(item);
+    });
+```
 
 ### Limitations / Einschränkungen
 
