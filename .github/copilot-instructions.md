@@ -209,6 +209,28 @@ xvfb-run --auto-servernum mvn test -Dtest=Java22CleanUpTest#testSimpleForEachCon
 
 **When tests fail in CI**: Always check the CI logs to see the actual vs expected output. See [Accessing CI Logs](#accessing-ci-logs) section below.
 
+#### Exception: sandbox_common_test
+
+The tests in `sandbox_common_test` are pure JUnit 5 tests that use the Eclipse `ASTParser` in standalone mode. They do **NOT** require:
+- Eclipse runtime/OSGi (still uses Tycho for dependency resolution)
+- Xvfb or any display server
+- UI Harness
+
+These tests can be run without xvfb-run:
+```bash
+# IMPORTANT: Set Java 21 first!
+export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
+# Run tests without xvfb
+mvn test -pl sandbox_common_test
+
+# Run specific test class
+mvn test -Dtest=BasicVisitorUsageTest -pl sandbox_common_test
+```
+
+This is significantly faster than running Tycho integration tests with UI harness. The Copilot coding agent should prefer this faster test execution path when working on `sandbox_common` or `sandbox_common_test` code.
+
 ### Linting and Code Quality
 
 ```bash
@@ -742,7 +764,7 @@ When debugging test failures or CI issues, **ALWAYS** access the actual CI logs 
 
 - This is an Eclipse plugin project, not a standard Java project
 - Always consider Eclipse platform APIs and patterns
-- Tests require Eclipse runtime and cannot be run as plain JUnit tests
+- Most tests require Eclipse runtime and cannot be run as plain JUnit tests. Exception: `sandbox_common_test` tests can run without UI harness (see "Exception: sandbox_common_test" section above)
 - Maven dependencies are resolved via P2, not Maven Central
 - Code must be compatible with Eclipse plugin classloading
 - When adding new cleanups, follow the existing pattern in other modules

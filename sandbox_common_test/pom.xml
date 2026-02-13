@@ -26,7 +26,8 @@
 				<version>${tycho-version}</version>
 				<configuration>
 					<useJDK>BREE</useJDK>
-					<useUIHarness>true</useUIHarness>
+					<!-- These tests use ASTParser in standalone mode and do not require Eclipse UI -->
+					<useUIHarness>false</useUIHarness>
 					<dependencies>
 						<dependency>
 							<type>eclipse-plugin</type>

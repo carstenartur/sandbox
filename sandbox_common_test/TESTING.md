@@ -192,8 +192,12 @@ EnumSet.of(VisitorEnum.MethodInvocation, VisitorEnum.FieldDeclaration)
 
 ## Running Tests
 
-### All Tests
+### All Tests (no Xvfb required)
+
+These tests use the Eclipse `ASTParser` in standalone mode and do **NOT** require a display server or UI harness.
+
 ```bash
+# Run all tests without xvfb
 mvn test -pl sandbox_common_test
 ```
 
@@ -202,9 +206,10 @@ mvn test -pl sandbox_common_test
 mvn test -Dtest=BasicVisitorUsageTest -pl sandbox_common_test
 ```
 
-### With xvfb (required on Linux CI)
+### With full Tycho build (optional)
 ```bash
-xvfb-run --auto-servernum mvn test -pl sandbox_common_test
+# This works but is not required since useUIHarness=false
+mvn verify -pl sandbox_common_test
 ```
 
 ## Code Examples
