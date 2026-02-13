@@ -26,6 +26,8 @@ import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.ImageDataProviderPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.ImageDataProviderPlugin.ImageDataHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.JFacePlugin.MonitorHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.ViewerSorterPlugin;
@@ -35,7 +37,8 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 public enum JfaceCleanUpFixCore {
 
 	MONITOR(new JFacePlugin()),
-	VIEWER_SORTER(new ViewerSorterPlugin());
+	VIEWER_SORTER(new ViewerSorterPlugin()),
+	IMAGE_DPI(new ImageDataProviderPlugin());
 
 	AbstractTool<?> jfacefound;
 
@@ -99,6 +102,13 @@ public enum JfaceCleanUpFixCore {
 				} else if (!hit.isEmpty() && hit.values().stream().findFirst().orElse(null) instanceof SorterHolder) {
 					// For SorterHolder, we don't have a single source node, so skip rangeComputer setup
 					((AbstractTool<ReferenceHolder<Integer, SorterHolder>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder<Integer, SorterHolder>) hit, cuRewrite, group);
+				} else if (!hit.isEmpty() && hit.values().stream().findFirst().orElse(null) instanceof ImageDataHolder imageDataHolder) {
+					// For ImageDataHolder, use the imageCreation node
+					if (imageDataHolder.imageCreation != null) {
+						rangeComputer.addTightSourceNode(imageDataHolder.imageCreation);
+					}
+					rewrite.setTargetSourceRangeComputer(rangeComputer);
+					((AbstractTool<ReferenceHolder<Integer, ImageDataHolder>>) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder<Integer, ImageDataHolder>) hit, cuRewrite, group);
 				} else {
 					// Fallback for unknown types - just call rewrite without specific range computer setup
 					rewrite.setTargetSourceRangeComputer(rangeComputer);

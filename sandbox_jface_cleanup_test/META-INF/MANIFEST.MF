@@ -6,7 +6,8 @@ Bundle-Version: 1.2.6.qualifier
 Fragment-Host: sandbox_jface_cleanup
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,
- sandbox_test_commons
+ sandbox_test_commons,
+ org.eclipse.swt
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global

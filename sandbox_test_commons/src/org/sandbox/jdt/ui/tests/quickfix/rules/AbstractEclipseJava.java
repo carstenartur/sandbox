@@ -56,10 +56,13 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 
 import org.eclipse.core.resources.IContainer;
@@ -512,6 +515,82 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		System.arraycopy(oldEntries, 0, newEntries, 0, nEntries);
 		newEntries[nEntries] = cpe;
 		jproject.setRawClasspath(newEntries, null);
+	}
+
+	/**
+	 * Adds an Eclipse platform bundle to the test project's classpath.
+	 * <p>
+	 * This is needed when test input source code references classes from
+	 * platform bundles (e.g., org.eclipse.swt, org.eclipse.jface).
+	 * The method handles both JAR bundles and directory bundles, as well as
+	 * platform-specific fragments (e.g., org.eclipse.swt.gtk.linux.x86_64).
+	 * </p>
+	 * 
+	 * @param bundleSymbolicName the symbolic name of the bundle (e.g., "org.eclipse.swt")
+	 * @throws CoreException if the bundle cannot be found or added
+	 */
+	public void addBundleToClasspath(String bundleSymbolicName) throws CoreException {
+		Bundle bundle = Platform.getBundle(bundleSymbolicName);
+		if (bundle == null) {
+			throw new CoreException(Status.error("Bundle not found: " + bundleSymbolicName)); //$NON-NLS-1$
+		}
+
+		// Get the bundle's file location
+		File bundleFile;
+		try {
+			bundleFile = FileLocator.getBundleFile(bundle);
+		} catch (Exception e) {
+			throw new CoreException(Status.error("Cannot locate bundle file: " + bundleSymbolicName, e)); //$NON-NLS-1$
+		}
+
+		if (bundleFile == null || !bundleFile.exists()) {
+			throw new CoreException(Status.error("Bundle file does not exist: " + bundleSymbolicName)); //$NON-NLS-1$
+		}
+
+		IPath bundlePath = new Path(bundleFile.getAbsolutePath());
+		IClasspathEntry cpe;
+
+		if (bundleFile.isDirectory()) {
+			File binDir = new File(bundleFile, "bin"); //$NON-NLS-1$
+			if (binDir.exists() && binDir.isDirectory()) {
+				cpe = JavaCore.newLibraryEntry(new Path(binDir.getAbsolutePath()), null, null);
+			} else {
+				cpe = JavaCore.newLibraryEntry(bundlePath, null, null);
+			}
+		} else {
+			cpe = JavaCore.newLibraryEntry(bundlePath, null, null);
+		}
+
+		addToClasspath(getJavaProject(), cpe);
+
+		// Also add any host or fragment bundles that may contain the actual classes
+		// This handles cases like org.eclipse.swt where the API bundle re-exports
+		// a platform-specific implementation fragment
+		Bundle[] fragments = Platform.getFragments(bundle);
+		if (fragments != null) {
+			for (Bundle fragment : fragments) {
+				try {
+					File fragmentFile = FileLocator.getBundleFile(fragment);
+					if (fragmentFile != null && fragmentFile.exists()) {
+						IPath fragmentPath = new Path(fragmentFile.getAbsolutePath());
+						IClasspathEntry fragmentCpe;
+						if (fragmentFile.isDirectory()) {
+							File fragmentBinDir = new File(fragmentFile, "bin"); //$NON-NLS-1$
+							if (fragmentBinDir.exists() && fragmentBinDir.isDirectory()) {
+								fragmentCpe = JavaCore.newLibraryEntry(new Path(fragmentBinDir.getAbsolutePath()), null, null);
+							} else {
+								fragmentCpe = JavaCore.newLibraryEntry(fragmentPath, null, null);
+							}
+						} else {
+							fragmentCpe = JavaCore.newLibraryEntry(fragmentPath, null, null);
+						}
+						addToClasspath(getJavaProject(), fragmentCpe);
+					}
+				} catch (Exception e) {
+					// Skip fragments that can't be resolved
+				}
+			}
+		}
 	}
 
 	/**
