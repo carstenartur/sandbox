@@ -15,8 +15,44 @@ This Eclipse cleanup plugin automatically converts imperative enhanced for-loops
   - **Math.max/Math.min**: `max = Math.max(max, x)` → `.reduce(max, Math::max)`
 - **Match operations**: Early returns → `.anyMatch()`, `.noneMatch()`
 - **Continue statements**: `if (condition) continue;` → `.filter(x -> !(condition))`
+- **Comment Preservation**: Comments in loop bodies are automatically preserved in the transformed code ✨
 
-### Recent Improvements (December 2025)
+### Comment Preservation ✨
+
+**New in February 2026!** The plugin now automatically preserves comments during transformations:
+
+```java
+// Before:
+for (String item : items) {
+    // Skip empty items
+    if (item.isEmpty()) continue;
+    System.out.println(item);
+}
+
+// After:
+items.stream()
+    .filter(item -> {
+        // Skip empty items
+        return !(item.isEmpty());
+    })
+    .forEachOrdered(item -> {
+        System.out.println(item);
+    });
+```
+
+**Features:**
+- ✅ Preserves line comments (`//`), block comments (`/* */`), and Javadoc (`/** */`)
+- ✅ Comments appear in generated block lambdas
+- ✅ Works for filter, map, and forEach operations
+- ✅ Bidirectional transformations preserve loop body comments
+- ✅ Enabled by default - no configuration needed
+
+**Supported:** Enhanced-for loops, bidirectional transformations  
+**Coming soon:** Iterator-while and traditional for-loops
+
+For detailed examples and technical information, see [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md).
+
+### Recent Improvements (December 2025 - February 2026)
 ✅ **Code Cleanup**: Removed ~366 lines of dead code (78% reduction in Refactorer.java)
 ✅ **Math.max/Math.min Support**: Full support for MAX/MIN reduction with method references
 ✅ **Enhanced Tests**: 34 comprehensive test cases covering all patterns
@@ -26,6 +62,12 @@ This Eclipse cleanup plugin automatically converts imperative enhanced for-loops
   - Labeled continue detection (rejected for safety)
   - Improved side-effect statement validation
   - Better tracking of produced/consumed variables across pipeline stages
+✅ **Comment Preservation** (February 2026 - Phase 10):
+  - Automatically preserves source code comments during transformations
+  - Comments appear in generated block lambdas
+  - Full support for enhanced-for loops to streams
+  - Bidirectional transformations preserve loop body comments
+  - See [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md) for details
 
 ## Target Format Selection (New!)
 
@@ -378,6 +420,9 @@ Package structure mirrors Eclipse JDT for seamless integration.
 
 ## References
 
+- [Comment Preservation Guide](COMMENT_PRESERVATION.md) - Detailed guide on comment preservation feature
+- [Architecture Documentation](ARCHITECTURE.md) - Complete design and implementation details
+- [TODO and Roadmap](TODO.md) - Future enhancements and development phases
 - [NetBeans Implementation](https://github.com/apache/netbeans/tree/master/java/java.hints/src/org/netbeans/modules/java/hints/jdk/mapreduce)
 - [Eclipse JDT AST](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/reference/api/org/eclipse/jdt/core/dom/package-summary.html)
 - [Java 8 Streams](https://docs.oracle.com/javase/8/docs/api/java/util/stream/Stream.html)
