@@ -21,7 +21,6 @@ package org.sandbox.jdt.internal.common;
  */
 
 
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -21,7 +21,6 @@ package org.sandbox.jdt.internal.common;
  */
 
 
-import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
