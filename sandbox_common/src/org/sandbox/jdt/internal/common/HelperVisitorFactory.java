@@ -60,7 +60,7 @@ public class HelperVisitorFactory {
 	 * <p><b>Example:</b></p>
 	 * <pre>
 	 * // Matches @Deprecated (MarkerAnnotation), @SuppressWarnings("unchecked") (SingleMemberAnnotation), etc.
-	 * HelperVisitor.forAnnotation("java.lang.Deprecated")
+	 * HelperVisitorFactory.forAnnotation("java.lang.Deprecated")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
 	 *     .processEach((node, holder) -&gt; {
@@ -82,7 +82,7 @@ public class HelperVisitorFactory {
 	 * 
 	 * <p><b>Example:</b></p>
 	 * <pre>
-	 * HelperVisitor.forMethodCalls("org.junit.Assert", ALL_ASSERTION_METHODS)
+	 * HelperVisitorFactory.forMethodCalls("org.junit.Assert", ALL_ASSERTION_METHODS)
 	 *     .andStaticImports()
 	 *     .andImportsOf("org.junit.Assert")
 	 *     .in(compilationUnit)
@@ -110,7 +110,7 @@ public class HelperVisitorFactory {
 	 * 
 	 * <p><b>Example:</b></p>
 	 * <pre>
-	 * HelperVisitor.forMethodCall("org.junit.Assert", "assertTrue")
+	 * HelperVisitorFactory.forMethodCall("org.junit.Assert", "assertTrue")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
 	 *     .processEach((methodInv, holder) -&gt; {
@@ -137,7 +137,7 @@ public class HelperVisitorFactory {
 	 * 
 	 * <p><b>Example:</b></p>
 	 * <pre>
-	 * HelperVisitor.forMethodCall(String.class, "getBytes")
+	 * HelperVisitorFactory.forMethodCall(String.class, "getBytes")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
 	 *     .processEach((methodInv, holder) -&gt; {
@@ -162,7 +162,7 @@ public class HelperVisitorFactory {
 	 * <p><b>Example:</b></p>
 	 * <pre>
 	 * // Find all "new String(...)" constructions
-	 * HelperVisitor.forClassInstanceCreation(String.class)
+	 * HelperVisitorFactory.forClassInstanceCreation(String.class)
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
 	 *     .processEach(holder, (creation, h) -&gt; {
@@ -184,7 +184,7 @@ public class HelperVisitorFactory {
 	 * 
 	 * <p><b>Example:</b></p>
 	 * <pre>
-	 * HelperVisitor.forField()
+	 * HelperVisitorFactory.forField()
 	 *     .withAnnotation("org.junit.Rule")
 	 *     .ofType("org.junit.rules.TemporaryFolder")
 	 *     .in(compilationUnit)
@@ -207,7 +207,7 @@ public class HelperVisitorFactory {
 	 * 
 	 * <p><b>Example:</b></p>
 	 * <pre>
-	 * HelperVisitor.forImport("org.junit.Assert")
+	 * HelperVisitorFactory.forImport("org.junit.Assert")
 	 *     .in(compilationUnit)
 	 *     .excluding(nodesprocessed)
 	 *     .processEach((node, holder) -&gt; {

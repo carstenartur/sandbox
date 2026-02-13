@@ -34,6 +34,7 @@ import org.sandbox.functional.core.tree.LoopKind;
 import org.sandbox.functional.core.tree.LoopTree;
 import org.sandbox.functional.core.tree.LoopTreeNode;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup;
