@@ -882,21 +882,24 @@ public class JdtLoopExtractor {
         int nodeStart = node.getStartPosition();
         int nodeEnd = nodeStart + node.getLength();
         int nodeStartLine = cu.getLineNumber(nodeStart);
+        int nodeEndLine = cu.getLineNumber(nodeEnd);
         
         for (Comment comment : commentList) {
             int commentStart = comment.getStartPosition();
             int commentEnd = commentStart + comment.getLength();
+            int commentStartLine = cu.getLineNumber(commentStart);
             int commentEndLine = cu.getLineNumber(commentEnd);
             
             // Associate comments that are:
             // 1. On the line immediately before the node, OR
-            // 2. On the same line as the node (trailing comment), OR
+            // 2. On the same line as the node (leading: before node start, trailing: after node end), OR
             // 3. Within the node's span (embedded comment)
             boolean isLeadingComment = commentEndLine == nodeStartLine - 1 || 
                                        (commentEndLine == nodeStartLine && commentEnd <= nodeStart);
+            boolean isTrailingComment = commentStartLine == nodeEndLine && commentStart >= nodeEnd;
             boolean isEmbeddedComment = commentStart >= nodeStart && commentEnd <= nodeEnd;
             
-            if (isLeadingComment || isEmbeddedComment) {
+            if (isLeadingComment || isTrailingComment || isEmbeddedComment) {
                 String commentText = extractCommentText(comment, cu);
                 if (commentText != null && !commentText.isEmpty()) {
                     comments.add(commentText);
