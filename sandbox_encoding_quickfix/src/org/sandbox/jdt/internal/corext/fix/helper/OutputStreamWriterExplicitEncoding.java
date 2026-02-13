@@ -61,7 +61,7 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
-		HelperVisitor.forClassInstanceCreation(OutputStreamWriter.class)
+		HelperVisitorFactory.forClassInstanceCreation(OutputStreamWriter.class)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

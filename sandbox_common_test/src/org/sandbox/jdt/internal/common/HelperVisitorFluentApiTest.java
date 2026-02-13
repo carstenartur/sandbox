@@ -79,7 +79,7 @@ public class HelperVisitorFluentApiTest {
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             AtomicInteger callCount = new AtomicInteger(0);
             
-            HelperVisitor.forAnnotation("java.lang.Deprecated")
+            HelperVisitorFactory.forAnnotation("java.lang.Deprecated")
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
@@ -127,7 +127,7 @@ public class HelperVisitorFluentApiTest {
             AtomicInteger callCount = new AtomicInteger(0);
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             
-            HelperVisitor.forAnnotation("java.lang.Deprecated")
+            HelperVisitorFactory.forAnnotation("java.lang.Deprecated")
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
@@ -154,7 +154,7 @@ public class HelperVisitorFluentApiTest {
             AtomicInteger importCount = new AtomicInteger(0);
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             
-            HelperVisitor.forAnnotation("java.lang.Deprecated")
+            HelperVisitorFactory.forAnnotation("java.lang.Deprecated")
                 .andImports()
                 .in(cu)
                 .excluding(nodesprocessed)
@@ -191,7 +191,7 @@ public class HelperVisitorFluentApiTest {
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             AtomicInteger callCount = new AtomicInteger(0);
             
-            HelperVisitor.forMethodCalls("java.io.PrintStream", Set.of("println"))
+            HelperVisitorFactory.forMethodCalls("java.io.PrintStream", Set.of("println"))
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
@@ -225,7 +225,7 @@ public class HelperVisitorFluentApiTest {
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             AtomicInteger nodeCount = new AtomicInteger(0);
             
-            HelperVisitor.forMethodCalls("org.junit.Assert", Set.of("assertEquals", "assertTrue"))
+            HelperVisitorFactory.forMethodCalls("org.junit.Assert", Set.of("assertEquals", "assertTrue"))
                 .andStaticImports()
                 .andImportsOf("org.junit.Assert")
                 .in(cu)
@@ -259,7 +259,7 @@ public class HelperVisitorFluentApiTest {
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             AtomicInteger callCount = new AtomicInteger(0);
             
-            HelperVisitor.forField()
+            HelperVisitorFactory.forField()
                 .withAnnotation("java.lang.Deprecated")
                 .ofType("java.lang.String")
                 .in(cu)
@@ -295,7 +295,7 @@ public class HelperVisitorFluentApiTest {
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             AtomicInteger callCount = new AtomicInteger(0);
             
-            HelperVisitor.forImport("java.util.List")
+            HelperVisitorFactory.forImport("java.util.List")
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
@@ -327,7 +327,7 @@ public class HelperVisitorFluentApiTest {
                 """;
             cu = parseSource(source);
             
-            var nodes = HelperVisitor.forImport("java.util.List")
+            var nodes = HelperVisitorFactory.forImport("java.util.List")
                 .in(cu)
                 .excluding(nodesprocessed)
                 .collect();
@@ -359,7 +359,7 @@ public class HelperVisitorFluentApiTest {
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             AtomicInteger index = new AtomicInteger(0);
             
-            HelperVisitor.forAnnotation("java.lang.Deprecated")
+            HelperVisitorFactory.forAnnotation("java.lang.Deprecated")
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
@@ -394,7 +394,7 @@ public class HelperVisitorFluentApiTest {
             AtomicInteger index = new AtomicInteger(0);
             
             // Find all java.util imports
-            HelperVisitor.forImport("java.util.List")
+            HelperVisitorFactory.forImport("java.util.List")
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
@@ -404,7 +404,7 @@ public class HelperVisitorFluentApiTest {
                     return true;
                 });
             
-            HelperVisitor.forImport("java.util.ArrayList")
+            HelperVisitorFactory.forImport("java.util.ArrayList")
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {
@@ -431,7 +431,7 @@ public class HelperVisitorFluentApiTest {
             ReferenceHolder<Integer, TestHolder> dataHolder = new ReferenceHolder<>();
             
             // Intentionally search for something that doesn't exist
-            HelperVisitor.forAnnotation("java.lang.NonExistent")
+            HelperVisitorFactory.forAnnotation("java.lang.NonExistent")
                 .in(cu)
                 .excluding(nodesprocessed)
                 .processEach(dataHolder, (node, holder) -> {

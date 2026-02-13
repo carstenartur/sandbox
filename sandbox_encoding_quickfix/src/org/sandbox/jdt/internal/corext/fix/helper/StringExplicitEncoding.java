@@ -62,7 +62,7 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
-		HelperVisitor.forClassInstanceCreation(String.class)
+		HelperVisitorFactory.forClassInstanceCreation(String.class)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

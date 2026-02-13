@@ -50,7 +50,7 @@ public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
 		
 		// Use Fluent API to find @FixMethodOrder annotations
-		HelperVisitor.forAnnotation(ORG_JUNIT_FIX_METHOD_ORDER)
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_FIX_METHOD_ORDER)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {

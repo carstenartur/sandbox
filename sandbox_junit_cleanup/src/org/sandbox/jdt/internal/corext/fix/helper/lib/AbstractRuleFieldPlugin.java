@@ -59,7 +59,7 @@ public abstract class AbstractRuleFieldPlugin extends AbstractTool<ReferenceHold
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 		
 		// Find @Rule fields
-		HelperVisitor.forField()
+		HelperVisitorFactory.forField()
 			.withAnnotation(ORG_JUNIT_RULE)
 			.ofType(getRuleType())
 			.in(compilationUnit)
@@ -69,7 +69,7 @@ public abstract class AbstractRuleFieldPlugin extends AbstractTool<ReferenceHold
 		
 		// Optionally find @ClassRule fields
 		if (includeClassRule()) {
-			HelperVisitor.forField()
+			HelperVisitorFactory.forField()
 				.withAnnotation(ORG_JUNIT_CLASS_RULE)
 				.ofType(getRuleType())
 				.in(compilationUnit)

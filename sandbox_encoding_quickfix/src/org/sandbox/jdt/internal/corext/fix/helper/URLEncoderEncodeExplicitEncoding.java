@@ -73,7 +73,7 @@ public class URLEncoderEncodeExplicitEncoding extends AbstractExplicitEncoding<M
 		}
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
 		getCharsetConstants().clear();
-		HelperVisitor.forMethodCall(URLEncoder.class, METHOD_ENCODE)
+		HelperVisitorFactory.forMethodCall(URLEncoder.class, METHOD_ENCODE)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

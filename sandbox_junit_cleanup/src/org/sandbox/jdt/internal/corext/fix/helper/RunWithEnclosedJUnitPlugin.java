@@ -74,7 +74,7 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
 		
 		// Find @RunWith annotations
-		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {

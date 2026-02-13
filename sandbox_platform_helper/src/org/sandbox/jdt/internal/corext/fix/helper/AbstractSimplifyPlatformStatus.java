@@ -76,7 +76,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 			boolean preservePluginId) throws CoreException {
 		try {
 			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
-			HelperVisitor.forClassInstanceCreation(Status.class)
+			HelperVisitorFactory.forClassInstanceCreation(Status.class)
 				.in(compilationUnit)
 				.excluding(nodesprocessed)
 				.processEach(dataholder, (visited, holder) -> {

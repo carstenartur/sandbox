@@ -61,7 +61,7 @@ public class StreamToIteratorWhile extends AbstractFunctionalCall<ASTNode> {
 		ReferenceHolder<Integer, Object> dataHolder = ReferenceHolder.create();
 		
 		// Find forEach method calls
-		HelperVisitor.callMethodInvocationVisitor("forEach", compilationUnit, dataHolder, nodesprocessed, //$NON-NLS-1$
+		HelperVisitorFactory.callMethodInvocationVisitor("forEach", compilationUnit, dataHolder, nodesprocessed, //$NON-NLS-1$
 			(visited, aholder) -> {
 				// Check if this is collection.forEach(...) or collection.stream().forEach(...)
 				if (visited.arguments().size() != 1) {

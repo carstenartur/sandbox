@@ -61,7 +61,7 @@ public class FilesWriteStringExplicitEncoding extends AbstractExplicitEncoding<M
 		}
 		ReferenceHolder<ASTNode, Object> datah = ReferenceHolder.createForNodes();
 		getCharsetConstants().clear();
-		HelperVisitor.forMethodCall(Files.class, METHOD_WRITE_STRING)
+		HelperVisitorFactory.forMethodCall(Files.class, METHOD_WRITE_STRING)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

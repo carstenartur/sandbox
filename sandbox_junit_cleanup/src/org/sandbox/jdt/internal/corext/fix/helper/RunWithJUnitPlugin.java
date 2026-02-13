@@ -49,7 +49,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
 		
 		// Find @RunWith annotations
-		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {
@@ -60,7 +60,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 			});
 		
 		// Find @Suite.SuiteClasses annotations
-		HelperVisitor.forAnnotation(ORG_JUNIT_SUITE_SUITECLASSES)
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_SUITE_SUITECLASSES)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {

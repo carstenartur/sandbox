@@ -53,7 +53,7 @@ public class FilesNewBufferedReaderExplicitEncoding extends AbstractExplicitEnco
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah = ReferenceHolder.createForNodes();
 		getCharsetConstants().clear();
-		HelperVisitor.forMethodCall(Files.class, METHOD_NEW_BUFFERED_READER)
+		HelperVisitorFactory.forMethodCall(Files.class, METHOD_NEW_BUFFERED_READER)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

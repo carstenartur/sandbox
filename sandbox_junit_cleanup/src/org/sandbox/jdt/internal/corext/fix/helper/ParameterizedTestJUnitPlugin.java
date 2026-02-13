@@ -73,7 +73,7 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 		
 		// Find @RunWith(Parameterized.class) annotations
-		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {

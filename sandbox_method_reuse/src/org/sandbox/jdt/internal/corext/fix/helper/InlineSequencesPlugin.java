@@ -61,7 +61,7 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 		// Use HelperVisitor to visit all methods in the compilation unit
 		ReferenceHolder<Integer, Object> dataholder = new ReferenceHolder<>();
 		
-		HelperVisitor.callMethodDeclarationVisitor(compilationUnit, dataholder, nodesprocessed,
+		HelperVisitorFactory.callMethodDeclarationVisitor(compilationUnit, dataholder, nodesprocessed,
 				(node, holder) -> {
 					// Search for inline sequences matching this method
 					List<InlineSequenceMatch> matches = InlineCodeSequenceFinder.findInlineSequences(compilationUnit, node);

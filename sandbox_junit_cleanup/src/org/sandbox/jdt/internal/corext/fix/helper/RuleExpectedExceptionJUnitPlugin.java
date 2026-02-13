@@ -77,7 +77,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitor.forField()
+		HelperVisitorFactory.forField()
 			.withAnnotation(ORG_JUNIT_RULE)
 			.ofType(ORG_JUNIT_RULES_EXPECTED_EXCEPTION)
 			.in(compilationUnit)

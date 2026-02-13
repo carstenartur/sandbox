@@ -50,7 +50,7 @@ public abstract class AbstractTestAnnotationParameterPlugin extends AbstractTool
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitor.forAnnotation(ORG_JUNIT_TEST)
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_TEST)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {

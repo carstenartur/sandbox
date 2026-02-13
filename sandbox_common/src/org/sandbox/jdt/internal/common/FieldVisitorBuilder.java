@@ -23,7 +23,7 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
  * <p><b>Example Usage:</b></p>
  * <pre>
  * // Field with annotation and type
- * HelperVisitor.forField()
+ * HelperVisitorFactory.forField()
  *     .withAnnotation("org.junit.Rule")
  *     .ofType("org.junit.rules.TemporaryFolder")
  *     .in(compilationUnit)
@@ -77,7 +77,7 @@ public class FieldVisitorBuilder extends HelperVisitorBuilder<FieldDeclaration> 
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
             BiPredicate<FieldDeclaration, ReferenceHolder<V, H>> processor) {
-        HelperVisitor.callFieldDeclarationVisitor(annotationFQN, typeFQN, compilationUnit,
+        HelperVisitorFactory.callFieldDeclarationVisitor(annotationFQN, typeFQN, compilationUnit,
                 holder, nodesprocessed, processor);
     }
 }

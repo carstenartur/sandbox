@@ -57,7 +57,7 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
-		HelperVisitor.forMethodCall(Properties.class, METHOD_STORE_TO_XML)
+		HelperVisitorFactory.forMethodCall(Properties.class, METHOD_STORE_TO_XML)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

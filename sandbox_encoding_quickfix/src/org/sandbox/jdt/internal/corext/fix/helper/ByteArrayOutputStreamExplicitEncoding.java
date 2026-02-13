@@ -76,7 +76,7 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> holder= new ReferenceHolder<>();
-		HelperVisitor.forMethodCall(ByteArrayOutputStream.class, METHOD_TOSTRING)
+		HelperVisitorFactory.forMethodCall(ByteArrayOutputStream.class, METHOD_TOSTRING)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(holder, (visited, aholder) -> processFoundNode(fixcore, operations, cb, visited, aholder));

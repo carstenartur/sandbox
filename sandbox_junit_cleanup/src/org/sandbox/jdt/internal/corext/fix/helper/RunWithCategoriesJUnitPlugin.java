@@ -83,7 +83,7 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
 		
 		// Find @RunWith(Categories.class) annotations
-		HelperVisitor.forAnnotation(ORG_JUNIT_RUNWITH)
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {

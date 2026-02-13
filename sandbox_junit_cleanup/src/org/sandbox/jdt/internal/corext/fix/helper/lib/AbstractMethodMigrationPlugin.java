@@ -93,7 +93,7 @@ public abstract class AbstractMethodMigrationPlugin extends AbstractTool<Referen
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitor.forMethodCalls(getSourceClass(), getMethodNames())
+		HelperVisitorFactory.forMethodCalls(getSourceClass(), getMethodNames())
 			.andStaticImports()
 			.andImportsOf(getSourceClass())
 			.in(compilationUnit)

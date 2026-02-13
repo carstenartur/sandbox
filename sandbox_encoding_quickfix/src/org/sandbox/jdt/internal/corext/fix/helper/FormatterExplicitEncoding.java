@@ -71,7 +71,7 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
-		HelperVisitor.forClassInstanceCreation(Formatter.class)
+		HelperVisitorFactory.forClassInstanceCreation(Formatter.class)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

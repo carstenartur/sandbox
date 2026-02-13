@@ -58,7 +58,7 @@ public class FilesReadStringExplicitEncoding extends AbstractExplicitEncoding<Me
 		}
 		ReferenceHolder<ASTNode, Object> datah = ReferenceHolder.createForNodes();
 		getCharsetConstants().clear();
-		HelperVisitor.forMethodCall(Files.class, METHOD_READ_STRING)
+		HelperVisitorFactory.forMethodCall(Files.class, METHOD_READ_STRING)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

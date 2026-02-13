@@ -23,7 +23,7 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
  * <p><b>Example Usage:</b></p>
  * <pre>
  * // Find all "new String(...)" constructions
- * HelperVisitor.forClassInstanceCreation(String.class)
+ * HelperVisitorFactory.forClassInstanceCreation(String.class)
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
  *     .processEach(holder, (creation, h) -&gt; {
@@ -51,7 +51,7 @@ public class ClassInstanceCreationVisitorBuilder extends HelperVisitorBuilder<Cl
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
             BiPredicate<ClassInstanceCreation, ReferenceHolder<V, H>> processor) {
-        HelperVisitor.callClassInstanceCreationVisitor(targetClass, compilationUnit,
+        HelperVisitorFactory.callClassInstanceCreationVisitor(targetClass, compilationUnit,
                 holder, nodesprocessed, processor);
     }
 }

@@ -79,7 +79,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         
         // Use BiPredicate (visit) and BiConsumer (endVisit) for tree-based analysis
         ReferenceHolder<ASTNode, Object> dataHolder = ReferenceHolder.create();
-        HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
+        HelperVisitorFactory.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,
                 // Visit (BiPredicate): pushLoop and continue traversal
                 (visited, holder) -> visitLoop(visited, treeHolder, nodesprocessed, holder),
                 // EndVisit (BiConsumer): popLoop and make conversion decision

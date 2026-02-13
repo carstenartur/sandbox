@@ -54,7 +54,7 @@ public class FilesReadAllLinesExplicitEncoding extends AbstractExplicitEncoding<
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah = ReferenceHolder.createForNodes();
 		getCharsetConstants().clear();
-		HelperVisitor.forMethodCall(Files.class, METHOD_READ_ALL_LINES)
+		HelperVisitorFactory.forMethodCall(Files.class, METHOD_READ_ALL_LINES)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

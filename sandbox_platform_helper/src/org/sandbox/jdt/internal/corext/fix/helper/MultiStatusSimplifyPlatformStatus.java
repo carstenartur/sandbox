@@ -83,7 +83,7 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 			boolean preservePluginId) throws CoreException {
 		try {
 			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
-			HelperVisitor.forClassInstanceCreation(MultiStatus.class)
+			HelperVisitorFactory.forClassInstanceCreation(MultiStatus.class)
 				.in(compilationUnit)
 				.excluding(nodesprocessed)
 				.processEach(dataholder, (visited, holder) -> {

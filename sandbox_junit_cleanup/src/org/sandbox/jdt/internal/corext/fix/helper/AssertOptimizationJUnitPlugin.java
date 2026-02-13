@@ -87,7 +87,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		// The optimization for JUnit 4 assertions should be done within the migration itself.
 		
 		// Find assertTrue and assertFalse calls for optimization (JUnit 5)
-		HelperVisitor.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSERTIONS, Set.of("assertTrue", "assertFalse"))
+		HelperVisitorFactory.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSERTIONS, Set.of("assertTrue", "assertFalse"))
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {
@@ -99,7 +99,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			});
 		
 		// Find assertion calls with expected/actual parameters for parameter order correction (JUnit 5)
-		HelperVisitor.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHODS_WITH_EXPECTED_ACTUAL)
+		HelperVisitorFactory.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHODS_WITH_EXPECTED_ACTUAL)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> {

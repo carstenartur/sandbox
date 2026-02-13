@@ -23,7 +23,7 @@ import org.eclipse.jdt.core.dom.ImportDeclaration;
  * <p><b>Example Usage:</b></p>
  * <pre>
  * // Single import
- * HelperVisitor.forImport("org.junit.Assert")
+ * HelperVisitorFactory.forImport("org.junit.Assert")
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
  *     .processEach((importDecl, holder) -&gt; addOperation(importDecl));
@@ -48,7 +48,7 @@ public class ImportVisitorBuilder extends HelperVisitorBuilder<ImportDeclaration
     @Override
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
             BiPredicate<ImportDeclaration, ReferenceHolder<V, H>> processor) {
-        HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
+        HelperVisitorFactory.callImportDeclarationVisitor(importFQN, compilationUnit,
                 holder, nodesprocessed, processor);
     }
 }

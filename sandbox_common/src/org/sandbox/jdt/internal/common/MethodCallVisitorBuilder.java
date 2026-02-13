@@ -24,7 +24,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
  * <p><b>Example Usage:</b></p>
  * <pre>
  * // Single method
- * HelperVisitor.forMethodCall("org.junit.Assert", "assertTrue")
+ * HelperVisitorFactory.forMethodCall("org.junit.Assert", "assertTrue")
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
  *     .processEach((methodInv, holder) -&gt; {
@@ -33,7 +33,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
  *     });
  *     
  * // Multiple methods with imports
- * HelperVisitor.forMethodCalls("org.junit.Assert", ALL_ASSERTION_METHODS)
+ * HelperVisitorFactory.forMethodCalls("org.junit.Assert", ALL_ASSERTION_METHODS)
  *     .andStaticImports()
  *     .andImportsOf("org.junit.Assert")
  *     .in(compilationUnit)
@@ -113,26 +113,26 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
         // Visit method invocations for each method name
         if (typeFQN != null) {
             methodNames.forEach(methodName -> {
-                HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,
+                HelperVisitorFactory.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,
                         holder, nodesprocessed, (node, h) -> processor.test(node, h));
             });
             
             // Optionally include static imports for each method
             if (includeStaticImports) {
                 methodNames.forEach(methodName -> {
-                    HelperVisitor.callImportDeclarationVisitor(typeFQN + "." + methodName, //$NON-NLS-1$
+                    HelperVisitorFactory.callImportDeclarationVisitor(typeFQN + "." + methodName, //$NON-NLS-1$
                             compilationUnit, holder, nodesprocessed, (node, h) -> processor.test(node, h));
                 });
             }
             
             // Optionally include the regular import
             if (importFQN != null) {
-                HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
+                HelperVisitorFactory.callImportDeclarationVisitor(importFQN, compilationUnit,
                         holder, nodesprocessed, (node, h) -> processor.test(node, h));
             }
         } else if (typeClass != null) {
             methodNames.forEach(methodName -> {
-                HelperVisitor.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,
+                HelperVisitorFactory.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,
                         holder, nodesprocessed, (node, h) -> processor.test(node, h));
             });
             
@@ -142,13 +142,13 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
                 
                 if (includeStaticImports) {
                     methodNames.forEach(methodName -> {
-                        HelperVisitor.callImportDeclarationVisitor(classFQN + "." + methodName, //$NON-NLS-1$
+                        HelperVisitorFactory.callImportDeclarationVisitor(classFQN + "." + methodName, //$NON-NLS-1$
                                 compilationUnit, holder, nodesprocessed, (node, h) -> processor.test(node, h));
                     });
                 }
                 
                 if (importFQN != null) {
-                    HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,
+                    HelperVisitorFactory.callImportDeclarationVisitor(importFQN, compilationUnit,
                             holder, nodesprocessed, (node, h) -> processor.test(node, h));
                 }
             }

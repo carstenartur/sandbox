@@ -51,7 +51,7 @@ public class StringGetBytesExplicitEncoding extends AbstractExplicitEncoding<Met
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
-		HelperVisitor.forMethodCall(String.class, METHOD_GET_BYTES)
+		HelperVisitorFactory.forMethodCall(String.class, METHOD_GET_BYTES)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(datah, (visited, holder) -> processFoundNode(fixcore, operations, cb, visited, holder));

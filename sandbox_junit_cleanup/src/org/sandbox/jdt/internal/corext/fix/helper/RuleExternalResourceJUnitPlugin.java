@@ -66,7 +66,7 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
 		
 		// Find @Rule fields with ExternalResource type
-		HelperVisitor.forField()
+		HelperVisitorFactory.forField()
 			.withAnnotation(ORG_JUNIT_RULE)
 			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
 			.in(compilationUnit)
@@ -74,7 +74,7 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 		
 		// Find @ClassRule fields with ExternalResource type
-		HelperVisitor.forField()
+		HelperVisitorFactory.forField()
 			.withAnnotation(ORG_JUNIT_CLASS_RULE)
 			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
 			.in(compilationUnit)

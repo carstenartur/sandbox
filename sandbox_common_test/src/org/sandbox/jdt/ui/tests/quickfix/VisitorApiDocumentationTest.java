@@ -494,7 +494,7 @@ public class VisitorApiDocumentationTest {
 	 * 
 	 * <h3>Method: callVisitor()</h3>
 	 * <pre>
-	 * HelperVisitor.callVisitor(
+	 * HelperVisitorFactory.callVisitor(
 	 *     astNode,              // Where to start
 	 *     nodeTypes,            // EnumSet of types to visit
 	 *     dataHolder,           // ReferenceHolder for data
@@ -512,9 +512,9 @@ public class VisitorApiDocumentationTest {
 	 * 
 	 * <h3>Type-Specific Static Methods</h3>
 	 * <pre>
-	 * HelperVisitor.callMethodInvocationVisitor(name, astNode, data, null, callback);
-	 * HelperVisitor.callWhileStatementVisitor(astNode, data, null, callback);
-	 * HelperVisitor.callVariableDeclarationStatementVisitor(type, astNode, data, null, callback);
+	 * HelperVisitorFactory.callMethodInvocationVisitor(name, astNode, data, null, callback);
+	 * HelperVisitorFactory.callWhileStatementVisitor(astNode, data, null, callback);
+	 * HelperVisitorFactory.callVariableDeclarationStatementVisitor(type, astNode, data, null, callback);
 	 * </pre>
 	 */
 	@Test
@@ -524,7 +524,7 @@ public class VisitorApiDocumentationTest {
 		ReferenceHolder<String, Integer> data = new ReferenceHolder<>();
 		
 		// Static method approach
-		HelperVisitor.callVisitor(
+		HelperVisitorFactory.callVisitor(
 			cunit,
 			EnumSet.of(VisitorEnum.MethodInvocation, VisitorEnum.FieldDeclaration),
 			data,

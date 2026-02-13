@@ -1,31 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
 package org.sandbox.jdt.internal.common;
 
-/*-
- * #%L
- * Sandbox common
- * %%
- * Copyright (C) 2024 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- * 
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- * 
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
-
-
-import java.util.AbstractMap;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
@@ -33,66 +21,208 @@ import java.util.function.BiPredicate;
 import org.eclipse.jdt.core.dom.*;
 
 /**
- * This class allows to use Lambda expressions for building up your visitor processing
- *
+ * Factory class containing static factory methods and convenience methods for creating
+ * and invoking {@link HelperVisitor} instances.
+ * 
+ * <p>This class was extracted from {@link HelperVisitor} to reduce its size and improve
+ * separation of concerns. It provides:</p>
+ * <ul>
+ * <li><b>Factory methods</b> ({@code forXxx()}) - Create fluent builder instances for common visitor patterns</li>
+ * <li><b>Convenience methods</b> ({@code callXxxVisitor()}) - One-shot visitor invocations for specific AST node types</li>
+ * </ul>
+ * 
  * @author chammer
- *
- * @param <E>
- * @param <V>
- * @param <T>
- * @since 1.15
+ * @since 1.17
  */
-public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
+public class HelperVisitorFactory {
 
 	/**
-	 *
+	 * Private constructor to prevent instantiation.
 	 */
-	public static final String TYPEOF = "typeof"; //$NON-NLS-1$
+	private HelperVisitorFactory() {
+		// Static utility class
+	}
 
 	/**
-	 * Key used to match type by fully qualified class name (as String) instead of Class object.
-	 * This avoids deprecation warnings when the type being matched is deprecated.
-	 * @since 1.2.5
-	 */
-	public static final String TYPEOF_BYNAME = "typeof_byname"; //$NON-NLS-1$
-
-	/**
-	 *
-	 */
-	public static final String METHODNAME = "methodname"; //$NON-NLS-1$
-	/**
+	 * Creates a fluent builder for visiting annotations of all types.
 	 * 
+	 * <p>This method matches <b>all annotation types</b> regardless of whether they have parameters:</p>
+	 * <ul>
+	 * <li>{@code MarkerAnnotation} - annotations without parameters (e.g., {@code @Override})</li>
+	 * <li>{@code SingleMemberAnnotation} - annotations with a single value (e.g., {@code @SuppressWarnings("unchecked")})</li>
+	 * <li>{@code NormalAnnotation} - annotations with named parameters (e.g., {@code @RequestMapping(path="/api", method=GET)})</li>
+	 * </ul>
+	 * 
+	 * <p><b>Note:</b> This differs from the underlying {@code callMarkerAnnotationVisitor()} method, 
+	 * which only matches {@code MarkerAnnotation} nodes. This fluent API provides a more intuitive 
+	 * interface by automatically handling all annotation types.</p>
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * // Matches @Deprecated (MarkerAnnotation), @SuppressWarnings("unchecked") (SingleMemberAnnotation), etc.
+	 * HelperVisitorFactory.forAnnotation("java.lang.Deprecated")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param annotationFQN the fully qualified name of the annotation to find
+	 * @return a fluent builder for annotation visitors that matches all annotation types
+	 * @since 1.15
 	 */
-	public static final String ANNOTATIONNAME = "annotationname"; //$NON-NLS-1$
+	public static AnnotationVisitorBuilder forAnnotation(String annotationFQN) {
+		return new AnnotationVisitorBuilder(annotationFQN);
+	}
+
+	/**
+	 * Creates a fluent builder for visiting multiple method invocations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitorFactory.forMethodCalls("org.junit.Assert", ALL_ASSERTION_METHODS)
+	 *     .andStaticImports()
+	 *     .andImportsOf("org.junit.Assert")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param typeFQN the fully qualified name of the type containing the methods
+	 * @param methodNames the set of method names to find
+	 * @return a fluent builder for method invocation visitors
+	 * @since 1.15
+	 */
+	public static MethodCallVisitorBuilder forMethodCalls(String typeFQN, Set<String> methodNames) {
+		return new MethodCallVisitorBuilder(typeFQN, methodNames);
+	}
+
+	/**
+	 * Creates a fluent builder for visiting a single method invocation.
+	 * 
+	 * <p>This method returns a type-safe builder where the processor receives 
+	 * {@code MethodInvocation} directly, without requiring casts.</p>
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitorFactory.forMethodCall("org.junit.Assert", "assertTrue")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((methodInv, holder) -&gt; {
+	 *         // methodInv is MethodInvocation - no cast needed!
+	 *         processNode(methodInv, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param typeFQN the fully qualified name of the type containing the method
+	 * @param methodName the method name to find
+	 * @return a fluent builder for method invocation visitors
+	 * @since 1.15
+	 */
+	public static SimpleMethodCallVisitorBuilder forMethodCall(String typeFQN, String methodName) {
+		return new SimpleMethodCallVisitorBuilder(typeFQN, methodName);
+	}
 	
 	/**
+	 * Creates a fluent builder for visiting a single method invocation using a Class object.
 	 * 
-	 */
-	public static final String IMPORT = "import";  //$NON-NLS-1$
-	/**
+	 * <p>This method returns a type-safe builder where the processor receives 
+	 * {@code MethodInvocation} directly, without requiring casts.</p>
 	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitorFactory.forMethodCall(String.class, "getBytes")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((methodInv, holder) -&gt; {
+	 *         // methodInv is MethodInvocation - no cast needed!
+	 *         processNode(methodInv, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param typeClass the class containing the method
+	 * @param methodName the method name to find
+	 * @return a fluent builder for method invocation visitors
+	 * @since 1.16
 	 */
-	public static final String SUPERCLASSNAME = "superclassname";  //$NON-NLS-1$
+	public static SimpleMethodCallVisitorBuilder forMethodCall(Class<?> typeClass, String methodName) {
+		return new SimpleMethodCallVisitorBuilder(typeClass, methodName);
+	}
+	
 	/**
-	 *
+	 * Creates a fluent builder for visiting class instance creation expressions (new expressions).
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * // Find all "new String(...)" constructions
+	 * HelperVisitorFactory.forClassInstanceCreation(String.class)
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach(holder, (creation, h) -&gt; {
+	 *         processStringCreation(creation, h);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param targetClass the class to match (e.g., String.class, FileReader.class)
+	 * @return a fluent builder for class instance creation visitors
+	 * @since 1.16
 	 */
-	public static final String PARAMTYPENAMES = "paramtypenames"; //$NON-NLS-1$
+	public static ClassInstanceCreationVisitorBuilder forClassInstanceCreation(Class<?> targetClass) {
+		return new ClassInstanceCreationVisitorBuilder(targetClass);
+	}
+
 	/**
-	 * Key used for matching the operator of expressions (for example,
-	 * {@link Assignment} and {@link InfixExpression}) when filtering nodes by
-	 * operator type.
+	 * Creates a fluent builder for visiting field declarations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitorFactory.forField()
+	 *     .withAnnotation("org.junit.Rule")
+	 *     .ofType("org.junit.rules.TemporaryFolder")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @return a fluent builder for field declaration visitors
+	 * @since 1.15
 	 */
-	public static final String OPERATOR = "operator"; //$NON-NLS-1$
+	public static FieldVisitorBuilder forField() {
+		return new FieldVisitorBuilder();
+	}
+
 	/**
-	 * Key used for matching the (fully qualified) name of a type associated with
-	 * a node when building or evaluating visitor predicates.
+	 * Creates a fluent builder for visiting import declarations.
+	 * 
+	 * <p><b>Example:</b></p>
+	 * <pre>
+	 * HelperVisitorFactory.forImport("org.junit.Assert")
+	 *     .in(compilationUnit)
+	 *     .excluding(nodesprocessed)
+	 *     .processEach((node, holder) -&gt; {
+	 *         processNode(node, holder);
+	 *         return true;
+	 *     });
+	 * </pre>
+	 * 
+	 * @param importFQN the fully qualified name of the import to find
+	 * @return a fluent builder for import declaration visitors
+	 * @since 1.15
 	 */
-	public static final String TYPENAME = "typename"; //$NON-NLS-1$
-	/**
-	 * Key used for matching the type of an exception in constructs such as
-	 * {@code throws} declarations or {@link CatchClause} nodes.
-	 */
-	public static final String EXCEPTIONTYPE = "exceptiontype"; //$NON-NLS-1$
+	public static ImportVisitorBuilder forImport(String importFQN) {
+		return new ImportVisitorBuilder(importFQN);
+	}
 
 	ASTVisitor astvisitor;
 
@@ -9303,15 +9433,4 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 		hv.addYieldStatement(bs, bc);
 		hv.build(node);
 	}
-
-	/**
-	 *
-	 */
-	public void clear() {
-		this.consumermap.clear();
-		this.consumerdata.clear();
-		this.predicatemap.clear();
-		this.predicatedata.clear();
-	}
-
 }

@@ -57,7 +57,7 @@ public class AssumeOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		// Processing JUnit 4 here would conflict with the migration rewrites.
 		
 		// Find assumeTrue and assumeFalse calls in JUnit 5 only
-		HelperVisitor.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, Set.of("assumeTrue", "assumeFalse"))
+		HelperVisitorFactory.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, Set.of("assumeTrue", "assumeFalse"))
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(dataHolder, (visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
