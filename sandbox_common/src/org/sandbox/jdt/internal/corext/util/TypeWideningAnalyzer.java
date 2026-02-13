@@ -188,6 +188,11 @@ public final class TypeWideningAnalyzer {
 				continue;
 			}
 
+			// Don't widen if the variable has no actual usage (no method calls, no field access)
+			if (usageInfo.usedMethodSignatures.isEmpty() && usageInfo.usedFields.isEmpty()) {
+				continue;
+			}
+
 			ITypeBinding widenedType = findMostGeneralType(declInfo.typeBinding,
 					usageInfo.usedMethodSignatures, usageInfo.usedFields);
 
@@ -277,7 +282,7 @@ public final class TypeWideningAnalyzer {
 		ITypeBinding mostGeneral = currentType;
 
 		ITypeBinding superclass = currentType.getSuperclass();
-		if (superclass != null && declaresAllMembers(currentType, superclass, usedMethodSignatures, usedFields)) {
+		if (superclass != null && !isJavaLangObject(superclass) && declaresAllMembers(currentType, superclass, usedMethodSignatures, usedFields)) {
 			ITypeBinding candidate = findMostGeneralType(superclass, usedMethodSignatures, usedFields);
 			if (candidate != null) {
 				mostGeneral = candidate;
@@ -285,12 +290,33 @@ public final class TypeWideningAnalyzer {
 		}
 
 		for (ITypeBinding iface : currentType.getInterfaces()) {
+			// Skip tagging/marker interfaces (e.g., Serializable, Cloneable, RandomAccess)
+			if (isTaggingInterface(iface)) {
+				continue;
+			}
 			if (declaresAllMembers(currentType, iface, usedMethodSignatures, usedFields)) {
 				mostGeneral = iface;
 			}
 		}
 
 		return mostGeneral;
+	}
+
+	/**
+	 * Checks if a type is a tagging/marker interface (has no declared methods).
+	 */
+	private static boolean isTaggingInterface(ITypeBinding type) {
+		if (type == null || !type.isInterface()) {
+			return false;
+		}
+		return type.getDeclaredMethods().length == 0;
+	}
+
+	/**
+	 * Checks if a type is java.lang.Object.
+	 */
+	private static boolean isJavaLangObject(ITypeBinding type) {
+		return type != null && "java.lang.Object".equals(type.getQualifiedName()); //$NON-NLS-1$
 	}
 
 	/**
