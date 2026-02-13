@@ -1,5 +1,3 @@
-package org.sandbox.jdt.internal.common;
-
 /*******************************************************************************
  * Copyright (c) 2026 Carsten Hammer.
  *
@@ -13,6 +11,7 @@ package org.sandbox.jdt.internal.common;
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
+package org.sandbox.jdt.internal.common;
 
 import java.util.Arrays;
 

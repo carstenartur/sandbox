@@ -155,4 +155,21 @@ class VisitorConfigDataTest {
 		// Second config should have the new value
 		assertEquals("test2", config2.getMethodName()); //$NON-NLS-1$
 	}
+
+	@Test
+	void testArrayDefensiveCopy() {
+		String[] original = {"Type1", "Type2"}; //$NON-NLS-1$ //$NON-NLS-2$
+		VisitorConfigData config = VisitorConfigData.builder()
+				.paramTypeNames(original)
+				.build();
+		
+		// Modify original - should not affect config
+		original[0] = "Modified"; //$NON-NLS-1$
+		assertArrayEquals(new String[] {"Type1", "Type2"}, config.getParamTypeNames()); //$NON-NLS-1$ //$NON-NLS-2$
+		
+		// Modify returned array - should not affect config
+		String[] returned = config.getParamTypeNames();
+		returned[0] = "Modified2"; //$NON-NLS-1$
+		assertArrayEquals(new String[] {"Type1", "Type2"}, config.getParamTypeNames()); //$NON-NLS-1$ //$NON-NLS-2$
+	}
 }
