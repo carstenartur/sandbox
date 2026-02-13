@@ -51,6 +51,13 @@
   <unit id="bcpkix" version="1.81.0"/>
   <unit id="bcpg"  version="1.81.0"/>
 </location>
+
+        <!-- 7. SWTBot Testing Framework -->
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/technology/swtbot/releases/latest/"/>
+            <unit id="org.eclipse.swtbot.eclipse.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.swtbot.feature.group" version="0.0.0"/>
+        </location>
     </locations>
 
 </target>

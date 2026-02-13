@@ -18,6 +18,7 @@
 - ✅ AST-based variable binding collection using AstProcessorBuilder
 - ✅ Proper error logging with Eclipse ILog
 - ✅ Support for analyzing projects, packages, and compilation units
+- ✅ SWTBot UI test infrastructure (via -Pswtbot profile)
 
 ### In Progress
 - None currently
