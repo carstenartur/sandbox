@@ -11,13 +11,12 @@ Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
 Import-Package: org.junit.jupiter.api;version="5.7.1",
  org.junit.jupiter.api.extension;version="5.7.1",
- org.junit.jupiter.api.io;version="5.7.1",
- org.eclipse.swtbot.swt.finder;resolution:=optional,
- org.eclipse.swtbot.eclipse.finder;resolution:=optional,
- org.eclipse.swtbot.eclipse.finder.widgets;resolution:=optional
+ org.junit.jupiter.api.io;version="5.7.1"
 Require-Bundle: sandbox_test_commons,
  org.eclipse.jdt.core,
  org.eclipse.jdt.core.manipulation,
  org.eclipse.core.resources,
- org.eclipse.core.runtime
+ org.eclipse.core.runtime,
+ org.eclipse.swtbot.swt.finder;resolution:=optional,
+ org.eclipse.swtbot.eclipse.finder;resolution:=optional
 Automatic-Module-Name: sandbox.usage.view.test
