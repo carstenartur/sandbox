@@ -92,6 +92,7 @@ import org.sandbox.jdt.ui.helper.views.colum.DeprecatedColumn;
 import org.sandbox.jdt.ui.helper.views.colum.NameColumn;
 import org.sandbox.jdt.ui.helper.views.colum.PackageColumn;
 import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
+import org.sandbox.jdt.ui.helper.views.colum.WidestTypeColumn;
 
 public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTarget {
 
@@ -122,6 +123,9 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 
 	private IJavaElement currentJavaElementInput = null;
 
+	/** Cache for type widening analysis results, shared between content provider and column */
+	private final TypeWideningCache typeWideningCache = new TypeWideningCache();
+
 	@Override
 	public void createPartControl(Composite parent) {
 		GridLayout layout = new GridLayout(1, false);
@@ -144,10 +148,13 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		variableTable.setHeaderVisible(true);
 		variableTable.setHeaderBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TITLE_BACKGROUND));
 		variableTable.setLinesVisible(true);
-		variableTableViewer.setContentProvider(new JHViewContentProvider());
+		variableTableViewer.setContentProvider(createContentProvider());
+		// Enable tooltip support for the widest type column
+		org.eclipse.jface.viewers.ColumnViewerToolTipSupport.enableFor(variableTableViewer);
 		// This will create the columns for the table with proper weights
 		AbstractColumn.addColumn(variableTableViewer, new NameColumn(), tableColumnLayout);
 		AbstractColumn.addColumn(variableTableViewer, new QualifiednameColumn(), tableColumnLayout);
+		AbstractColumn.addColumn(variableTableViewer, new WidestTypeColumn(typeWideningCache), tableColumnLayout);
 		AbstractColumn.addColumn(variableTableViewer, new PackageColumn(), tableColumnLayout);
 		AbstractColumn.addColumn(variableTableViewer, new DeprecatedColumn(), tableColumnLayout);
 		AbstractColumn.addColumn(variableTableViewer, new DeclaringMethodColumn(), tableColumnLayout);
@@ -164,6 +171,12 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		addEditorPartListener();
 		// Add selection listener to track Package Explorer selections
 		addWorkbenchSelectionListener();
+	}
+
+	private JHViewContentProvider createContentProvider() {
+		JHViewContentProvider contentProvider = new JHViewContentProvider();
+		contentProvider.setTypeWideningCache(typeWideningCache);
+		return contentProvider;
 	}
 
 	private void contributeToActionBars() {
