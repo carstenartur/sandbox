@@ -882,13 +882,13 @@ public class JdtLoopExtractor {
         int nodeStart = node.getStartPosition();
         int nodeEnd = nodeStart + node.getLength();
         int nodeStartLine = cu.getLineNumber(nodeStart);
+        int nodeEndLine = cu.getLineNumber(nodeEnd);
         
         for (Comment comment : commentList) {
             int commentStart = comment.getStartPosition();
             int commentEnd = commentStart + comment.getLength();
             int commentStartLine = cu.getLineNumber(commentStart);
             int commentEndLine = cu.getLineNumber(commentEnd);
-            int nodeEndLine = cu.getLineNumber(nodeEnd);
             
             // Associate comments that are:
             // 1. On the line immediately before the node, OR

@@ -83,7 +83,7 @@ For detailed examples and technical information, see [COMMENT_PRESERVATION.md](C
   - Comments appear in generated block lambdas
   - Full support for enhanced-for loops to streams
   - Bidirectional transformations preserve loop body comments
-  - See [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md) and [FAQ.md](FAQ.md#was-ist-mit-inline-kommentaren--what-about-inline-comments) for details
+  - See [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md) and [FAQ.md](FAQ.md#q-was-ist-mit-inline-kommentaren--what-about-inline-comments) for details
 
 ## Target Format Selection (New!)
 

@@ -169,7 +169,7 @@ All documentation now reflects inline/trailing comment support:
 
 ## References
 
-- [FAQ: Inline Comments](FAQ.md#was-ist-mit-inline-kommentaren--what-about-inline-comments)
+- [FAQ: Inline Comments](FAQ.md#q-was-ist-mit-inline-kommentaren--what-about-inline-comments)
 - [Comment Preservation Guide](COMMENT_PRESERVATION.md)
 - [Examples](EXAMPLES.md)
 - [Tests](../sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/CommentPreservationIntegrationTest.java)
