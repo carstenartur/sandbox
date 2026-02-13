@@ -169,6 +169,14 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 					return true;
 				}
 				
+				// Skip multi-fragment declarations (e.g., "ImageData a = ..., b = ...;")
+				// These are too complex to safely transform
+				@SuppressWarnings("unchecked")
+				List<VariableDeclarationFragment> declFragments = varDecl.fragments();
+				if (declFragments.size() != 1) {
+					return true;
+				}
+				
 				// Check that the ImageData variable is referenced exactly once (excluding its declaration)
 				// This ensures it's safe to remove the variable declaration
 				int usageCount = countVariableReferences(imageDataVar);

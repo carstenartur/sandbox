@@ -895,13 +895,14 @@ public class Test {
 package test;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageDataProvider;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.RGB;
 public class Test {
 	public Image createPattern(Device device) {
 		PaletteData palette = new PaletteData(new RGB(0, 0, 0));
-		Image image = new Image(device, (ImageDataProvider) zoom -> {
+		Image image = new Image(device, (ImageDataProvider) (zoom) -> {
 			return new ImageData(1, 1, 1, palette);
 		});
 		return image;
@@ -1016,18 +1017,19 @@ public class Test {
 package test;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageDataProvider;
 import org.eclipse.swt.graphics.PaletteData;
 import org.eclipse.swt.graphics.RGB;
 public class Test {
 	public void createPatterns(Device device) {
 		PaletteData palette1 = new PaletteData(new RGB(0, 0, 0));
-		Image image1 = new Image(device, (ImageDataProvider) zoom -> {
+		Image image1 = new Image(device, (ImageDataProvider) (zoom) -> {
 			return new ImageData(1, 1, 1, palette1);
 		});
 		
 		PaletteData palette2 = new PaletteData(new RGB(255, 255, 255));
-		Image image2 = new Image(device, (ImageDataProvider) zoom -> {
+		Image image2 = new Image(device, (ImageDataProvider) (zoom) -> {
 			return new ImageData(2, 2, 1, palette2);
 		});
 	}
