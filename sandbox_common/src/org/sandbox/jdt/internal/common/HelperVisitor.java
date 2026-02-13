@@ -214,13 +214,13 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	/**
 	 * @deprecated Use {@link #add(VisitorConfigData, VisitorEnum, BiPredicate)} instead.
 	 *             This method is provided for backward compatibility only.
-	 * @param object legacy object parameter (ignored, pass null)
-	 * @param key
-	 * @param bs
+	 * @param unused legacy parameter (ignored, any value passed will be discarded)
+	 * @param key the visitor enum key
+	 * @param bs the predicate to register
 	 * @return old BiPredicate assigned to key
 	 */
 	@Deprecated
-	public BiPredicate<? extends ASTNode, E> add(Object object, VisitorEnum key, BiPredicate<? extends ASTNode, E> bs) {
+	public BiPredicate<? extends ASTNode, E> add(Object unused, VisitorEnum key, BiPredicate<? extends ASTNode, E> bs) {
 		// For backward compatibility, store an empty VisitorConfigData to avoid NPE
 		this.predicatedata.put(key, VisitorConfigData.builder().build());
 		return predicatemap.put(key, bs);
