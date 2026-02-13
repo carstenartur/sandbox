@@ -302,7 +302,20 @@ public class UseGeneralTypeCleanUpTest {
 				""",
 				false, null);
 		context.enable(MYCleanUpConstants.USE_GENERAL_TYPE_CLEANUP);
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {
+				"""
+				package test;
+				import java.util.Deque;
+				import java.util.LinkedList;
+				
+				public class Test {
+				    public void method() {
+				        Deque<String> list = new LinkedList<>();
+				        list.addFirst("a");
+				    }
+				}
+				"""
+		}, null);
 	}
 
 	@Test
@@ -428,6 +441,19 @@ public class UseGeneralTypeCleanUpTest {
 				""",
 				false, null);
 		context.enable(MYCleanUpConstants.USE_GENERAL_TYPE_CLEANUP);
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {
+				"""
+				package test;
+				import java.util.ArrayList;
+				import java.util.Collection;
+				
+				public class Test {
+				    public void method() {
+				        Collection<String> list = new ArrayList<>();
+				        list.add("a");
+				    }
+				}
+				"""
+		}, null);
 	}
 }
