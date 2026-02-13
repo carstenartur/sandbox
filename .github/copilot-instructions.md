@@ -166,6 +166,7 @@ The project uses Maven profiles to optimize build times. The "heavy" modules (`s
 | `repo` | With P2 Update Site | `mvn -Prepo verify` |
 | `jacoco` | With Code Coverage + sandbox_coverage module | `mvn -Pjacoco verify` |
 | `web` | With WAR file (sandbox_product + sandbox_web) | `mvn -Dinclude=web verify` |
+| `swtbot` | With SWTBot UI tests | `mvn -Pswtbot verify` |
 
 **Combined profiles for full build:**
 ```bash
@@ -201,6 +202,17 @@ xvfb-run --auto-servernum mvn test -Dtest=Java22CleanUpTest#testSimpleForEachCon
 # Tests are located in modules ending with `_test`
 # Test files use JUnit 5
 ```
+
+#### SWTBot UI Tests
+
+SWTBot-based UI tests are available for `sandbox_usage_view` but excluded from the default build 
+to keep build times fast. To run them:
+
+```bash
+xvfb-run --auto-servernum mvn verify -Pswtbot -pl sandbox_usage_view_test
+```
+
+These tests verify actual UI interactions (opening views, clicking buttons, table operations).
 
 **Common Test Issues**:
 - **Java version mismatch**: Ensure Java 21 is active (`java -version` should show "21")
