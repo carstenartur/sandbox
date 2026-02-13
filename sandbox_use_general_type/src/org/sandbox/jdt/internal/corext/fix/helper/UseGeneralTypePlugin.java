@@ -337,7 +337,8 @@ public class UseGeneralTypePlugin {
 		if (type == null || !type.isInterface()) {
 			return false;
 		}
-		// A tagging/marker interface has no declared methods
+		// A tagging/marker interface has no methods declared directly on the interface itself
+		// (excluding inherited Object methods)
 		return type.getDeclaredMethods().length == 0;
 	}
 
