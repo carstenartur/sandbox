@@ -15,6 +15,7 @@ package org.sandbox.jdt.ui.helper.views;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
@@ -117,8 +118,7 @@ public class JavaHelperViewSWTBotTest {
             // Toggle back
             linkButton.click();
         } catch (WidgetNotFoundException e) {
-            // Button might have different tooltip, try finding by index
-            // This is a fallback - the test documents expected behavior
+            fail("Link with Selection button not found: " + e.getMessage()); //$NON-NLS-1$
         }
     }
 
@@ -137,7 +137,7 @@ public class JavaHelperViewSWTBotTest {
             SWTBotToolbarButton filterButton = view.toolbarToggleButton("Filter Naming Conflicts"); //$NON-NLS-1$
             assertNotNull(filterButton, "Filter Naming Conflicts button should exist"); //$NON-NLS-1$
         } catch (WidgetNotFoundException e) {
-            // Button might have different tooltip
+            fail("Filter Naming Conflicts button not found: " + e.getMessage()); //$NON-NLS-1$
         }
     }
 
@@ -159,7 +159,7 @@ public class JavaHelperViewSWTBotTest {
             // Click refresh
             refreshButton.click();
         } catch (WidgetNotFoundException e) {
-            // Button might have different tooltip
+            fail("Refresh button not found: " + e.getMessage()); //$NON-NLS-1$
         }
     }
 
