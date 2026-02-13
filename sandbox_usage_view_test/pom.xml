@@ -62,7 +62,6 @@
 							<excludes />
 							<includes>
 								<include>**/*Test.java</include>
-								<include>**/*SWTBotTest.java</include>
 							</includes>
 							<dependencies>
 								<!-- SWTBot dependencies -->

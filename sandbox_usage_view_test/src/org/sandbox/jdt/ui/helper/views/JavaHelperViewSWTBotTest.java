@@ -24,7 +24,10 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarButton;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * SWTBot UI tests for the JavaHelper View (Usage View).
@@ -36,6 +39,7 @@ import org.junit.jupiter.api.Test;
  * 
  * Run with: mvn verify -Pswtbot -pl sandbox_usage_view_test
  */
+@TestMethodOrder(OrderAnnotation.class)
 public class JavaHelperViewSWTBotTest {
 
     private static SWTWorkbenchBot bot;
@@ -67,6 +71,7 @@ public class JavaHelperViewSWTBotTest {
      * Test that the JavaHelper View can be opened via Show View dialog.
      */
     @Test
+    @Order(1)
     public void testOpenView() {
         // Open the view via menu
         bot.menu("Window").menu("Show View").menu("Other...").click(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -83,6 +88,7 @@ public class JavaHelperViewSWTBotTest {
      * Test that the view contains a table with expected columns.
      */
     @Test
+    @Order(2)
     public void testViewHasTable() {
         openViewIfNeeded();
         
@@ -102,6 +108,7 @@ public class JavaHelperViewSWTBotTest {
      * Test that the Link with Selection toolbar button exists and can be toggled.
      */
     @Test
+    @Order(3)
     public void testLinkWithSelectionToggle() {
         openViewIfNeeded();
         
@@ -126,6 +133,7 @@ public class JavaHelperViewSWTBotTest {
      * Test that the Filter Naming Conflicts toolbar button exists.
      */
     @Test
+    @Order(4)
     public void testFilterNamingConflictsButton() {
         openViewIfNeeded();
         
@@ -145,6 +153,7 @@ public class JavaHelperViewSWTBotTest {
      * Test that the Refresh toolbar button exists.
      */
     @Test
+    @Order(5)
     public void testRefreshButton() {
         openViewIfNeeded();
         
