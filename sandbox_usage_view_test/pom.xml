@@ -29,6 +29,10 @@
 					<skip>false</skip>
 					<useUIHarness>true</useUIHarness>
 					<showEclipseLog>true</showEclipseLog>
+					<!-- Default: Exclude SWTBot tests -->
+					<excludes>
+						<exclude>**/*SWTBotTest.java</exclude>
+					</excludes>
 					<dependencies>
 						<dependency>
 							<type>eclipse-plugin</type>
@@ -42,4 +46,39 @@
 			</plugin>
 		</plugins>
 	</build>
+	
+	<profiles>
+		<!-- SWTBot profile: Include SWTBot tests -->
+		<profile>
+			<id>swtbot</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-surefire-plugin</artifactId>
+						<version>${tycho-version}</version>
+						<configuration>
+							<!-- Include SWTBot tests when profile is active -->
+							<excludes />
+							<includes>
+								<include>**/*Test.java</include>
+								<include>**/*SWTBotTest.java</include>
+							</includes>
+							<dependencies>
+								<!-- SWTBot dependencies -->
+								<dependency>
+									<type>eclipse-plugin</type>
+									<artifactId>org.eclipse.swtbot.eclipse.finder</artifactId>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<artifactId>org.eclipse.swtbot.swt.finder</artifactId>
+								</dependency>
+							</dependencies>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

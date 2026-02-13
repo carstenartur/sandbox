@@ -755,6 +755,16 @@ See README.md for more information.
 				<module>sandbox-benchmarks</module>
 			</modules>
 		</profile>
+		
+		<!-- SWTBot profile: UI tests with SWTBot framework -->
+		<profile>
+			<id>swtbot</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<!-- SWTBot tests are included in sandbox_usage_view_test but skipped by default.
+			     This profile enables them. -->
+		</profile>
 	</profiles>
 </project>
 
