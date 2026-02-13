@@ -14,6 +14,8 @@ package org.sandbox.jdt.internal.common;
  *     Carsten Hammer
  *******************************************************************************/
 
+import java.util.Arrays;
+
 /**
  * Immutable configuration data for visitor predicates and consumers.
  * This class replaces the stringly-typed {@code Map<String, Object>} pattern
@@ -122,10 +124,10 @@ public final class VisitorConfigData {
 	/**
 	 * Gets the parameter type names filter.
 	 * 
-	 * @return the parameter type names, or {@code null} if not set
+	 * @return a defensive copy of the parameter type names, or {@code null} if not set
 	 */
 	public String[] getParamTypeNames() {
-		return paramTypeNames;
+		return paramTypeNames != null ? Arrays.copyOf(paramTypeNames, paramTypeNames.length) : null;
 	}
 	
 	/**
@@ -247,7 +249,7 @@ public final class VisitorConfigData {
 		 * @return this builder
 		 */
 		public Builder paramTypeNames(String[] paramTypeNames) {
-			this.paramTypeNames = paramTypeNames;
+			this.paramTypeNames = paramTypeNames != null ? Arrays.copyOf(paramTypeNames, paramTypeNames.length) : null;
 			return this;
 		}
 		
