@@ -62,6 +62,7 @@ import org.sandbox.ast.api.expr.MethodInvocationExpr;
 import org.sandbox.ast.api.expr.SimpleNameExpr;
 import org.sandbox.ast.api.jdt.JDTConverter;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
 
@@ -80,14 +81,14 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		ReferenceHolder<ASTNode, WhileLoopToChangeHit> dataholder= new ReferenceHolder<>();
 		Map<ASTNode, WhileLoopToChangeHit> operationsMap= new LinkedHashMap<>();
 		WhileLoopToChangeHit invalidHit= new WhileLoopToChangeHit(true);
-		HelperVisitor.callVariableDeclarationStatementVisitor(Iterator.class, compilationUnit, dataholder,
+		HelperVisitorFactory.callVariableDeclarationStatementVisitor(Iterator.class, compilationUnit, dataholder,
 				nodesprocessed, (init_iterator, holder_a) -> {
 					List<Object> computeVarName= computeVarName(init_iterator);
 					MethodInvocation iteratorCall= computeIteratorCall(init_iterator);
 					if (computeVarName != null && iteratorCall != null) {
 						Statement iteratorAssignment= ASTNodes.getFirstAncestorOrNull(iteratorCall,
 								Statement.class);
-						HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder, nodesprocessed,
+						HelperVisitorFactory.callWhileStatementVisitor(init_iterator.getParent(), dataholder, nodesprocessed,
 								(whilestatement, holder) -> {
 									String name= computeNextVarname(whilestatement);
 									if (computeVarName.get(0).equals(name)
@@ -113,7 +114,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 											}
 											operationsMap.put(whilestatement, hit);
 										}
-										HelperVisitor.callMethodInvocationVisitor(whilestatement.getBody(), dataholder,
+										HelperVisitorFactory.callMethodInvocationVisitor(whilestatement.getBody(), dataholder,
 												nodesprocessed, (mi, holder2) -> {
 													String identifier= mi.getExpression() instanceof SimpleName sn ? sn.getIdentifier() : null;
 													if (identifier != null) {
@@ -218,7 +219,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		if (iterBinding == null) {
 			return false;
 		}
-		HelperVisitor.callMethodInvocationVisitor(iterDeclarationParent, dataholder, nodesprocessed, (mi, holder2) -> {
+		HelperVisitorFactory.callMethodInvocationVisitor(iterDeclarationParent, dataholder, nodesprocessed, (mi, holder2) -> {
 			String receiverIdentifier= mi.getExpression() instanceof SimpleName sn ? sn.getIdentifier() : null;
 			if (receiverIdentifier != null && receiverIdentifier.equals(hit.iteratorName)) {
 				if (mi.getStartPosition() < hit.whileStatement.getStartPosition()) {
@@ -311,7 +312,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			Set<ASTNode> nodesprocessed= new HashSet<>();
 			final Object Invalid= new Object();
 			try {
-				HelperVisitor.callAssignmentVisitor(parent, dataholder, nodesprocessed, (assignment, holder2) -> {
+				HelperVisitorFactory.callAssignmentVisitor(parent, dataholder, nodesprocessed, (assignment, holder2) -> {
 					if (assignment.getStartPosition() > node_a.getStartPosition()) {
 						Expression leftSide= assignment.getLeftHandSide();
 						SimpleName sn= ASTNodes.as(leftSide, SimpleName.class);
@@ -359,7 +360,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			Set<ASTNode> nodesprocessed= new HashSet<>();
 			final Object Invalid= new Object();
 			try {
-				HelperVisitor.callAssignmentVisitor(parent, dataholder, nodesprocessed, (assignment, holder2) -> {
+				HelperVisitorFactory.callAssignmentVisitor(parent, dataholder, nodesprocessed, (assignment, holder2) -> {
 					if (assignment.getStartPosition() > node_a.getStartPosition()) {
 						Expression leftSide= assignment.getLeftHandSide();
 						SimpleName sn= ASTNodes.as(leftSide, SimpleName.class);

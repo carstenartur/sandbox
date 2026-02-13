@@ -30,6 +30,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
@@ -93,7 +94,7 @@ public abstract class AbstractMethodMigrationPlugin extends AbstractTool<Referen
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitor.forMethodCalls(getSourceClass(), getMethodNames())
+		HelperVisitorFactory.forMethodCalls(getSourceClass(), getMethodNames())
 			.andStaticImports()
 			.andImportsOf(getSourceClass())
 			.in(compilationUnit)

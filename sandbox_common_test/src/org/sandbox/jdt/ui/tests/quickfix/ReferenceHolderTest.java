@@ -33,6 +33,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.common.VisitorEnum;
 
@@ -168,12 +169,12 @@ public class ReferenceHolderTest {
 	/**
 	 * Demonstrates a simpler approach using callVisitor static method.
 	 * 
-	 * <p>The HelperVisitor.callVisitor() static method provides a more concise
+	 * <p>The HelperVisitorFactory.callVisitor() static method provides a more concise
 	 * way to set up visitors when you don't need the full HelperVisitor API.</p>
 	 * 
 	 * <p><b>Pattern:</b></p>
 	 * <pre>
-	 * HelperVisitor.callVisitor(astNode, nodeTypes, dataHolder, null, callback);
+	 * HelperVisitorFactory.callVisitor(astNode, nodeTypes, dataHolder, null, callback);
 	 * </pre>
 	 * 
 	 * <p><b>When to use:</b> Simple one-off visitors that don't need complex setup.</p>
@@ -181,7 +182,7 @@ public class ReferenceHolderTest {
 	@Test
 	public void testCountingWithStaticMethod() {
 		ReferenceHolder<VisitorEnum, Integer> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callVisitor(cunit1, EnumSet.allOf(VisitorEnum.class), dataholder, null, this::countVisits);
+		HelperVisitorFactory.callVisitor(cunit1, EnumSet.allOf(VisitorEnum.class), dataholder, null, this::countVisits);
 
 		// Print results
 		System.out.println("=== Node Count Statistics (Static Method) ===");
@@ -217,7 +218,7 @@ public class ReferenceHolderTest {
 	@Test
 	public void testCollectingNodePositions() {
 		ReferenceHolder<ASTNode, Integer> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callVisitor(cunit1, EnumSet.of(
+		HelperVisitorFactory.callVisitor(cunit1, EnumSet.of(
 			VisitorEnum.SingleVariableDeclaration,
 			VisitorEnum.VariableDeclarationExpression,
 			VisitorEnum.VariableDeclarationStatement,
@@ -253,7 +254,7 @@ public class ReferenceHolderTest {
 	@Test
 	public void testComplexDataStructures() {
 		ReferenceHolder<ASTNode, Map<String, Object>> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callVisitor(cunit1, EnumSet.of(
+		HelperVisitorFactory.callVisitor(cunit1, EnumSet.of(
 			VisitorEnum.SingleVariableDeclaration,
 			VisitorEnum.VariableDeclarationExpression,
 			VisitorEnum.VariableDeclarationStatement,
@@ -355,7 +356,7 @@ public class ReferenceHolderTest {
 	@Test
 	public void testLazyInitialization() {
 		ReferenceHolder<String, java.util.List<ASTNode>> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callVisitor(cunit1, EnumSet.allOf(VisitorEnum.class), dataholder, null, (node, holder) -> {
+		HelperVisitorFactory.callVisitor(cunit1, EnumSet.allOf(VisitorEnum.class), dataholder, null, (node, holder) -> {
 			String category = VisitorEnum.fromNode(node).name();
 			java.util.List<ASTNode> nodes = holder.computeIfAbsent(category, k -> new java.util.ArrayList<>());
 			nodes.add(node);

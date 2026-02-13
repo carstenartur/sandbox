@@ -38,6 +38,7 @@ import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
@@ -61,7 +62,7 @@ public class StreamToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
 		ReferenceHolder<Integer, Object> dataHolder = ReferenceHolder.create();
 		
 		// Find forEach method calls
-		HelperVisitor.callMethodInvocationVisitor("forEach", compilationUnit, dataHolder, nodesprocessed, //$NON-NLS-1$
+		HelperVisitorFactory.callMethodInvocationVisitor("forEach", compilationUnit, dataHolder, nodesprocessed, //$NON-NLS-1$
 			(visited, aholder) -> {
 				// Check if this is collection.forEach(...) or collection.stream().forEach(...)
 				if (visited.arguments().size() != 1) {

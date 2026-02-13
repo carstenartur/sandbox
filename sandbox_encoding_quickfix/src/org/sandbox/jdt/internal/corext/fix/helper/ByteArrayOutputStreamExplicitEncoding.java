@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -76,7 +77,7 @@ public class ByteArrayOutputStreamExplicitEncoding extends AbstractExplicitEncod
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> holder= new ReferenceHolder<>();
-		HelperVisitor.forMethodCall(ByteArrayOutputStream.class, METHOD_TOSTRING)
+		HelperVisitorFactory.forMethodCall(ByteArrayOutputStream.class, METHOD_TOSTRING)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
 			.processEach(holder, (visited, aholder) -> processFoundNode(fixcore, operations, cb, visited, aholder));

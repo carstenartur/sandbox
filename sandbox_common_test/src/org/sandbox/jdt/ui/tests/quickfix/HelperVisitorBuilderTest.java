@@ -33,6 +33,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
@@ -94,7 +95,7 @@ public void newMethod() {
 CompilationUnit cu = parseSource(source);
 List<ASTNode> nodes = new ArrayList<>();
 
-HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
+HelperVisitorFactory.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -121,7 +122,7 @@ return "test";
 CompilationUnit cu = parseSource(source);
 List<ASTNode> nodes = new ArrayList<>();
 
-HelperVisitor.forAnnotation("java.lang.Override") //$NON-NLS-1$
+HelperVisitorFactory.forAnnotation("java.lang.Override") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -146,7 +147,7 @@ public void test() {
 CompilationUnit cu = parseSource(source);
 List<ASTNode> nodes = new ArrayList<>();
 
-HelperVisitor.forAnnotation("java.lang.SuppressWarnings") //$NON-NLS-1$
+HelperVisitorFactory.forAnnotation("java.lang.SuppressWarnings") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -174,7 +175,7 @@ public void oldMethod2() {
 
 CompilationUnit cu = parseSource(source);
 
-List<ASTNode> nodes = HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
+List<ASTNode> nodes = HelperVisitorFactory.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .collect();
@@ -186,7 +187,7 @@ assertEquals(2, nodes.size(), "Should collect two @Deprecated annotations"); //$
 @DisplayName("Validation: processEach without compilationUnit should throw")
 void testValidationWithoutCompilationUnit() {
 assertThrows(IllegalStateException.class, () -> {
-HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
+HelperVisitorFactory.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .excluding(new HashSet<>())
 .processEach((node, holder) -> true);
 });
@@ -216,7 +217,7 @@ int len = s.length();
 CompilationUnit cu = parseSource(source);
 List<ASTNode> nodes = new ArrayList<>();
 
-HelperVisitor.forMethodCall("java.lang.String", "length") //$NON-NLS-1$ //$NON-NLS-2$
+HelperVisitorFactory.forMethodCall("java.lang.String", "length") //$NON-NLS-1$ //$NON-NLS-2$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -246,7 +247,7 @@ CompilationUnit cu = parseSource(source);
 List<ASTNode> nodes = new ArrayList<>();
 
 Set<String> methods = Set.of("length", "toUpperCase", "toLowerCase"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-HelperVisitor.forMethodCalls("java.lang.String", methods) //$NON-NLS-1$
+HelperVisitorFactory.forMethodCalls("java.lang.String", methods) //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -272,7 +273,7 @@ s.trim();
 
 CompilationUnit cu = parseSource(source);
 
-List<ASTNode> nodes = HelperVisitor.forMethodCall("java.lang.String", "trim") //$NON-NLS-1$ //$NON-NLS-2$
+List<ASTNode> nodes = HelperVisitorFactory.forMethodCall("java.lang.String", "trim") //$NON-NLS-1$ //$NON-NLS-2$
 .in(cu)
 .excluding(new HashSet<>())
 .collect();
@@ -302,7 +303,7 @@ CompilationUnit cu = parseSource(source);
 
 // Missing type - should throw
 assertThrows(IllegalStateException.class, () -> {
-HelperVisitor.forField()
+HelperVisitorFactory.forField()
 .withAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
@@ -311,7 +312,7 @@ HelperVisitor.forField()
 
 // Missing annotation - should throw
 assertThrows(IllegalStateException.class, () -> {
-HelperVisitor.forField()
+HelperVisitorFactory.forField()
 .ofType("java.lang.String") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
@@ -343,7 +344,7 @@ private List<String> list = new ArrayList<>();
 CompilationUnit cu = parseSource(source);
 List<ASTNode> nodes = new ArrayList<>();
 
-HelperVisitor.forImport("java.util.List") //$NON-NLS-1$
+HelperVisitorFactory.forImport("java.util.List") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -370,7 +371,7 @@ double radius = PI;
 CompilationUnit cu = parseSource(source);
 List<ASTNode> nodes = new ArrayList<>();
 
-HelperVisitor.forImport("java.lang.Math.PI") //$NON-NLS-1$
+HelperVisitorFactory.forImport("java.lang.Math.PI") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -410,7 +411,7 @@ public void method3() {}
 CompilationUnit cu = parseSource(source);
 List<ASTNode> nodes = new ArrayList<>();
 
-HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
+HelperVisitorFactory.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -438,7 +439,7 @@ CompilationUnit cu = parseSource(source);
 Set<ASTNode> processed = new HashSet<>();
 
 // First pass - find all
-HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
+HelperVisitorFactory.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach((node, holder) -> {
@@ -450,7 +451,7 @@ assertEquals(2, processed.size());
 
 // Second pass - should find none (all excluded)
 List<ASTNode> secondPass = new ArrayList<>();
-HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
+HelperVisitorFactory.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(processed)
 .processEach((node, holder) -> {
@@ -486,7 +487,7 @@ CompilationUnit cu = parseSource(source);
 ReferenceHolder<Integer, List<String>> holder = new ReferenceHolder<>();
 holder.put(0, new ArrayList<>());
 
-HelperVisitor.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
+HelperVisitorFactory.forAnnotation("java.lang.Deprecated") //$NON-NLS-1$
 .in(cu)
 .excluding(new HashSet<>())
 .processEach(holder, (node, h) -> {

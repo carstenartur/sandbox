@@ -46,6 +46,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.ASTProcessor;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.common.VisitorEnum;
 
@@ -159,7 +160,7 @@ public class VisitorTest {
 	@Test
 	public void testComplexDataCollection() {
 		ReferenceHolder<ASTNode, Map<String,Object>> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callVisitor(cunit1,EnumSet.of(
+		HelperVisitorFactory.callVisitor(cunit1,EnumSet.of(
 				VisitorEnum.SingleVariableDeclaration,
 				VisitorEnum.VariableDeclarationExpression,
 				VisitorEnum.VariableDeclarationStatement,
@@ -207,12 +208,12 @@ public class VisitorTest {
 	@Test
 	public void testNestedHierarchicalSearch() {
 		ReferenceHolder<ASTNode, Map<String,Object>> dataholder = new ReferenceHolder<>();
-		HelperVisitor.callVariableDeclarationStatementVisitor(Iterator.class, cunit2, dataholder,null, (init_iterator,holdera)->{
+		HelperVisitorFactory.callVariableDeclarationStatementVisitor(Iterator.class, cunit2, dataholder,null, (init_iterator,holdera)->{
 			List<String> computeVarName = computeVarName(init_iterator);
-			HelperVisitor.callWhileStatementVisitor(init_iterator.getParent(), dataholder,null, (whilestatement,holder)->{
+			HelperVisitorFactory.callWhileStatementVisitor(init_iterator.getParent(), dataholder,null, (whilestatement,holder)->{
 				String name = computeNextVarname(whilestatement);
 				if(computeVarName.get(0).equals(name)) {
-					HelperVisitor.callMethodInvocationVisitor("next", whilestatement.getBody() ,dataholder,null, (mi,holder2)->{ //$NON-NLS-1$
+					HelperVisitorFactory.callMethodInvocationVisitor("next", whilestatement.getBody() ,dataholder,null, (mi,holder2)->{ //$NON-NLS-1$
 						Map<String, Object> pernodemap2 = holder2.computeIfAbsent(whilestatement, k -> new HashMap<>());
 						Expression element2 = mi.getExpression();
 						SimpleName sn= ASTNodes.as(element2, SimpleName.class);

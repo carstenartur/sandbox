@@ -36,6 +36,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.refactoring.util.TightSourceRangeComputer;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodReuse;
@@ -61,7 +62,7 @@ public class InlineSequencesPlugin extends AbstractMethodReuse<MethodDeclaration
 		// Use HelperVisitor to visit all methods in the compilation unit
 		ReferenceHolder<Integer, Object> dataholder = new ReferenceHolder<>();
 		
-		HelperVisitor.callMethodDeclarationVisitor(compilationUnit, dataholder, nodesprocessed,
+		HelperVisitorFactory.callMethodDeclarationVisitor(compilationUnit, dataholder, nodesprocessed,
 				(node, holder) -> {
 					// Search for inline sequences matching this method
 					List<InlineSequenceMatch> matches = InlineCodeSequenceFinder.findInlineSequences(compilationUnit, node);

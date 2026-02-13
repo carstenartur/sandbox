@@ -60,7 +60,7 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		org.sandbox.jdt.internal.common.HelperVisitor.callEnhancedForStatementVisitor(compilationUnit, 
+		org.sandbox.jdt.internal.common.HelperVisitorFactory.callEnhancedForStatementVisitor(compilationUnit, 
 			new ReferenceHolder<Integer, Object>(), nodesprocessed, (visited, aholder) -> {
 				// Safety: reject arrays — arrays don't have .iterator() method
 				Expression iterable = visited.getExpression();

@@ -31,7 +31,7 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
  * <li>{@code NormalAnnotation} - annotations with named parameters (e.g., {@code @RequestMapping(path="/api", method=GET)})</li>
  * </ul>
  * 
- * <p><b>Difference from underlying HelperVisitor:</b> The {@code HelperVisitor.callMarkerAnnotationVisitor()} 
+ * <p><b>Difference from underlying HelperVisitor:</b> The {@code HelperVisitorFactory.callMarkerAnnotationVisitor()} 
  * method only matches {@code MarkerAnnotation} nodes (annotations without parameters). This fluent API 
  * abstracts away that limitation by calling visitors for all three annotation types, providing a more 
  * intuitive and flexible interface.</p>
@@ -39,7 +39,7 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
  * <p><b>Example Usage:</b></p>
  * <pre>
  * // Simple annotation visitor - matches all annotation types
- * HelperVisitor.forAnnotation("java.lang.Deprecated")
+ * HelperVisitorFactory.forAnnotation("java.lang.Deprecated")
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
  *     .processEach((annotation, holder) -&gt; {
@@ -48,7 +48,7 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
  *     });
  *     
  * // Include import declarations
- * HelperVisitor.forAnnotation("org.junit.Before")
+ * HelperVisitorFactory.forAnnotation("org.junit.Before")
  *     .andImports()
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
@@ -171,21 +171,21 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
         
         // Call visitors for all three annotation types to match annotations regardless of parameters
         if (shouldContinue[0]) {
-            HelperVisitor.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, 
+            HelperVisitorFactory.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, 
                     holder, nodesprocessed, markerAdapter);
         }
         if (shouldContinue[0]) {
-            HelperVisitor.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,
+            HelperVisitorFactory.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, singleMemberAdapter);
         }
         if (shouldContinue[0]) {
-            HelperVisitor.callNormalAnnotationVisitor(annotationFQN, compilationUnit,
+            HelperVisitorFactory.callNormalAnnotationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, normalAdapter);
         }
         
         // Optionally include import declarations
         if (shouldContinue[0] && includeImports) {
-            HelperVisitor.callImportDeclarationVisitor(annotationFQN, compilationUnit,
+            HelperVisitorFactory.callImportDeclarationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, importAdapter);
         }
     }

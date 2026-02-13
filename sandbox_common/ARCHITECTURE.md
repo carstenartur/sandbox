@@ -318,7 +318,7 @@ public static String toCamelCase(String input) {
 ```java
 // Plugin cleanup code using HelperVisitor utility
 ReferenceHolder<ASTNode, Object> datah = new ReferenceHolder<>();
-HelperVisitor.callMethodInvocationVisitor(
+HelperVisitorFactory.callMethodInvocationVisitor(
     Channels.class, 
     "newReader", 
     compilationUnit, 
@@ -332,7 +332,7 @@ HelperVisitor.callMethodInvocationVisitor(
 );
 ```
 
-**Note**: `HelperVisitor` is NOT a base class to extend. It's a utility class providing static methods for building AST visitors using lambda expressions.
+**Note**: `HelperVisitor` is NOT a base class to extend. Use `HelperVisitorFactory` static methods for building AST visitors using lambda expressions.
 
 ### Why Separate Utility Classes?
 

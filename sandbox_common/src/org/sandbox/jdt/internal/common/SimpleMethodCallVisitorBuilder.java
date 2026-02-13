@@ -26,7 +26,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
  * 
  * <p><b>Example Usage:</b></p>
  * <pre>
- * HelperVisitor.forMethodCall(String.class, "getBytes")
+ * HelperVisitorFactory.forMethodCall(String.class, "getBytes")
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
  *     .processEach(holder, (methodInv, h) -&gt; {
@@ -38,7 +38,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
  * 
  * <p><b>Note:</b> If you need to also process imports alongside method invocations,
  * use {@link MethodCallVisitorBuilder} instead via 
- * {@code HelperVisitor.forMethodCalls(...).andStaticImports()}.</p>
+ * {@code HelperVisitorFactory.forMethodCalls(...).andStaticImports()}.</p>
  * 
  * @author Carsten Hammer
  * @since 1.16
@@ -77,10 +77,10 @@ public class SimpleMethodCallVisitorBuilder extends HelperVisitorBuilder<MethodI
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
             BiPredicate<MethodInvocation, ReferenceHolder<V, H>> processor) {
         if (typeFQN != null) {
-            HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,
+            HelperVisitorFactory.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,
                     holder, nodesprocessed, (node, h) -> processor.test(node, h));
         } else if (typeClass != null) {
-            HelperVisitor.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,
+            HelperVisitorFactory.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,
                     holder, nodesprocessed, (node, h) -> processor.test(node, h));
         }
     }
