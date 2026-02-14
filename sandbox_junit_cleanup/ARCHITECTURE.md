@@ -693,6 +693,19 @@ The corresponding feature module `sandbox_junit_cleanup_feature` MUST maintain:
 
 These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.
 
+## DSL Pattern Library
+
+The JUnit cleanup plugin provides a declarative `.sandbox-hint` file (`junit5.sandbox-hint`) that defines JUnit 4→5 migration rules using the TriggerPattern DSL. This file is located at `src/org/sandbox/jdt/internal/corext/fix/hints/junit5.sandbox-hint` and is registered via the `org.sandbox.jdt.triggerpattern.hints` extension point in `plugin.xml`.
+
+The hint file contains rules for migrating JUnit 4 assertions to JUnit 5 equivalents, including:
+- `Assert.assertEquals(expected, actual)` → `Assertions.assertEquals(expected, actual)`
+- `Assert.assertTrue(cond)` → `Assertions.assertTrue(cond)`
+- `Assert.assertEquals(msg, expected, actual)` → `Assertions.assertEquals(expected, actual, msg)` (parameter reorder)
+
+Each rule includes `addImport org.junit.jupiter.api.Assertions` and `removeImport org.junit.Assert` directives.
+
+This file was moved from `sandbox_common` to this plugin to prevent duplication of functionality with the annotation-based cleanup implementation, keeping domain-specific rules together with their domain-specific plugin.
+
 ## Maintainers
 
 This architecture was established during the refactoring effort to improve maintainability and modularity of the JUnit cleanup plugin. For questions or suggestions, please open an issue in the repository.

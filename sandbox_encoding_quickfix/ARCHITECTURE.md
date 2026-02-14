@@ -225,3 +225,16 @@ The corresponding feature module `sandbox_encoding_quickfix_feature` MUST mainta
 2. **feature_de.properties** - German translation of all properties
 
 These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.
+
+## DSL Pattern Library
+
+The encoding plugin provides a declarative `.sandbox-hint` file (`encoding.sandbox-hint`) that defines encoding transformation rules using the TriggerPattern DSL. This file is located at `src/org/sandbox/jdt/internal/corext/fix/hints/encoding.sandbox-hint` and is registered via the `org.sandbox.jdt.triggerpattern.hints` extension point in `plugin.xml`.
+
+The hint file contains rules for replacing string-based charset specifications with `StandardCharsets` constants, including:
+- `new String(byte[], "UTF-8")` → `new String(byte[], StandardCharsets.UTF_8)`
+- `$str.getBytes("UTF-8")` → `$str.getBytes(StandardCharsets.UTF_8)`
+- `new InputStreamReader(in, "UTF-8")` → `new InputStreamReader(in, StandardCharsets.UTF_8)`
+
+Each rule includes `sourceVersionGE(7)` guards and `addImport java.nio.charset.StandardCharsets` directives.
+
+This file was moved from `sandbox_common` to this plugin to prevent duplication of functionality with the imperative cleanup implementation, keeping domain-specific rules together with their domain-specific plugin.
