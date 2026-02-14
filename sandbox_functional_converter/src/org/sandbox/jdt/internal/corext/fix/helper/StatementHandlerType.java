@@ -28,6 +28,7 @@ import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.sandbox.jdt.internal.common.NodeMatcher;
 import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 
 /**
@@ -135,23 +136,27 @@ public enum StatementHandlerType {
 			// Look through remaining non-terminal statements
 			for (int j = currentIndex + 1; j < statements.size() - 1; j++) {
 				Statement stmt = statements.get(j);
+				boolean[] returnFalse = { false };
+				boolean[] returnTrue = { false };
 
-				if (stmt instanceof IfStatement) {
-					IfStatement ifStmt = (IfStatement) stmt;
+				NodeMatcher.on(stmt)
+					.ifIfStatementMatching(
+						ifStmt -> ifAnalyzer.isEarlyReturnIf(ifStmt,
+							context.isAnyMatchPattern(),
+							context.isNoneMatchPattern(),
+							context.isAllMatchPattern()),
+						ifStmt -> returnFalse[0] = true)
+					.ifIfStatementMatching(
+						ifStmt -> ifAnalyzer.isIfWithContinue(ifStmt),
+						ifStmt -> returnFalse[0] = true)
+					.ifIfStatementWithoutElse(
+						ifStmt -> returnTrue[0] = true);
 
-					// Don't wrap if this is an early return IF or continue IF
-					if (ifAnalyzer.isEarlyReturnIf(ifStmt, 
-							context.isAnyMatchPattern(), 
-							context.isNoneMatchPattern(), 
-							context.isAllMatchPattern())) {
-						return false;
-					}
-					if (ifAnalyzer.isIfWithContinue(ifStmt)) {
-						return false;
-					}
-					if (ifStmt.getElseStatement() == null) {
-						return true;
-					}
+				if (returnFalse[0]) {
+					return false;
+				}
+				if (returnTrue[0]) {
+					return true;
 				}
 				
 				// Don't wrap if the statement is an assignment to a variable that will be 

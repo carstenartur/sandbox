@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.internal.common.NodeMatcher;
 import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 
 /**
@@ -112,19 +113,12 @@ public final class IfStatementAnalyzer {
 		if (ifStatement == null) {
 			return false;
 		}
-		Statement thenStatement = ifStatement.getThenStatement();
-		if (thenStatement instanceof ContinueStatement) {
-			ContinueStatement continueStmt = (ContinueStatement) thenStatement;
-			return continueStmt.getLabel() == null;
-		}
-		if (thenStatement instanceof Block) {
-			Block block = (Block) thenStatement;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof ContinueStatement) {
-				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
-				return continueStmt.getLabel() == null;
-			}
-		}
-		return false;
+		boolean[] result = { false };
+		NodeMatcher.on(ifStatement)
+			.ifThenStatementIs(ContinueStatement.class,
+				cs -> cs.getLabel() == null,
+				cs -> result[0] = true);
+		return result[0];
 	}
 
 	/**
@@ -138,19 +132,12 @@ public final class IfStatementAnalyzer {
 		if (ifStatement == null) {
 			return false;
 		}
-		Statement thenStatement = ifStatement.getThenStatement();
-		if (thenStatement instanceof ContinueStatement) {
-			ContinueStatement continueStmt = (ContinueStatement) thenStatement;
-			return continueStmt.getLabel() != null;
-		}
-		if (thenStatement instanceof Block) {
-			Block block = (Block) thenStatement;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof ContinueStatement) {
-				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);
-				return continueStmt.getLabel() != null;
-			}
-		}
-		return false;
+		boolean[] result = { false };
+		NodeMatcher.on(ifStatement)
+			.ifThenStatementIs(ContinueStatement.class,
+				cs -> cs.getLabel() != null,
+				cs -> result[0] = true);
+		return result[0];
 	}
 
 	/**
@@ -164,17 +151,12 @@ public final class IfStatementAnalyzer {
 		if (ifStatement == null) {
 			return false;
 		}
-		Statement thenStatement = ifStatement.getThenStatement();
-		if (thenStatement instanceof BreakStatement) {
-			return true;
-		}
-		if (thenStatement instanceof Block) {
-			Block block = (Block) thenStatement;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof BreakStatement) {
-				return true;
-			}
-		}
-		return false;
+		boolean[] result = { false };
+		NodeMatcher.on(ifStatement)
+			.ifThenStatementIs(BreakStatement.class,
+				bs -> true,
+				bs -> result[0] = true);
+		return result[0];
 	}
 
 	/**
@@ -421,16 +403,13 @@ public final class IfStatementAnalyzer {
 	 * Handles both direct return statements and blocks containing a single return.
 	 */
 	private ReturnStatement extractReturnStatement(Statement thenStmt) {
-		if (thenStmt instanceof ReturnStatement) {
-			return (ReturnStatement) thenStmt;
-		}
-		if (thenStmt instanceof Block) {
-			Block block = (Block) thenStmt;
-			if (block.statements().size() == 1 && block.statements().get(0) instanceof ReturnStatement) {
-				return (ReturnStatement) block.statements().get(0);
-			}
-		}
-		return null;
+		ReturnStatement[] result = { null };
+		NodeMatcher.on(thenStmt)
+			.ifReturnStatement(rs -> result[0] = rs)
+			.ifBlockWithSingleStatement(ReturnStatement.class,
+				rs -> true,
+				rs -> result[0] = rs);
+		return result[0];
 	}
 
 	/**

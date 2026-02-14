@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.common;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
@@ -920,6 +921,235 @@ public class NodeMatcherTest {
 			var result = NodeMatcher.on(varDecl).getExpression();
 			
 			assertFalse(result.isPresent());
+		}
+	}
+
+	@Nested
+	@DisplayName("Composite Matchers")
+	class CompositeMatcherTests {
+
+		@Test
+		@DisplayName("ifBlockWithSingleStatement matches Block with single matching statement")
+		void testIfBlockWithSingleStatement_matches() {
+			String source = """
+				public class Test {
+					void test() {
+						{
+							continue;
+						}
+					}
+				}
+				""";
+			// Parse as a method body to get the Block with continue
+			String fullSource = """
+				public class Test {
+					void test() {
+						while (true) {
+							{
+								continue;
+							}
+						}
+					}
+				}
+				""";
+			cu = parseSource(fullSource);
+
+			// Find the inner block (not the method body block or while body)
+			Block innerBlock = null;
+			MethodDeclaration method = findFirstNodeOfType(cu, MethodDeclaration.class);
+			// The while loop body is a Block, inside it is another Block containing continue
+			Block whileBody = (Block) method.getBody().statements().get(0);
+			// whileBody is a WhileStatement, get its body
+			org.eclipse.jdt.core.dom.WhileStatement whileStmt = findFirstNodeOfType(cu, org.eclipse.jdt.core.dom.WhileStatement.class);
+			innerBlock = (Block) ((Block) whileStmt.getBody()).statements().get(0);
+
+			AtomicBoolean called = new AtomicBoolean(false);
+
+			NodeMatcher.on((Statement) innerBlock)
+				.ifBlockWithSingleStatement(ContinueStatement.class,
+					cs -> cs.getLabel() == null,
+					cs -> called.set(true));
+
+			assertTrue(called.get());
+		}
+
+		@Test
+		@DisplayName("ifBlockWithSingleStatement does not match Block with multiple statements")
+		void testIfBlockWithSingleStatement_noMatchMultiple() {
+			String source = """
+				public class Test {
+					void test() {
+						int x = 0;
+						int y = 1;
+					}
+				}
+				""";
+			cu = parseSource(source);
+
+			MethodDeclaration method = findFirstNodeOfType(cu, MethodDeclaration.class);
+			Block body = method.getBody();
+			AtomicBoolean called = new AtomicBoolean(false);
+
+			NodeMatcher.on((Statement) body)
+				.ifBlockWithSingleStatement(VariableDeclarationStatement.class,
+					vd -> true,
+					vd -> called.set(true));
+
+			assertFalse(called.get());
+		}
+
+		@Test
+		@DisplayName("ifThenStatementIs matches direct statement in then-branch")
+		void testIfThenStatementIs_directMatch() {
+			String source = """
+				public class Test {
+					void test() {
+						while (true) {
+							if (true) continue;
+						}
+					}
+				}
+				""";
+			cu = parseSource(source);
+
+			IfStatement ifStmt = findFirstNodeOfType(cu, IfStatement.class);
+			AtomicBoolean called = new AtomicBoolean(false);
+
+			NodeMatcher.on((Statement) ifStmt)
+				.ifThenStatementIs(ContinueStatement.class,
+					cs -> cs.getLabel() == null,
+					cs -> called.set(true));
+
+			assertTrue(called.get());
+		}
+
+		@Test
+		@DisplayName("ifThenStatementIs matches wrapped statement in Block")
+		void testIfThenStatementIs_wrappedInBlock() {
+			String source = """
+				public class Test {
+					void test() {
+						while (true) {
+							if (true) {
+								continue;
+							}
+						}
+					}
+				}
+				""";
+			cu = parseSource(source);
+
+			IfStatement ifStmt = findFirstNodeOfType(cu, IfStatement.class);
+			AtomicBoolean called = new AtomicBoolean(false);
+
+			NodeMatcher.on((Statement) ifStmt)
+				.ifThenStatementIs(ContinueStatement.class,
+					cs -> cs.getLabel() == null,
+					cs -> called.set(true));
+
+			assertTrue(called.get());
+		}
+
+		@Test
+		@DisplayName("ifThenStatementIs does not match non-IfStatement node")
+		void testIfThenStatementIs_nonIfStatement() {
+			String source = """
+				public class Test {
+					void test() {
+						int x = 5;
+					}
+				}
+				""";
+			cu = parseSource(source);
+
+			Statement stmt = extractFirstStatement(cu);
+			AtomicBoolean called = new AtomicBoolean(false);
+
+			NodeMatcher.on(stmt)
+				.ifThenStatementIs(ContinueStatement.class,
+					cs -> true,
+					cs -> called.set(true));
+
+			assertFalse(called.get());
+		}
+
+		@Test
+		@DisplayName("ifTypeMapping maps and consumes result")
+		void testIfTypeMapping_mapsResult() {
+			String source = """
+				public class Test {
+					int test() {
+						return 42;
+					}
+				}
+				""";
+			cu = parseSource(source);
+
+			ReturnStatement returnStmt = findFirstNodeOfType(cu, ReturnStatement.class);
+			AtomicBoolean called = new AtomicBoolean(false);
+			String[] result = new String[1];
+
+			NodeMatcher.on((Statement) returnStmt)
+				.ifTypeMapping(ReturnStatement.class,
+					rs -> rs.getExpression() != null ? rs.getExpression().toString() : null,
+					r -> { result[0] = r; called.set(true); });
+
+			assertTrue(called.get());
+			assertEquals("42", result[0]);
+		}
+
+		@Test
+		@DisplayName("ifTypeMapping does not consume when mapper returns null")
+		void testIfTypeMapping_nullResult() {
+			String source = """
+				public class Test {
+					void test() {
+						return;
+					}
+				}
+				""";
+			cu = parseSource(source);
+
+			ReturnStatement returnStmt = findFirstNodeOfType(cu, ReturnStatement.class);
+			AtomicBoolean called = new AtomicBoolean(false);
+
+			NodeMatcher.on((Statement) returnStmt)
+				.ifTypeMapping(ReturnStatement.class,
+					rs -> rs.getExpression(), // null for void return
+					r -> called.set(true));
+
+			assertFalse(called.get());
+		}
+	}
+
+	@Nested
+	@DisplayName("Static Utility Methods")
+	class StaticUtilityTests {
+
+		@Test
+		@DisplayName("matchAll processes all ASTNode elements in list")
+		void testMatchAll_processesAll() {
+			String source = """
+				public class Test {
+					void test() {
+						int x = 0;
+						x = 5;
+						System.out.println(x);
+					}
+				}
+				""";
+			cu = parseSource(source);
+
+			MethodDeclaration method = findFirstNodeOfType(cu, MethodDeclaration.class);
+			Block body = method.getBody();
+
+			AtomicInteger count = new AtomicInteger(0);
+
+			NodeMatcher.matchAll(body.statements(), m -> m
+				.ifVariableDeclaration(vd -> count.incrementAndGet())
+				.ifExpressionStatement(es -> count.incrementAndGet()));
+
+			assertEquals(3, count.get());
 		}
 	}
 
