@@ -142,9 +142,7 @@ public class LoopBodyScopeScanner {
 				
 				// Try to resolve binding to filter out fields
 				IBinding binding = node.resolveBinding();
-				if (binding instanceof IVariableBinding) {
-					IVariableBinding varBinding = (IVariableBinding) binding;
-					
+				if (binding instanceof IVariableBinding varBinding) {
 					// Skip fields - they're not in local scope
 					if (varBinding.isField()) {
 						return true;
@@ -209,24 +207,21 @@ public class LoopBodyScopeScanner {
 	private boolean isModification(SimpleName node) {
 		// Check if node is the DIRECT left-hand side of an assignment
 		// (not part of a complex LHS like arr[i] or obj.field)
-		if (node.getParent() instanceof Assignment) {
-			Assignment assignment = (Assignment) node.getParent();
+		if (node.getParent() instanceof Assignment assignment) {
 			if (assignment.getLeftHandSide() == node) {
 				return true;
 			}
 		}
 		
 		// Check if node is part of increment/decrement expression
-		if (node.getParent() instanceof PostfixExpression) {
-			PostfixExpression postfix = (PostfixExpression) node.getParent();
+		if (node.getParent() instanceof PostfixExpression postfix) {
 			PostfixExpression.Operator op = postfix.getOperator();
 			if (op == PostfixExpression.Operator.INCREMENT || op == PostfixExpression.Operator.DECREMENT) {
 				return true;
 			}
 		}
 		
-		if (node.getParent() instanceof PrefixExpression) {
-			PrefixExpression prefix = (PrefixExpression) node.getParent();
+		if (node.getParent() instanceof PrefixExpression prefix) {
 			PrefixExpression.Operator op = prefix.getOperator();
 			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {
 				return true;

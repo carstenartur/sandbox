@@ -76,11 +76,10 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> data)
 			throws CoreException {
-		if (!(visited instanceof EnhancedForStatement)) {
+		if (!(visited instanceof EnhancedForStatement forStmt)) {
 			return;
 		}
 		
-		EnhancedForStatement forStmt = (EnhancedForStatement) visited;
 		AST ast = cuRewrite.getAST();
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		

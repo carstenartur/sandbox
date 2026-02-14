@@ -52,7 +52,7 @@ import org.eclipse.text.edits.TextEditGroup;
  * <p><b>Usage Example:</b></p>
  * <pre>{@code
  * PreconditionsChecker preconditions = new PreconditionsChecker(forLoop, cu);
- * Refactorer refactorer = new Refactorer(forLoop, rewrite, preconditions, group);
+ * Refactorer refactorer = new Refactorer(forLoop, rewrite, preconditions, group, cuRewrite);
  * 
  * if (refactorer.isRefactorable()) {
  *     refactorer.refactor(); // Performs the transformation
@@ -84,21 +84,6 @@ public class Refactorer {
 	private final TextEditGroup group;
 	private final CompilationUnitRewrite cuRewrite;
 
-	/**
-	 * Creates a new Refactorer.
-	 * 
-	 * @param forLoop       the enhanced for-loop to refactor
-	 * @param rewrite       the AST rewrite to use
-	 * @param preconditions the preconditions checker
-	 * @param group         the text edit group for tracking changes
-	 * @deprecated Use {@link #Refactorer(EnhancedForStatement, ASTRewrite, PreconditionsChecker, TextEditGroup, CompilationUnitRewrite)} instead
-	 */
-	@Deprecated
-	public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions,
-			TextEditGroup group) {
-		this(forLoop, rewrite, preconditions, group, null);
-	}
-	
 	/**
 	 * Creates a new Refactorer with CompilationUnitRewrite for import management.
 	 * 
@@ -209,11 +194,10 @@ public class Refactorer {
 		
 		// Get the parent block
 		ASTNode parent = forLoop.getParent();
-		if (!(parent instanceof Block)) {
+		if (!(parent instanceof Block block)) {
 			return null;
 		}
 		
-		Block block = (Block) parent;
 		List<?> statements = block.statements();
 		
 		// Find the index of the for-loop

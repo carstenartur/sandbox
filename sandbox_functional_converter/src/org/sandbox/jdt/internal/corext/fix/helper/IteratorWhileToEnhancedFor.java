@@ -112,21 +112,19 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> data)
 			throws CoreException {
-		if (!(visited instanceof WhileStatement)) {
+		if (!(visited instanceof WhileStatement whileStmt)) {
 			return;
 		}
 		
 		Object patternObj = data.get(visited);
-		if (!(patternObj instanceof IteratorPattern)) {
+		if (!(patternObj instanceof IteratorPattern pattern)) {
 			return;
 		}
 		
-		IteratorPattern pattern = (IteratorPattern) patternObj;
 		AST ast = cuRewrite.getAST();
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		
 		// Find the iterator declaration statement that should be removed
-		WhileStatement whileStmt = (WhileStatement) visited;
 		Block parentBlock = (Block) whileStmt.getParent();
 		Statement iteratorDecl = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);
 		

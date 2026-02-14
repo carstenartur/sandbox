@@ -54,11 +54,10 @@ public class IteratorLoopBodyParser {
      * @return parsed body or null if pattern doesn't match
      */
     public ParsedBody parse(Statement loopBody, String iteratorVarName) {
-        if (!(loopBody instanceof Block)) {
+        if (!(loopBody instanceof Block block)) {
             return null;
         }
         
-        Block block = (Block) loopBody;
         List<?> statements = block.statements();
         
         if (statements.isEmpty()) {
@@ -68,11 +67,9 @@ public class IteratorLoopBodyParser {
         // First statement should be: T item = it.next();
         Statement firstStmt = (Statement) statements.get(0);
         
-        if (!(firstStmt instanceof VariableDeclarationStatement)) {
+        if (!(firstStmt instanceof VariableDeclarationStatement varDecl)) {
             return null;
         }
-        
-        VariableDeclarationStatement varDecl = (VariableDeclarationStatement) firstStmt;
         if (varDecl.fragments().size() != 1) {
             return null;
         }
@@ -102,21 +99,20 @@ public class IteratorLoopBodyParser {
      * Checks if an expression is it.next() call.
      */
     private boolean isNextCall(Expression expr, String iteratorVarName) {
-        if (!(expr instanceof MethodInvocation)) {
+        if (!(expr instanceof MethodInvocation methodInv)) {
             return false;
         }
         
-        MethodInvocation methodInv = (MethodInvocation) expr;
         if (!"next".equals(methodInv.getName().getIdentifier())) {
             return false;
         }
         
         Expression iteratorExpr = methodInv.getExpression();
-        if (!(iteratorExpr instanceof SimpleName)) {
+        if (!(iteratorExpr instanceof SimpleName iteratorName)) {
             return false;
         }
         
-        return ((SimpleName) iteratorExpr).getIdentifier().equals(iteratorVarName);
+        return iteratorName.getIdentifier().equals(iteratorVarName);
     }
     
     /**

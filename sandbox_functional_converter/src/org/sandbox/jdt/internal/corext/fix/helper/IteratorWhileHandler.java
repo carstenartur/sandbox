@@ -153,11 +153,10 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
                         ReferenceHolder<ASTNode, Object> holder) throws CoreException {
         
         Object data = holder.get(node);
-        if (!(data instanceof IteratorPattern)) {
+        if (!(data instanceof IteratorPattern pattern)) {
             return;
         }
         
-        IteratorPattern pattern = (IteratorPattern) data;
         ParsedBody parsedBody = bodyParser.parse(pattern.loopBody, pattern.iteratorVariableName);
         
         if (parsedBody == null) {
@@ -179,9 +178,9 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
         
         if (streamExpression != null) {
             // For while pattern, also remove the iterator declaration
-            if (node instanceof WhileStatement) {
-                Block parentBlock = (Block) node.getParent();
-                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, (Statement) node);
+            if (node instanceof WhileStatement whileStmt) {
+                Block parentBlock = (Block) whileStmt.getParent();
+                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);
                 
                 if (previousStmt != null) {
                     rewrite.remove(previousStmt, group);

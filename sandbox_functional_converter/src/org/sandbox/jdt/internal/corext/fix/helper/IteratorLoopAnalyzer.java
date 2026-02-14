@@ -113,8 +113,7 @@ public class IteratorLoopAnalyzer {
         @Override
         public boolean visit(MethodInvocation node) {
             Expression expr = node.getExpression();
-            if (expr instanceof SimpleName) {
-                SimpleName name = (SimpleName) expr;
+            if (expr instanceof SimpleName name) {
                 if (name.getIdentifier().equals(iteratorVarName)) {
                     String methodName = node.getName().getIdentifier();
                     

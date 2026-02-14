@@ -67,11 +67,9 @@ public class IteratorPatternDetector {
         }
         
         // Check previous statement: Iterator<T> it = collection.iterator();
-        if (previousStatement == null || !(previousStatement instanceof VariableDeclarationStatement)) {
+        if (!(previousStatement instanceof VariableDeclarationStatement varDecl)) {
             return null;
         }
-        
-        VariableDeclarationStatement varDecl = (VariableDeclarationStatement) previousStatement;
         if (varDecl.fragments().size() != 1) {
             return null;
         }
@@ -113,11 +111,9 @@ public class IteratorPatternDetector {
         }
         
         Object init = forStmt.initializers().get(0);
-        if (!(init instanceof VariableDeclarationExpression)) {
+        if (!(init instanceof VariableDeclarationExpression varDeclExpr)) {
             return null;
         }
-        
-        VariableDeclarationExpression varDeclExpr = (VariableDeclarationExpression) init;
         if (varDeclExpr.fragments().size() != 1) {
             return null;
         }
@@ -157,21 +153,20 @@ public class IteratorPatternDetector {
      * @return iterator variable name or null if pattern doesn't match
      */
     private String extractIteratorFromHasNext(Expression expr) {
-        if (!(expr instanceof MethodInvocation)) {
+        if (!(expr instanceof MethodInvocation methodInv)) {
             return null;
         }
         
-        MethodInvocation methodInv = (MethodInvocation) expr;
         if (!"hasNext".equals(methodInv.getName().getIdentifier())) {
             return null;
         }
         
         Expression iteratorExpr = methodInv.getExpression();
-        if (!(iteratorExpr instanceof SimpleName)) {
+        if (!(iteratorExpr instanceof SimpleName iteratorName)) {
             return null;
         }
         
-        return ((SimpleName) iteratorExpr).getIdentifier();
+        return iteratorName.getIdentifier();
     }
     
     /**
@@ -180,11 +175,10 @@ public class IteratorPatternDetector {
      * @return collection expression or null if pattern doesn't match
      */
     private Expression extractCollectionFromIteratorCall(Expression expr) {
-        if (!(expr instanceof MethodInvocation)) {
+        if (!(expr instanceof MethodInvocation methodInv)) {
             return null;
         }
         
-        MethodInvocation methodInv = (MethodInvocation) expr;
         if (!"iterator".equals(methodInv.getName().getIdentifier())) {
             return null;
         }
@@ -203,11 +197,10 @@ public class IteratorPatternDetector {
      * @return element type as string or "Object" if not determinable
      */
     private String extractElementType(Type type) {
-        if (!(type instanceof ParameterizedType)) {
+        if (!(type instanceof ParameterizedType paramType)) {
             return "Object";
         }
         
-        ParameterizedType paramType = (ParameterizedType) type;
         if (paramType.typeArguments().isEmpty()) {
             return "Object";
         }

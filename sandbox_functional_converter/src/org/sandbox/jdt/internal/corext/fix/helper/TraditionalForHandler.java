@@ -426,11 +426,9 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
                         ReferenceHolder<ASTNode, Object> data) throws CoreException {
         
         Object patternObj = data.get(visited);
-        if (!(patternObj instanceof ForLoopPattern)) {
+        if (!(patternObj instanceof ForLoopPattern pattern)) {
             return;
         }
-        
-        ForLoopPattern pattern = (ForLoopPattern) patternObj;
         
         AST ast = cuRewrite.getRoot().getAST();
         ASTRewrite rewrite = cuRewrite.getASTRewrite();
