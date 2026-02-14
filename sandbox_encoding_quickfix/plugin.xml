@@ -8,4 +8,9 @@
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp" id="org.eclipse.jdt.ui.cleanup.explicitencoding" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
+	<extension point="org.sandbox.jdt.triggerpattern.hints">
+		<hintFile
+			id="encoding"
+			resource="org/sandbox/jdt/internal/corext/fix/hints/encoding.sandbox-hint" />
+	</extension>
 </plugin>

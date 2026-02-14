@@ -32,6 +32,11 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
  * <p>Validates that each bundled {@code .sandbox-hint} file can be parsed
  * successfully and contains valid transformation rules.</p>
  * 
+ * <p>Note: Domain-specific libraries ({@code encoding.sandbox-hint} and
+ * {@code junit5.sandbox-hint}) have been moved to their dedicated plugins
+ * ({@code sandbox_encoding_quickfix} and {@code sandbox_junit_cleanup})
+ * and are tested in their respective test modules.</p>
+ * 
  * @since 1.3.3
  */
 public class BundledLibrariesTest {
@@ -39,15 +44,6 @@ public class BundledLibrariesTest {
 	private final HintFileParser parser = new HintFileParser();
 
 	// --- Bundled library loading tests ---
-
-	@Test
-	public void testLoadEncodingLibrary() throws Exception {
-		HintFile hintFile = loadBundledLibrary("encoding.sandbox-hint"); //$NON-NLS-1$
-		assertNotNull(hintFile, "encoding library should be loadable"); //$NON-NLS-1$
-		assertEquals("encoding", hintFile.getId()); //$NON-NLS-1$
-		assertTrue(hintFile.getRules().size() >= 5,
-				"encoding library should have at least 5 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
-	}
 
 	@Test
 	public void testLoadCollectionsLibrary() throws Exception {
@@ -77,15 +73,6 @@ public class BundledLibrariesTest {
 	}
 
 	@Test
-	public void testLoadJUnit5Library() throws Exception {
-		HintFile hintFile = loadBundledLibrary("junit5.sandbox-hint"); //$NON-NLS-1$
-		assertNotNull(hintFile, "junit5 library should be loadable"); //$NON-NLS-1$
-		assertEquals("junit5", hintFile.getId()); //$NON-NLS-1$
-		assertTrue(hintFile.getRules().size() >= 5,
-				"junit5 library should have at least 5 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
-	}
-
-	@Test
 	public void testAllBundledLibrariesHaveMetadata() throws Exception {
 		for (String name : HintFileRegistry.getBundledLibraryNames()) {
 			HintFile hintFile = loadBundledLibrary(name);
@@ -109,6 +96,8 @@ public class BundledLibrariesTest {
 
 		assertFalse(loaded.isEmpty(),
 				"Should load at least one bundled library"); //$NON-NLS-1$
+		assertEquals(3, loaded.size(),
+				"Should load exactly 3 bundled libraries (collections, modernize-java11, performance)"); //$NON-NLS-1$
 
 		// Verify each loaded library
 		for (String id : loaded) {
@@ -123,39 +112,10 @@ public class BundledLibrariesTest {
 	}
 
 	@Test
-	public void testEncodingRulesHaveImportDirectives() throws Exception {
-		HintFile hintFile = loadBundledLibrary("encoding.sandbox-hint"); //$NON-NLS-1$
-
-		// At least some encoding rules should have import directives for StandardCharsets
-		long rulesWithImports = hintFile.getRules().stream()
-				.filter(r -> r.hasImportDirective())
-				.count();
-		assertTrue(rulesWithImports > 0,
-				"Encoding rules should have import directives"); //$NON-NLS-1$
-	}
-
-	@Test
-	public void testJUnit5RulesHaveImportDirectives() throws Exception {
-		HintFile hintFile = loadBundledLibrary("junit5.sandbox-hint"); //$NON-NLS-1$
-
-		// JUnit 5 migration rules should have import directives
-		long rulesWithImports = hintFile.getRules().stream()
-				.filter(r -> r.hasImportDirective())
-				.count();
-		assertTrue(rulesWithImports > 0,
-				"JUnit5 rules should have import directives"); //$NON-NLS-1$
-	}
-
-	@Test
-	public void testEncodingRulesHaveGuards() throws Exception {
-		HintFile hintFile = loadBundledLibrary("encoding.sandbox-hint"); //$NON-NLS-1$
-
-		// Encoding rules should have sourceVersionGE guards
-		long rulesWithGuards = hintFile.getRules().stream()
-				.filter(r -> r.sourceGuard() != null)
-				.count();
-		assertTrue(rulesWithGuards > 0,
-				"Encoding rules should have guards"); //$NON-NLS-1$
+	public void testBundledLibraryCount() {
+		String[] names = HintFileRegistry.getBundledLibraryNames();
+		assertEquals(3, names.length,
+				"Should have exactly 3 bundled libraries"); //$NON-NLS-1$
 	}
 
 	// --- Helper methods ---

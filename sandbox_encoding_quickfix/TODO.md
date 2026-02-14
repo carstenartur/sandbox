@@ -174,6 +174,15 @@ None currently identified.
 
 ## Future Enhancements
 
+### DSL-Based Cleanup Integration
+**Priority**: Medium  
+**Effort**: 6-8 hours
+
+The plugin now bundles `encoding.sandbox-hint`, a declarative DSL file containing encoding transformation rules. Currently this file coexists with the imperative cleanup implementation. A future enhancement would be to:
+- Use the hint file rules directly via `BatchTransformationProcessor` for simple cases
+- Keep the imperative implementation for complex cases (version-aware transformations, three cleanup modes)
+- Provide a unified preference page combining both approaches
+
 ### Smart Encoding Detection
 **Priority**: Low  
 **Effort**: 8-10 hours

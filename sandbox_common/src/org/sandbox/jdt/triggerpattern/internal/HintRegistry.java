@@ -13,8 +13,13 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.internal;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -280,6 +285,8 @@ public class HintRegistry {
 					loadFromProvider(element, loadedHints);
 				} else if ("pattern".equals(element.getName())) { //$NON-NLS-1$
 					loadDeclarativePattern(element, loadedHints);
+				} else if ("hintFile".equals(element.getName())) { //$NON-NLS-1$
+					loadHintFile(element);
 				}
 			} catch (Exception e) {
 				// Log error but continue with other hints
@@ -425,6 +432,45 @@ public class HintRegistry {
 			HintKind.INSPECTION, "", null, providerClass, method //$NON-NLS-1$
 		);
 		loadedHints.add(descriptor);
+	}
+	
+	/**
+	 * Loads a {@code .sandbox-hint} file registered via the extension point.
+	 * 
+	 * <p>The hint file is loaded from the contributing plugin's classpath
+	 * and registered with the {@link HintFileRegistry}.</p>
+	 * 
+	 * @param element the configuration element with {@code id} and {@code resource} attributes
+	 */
+	private void loadHintFile(IConfigurationElement element) {
+		String id = element.getAttribute("id"); //$NON-NLS-1$
+		String resource = element.getAttribute("resource"); //$NON-NLS-1$
+		
+		if (id == null || resource == null) {
+			return;
+		}
+		
+		Bundle bundle = Platform.getBundle(element.getContributor().getName());
+		if (bundle == null) {
+			return;
+		}
+		
+		try {
+			java.net.URL resourceUrl = bundle.getResource(resource);
+			if (resourceUrl == null) {
+				ILog log = Platform.getLog(HintRegistry.class);
+				log.log(Status.warning("Hint file resource not found: " + resource //$NON-NLS-1$
+						+ " in bundle " + bundle.getSymbolicName())); //$NON-NLS-1$
+				return;
+			}
+			try (InputStream is = resourceUrl.openStream();
+					Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+				HintFileRegistry.getInstance().loadFromReader(id, reader);
+			}
+		} catch (HintFileParser.HintParseException | IOException e) {
+			ILog log = Platform.getLog(HintRegistry.class);
+			log.log(Status.error("Error loading hint file: " + resource, e)); //$NON-NLS-1$
+		}
 	}
 	
 	/**

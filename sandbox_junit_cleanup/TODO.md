@@ -21,6 +21,7 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ @Rule ExpectedException migration to assertThrows() (RuleExpectedExceptionJUnitPlugin)
 - ✅ **@Rule Timeout migration to class-level @Timeout** (RuleTimeoutJUnitPlugin)
 - ✅ **@RewriteRule annotation framework** - Declarative transformation for simple annotation migrations
+- ✅ **junit5.sandbox-hint DSL file** - Declarative JUnit 4→5 assertion migration rules bundled with this plugin
 
 ### In Progress
 - None currently

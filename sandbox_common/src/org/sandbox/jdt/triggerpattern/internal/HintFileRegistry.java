@@ -36,12 +36,17 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
  * classpath, while user-defined files can be loaded from the filesystem.</p>
  * 
  * <h2>Bundled Pattern Libraries</h2>
+ * <p>Generic libraries bundled with the framework:</p>
  * <ul>
- *   <li>{@code encoding.sandbox-hint} — StandardCharsets migration</li>
  *   <li>{@code collections.sandbox-hint} — Collection API improvements</li>
  *   <li>{@code modernize-java11.sandbox-hint} — Java 11+ API modernization</li>
  *   <li>{@code performance.sandbox-hint} — Performance optimizations</li>
- *   <li>{@code junit5.sandbox-hint} — JUnit 4 → 5 migration</li>
+ * </ul>
+ * 
+ * <p>Domain-specific libraries are provided by their dedicated plugins:</p>
+ * <ul>
+ *   <li>{@code encoding.sandbox-hint} — in {@code sandbox_encoding_quickfix}</li>
+ *   <li>{@code junit5.sandbox-hint} — in {@code sandbox_junit_cleanup}</li>
  * </ul>
  * 
  * <p>This class is thread-safe. All mutable state is protected by
@@ -61,11 +66,9 @@ public final class HintFileRegistry {
 	 * Bundled library resource names.
 	 */
 	private static final String[] BUNDLED_LIBRARIES = {
-		"encoding.sandbox-hint", //$NON-NLS-1$
 		"collections.sandbox-hint", //$NON-NLS-1$
 		"modernize-java11.sandbox-hint", //$NON-NLS-1$
-		"performance.sandbox-hint", //$NON-NLS-1$
-		"junit5.sandbox-hint" //$NON-NLS-1$
+		"performance.sandbox-hint" //$NON-NLS-1$
 	};
 	
 	/**
