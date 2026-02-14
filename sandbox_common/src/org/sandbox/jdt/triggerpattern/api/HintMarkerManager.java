@@ -43,8 +43,11 @@ public final class HintMarkerManager {
 
 	/**
 	 * The marker type used for trigger-pattern hints.
+	 * <p>This corresponds to the marker extension registered in {@code plugin.xml}
+	 * with id {@code org.sandbox.jdt.triggerpattern.hint} under the
+	 * {@code sandbox_common} bundle.</p>
 	 */
-	public static final String MARKER_TYPE = "org.sandbox.jdt.triggerpattern.hint"; //$NON-NLS-1$
+	public static final String MARKER_TYPE = "sandbox_common.org.sandbox.jdt.triggerpattern.hint"; //$NON-NLS-1$
 
 	/**
 	 * Creates problem markers for the given transformation results on the

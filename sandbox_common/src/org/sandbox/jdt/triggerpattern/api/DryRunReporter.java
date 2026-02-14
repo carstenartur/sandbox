@@ -234,6 +234,9 @@ public final class DryRunReporter {
 
 	/**
 	 * Escapes a string for JSON output.
+	 * Handles common escape sequences and also escapes other control
+	 * characters (U+0000 to U+001F) as {@code &#92;uXXXX} for fully
+	 * compliant JSON output.
 	 */
 	private static String escapeJson(String value) {
 		if (value == null) {
@@ -258,7 +261,11 @@ public final class DryRunReporter {
 				sb.append("\\t"); //$NON-NLS-1$
 				break;
 			default:
-				sb.append(c);
+				if (c < 0x20) {
+					sb.append(String.format("\\u%04x", (int) c)); //$NON-NLS-1$
+				} else {
+					sb.append(c);
+				}
 				break;
 			}
 		}
