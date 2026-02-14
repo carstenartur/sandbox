@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.common;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -31,6 +32,7 @@ import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
@@ -427,6 +429,114 @@ public final class NodeMatcher<N extends ASTNode> {
 			}
 		}
 		return this;
+	}
+
+	// ========== Composite Matchers ==========
+
+	/**
+	 * Matches if the node is a Block containing exactly one statement of the given type,
+	 * and that statement matches the predicate.
+	 *
+	 * @param <S> the expected statement type
+	 * @param stmtClass the class of the single statement to match
+	 * @param predicate the predicate to test the statement
+	 * @param consumer the consumer to execute if matched
+	 * @return this matcher for chaining
+	 */
+	public <S extends Statement> NodeMatcher<N> ifBlockWithSingleStatement(
+			Class<S> stmtClass,
+			Predicate<S> predicate,
+			Consumer<S> consumer) {
+		if (!handled && node instanceof Block block) {
+			if (block.statements().size() == 1
+					&& stmtClass.isInstance(block.statements().get(0))) {
+				S stmt = stmtClass.cast(block.statements().get(0));
+				if (predicate.test(stmt)) {
+					consumer.accept(stmt);
+					handled = true;
+				}
+			}
+		}
+		return this;
+	}
+
+	/**
+	 * If the node is an IfStatement, extracts the thenStatement and matches it
+	 * as either a direct statement or a Block with a single statement of the given type.
+	 *
+	 * @param <S> the expected statement type
+	 * @param stmtClass the class to match the then-branch content against
+	 * @param predicate the predicate to test the matched statement
+	 * @param consumer the consumer to execute if matched
+	 * @return this matcher for chaining
+	 */
+	public <S extends Statement> NodeMatcher<N> ifThenStatementIs(
+			Class<S> stmtClass,
+			Predicate<S> predicate,
+			Consumer<S> consumer) {
+		if (!handled && node instanceof IfStatement ifStmt) {
+			Statement then = ifStmt.getThenStatement();
+			if (stmtClass.isInstance(then)) {
+				S stmt = stmtClass.cast(then);
+				if (predicate.test(stmt)) {
+					consumer.accept(stmt);
+					handled = true;
+				}
+			} else if (then instanceof Block block
+					&& block.statements().size() == 1
+					&& stmtClass.isInstance(block.statements().get(0))) {
+				S stmt = stmtClass.cast(block.statements().get(0));
+				if (predicate.test(stmt)) {
+					consumer.accept(stmt);
+					handled = true;
+				}
+			}
+		}
+		return this;
+	}
+
+	/**
+	 * If the node matches the given type, applies the mapper and passes the result
+	 * to the consumer. The node is considered handled if the mapper returns a non-null result.
+	 *
+	 * @param <T> the expected node type
+	 * @param <R> the result type
+	 * @param nodeClass the class to match
+	 * @param mapper the function to extract a result from the node
+	 * @param resultConsumer the consumer to receive the non-null result
+	 * @return this matcher for chaining
+	 */
+	public <T extends ASTNode, R> NodeMatcher<N> ifTypeMapping(
+			Class<T> nodeClass,
+			Function<T, R> mapper,
+			Consumer<R> resultConsumer) {
+		if (!handled && nodeClass.isInstance(node)) {
+			R result = mapper.apply(nodeClass.cast(node));
+			if (result != null) {
+				resultConsumer.accept(result);
+				handled = true;
+			}
+		}
+		return this;
+	}
+
+	// ========== Static Utility Methods ==========
+
+	/**
+	 * Applies a NodeMatcher configuration to each element in a list.
+	 * Only elements that are ASTNode instances are processed.
+	 *
+	 * @param statements the list of statements to match against
+	 * @param matcherConfig the matcher configuration to apply per statement
+	 */
+	@SuppressWarnings("rawtypes")
+	public static void matchAll(List statements,
+			Function<NodeMatcher<ASTNode>, NodeMatcher<ASTNode>> matcherConfig) {
+		for (Object stmt : statements) {
+			if (stmt instanceof ASTNode astNode) {
+				matcherConfig.apply(NodeMatcher.on(astNode));
+			}
+		}
 	}
 
 	// ========== Terminal Operations ==========

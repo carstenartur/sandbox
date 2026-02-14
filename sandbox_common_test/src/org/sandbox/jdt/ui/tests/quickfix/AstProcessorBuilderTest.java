@@ -27,12 +27,15 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.NodeMatcher;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
@@ -472,6 +475,81 @@ public class AstProcessorBuilderTest {
 
 			// Verify we can access the processor
 			assertNotNull(AstProcessorBuilder.with(holder).processor());
+		}
+	}
+
+	@Nested
+	@DisplayName("matchNode()")
+	class MatchNodeTests {
+
+		@Test
+		@DisplayName("matchNode finds correct type")
+		void matchNodeFindsCorrectType() {
+			ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
+			AtomicInteger ifCount = new AtomicInteger(0);
+
+			AstProcessorBuilder.with(holder)
+					.matchNode(IfStatement.class, m -> m
+						.ifIfStatement(is -> ifCount.incrementAndGet()))
+					.build(forLoopClass);
+
+			assertEquals(1, ifCount.get(), "Should find 1 if statement via matchNode");
+		}
+
+		@Test
+		@DisplayName("matchNode handled state prevents duplicate processing")
+		void matchNodeHandledStatePreventsDuplicate() {
+			ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
+			AtomicInteger firstBranch = new AtomicInteger(0);
+			AtomicInteger secondBranch = new AtomicInteger(0);
+
+			AstProcessorBuilder.with(holder)
+					.matchNode(IfStatement.class, m -> m
+						.ifIfStatementWithoutElse(is -> firstBranch.incrementAndGet())
+						.ifIfStatement(is -> secondBranch.incrementAndGet()))
+					.build(forLoopClass);
+
+			assertEquals(1, firstBranch.get(), "First matcher should handle the node");
+			assertEquals(0, secondBranch.get(), "Second matcher should be skipped");
+		}
+
+		@Test
+		@DisplayName("matchNode with predicate filters correctly")
+		void matchNodeWithPredicateFiltersCorrectly() {
+			ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
+			AtomicInteger count = new AtomicInteger(0);
+
+			AstProcessorBuilder.with(holder)
+					.matchNode(ReturnStatement.class, m -> m
+						.ifTypeMatching(ReturnStatement.class,
+							rs -> rs.getExpression() != null,
+							rs -> count.incrementAndGet()))
+					.build(simpleClass);
+
+			assertEquals(2, count.get(), "Should find return statements with expressions");
+		}
+	}
+
+	@Nested
+	@DisplayName("onEachStatement()")
+	class OnEachStatementTests {
+
+		@Test
+		@DisplayName("onEachStatement processes all statements in blocks")
+		void onEachStatementProcessesAllStatements() {
+			ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
+			List<String> matched = new ArrayList<>();
+
+			AstProcessorBuilder.with(holder)
+					.onEachStatement(m -> m
+						.ifVariableDeclaration(vd -> matched.add("varDecl"))
+						.ifReturnStatement(rs -> matched.add("return"))
+						.ifExpressionStatement(es -> matched.add("expr")))
+					.build(simpleClass);
+
+			assertFalse(matched.isEmpty(), "Should match at least some statements");
+			assertTrue(matched.contains("varDecl") || matched.contains("return") || matched.contains("expr"),
+					"Should find at least one of the expected statement types");
 		}
 	}
 }
