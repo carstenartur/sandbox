@@ -133,11 +133,7 @@ public final class NodeMatcher<N extends ASTNode> {
 	 * Executes the consumer if the node is a VariableDeclarationStatement.
 	 */
 	public NodeMatcher<N> ifVariableDeclaration(Consumer<VariableDeclarationStatement> consumer) {
-		if (!handled && node instanceof VariableDeclarationStatement) {
-			consumer.accept((VariableDeclarationStatement) node);
-			handled = true;
-		}
-		return this;
+		return ifType(VariableDeclarationStatement.class, consumer);
 	}
 
 	/**
@@ -146,25 +142,14 @@ public final class NodeMatcher<N extends ASTNode> {
 	public NodeMatcher<N> ifVariableDeclarationMatching(
 			Predicate<VariableDeclarationStatement> predicate,
 			Consumer<VariableDeclarationStatement> consumer) {
-		if (!handled && node instanceof VariableDeclarationStatement) {
-			VariableDeclarationStatement varDecl = (VariableDeclarationStatement) node;
-			if (predicate.test(varDecl)) {
-				consumer.accept(varDecl);
-				handled = true;
-			}
-		}
-		return this;
+		return ifTypeMatching(VariableDeclarationStatement.class, predicate, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is an IfStatement.
 	 */
 	public NodeMatcher<N> ifIfStatement(Consumer<IfStatement> consumer) {
-		if (!handled && node instanceof IfStatement) {
-			consumer.accept((IfStatement) node);
-			handled = true;
-		}
-		return this;
+		return ifType(IfStatement.class, consumer);
 	}
 
 	/**
@@ -173,14 +158,7 @@ public final class NodeMatcher<N extends ASTNode> {
 	public NodeMatcher<N> ifIfStatementMatching(
 			Predicate<IfStatement> predicate,
 			Consumer<IfStatement> consumer) {
-		if (!handled && node instanceof IfStatement) {
-			IfStatement ifStmt = (IfStatement) node;
-			if (predicate.test(ifStmt)) {
-				consumer.accept(ifStmt);
-				handled = true;
-			}
-		}
-		return this;
+		return ifTypeMatching(IfStatement.class, predicate, consumer);
 	}
 
 	/**
@@ -201,11 +179,7 @@ public final class NodeMatcher<N extends ASTNode> {
 	 * Executes the consumer if the node is an ExpressionStatement.
 	 */
 	public NodeMatcher<N> ifExpressionStatement(Consumer<ExpressionStatement> consumer) {
-		if (!handled && node instanceof ExpressionStatement) {
-			consumer.accept((ExpressionStatement) node);
-			handled = true;
-		}
-		return this;
+		return ifType(ExpressionStatement.class, consumer);
 	}
 
 	/**
@@ -214,69 +188,42 @@ public final class NodeMatcher<N extends ASTNode> {
 	public NodeMatcher<N> ifExpressionStatementMatching(
 			Predicate<ExpressionStatement> predicate,
 			Consumer<ExpressionStatement> consumer) {
-		if (!handled && node instanceof ExpressionStatement) {
-			ExpressionStatement exprStmt = (ExpressionStatement) node;
-			if (predicate.test(exprStmt)) {
-				consumer.accept(exprStmt);
-				handled = true;
-			}
-		}
-		return this;
+		return ifTypeMatching(ExpressionStatement.class, predicate, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a ReturnStatement.
 	 */
 	public NodeMatcher<N> ifReturnStatement(Consumer<ReturnStatement> consumer) {
-		if (!handled && node instanceof ReturnStatement) {
-			consumer.accept((ReturnStatement) node);
-			handled = true;
-		}
-		return this;
+		return ifType(ReturnStatement.class, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a ContinueStatement.
 	 */
 	public NodeMatcher<N> ifContinueStatement(Consumer<ContinueStatement> consumer) {
-		if (!handled && node instanceof ContinueStatement) {
-			consumer.accept((ContinueStatement) node);
-			handled = true;
-		}
-		return this;
+		return ifType(ContinueStatement.class, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a BreakStatement.
 	 */
 	public NodeMatcher<N> ifBreakStatement(Consumer<BreakStatement> consumer) {
-		if (!handled && node instanceof BreakStatement) {
-			consumer.accept((BreakStatement) node);
-			handled = true;
-		}
-		return this;
+		return ifType(BreakStatement.class, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a ThrowStatement.
 	 */
 	public NodeMatcher<N> ifThrowStatement(Consumer<ThrowStatement> consumer) {
-		if (!handled && node instanceof ThrowStatement) {
-			consumer.accept((ThrowStatement) node);
-			handled = true;
-		}
-		return this;
+		return ifType(ThrowStatement.class, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a Block.
 	 */
 	public NodeMatcher<N> ifBlock(Consumer<Block> consumer) {
-		if (!handled && node instanceof Block) {
-			consumer.accept((Block) node);
-			handled = true;
-		}
-		return this;
+		return ifType(Block.class, consumer);
 	}
 
 	// ========== Expression Type Matchers ==========
@@ -285,11 +232,7 @@ public final class NodeMatcher<N extends ASTNode> {
 	 * Executes the consumer if the node is an Assignment.
 	 */
 	public NodeMatcher<N> ifAssignment(Consumer<Assignment> consumer) {
-		if (!handled && node instanceof Assignment) {
-			consumer.accept((Assignment) node);
-			handled = true;
-		}
-		return this;
+		return ifType(Assignment.class, consumer);
 	}
 
 	/**
@@ -298,102 +241,63 @@ public final class NodeMatcher<N extends ASTNode> {
 	public NodeMatcher<N> ifAssignmentWithOperator(
 			Assignment.Operator operator,
 			Consumer<Assignment> consumer) {
-		if (!handled && node instanceof Assignment) {
-			Assignment assignment = (Assignment) node;
-			if (assignment.getOperator() == operator) {
-				consumer.accept(assignment);
-				handled = true;
-			}
-		}
-		return this;
+		return ifTypeMatching(Assignment.class, a -> a.getOperator() == operator, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a MethodInvocation.
 	 */
 	public NodeMatcher<N> ifMethodInvocation(Consumer<MethodInvocation> consumer) {
-		if (!handled && node instanceof MethodInvocation) {
-			consumer.accept((MethodInvocation) node);
-			handled = true;
-		}
-		return this;
+		return ifType(MethodInvocation.class, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a MethodInvocation with the specified method name.
 	 */
 	public NodeMatcher<N> ifMethodInvocationNamed(String methodName, Consumer<MethodInvocation> consumer) {
-		if (!handled && node instanceof MethodInvocation) {
-			MethodInvocation mi = (MethodInvocation) node;
-			if (methodName.equals(mi.getName().getIdentifier())) {
-				consumer.accept(mi);
-				handled = true;
-			}
-		}
-		return this;
+		return ifTypeMatching(MethodInvocation.class, 
+				mi -> methodName.equals(mi.getName().getIdentifier()), consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a PostfixExpression.
 	 */
 	public NodeMatcher<N> ifPostfixExpression(Consumer<PostfixExpression> consumer) {
-		if (!handled && node instanceof PostfixExpression) {
-			consumer.accept((PostfixExpression) node);
-			handled = true;
-		}
-		return this;
+		return ifType(PostfixExpression.class, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a PostfixExpression with increment or decrement.
 	 */
 	public NodeMatcher<N> ifPostfixIncrementOrDecrement(Consumer<PostfixExpression> consumer) {
-		if (!handled && node instanceof PostfixExpression) {
-			PostfixExpression postfix = (PostfixExpression) node;
-			if (postfix.getOperator() == PostfixExpression.Operator.INCREMENT
-					|| postfix.getOperator() == PostfixExpression.Operator.DECREMENT) {
-				consumer.accept(postfix);
-				handled = true;
-			}
-		}
-		return this;
+		return ifTypeMatching(PostfixExpression.class,
+				postfix -> postfix.getOperator() == PostfixExpression.Operator.INCREMENT
+						|| postfix.getOperator() == PostfixExpression.Operator.DECREMENT,
+				consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a PrefixExpression.
 	 */
 	public NodeMatcher<N> ifPrefixExpression(Consumer<PrefixExpression> consumer) {
-		if (!handled && node instanceof PrefixExpression) {
-			consumer.accept((PrefixExpression) node);
-			handled = true;
-		}
-		return this;
+		return ifType(PrefixExpression.class, consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a PrefixExpression with increment or decrement.
 	 */
 	public NodeMatcher<N> ifPrefixIncrementOrDecrement(Consumer<PrefixExpression> consumer) {
-		if (!handled && node instanceof PrefixExpression) {
-			PrefixExpression prefix = (PrefixExpression) node;
-			if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT
-					|| prefix.getOperator() == PrefixExpression.Operator.DECREMENT) {
-				consumer.accept(prefix);
-				handled = true;
-			}
-		}
-		return this;
+		return ifTypeMatching(PrefixExpression.class,
+				prefix -> prefix.getOperator() == PrefixExpression.Operator.INCREMENT
+						|| prefix.getOperator() == PrefixExpression.Operator.DECREMENT,
+				consumer);
 	}
 
 	/**
 	 * Executes the consumer if the node is a SimpleName.
 	 */
 	public NodeMatcher<N> ifSimpleName(Consumer<SimpleName> consumer) {
-		if (!handled && node instanceof SimpleName) {
-			consumer.accept((SimpleName) node);
-			handled = true;
-		}
-		return this;
+		return ifType(SimpleName.class, consumer);
 	}
 
 	// ========== Generic Type Matcher ==========
@@ -598,10 +502,8 @@ public final class NodeMatcher<N extends ASTNode> {
 	 * @return true if the node is an assignment statement
 	 */
 	public boolean isAssignmentStatement() {
-		if (node instanceof ExpressionStatement) {
-			return ((ExpressionStatement) node).getExpression() instanceof Assignment;
-		}
-		return false;
+		return node instanceof ExpressionStatement exprStmt
+				&& exprStmt.getExpression() instanceof Assignment;
 	}
 
 	/**
@@ -610,11 +512,9 @@ public final class NodeMatcher<N extends ASTNode> {
 	 * @return Optional containing the Assignment, or empty if not an assignment statement
 	 */
 	public Optional<Assignment> getAssignment() {
-		if (node instanceof ExpressionStatement) {
-			Expression expr = ((ExpressionStatement) node).getExpression();
-			if (expr instanceof Assignment) {
-				return Optional.of((Assignment) expr);
-			}
+		if (node instanceof ExpressionStatement exprStmt
+				&& exprStmt.getExpression() instanceof Assignment assignment) {
+			return Optional.of(assignment);
 		}
 		return Optional.empty();
 	}
@@ -625,8 +525,8 @@ public final class NodeMatcher<N extends ASTNode> {
 	 * @return Optional containing the Expression, or empty if not an ExpressionStatement
 	 */
 	public Optional<Expression> getExpression() {
-		if (node instanceof ExpressionStatement) {
-			return Optional.of(((ExpressionStatement) node).getExpression());
+		if (node instanceof ExpressionStatement exprStmt) {
+			return Optional.of(exprStmt.getExpression());
 		}
 		return Optional.empty();
 	}

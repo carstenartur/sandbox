@@ -189,11 +189,9 @@ public final class ExpressionHelper {
 			throw new IllegalArgumentException("expression cannot be null"); //$NON-NLS-1$
 		}
 
-		if (expression instanceof SimpleName && varName != null) {
-			SimpleName simpleName = (SimpleName) expression;
-			return simpleName.getIdentifier().equals(varName);
-		}
-		return false;
+		return expression instanceof SimpleName simpleName
+				&& varName != null
+				&& simpleName.getIdentifier().equals(varName);
 	}
 
 	/**
@@ -232,12 +230,9 @@ public final class ExpressionHelper {
 		Expression unwrapped = ASTNodes.getUnparenthesedExpression(expr);
 
 		// Check if it's a negated expression
-		if (unwrapped instanceof PrefixExpression) {
-			PrefixExpression prefixExpr = (PrefixExpression) unwrapped;
-			if (prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
-				// Return the operand without the NOT
-				return prefixExpr.getOperand();
-			}
+		if (unwrapped instanceof PrefixExpression prefixExpr
+				&& prefixExpr.getOperator() == PrefixExpression.Operator.NOT) {
+			return prefixExpr.getOperand();
 		}
 
 		// Not a negated expression, return as-is
@@ -289,12 +284,8 @@ public final class ExpressionHelper {
 		Expression unwrapped = ASTNodes.getUnparenthesedExpression(expr);
 
 		// Check if it's a negated expression
-		if (unwrapped instanceof PrefixExpression) {
-			PrefixExpression prefixExpr = (PrefixExpression) unwrapped;
-			return prefixExpr.getOperator() == PrefixExpression.Operator.NOT;
-		}
-
-		return false;
+		return unwrapped instanceof PrefixExpression prefixExpr
+				&& prefixExpr.getOperator() == PrefixExpression.Operator.NOT;
 	}
 
 	/**

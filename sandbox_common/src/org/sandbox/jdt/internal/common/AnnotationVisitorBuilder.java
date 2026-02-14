@@ -107,67 +107,14 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
         // and break indexing when users call holder.size() to get the next key
         final boolean[] shouldContinue = { true };
         
-        // Create adapter BiPredicates for each annotation type that delegate to the processor
-        BiPredicate<MarkerAnnotation, ReferenceHolder<V, H>> markerAdapter = (MarkerAnnotation node, ReferenceHolder<V, H> h) -> {
-            // Check if already processed (excluded)
-            if (nodesprocessed != null && nodesprocessed.contains(node)) {
-                return true; // Skip this node but continue processing others
-            }
-            if (!shouldContinue[0]) {
-                return false;
-            }
-            boolean result = processor.test(node, h);
-            if (!result) {
-                shouldContinue[0] = false;
-            }
-            return result;
-        };
-        
-        BiPredicate<SingleMemberAnnotation, ReferenceHolder<V, H>> singleMemberAdapter = (SingleMemberAnnotation node, ReferenceHolder<V, H> h) -> {
-            // Check if already processed (excluded)
-            if (nodesprocessed != null && nodesprocessed.contains(node)) {
-                return true; // Skip this node but continue processing others
-            }
-            if (!shouldContinue[0]) {
-                return false;
-            }
-            boolean result = processor.test(node, h);
-            if (!result) {
-                shouldContinue[0] = false;
-            }
-            return result;
-        };
-        
-        BiPredicate<NormalAnnotation, ReferenceHolder<V, H>> normalAdapter = (NormalAnnotation node, ReferenceHolder<V, H> h) -> {
-            // Check if already processed (excluded)
-            if (nodesprocessed != null && nodesprocessed.contains(node)) {
-                return true; // Skip this node but continue processing others
-            }
-            if (!shouldContinue[0]) {
-                return false;
-            }
-            boolean result = processor.test(node, h);
-            if (!result) {
-                shouldContinue[0] = false;
-            }
-            return result;
-        };
-        
-        BiPredicate<ImportDeclaration, ReferenceHolder<V, H>> importAdapter = (ImportDeclaration node, ReferenceHolder<V, H> h) -> {
-            // Check if already processed (excluded)
-            if (nodesprocessed != null && nodesprocessed.contains(node)) {
-                return true; // Skip this node but continue processing others
-            }
-            if (!shouldContinue[0]) {
-                return false;
-            }
-            // For imports, pass as ASTNode (polymorphic handling when imports are included)
-            boolean result = processor.test(node, h);
-            if (!result) {
-                shouldContinue[0] = false;
-            }
-            return result;
-        };
+        // Create a single adapter that handles exclusion, continuation, and delegation
+        // for all node types (annotations and imports) uniformly
+        BiPredicate<MarkerAnnotation, ReferenceHolder<V, H>> markerAdapter =
+                createNodeAdapter(processor, shouldContinue);
+        BiPredicate<SingleMemberAnnotation, ReferenceHolder<V, H>> singleMemberAdapter =
+                createNodeAdapter(processor, shouldContinue);
+        BiPredicate<NormalAnnotation, ReferenceHolder<V, H>> normalAdapter =
+                createNodeAdapter(processor, shouldContinue);
         
         // Call visitors for all three annotation types to match annotations regardless of parameters
         if (shouldContinue[0]) {
@@ -185,8 +132,38 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder<ASTNode> {
         
         // Optionally include import declarations
         if (shouldContinue[0] && includeImports) {
+            BiPredicate<ImportDeclaration, ReferenceHolder<V, H>> importAdapter =
+                    createNodeAdapter(processor, shouldContinue);
             HelperVisitorFactory.callImportDeclarationVisitor(annotationFQN, compilationUnit,
                     holder, nodesprocessed, importAdapter);
         }
+    }
+    
+    /**
+     * Creates a type-safe adapter BiPredicate that handles exclusion checking,
+     * continuation tracking, and delegation to the main processor.
+     * 
+     * @param <N> the specific AST node type (e.g., MarkerAnnotation, ImportDeclaration)
+     * @param <V> the key type of the reference holder
+     * @param <H> the value type of the reference holder
+     * @param processor the main processor to delegate to
+     * @param shouldContinue shared continuation flag (modified on processor returning false)
+     * @return a BiPredicate adapter for the specific node type
+     */
+    private <N extends ASTNode, V, H> BiPredicate<N, ReferenceHolder<V, H>> createNodeAdapter(
+            BiPredicate<ASTNode, ReferenceHolder<V, H>> processor, boolean[] shouldContinue) {
+        return (N node, ReferenceHolder<V, H> h) -> {
+            if (nodesprocessed != null && nodesprocessed.contains(node)) {
+                return true; // Skip this node but continue processing others
+            }
+            if (!shouldContinue[0]) {
+                return false;
+            }
+            boolean result = processor.test(node, h);
+            if (!result) {
+                shouldContinue[0] = false;
+            }
+            return result;
+        };
     }
 }

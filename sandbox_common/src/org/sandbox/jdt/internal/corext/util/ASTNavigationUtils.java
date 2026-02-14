@@ -103,8 +103,7 @@ public final class ASTNavigationUtils {
 	 */
 	public static TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
 		for (Object obj : unit.types()) {
-			if (obj instanceof TypeDeclaration) {
-				TypeDeclaration typeDecl = (TypeDeclaration) obj;
+			if (obj instanceof TypeDeclaration typeDecl) {
 				TypeDeclaration result = findTypeDeclarationInType(typeDecl, fullyQualifiedTypeName);
 				if (result != null) {
 					return result;
@@ -212,10 +211,9 @@ public final class ASTNavigationUtils {
 		ASTNode parent = typeDecl.getParent();
 
 		// Process nested classes
-		while (parent instanceof TypeDeclaration) {
-			TypeDeclaration parentType = (TypeDeclaration) parent;
+		while (parent instanceof TypeDeclaration parentType) {
 			qualifiedName.insert(0, parentType.getName().getIdentifier() + "$"); // $ for nested classes //$NON-NLS-1$
-			parent = parent.getParent();
+			parent = parentType.getParent();
 		}
 
 		// Add package name

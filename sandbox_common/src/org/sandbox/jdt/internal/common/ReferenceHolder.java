@@ -52,7 +52,7 @@ public class ReferenceHolder<V,T> extends ConcurrentHashMap<V,T> implements Help
 	/**
 	 * The associated helper visitor for processing AST nodes.
 	 */
-	HelperVisitor<ReferenceHolder<V,T>,V,T> hv;
+	private transient HelperVisitor<ReferenceHolder<V,T>,V,T> hv;
 	
 	/**
 	 * Creates a new empty ReferenceHolder.
