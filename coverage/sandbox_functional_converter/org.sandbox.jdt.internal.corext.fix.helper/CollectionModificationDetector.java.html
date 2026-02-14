@@ -16,8 +16,10 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.ThisExpression;
 
 /**
  * Shared utility for detecting structural modifications on a collection.
@@ -26,12 +28,20 @@ import org.eclipse.jdt.core.dom.SimpleName;
  * {@link JdtLoopExtractor.LoopBodyAnalyzer} to ensure consistent detection
  * of collection modifications that block loop-to-stream conversions.&lt;/p&gt;
  * 
- * &lt;p&gt;&lt;b&gt;Limitation:&lt;/b&gt; Only detects modifications on {@link SimpleName} receivers
- * (e.g., {@code list.remove(x)}). Does not detect modifications via field access
- * ({@code this.list.remove(x)}), method return values ({@code getList().remove(x)}),
- * or array access ({@code arrays[0].clear()}). This is an intentional conservative
- * limitation — the detector focuses on the most common loop patterns where the
- * iterated collection is referenced by a local variable name.&lt;/p&gt;
+ * &lt;p&gt;&lt;b&gt;Supported Receivers:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Simple names: {@code list.remove(x)}&lt;/li&gt;
+ * &lt;li&gt;Field access: {@code this.list.remove(x)}&lt;/li&gt;
+ * &lt;li&gt;Method invocation (getter pattern): {@code getList().remove(x)}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Method Invocation Heuristic:&lt;/b&gt; For method invocations, matches getter
+ * method names against collection names. For example, {@code getList().add(x)}
+ * is detected when iterating over {@code list}. Supports common getter patterns:
+ * {@code getXxx()}, {@code fetchXxx()}, {@code retrieveXxx()}, etc.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Limitation:&lt;/b&gt; Does not detect modifications via array access
+ * ({@code arrays[0].clear()}). This is an intentional conservative limitation.&lt;/p&gt;
  * 
  * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/670&quot;&gt;Issue #670&lt;/a&gt;
  * @since 1.0.0
@@ -42,10 +52,23 @@ public final class CollectionModificationDetector {
 	 * Method names that represent structural modifications on a collection.
 	 * Calling any of these on the iterated collection causes
 	 * ConcurrentModificationException with fail-fast iterators.
+	 * 
+	 * &lt;p&gt;Includes:&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;Collection methods: add, remove, clear, addAll, removeAll, retainAll, removeIf, replaceAll, sort&lt;/li&gt;
+	 * &lt;li&gt;List methods: set&lt;/li&gt;
+	 * &lt;li&gt;Map methods: put, putAll, putIfAbsent, compute, computeIfAbsent, computeIfPresent, merge, replace, replaceAll&lt;/li&gt;
+	 * &lt;/ul&gt;
 	 */
-<span class="fc" id="L46">	private static final Set&lt;String&gt; MODIFYING_METHODS = Set.of(</span>
-<span class="fc" id="L47">			&quot;remove&quot;, &quot;add&quot;, &quot;put&quot;, &quot;clear&quot;, &quot;set&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
-<span class="fc" id="L48">			&quot;addAll&quot;, &quot;removeAll&quot;, &quot;retainAll&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L63">	private static final Set&lt;String&gt; MODIFYING_METHODS = Set.of(</span>
+			// Collection/List methods
+<span class="fc" id="L65">			&quot;remove&quot;, &quot;add&quot;, &quot;clear&quot;, &quot;set&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L66">			&quot;addAll&quot;, &quot;removeAll&quot;, &quot;retainAll&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L67">			&quot;removeIf&quot;, &quot;replaceAll&quot;, &quot;sort&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+			// Map methods
+<span class="fc" id="L69">			&quot;put&quot;, &quot;putAll&quot;, &quot;putIfAbsent&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L70">			&quot;compute&quot;, &quot;computeIfAbsent&quot;, &quot;computeIfPresent&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L71">			&quot;merge&quot;, &quot;replace&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
 	private CollectionModificationDetector() {
 		// utility class
@@ -54,26 +77,95 @@ public final class CollectionModificationDetector {
 	/**
 	 * Checks if a method invocation is a structural modification on a named collection.
 	 * 
-	 * &lt;p&gt;Detects calls to structural modification methods ({@code remove}, {@code add},
-	 * {@code put}, {@code clear}, {@code set}, {@code addAll}, {@code removeAll},
-	 * {@code retainAll}) on the given collection variable.&lt;/p&gt;
+	 * &lt;p&gt;Detects calls to structural modification methods on the given collection variable.
+	 * Supports simple names ({@code list.remove(x)}), field access
+	 * ({@code this.list.remove(x)}), and method invocation receivers
+	 * ({@code getList().remove(x)}).&lt;/p&gt;
 	 * 
 	 * @param methodInv the method invocation to check
 	 * @param collectionName the name of the iterated collection variable
 	 * @return {@code true} if this is a structural modification on the named collection
 	 */
 	public static boolean isModification(MethodInvocation methodInv, String collectionName) {
-<span class="fc" id="L66">		Expression receiver = methodInv.getExpression();</span>
-<span class="fc bfc" id="L67" title="All 2 branches covered.">		if (!(receiver instanceof SimpleName receiverName)) {</span>
-<span class="fc" id="L68">			return false;</span>
+<span class="fc" id="L90">		Expression receiver = methodInv.getExpression();</span>
+		
+		// Check for simple name receiver: list.remove(x)
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		if (receiver instanceof SimpleName receiverName) {</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">			if (collectionName.equals(receiverName.getIdentifier())) {</span>
+<span class="fc" id="L95">				String methodName = methodInv.getName().getIdentifier();</span>
+<span class="fc" id="L96">				return MODIFYING_METHODS.contains(methodName);</span>
+			}
 		}
-
-<span class="fc bfc" id="L71" title="All 2 branches covered.">		if (!collectionName.equals(receiverName.getIdentifier())) {</span>
-<span class="fc" id="L72">			return false;</span>
+		
+		// Check for field access receiver: this.list.remove(x)
+<span class="fc bfc" id="L101" title="All 2 branches covered.">		if (receiver instanceof FieldAccess fieldAccess) {</span>
+<span class="fc" id="L102">			Expression fieldExpression = fieldAccess.getExpression();</span>
+			// Check if it's &quot;this.fieldName&quot;
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">			if (fieldExpression instanceof ThisExpression) {</span>
+<span class="fc" id="L105">				SimpleName fieldName = fieldAccess.getName();</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">				if (collectionName.equals(fieldName.getIdentifier())) {</span>
+<span class="fc" id="L107">					String methodName = methodInv.getName().getIdentifier();</span>
+<span class="fc" id="L108">					return MODIFYING_METHODS.contains(methodName);</span>
+				}
+			}
 		}
-
-<span class="fc" id="L75">		String methodName = methodInv.getName().getIdentifier();</span>
-<span class="fc" id="L76">		return MODIFYING_METHODS.contains(methodName);</span>
+		
+		// Check for method invocation receiver: getList().remove(x)
+<span class="fc bfc" id="L114" title="All 2 branches covered.">		if (receiver instanceof MethodInvocation getterInvocation) {</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">			if (matchesGetterPattern(getterInvocation, collectionName)) {</span>
+<span class="fc" id="L116">				String methodName = methodInv.getName().getIdentifier();</span>
+<span class="fc" id="L117">				return MODIFYING_METHODS.contains(methodName);</span>
+			}
+		}
+		
+<span class="fc" id="L121">		return false;</span>
+	}
+	
+	/**
+	 * Common getter method prefixes used in heuristic matching.
+	 */
+<span class="fc" id="L127">	private static final String[] GETTER_PREFIXES = { </span>
+<span class="fc" id="L128">			&quot;get&quot;, &quot;fetch&quot;, &quot;retrieve&quot;, &quot;obtain&quot; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L129">	};</span>
+	
+	/**
+	 * Checks if a method invocation matches a getter pattern for the given collection name.
+	 * 
+	 * &lt;p&gt;Matches common getter patterns like:&lt;/p&gt;
+	 * &lt;ul&gt;
+	 * &lt;li&gt;{@code getList()} → {@code list}&lt;/li&gt;
+	 * &lt;li&gt;{@code fetchItems()} → {@code items}&lt;/li&gt;
+	 * &lt;li&gt;{@code retrieveMap()} → {@code map}&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param methodInv the method invocation to check
+	 * @param collectionName the expected collection name
+	 * @return {@code true} if the method name matches a getter pattern for the collection
+	 */
+	private static boolean matchesGetterPattern(MethodInvocation methodInv, String collectionName) {
+		// Only consider no-arg methods (simple getters)
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		if (!methodInv.arguments().isEmpty()) {</span>
+<span class="fc" id="L148">			return false;</span>
+		}
+		
+<span class="fc" id="L151">		String methodName = methodInv.getName().getIdentifier();</span>
+		
+<span class="fc bfc" id="L153" title="All 2 branches covered.">		for (String prefix : GETTER_PREFIXES) {</span>
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">			if (methodName.startsWith(prefix) &amp;&amp; methodName.length() &gt; prefix.length()) {</span>
+				// Extract the property name after the prefix (e.g., &quot;List&quot; from &quot;getList&quot;)
+<span class="fc" id="L156">				String propertyName = methodName.substring(prefix.length());</span>
+				
+				// Convert first char to lowercase to get the expected variable name
+<span class="fc" id="L159">				String expectedName = Character.toLowerCase(propertyName.charAt(0)) + </span>
+<span class="fc" id="L160">						propertyName.substring(1);</span>
+				
+<span class="fc bfc" id="L162" title="All 2 branches covered.">				if (collectionName.equals(expectedName)) {</span>
+<span class="fc" id="L163">					return true;</span>
+				}
+			}
+		}
+		
+<span class="fc" id="L168">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

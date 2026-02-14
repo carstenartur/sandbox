@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JFacePlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_jface_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">JFacePlugin.java</span></div><h1>JFacePlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JFacePlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_jface_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">JFacePlugin.java</span></div><h1>JFacePlugin.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
  * Copyright (c) 2021 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -27,6 +27,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -34,7 +35,9 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -76,7 +79,7 @@ import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
  * @see SubProgressMonitor
  * @see SubMonitor
  */
-<span class="fc" id="L79">public class JFacePlugin extends</span>
+<span class="fc" id="L82">public class JFacePlugin extends</span>
 AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 
 	public static final String CLASS_INSTANCE_CREATION = &quot;ClassInstanceCreation&quot;; //$NON-NLS-1$
@@ -92,14 +95,20 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 	 * Holder for monitor-related transformation data.
 	 * Tracks beginTask invocations and associated SubProgressMonitor instances.
 	 */
-<span class="fc" id="L95">	public static class MonitorHolder {</span>
+<span class="fc" id="L98">	public static class MonitorHolder {</span>
 		/** The beginTask method invocation to be converted */
 		public MethodInvocation minv;
 		/** The monitor variable name from beginTask expression */
 		public String minvname;
 		/** Set of SubProgressMonitor constructions to be converted to split() calls */
-<span class="fc" id="L101">		public Set&lt;ClassInstanceCreation&gt; setofcic = new HashSet&lt;&gt;();</span>
-		/** Nodes that have been processed to avoid duplicate transformations */
+<span class="fc" id="L104">		public Set&lt;ClassInstanceCreation&gt; setofcic = new HashSet&lt;&gt;();</span>
+		/** Standalone SubProgressMonitor constructions (without associated beginTask) */
+<span class="fc" id="L106">		public Set&lt;ClassInstanceCreation&gt; standaloneSubProgressMonitors = new HashSet&lt;&gt;();</span>
+		/** SubProgressMonitor on already-SubMonitor variables (use split() directly) */
+<span class="fc" id="L108">		public Set&lt;ClassInstanceCreation&gt; subProgressMonitorOnSubMonitor = new HashSet&lt;&gt;();</span>
+		/** SubProgressMonitor type references to be replaced with IProgressMonitor */
+<span class="fc" id="L110">		public Set&lt;org.eclipse.jdt.core.dom.Type&gt; typesToReplace = new HashSet&lt;&gt;();</span>
+		/** Nodes that have been processed to avoid duplicate transformations (references shared Set passed during construction) */
 		public Set&lt;ASTNode&gt; nodesprocessed;
 	}
 
@@ -109,7 +118,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 	 * @return {@code true} if debug logging is enabled, {@code false} otherwise
 	 */
 	private static boolean isDebugEnabled() {
-<span class="pc bpc" id="L112" title="3 of 4 branches missed.">		return Platform.inDebugMode() &amp;&amp; &quot;true&quot;.equalsIgnoreCase(Platform.getDebugOption(DEBUG_OPTION)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L121" title="3 of 4 branches missed.">		return Platform.inDebugMode() &amp;&amp; &quot;true&quot;.equalsIgnoreCase(Platform.getDebugOption(DEBUG_OPTION)); //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -118,19 +127,19 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 	 * @param message the message to log
 	 */
 	private static void logDebug(String message) {
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">		if (isDebugEnabled()) {</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">		if (isDebugEnabled()) {</span>
 			try {
-<span class="nc" id="L123">				Bundle bundle = Platform.getBundle(BUNDLE_ID);</span>
-<span class="nc bnc" id="L124" title="All 2 branches missed.">				if (bundle != null) {</span>
-<span class="nc" id="L125">					ILog log = Platform.getLog(bundle);</span>
-<span class="nc" id="L126">					log.log(new Status(IStatus.INFO, BUNDLE_ID, &quot;JFacePlugin: &quot; + message)); //$NON-NLS-1$</span>
+<span class="nc" id="L132">				Bundle bundle = Platform.getBundle(BUNDLE_ID);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">				if (bundle != null) {</span>
+<span class="nc" id="L134">					ILog log = Platform.getLog(bundle);</span>
+<span class="nc" id="L135">					log.log(new Status(IStatus.INFO, BUNDLE_ID, &quot;JFacePlugin: &quot; + message)); //$NON-NLS-1$</span>
 				}
-<span class="nc" id="L128">			} catch (Exception e) {</span>
-<span class="nc" id="L129">				System.err.println(&quot;Failed to log debug message: &quot; + e.getMessage());</span>
-<span class="nc" id="L130">				e.printStackTrace(System.err);</span>
+<span class="nc" id="L137">			} catch (Exception e) {</span>
+<span class="nc" id="L138">				System.err.println(&quot;Failed to log debug message: &quot; + e.getMessage());</span>
+<span class="nc" id="L139">				e.printStackTrace(System.err);</span>
 			}
 		}
-<span class="fc" id="L133">	}</span>
+<span class="fc" id="L142">	}</span>
 
 	/**
 	 * Finds and identifies SubProgressMonitor usage patterns to be transformed.
@@ -154,75 +163,256 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 	public void find(JfaceCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
-<span class="fc" id="L157">		ReferenceHolder&lt;Integer, MonitorHolder&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L166">		ReferenceHolder&lt;Integer, MonitorHolder&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
 		
-<span class="fc" id="L159">		AstProcessorBuilder.with(dataholder, nodesprocessed)</span>
-<span class="fc" id="L160">			.processor()</span>
-<span class="fc" id="L161">			.callMethodInvocationVisitor(IProgressMonitor.class, &quot;beginTask&quot;, (node, holder) -&gt; { //$NON-NLS-1$</span>
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">				if (node.arguments().size() != 2) {</span>
-<span class="nc" id="L163">					return true;</span>
+		// Track which SubProgressMonitor nodes are associated with beginTask (prevents Pass 2 from re-processing them)
+<span class="fc" id="L169">		Set&lt;ASTNode&gt; beginTaskAssociated = new HashSet&lt;&gt;();</span>
+		
+		// Pass 1: Find beginTask + SubProgressMonitor patterns (chained visitors)
+<span class="fc" id="L172">		AstProcessorBuilder.with(dataholder, nodesprocessed)</span>
+<span class="fc" id="L173">			.processor()</span>
+<span class="fc" id="L174">			.callMethodInvocationVisitor(IProgressMonitor.class, &quot;beginTask&quot;, (node, holder) -&gt; { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">				if (node.arguments().size() != 2) {</span>
+<span class="nc" id="L176">					return true;</span>
 				}
-<span class="fc" id="L165">				logDebug(&quot;Found beginTask at position &quot; + node.getStartPosition() + &quot; (type: &quot; + node.getClass().getSimpleName() + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L178">				logDebug(&quot;Found beginTask at position &quot; + node.getStartPosition() + &quot; (type: &quot; + node.getClass().getSimpleName() + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 				
 				// Check if parent is ExpressionStatement, otherwise skip
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">				if (!(node.getParent() instanceof ExpressionStatement)) {</span>
-<span class="nc" id="L169">					return true;</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">				if (!(node.getParent() instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L182">					return true;</span>
 				}
 				
-<span class="fc" id="L172">				Expression expr = node.getExpression();</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">				if (expr == null) {</span>
-<span class="nc" id="L174">					return true;</span>
+<span class="fc" id="L185">				Expression expr = node.getExpression();</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				if (expr == null) {</span>
+<span class="nc" id="L187">					return true;</span>
 				}
-<span class="fc" id="L176">				SimpleName sn = ASTNodes.as(expr, SimpleName.class);</span>
-<span class="pc bpc" id="L177" title="1 of 2 branches missed.">				if (sn != null) {</span>
-<span class="fc" id="L178">					IBinding ibinding = sn.resolveBinding();</span>
+<span class="fc" id="L189">				SimpleName sn = ASTNodes.as(expr, SimpleName.class);</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">				if (sn != null) {</span>
+<span class="fc" id="L191">					IBinding ibinding = sn.resolveBinding();</span>
 					// Add null-check for binding
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">					if (ibinding == null) {</span>
-<span class="nc" id="L181">						return true;</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">					if (ibinding == null) {</span>
+<span class="nc" id="L194">						return true;</span>
 					}
-<span class="fc" id="L183">					String name = ibinding.getName();</span>
-<span class="fc" id="L184">					MonitorHolder mh = new MonitorHolder();</span>
-<span class="fc" id="L185">					mh.minv = node;</span>
-<span class="fc" id="L186">					mh.minvname = name;</span>
-<span class="fc" id="L187">					mh.nodesprocessed = nodesprocessed;</span>
-<span class="fc" id="L188">					holder.put(holder.size(), mh);</span>
+<span class="fc" id="L196">					String name = ibinding.getName();</span>
+<span class="fc" id="L197">					MonitorHolder mh = new MonitorHolder();</span>
+<span class="fc" id="L198">					mh.minv = node;</span>
+<span class="fc" id="L199">					mh.minvname = name;</span>
+<span class="fc" id="L200">					mh.nodesprocessed = nodesprocessed;</span>
+<span class="fc" id="L201">					holder.put(holder.size(), mh);</span>
 				}
-<span class="fc" id="L190">				return true;</span>
-<span class="fc" id="L191">			}, s -&gt; ASTNodes.getTypedAncestor(s, Block.class))</span>
-<span class="fc" id="L192">			.callClassInstanceCreationVisitor(&quot;org.eclipse.core.runtime.SubProgressMonitor&quot;, (node, holder) -&gt; { //$NON-NLS-1$</span>
-<span class="fc" id="L193">				List&lt;?&gt; arguments = node.arguments();</span>
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">				if (arguments.isEmpty()) {</span>
-<span class="nc" id="L195">					return true;</span>
+<span class="fc" id="L203">				return true;</span>
+<span class="fc" id="L204">			}, s -&gt; ASTNodes.getTypedAncestor(s, Block.class))</span>
+<span class="fc" id="L205">			.callClassInstanceCreationVisitor(&quot;org.eclipse.core.runtime.SubProgressMonitor&quot;, (node, holder) -&gt; { //$NON-NLS-1$</span>
+<span class="fc" id="L206">				List&lt;?&gt; arguments = node.arguments();</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">				if (arguments.isEmpty()) {</span>
+<span class="nc" id="L208">					return true;</span>
 				}
 				
 				// Safe handling of first argument - extract identifier from expression
-<span class="fc" id="L199">				Expression firstArg = (Expression) arguments.get(0);</span>
-<span class="fc" id="L200">				String firstArgName = null;</span>
+<span class="fc" id="L212">				Expression firstArg = (Expression) arguments.get(0);</span>
+<span class="fc" id="L213">				String firstArgName = null;</span>
 				
 				// Try to extract SimpleName from the expression
-<span class="fc" id="L203">				SimpleName sn = ASTNodes.as(firstArg, SimpleName.class);</span>
-<span class="pc bpc" id="L204" title="1 of 2 branches missed.">				if (sn != null) {</span>
-<span class="fc" id="L205">					firstArgName = sn.getIdentifier();</span>
+<span class="fc" id="L216">				SimpleName sn = ASTNodes.as(firstArg, SimpleName.class);</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">				if (sn != null) {</span>
+<span class="fc" id="L218">					firstArgName = sn.getIdentifier();</span>
 				}
 				
 				// Check if this SubProgressMonitor is associated with a beginTask
-<span class="pc bpc" id="L209" title="2 of 4 branches missed.">				if (!holder.isEmpty() &amp;&amp; firstArgName != null) {</span>
-<span class="fc" id="L210">					MonitorHolder mh = holder.get(holder.size() - 1);</span>
-<span class="pc bpc" id="L211" title="1 of 2 branches missed.">					if (mh.minvname.equals(firstArgName)) {</span>
-<span class="fc" id="L212">						logDebug(&quot;Found SubProgressMonitor construction at position &quot; + node.getStartPosition() + &quot; for variable '&quot; + firstArgName + &quot;' with beginTask&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L213">						mh.setofcic.add(node);</span>
+<span class="pc bpc" id="L222" title="2 of 4 branches missed.">				if (!holder.isEmpty() &amp;&amp; firstArgName != null) {</span>
+<span class="fc" id="L223">					MonitorHolder mh = holder.get(holder.size() - 1);</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">					if (mh.minvname.equals(firstArgName)) {</span>
+<span class="fc" id="L225">						logDebug(&quot;Found SubProgressMonitor construction at position &quot; + node.getStartPosition() + &quot; for variable '&quot; + firstArgName + &quot;' with beginTask&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L226">						mh.setofcic.add(node);</span>
+<span class="fc" id="L227">						beginTaskAssociated.add(node);</span>
 					}
 				}
 				
-<span class="fc" id="L217">				return true;</span>
-<span class="fc" id="L218">			}, s -&gt; ASTNodes.getTypedAncestor(s, Block.class))</span>
-<span class="fc" id="L219">			.build(compilationUnit);</span>
+<span class="fc" id="L231">				return true;</span>
+<span class="fc" id="L232">			}, s -&gt; ASTNodes.getTypedAncestor(s, Block.class))</span>
+<span class="fc" id="L233">			.build(compilationUnit);</span>
 		
 		// Add operations for beginTask-associated monitors
-<span class="fc bfc" id="L222" title="All 2 branches covered.">		if (!dataholder.isEmpty()) {</span>
-<span class="fc" id="L223">			operations.add(fixcore.rewrite(dataholder));</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">		if (!dataholder.isEmpty()) {</span>
+<span class="fc" id="L237">			operations.add(fixcore.rewrite(dataholder));</span>
 		}
-<span class="fc" id="L225">	}</span>
+		
+		// Pass 2: Find standalone SubProgressMonitor instances using direct ASTVisitor
+<span class="fc" id="L241">		ReferenceHolder&lt;Integer, MonitorHolder&gt; standaloneHolder = new ReferenceHolder&lt;&gt;();</span>
+		
+<span class="fc" id="L243">		compilationUnit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(ClassInstanceCreation node) {
+				// Check if this is a SubProgressMonitor construction (use simple name like Pass 1)
+<span class="fc" id="L247">				ITypeBinding binding = node.resolveTypeBinding();</span>
+<span class="pc bpc" id="L248" title="1 of 4 branches missed.">				if (binding == null || !&quot;SubProgressMonitor&quot;.equals(binding.getName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L249">					return true;</span>
+				}
+				
+				// Skip nodes already associated with beginTask from pass 1
+<span class="fc bfc" id="L253" title="All 2 branches covered.">				if (beginTaskAssociated.contains(node)) {</span>
+<span class="fc" id="L254">					return true;</span>
+				}
+				
+<span class="fc" id="L257">				List&lt;?&gt; arguments = node.arguments();</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">				if (arguments.isEmpty()) {</span>
+<span class="nc" id="L259">					return true;</span>
+				}
+				
+				// Safe handling of first argument - extract identifier from expression
+<span class="fc" id="L263">				Expression firstArg = (Expression) arguments.get(0);</span>
+<span class="fc" id="L264">				String firstArgName = null;</span>
+				
+				// Try to extract SimpleName from the expression
+<span class="fc" id="L267">				SimpleName sn = ASTNodes.as(firstArg, SimpleName.class);</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">				if (sn != null) {</span>
+<span class="fc" id="L269">					firstArgName = sn.getIdentifier();</span>
+				}
+				
+				// Check if the variable is already a SubMonitor type (use simple name like Pass 1)
+<span class="fc" id="L273">				boolean isSubMonitorType = false;</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">				if (sn != null) {</span>
+<span class="fc" id="L275">					IBinding snBinding = sn.resolveBinding();</span>
+<span class="pc bpc" id="L276" title="2 of 4 branches missed.">					if (snBinding != null &amp;&amp; snBinding.getKind() == IBinding.VARIABLE) {</span>
+<span class="fc" id="L277">						ITypeBinding typeBinding = </span>
+<span class="fc" id="L278">							((org.eclipse.jdt.core.dom.IVariableBinding) snBinding).getType();</span>
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">						if (typeBinding != null) {</span>
+<span class="fc" id="L280">							isSubMonitorType = &quot;SubMonitor&quot;.equals(typeBinding.getName()); //$NON-NLS-1$</span>
+						}
+					}
+				}
+				
+				// If already SubMonitor type, handle separately (use split() directly)
+<span class="pc bpc" id="L286" title="1 of 4 branches missed.">				if (isSubMonitorType &amp;&amp; firstArgName != null) {</span>
+<span class="fc" id="L287">					logDebug(&quot;Found SubProgressMonitor on already-SubMonitor variable at position &quot; + node.getStartPosition() + &quot; for variable '&quot; + firstArgName + &quot;'&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L288">					MonitorHolder mh = new MonitorHolder();</span>
+<span class="fc" id="L289">					mh.minvname = firstArgName;</span>
+<span class="fc" id="L290">					mh.nodesprocessed = nodesprocessed;</span>
+<span class="fc" id="L291">					mh.subProgressMonitorOnSubMonitor.add(node);</span>
+<span class="fc" id="L292">					standaloneHolder.put(standaloneHolder.size(), mh);</span>
+<span class="fc" id="L293">					return true;</span>
+				}
+				
+				// Standalone SubProgressMonitor (not associated with beginTask)
+<span class="fc bfc" id="L297" title="All 2 branches covered.">				String varName = firstArgName != null ? firstArgName : &quot;monitor&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L298">				logDebug(&quot;Found standalone SubProgressMonitor construction at position &quot; + node.getStartPosition() + &quot; for variable '&quot; + varName + &quot;' without beginTask&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L299">				MonitorHolder mh = new MonitorHolder();</span>
+<span class="fc" id="L300">				mh.minvname = varName;</span>
+<span class="fc" id="L301">				mh.nodesprocessed = nodesprocessed;</span>
+<span class="fc" id="L302">				mh.standaloneSubProgressMonitors.add(node);</span>
+<span class="fc" id="L303">				standaloneHolder.put(standaloneHolder.size(), mh);</span>
+				
+<span class="fc" id="L305">				return true;</span>
+			}
+		});
+		
+		// Add operations for standalone SubProgressMonitor
+<span class="fc bfc" id="L310" title="All 2 branches covered.">		if (!standaloneHolder.isEmpty()) {</span>
+<span class="fc" id="L311">			operations.add(fixcore.rewrite(standaloneHolder));</span>
+		}
+		
+		// Pass 3: Find SubProgressMonitor type references for type replacement
+<span class="fc" id="L315">		ReferenceHolder&lt;Integer, MonitorHolder&gt; typeReplacementHolder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L316">		MonitorHolder typeHolder = new MonitorHolder();</span>
+<span class="fc" id="L317">		typeHolder.nodesprocessed = nodesprocessed;</span>
+		
+<span class="fc" id="L319">		compilationUnit.accept(new ASTVisitor() {</span>
+			/**
+			 * Helper to check if a Type is SubProgressMonitor
+			 */
+			private boolean isSubProgressMonitorType(org.eclipse.jdt.core.dom.Type type) {
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">				if (type == null) {</span>
+<span class="nc" id="L325">					return false;</span>
+				}
+				
+				// First try binding (most reliable)
+<span class="fc" id="L329">				ITypeBinding binding = type.resolveBinding();</span>
+<span class="pc bpc" id="L330" title="1 of 4 branches missed.">				if (binding != null &amp;&amp; !binding.isRecovered()) {</span>
+<span class="fc" id="L331">					return &quot;org.eclipse.core.runtime.SubProgressMonitor&quot;.equals(binding.getQualifiedName()); //$NON-NLS-1$</span>
+				}
+				
+				// Fallback: check type name
+<span class="fc" id="L335">				String typeName = getTypeName(type);</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">				return &quot;SubProgressMonitor&quot;.equals(typeName) || //$NON-NLS-1$</span>
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">					   &quot;org.eclipse.core.runtime.SubProgressMonitor&quot;.equals(typeName); //$NON-NLS-1$</span>
+			}
+			
+			/**
+			 * Extract type name from Type node
+			 */
+			private String getTypeName(org.eclipse.jdt.core.dom.Type type) {
+<span class="fc bfc" id="L344" title="All 2 branches covered.">				if (type.isSimpleType()) {</span>
+<span class="fc" id="L345">					org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;</span>
+<span class="fc" id="L346">					return simpleType.getName().getFullyQualifiedName();</span>
+				}
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">				if (type.isQualifiedType()) {</span>
+<span class="nc" id="L349">					org.eclipse.jdt.core.dom.QualifiedType qualifiedType = (org.eclipse.jdt.core.dom.QualifiedType) type;</span>
+<span class="nc" id="L350">					return qualifiedType.getName().getFullyQualifiedName();</span>
+				}
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">				if (type.isNameQualifiedType()) {</span>
+<span class="nc" id="L353">					org.eclipse.jdt.core.dom.NameQualifiedType nameQualifiedType = (org.eclipse.jdt.core.dom.NameQualifiedType) type;</span>
+<span class="nc" id="L354">					return nameQualifiedType.getName().getFullyQualifiedName();</span>
+				}
+<span class="fc" id="L356">				return type.toString();</span>
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.FieldDeclaration node) {
+<span class="fc" id="L361">				org.eclipse.jdt.core.dom.Type fieldType = node.getType();</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">				if (isSubProgressMonitorType(fieldType)) {</span>
+<span class="fc" id="L363">					logDebug(&quot;Found SubProgressMonitor field declaration at position &quot; + node.getStartPosition()); //$NON-NLS-1$</span>
+<span class="fc" id="L364">					typeHolder.typesToReplace.add(fieldType);</span>
+				}
+<span class="fc" id="L366">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.VariableDeclarationStatement node) {
+<span class="fc" id="L371">				org.eclipse.jdt.core.dom.Type varType = node.getType();</span>
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">				if (isSubProgressMonitorType(varType)) {</span>
+<span class="nc" id="L373">					logDebug(&quot;Found SubProgressMonitor variable declaration at position &quot; + node.getStartPosition()); //$NON-NLS-1$</span>
+<span class="nc" id="L374">					typeHolder.typesToReplace.add(varType);</span>
+				}
+<span class="fc" id="L376">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.MethodDeclaration node) {
+<span class="fc" id="L381">				org.eclipse.jdt.core.dom.Type returnType = node.getReturnType2();</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">				if (isSubProgressMonitorType(returnType)) {</span>
+<span class="fc" id="L383">					logDebug(&quot;Found SubProgressMonitor return type at position &quot; + node.getStartPosition()); //$NON-NLS-1$</span>
+<span class="fc" id="L384">					typeHolder.typesToReplace.add(returnType);</span>
+				}
+<span class="fc" id="L386">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.SingleVariableDeclaration node) {
+<span class="fc" id="L391">				org.eclipse.jdt.core.dom.Type paramType = node.getType();</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">				if (isSubProgressMonitorType(paramType)) {</span>
+<span class="fc" id="L393">					logDebug(&quot;Found SubProgressMonitor parameter type at position &quot; + node.getStartPosition()); //$NON-NLS-1$</span>
+<span class="fc" id="L394">					typeHolder.typesToReplace.add(paramType);</span>
+				}
+<span class="fc" id="L396">				return true;</span>
+			}
+			
+			@Override
+			public boolean visit(org.eclipse.jdt.core.dom.CastExpression node) {
+<span class="fc" id="L401">				org.eclipse.jdt.core.dom.Type castType = node.getType();</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">				if (isSubProgressMonitorType(castType)) {</span>
+<span class="fc" id="L403">					logDebug(&quot;Found SubProgressMonitor cast at position &quot; + node.getStartPosition()); //$NON-NLS-1$</span>
+<span class="fc" id="L404">					typeHolder.typesToReplace.add(castType);</span>
+				}
+<span class="fc" id="L406">				return true;</span>
+			}
+		});
+		
+		// Add operations for type replacement if any types were found
+<span class="fc bfc" id="L411" title="All 2 branches covered.">		if (!typeHolder.typesToReplace.isEmpty()) {</span>
+<span class="fc" id="L412">			typeReplacementHolder.put(0, typeHolder);</span>
+<span class="fc" id="L413">			operations.add(fixcore.rewrite(typeReplacementHolder));</span>
+		}
+<span class="fc" id="L415">	}</span>
 
 	/**
 	 * Rewrites AST nodes to transform SubProgressMonitor patterns to SubMonitor.
@@ -255,36 +445,146 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 	@Override
 	public void rewrite(JfaceCleanUpFixCore upp, final ReferenceHolder&lt;Integer, MonitorHolder&gt; hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-<span class="fc" id="L258">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L259">		AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L260">		ImportRewrite importRemover = cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L448">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L449">		AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L450">		ImportRewrite importRemover = cuRewrite.getImportRewrite();</span>
 		
 		// Guard against empty holder
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		if (hit.isEmpty()) {</span>
-<span class="nc" id="L264">			return;</span>
+<span class="pc bpc" id="L453" title="1 of 2 branches missed.">		if (hit.isEmpty()) {</span>
+<span class="nc" id="L454">			return;</span>
 		}
 		
-<span class="fc" id="L267">		Set&lt;ASTNode&gt; nodesprocessed = hit.get(hit.size() - 1).nodesprocessed;</span>
-<span class="fc bfc" id="L268" title="All 2 branches covered.">		for (Entry&lt;Integer, MonitorHolder&gt; entry : hit.entrySet()) {</span>
+		// Track whether any flag was passed through unmapped (may still reference SubProgressMonitor)
+<span class="fc" id="L458">		boolean hasUnmappedFlags = false;</span>
+		
+<span class="fc bfc" id="L460" title="All 2 branches covered.">		for (Entry&lt;Integer, MonitorHolder&gt; entry : hit.entrySet()) {</span>
 
-<span class="fc" id="L270">			MonitorHolder mh = entry.getValue();</span>
+<span class="fc" id="L462">			MonitorHolder mh = entry.getValue();</span>
+<span class="fc" id="L463">			Set&lt;ASTNode&gt; nodesprocessed = mh.nodesprocessed;</span>
 			
-			// Handle beginTask + SubProgressMonitor pattern
-<span class="fc" id="L273">			MethodInvocation minv = mh.minv;</span>
-			
-			// Generate unique identifier name for SubMonitor variable
-<span class="fc" id="L276">			String identifier = generateUniqueVariableName(minv, &quot;subMonitor&quot;); //$NON-NLS-1$</span>
-			
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">			if (!nodesprocessed.contains(minv)) {</span>
-<span class="fc" id="L279">				nodesprocessed.add(minv);</span>
-<span class="fc" id="L280">				logDebug(&quot;Rewriting beginTask at position &quot; + minv.getStartPosition() + &quot; (method: &quot; + minv.getName() + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-				
-				// Ensure parent is ExpressionStatement
-<span class="pc bpc" id="L283" title="1 of 2 branches missed.">				if (!(minv.getParent() instanceof ExpressionStatement)) {</span>
-<span class="nc" id="L284">					continue;</span>
+			// Handle SubProgressMonitor on already-SubMonitor variables (use split() directly)
+<span class="fc bfc" id="L466" title="All 2 branches covered.">			if (!mh.subProgressMonitorOnSubMonitor.isEmpty()) {</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">				for (ClassInstanceCreation submon : mh.subProgressMonitorOnSubMonitor) {</span>
+<span class="pc bpc" id="L468" title="1 of 2 branches missed.">					if (nodesprocessed.contains(submon)) {</span>
+<span class="nc" id="L469">						continue;</span>
+					}
+<span class="fc" id="L471">					nodesprocessed.add(submon);</span>
+					
+<span class="fc" id="L473">					List&lt;?&gt; arguments = submon.arguments();</span>
+<span class="pc bpc" id="L474" title="1 of 2 branches missed.">					if (arguments.size() &lt; 2) {</span>
+<span class="nc" id="L475">						continue;</span>
+					}
+					
+<span class="fc" id="L478">					logDebug(&quot;Rewriting SubProgressMonitor on SubMonitor variable at position &quot; + submon.getStartPosition()); //$NON-NLS-1$</span>
+					
+					// Create subMonitor.split(work [, flags]) call
+<span class="fc" id="L481">					MethodInvocation splitCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L482">					splitCall.setExpression(ASTNodes.createMoveTarget(rewrite, </span>
+<span class="fc" id="L483">						ASTNodes.getUnparenthesedExpression((Expression) arguments.get(0))));</span>
+<span class="fc" id="L484">					splitCall.setName(ast.newSimpleName(&quot;split&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L485">					List&lt;ASTNode&gt; splitArgs = splitCall.arguments();</span>
+					
+					// Add work amount (second argument)
+<span class="fc" id="L488">					splitArgs.add(ASTNodes.createMoveTarget(rewrite, </span>
+<span class="fc" id="L489">						ASTNodes.getUnparenthesedExpression((Expression) arguments.get(1))));</span>
+					
+					// Handle flags if present (3-arg constructor)
+<span class="pc bpc" id="L492" title="1 of 2 branches missed.">					if (arguments.size() &gt;= 3) {</span>
+<span class="nc" id="L493">						Expression flagsArg = (Expression) arguments.get(2);</span>
+<span class="nc" id="L494">						FlagMappingResult flagResult = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);</span>
+						
+<span class="nc bnc" id="L496" title="All 2 branches missed.">						if (flagResult.mappedExpression() != null) {</span>
+<span class="nc" id="L497">							splitArgs.add(flagResult.mappedExpression());</span>
+<span class="nc bnc" id="L498" title="All 2 branches missed.">							if (flagResult.referencesSubMonitor()) {</span>
+<span class="nc" id="L499">								importRemover.addImport(&quot;org.eclipse.core.runtime.SubMonitor&quot;); //$NON-NLS-1$</span>
+							}
+						}
+<span class="nc bnc" id="L502" title="All 2 branches missed.">						if (flagResult.passedThrough()) {</span>
+<span class="nc" id="L503">							hasUnmappedFlags = true;</span>
+						}
+					}
+					
+<span class="fc" id="L507">					ASTNodes.replaceButKeepComment(rewrite, submon, splitCall, group);</span>
 				}
 				
-<span class="fc" id="L287">				List&lt;ASTNode&gt; arguments = minv.arguments();</span>
+<span class="fc" id="L510">				continue;</span>
+			}
+			
+			// Handle standalone SubProgressMonitor (without beginTask)
+<span class="fc bfc" id="L514" title="All 2 branches covered.">			if (!mh.standaloneSubProgressMonitors.isEmpty()) {</span>
+<span class="fc bfc" id="L515" title="All 2 branches covered.">				for (ClassInstanceCreation submon : mh.standaloneSubProgressMonitors) {</span>
+<span class="pc bpc" id="L516" title="1 of 2 branches missed.">					if (nodesprocessed.contains(submon)) {</span>
+<span class="nc" id="L517">						continue;</span>
+					}
+<span class="fc" id="L519">					nodesprocessed.add(submon);</span>
+					
+<span class="fc" id="L521">					List&lt;?&gt; arguments = submon.arguments();</span>
+<span class="pc bpc" id="L522" title="1 of 2 branches missed.">					if (arguments.size() &lt; 2) {</span>
+<span class="nc" id="L523">						continue;</span>
+					}
+					
+<span class="fc" id="L526">					logDebug(&quot;Rewriting standalone SubProgressMonitor at position &quot; + submon.getStartPosition()); //$NON-NLS-1$</span>
+					
+					// Create SubMonitor.convert(monitor) call
+<span class="fc" id="L529">					MethodInvocation convertCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L530">					convertCall.setExpression(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast));</span>
+<span class="fc" id="L531">					convertCall.setName(ast.newSimpleName(&quot;convert&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L532">					convertCall.arguments().add(</span>
+<span class="fc" id="L533">						ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression((Expression) arguments.get(0))));</span>
+					
+					// Create .split(work [, flags]) call chained on convert
+<span class="fc" id="L536">					MethodInvocation splitCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L537">					splitCall.setExpression(convertCall);</span>
+<span class="fc" id="L538">					splitCall.setName(ast.newSimpleName(&quot;split&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L539">					List&lt;ASTNode&gt; splitArgs = splitCall.arguments();</span>
+					
+					// Add work amount (second argument)
+<span class="fc" id="L542">					splitArgs.add(ASTNodes.createMoveTarget(rewrite, </span>
+<span class="fc" id="L543">						ASTNodes.getUnparenthesedExpression((Expression) arguments.get(1))));</span>
+					
+					// Handle flags if present (3-arg constructor)
+<span class="fc bfc" id="L546" title="All 2 branches covered.">					if (arguments.size() &gt;= 3) {</span>
+<span class="fc" id="L547">						Expression flagsArg = (Expression) arguments.get(2);</span>
+<span class="fc" id="L548">						FlagMappingResult flagResult = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);</span>
+						
+<span class="pc bpc" id="L550" title="1 of 2 branches missed.">						if (flagResult.mappedExpression() != null) {</span>
+<span class="fc" id="L551">							splitArgs.add(flagResult.mappedExpression());</span>
+<span class="pc bpc" id="L552" title="1 of 2 branches missed.">							if (flagResult.referencesSubMonitor()) {</span>
+<span class="fc" id="L553">								importRemover.addImport(&quot;org.eclipse.core.runtime.SubMonitor&quot;); //$NON-NLS-1$</span>
+							}
+						}
+<span class="pc bpc" id="L556" title="1 of 2 branches missed.">						if (flagResult.passedThrough()) {</span>
+<span class="nc" id="L557">							hasUnmappedFlags = true;</span>
+						}
+					}
+					
+<span class="fc" id="L561">					ASTNodes.replaceButKeepComment(rewrite, submon, splitCall, group);</span>
+				}
+				
+<span class="fc" id="L564">				continue;</span>
+			}
+			
+			// Handle beginTask + SubProgressMonitor pattern
+<span class="fc" id="L568">			MethodInvocation minv = mh.minv;</span>
+			
+			// Skip if no beginTask (already handled as standalone above)
+<span class="fc bfc" id="L571" title="All 2 branches covered.">			if (minv == null) {</span>
+<span class="fc" id="L572">				continue;</span>
+			}
+			
+			// Generate unique identifier name for SubMonitor variable
+<span class="fc" id="L576">			String identifier = generateUniqueVariableName(minv, &quot;subMonitor&quot;); //$NON-NLS-1$</span>
+			
+<span class="pc bpc" id="L578" title="1 of 2 branches missed.">			if (!nodesprocessed.contains(minv)) {</span>
+<span class="fc" id="L579">				nodesprocessed.add(minv);</span>
+<span class="fc" id="L580">				logDebug(&quot;Rewriting beginTask at position &quot; + minv.getStartPosition() + &quot; (method: &quot; + minv.getName() + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+				
+				// Ensure parent is ExpressionStatement
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">				if (!(minv.getParent() instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L584">					continue;</span>
+				}
+				
+<span class="fc" id="L587">				List&lt;ASTNode&gt; arguments = minv.arguments();</span>
 
 				/**
 				 * Here we process the &quot;beginTask&quot; and change it to &quot;SubMonitor.convert&quot;
@@ -297,44 +597,44 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 				 */
 
 				// Create the static call to SubMonitor.convert
-<span class="fc" id="L300">				MethodInvocation staticCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L301">				staticCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));</span>
-<span class="fc" id="L302">				staticCall.setName(ast.newSimpleName(&quot;convert&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L303">				List&lt;ASTNode&gt; staticCallArguments = staticCall.arguments();</span>
-<span class="fc" id="L304">				staticCallArguments.add(</span>
-<span class="fc" id="L305">						ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(minv.getExpression())));</span>
-<span class="fc" id="L306">				staticCallArguments</span>
-<span class="fc" id="L307">				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(0))));</span>
-<span class="fc" id="L308">				staticCallArguments</span>
-<span class="fc" id="L309">				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(1))));</span>
+<span class="fc" id="L600">				MethodInvocation staticCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L601">				staticCall.setExpression(ASTNodeFactory.newName(ast, SubMonitor.class.getSimpleName()));</span>
+<span class="fc" id="L602">				staticCall.setName(ast.newSimpleName(&quot;convert&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L603">				List&lt;ASTNode&gt; staticCallArguments = staticCall.arguments();</span>
+<span class="fc" id="L604">				staticCallArguments.add(</span>
+<span class="fc" id="L605">						ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(minv.getExpression())));</span>
+<span class="fc" id="L606">				staticCallArguments</span>
+<span class="fc" id="L607">				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(0))));</span>
+<span class="fc" id="L608">				staticCallArguments</span>
+<span class="fc" id="L609">				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(arguments.get(1))));</span>
 
 				// Create the variable declaration fragment (name + initializer)
-<span class="fc" id="L312">				VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L313">				fragment.setName(ast.newSimpleName(identifier));</span>
-<span class="fc" id="L314">				fragment.setInitializer(staticCall);</span>
+<span class="fc" id="L612">				VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L613">				fragment.setName(ast.newSimpleName(identifier));</span>
+<span class="fc" id="L614">				fragment.setInitializer(staticCall);</span>
 
 				// Create the variable declaration statement (type + fragment)
-<span class="fc" id="L317">				VariableDeclarationStatement varDeclStmt = ast.newVariableDeclarationStatement(fragment);</span>
-<span class="fc" id="L318">				varDeclStmt.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast)));</span>
+<span class="fc" id="L617">				VariableDeclarationStatement varDeclStmt = ast.newVariableDeclarationStatement(fragment);</span>
+<span class="fc" id="L618">				varDeclStmt.setType(ast.newSimpleType(addImport(SubMonitor.class.getCanonicalName(), cuRewrite, ast)));</span>
 
 				// Replace the entire ExpressionStatement (parent of beginTask), not just the MethodInvocation
-<span class="fc" id="L321">				ASTNodes.replaceButKeepComment(rewrite, minv.getParent(), varDeclStmt, group);</span>
-<span class="fc" id="L322">				logDebug(&quot;Created SubMonitor.convert call: &quot; + staticCall); //$NON-NLS-1$</span>
+<span class="fc" id="L621">				ASTNodes.replaceButKeepComment(rewrite, minv.getParent(), varDeclStmt, group);</span>
+<span class="fc" id="L622">				logDebug(&quot;Created SubMonitor.convert call: &quot; + staticCall); //$NON-NLS-1$</span>
 			}
 			
-<span class="fc bfc" id="L325" title="All 2 branches covered.">			for (ClassInstanceCreation submon : mh.setofcic) {</span>
-<span class="pc bpc" id="L326" title="1 of 2 branches missed.">				if (nodesprocessed.contains(submon)) {</span>
-<span class="nc" id="L327">					continue;</span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">			for (ClassInstanceCreation submon : mh.setofcic) {</span>
+<span class="pc bpc" id="L626" title="1 of 2 branches missed.">				if (nodesprocessed.contains(submon)) {</span>
+<span class="nc" id="L627">					continue;</span>
 				}
-<span class="fc" id="L329">				nodesprocessed.add(submon);</span>
+<span class="fc" id="L629">				nodesprocessed.add(submon);</span>
 				
-<span class="fc" id="L331">				List&lt;?&gt; arguments = submon.arguments();</span>
-<span class="pc bpc" id="L332" title="1 of 2 branches missed.">				if (arguments.size() &lt; 2) {</span>
-<span class="nc" id="L333">					continue;</span>
+<span class="fc" id="L631">				List&lt;?&gt; arguments = submon.arguments();</span>
+<span class="pc bpc" id="L632" title="1 of 2 branches missed.">				if (arguments.size() &lt; 2) {</span>
+<span class="nc" id="L633">					continue;</span>
 				}
 				
-<span class="fc" id="L336">				ASTNode origarg = (ASTNode) arguments.get(1);</span>
-<span class="fc" id="L337">				logDebug(&quot;Rewriting SubProgressMonitor at position &quot; + submon.getStartPosition() + &quot; (ClassInstanceCreation)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L636">				ASTNode origarg = (ASTNode) arguments.get(1);</span>
+<span class="fc" id="L637">				logDebug(&quot;Rewriting SubProgressMonitor at position &quot; + submon.getStartPosition() + &quot; (ClassInstanceCreation)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 				
 				/**
 				 * Handle both 2-arg and 3-arg SubProgressMonitor constructors:
@@ -349,31 +649,67 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 				 *   - SUPPRESS_SUBTASK_LABEL -&gt; SUPPRESS_SUBTASK
 				 *   - PREPEND_MAIN_LABEL_TO_SUBTASK -&gt; dropped (no equivalent)
 				 */
-<span class="fc" id="L352">				MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();</span>
-<span class="fc" id="L353">				newMethodInvocation2.setName(ast.newSimpleName(&quot;split&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L354">				newMethodInvocation2.setExpression(ASTNodeFactory.newName(ast, identifier));</span>
-<span class="fc" id="L355">				List&lt;ASTNode&gt; splitCallArguments = newMethodInvocation2.arguments();</span>
+<span class="fc" id="L652">				MethodInvocation newMethodInvocation2 = ast.newMethodInvocation();</span>
+<span class="fc" id="L653">				newMethodInvocation2.setName(ast.newSimpleName(&quot;split&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L654">				newMethodInvocation2.setExpression(ASTNodeFactory.newName(ast, identifier));</span>
+<span class="fc" id="L655">				List&lt;ASTNode&gt; splitCallArguments = newMethodInvocation2.arguments();</span>
 
 				// Add the work amount (second argument)
-<span class="fc" id="L358">				splitCallArguments</span>
-<span class="fc" id="L359">				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(origarg)));</span>
+<span class="fc" id="L658">				splitCallArguments</span>
+<span class="fc" id="L659">				.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(origarg)));</span>
 				
 				// Check for 3-arg constructor (with flags)
-<span class="fc bfc" id="L362" title="All 2 branches covered.">				if (arguments.size() &gt;= 3) {</span>
-<span class="fc" id="L363">					Expression flagsArg = (Expression) arguments.get(2);</span>
-<span class="fc" id="L364">					Expression mappedFlag = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);</span>
+<span class="fc bfc" id="L662" title="All 2 branches covered.">				if (arguments.size() &gt;= 3) {</span>
+<span class="fc" id="L663">					Expression flagsArg = (Expression) arguments.get(2);</span>
+<span class="fc" id="L664">					FlagMappingResult flagResult = mapSubProgressMonitorFlags(flagsArg, ast, cuRewrite);</span>
 					
 					// Only add the flag if it wasn't dropped (PREPEND_MAIN_LABEL_TO_SUBTASK is dropped)
-<span class="fc bfc" id="L367" title="All 2 branches covered.">					if (mappedFlag != null) {</span>
-<span class="fc" id="L368">						splitCallArguments.add(mappedFlag);</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">					if (flagResult.mappedExpression() != null) {</span>
+<span class="fc" id="L668">						splitCallArguments.add(flagResult.mappedExpression());</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">						if (flagResult.referencesSubMonitor()) {</span>
+<span class="fc" id="L670">							importRemover.addImport(&quot;org.eclipse.core.runtime.SubMonitor&quot;); //$NON-NLS-1$</span>
+						}
+					}
+<span class="pc bpc" id="L673" title="1 of 2 branches missed.">					if (flagResult.passedThrough()) {</span>
+<span class="nc" id="L674">						hasUnmappedFlags = true;</span>
 					}
 				}
 				
-<span class="fc" id="L372">				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);</span>
-<span class="fc" id="L373">				importRemover.removeImport(&quot;org.eclipse.core.runtime.SubProgressMonitor&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L678">				ASTNodes.replaceButKeepComment(rewrite, submon, newMethodInvocation2, group);</span>
 			}
 		}
-<span class="fc" id="L376">	}</span>
+		
+		// Handle type replacements (fields, parameters, return types, casts)
+<span class="fc bfc" id="L683" title="All 2 branches covered.">		for (Entry&lt;Integer, MonitorHolder&gt; entry : hit.entrySet()) {</span>
+<span class="fc" id="L684">			MonitorHolder mh = entry.getValue();</span>
+			
+<span class="fc bfc" id="L686" title="All 2 branches covered.">			if (!mh.typesToReplace.isEmpty()) {</span>
+<span class="fc" id="L687">				logDebug(&quot;Processing &quot; + mh.typesToReplace.size() + &quot; SubProgressMonitor type replacements&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+				
+<span class="fc bfc" id="L689" title="All 2 branches covered.">				for (org.eclipse.jdt.core.dom.Type typeToReplace : mh.typesToReplace) {</span>
+					// Skip if already processed
+<span class="pc bpc" id="L691" title="1 of 2 branches missed.">					if (mh.nodesprocessed.contains(typeToReplace)) {</span>
+<span class="nc" id="L692">						continue;</span>
+					}
+<span class="fc" id="L694">					mh.nodesprocessed.add(typeToReplace);</span>
+					
+<span class="fc" id="L696">					logDebug(&quot;Replacing SubProgressMonitor type at position &quot; + typeToReplace.getStartPosition()); //$NON-NLS-1$</span>
+					
+					// Create replacement type: IProgressMonitor
+<span class="fc" id="L699">					org.eclipse.jdt.core.dom.Type newType = ast.newSimpleType(</span>
+<span class="fc" id="L700">						addImport(IProgressMonitor.class.getCanonicalName(), cuRewrite, ast));</span>
+					
+					// Replace the type in AST
+<span class="fc" id="L703">					rewrite.replace(typeToReplace, newType, group);</span>
+				}
+			}
+		}
+		
+		// Only remove SubProgressMonitor import if no unmapped flags may still reference it
+<span class="pc bpc" id="L709" title="1 of 2 branches missed.">		if (!hasUnmappedFlags) {</span>
+<span class="fc" id="L710">			importRemover.removeImport(&quot;org.eclipse.core.runtime.SubProgressMonitor&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L712">	}</span>
 	
 	/**
 	 * Generates a unique variable name that doesn't collide with existing variables in scope.
@@ -387,22 +723,34 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 	 * @return a unique variable name that doesn't exist in the current scope
 	 */
 	private String generateUniqueVariableName(ASTNode node, String baseName) {
-<span class="fc" id="L390">		Collection&lt;String&gt; usedNames = getUsedVariableNames(node);</span>
+<span class="fc" id="L726">		Collection&lt;String&gt; usedNames = getUsedVariableNames(node);</span>
 		
 		// If base name is not used, return it
-<span class="fc bfc" id="L393" title="All 2 branches covered.">		if (!usedNames.contains(baseName)) {</span>
-<span class="fc" id="L394">			return baseName;</span>
+<span class="fc bfc" id="L729" title="All 2 branches covered.">		if (!usedNames.contains(baseName)) {</span>
+<span class="fc" id="L730">			return baseName;</span>
 		}
 		
 		// Otherwise, append a number until we find an unused name
-<span class="fc" id="L398">		int counter = 2;</span>
-<span class="fc" id="L399">		String candidate = baseName + counter;</span>
-<span class="pc bpc" id="L400" title="1 of 2 branches missed.">		while (usedNames.contains(candidate)) {</span>
-<span class="nc" id="L401">			counter++;</span>
-<span class="nc" id="L402">			candidate = baseName + counter;</span>
+<span class="fc" id="L734">		int counter = 2;</span>
+<span class="fc" id="L735">		String candidate = baseName + counter;</span>
+<span class="pc bpc" id="L736" title="1 of 2 branches missed.">		while (usedNames.contains(candidate)) {</span>
+<span class="nc" id="L737">			counter++;</span>
+<span class="nc" id="L738">			candidate = baseName + counter;</span>
 		}
-<span class="fc" id="L404">		return candidate;</span>
+<span class="fc" id="L740">		return candidate;</span>
 	}
+
+	/**
+	 * Result of mapping SubProgressMonitor flags to SubMonitor flags.
+	 */
+	private record FlagMappingResult(
+		/** The mapped expression, or null if the flag should be dropped */
+		Expression mappedExpression,
+		/** True if the mapped expression references SubMonitor (needs import) */
+		boolean referencesSubMonitor,
+		/** True if the flag was passed through unchanged (may still reference SubProgressMonitor) */
+		boolean passedThrough
+	) {}
 
 	/**
 	 * Maps SubProgressMonitor flags to SubMonitor flags.
@@ -415,62 +763,72 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 	 * 
 	 * &lt;p&gt;&lt;b&gt;Limitations:&lt;/b&gt; This method only handles single flag constants. Combined flag expressions
 	 * using bitwise OR (e.g., {@code FLAG1 | FLAG2}) or numeric literals are not mapped and will be
-	 * passed through unchanged, which may result in incorrect behavior. Such cases require manual review.&lt;/p&gt;
+	 * passed through unchanged. When flags are passed through, the SubProgressMonitor import is
+	 * preserved to avoid breaking references in the unmapped expression.&lt;/p&gt;
 	 * 
 	 * @param flagExpr the original flag expression from SubProgressMonitor constructor
 	 * @param ast the AST to create new nodes
 	 * @param cuRewrite the compilation unit rewrite context
-	 * @return the mapped flag expression for SubMonitor, or null if flag should be dropped
+	 * @return the flag mapping result containing the mapped expression and metadata
 	 */
-	private Expression mapSubProgressMonitorFlags(Expression flagExpr, AST ast, CompilationUnitRewrite cuRewrite) {
+	private FlagMappingResult mapSubProgressMonitorFlags(Expression flagExpr, AST ast, CompilationUnitRewrite cuRewrite) {
 		// Handle field access: SubProgressMonitor.SUPPRESS_SUBTASK_LABEL
-<span class="fc bfc" id="L427" title="All 2 branches covered.">		if (flagExpr instanceof QualifiedName) {</span>
-<span class="fc" id="L428">			QualifiedName qn = (QualifiedName) flagExpr;</span>
-<span class="fc" id="L429">			String fieldName = qn.getName().getIdentifier();</span>
+<span class="fc bfc" id="L776" title="All 2 branches covered.">		if (flagExpr instanceof QualifiedName) {</span>
+<span class="fc" id="L777">			QualifiedName qn = (QualifiedName) flagExpr;</span>
+<span class="fc" id="L778">			String fieldName = qn.getName().getIdentifier();</span>
 			
-<span class="fc bfc" id="L431" title="All 2 branches covered.">			if (&quot;SUPPRESS_SUBTASK_LABEL&quot;.equals(fieldName)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L780" title="All 2 branches covered.">			if (&quot;SUPPRESS_SUBTASK_LABEL&quot;.equals(fieldName)) { //$NON-NLS-1$</span>
 				// Map to SubMonitor.SUPPRESS_SUBTASK
-<span class="fc" id="L433">				QualifiedName newFlag = ast.newQualifiedName(</span>
-<span class="fc" id="L434">					ast.newSimpleName(SubMonitor.class.getSimpleName()),</span>
-<span class="fc" id="L435">					ast.newSimpleName(&quot;SUPPRESS_SUBTASK&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L436">				return newFlag;</span>
-<span class="pc bpc" id="L437" title="1 of 2 branches missed.">			} else if (&quot;PREPEND_MAIN_LABEL_TO_SUBTASK&quot;.equals(fieldName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L782">				QualifiedName newFlag = ast.newQualifiedName(</span>
+<span class="fc" id="L783">					ast.newSimpleName(SubMonitor.class.getSimpleName()),</span>
+<span class="fc" id="L784">					ast.newSimpleName(&quot;SUPPRESS_SUBTASK&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L785">				return new FlagMappingResult(newFlag, true, false);</span>
+<span class="pc bpc" id="L786" title="1 of 2 branches missed.">			} else if (&quot;PREPEND_MAIN_LABEL_TO_SUBTASK&quot;.equals(fieldName)) { //$NON-NLS-1$</span>
 				// Drop this flag - no equivalent in SubMonitor
-<span class="fc" id="L439">				return null;</span>
+<span class="fc" id="L788">				return new FlagMappingResult(null, false, false);</span>
 			}
 		}
 		
 		// Handle FieldAccess syntax (e.g., expression.FIELD_NAME)
-<span class="pc bpc" id="L444" title="1 of 2 branches missed.">		if (flagExpr instanceof FieldAccess) {</span>
-<span class="nc" id="L445">			FieldAccess fa = (FieldAccess) flagExpr;</span>
-<span class="nc" id="L446">			String fieldName = fa.getName().getIdentifier();</span>
+<span class="pc bpc" id="L793" title="1 of 2 branches missed.">		if (flagExpr instanceof FieldAccess) {</span>
+<span class="nc" id="L794">			FieldAccess fa = (FieldAccess) flagExpr;</span>
+<span class="nc" id="L795">			String fieldName = fa.getName().getIdentifier();</span>
 			
-<span class="nc bnc" id="L448" title="All 2 branches missed.">			if (&quot;SUPPRESS_SUBTASK_LABEL&quot;.equals(fieldName)) { //$NON-NLS-1$</span>
+<span class="nc bnc" id="L797" title="All 2 branches missed.">			if (&quot;SUPPRESS_SUBTASK_LABEL&quot;.equals(fieldName)) { //$NON-NLS-1$</span>
 				// Map to SubMonitor.SUPPRESS_SUBTASK
-<span class="nc" id="L450">				FieldAccess newFlag = ast.newFieldAccess();</span>
-<span class="nc" id="L451">				newFlag.setExpression(ast.newSimpleName(SubMonitor.class.getSimpleName()));</span>
-<span class="nc" id="L452">				newFlag.setName(ast.newSimpleName(&quot;SUPPRESS_SUBTASK&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L453">				return newFlag;</span>
-<span class="nc bnc" id="L454" title="All 2 branches missed.">			} else if (&quot;PREPEND_MAIN_LABEL_TO_SUBTASK&quot;.equals(fieldName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L799">				FieldAccess newFlag = ast.newFieldAccess();</span>
+<span class="nc" id="L800">				newFlag.setExpression(ast.newSimpleName(SubMonitor.class.getSimpleName()));</span>
+<span class="nc" id="L801">				newFlag.setName(ast.newSimpleName(&quot;SUPPRESS_SUBTASK&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L802">				return new FlagMappingResult(newFlag, true, false);</span>
+<span class="nc bnc" id="L803" title="All 2 branches missed.">			} else if (&quot;PREPEND_MAIN_LABEL_TO_SUBTASK&quot;.equals(fieldName)) { //$NON-NLS-1$</span>
 				// Drop this flag - no equivalent in SubMonitor
-<span class="nc" id="L456">				return null;</span>
+<span class="nc" id="L805">				return new FlagMappingResult(null, false, false);</span>
 			}
 		}
 		
-		// For other expressions (constants, variables), pass through unchanged
-<span class="fc" id="L461">		return ASTNodes.createMoveTarget(cuRewrite.getASTRewrite(), ASTNodes.getUnparenthesedExpression(flagExpr));</span>
+		// For numeric literals, pass through unchanged but don't mark as passedThrough
+		// since they don't reference SubProgressMonitor (safe to remove import)
+<span class="pc bpc" id="L811" title="1 of 2 branches missed.">		if (flagExpr instanceof NumberLiteral) {</span>
+<span class="fc" id="L812">			Expression passedExpr = ASTNodes.createMoveTarget(cuRewrite.getASTRewrite(), ASTNodes.getUnparenthesedExpression(flagExpr));</span>
+<span class="fc" id="L813">			return new FlagMappingResult(passedExpr, false, false);</span>
+		}
+		
+		// For other expressions (variables, bitwise OR), pass through unchanged
+		// Mark as passedThrough so SubProgressMonitor import is preserved
+<span class="nc" id="L818">		Expression passedExpr = ASTNodes.createMoveTarget(cuRewrite.getASTRewrite(), ASTNodes.getUnparenthesedExpression(flagExpr));</span>
+<span class="nc" id="L819">		return new FlagMappingResult(passedExpr, false, true);</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L466" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
-<span class="nc" id="L467">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L824" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
+<span class="nc" id="L825">			return &quot;&quot;&quot;</span>
 					monitor.beginTask(NewWizardMessages.NewSourceFolderWizardPage_operation, 3);
 						IProgressMonitor subProgressMonitor= new SubProgressMonitor(monitor, 1);
 						IProgressMonitor subProgressMonitor2= new SubProgressMonitor(monitor, 2);
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L473">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L831">		return &quot;&quot;&quot;</span>
 				SubMonitor subMonitor=SubMonitor.convert(monitor,NewWizardMessages.NewSourceFolderWizardPage_operation,3);
 					IProgressMonitor subProgressMonitor= subMonitor.split(1);
 					IProgressMonitor subProgressMonitor2= subMonitor.split(2);

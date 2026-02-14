@@ -63,6 +63,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
@@ -71,268 +72,268 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 /**
  * Plugin to migrate JUnit 4 ExpectedException rule to JUnit 5 assertThrows.
  */
-<span class="fc" id="L74">public class RuleExpectedExceptionJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L75">public class RuleExpectedExceptionJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L79">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
-<span class="fc" id="L80">		HelperVisitor.forField()</span>
-<span class="fc" id="L81">			.withAnnotation(ORG_JUNIT_RULE)</span>
-<span class="fc" id="L82">			.ofType(ORG_JUNIT_RULES_EXPECTED_EXCEPTION)</span>
-<span class="fc" id="L83">			.in(compilationUnit)</span>
-<span class="fc" id="L84">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L85">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
-<span class="fc" id="L86">	}</span>
+<span class="fc" id="L80">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L81">		HelperVisitorFactory.forField()</span>
+<span class="fc" id="L82">			.withAnnotation(ORG_JUNIT_RULE)</span>
+<span class="fc" id="L83">			.ofType(ORG_JUNIT_RULES_EXPECTED_EXCEPTION)</span>
+<span class="fc" id="L84">			.in(compilationUnit)</span>
+<span class="fc" id="L85">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L86">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
+<span class="fc" id="L87">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, FieldDeclaration node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L91">		JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L92">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);</span>
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">		if (fragment.resolveBinding() == null) {</span>
+<span class="fc" id="L92">		JunitHolder mh = new JunitHolder();</span>
+<span class="fc" id="L93">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		if (fragment.resolveBinding() == null) {</span>
 			// Return true to continue processing other fields
-<span class="nc" id="L95">			return true;</span>
+<span class="nc" id="L96">			return true;</span>
 		}
-<span class="fc" id="L97">		ITypeBinding binding = fragment.resolveBinding().getType();</span>
-<span class="pc bpc" id="L98" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L99">			mh.setMinv(node);</span>
-<span class="fc" id="L100">			dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L101">			operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L98">		ITypeBinding binding = fragment.resolveBinding().getType();</span>
+<span class="pc bpc" id="L99" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L100">			mh.setMinv(node);</span>
+<span class="fc" id="L101">			dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L102">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}
 		// Return true to continue processing other fields
-<span class="fc" id="L104">		return true;</span>
+<span class="fc" id="L105">		return true;</span>
 	}
 
 	@Override
 	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L111">		FieldDeclaration field = junitHolder.getFieldDeclaration();</span>
-<span class="fc" id="L112">		TypeDeclaration parentClass = ASTNodes.getParent(field, TypeDeclaration.class);</span>
+<span class="fc" id="L112">		FieldDeclaration field = junitHolder.getFieldDeclaration();</span>
+<span class="fc" id="L113">		TypeDeclaration parentClass = ASTNodes.getParent(field, TypeDeclaration.class);</span>
 
-<span class="fc" id="L114">		VariableDeclarationFragment originalFragment = (VariableDeclarationFragment) field.fragments().get(0);</span>
-<span class="fc" id="L115">		String fieldName = originalFragment.getName().getIdentifier();</span>
+<span class="fc" id="L115">		VariableDeclarationFragment originalFragment = (VariableDeclarationFragment) field.fragments().get(0);</span>
+<span class="fc" id="L116">		String fieldName = originalFragment.getName().getIdentifier();</span>
 
 		// Remove the field declaration
-<span class="fc" id="L118">		rewriter.remove(field, group);</span>
+<span class="fc" id="L119">		rewriter.remove(field, group);</span>
 
 		// Remove old imports
-<span class="fc" id="L121">		importRewriter.removeImport(ORG_JUNIT_RULE);</span>
-<span class="fc" id="L122">		importRewriter.removeImport(ORG_JUNIT_RULES_EXPECTED_EXCEPTION);</span>
+<span class="fc" id="L122">		importRewriter.removeImport(ORG_JUNIT_RULE);</span>
+<span class="fc" id="L123">		importRewriter.removeImport(ORG_JUNIT_RULES_EXPECTED_EXCEPTION);</span>
 
 		// Add new imports
-<span class="fc" id="L125">		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertThrows&quot;, false);</span>
+<span class="fc" id="L126">		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertThrows&quot;, false);</span>
 
 		// Transform all test methods that use the ExpectedException field
-<span class="fc bfc" id="L128" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
-<span class="fc" id="L129">			transformTestMethod(method, fieldName, rewriter, ast, group, importRewriter, parentClass);</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
+<span class="fc" id="L130">			transformTestMethod(method, fieldName, rewriter, ast, group, importRewriter, parentClass);</span>
 		}
-<span class="fc" id="L131">	}</span>
+<span class="fc" id="L132">	}</span>
 
 	private void transformTestMethod(MethodDeclaration method, String fieldName, ASTRewrite rewriter, AST ast,
 			TextEditGroup group, ImportRewrite importRewriter, TypeDeclaration parentClass) {
-<span class="fc" id="L135">		Block methodBody = method.getBody();</span>
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (methodBody == null) {</span>
-<span class="nc" id="L137">			return;</span>
+<span class="fc" id="L136">		Block methodBody = method.getBody();</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		if (methodBody == null) {</span>
+<span class="nc" id="L138">			return;</span>
 		}
 
-<span class="fc" id="L140">		List&lt;Statement&gt; statements = methodBody.statements();</span>
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		if (statements.isEmpty()) {</span>
-<span class="nc" id="L142">			return;</span>
+<span class="fc" id="L141">		List&lt;Statement&gt; statements = methodBody.statements();</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">		if (statements.isEmpty()) {</span>
+<span class="nc" id="L143">			return;</span>
 		}
 
 		// Find expect() and expectMessage() calls
-<span class="fc" id="L146">		ExpectedExceptionInfo info = findExpectedExceptionCalls(statements, fieldName);</span>
+<span class="fc" id="L147">		ExpectedExceptionInfo info = findExpectedExceptionCalls(statements, fieldName);</span>
 
-<span class="fc bfc" id="L148" title="All 2 branches covered.">		if (info.expectCall == null) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		if (info.expectCall == null) {</span>
 			// This method doesn't use the ExpectedException field
-<span class="fc" id="L150">			return;</span>
+<span class="fc" id="L151">			return;</span>
 		}
 
 		// Generate a unique variable name for the exception if we need to check the message or cause
-<span class="fc" id="L154">		String exceptionVarName = null;</span>
-<span class="fc bfc" id="L155" title="All 4 branches covered.">		if (info.expectMessageCall != null || info.expectCauseCall != null) {</span>
-<span class="fc" id="L156">			Collection&lt;String&gt; usedNames = getUsedVariableNames(method);</span>
-<span class="fc" id="L157">			exceptionVarName = generateUniqueVariableName(&quot;exception&quot;, usedNames);</span>
+<span class="fc" id="L155">		String exceptionVarName = null;</span>
+<span class="fc bfc" id="L156" title="All 4 branches covered.">		if (info.expectMessageCall != null || info.expectCauseCall != null) {</span>
+<span class="fc" id="L157">			Collection&lt;String&gt; usedNames = getUsedVariableNames(method);</span>
+<span class="fc" id="L158">			exceptionVarName = generateUniqueVariableName(&quot;exception&quot;, usedNames);</span>
 		}
 
 		// Create assertThrows call
-<span class="fc" id="L161">		MethodInvocation assertThrowsCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L162">		assertThrowsCall.setName(ast.newSimpleName(&quot;assertThrows&quot;));</span>
+<span class="fc" id="L162">		MethodInvocation assertThrowsCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L163">		assertThrowsCall.setName(ast.newSimpleName(&quot;assertThrows&quot;));</span>
 
 		// Add exception class as first argument
-<span class="fc" id="L165">		Expression exceptionClass = (Expression) ASTNode.copySubtree(ast,</span>
-<span class="fc" id="L166">				(Expression) info.expectCall.arguments().get(0));</span>
-<span class="fc" id="L167">		assertThrowsCall.arguments().add(exceptionClass);</span>
+<span class="fc" id="L166">		Expression exceptionClass = (Expression) ASTNode.copySubtree(ast,</span>
+<span class="fc" id="L167">				(Expression) info.expectCall.arguments().get(0));</span>
+<span class="fc" id="L168">		assertThrowsCall.arguments().add(exceptionClass);</span>
 
 		// Create lambda with remaining statements
-<span class="fc" id="L170">		LambdaExpression lambda = ast.newLambdaExpression();</span>
-<span class="fc" id="L171">		lambda.setParentheses(true);</span>
+<span class="fc" id="L171">		LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="fc" id="L172">		lambda.setParentheses(true);</span>
 
-<span class="fc" id="L173">		Block lambdaBody = ast.newBlock();</span>
+<span class="fc" id="L174">		Block lambdaBody = ast.newBlock();</span>
 
 		// Copy all statements after the expect/expectMessage calls
-<span class="fc" id="L176">		int startIndex = info.lastExpectStatementIndex + 1;</span>
-<span class="pc bpc" id="L177" title="1 of 2 branches missed.">		if (startIndex &gt;= statements.size()) {</span>
+<span class="fc" id="L177">		int startIndex = info.lastExpectStatementIndex + 1;</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		if (startIndex &gt;= statements.size()) {</span>
 			// Edge case: expect() is the last statement, no code to throw exception
 			// This would create an empty lambda that never throws, causing test to fail
 			// Skip transformation for this edge case
-<span class="nc" id="L181">			return;</span>
+<span class="nc" id="L182">			return;</span>
 		}
 		
-<span class="fc bfc" id="L184" title="All 2 branches covered.">		for (int i = startIndex; i &lt; statements.size(); i++) {</span>
-<span class="fc" id="L185">			Statement stmt = statements.get(i);</span>
-<span class="fc" id="L186">			lambdaBody.statements().add(ASTNode.copySubtree(ast, stmt));</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">		for (int i = startIndex; i &lt; statements.size(); i++) {</span>
+<span class="fc" id="L186">			Statement stmt = statements.get(i);</span>
+<span class="fc" id="L187">			lambdaBody.statements().add(ASTNode.copySubtree(ast, stmt));</span>
 		}
 
-<span class="fc" id="L189">		lambda.setBody(lambdaBody);</span>
-<span class="fc" id="L190">		assertThrowsCall.arguments().add(lambda);</span>
+<span class="fc" id="L190">		lambda.setBody(lambdaBody);</span>
+<span class="fc" id="L191">		assertThrowsCall.arguments().add(lambda);</span>
 
 		// Create the new statement
 		Statement newStatement;
-<span class="fc bfc" id="L194" title="All 2 branches covered.">		if (exceptionVarName != null) {</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		if (exceptionVarName != null) {</span>
 			// Need to capture exception for message check
 			// ExceptionType exceptionVar = assertThrows(ExceptionType.class, () -&gt; { ... });
-<span class="fc" id="L197">			VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L198">			fragment.setName(ast.newSimpleName(exceptionVarName));</span>
-<span class="fc" id="L199">			fragment.setInitializer(assertThrowsCall);</span>
+<span class="fc" id="L198">			VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L199">			fragment.setName(ast.newSimpleName(exceptionVarName));</span>
+<span class="fc" id="L200">			fragment.setInitializer(assertThrowsCall);</span>
 
-<span class="fc" id="L201">			VariableDeclarationStatement varDecl = ast.newVariableDeclarationStatement(fragment);</span>
+<span class="fc" id="L202">			VariableDeclarationStatement varDecl = ast.newVariableDeclarationStatement(fragment);</span>
 			// Extract the exception type from the class literal (use the Type directly to preserve simple name)
-<span class="fc" id="L203">			Type exceptionType = extractExceptionType(info.expectCall);</span>
-<span class="fc" id="L204">			varDecl.setType((Type) ASTNode.copySubtree(ast, exceptionType));</span>
+<span class="fc" id="L204">			Type exceptionType = extractExceptionType(info.expectCall);</span>
+<span class="fc" id="L205">			varDecl.setType((Type) ASTNode.copySubtree(ast, exceptionType));</span>
 
-<span class="fc" id="L206">			newStatement = varDecl;</span>
-<span class="fc" id="L207">		} else {</span>
+<span class="fc" id="L207">			newStatement = varDecl;</span>
+<span class="fc" id="L208">		} else {</span>
 			// No message check needed, just call assertThrows
-<span class="fc" id="L209">			newStatement = ast.newExpressionStatement(assertThrowsCall);</span>
+<span class="fc" id="L210">			newStatement = ast.newExpressionStatement(assertThrowsCall);</span>
 		}
 
 		// Remove old expect/expectMessage calls and statements after them
-<span class="fc bfc" id="L213" title="All 2 branches covered.">		for (int i = statements.size() - 1; i &gt;= info.firstExpectStatementIndex; i--) {</span>
-<span class="fc" id="L214">			rewriter.remove(statements.get(i), group);</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">		for (int i = statements.size() - 1; i &gt;= info.firstExpectStatementIndex; i--) {</span>
+<span class="fc" id="L215">			rewriter.remove(statements.get(i), group);</span>
 		}
 
 		// Insert the new assertThrows statement
-<span class="fc" id="L218">		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(newStatement, group);</span>
+<span class="fc" id="L219">		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(newStatement, group);</span>
 
 		// If there's a message expectation, add the assertion
-<span class="pc bpc" id="L221" title="1 of 4 branches missed.">		if (info.expectMessageCall != null &amp;&amp; exceptionVarName != null) {</span>
-<span class="fc" id="L222">			Expression messageArg = (Expression) info.expectMessageCall.arguments().get(0);</span>
+<span class="pc bpc" id="L222" title="1 of 4 branches missed.">		if (info.expectMessageCall != null &amp;&amp; exceptionVarName != null) {</span>
+<span class="fc" id="L223">			Expression messageArg = (Expression) info.expectMessageCall.arguments().get(0);</span>
 			
 			// Create: assertEquals(&quot;message&quot;, exception.getMessage());
-<span class="fc" id="L225">			MethodInvocation getMessageCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L226">			getMessageCall.setExpression(ast.newSimpleName(exceptionVarName));</span>
-<span class="fc" id="L227">			getMessageCall.setName(ast.newSimpleName(&quot;getMessage&quot;));</span>
+<span class="fc" id="L226">			MethodInvocation getMessageCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L227">			getMessageCall.setExpression(ast.newSimpleName(exceptionVarName));</span>
+<span class="fc" id="L228">			getMessageCall.setName(ast.newSimpleName(&quot;getMessage&quot;));</span>
 
-<span class="fc" id="L229">			MethodInvocation assertEqualsCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L230">			assertEqualsCall.setName(ast.newSimpleName(&quot;assertEquals&quot;));</span>
-<span class="fc" id="L231">			assertEqualsCall.arguments().add(ASTNode.copySubtree(ast, messageArg));</span>
-<span class="fc" id="L232">			assertEqualsCall.arguments().add(getMessageCall);</span>
+<span class="fc" id="L230">			MethodInvocation assertEqualsCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L231">			assertEqualsCall.setName(ast.newSimpleName(&quot;assertEquals&quot;));</span>
+<span class="fc" id="L232">			assertEqualsCall.arguments().add(ASTNode.copySubtree(ast, messageArg));</span>
+<span class="fc" id="L233">			assertEqualsCall.arguments().add(getMessageCall);</span>
 
-<span class="fc" id="L234">			ExpressionStatement assertStatement = ast.newExpressionStatement(assertEqualsCall);</span>
-<span class="fc" id="L235">			rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertStatement, group);</span>
+<span class="fc" id="L235">			ExpressionStatement assertStatement = ast.newExpressionStatement(assertEqualsCall);</span>
+<span class="fc" id="L236">			rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertStatement, group);</span>
 
 			// Add assertEquals import
-<span class="fc" id="L238">			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertEquals&quot;, false);</span>
+<span class="fc" id="L239">			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertEquals&quot;, false);</span>
 		}
 		
 		// If there's a cause expectation, add the assertion
-<span class="pc bpc" id="L242" title="1 of 4 branches missed.">		if (info.expectCauseCall != null &amp;&amp; exceptionVarName != null) {</span>
+<span class="pc bpc" id="L243" title="1 of 4 branches missed.">		if (info.expectCauseCall != null &amp;&amp; exceptionVarName != null) {</span>
 			// Check if expectCauseCall has arguments before accessing
-<span class="pc bpc" id="L244" title="1 of 2 branches missed.">			if (!info.expectCauseCall.arguments().isEmpty()) {</span>
-<span class="fc" id="L245">				Expression causeArg = (Expression) info.expectCauseCall.arguments().get(0);</span>
-<span class="fc" id="L246">				Expression causeClass = extractCauseClass(causeArg);</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">			if (!info.expectCauseCall.arguments().isEmpty()) {</span>
+<span class="fc" id="L246">				Expression causeArg = (Expression) info.expectCauseCall.arguments().get(0);</span>
+<span class="fc" id="L247">				Expression causeClass = extractCauseClass(causeArg);</span>
 				
-<span class="pc bpc" id="L248" title="1 of 2 branches missed.">				if (causeClass != null) {</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">				if (causeClass != null) {</span>
 					// Create: exception.getCause()
-<span class="fc" id="L250">					MethodInvocation getCauseCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L251">					getCauseCall.setExpression(ast.newSimpleName(exceptionVarName));</span>
-<span class="fc" id="L252">					getCauseCall.setName(ast.newSimpleName(&quot;getCause&quot;));</span>
+<span class="fc" id="L251">					MethodInvocation getCauseCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L252">					getCauseCall.setExpression(ast.newSimpleName(exceptionVarName));</span>
+<span class="fc" id="L253">					getCauseCall.setName(ast.newSimpleName(&quot;getCause&quot;));</span>
 
 					// Create: assertInstanceOf(CauseClass.class, exception.getCause());
-<span class="fc" id="L255">					MethodInvocation assertInstanceOfCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L256">					assertInstanceOfCall.setName(ast.newSimpleName(&quot;assertInstanceOf&quot;));</span>
-<span class="fc" id="L257">					assertInstanceOfCall.arguments().add(ASTNode.copySubtree(ast, causeClass));</span>
-<span class="fc" id="L258">					assertInstanceOfCall.arguments().add(getCauseCall);</span>
+<span class="fc" id="L256">					MethodInvocation assertInstanceOfCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L257">					assertInstanceOfCall.setName(ast.newSimpleName(&quot;assertInstanceOf&quot;));</span>
+<span class="fc" id="L258">					assertInstanceOfCall.arguments().add(ASTNode.copySubtree(ast, causeClass));</span>
+<span class="fc" id="L259">					assertInstanceOfCall.arguments().add(getCauseCall);</span>
 
-<span class="fc" id="L260">					ExpressionStatement assertStatement = ast.newExpressionStatement(assertInstanceOfCall);</span>
-<span class="fc" id="L261">					rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertStatement, group);</span>
+<span class="fc" id="L261">					ExpressionStatement assertStatement = ast.newExpressionStatement(assertInstanceOfCall);</span>
+<span class="fc" id="L262">					rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertStatement, group);</span>
 
 					// Add assertInstanceOf import
-<span class="fc" id="L264">					importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertInstanceOf&quot;, false);</span>
-<span class="fc" id="L265">				} else {</span>
+<span class="fc" id="L265">					importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertInstanceOf&quot;, false);</span>
+<span class="fc" id="L266">				} else {</span>
 					// Unsupported matcher - log warning
-<span class="nc" id="L267">					System.err.println(&quot;WARNING: RuleExpectedExceptionJUnitPlugin - Unsupported expectCause matcher in method '&quot;</span>
-<span class="nc" id="L268">							+ method.getName().getIdentifier()</span>
+<span class="nc" id="L268">					System.err.println(&quot;WARNING: RuleExpectedExceptionJUnitPlugin - Unsupported expectCause matcher in method '&quot;</span>
+<span class="nc" id="L269">							+ method.getName().getIdentifier()</span>
 							+ &quot;'. Only Hamcrest instanceOf() and isA() matchers are supported. Manual migration of the cause expectation may be required.&quot;);
 				}
 			}
 		}
-<span class="fc" id="L273">	}</span>
+<span class="fc" id="L274">	}</span>
 
 	private ExpectedExceptionInfo findExpectedExceptionCalls(List&lt;Statement&gt; statements, String fieldName) {
-<span class="fc" id="L276">		ExpectedExceptionInfo info = new ExpectedExceptionInfo();</span>
+<span class="fc" id="L277">		ExpectedExceptionInfo info = new ExpectedExceptionInfo();</span>
 		
-<span class="fc bfc" id="L278" title="All 2 branches covered.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
-<span class="fc" id="L279">			Statement stmt = statements.get(i);</span>
-<span class="fc bfc" id="L280" title="All 2 branches covered.">			if (!(stmt instanceof ExpressionStatement)) {</span>
-<span class="fc" id="L281">				continue;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
+<span class="fc" id="L280">			Statement stmt = statements.get(i);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">			if (!(stmt instanceof ExpressionStatement)) {</span>
+<span class="fc" id="L282">				continue;</span>
 			}
 
-<span class="fc" id="L284">			Expression expr = ((ExpressionStatement) stmt).getExpression();</span>
-<span class="pc bpc" id="L285" title="1 of 2 branches missed.">			if (!(expr instanceof MethodInvocation)) {</span>
-<span class="nc" id="L286">				continue;</span>
+<span class="fc" id="L285">			Expression expr = ((ExpressionStatement) stmt).getExpression();</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">			if (!(expr instanceof MethodInvocation)) {</span>
+<span class="nc" id="L287">				continue;</span>
 			}
 
-<span class="fc" id="L289">			MethodInvocation invocation = (MethodInvocation) expr;</span>
-<span class="fc" id="L290">			Expression expression = invocation.getExpression();</span>
-<span class="pc bpc" id="L291" title="1 of 4 branches missed.">			if (expression == null || !(expression instanceof SimpleName)) {</span>
-<span class="nc" id="L292">				continue;</span>
+<span class="fc" id="L290">			MethodInvocation invocation = (MethodInvocation) expr;</span>
+<span class="fc" id="L291">			Expression expression = invocation.getExpression();</span>
+<span class="pc bpc" id="L292" title="1 of 4 branches missed.">			if (expression == null || !(expression instanceof SimpleName)) {</span>
+<span class="nc" id="L293">				continue;</span>
 			}
 
-<span class="fc" id="L295">			SimpleName receiver = (SimpleName) expression;</span>
-<span class="pc bpc" id="L296" title="1 of 2 branches missed.">			if (!fieldName.equals(receiver.getIdentifier())) {</span>
-<span class="nc" id="L297">				continue;</span>
+<span class="fc" id="L296">			SimpleName receiver = (SimpleName) expression;</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">			if (!fieldName.equals(receiver.getIdentifier())) {</span>
+<span class="nc" id="L298">				continue;</span>
 			}
 
-<span class="fc" id="L300">			String methodName = invocation.getName().getIdentifier();</span>
-<span class="fc bfc" id="L301" title="All 2 branches covered.">			if (&quot;expect&quot;.equals(methodName)) {</span>
-<span class="fc" id="L302">				info.expectCall = invocation;</span>
-<span class="pc bpc" id="L303" title="1 of 2 branches missed.">				if (info.firstExpectStatementIndex == -1) {</span>
-<span class="fc" id="L304">					info.firstExpectStatementIndex = i;</span>
+<span class="fc" id="L301">			String methodName = invocation.getName().getIdentifier();</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">			if (&quot;expect&quot;.equals(methodName)) {</span>
+<span class="fc" id="L303">				info.expectCall = invocation;</span>
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">				if (info.firstExpectStatementIndex == -1) {</span>
+<span class="fc" id="L305">					info.firstExpectStatementIndex = i;</span>
 				}
-<span class="fc" id="L306">				info.lastExpectStatementIndex = i;</span>
-<span class="fc bfc" id="L307" title="All 2 branches covered.">			} else if (&quot;expectMessage&quot;.equals(methodName)) {</span>
-<span class="fc" id="L308">				info.expectMessageCall = invocation;</span>
-<span class="pc bpc" id="L309" title="1 of 2 branches missed.">				if (info.firstExpectStatementIndex == -1) {</span>
-<span class="nc" id="L310">					info.firstExpectStatementIndex = i;</span>
+<span class="fc" id="L307">				info.lastExpectStatementIndex = i;</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">			} else if (&quot;expectMessage&quot;.equals(methodName)) {</span>
+<span class="fc" id="L309">				info.expectMessageCall = invocation;</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">				if (info.firstExpectStatementIndex == -1) {</span>
+<span class="nc" id="L311">					info.firstExpectStatementIndex = i;</span>
 				}
-<span class="fc" id="L312">				info.lastExpectStatementIndex = i;</span>
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">			} else if (&quot;expectCause&quot;.equals(methodName)) {</span>
-<span class="fc" id="L314">				info.expectCauseCall = invocation;</span>
-<span class="pc bpc" id="L315" title="1 of 2 branches missed.">				if (info.firstExpectStatementIndex == -1) {</span>
-<span class="nc" id="L316">					info.firstExpectStatementIndex = i;</span>
+<span class="fc" id="L313">				info.lastExpectStatementIndex = i;</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">			} else if (&quot;expectCause&quot;.equals(methodName)) {</span>
+<span class="fc" id="L315">				info.expectCauseCall = invocation;</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">				if (info.firstExpectStatementIndex == -1) {</span>
+<span class="nc" id="L317">					info.firstExpectStatementIndex = i;</span>
 				}
-<span class="fc" id="L318">				info.lastExpectStatementIndex = i;</span>
+<span class="fc" id="L319">				info.lastExpectStatementIndex = i;</span>
 			}
 		}
 
-<span class="fc" id="L322">		return info;</span>
+<span class="fc" id="L323">		return info;</span>
 	}
 
 	private Type extractExceptionType(MethodInvocation expectCall) {
 		// The argument is typically a TypeLiteral like IllegalArgumentException.class
-<span class="pc bpc" id="L327" title="1 of 2 branches missed.">		if (!expectCall.arguments().isEmpty()) {</span>
-<span class="fc" id="L328">			Expression arg = (Expression) expectCall.arguments().get(0);</span>
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">		if (!expectCall.arguments().isEmpty()) {</span>
+<span class="fc" id="L329">			Expression arg = (Expression) expectCall.arguments().get(0);</span>
 			
 			// Extract the Type from the TypeLiteral
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">			if (arg instanceof TypeLiteral typeLiteral) {</span>
-<span class="fc" id="L332">				return typeLiteral.getType();</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">			if (arg instanceof TypeLiteral typeLiteral) {</span>
+<span class="fc" id="L333">				return typeLiteral.getType();</span>
 			}
 		}
-<span class="nc" id="L335">		return null;</span>
+<span class="nc" id="L336">		return null;</span>
 	}
 
 	/**
@@ -351,70 +352,70 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	 * @return the class literal expression, or null if the matcher is not supported
 	 */
 	private Expression extractCauseClass(Expression causeArg) {
-<span class="pc bpc" id="L354" title="1 of 2 branches missed.">		if (causeArg instanceof MethodInvocation methodInv) {</span>
-<span class="fc" id="L355">			String methodName = methodInv.getName().getIdentifier();</span>
-<span class="pc bpc" id="L356" title="2 of 6 branches missed.">			if ((&quot;instanceOf&quot;.equals(methodName) || &quot;isA&quot;.equals(methodName)) &amp;&amp; !methodInv.arguments().isEmpty()) {</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">		if (causeArg instanceof MethodInvocation methodInv) {</span>
+<span class="fc" id="L356">			String methodName = methodInv.getName().getIdentifier();</span>
+<span class="pc bpc" id="L357" title="2 of 6 branches missed.">			if ((&quot;instanceOf&quot;.equals(methodName) || &quot;isA&quot;.equals(methodName)) &amp;&amp; !methodInv.arguments().isEmpty()) {</span>
 				// Extract the class literal argument
-<span class="fc" id="L358">				Expression arg = (Expression) methodInv.arguments().get(0);</span>
-<span class="fc" id="L359">				return arg;</span>
+<span class="fc" id="L359">				Expression arg = (Expression) methodInv.arguments().get(0);</span>
+<span class="fc" id="L360">				return arg;</span>
 			}
 		}
-<span class="nc" id="L362">		return null;</span>
+<span class="nc" id="L363">		return null;</span>
 	}
 
 	@SuppressWarnings(&quot;unused&quot;) // Helper method kept for potential future use (alternative to extractExceptionType)
 	private String extractExceptionTypeName(MethodInvocation expectCall) {
 		// The argument is typically a TypeLiteral like IllegalArgumentException.class
-<span class="nc bnc" id="L368" title="All 2 branches missed.">		if (!expectCall.arguments().isEmpty()) {</span>
-<span class="nc" id="L369">			Expression arg = (Expression) expectCall.arguments().get(0);</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">		if (!expectCall.arguments().isEmpty()) {</span>
+<span class="nc" id="L370">			Expression arg = (Expression) expectCall.arguments().get(0);</span>
 			
 			// Use TypeLiteral API for robust type extraction
-<span class="nc bnc" id="L372" title="All 2 branches missed.">			if (arg instanceof TypeLiteral typeLiteral) {</span>
-<span class="nc" id="L373">				Type type = typeLiteral.getType();</span>
-<span class="nc bnc" id="L374" title="All 2 branches missed.">				if (type != null) {</span>
-<span class="nc" id="L375">					ITypeBinding typeBinding = type.resolveBinding();</span>
-<span class="nc bnc" id="L376" title="All 2 branches missed.">					if (typeBinding != null) {</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">			if (arg instanceof TypeLiteral typeLiteral) {</span>
+<span class="nc" id="L374">				Type type = typeLiteral.getType();</span>
+<span class="nc bnc" id="L375" title="All 2 branches missed.">				if (type != null) {</span>
+<span class="nc" id="L376">					ITypeBinding typeBinding = type.resolveBinding();</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">					if (typeBinding != null) {</span>
 						// Try qualified name first, fall back to simple name
-<span class="nc" id="L378">						String qualifiedName = typeBinding.getQualifiedName();</span>
-<span class="nc bnc" id="L379" title="All 4 branches missed.">						if (qualifiedName != null &amp;&amp; !qualifiedName.isEmpty()) {</span>
-<span class="nc" id="L380">							return qualifiedName;</span>
+<span class="nc" id="L379">						String qualifiedName = typeBinding.getQualifiedName();</span>
+<span class="nc bnc" id="L380" title="All 4 branches missed.">						if (qualifiedName != null &amp;&amp; !qualifiedName.isEmpty()) {</span>
+<span class="nc" id="L381">							return qualifiedName;</span>
 						}
-<span class="nc" id="L382">						String name = typeBinding.getName();</span>
-<span class="nc bnc" id="L383" title="All 4 branches missed.">						if (name != null &amp;&amp; !name.isEmpty()) {</span>
-<span class="nc" id="L384">							return name;</span>
+<span class="nc" id="L383">						String name = typeBinding.getName();</span>
+<span class="nc bnc" id="L384" title="All 4 branches missed.">						if (name != null &amp;&amp; !name.isEmpty()) {</span>
+<span class="nc" id="L385">							return name;</span>
 						}
 					}
 					// Fallback: use the type's string representation
-<span class="nc" id="L388">					return type.toString();</span>
+<span class="nc" id="L389">					return type.toString();</span>
 				}
 			}
 			
 			// Fallback for non-TypeLiteral expressions
-<span class="nc" id="L393">			String argStr = arg.toString();</span>
-<span class="nc bnc" id="L394" title="All 2 branches missed.">			if (argStr.endsWith(&quot;.class&quot;)) {</span>
-<span class="nc" id="L395">				return argStr.substring(0, argStr.length() - &quot;.class&quot;.length());</span>
+<span class="nc" id="L394">			String argStr = arg.toString();</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">			if (argStr.endsWith(&quot;.class&quot;)) {</span>
+<span class="nc" id="L396">				return argStr.substring(0, argStr.length() - &quot;.class&quot;.length());</span>
 			}
 		}
-<span class="nc" id="L398">		return &quot;Exception&quot;;</span>
+<span class="nc" id="L399">		return &quot;Exception&quot;;</span>
 	}
 
 	private String generateUniqueVariableName(String baseName, Collection&lt;String&gt; usedNames) {
-<span class="pc bpc" id="L402" title="1 of 2 branches missed.">		if (!usedNames.contains(baseName)) {</span>
-<span class="fc" id="L403">			return baseName;</span>
+<span class="pc bpc" id="L403" title="1 of 2 branches missed.">		if (!usedNames.contains(baseName)) {</span>
+<span class="fc" id="L404">			return baseName;</span>
 		}
-<span class="nc" id="L405">		int counter = 1;</span>
+<span class="nc" id="L406">		int counter = 1;</span>
 		String candidateName;
 		do {
-<span class="nc" id="L408">			candidateName = baseName + counter;</span>
-<span class="nc" id="L409">			counter++;</span>
-<span class="nc bnc" id="L410" title="All 2 branches missed.">		} while (usedNames.contains(candidateName));</span>
-<span class="nc" id="L411">		return candidateName;</span>
+<span class="nc" id="L409">			candidateName = baseName + counter;</span>
+<span class="nc" id="L410">			counter++;</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">		} while (usedNames.contains(candidateName));</span>
+<span class="nc" id="L412">		return candidateName;</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L416" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L417">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L418">			return &quot;&quot;&quot;</span>
 					import static org.junit.jupiter.api.Assertions.assertEquals;
 					import static org.junit.jupiter.api.Assertions.assertThrows;
 					
@@ -431,7 +432,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L434">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L435">		return &quot;&quot;&quot;</span>
 				import org.junit.Rule;
 				import org.junit.Test;
 				import org.junit.rules.ExpectedException;
@@ -452,15 +453,15 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L455">		return &quot;RuleExpectedException&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L456">		return &quot;RuleExpectedException&quot;; //$NON-NLS-1$</span>
 	}
 
-<span class="fc" id="L458">	private static class ExpectedExceptionInfo {</span>
+<span class="fc" id="L459">	private static class ExpectedExceptionInfo {</span>
 		MethodInvocation expectCall;
 		MethodInvocation expectMessageCall;
 		MethodInvocation expectCauseCall;
-<span class="fc" id="L462">		int firstExpectStatementIndex = -1;</span>
-<span class="fc" id="L463">		int lastExpectStatementIndex = -1;</span>
+<span class="fc" id="L463">		int firstExpectStatementIndex = -1;</span>
+<span class="fc" id="L464">		int lastExpectStatementIndex = -1;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

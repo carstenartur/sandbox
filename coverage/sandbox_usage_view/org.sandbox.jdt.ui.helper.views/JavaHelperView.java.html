@@ -92,10 +92,11 @@ import org.sandbox.jdt.ui.helper.views.colum.DeprecatedColumn;
 import org.sandbox.jdt.ui.helper.views.colum.NameColumn;
 import org.sandbox.jdt.ui.helper.views.colum.PackageColumn;
 import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
+import org.sandbox.jdt.ui.helper.views.colum.WidestTypeColumn;
 
-<span class="fc" id="L96">public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTarget {</span>
+<span class="fc" id="L97">public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTarget {</span>
 
-<span class="fc" id="L98">	Logger logger= PlatformUI.getWorkbench().getService(Logger.class);</span>
+<span class="fc" id="L99">	Logger logger= PlatformUI.getWorkbench().getService(Logger.class);</span>
 	TableViewer variableTableViewer;
 	private Table variableTable;
 	private Action refreshAction;
@@ -108,208 +109,220 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	private Action renameVariableAction;
 	
 	/** When true, the view automatically updates when selections change in other views */
-<span class="fc" id="L111">	private boolean linkWithSelectionEnabled = true;</span>
+<span class="fc" id="L112">	private boolean linkWithSelectionEnabled = true;</span>
 	
 	/** When true, only shows variables with naming conflicts (same name, different type) */
-<span class="fc" id="L114">	private boolean filterConflictsEnabled = false;</span>
+<span class="fc" id="L115">	private boolean filterConflictsEnabled = false;</span>
 	
 	/** Filter for showing only naming conflicts */
-<span class="fc" id="L117">	private NamingConflictFilter namingConflictFilter = new NamingConflictFilter();</span>
+<span class="fc" id="L118">	private NamingConflictFilter namingConflictFilter = new NamingConflictFilter();</span>
 
 	private IPartListener2 editorPartListener;
 
 	private ISelectionListener workbenchSelectionListener;
 
-<span class="fc" id="L123">	private IJavaElement currentJavaElementInput = null;</span>
+<span class="fc" id="L124">	private IJavaElement currentJavaElementInput = null;</span>
+
+	/** Cache for type widening analysis results, shared between content provider and column */
+<span class="fc" id="L127">	private final TypeWideningCache typeWideningCache = new TypeWideningCache();</span>
 
 	@Override
 	public void createPartControl(Composite parent) {
-<span class="fc" id="L127">		GridLayout layout = new GridLayout(1, false);</span>
-<span class="fc" id="L128">		layout.marginWidth = 0;</span>
-<span class="fc" id="L129">		layout.marginHeight = 0;</span>
-<span class="fc" id="L130">		layout.horizontalSpacing = 0;</span>
-<span class="fc" id="L131">		layout.verticalSpacing = 0;</span>
-<span class="fc" id="L132">		parent.setLayout(layout);</span>
+<span class="fc" id="L131">		GridLayout layout = new GridLayout(1, false);</span>
+<span class="fc" id="L132">		layout.marginWidth = 0;</span>
+<span class="fc" id="L133">		layout.marginHeight = 0;</span>
+<span class="fc" id="L134">		layout.horizontalSpacing = 0;</span>
+<span class="fc" id="L135">		layout.verticalSpacing = 0;</span>
+<span class="fc" id="L136">		parent.setLayout(layout);</span>
 
 		// Create a composite to hold the table with TableColumnLayout
-<span class="fc" id="L135">		Composite tableComposite = new Composite(parent, SWT.NONE);</span>
-<span class="fc" id="L136">		tableComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
-<span class="fc" id="L137">		TableColumnLayout tableColumnLayout = new TableColumnLayout();</span>
-<span class="fc" id="L138">		tableComposite.setLayout(tableColumnLayout);</span>
+<span class="fc" id="L139">		Composite tableComposite = new Composite(parent, SWT.NONE);</span>
+<span class="fc" id="L140">		tableComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
+<span class="fc" id="L141">		TableColumnLayout tableColumnLayout = new TableColumnLayout();</span>
+<span class="fc" id="L142">		tableComposite.setLayout(tableColumnLayout);</span>
 
-<span class="fc" id="L140">		variableTableViewer= new TableViewer(tableComposite, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.V_SCROLL);</span>
-<span class="fc" id="L141">		variableTableViewer.setColumnProperties(new String[] {});</span>
-<span class="fc" id="L142">		variableTableViewer.setUseHashlookup(true);</span>
-<span class="fc" id="L143">		variableTable= variableTableViewer.getTable();</span>
-<span class="fc" id="L144">		variableTable.setHeaderVisible(true);</span>
-<span class="fc" id="L145">		variableTable.setHeaderBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TITLE_BACKGROUND));</span>
-<span class="fc" id="L146">		variableTable.setLinesVisible(true);</span>
-<span class="fc" id="L147">		variableTableViewer.setContentProvider(new JHViewContentProvider());</span>
+<span class="fc" id="L144">		variableTableViewer= new TableViewer(tableComposite, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.V_SCROLL);</span>
+<span class="fc" id="L145">		variableTableViewer.setColumnProperties(new String[] {});</span>
+<span class="fc" id="L146">		variableTableViewer.setUseHashlookup(true);</span>
+<span class="fc" id="L147">		variableTable= variableTableViewer.getTable();</span>
+<span class="fc" id="L148">		variableTable.setHeaderVisible(true);</span>
+<span class="fc" id="L149">		variableTable.setHeaderBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TITLE_BACKGROUND));</span>
+<span class="fc" id="L150">		variableTable.setLinesVisible(true);</span>
+<span class="fc" id="L151">		variableTableViewer.setContentProvider(createContentProvider());</span>
+		// Enable tooltip support for the widest type column
+<span class="fc" id="L153">		org.eclipse.jface.viewers.ColumnViewerToolTipSupport.enableFor(variableTableViewer);</span>
 		// This will create the columns for the table with proper weights
-<span class="fc" id="L149">		AbstractColumn.addColumn(variableTableViewer, new NameColumn(), tableColumnLayout);</span>
-<span class="fc" id="L150">		AbstractColumn.addColumn(variableTableViewer, new QualifiednameColumn(), tableColumnLayout);</span>
-<span class="fc" id="L151">		AbstractColumn.addColumn(variableTableViewer, new PackageColumn(), tableColumnLayout);</span>
-<span class="fc" id="L152">		AbstractColumn.addColumn(variableTableViewer, new DeprecatedColumn(), tableColumnLayout);</span>
-<span class="fc" id="L153">		AbstractColumn.addColumn(variableTableViewer, new DeclaringMethodColumn(), tableColumnLayout);</span>
+<span class="fc" id="L155">		AbstractColumn.addColumn(variableTableViewer, new NameColumn(), tableColumnLayout);</span>
+<span class="fc" id="L156">		AbstractColumn.addColumn(variableTableViewer, new QualifiednameColumn(), tableColumnLayout);</span>
+<span class="fc" id="L157">		AbstractColumn.addColumn(variableTableViewer, new WidestTypeColumn(typeWideningCache), tableColumnLayout);</span>
+<span class="fc" id="L158">		AbstractColumn.addColumn(variableTableViewer, new PackageColumn(), tableColumnLayout);</span>
+<span class="fc" id="L159">		AbstractColumn.addColumn(variableTableViewer, new DeprecatedColumn(), tableColumnLayout);</span>
+<span class="fc" id="L160">		AbstractColumn.addColumn(variableTableViewer, new DeclaringMethodColumn(), tableColumnLayout);</span>
 
-<span class="fc" id="L155">		variableTableViewer.setComparator(AbstractColumn.getComparator());</span>
-<span class="fc" id="L156">		makeActions();</span>
-<span class="fc" id="L157">		hookContextMenu();</span>
-<span class="fc" id="L158">		hookDoubleClickAction();</span>
-<span class="fc" id="L159">		hookConflictHighlighting();</span>
-<span class="fc" id="L160">		getSite().setSelectionProvider(new JHViewSelectionProvider(variableTableViewer));</span>
-<span class="fc" id="L161">		contributeToActionBars();</span>
+<span class="fc" id="L162">		variableTableViewer.setComparator(AbstractColumn.getComparator());</span>
+<span class="fc" id="L163">		makeActions();</span>
+<span class="fc" id="L164">		hookContextMenu();</span>
+<span class="fc" id="L165">		hookDoubleClickAction();</span>
+<span class="fc" id="L166">		hookConflictHighlighting();</span>
+<span class="fc" id="L167">		getSite().setSelectionProvider(new JHViewSelectionProvider(variableTableViewer));</span>
+<span class="fc" id="L168">		contributeToActionBars();</span>
 		
 		// Add part listener to track editor changes
-<span class="fc" id="L164">		addEditorPartListener();</span>
+<span class="fc" id="L171">		addEditorPartListener();</span>
 		// Add selection listener to track Package Explorer selections
-<span class="fc" id="L166">		addWorkbenchSelectionListener();</span>
-<span class="fc" id="L167">	}</span>
+<span class="fc" id="L173">		addWorkbenchSelectionListener();</span>
+<span class="fc" id="L174">	}</span>
+
+	private JHViewContentProvider createContentProvider() {
+<span class="fc" id="L177">		JHViewContentProvider contentProvider = new JHViewContentProvider();</span>
+<span class="fc" id="L178">		contentProvider.setTypeWideningCache(typeWideningCache);</span>
+<span class="fc" id="L179">		return contentProvider;</span>
+	}
 
 	private void contributeToActionBars() {
-<span class="fc" id="L170">		IActionBars bars= getViewSite().getActionBars();</span>
-<span class="fc" id="L171">		fillLocalPullDown(bars.getMenuManager());</span>
-<span class="fc" id="L172">		fillLocalToolBar(bars.getToolBarManager());</span>
-<span class="fc" id="L173">		bars.setGlobalActionHandler(ActionFactory.REFRESH.getId(), refreshAction);</span>
-<span class="fc" id="L174">		bars.setGlobalActionHandler(ActionFactory.PROPERTIES.getId(), propertiesAction);</span>
-<span class="fc" id="L175">	}</span>
+<span class="fc" id="L183">		IActionBars bars= getViewSite().getActionBars();</span>
+<span class="fc" id="L184">		fillLocalPullDown(bars.getMenuManager());</span>
+<span class="fc" id="L185">		fillLocalToolBar(bars.getToolBarManager());</span>
+<span class="fc" id="L186">		bars.setGlobalActionHandler(ActionFactory.REFRESH.getId(), refreshAction);</span>
+<span class="fc" id="L187">		bars.setGlobalActionHandler(ActionFactory.PROPERTIES.getId(), propertiesAction);</span>
+<span class="fc" id="L188">	}</span>
 
 	private void fillLocalToolBar(IToolBarManager manager) {
-<span class="fc" id="L178">		manager.add(linkWithSelectionAction);</span>
-<span class="fc" id="L179">		manager.add(filterConflictsAction);</span>
-<span class="fc" id="L180">		manager.add(new Separator());</span>
-<span class="fc" id="L181">		manager.add(refreshAction);</span>
-<span class="fc" id="L182">	}</span>
+<span class="fc" id="L191">		manager.add(linkWithSelectionAction);</span>
+<span class="fc" id="L192">		manager.add(filterConflictsAction);</span>
+<span class="fc" id="L193">		manager.add(new Separator());</span>
+<span class="fc" id="L194">		manager.add(refreshAction);</span>
+<span class="fc" id="L195">	}</span>
 
 	private void fillLocalPullDown(IMenuManager manager) {
-<span class="fc" id="L185">		manager.add(linkWithSelectionAction);</span>
-<span class="fc" id="L186">		manager.add(filterConflictsAction);</span>
-<span class="fc" id="L187">		manager.add(new Separator());</span>
-<span class="fc" id="L188">		manager.add(refreshAction);</span>
-<span class="fc" id="L189">	}</span>
+<span class="fc" id="L198">		manager.add(linkWithSelectionAction);</span>
+<span class="fc" id="L199">		manager.add(filterConflictsAction);</span>
+<span class="fc" id="L200">		manager.add(new Separator());</span>
+<span class="fc" id="L201">		manager.add(refreshAction);</span>
+<span class="fc" id="L202">	}</span>
 
 	private void makeActions() {
 		// Toggle action for linking with selection
-<span class="fc" id="L193">		linkWithSelectionAction = new Action(&quot;Link with Selection&quot;, Action.AS_CHECK_BOX) { //$NON-NLS-1$</span>
+<span class="fc" id="L206">		linkWithSelectionAction = new Action(&quot;Link with Selection&quot;, Action.AS_CHECK_BOX) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L196">				linkWithSelectionEnabled = isChecked();</span>
-<span class="nc" id="L197">			}</span>
+<span class="nc" id="L209">				linkWithSelectionEnabled = isChecked();</span>
+<span class="nc" id="L210">			}</span>
 		};
-<span class="fc" id="L199">		linkWithSelectionAction.setToolTipText(&quot;Link with Selection - when enabled, the view automatically updates based on the current selection&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L200">		linkWithSelectionAction.setImageDescriptor(JHPluginImages.IMG_SET_FOCUS);</span>
-<span class="fc" id="L201">		linkWithSelectionAction.setChecked(linkWithSelectionEnabled);</span>
+<span class="fc" id="L212">		linkWithSelectionAction.setToolTipText(&quot;Link with Selection - when enabled, the view automatically updates based on the current selection&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L213">		linkWithSelectionAction.setImageDescriptor(JHPluginImages.IMG_SET_FOCUS);</span>
+<span class="fc" id="L214">		linkWithSelectionAction.setChecked(linkWithSelectionEnabled);</span>
 		
 		// Toggle action for filtering naming conflicts
-<span class="fc" id="L204">		filterConflictsAction = new Action(&quot;Filter Naming Conflicts&quot;, Action.AS_CHECK_BOX) { //$NON-NLS-1$</span>
+<span class="fc" id="L217">		filterConflictsAction = new Action(&quot;Filter Naming Conflicts&quot;, Action.AS_CHECK_BOX) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L207">				filterConflictsEnabled = isChecked();</span>
-<span class="nc" id="L208">				applyConflictFilter();</span>
-<span class="nc" id="L209">			}</span>
+<span class="nc" id="L220">				filterConflictsEnabled = isChecked();</span>
+<span class="nc" id="L221">				applyConflictFilter();</span>
+<span class="nc" id="L222">			}</span>
 		};
-<span class="fc" id="L211">		filterConflictsAction.setToolTipText(&quot;Filter Naming Conflicts - when enabled, only shows variables with the same name but different types&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L212">		filterConflictsAction.setImageDescriptor(JHPluginImages.IMG_FILTER_CONFLICTS);</span>
-<span class="fc" id="L213">		filterConflictsAction.setChecked(filterConflictsEnabled);</span>
+<span class="fc" id="L224">		filterConflictsAction.setToolTipText(&quot;Filter Naming Conflicts - when enabled, only shows variables with the same name but different types&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L225">		filterConflictsAction.setImageDescriptor(JHPluginImages.IMG_FILTER_CONFLICTS);</span>
+<span class="fc" id="L226">		filterConflictsAction.setChecked(filterConflictsEnabled);</span>
 		
 		// Action to rename a variable with a suggested name based on type
-<span class="fc" id="L216">		renameVariableAction = new Action(&quot;Rename Variable with Type Suffix...&quot;) { //$NON-NLS-1$</span>
+<span class="fc" id="L229">		renameVariableAction = new Action(&quot;Rename Variable with Type Suffix...&quot;) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L219">				renameSelectedVariable();</span>
-<span class="nc" id="L220">			}</span>
+<span class="nc" id="L232">				renameSelectedVariable();</span>
+<span class="nc" id="L233">			}</span>
 		};
-<span class="fc" id="L222">		renameVariableAction.setToolTipText(&quot;Rename the selected variable with a suggested name based on its type&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L235">		renameVariableAction.setToolTipText(&quot;Rename the selected variable with a suggested name based on its type&quot;); //$NON-NLS-1$</span>
 		
-<span class="fc" id="L224">		propertiesAction= new Action(&quot;&amp;Properties&quot;, JHPluginImages.IMG_PROPERTIES) { //$NON-NLS-1$</span>
+<span class="fc" id="L237">		propertiesAction= new Action(&quot;&amp;Properties&quot;, JHPluginImages.IMG_PROPERTIES) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L227">				String viewId= IPageLayout.ID_PROP_SHEET;</span>
-<span class="nc" id="L228">				IWorkbenchPage page= getViewSite().getPage();</span>
+<span class="nc" id="L240">				String viewId= IPageLayout.ID_PROP_SHEET;</span>
+<span class="nc" id="L241">				IWorkbenchPage page= getViewSite().getPage();</span>
 				IViewPart view;
 				try {
-<span class="nc" id="L231">					view= page.showView(viewId);</span>
-<span class="nc" id="L232">					page.activate(JavaHelperView.this);</span>
-<span class="nc" id="L233">					page.bringToTop(view);</span>
-<span class="nc" id="L234">				} catch (PartInitException e) {</span>
-<span class="nc" id="L235">					logger.error(e, &quot;could not find Properties view&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L244">					view= page.showView(viewId);</span>
+<span class="nc" id="L245">					page.activate(JavaHelperView.this);</span>
+<span class="nc" id="L246">					page.bringToTop(view);</span>
+<span class="nc" id="L247">				} catch (PartInitException e) {</span>
+<span class="nc" id="L248">					logger.error(e, &quot;could not find Properties view&quot;); //$NON-NLS-1$</span>
 				}
-<span class="nc" id="L237">			}</span>
+<span class="nc" id="L250">			}</span>
 		};
-<span class="fc" id="L239">		propertiesAction.setActionDefinitionId(IWorkbenchCommandConstants.FILE_PROPERTIES);</span>
+<span class="fc" id="L252">		propertiesAction.setActionDefinitionId(IWorkbenchCommandConstants.FILE_PROPERTIES);</span>
 		
-<span class="fc" id="L241">		refreshAction= new Action(&quot;Re&amp;fresh&quot;, JHPluginImages.IMG_REFRESH) { //$NON-NLS-1$</span>
+<span class="fc" id="L254">		refreshAction= new Action(&quot;Re&amp;fresh&quot;, JHPluginImages.IMG_REFRESH) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L244">				BusyIndicator.showWhile(getSite().getShell().getDisplay(), () -&gt; variableTableViewer.refresh());</span>
-<span class="nc" id="L245">			}</span>
+<span class="nc" id="L257">				BusyIndicator.showWhile(getSite().getShell().getDisplay(), () -&gt; variableTableViewer.refresh());</span>
+<span class="nc" id="L258">			}</span>
 		};
-<span class="fc" id="L247">		refreshAction.setToolTipText(&quot;Refresh&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L248">		refreshAction.setActionDefinitionId(&quot;org.eclipse.ui.file.refresh&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L249">	}</span>
+<span class="fc" id="L260">		refreshAction.setToolTipText(&quot;Refresh&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L261">		refreshAction.setActionDefinitionId(&quot;org.eclipse.ui.file.refresh&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L262">	}</span>
 	
 	/**
 	 * Applies or removes the naming conflict filter based on the filterConflictsEnabled flag.
 	 * When applying, analyzes all elements first to identify conflicts.
 	 */
 	private void applyConflictFilter() {
-<span class="nc bnc" id="L256" title="All 2 branches missed.">		if (filterConflictsEnabled) {</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">		if (filterConflictsEnabled) {</span>
 			// Analyze current elements to find conflicts
-<span class="nc" id="L258">			JHViewContentProvider contentProvider = (JHViewContentProvider) variableTableViewer.getContentProvider();</span>
-<span class="nc" id="L259">			Object[] elements = contentProvider.getElements(variableTableViewer.getInput());</span>
-<span class="nc" id="L260">			namingConflictFilter.analyzeElements(elements);</span>
+<span class="nc" id="L271">			JHViewContentProvider contentProvider = (JHViewContentProvider) variableTableViewer.getContentProvider();</span>
+<span class="nc" id="L272">			Object[] elements = contentProvider.getElements(variableTableViewer.getInput());</span>
+<span class="nc" id="L273">			namingConflictFilter.analyzeElements(elements);</span>
 			
 			// Add filter
-<span class="nc" id="L263">			variableTableViewer.addFilter(namingConflictFilter);</span>
-<span class="nc" id="L264">		} else {</span>
+<span class="nc" id="L276">			variableTableViewer.addFilter(namingConflictFilter);</span>
+<span class="nc" id="L277">		} else {</span>
 			// Remove filter
-<span class="nc" id="L266">			variableTableViewer.removeFilter(namingConflictFilter);</span>
+<span class="nc" id="L279">			variableTableViewer.removeFilter(namingConflictFilter);</span>
 		}
-<span class="nc" id="L268">	}</span>
+<span class="nc" id="L281">	}</span>
 	
 	/**
 	 * Renames the currently selected variable with a suggested name based on its type.
 	 * Shows a dialog to allow the user to modify the suggested name before applying.
 	 */
 	private void renameSelectedVariable() {
-<span class="nc" id="L275">		IStructuredSelection selection = variableTableViewer.getStructuredSelection();</span>
-<span class="nc" id="L276">		Object element = selection.getFirstElement();</span>
+<span class="nc" id="L288">		IStructuredSelection selection = variableTableViewer.getStructuredSelection();</span>
+<span class="nc" id="L289">		Object element = selection.getFirstElement();</span>
 		
-<span class="nc bnc" id="L278" title="All 2 branches missed.">		if (!(element instanceof IVariableBinding variableBinding)) {</span>
-<span class="nc" id="L279">			return;</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">		if (!(element instanceof IVariableBinding variableBinding)) {</span>
+<span class="nc" id="L292">			return;</span>
 		}
 		
-<span class="nc" id="L282">		IJavaElement javaElement = variableBinding.getJavaElement();</span>
-<span class="nc bnc" id="L283" title="All 2 branches missed.">		if (javaElement == null) {</span>
-<span class="nc" id="L284">			return;</span>
+<span class="nc" id="L295">		IJavaElement javaElement = variableBinding.getJavaElement();</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">		if (javaElement == null) {</span>
+<span class="nc" id="L297">			return;</span>
 		}
 		
-<span class="nc" id="L287">		String suggestedName = VariableNameSuggester.suggestName(variableBinding);</span>
-<span class="nc" id="L288">		String currentName = variableBinding.getName();</span>
+<span class="nc" id="L300">		String suggestedName = VariableNameSuggester.suggestName(variableBinding);</span>
+<span class="nc" id="L301">		String currentName = variableBinding.getName();</span>
 		
 		// Show input dialog with suggested name pre-filled
-<span class="nc" id="L291">		InputDialog dialog = new InputDialog(</span>
-<span class="nc" id="L292">				getSite().getShell(),</span>
-<span class="nc" id="L293">				&quot;Rename Variable&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L294">				&quot;Enter new name for variable '&quot; + currentName + &quot;':&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L295">				suggestedName,</span>
-<span class="nc" id="L296">				newText -&gt; {</span>
-<span class="nc bnc" id="L297" title="All 4 branches missed.">					if (newText == null || newText.trim().isEmpty()) {</span>
-<span class="nc" id="L298">						return &quot;Name cannot be empty&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L304">		InputDialog dialog = new InputDialog(</span>
+<span class="nc" id="L305">				getSite().getShell(),</span>
+<span class="nc" id="L306">				&quot;Rename Variable&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L307">				&quot;Enter new name for variable '&quot; + currentName + &quot;':&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L308">				suggestedName,</span>
+<span class="nc" id="L309">				newText -&gt; {</span>
+<span class="nc bnc" id="L310" title="All 4 branches missed.">					if (newText == null || newText.trim().isEmpty()) {</span>
+<span class="nc" id="L311">						return &quot;Name cannot be empty&quot;; //$NON-NLS-1$</span>
 					}
-<span class="nc bnc" id="L300" title="All 2 branches missed.">					if (!NamingUtils.isValidJavaIdentifier(newText)) {</span>
-<span class="nc" id="L301">						return &quot;Invalid Java identifier&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">					if (!NamingUtils.isValidJavaIdentifier(newText)) {</span>
+<span class="nc" id="L314">						return &quot;Invalid Java identifier&quot;; //$NON-NLS-1$</span>
 					}
-<span class="nc" id="L303">					return null;</span>
+<span class="nc" id="L316">					return null;</span>
 				});
 		
-<span class="nc bnc" id="L306" title="All 2 branches missed.">		if (dialog.open() == Window.OK) {</span>
-<span class="nc" id="L307">			String newName = dialog.getValue();</span>
-<span class="nc bnc" id="L308" title="All 2 branches missed.">			if (!newName.equals(currentName)) {</span>
-<span class="nc" id="L309">				performRename(javaElement, newName);</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">		if (dialog.open() == Window.OK) {</span>
+<span class="nc" id="L320">			String newName = dialog.getValue();</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">			if (!newName.equals(currentName)) {</span>
+<span class="nc" id="L322">				performRename(javaElement, newName);</span>
 			}
 		}
-<span class="nc" id="L312">	}</span>
+<span class="nc" id="L325">	}</span>
 	
 	/**
 	 * Performs the rename refactoring using JDT's RenameSupport.
@@ -320,105 +333,105 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 */
 	private void performRename(IJavaElement javaElement, String newName) {
 		try {
-<span class="nc" id="L323">			RenameSupport renameSupport = null;</span>
+<span class="nc" id="L336">			RenameSupport renameSupport = null;</span>
 			
-<span class="nc bnc" id="L325" title="All 2 branches missed.">			if (javaElement instanceof IField field) {</span>
-<span class="nc" id="L326">				renameSupport = RenameSupport.create(field, newName, </span>
-<span class="nc" id="L327">						RenameSupport.UPDATE_REFERENCES | RenameSupport.UPDATE_GETTER_METHOD | RenameSupport.UPDATE_SETTER_METHOD);</span>
-<span class="nc bnc" id="L328" title="All 2 branches missed.">			} else if (javaElement instanceof ILocalVariable localVariable) {</span>
-<span class="nc" id="L329">				renameSupport = RenameSupport.create(localVariable, newName, RenameSupport.UPDATE_REFERENCES);</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">			if (javaElement instanceof IField field) {</span>
+<span class="nc" id="L339">				renameSupport = RenameSupport.create(field, newName, </span>
+<span class="nc" id="L340">						RenameSupport.UPDATE_REFERENCES | RenameSupport.UPDATE_GETTER_METHOD | RenameSupport.UPDATE_SETTER_METHOD);</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">			} else if (javaElement instanceof ILocalVariable localVariable) {</span>
+<span class="nc" id="L342">				renameSupport = RenameSupport.create(localVariable, newName, RenameSupport.UPDATE_REFERENCES);</span>
 			}
 			
-<span class="nc bnc" id="L332" title="All 2 branches missed.">			if (renameSupport != null) {</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">			if (renameSupport != null) {</span>
 				// Check if refactoring is valid
-<span class="nc bnc" id="L334" title="All 2 branches missed.">				if (renameSupport.preCheck().isOK()) {</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">				if (renameSupport.preCheck().isOK()) {</span>
 					// Open the refactoring wizard dialog with preview
-<span class="nc" id="L336">					renameSupport.openDialog(getSite().getShell(), true);</span>
+<span class="nc" id="L349">					renameSupport.openDialog(getSite().getShell(), true);</span>
 				}
 			}
-<span class="nc" id="L339">		} catch (CoreException e) {</span>
-<span class="nc" id="L340">			logger.error(e, &quot;Error performing rename refactoring&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L352">		} catch (CoreException e) {</span>
+<span class="nc" id="L353">			logger.error(e, &quot;Error performing rename refactoring&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L342">	}</span>
+<span class="nc" id="L355">	}</span>
 
 	/* see JavaModelUtil.reconcile((ICompilationUnit) input) */
 	static void reconcile(ICompilationUnit unit) throws JavaModelException {
-<span class="nc" id="L346">		synchronized (unit) {</span>
-<span class="nc" id="L347">			unit.reconcile(ICompilationUnit.NO_AST, false /* don't force problem detection */,</span>
-<span class="nc" id="L348">					null /* use primary owner */, null /* no progress monitor */);</span>
+<span class="nc" id="L359">		synchronized (unit) {</span>
+<span class="nc" id="L360">			unit.reconcile(ICompilationUnit.NO_AST, false /* don't force problem detection */,</span>
+<span class="nc" id="L361">					null /* use primary owner */, null /* no progress monitor */);</span>
 		}
-<span class="nc" id="L350">	}</span>
+<span class="nc" id="L363">	}</span>
 
 	private void hookContextMenu() {
-<span class="fc" id="L353">		MenuManager menuMgr= new MenuManager(&quot;#PopupMenu&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L354">		menuMgr.setRemoveAllWhenShown(true);</span>
-<span class="fc" id="L355">		menuMgr.addMenuListener(this::fillContextMenu);</span>
-<span class="fc" id="L356">		Menu menu= menuMgr.createContextMenu(variableTable);</span>
-<span class="fc" id="L357">		variableTable.setMenu(menu);</span>
-<span class="fc" id="L358">		getSite().registerContextMenu(menuMgr, variableTableViewer);</span>
+<span class="fc" id="L366">		MenuManager menuMgr= new MenuManager(&quot;#PopupMenu&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L367">		menuMgr.setRemoveAllWhenShown(true);</span>
+<span class="fc" id="L368">		menuMgr.addMenuListener(this::fillContextMenu);</span>
+<span class="fc" id="L369">		Menu menu= menuMgr.createContextMenu(variableTable);</span>
+<span class="fc" id="L370">		variableTable.setMenu(menu);</span>
+<span class="fc" id="L371">		getSite().registerContextMenu(menuMgr, variableTableViewer);</span>
 		
 		// Add mouse listener to select the row under cursor on right-click
-<span class="fc" id="L361">		variableTable.addListener(SWT.MenuDetect, event -&gt; {</span>
-<span class="nc" id="L362">			org.eclipse.swt.graphics.Point pt = variableTable.getDisplay().map(null, variableTable, event.x, event.y);</span>
-<span class="nc" id="L363">			org.eclipse.swt.widgets.TableItem item = variableTable.getItem(pt);</span>
-<span class="nc bnc" id="L364" title="All 2 branches missed.">			if (item != null) {</span>
-<span class="nc" id="L365">				Object data = item.getData();</span>
-<span class="nc bnc" id="L366" title="All 2 branches missed.">				if (data != null) {</span>
-<span class="nc" id="L367">					variableTableViewer.setSelection(new StructuredSelection(data), true);</span>
+<span class="fc" id="L374">		variableTable.addListener(SWT.MenuDetect, event -&gt; {</span>
+<span class="nc" id="L375">			org.eclipse.swt.graphics.Point pt = variableTable.getDisplay().map(null, variableTable, event.x, event.y);</span>
+<span class="nc" id="L376">			org.eclipse.swt.widgets.TableItem item = variableTable.getItem(pt);</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">			if (item != null) {</span>
+<span class="nc" id="L378">				Object data = item.getData();</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">				if (data != null) {</span>
+<span class="nc" id="L380">					variableTableViewer.setSelection(new StructuredSelection(data), true);</span>
 				}
 			}
-<span class="nc" id="L370">		});</span>
-<span class="fc" id="L371">	}</span>
+<span class="nc" id="L383">		});</span>
+<span class="fc" id="L384">	}</span>
 
 	/**
 	 * Adds a double-click listener to the table viewer that navigates to the
 	 * declaration of the selected variable binding.
 	 */
 	private void hookDoubleClickAction() {
-<span class="fc" id="L378">		variableTableViewer.addDoubleClickListener(event -&gt; {</span>
-<span class="nc" id="L379">			IStructuredSelection selection = (IStructuredSelection) event.getSelection();</span>
-<span class="nc" id="L380">			Object element = selection.getFirstElement();</span>
-<span class="nc bnc" id="L381" title="All 2 branches missed.">			if (element instanceof IVariableBinding variableBinding) {</span>
-<span class="nc" id="L382">				openVariableDeclaration(variableBinding);</span>
+<span class="fc" id="L391">		variableTableViewer.addDoubleClickListener(event -&gt; {</span>
+<span class="nc" id="L392">			IStructuredSelection selection = (IStructuredSelection) event.getSelection();</span>
+<span class="nc" id="L393">			Object element = selection.getFirstElement();</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">			if (element instanceof IVariableBinding variableBinding) {</span>
+<span class="nc" id="L395">				openVariableDeclaration(variableBinding);</span>
 			}
-<span class="nc" id="L384">		});</span>
-<span class="fc" id="L385">	}</span>
+<span class="nc" id="L397">		});</span>
+<span class="fc" id="L398">	}</span>
 
 	/**
 	 * Adds custom painting for conflict highlighting using SWT's EraseItem event.
 	 * This paints a light red background for rows where the variable name has type conflicts.
 	 */
 	private void hookConflictHighlighting() {
-<span class="fc" id="L392">		final org.eclipse.swt.graphics.Color conflictColor = new org.eclipse.swt.graphics.Color(</span>
-<span class="fc" id="L393">				variableTable.getDisplay(), 255, 200, 200);</span>
+<span class="fc" id="L405">		final org.eclipse.swt.graphics.Color conflictColor = new org.eclipse.swt.graphics.Color(</span>
+<span class="fc" id="L406">				variableTable.getDisplay(), 255, 200, 200);</span>
 		
-<span class="fc" id="L395">		variableTable.addListener(SWT.EraseItem, event -&gt; {</span>
+<span class="fc" id="L408">		variableTable.addListener(SWT.EraseItem, event -&gt; {</span>
 			// Only handle background painting
-<span class="nc bnc" id="L397" title="All 2 branches missed.">			if ((event.detail &amp; SWT.BACKGROUND) == 0) {</span>
-<span class="nc" id="L398">				return;</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">			if ((event.detail &amp; SWT.BACKGROUND) == 0) {</span>
+<span class="nc" id="L411">				return;</span>
 			}
 			
-<span class="nc" id="L401">			org.eclipse.swt.widgets.TableItem item = (org.eclipse.swt.widgets.TableItem) event.item;</span>
-<span class="nc" id="L402">			Object data = item.getData();</span>
+<span class="nc" id="L414">			org.eclipse.swt.widgets.TableItem item = (org.eclipse.swt.widgets.TableItem) event.item;</span>
+<span class="nc" id="L415">			Object data = item.getData();</span>
 			
-<span class="nc bnc" id="L404" title="All 2 branches missed.">			if (data instanceof IVariableBinding variableBinding) {</span>
-<span class="nc" id="L405">				Set&lt;String&gt; conflicts = ConflictHighlightingLabelProvider.getConflictingNames();</span>
-<span class="nc bnc" id="L406" title="All 4 branches missed.">				if (conflicts != null &amp;&amp; conflicts.contains(variableBinding.getName())) {</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">			if (data instanceof IVariableBinding variableBinding) {</span>
+<span class="nc" id="L418">				Set&lt;String&gt; conflicts = ConflictHighlightingLabelProvider.getConflictingNames();</span>
+<span class="nc bnc" id="L419" title="All 4 branches missed.">				if (conflicts != null &amp;&amp; conflicts.contains(variableBinding.getName())) {</span>
 					// Paint conflict background
-<span class="nc" id="L408">					org.eclipse.swt.graphics.GC gc = event.gc;</span>
-<span class="nc" id="L409">					org.eclipse.swt.graphics.Color oldBackground = gc.getBackground();</span>
-<span class="nc" id="L410">					gc.setBackground(conflictColor);</span>
-<span class="nc" id="L411">					gc.fillRectangle(event.x, event.y, event.width, event.height);</span>
-<span class="nc" id="L412">					gc.setBackground(oldBackground);</span>
+<span class="nc" id="L421">					org.eclipse.swt.graphics.GC gc = event.gc;</span>
+<span class="nc" id="L422">					org.eclipse.swt.graphics.Color oldBackground = gc.getBackground();</span>
+<span class="nc" id="L423">					gc.setBackground(conflictColor);</span>
+<span class="nc" id="L424">					gc.fillRectangle(event.x, event.y, event.width, event.height);</span>
+<span class="nc" id="L425">					gc.setBackground(oldBackground);</span>
 					// Mark that we handled the background
-<span class="nc" id="L414">					event.detail &amp;= ~SWT.BACKGROUND;</span>
+<span class="nc" id="L427">					event.detail &amp;= ~SWT.BACKGROUND;</span>
 				}
 			}
-<span class="nc" id="L417">		});</span>
+<span class="nc" id="L430">		});</span>
 		
 		// Dispose color when table is disposed
-<span class="fc" id="L420">		variableTable.addDisposeListener(e -&gt; conflictColor.dispose());</span>
-<span class="fc" id="L421">	}</span>
+<span class="fc" id="L433">		variableTable.addDisposeListener(e -&gt; conflictColor.dispose());</span>
+<span class="fc" id="L434">	}</span>
 
 	/**
 	 * Opens the editor and navigates to the declaration of the given variable binding.
@@ -428,17 +441,17 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 * @param variableBinding the variable binding whose declaration to open
 	 */
 	private void openVariableDeclaration(IVariableBinding variableBinding) {
-<span class="nc" id="L431">		IJavaElement javaElement = variableBinding.getJavaElement();</span>
-<span class="nc bnc" id="L432" title="All 2 branches missed.">		if (javaElement != null) {</span>
+<span class="nc" id="L444">		IJavaElement javaElement = variableBinding.getJavaElement();</span>
+<span class="nc bnc" id="L445" title="All 2 branches missed.">		if (javaElement != null) {</span>
 			// Disable linking before opening the editor to prevent table refresh
-<span class="nc" id="L434">			disableLinkingWithSelection();</span>
+<span class="nc" id="L447">			disableLinkingWithSelection();</span>
 			try {
-<span class="nc" id="L436">				JavaUI.openInEditor(javaElement, true, true);</span>
-<span class="nc" id="L437">			} catch (PartInitException | JavaModelException e) {</span>
-<span class="nc" id="L438">				logger.error(e, &quot;Could not open editor for variable: &quot; + variableBinding.getName()); //$NON-NLS-1$</span>
+<span class="nc" id="L449">				JavaUI.openInEditor(javaElement, true, true);</span>
+<span class="nc" id="L450">			} catch (PartInitException | JavaModelException e) {</span>
+<span class="nc" id="L451">				logger.error(e, &quot;Could not open editor for variable: &quot; + variableBinding.getName()); //$NON-NLS-1$</span>
 			}
 		}
-<span class="nc" id="L441">	}</span>
+<span class="nc" id="L454">	}</span>
 	
 	/**
 	 * Disables linking with selection and updates the toggle button state.
@@ -446,55 +459,55 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 * automatically refreshing and losing the current content.
 	 */
 	private void disableLinkingWithSelection() {
-<span class="nc" id="L449">		linkWithSelectionEnabled = false;</span>
-<span class="nc bnc" id="L450" title="All 2 branches missed.">		if (linkWithSelectionAction != null) {</span>
-<span class="nc" id="L451">			linkWithSelectionAction.setChecked(false);</span>
+<span class="nc" id="L462">		linkWithSelectionEnabled = false;</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">		if (linkWithSelectionAction != null) {</span>
+<span class="nc" id="L464">			linkWithSelectionAction.setChecked(false);</span>
 		}
-<span class="nc" id="L453">	}</span>
+<span class="nc" id="L466">	}</span>
 
 	void fillContextMenu(IMenuManager manager) {
-<span class="nc" id="L456">		manager.add(refreshAction);</span>
-<span class="nc" id="L457">		manager.add(new Separator());</span>
+<span class="nc" id="L469">		manager.add(refreshAction);</span>
+<span class="nc" id="L470">		manager.add(new Separator());</span>
 
 		// Add rename action when a variable is selected
-<span class="nc" id="L460">		IStructuredSelection selection = variableTableViewer.getStructuredSelection();</span>
-<span class="nc bnc" id="L461" title="All 2 branches missed.">		if (!selection.isEmpty()) {</span>
-<span class="nc" id="L462">			Object selectedElement = selection.getFirstElement();</span>
-<span class="nc bnc" id="L463" title="All 2 branches missed.">			if (selectedElement instanceof IVariableBinding variableBinding) {</span>
-<span class="nc" id="L464">				IJavaElement javaElement = variableBinding.getJavaElement();</span>
+<span class="nc" id="L473">		IStructuredSelection selection = variableTableViewer.getStructuredSelection();</span>
+<span class="nc bnc" id="L474" title="All 2 branches missed.">		if (!selection.isEmpty()) {</span>
+<span class="nc" id="L475">			Object selectedElement = selection.getFirstElement();</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">			if (selectedElement instanceof IVariableBinding variableBinding) {</span>
+<span class="nc" id="L477">				IJavaElement javaElement = variableBinding.getJavaElement();</span>
 				// Enable rename only for fields and local variables
-<span class="nc bnc" id="L466" title="All 4 branches missed.">				boolean canRename = javaElement instanceof IField || javaElement instanceof ILocalVariable;</span>
-<span class="nc" id="L467">				renameVariableAction.setEnabled(canRename);</span>
-<span class="nc" id="L468">				manager.add(renameVariableAction);</span>
-<span class="nc" id="L469">				manager.add(new Separator());</span>
+<span class="nc bnc" id="L479" title="All 4 branches missed.">				boolean canRename = javaElement instanceof IField || javaElement instanceof ILocalVariable;</span>
+<span class="nc" id="L480">				renameVariableAction.setEnabled(canRename);</span>
+<span class="nc" id="L481">				manager.add(renameVariableAction);</span>
+<span class="nc" id="L482">				manager.add(new Separator());</span>
 			}
 			
-<span class="nc" id="L472">			MenuManager showInSubMenu= new MenuManager(getShowInMenuLabel());</span>
-<span class="nc" id="L473">			IWorkbenchWindow workbenchWindow= getSite().getWorkbenchWindow();</span>
-<span class="nc" id="L474">			showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(workbenchWindow));</span>
-<span class="nc" id="L475">			manager.add(showInSubMenu);</span>
+<span class="nc" id="L485">			MenuManager showInSubMenu= new MenuManager(getShowInMenuLabel());</span>
+<span class="nc" id="L486">			IWorkbenchWindow workbenchWindow= getSite().getWorkbenchWindow();</span>
+<span class="nc" id="L487">			showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(workbenchWindow));</span>
+<span class="nc" id="L488">			manager.add(showInSubMenu);</span>
 		}
-<span class="nc" id="L477">		manager.add(new Separator());</span>
+<span class="nc" id="L490">		manager.add(new Separator());</span>
 		// Other plug-ins can contribute there actions here
-<span class="nc" id="L479">		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));</span>
-<span class="nc" id="L480">		manager.add(new Separator());</span>
-<span class="nc" id="L481">		manager.add(propertiesAction);</span>
-<span class="nc" id="L482">	}</span>
+<span class="nc" id="L492">		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));</span>
+<span class="nc" id="L493">		manager.add(new Separator());</span>
+<span class="nc" id="L494">		manager.add(propertiesAction);</span>
+<span class="nc" id="L495">	}</span>
 
 	private String getShowInMenuLabel() {
-<span class="nc" id="L485">		String keyBinding= null;</span>
+<span class="nc" id="L498">		String keyBinding= null;</span>
 
-<span class="nc" id="L487">		IBindingService bindingService= PlatformUI.getWorkbench().getAdapter(IBindingService.class);</span>
-<span class="nc bnc" id="L488" title="All 2 branches missed.">		if (bindingService != null) {</span>
-<span class="nc" id="L489">			keyBinding= bindingService</span>
-<span class="nc" id="L490">					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);</span>
+<span class="nc" id="L500">		IBindingService bindingService= PlatformUI.getWorkbench().getAdapter(IBindingService.class);</span>
+<span class="nc bnc" id="L501" title="All 2 branches missed.">		if (bindingService != null) {</span>
+<span class="nc" id="L502">			keyBinding= bindingService</span>
+<span class="nc" id="L503">					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);</span>
 		}
 
-<span class="nc bnc" id="L493" title="All 2 branches missed.">		if (keyBinding == null) {</span>
-<span class="nc" id="L494">			keyBinding= &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L506" title="All 2 branches missed.">		if (keyBinding == null) {</span>
+<span class="nc" id="L507">			keyBinding= &quot;&quot;; //$NON-NLS-1$</span>
 		}
 
-<span class="nc" id="L497">		return &quot;Sho&amp;w In&quot; + '\t' + keyBinding; //$NON-NLS-1$</span>
+<span class="nc" id="L510">		return &quot;Sho&amp;w In&quot; + '\t' + keyBinding; //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -502,122 +515,122 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 */
 	@Override
 	public void setFocus() {
-<span class="fc" id="L505">		variableTableViewer.getControl().setFocus();</span>
-<span class="fc" id="L506">	}</span>
+<span class="fc" id="L518">		variableTableViewer.getControl().setFocus();</span>
+<span class="fc" id="L519">	}</span>
 
 	@Override
 	public boolean show(ShowInContext context) {
-<span class="nc" id="L510">		ISelection selection= context.getSelection();</span>
-<span class="nc bnc" id="L511" title="All 2 branches missed.">		if (selection instanceof IStructuredSelection structuredSelection) {</span>
-<span class="nc bnc" id="L512" title="All 2 branches missed.">			if (structuredSelection.size() &gt;= 1) {</span>
-<span class="nc" id="L513">				List&lt;Object&gt; input= new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L514" title="All 2 branches missed.">				for (Object item : structuredSelection) {</span>
-<span class="nc bnc" id="L515" title="All 4 branches missed.">					if (item instanceof IJavaElement || item instanceof IResource</span>
-<span class="nc bnc" id="L516" title="All 2 branches missed.">							|| item instanceof IJarEntryResource) {</span>
-<span class="nc" id="L517">						input.add(item);</span>
+<span class="nc" id="L523">		ISelection selection= context.getSelection();</span>
+<span class="nc bnc" id="L524" title="All 2 branches missed.">		if (selection instanceof IStructuredSelection structuredSelection) {</span>
+<span class="nc bnc" id="L525" title="All 2 branches missed.">			if (structuredSelection.size() &gt;= 1) {</span>
+<span class="nc" id="L526">				List&lt;Object&gt; input= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L527" title="All 2 branches missed.">				for (Object item : structuredSelection) {</span>
+<span class="nc bnc" id="L528" title="All 4 branches missed.">					if (item instanceof IJavaElement || item instanceof IResource</span>
+<span class="nc bnc" id="L529" title="All 2 branches missed.">							|| item instanceof IJarEntryResource) {</span>
+<span class="nc" id="L530">						input.add(item);</span>
 					}
 				}
-<span class="nc bnc" id="L520" title="All 2 branches missed.">				if (!input.isEmpty()) {</span>
-<span class="nc" id="L521">					setInput(input);</span>
-<span class="nc" id="L522">					return true;</span>
+<span class="nc bnc" id="L533" title="All 2 branches missed.">				if (!input.isEmpty()) {</span>
+<span class="nc" id="L534">					setInput(input);</span>
+<span class="nc" id="L535">					return true;</span>
 				}
 			}
 		}
 
-<span class="nc" id="L527">		Object input= context.getInput();</span>
-<span class="nc bnc" id="L528" title="All 2 branches missed.">		if (input instanceof IEditorInput) {</span>
-<span class="nc" id="L529">			SourceType elementOfInput= (SourceType) getElementOfInput((IEditorInput) context.getInput());</span>
-<span class="nc bnc" id="L530" title="All 2 branches missed.">			if (elementOfInput != null) {</span>
+<span class="nc" id="L540">		Object input= context.getInput();</span>
+<span class="nc bnc" id="L541" title="All 2 branches missed.">		if (input instanceof IEditorInput) {</span>
+<span class="nc" id="L542">			SourceType elementOfInput= (SourceType) getElementOfInput((IEditorInput) context.getInput());</span>
+<span class="nc bnc" id="L543" title="All 2 branches missed.">			if (elementOfInput != null) {</span>
 				//				setSingleInput(elementOfInput);
-<span class="nc" id="L532">				return true;</span>
+<span class="nc" id="L545">				return true;</span>
 			}
 		}
 
-<span class="nc" id="L536">		return false;</span>
+<span class="nc" id="L549">		return false;</span>
 	}
 
 	void setSingleInput(IResource iResource) {
-<span class="nc" id="L540">		setInput(Collections.singletonList(iResource));</span>
-<span class="nc" id="L541">	}</span>
+<span class="nc" id="L553">		setInput(Collections.singletonList(iResource));</span>
+<span class="nc" id="L554">	}</span>
 
 	void setSingleInput(IJavaElement javaElement) {
-<span class="nc" id="L544">		setInput(Collections.singletonList(javaElement));</span>
-<span class="nc" id="L545">	}</span>
+<span class="nc" id="L557">		setInput(Collections.singletonList(javaElement));</span>
+<span class="nc" id="L558">	}</span>
 
 	Object getElementOfInput(IEditorInput input) {
-<span class="nc" id="L548">		Object adapted= input.getAdapter(IClassFile.class);</span>
-<span class="nc bnc" id="L549" title="All 2 branches missed.">		if (adapted != null) {</span>
-<span class="nc" id="L550">			return adapted;</span>
+<span class="nc" id="L561">		Object adapted= input.getAdapter(IClassFile.class);</span>
+<span class="nc bnc" id="L562" title="All 2 branches missed.">		if (adapted != null) {</span>
+<span class="nc" id="L563">			return adapted;</span>
 		}
 
-<span class="nc bnc" id="L553" title="All 2 branches missed.">		if (input instanceof IFileEditorInput) {</span>
-<span class="nc" id="L554">			IFile file= ((IFileEditorInput) input).getFile();</span>
-<span class="nc" id="L555">			IJavaElement javaElement= JavaCore.create(file);</span>
-<span class="nc bnc" id="L556" title="All 2 branches missed.">			if (javaElement != null) {</span>
-<span class="nc" id="L557">				return javaElement;</span>
+<span class="nc bnc" id="L566" title="All 2 branches missed.">		if (input instanceof IFileEditorInput) {</span>
+<span class="nc" id="L567">			IFile file= ((IFileEditorInput) input).getFile();</span>
+<span class="nc" id="L568">			IJavaElement javaElement= JavaCore.create(file);</span>
+<span class="nc bnc" id="L569" title="All 2 branches missed.">			if (javaElement != null) {</span>
+<span class="nc" id="L570">				return javaElement;</span>
 			}
-<span class="nc" id="L559">			return file;</span>
+<span class="nc" id="L572">			return file;</span>
 		}
-<span class="nc bnc" id="L561" title="All 2 branches missed.">		if (input instanceof IStorageEditorInput) {</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">		if (input instanceof IStorageEditorInput) {</span>
 			try {
-<span class="nc" id="L563">				return ((IStorageEditorInput) input).getStorage();</span>
-<span class="nc" id="L564">			} catch (CoreException e) {</span>
+<span class="nc" id="L576">				return ((IStorageEditorInput) input).getStorage();</span>
+<span class="nc" id="L577">			} catch (CoreException e) {</span>
 			}
 		}
-<span class="nc" id="L567">		return null;</span>
+<span class="nc" id="L580">		return null;</span>
 	}
 
 	@Override
 	public ShowInContext getShowInContext() {
-<span class="fc" id="L572">		IWorkbenchPartSite site= getSite();</span>
-<span class="pc bpc" id="L573" title="1 of 2 branches missed.">		if (site == null) {</span>
-<span class="nc" id="L574">			return null;</span>
+<span class="fc" id="L585">		IWorkbenchPartSite site= getSite();</span>
+<span class="pc bpc" id="L586" title="1 of 2 branches missed.">		if (site == null) {</span>
+<span class="nc" id="L587">			return null;</span>
 		}
-<span class="fc" id="L576">		ISelectionProvider selectionProvider= site.getSelectionProvider();</span>
-<span class="pc bpc" id="L577" title="1 of 2 branches missed.">		if (selectionProvider == null) {</span>
-<span class="nc" id="L578">			return null;</span>
+<span class="fc" id="L589">		ISelectionProvider selectionProvider= site.getSelectionProvider();</span>
+<span class="pc bpc" id="L590" title="1 of 2 branches missed.">		if (selectionProvider == null) {</span>
+<span class="nc" id="L591">			return null;</span>
 		}
-<span class="fc" id="L580">		return new ShowInContext(null, selectionProvider.getSelection());</span>
+<span class="fc" id="L593">		return new ShowInContext(null, selectionProvider.getSelection());</span>
 	}
 
 	void setInput(List&lt;?&gt; javaElementsOrResources) {
 		//		fInput = new JERoot(javaElementsOrResources);
 		//		variableTableViewer.setInput(fInput);
-<span class="nc" id="L586">		variableTableViewer.setInput(javaElementsOrResources);</span>
+<span class="nc" id="L599">		variableTableViewer.setInput(javaElementsOrResources);</span>
 		
 		// Clear the editor input cache if the input is not a single IJavaElement
 		// This ensures the view will refresh when switching back to an editor after
 		// actions like reset() or setInputFromEditorLocationAction that set IResource inputs
-<span class="nc bnc" id="L591" title="All 4 branches missed.">		if (javaElementsOrResources != null &amp;&amp; javaElementsOrResources.size() == 1) {</span>
-<span class="nc" id="L592">			Object input = javaElementsOrResources.get(0);</span>
-<span class="nc bnc" id="L593" title="All 2 branches missed.">			if (!(input instanceof IJavaElement)) {</span>
-<span class="nc" id="L594">				currentJavaElementInput = null;</span>
+<span class="nc bnc" id="L604" title="All 4 branches missed.">		if (javaElementsOrResources != null &amp;&amp; javaElementsOrResources.size() == 1) {</span>
+<span class="nc" id="L605">			Object input = javaElementsOrResources.get(0);</span>
+<span class="nc bnc" id="L606" title="All 2 branches missed.">			if (!(input instanceof IJavaElement)) {</span>
+<span class="nc" id="L607">				currentJavaElementInput = null;</span>
 			}
-<span class="nc" id="L596">		} else {</span>
-<span class="nc" id="L597">			currentJavaElementInput = null;</span>
+<span class="nc" id="L609">		} else {</span>
+<span class="nc" id="L610">			currentJavaElementInput = null;</span>
 		}
 		
-<span class="nc" id="L600">		JHViewContentProvider contentProvider= (JHViewContentProvider) variableTableViewer.getContentProvider();</span>
-<span class="nc" id="L601">		Object[] elements= contentProvider.getElements(javaElementsOrResources);</span>
+<span class="nc" id="L613">		JHViewContentProvider contentProvider= (JHViewContentProvider) variableTableViewer.getContentProvider();</span>
+<span class="nc" id="L614">		Object[] elements= contentProvider.getElements(javaElementsOrResources);</span>
 		
 		// Analyze elements for naming conflicts and update the highlighting
-<span class="nc" id="L604">		namingConflictFilter.analyzeElements(elements);</span>
-<span class="nc" id="L605">		ConflictHighlightingLabelProvider.setConflictingNames(namingConflictFilter.getConflictingNames());</span>
+<span class="nc" id="L617">		namingConflictFilter.analyzeElements(elements);</span>
+<span class="nc" id="L618">		ConflictHighlightingLabelProvider.setConflictingNames(namingConflictFilter.getConflictingNames());</span>
 		
 		// Refresh the table to apply the conflict highlighting
-<span class="nc" id="L608">		variableTableViewer.refresh();</span>
+<span class="nc" id="L621">		variableTableViewer.refresh();</span>
 		
-<span class="nc bnc" id="L610" title="All 2 branches missed.">		if (elements.length &gt; 0) {</span>
-<span class="nc" id="L611">			variableTableViewer.setSelection(new StructuredSelection(elements[0]));</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">		if (elements.length &gt; 0) {</span>
+<span class="nc" id="L624">			variableTableViewer.setSelection(new StructuredSelection(elements[0]));</span>
 		}
-<span class="nc" id="L613">	}</span>
+<span class="nc" id="L626">	}</span>
 
 	@Override
 	public &lt;T&gt; T getAdapter(Class&lt;T&gt; adapter) {
 		// if (adapter == IPropertySheetPage.class) {
 		// return (T) getPropertySheetPage();
 		// }
-<span class="fc" id="L620">		return super.getAdapter(adapter);</span>
+<span class="fc" id="L633">		return super.getAdapter(adapter);</span>
 	}
 
 	/**
@@ -626,87 +639,87 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 */
 	private void addEditorPartListener() {
 		// Check if listener is already registered to prevent duplicates
-<span class="pc bpc" id="L629" title="1 of 2 branches missed.">		if (editorPartListener != null) {</span>
-<span class="nc" id="L630">			return;</span>
+<span class="pc bpc" id="L642" title="1 of 2 branches missed.">		if (editorPartListener != null) {</span>
+<span class="nc" id="L643">			return;</span>
 		}
 		
-<span class="fc" id="L633">		editorPartListener = new IPartListener2() {</span>
+<span class="fc" id="L646">		editorPartListener = new IPartListener2() {</span>
 			@Override
 			public void partActivated(IWorkbenchPartReference partRef) {
-<span class="pc bpc" id="L636" title="2 of 4 branches missed.">				if (linkWithSelectionEnabled &amp;&amp; partRef.getPart(false) instanceof IEditorPart) {</span>
+<span class="pc bpc" id="L649" title="2 of 4 branches missed.">				if (linkWithSelectionEnabled &amp;&amp; partRef.getPart(false) instanceof IEditorPart) {</span>
 					// Update the view when an editor is activated
 					// Ensure UI updates happen on the UI thread
-<span class="nc" id="L639">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
+<span class="nc" id="L652">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
 				}
-<span class="fc" id="L641">			}</span>
+<span class="fc" id="L654">			}</span>
 
 			@Override
 			public void partBroughtToTop(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L646">			}</span>
+<span class="fc" id="L659">			}</span>
 
 			@Override
 			public void partClosed(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L651">			}</span>
+<span class="fc" id="L664">			}</span>
 
 			@Override
 			public void partDeactivated(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L656">			}</span>
+<span class="fc" id="L669">			}</span>
 
 			@Override
 			public void partOpened(IWorkbenchPartReference partRef) {
-<span class="pc bpc" id="L660" title="2 of 4 branches missed.">				if (linkWithSelectionEnabled &amp;&amp; partRef.getPart(false) instanceof IEditorPart) {</span>
+<span class="pc bpc" id="L673" title="2 of 4 branches missed.">				if (linkWithSelectionEnabled &amp;&amp; partRef.getPart(false) instanceof IEditorPart) {</span>
 					// Update the view when an editor is opened
 					// Ensure UI updates happen on the UI thread
-<span class="nc" id="L663">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
+<span class="nc" id="L676">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
 				}
-<span class="fc" id="L665">			}</span>
+<span class="fc" id="L678">			}</span>
 
 			@Override
 			public void partHidden(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L670">			}</span>
+<span class="fc" id="L683">			}</span>
 
 			@Override
 			public void partVisible(IWorkbenchPartReference partRef) {
 				// Not needed
-<span class="fc" id="L675">			}</span>
+<span class="fc" id="L688">			}</span>
 
 			@Override
 			public void partInputChanged(IWorkbenchPartReference partRef) {
-<span class="nc bnc" id="L679" title="All 4 branches missed.">				if (linkWithSelectionEnabled &amp;&amp; partRef.getPart(false) instanceof IEditorPart) {</span>
+<span class="nc bnc" id="L692" title="All 4 branches missed.">				if (linkWithSelectionEnabled &amp;&amp; partRef.getPart(false) instanceof IEditorPart) {</span>
 					// Update the view when editor input changes
 					// Ensure UI updates happen on the UI thread
-<span class="nc" id="L682">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
+<span class="nc" id="L695">					getSite().getShell().getDisplay().asyncExec(() -&gt; updateViewFromActiveEditor());</span>
 				}
-<span class="nc" id="L684">			}</span>
+<span class="nc" id="L697">			}</span>
 		};
 
-<span class="fc" id="L687">		getSite().getPage().addPartListener(editorPartListener);</span>
-<span class="fc" id="L688">	}</span>
+<span class="fc" id="L700">		getSite().getPage().addPartListener(editorPartListener);</span>
+<span class="fc" id="L701">	}</span>
 
 	/**
 	 * Updates the view content based on the currently active editor.
 	 */
 	private void updateViewFromActiveEditor() {
-<span class="nc" id="L694">		IEditorPart editor = getSite().getPage().getActiveEditor();</span>
-<span class="nc bnc" id="L695" title="All 2 branches missed.">		if (editor == null) {</span>
-<span class="nc" id="L696">			return;</span>
+<span class="nc" id="L707">		IEditorPart editor = getSite().getPage().getActiveEditor();</span>
+<span class="nc bnc" id="L708" title="All 2 branches missed.">		if (editor == null) {</span>
+<span class="nc" id="L709">			return;</span>
 		}
 		
-<span class="nc" id="L699">		IEditorInput input = editor.getEditorInput();</span>
-<span class="nc bnc" id="L700" title="All 2 branches missed.">		if (input == null) {</span>
-<span class="nc" id="L701">			return;</span>
+<span class="nc" id="L712">		IEditorInput input = editor.getEditorInput();</span>
+<span class="nc bnc" id="L713" title="All 2 branches missed.">		if (input == null) {</span>
+<span class="nc" id="L714">			return;</span>
 		}
 
-<span class="nc" id="L704">		IJavaElement javaElement = input.getAdapter(IJavaElement.class);</span>
-<span class="nc bnc" id="L705" title="All 4 branches missed.">		if (javaElement != null &amp;&amp; !javaElement.equals(currentJavaElementInput)) {</span>
-<span class="nc" id="L706">			currentJavaElementInput = javaElement;</span>
-<span class="nc" id="L707">			setSingleInput(javaElement);</span>
+<span class="nc" id="L717">		IJavaElement javaElement = input.getAdapter(IJavaElement.class);</span>
+<span class="nc bnc" id="L718" title="All 4 branches missed.">		if (javaElement != null &amp;&amp; !javaElement.equals(currentJavaElementInput)) {</span>
+<span class="nc" id="L719">			currentJavaElementInput = javaElement;</span>
+<span class="nc" id="L720">			setSingleInput(javaElement);</span>
 		}
-<span class="nc" id="L709">	}</span>
+<span class="nc" id="L722">	}</span>
 
 	/**
 	 * Adds a selection listener to track selections in views like Package Explorer.
@@ -714,42 +727,42 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 * to show variables from all contained compilation units.
 	 */
 	private void addWorkbenchSelectionListener() {
-<span class="pc bpc" id="L717" title="1 of 2 branches missed.">		if (workbenchSelectionListener != null) {</span>
-<span class="nc" id="L718">			return;</span>
+<span class="pc bpc" id="L730" title="1 of 2 branches missed.">		if (workbenchSelectionListener != null) {</span>
+<span class="nc" id="L731">			return;</span>
 		}
 
-<span class="fc" id="L721">		workbenchSelectionListener = (part, selection) -&gt; {</span>
+<span class="fc" id="L734">		workbenchSelectionListener = (part, selection) -&gt; {</span>
 			// Skip if link with selection is disabled
-<span class="pc bpc" id="L723" title="1 of 2 branches missed.">			if (!linkWithSelectionEnabled) {</span>
-<span class="nc" id="L724">				return;</span>
+<span class="pc bpc" id="L736" title="1 of 2 branches missed.">			if (!linkWithSelectionEnabled) {</span>
+<span class="nc" id="L737">				return;</span>
 			}
 			
 			// Ignore selections from this view itself
-<span class="pc bpc" id="L728" title="1 of 2 branches missed.">			if (part == JavaHelperView.this) {</span>
-<span class="fc" id="L729">				return;</span>
+<span class="pc bpc" id="L741" title="1 of 2 branches missed.">			if (part == JavaHelperView.this) {</span>
+<span class="fc" id="L742">				return;</span>
 			}
 
-<span class="nc bnc" id="L732" title="All 2 branches missed.">			if (selection instanceof IStructuredSelection structuredSelection) {</span>
-<span class="nc" id="L733">				Object firstElement = structuredSelection.getFirstElement();</span>
-<span class="nc bnc" id="L734" title="All 2 branches missed.">				if (firstElement instanceof IPackageFragment </span>
-<span class="nc bnc" id="L735" title="All 2 branches missed.">						|| firstElement instanceof IPackageFragmentRoot</span>
-<span class="nc bnc" id="L736" title="All 2 branches missed.">						|| firstElement instanceof IJavaProject) {</span>
-<span class="nc" id="L737">					IJavaElement javaElement = (IJavaElement) firstElement;</span>
-<span class="nc bnc" id="L738" title="All 2 branches missed.">					if (!javaElement.equals(currentJavaElementInput)) {</span>
-<span class="nc" id="L739">						currentJavaElementInput = javaElement;</span>
-<span class="nc" id="L740">						setInputWithProgress(javaElement);</span>
+<span class="nc bnc" id="L745" title="All 2 branches missed.">			if (selection instanceof IStructuredSelection structuredSelection) {</span>
+<span class="nc" id="L746">				Object firstElement = structuredSelection.getFirstElement();</span>
+<span class="nc bnc" id="L747" title="All 2 branches missed.">				if (firstElement instanceof IPackageFragment </span>
+<span class="nc bnc" id="L748" title="All 2 branches missed.">						|| firstElement instanceof IPackageFragmentRoot</span>
+<span class="nc bnc" id="L749" title="All 2 branches missed.">						|| firstElement instanceof IJavaProject) {</span>
+<span class="nc" id="L750">					IJavaElement javaElement = (IJavaElement) firstElement;</span>
+<span class="nc bnc" id="L751" title="All 2 branches missed.">					if (!javaElement.equals(currentJavaElementInput)) {</span>
+<span class="nc" id="L752">						currentJavaElementInput = javaElement;</span>
+<span class="nc" id="L753">						setInputWithProgress(javaElement);</span>
 					}
-<span class="nc bnc" id="L742" title="All 2 branches missed.">				} else if (firstElement instanceof ICompilationUnit compilationUnit) {</span>
-<span class="nc bnc" id="L743" title="All 2 branches missed.">					if (!compilationUnit.equals(currentJavaElementInput)) {</span>
-<span class="nc" id="L744">						currentJavaElementInput = compilationUnit;</span>
-<span class="nc" id="L745">						setSingleInput(compilationUnit);</span>
+<span class="nc bnc" id="L755" title="All 2 branches missed.">				} else if (firstElement instanceof ICompilationUnit compilationUnit) {</span>
+<span class="nc bnc" id="L756" title="All 2 branches missed.">					if (!compilationUnit.equals(currentJavaElementInput)) {</span>
+<span class="nc" id="L757">						currentJavaElementInput = compilationUnit;</span>
+<span class="nc" id="L758">						setSingleInput(compilationUnit);</span>
 					}
 				}
 			}
-<span class="nc" id="L749">		};</span>
+<span class="nc" id="L762">		};</span>
 
-<span class="fc" id="L751">		getSite().getPage().addSelectionListener(workbenchSelectionListener);</span>
-<span class="fc" id="L752">	}</span>
+<span class="fc" id="L764">		getSite().getPage().addSelectionListener(workbenchSelectionListener);</span>
+<span class="fc" id="L765">	}</span>
 
 	/**
 	 * Sets the input with a progress dialog for potentially long-running operations.
@@ -759,39 +772,39 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 * @param javaElement the Java element to process (package, source folder, or project)
 	 */
 	private void setInputWithProgress(IJavaElement javaElement) {
-<span class="nc" id="L762">		IProgressService progressService = PlatformUI.getWorkbench().getProgressService();</span>
+<span class="nc" id="L775">		IProgressService progressService = PlatformUI.getWorkbench().getProgressService();</span>
 		
 		try {
-<span class="nc" id="L765">			progressService.busyCursorWhile(monitor -&gt; {</span>
-<span class="nc" id="L766">				monitor.beginTask(&quot;Processing &quot; + javaElement.getElementName() + &quot;...&quot;, IProgressMonitor.UNKNOWN); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L778">			progressService.busyCursorWhile(monitor -&gt; {</span>
+<span class="nc" id="L779">				monitor.beginTask(&quot;Processing &quot; + javaElement.getElementName() + &quot;...&quot;, IProgressMonitor.UNKNOWN); //$NON-NLS-1$ //$NON-NLS-2$</span>
 				
 				try {
-<span class="nc" id="L769">					int totalUnits = countCompilationUnits(javaElement);</span>
-<span class="nc bnc" id="L770" title="All 2 branches missed.">					if (totalUnits &gt; 0) {</span>
-<span class="nc" id="L771">						monitor.beginTask(&quot;Processing &quot; + totalUnits + &quot; compilation units...&quot;, totalUnits); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L782">					int totalUnits = countCompilationUnits(javaElement);</span>
+<span class="nc bnc" id="L783" title="All 2 branches missed.">					if (totalUnits &gt; 0) {</span>
+<span class="nc" id="L784">						monitor.beginTask(&quot;Processing &quot; + totalUnits + &quot; compilation units...&quot;, totalUnits); //$NON-NLS-1$ //$NON-NLS-2$</span>
 					}
 					
 					// Create a progress-aware content provider
-<span class="nc" id="L775">					VariableBindingContentProviderWithProgress contentProvider = new VariableBindingContentProviderWithProgress(monitor);</span>
-<span class="nc" id="L776">					final Object[] elements = contentProvider.getElements(Collections.singletonList(javaElement));</span>
+<span class="nc" id="L788">					VariableBindingContentProviderWithProgress contentProvider = new VariableBindingContentProviderWithProgress(monitor);</span>
+<span class="nc" id="L789">					final Object[] elements = contentProvider.getElements(Collections.singletonList(javaElement));</span>
 					
 					// Update UI on the display thread
-<span class="nc" id="L779">					getSite().getShell().getDisplay().asyncExec(() -&gt; {</span>
-<span class="nc" id="L780">						variableTableViewer.setInput(Collections.singletonList(javaElement));</span>
+<span class="nc" id="L792">					getSite().getShell().getDisplay().asyncExec(() -&gt; {</span>
+<span class="nc" id="L793">						variableTableViewer.setInput(Collections.singletonList(javaElement));</span>
 						// Manually set the elements since we already computed them
-<span class="nc" id="L782">						variableTableViewer.refresh();</span>
-<span class="nc bnc" id="L783" title="All 2 branches missed.">						if (elements.length &gt; 0) {</span>
-<span class="nc" id="L784">							variableTableViewer.setSelection(new StructuredSelection(elements[0]));</span>
+<span class="nc" id="L795">						variableTableViewer.refresh();</span>
+<span class="nc bnc" id="L796" title="All 2 branches missed.">						if (elements.length &gt; 0) {</span>
+<span class="nc" id="L797">							variableTableViewer.setSelection(new StructuredSelection(elements[0]));</span>
 						}
-<span class="nc" id="L786">					});</span>
-<span class="nc" id="L787">				} finally {</span>
-<span class="nc" id="L788">					monitor.done();</span>
+<span class="nc" id="L799">					});</span>
+<span class="nc" id="L800">				} finally {</span>
+<span class="nc" id="L801">					monitor.done();</span>
 				}
-<span class="nc" id="L790">			});</span>
-<span class="nc" id="L791">		} catch (InvocationTargetException | InterruptedException e) {</span>
-<span class="nc" id="L792">			logger.error(e, &quot;Error processing Java element: &quot; + javaElement.getElementName()); //$NON-NLS-1$</span>
+<span class="nc" id="L803">			});</span>
+<span class="nc" id="L804">		} catch (InvocationTargetException | InterruptedException e) {</span>
+<span class="nc" id="L805">			logger.error(e, &quot;Error processing Java element: &quot; + javaElement.getElementName()); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L794">	}</span>
+<span class="nc" id="L807">	}</span>
 
 	/**
 	 * Counts the number of compilation units in a Java element.
@@ -801,66 +814,66 @@ import org.sandbox.jdt.ui.helper.views.colum.QualifiednameColumn;
 	 */
 	private int countCompilationUnits(IJavaElement javaElement) {
 		try {
-<span class="nc bnc" id="L804" title="All 2 branches missed.">			if (javaElement instanceof ICompilationUnit) {</span>
-<span class="nc" id="L805">				return 1;</span>
-<span class="nc bnc" id="L806" title="All 2 branches missed.">			} else if (javaElement instanceof IPackageFragment pf) {</span>
-<span class="nc" id="L807">				return pf.getCompilationUnits().length;</span>
-<span class="nc bnc" id="L808" title="All 2 branches missed.">			} else if (javaElement instanceof IPackageFragmentRoot pfr) {</span>
-<span class="nc" id="L809">				int count = 0;</span>
-<span class="nc bnc" id="L810" title="All 2 branches missed.">				for (IJavaElement child : pfr.getChildren()) {</span>
-<span class="nc bnc" id="L811" title="All 2 branches missed.">					if (child instanceof IPackageFragment pf) {</span>
-<span class="nc" id="L812">						count += pf.getCompilationUnits().length;</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">			if (javaElement instanceof ICompilationUnit) {</span>
+<span class="nc" id="L818">				return 1;</span>
+<span class="nc bnc" id="L819" title="All 2 branches missed.">			} else if (javaElement instanceof IPackageFragment pf) {</span>
+<span class="nc" id="L820">				return pf.getCompilationUnits().length;</span>
+<span class="nc bnc" id="L821" title="All 2 branches missed.">			} else if (javaElement instanceof IPackageFragmentRoot pfr) {</span>
+<span class="nc" id="L822">				int count = 0;</span>
+<span class="nc bnc" id="L823" title="All 2 branches missed.">				for (IJavaElement child : pfr.getChildren()) {</span>
+<span class="nc bnc" id="L824" title="All 2 branches missed.">					if (child instanceof IPackageFragment pf) {</span>
+<span class="nc" id="L825">						count += pf.getCompilationUnits().length;</span>
 					}
 				}
-<span class="nc" id="L815">				return count;</span>
-<span class="nc bnc" id="L816" title="All 2 branches missed.">			} else if (javaElement instanceof IJavaProject project) {</span>
-<span class="nc" id="L817">				int count = 0;</span>
-<span class="nc bnc" id="L818" title="All 2 branches missed.">				for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
-<span class="nc bnc" id="L819" title="All 2 branches missed.">					if (root.getKind() == IPackageFragmentRoot.K_SOURCE) {</span>
-<span class="nc bnc" id="L820" title="All 2 branches missed.">						for (IJavaElement child : root.getChildren()) {</span>
-<span class="nc bnc" id="L821" title="All 2 branches missed.">							if (child instanceof IPackageFragment pf) {</span>
-<span class="nc" id="L822">								count += pf.getCompilationUnits().length;</span>
+<span class="nc" id="L828">				return count;</span>
+<span class="nc bnc" id="L829" title="All 2 branches missed.">			} else if (javaElement instanceof IJavaProject project) {</span>
+<span class="nc" id="L830">				int count = 0;</span>
+<span class="nc bnc" id="L831" title="All 2 branches missed.">				for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
+<span class="nc bnc" id="L832" title="All 2 branches missed.">					if (root.getKind() == IPackageFragmentRoot.K_SOURCE) {</span>
+<span class="nc bnc" id="L833" title="All 2 branches missed.">						for (IJavaElement child : root.getChildren()) {</span>
+<span class="nc bnc" id="L834" title="All 2 branches missed.">							if (child instanceof IPackageFragment pf) {</span>
+<span class="nc" id="L835">								count += pf.getCompilationUnits().length;</span>
 							}
 						}
 					}
 				}
-<span class="nc" id="L827">				return count;</span>
+<span class="nc" id="L840">				return count;</span>
 			}
-<span class="nc" id="L829">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L842">		} catch (JavaModelException e) {</span>
 			// Ignore and return 0
 		}
-<span class="nc" id="L832">		return 0;</span>
+<span class="nc" id="L845">		return 0;</span>
 	}
 
 	@Override
 	public void dispose() {
 		// Remove workbench selection listener when view is disposed
-<span class="pc bpc" id="L838" title="1 of 2 branches missed.">		if (workbenchSelectionListener != null) {</span>
-			try {
-<span class="fc" id="L840">				IWorkbenchPage page = getSite().getPage();</span>
-<span class="pc bpc" id="L841" title="1 of 2 branches missed.">				if (page != null) {</span>
-<span class="fc" id="L842">					page.removeSelectionListener(workbenchSelectionListener);</span>
-				}
-<span class="pc" id="L844">			} catch (Exception e) {</span>
-				// Ignore errors during shutdown
-			}
-<span class="fc" id="L847">			workbenchSelectionListener = null;</span>
-		}
-		// Remove editor part listener when view is disposed
-<span class="pc bpc" id="L850" title="1 of 2 branches missed.">		if (editorPartListener != null) {</span>
-			// Check if page is still available to prevent errors during workbench shutdown
+<span class="pc bpc" id="L851" title="1 of 2 branches missed.">		if (workbenchSelectionListener != null) {</span>
 			try {
 <span class="fc" id="L853">				IWorkbenchPage page = getSite().getPage();</span>
 <span class="pc bpc" id="L854" title="1 of 2 branches missed.">				if (page != null) {</span>
-<span class="fc" id="L855">					page.removePartListener(editorPartListener);</span>
+<span class="fc" id="L855">					page.removeSelectionListener(workbenchSelectionListener);</span>
 				}
 <span class="pc" id="L857">			} catch (Exception e) {</span>
 				// Ignore errors during shutdown
 			}
-<span class="fc" id="L860">			editorPartListener = null;</span>
+<span class="fc" id="L860">			workbenchSelectionListener = null;</span>
 		}
-<span class="fc" id="L862">		super.dispose();</span>
-<span class="fc" id="L863">	}</span>
+		// Remove editor part listener when view is disposed
+<span class="pc bpc" id="L863" title="1 of 2 branches missed.">		if (editorPartListener != null) {</span>
+			// Check if page is still available to prevent errors during workbench shutdown
+			try {
+<span class="fc" id="L866">				IWorkbenchPage page = getSite().getPage();</span>
+<span class="pc bpc" id="L867" title="1 of 2 branches missed.">				if (page != null) {</span>
+<span class="fc" id="L868">					page.removePartListener(editorPartListener);</span>
+				}
+<span class="pc" id="L870">			} catch (Exception e) {</span>
+				// Ignore errors during shutdown
+			}
+<span class="fc" id="L873">			editorPartListener = null;</span>
+		}
+<span class="fc" id="L875">		super.dispose();</span>
+<span class="fc" id="L876">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -38,13 +38,13 @@ public final class TypeCheckingUtils {
 	 * @throws AbortSearchException if typeBinding is null
 	 */
 	public static boolean isOfType(ITypeBinding typeBinding, String typename) {
-<span class="nc bnc" id="L41" title="All 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
 <span class="nc" id="L42">			throw new AbortSearchException();</span>
 		}
-<span class="nc bnc" id="L44" title="All 2 branches missed.">		if (typeBinding.isArray()) {</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		if (typeBinding.isArray()) {</span>
 <span class="nc" id="L45">			typeBinding= typeBinding.getElementType();</span>
 		}
-<span class="nc" id="L47">		return typeBinding.getQualifiedName().equals(typename);</span>
+<span class="fc" id="L47">		return typeBinding.getQualifiedName().equals(typename);</span>
 	}
 
 	/**

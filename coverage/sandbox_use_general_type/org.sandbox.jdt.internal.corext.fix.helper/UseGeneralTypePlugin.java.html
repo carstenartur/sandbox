@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UseGeneralTypePlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_use_general_type</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">UseGeneralTypePlugin.java</span></div><h1>UseGeneralTypePlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.UseGeneralTypeFixCore;
+import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
+
+/**
+ * Plugin that widens variable declaration types to more general supertypes/interfaces
+ * based on actual usage of the variable.
+ * 
+ * &lt;p&gt;Example transformations:&lt;/p&gt;
+ * &lt;pre&gt;
+ * // Before:
+ * ArrayList&amp;lt;String&amp;gt; list = new ArrayList&amp;lt;&amp;gt;();
+ * list.add(&quot;a&quot;);
+ * list.size();
+ * 
+ * // After:
+ * List&amp;lt;String&amp;gt; list = new ArrayList&amp;lt;&amp;gt;();
+ * list.add(&quot;a&quot;);
+ * list.size();
+ * &lt;/pre&gt;
+ */
+<span class="fc" id="L55">public class UseGeneralTypePlugin {</span>
+
+	/**
+	 * Holder for variable type widening transformation data.
+	 */
+<span class="fc" id="L60">	public static class TypeWidenHolder {</span>
+		/** The variable declaration statement to transform */
+		public VariableDeclarationStatement variableDeclarationStatement;
+		/** The variable declaration fragment */
+		public VariableDeclarationFragment fragment;
+		/** The current declared type binding */
+		public ITypeBinding currentType;
+		/** The widened type binding (most general type that still supports all usages) */
+		public ITypeBinding widenedType;
+		/** All method signatures used on this variable (methodName + parameter types) */
+<span class="fc" id="L70">		public Set&lt;String&gt; usedMethodSignatures = new HashSet&lt;&gt;();</span>
+		/** All field names accessed on this variable */
+<span class="fc" id="L72">		public Set&lt;String&gt; usedFields = new HashSet&lt;&gt;();</span>
+		/** Whether the variable is cast to a specific type */
+		public boolean hasCast;
+		/** Whether the variable is used in instanceof check */
+		public boolean hasInstanceof;
+		/** Whether the variable is passed as method argument or returned (unsafe) */
+		public boolean hasUnsafeUsage;
+		/** Nodes that have been processed */
+		public Set&lt;ASTNode&gt; nodesprocessed;
+	}
+
+	public void find(UseGeneralTypeFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed,
+			boolean createForIfVarNotUsed) {
+
+		// Use shared TypeWideningAnalyzer from sandbox_common
+<span class="fc" id="L88">		Map&lt;String, TypeWideningAnalyzer.TypeWideningResult&gt; analysisResults =</span>
+<span class="fc" id="L89">				TypeWideningAnalyzer.analyzeCompilationUnit(compilationUnit);</span>
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		if (analysisResults.isEmpty()) {</span>
+<span class="fc" id="L92">			return;</span>
+		}
+
+		// Collect VariableDeclarationStatement info needed for rewriting
+<span class="fc" id="L96">		Map&lt;String, StatementInfo&gt; statementsByKey = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L97">		compilationUnit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(VariableDeclarationStatement node) {
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">				if (nodesprocessed.contains(node) || node.fragments().size() &gt; 1) {</span>
+<span class="nc" id="L101">					return true;</span>
+				}
+<span class="fc" id="L103">				Type type = node.getType();</span>
+<span class="pc bpc" id="L104" title="2 of 4 branches missed.">				if (type == null || type.isVar()) {</span>
+<span class="nc" id="L105">					return true;</span>
+				}
+<span class="fc bfc" id="L107" title="All 2 branches covered.">				for (Object fragObj : node.fragments()) {</span>
+<span class="fc" id="L108">					VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragObj;</span>
+<span class="fc" id="L109">					IVariableBinding varBinding = fragment.resolveBinding();</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">					if (varBinding != null) {</span>
+<span class="fc" id="L111">						statementsByKey.put(varBinding.getKey(), new StatementInfo(node, fragment));</span>
+					}
+				}
+<span class="fc" id="L114">				return true;</span>
+			}
+		});
+
+		// Build TypeWidenHolder entries from analysis results
+<span class="fc" id="L119">		ReferenceHolder&lt;Integer, TypeWidenHolder&gt; holder = new ReferenceHolder&lt;&gt;();</span>
+
+<span class="fc bfc" id="L121" title="All 2 branches covered.">		for (TypeWideningAnalyzer.TypeWideningResult result : analysisResults.values()) {</span>
+<span class="fc" id="L122">			StatementInfo stmtInfo = statementsByKey.get(result.getVariableBinding().getKey());</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">			if (stmtInfo == null) {</span>
+<span class="nc" id="L124">				continue;</span>
+			}
+
+<span class="fc" id="L127">			TypeWidenHolder typeHolder = new TypeWidenHolder();</span>
+<span class="fc" id="L128">			typeHolder.variableDeclarationStatement = stmtInfo.statement;</span>
+<span class="fc" id="L129">			typeHolder.fragment = stmtInfo.fragment;</span>
+<span class="fc" id="L130">			typeHolder.currentType = result.getCurrentType();</span>
+<span class="fc" id="L131">			typeHolder.widenedType = result.getWidestType();</span>
+<span class="fc" id="L132">			typeHolder.usedMethodSignatures = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L133">			typeHolder.usedFields = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L134">			typeHolder.nodesprocessed = nodesprocessed;</span>
+
+<span class="fc" id="L136">			holder.put(holder.size(), typeHolder);</span>
+		}
+
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		if (!holder.isEmpty()) {</span>
+<span class="fc" id="L140">			operations.add(fixcore.rewrite(holder));</span>
+		}
+<span class="fc" id="L142">	}</span>
+
+	/**
+	 * Helper class to store variable declaration statement information needed for rewriting.
+	 */
+	private static class StatementInfo {
+		final VariableDeclarationStatement statement;
+		final VariableDeclarationFragment fragment;
+
+<span class="fc" id="L151">		StatementInfo(VariableDeclarationStatement statement, VariableDeclarationFragment fragment) {</span>
+<span class="fc" id="L152">			this.statement = statement;</span>
+<span class="fc" id="L153">			this.fragment = fragment;</span>
+<span class="fc" id="L154">		}</span>
+	}
+
+	public void rewrite(UseGeneralTypeFixCore fixcore, ReferenceHolder&lt;Integer, TypeWidenHolder&gt; holder,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+		
+<span class="fc" id="L160">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L161">		AST ast = cuRewrite.getAST();</span>
+		
+<span class="fc bfc" id="L163" title="All 2 branches covered.">		for (TypeWidenHolder typeHolder : holder.values()) {</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">			if (typeHolder.nodesprocessed.contains(typeHolder.variableDeclarationStatement)) {</span>
+<span class="nc" id="L165">				continue;</span>
+			}
+			
+			// Create new type
+<span class="fc" id="L169">			Type newType = cuRewrite.getImportRewrite().addImport(typeHolder.widenedType, ast);</span>
+			
+			// Replace the type in the variable declaration statement
+<span class="fc" id="L172">			rewrite.replace(typeHolder.variableDeclarationStatement.getType(), newType, group);</span>
+			
+			// Mark as processed
+<span class="fc" id="L175">			typeHolder.nodesprocessed.add(typeHolder.variableDeclarationStatement);</span>
+		}
+<span class="fc" id="L177">	}</span>
+
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L181">			return &quot;&quot;&quot;</span>
+				Map&lt;String, Integer&gt; map = new LinkedHashMap&lt;&gt;();
+				map.put(&quot;a&quot;, 1);
+				&quot;&quot;&quot;;
+		}
+<span class="nc" id="L186">		return &quot;&quot;&quot;</span>
+			LinkedHashMap&lt;String, Integer&gt; map = new LinkedHashMap&lt;&gt;();
+			map.put(&quot;a&quot;, 1);
+			&quot;&quot;&quot;;
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -25,11 +25,15 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
@@ -39,14 +43,27 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
  * Engine for finding pattern matches in Java code.
  * 
  * &lt;p&gt;This engine traverses a compilation unit and identifies all occurrences
- * that match a given pattern. It supports both expression and statement patterns
+ * that match a given pattern. It supports expression, statement, annotation,
+ * method call, import, field, constructor, and method declaration patterns
  * with placeholder binding.&lt;/p&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Supported Pattern Kinds:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link PatternKind#EXPRESSION} - Expressions like {@code $x + 1}&lt;/li&gt;
+ *   &lt;li&gt;{@link PatternKind#STATEMENT} - Statements like {@code return $x;}&lt;/li&gt;
+ *   &lt;li&gt;{@link PatternKind#ANNOTATION} - Annotations like {@code @Before}&lt;/li&gt;
+ *   &lt;li&gt;{@link PatternKind#METHOD_CALL} - Method invocations like {@code assertEquals($a, $b)}&lt;/li&gt;
+ *   &lt;li&gt;{@link PatternKind#IMPORT} - Import declarations&lt;/li&gt;
+ *   &lt;li&gt;{@link PatternKind#FIELD} - Field declarations&lt;/li&gt;
+ *   &lt;li&gt;{@link PatternKind#CONSTRUCTOR} - Constructor invocations like {@code new String($bytes)}&lt;/li&gt;
+ *   &lt;li&gt;{@link PatternKind#METHOD_DECLARATION} - Method declarations like {@code void dispose()}&lt;/li&gt;
+ * &lt;/ul&gt;
  * 
  * @since 1.2.2
  */
-<span class="fc" id="L47">public class TriggerPatternEngine {</span>
+<span class="fc" id="L64">public class TriggerPatternEngine {</span>
 	
-<span class="fc" id="L49">	private final PatternParser parser = new PatternParser();</span>
+<span class="fc" id="L66">	private final PatternParser parser = new PatternParser();</span>
 	
 	/**
 	 * Finds all matches of the given pattern in the compilation unit.
@@ -56,60 +73,69 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 	 * @return a list of all matches (may be empty)
 	 */
 	public List&lt;Match&gt; findMatches(CompilationUnit cu, Pattern pattern) {
-<span class="pc bpc" id="L59" title="2 of 4 branches missed.">		if (cu == null || pattern == null) {</span>
-<span class="nc" id="L60">			return List.of();</span>
+<span class="pc bpc" id="L76" title="2 of 4 branches missed.">		if (cu == null || pattern == null) {</span>
+<span class="nc" id="L77">			return List.of();</span>
 		}
 		
-<span class="fc" id="L63">		ASTNode patternNode = parser.parse(pattern);</span>
-<span class="pc bpc" id="L64" title="1 of 2 branches missed.">		if (patternNode == null) {</span>
-<span class="nc" id="L65">			return List.of();</span>
+<span class="fc" id="L80">		ASTNode patternNode = parser.parse(pattern);</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">		if (patternNode == null) {</span>
+<span class="nc" id="L82">			return List.of();</span>
 		}
 		
-<span class="fc" id="L68">		List&lt;Match&gt; matches = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L85">		List&lt;Match&gt; matches = new ArrayList&lt;&gt;();</span>
 		
-<span class="fc" id="L70">		cu.accept(new ASTVisitor() {</span>
+<span class="fc" id="L87">		cu.accept(new ASTVisitor() {</span>
 			@Override
 			public void preVisit(ASTNode node) {
 				// Only check nodes of compatible types
-<span class="fc bfc" id="L74" title="All 4 branches covered.">				if (pattern.getKind() == PatternKind.EXPRESSION &amp;&amp; node instanceof Expression) {</span>
-<span class="fc" id="L75">					checkMatch(node, patternNode, matches);</span>
-<span class="pc bpc" id="L76" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.STATEMENT &amp;&amp; node instanceof Statement) {</span>
-<span class="nc" id="L77">					checkMatch(node, patternNode, matches);</span>
-<span class="pc bfc" id="L78" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.ANNOTATION &amp;&amp; node instanceof Annotation) {</span>
-<span class="fc" id="L79">					checkMatch(node, patternNode, matches);</span>
-<span class="fc bfc" id="L80" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.METHOD_CALL &amp;&amp; node instanceof MethodInvocation) {</span>
-<span class="fc" id="L81">					checkMatch(node, patternNode, matches);</span>
-<span class="fc bfc" id="L82" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.IMPORT &amp;&amp; node instanceof ImportDeclaration) {</span>
-<span class="fc" id="L83">					checkMatch(node, patternNode, matches);</span>
-<span class="fc bfc" id="L84" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.FIELD &amp;&amp; node instanceof FieldDeclaration) {</span>
-<span class="fc" id="L85">					checkMatch(node, patternNode, matches);</span>
-<span class="fc bfc" id="L86" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.CONSTRUCTOR &amp;&amp; node instanceof ClassInstanceCreation) {</span>
-<span class="fc" id="L87">					checkMatch(node, patternNode, matches);</span>
+<span class="fc bfc" id="L91" title="All 4 branches covered.">				if (pattern.getKind() == PatternKind.EXPRESSION &amp;&amp; node instanceof Expression) {</span>
+<span class="fc" id="L92">					checkMatch(node, patternNode, matches);</span>
+<span class="pc bpc" id="L93" title="3 of 4 branches missed.">				} else if (pattern.getKind() == PatternKind.STATEMENT &amp;&amp; node instanceof Statement) {</span>
+<span class="nc" id="L94">					checkMatch(node, patternNode, matches);</span>
+<span class="pc bfc" id="L95" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.ANNOTATION &amp;&amp; node instanceof Annotation) {</span>
+<span class="fc" id="L96">					checkMatch(node, patternNode, matches);</span>
+<span class="fc bfc" id="L97" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.METHOD_CALL &amp;&amp; node instanceof MethodInvocation) {</span>
+<span class="fc" id="L98">					checkMatch(node, patternNode, matches);</span>
+<span class="fc bfc" id="L99" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.IMPORT &amp;&amp; node instanceof ImportDeclaration) {</span>
+<span class="fc" id="L100">					checkMatch(node, patternNode, matches);</span>
+<span class="fc bfc" id="L101" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.FIELD &amp;&amp; node instanceof FieldDeclaration) {</span>
+<span class="fc" id="L102">					checkMatch(node, patternNode, matches);</span>
+<span class="fc bfc" id="L103" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.CONSTRUCTOR &amp;&amp; node instanceof ClassInstanceCreation) {</span>
+<span class="fc" id="L104">					checkMatch(node, patternNode, matches);</span>
+<span class="fc bfc" id="L105" title="All 4 branches covered.">				} else if (pattern.getKind() == PatternKind.METHOD_DECLARATION &amp;&amp; node instanceof MethodDeclaration) {</span>
+<span class="fc" id="L106">					checkMethodDeclarationMatch((MethodDeclaration) node, patternNode, pattern, matches);</span>
 				}
-<span class="fc" id="L89">			}</span>
+<span class="fc" id="L108">			}</span>
 		});
 		
-<span class="fc" id="L92">		return matches;</span>
+<span class="fc" id="L111">		return matches;</span>
 	}
 	
 	/**
 	 * Finds all matches of the given pattern in the compilation unit.
+	 * 
+	 * &lt;p&gt;When the pattern specifies an overrides constraint, binding resolution
+	 * is enabled to support override detection via {@link IMethodBinding}.&lt;/p&gt;
 	 * 
 	 * @param icu the ICompilationUnit to search
 	 * @param pattern the pattern to match
 	 * @return a list of all matches (may be empty)
 	 */
 	public List&lt;Match&gt; findMatches(ICompilationUnit icu, Pattern pattern) {
-<span class="nc bnc" id="L103" title="All 4 branches missed.">		if (icu == null || pattern == null) {</span>
-<span class="nc" id="L104">			return List.of();</span>
+<span class="nc bnc" id="L125" title="All 4 branches missed.">		if (icu == null || pattern == null) {</span>
+<span class="nc" id="L126">			return List.of();</span>
 		}
 		
-<span class="nc" id="L107">		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="nc" id="L108">		astParser.setSource(icu);</span>
-<span class="nc" id="L109">		astParser.setResolveBindings(false);</span>
-<span class="nc" id="L110">		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		boolean needsBindings = pattern.getOverridesType() != null;</span>
+<span class="nc" id="L130">		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L131">		astParser.setSource(icu);</span>
+<span class="nc" id="L132">		astParser.setResolveBindings(needsBindings);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">		if (needsBindings) {</span>
+<span class="nc" id="L134">			astParser.setProject(icu.getJavaProject());</span>
+		}
+<span class="nc" id="L136">		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);</span>
 		
-<span class="nc" id="L112">		return findMatches(cu, pattern);</span>
+<span class="nc" id="L138">		return findMatches(cu, pattern);</span>
 	}
 	
 	/**
@@ -123,26 +149,26 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 	 * @return a list of all matches (may be empty)
 	 */
 	public List&lt;Match&gt; findMatchesByNodeType(CompilationUnit cu, int... nodeTypes) {
-<span class="pc bpc" id="L126" title="3 of 6 branches missed.">		if (cu == null || nodeTypes == null || nodeTypes.length == 0) {</span>
-<span class="nc" id="L127">			return List.of();</span>
+<span class="pc bpc" id="L152" title="3 of 6 branches missed.">		if (cu == null || nodeTypes == null || nodeTypes.length == 0) {</span>
+<span class="nc" id="L153">			return List.of();</span>
 		}
 		
-<span class="fc" id="L130">		List&lt;Match&gt; matches = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L156">		List&lt;Match&gt; matches = new ArrayList&lt;&gt;();</span>
 		
-<span class="fc" id="L132">		cu.accept(new ASTVisitor() {</span>
+<span class="fc" id="L158">		cu.accept(new ASTVisitor() {</span>
 			@Override
 			public void preVisit(ASTNode node) {
-<span class="fc" id="L135">				int nodeType = node.getNodeType();</span>
-<span class="fc bfc" id="L136" title="All 2 branches covered.">				for (int targetType : nodeTypes) {</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">					if (nodeType == targetType) {</span>
-<span class="fc" id="L138">						createMatchWithAutoBindings(node, matches);</span>
-<span class="fc" id="L139">						break;</span>
+<span class="fc" id="L161">				int nodeType = node.getNodeType();</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">				for (int targetType : nodeTypes) {</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">					if (nodeType == targetType) {</span>
+<span class="fc" id="L164">						createMatchWithAutoBindings(node, matches);</span>
+<span class="fc" id="L165">						break;</span>
 					}
 				}
-<span class="fc" id="L142">			}</span>
+<span class="fc" id="L168">			}</span>
 		});
 		
-<span class="fc" id="L145">		return matches;</span>
+<span class="fc" id="L171">		return matches;</span>
 	}
 	
 	/**
@@ -156,18 +182,207 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 	 * @return a list of all matches (may be empty)
 	 */
 	public List&lt;Match&gt; findMatchesByNodeType(ICompilationUnit icu, int... nodeTypes) {
-<span class="nc bnc" id="L159" title="All 6 branches missed.">		if (icu == null || nodeTypes == null || nodeTypes.length == 0) {</span>
-<span class="nc" id="L160">			return List.of();</span>
+<span class="nc bnc" id="L185" title="All 6 branches missed.">		if (icu == null || nodeTypes == null || nodeTypes.length == 0) {</span>
+<span class="nc" id="L186">			return List.of();</span>
 		}
 		
-<span class="nc" id="L163">		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="nc" id="L164">		astParser.setSource(icu);</span>
-<span class="nc" id="L165">		astParser.setResolveBindings(false);</span>
-<span class="nc" id="L166">		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);</span>
+<span class="nc" id="L189">		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L190">		astParser.setSource(icu);</span>
+<span class="nc" id="L191">		astParser.setResolveBindings(false);</span>
+<span class="nc" id="L192">		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);</span>
 		
-<span class="nc" id="L168">		return findMatchesByNodeType(cu, nodeTypes);</span>
+<span class="nc" id="L194">		return findMatchesByNodeType(cu, nodeTypes);</span>
 	}
 	
+	/**
+	 * Finds all matches of the given pattern in the compilation unit, applying
+	 * body constraints to filter the results.
+	 * 
+	 * &lt;p&gt;This method extends {@link #findMatches(CompilationUnit, Pattern)} by also
+	 * checking the body of matched METHOD_DECLARATION nodes. The body constraint
+	 * specifies a pattern that must (or must not, when negated) be present in the
+	 * method body.&lt;/p&gt;
+	 * 
+	 * @param cu the compilation unit to search
+	 * @param pattern the pattern to match
+	 * @param bodyConstraintPattern the pattern to look for in the method body
+	 * @param bodyConstraintKind the kind of the body constraint pattern
+	 * @param negate if {@code true}, the constraint triggers when the pattern is NOT found
+	 * @return a list of all matches that satisfy both the pattern and body constraint (may be empty)
+	 * @since 1.2.6
+	 */
+	public List&lt;Match&gt; findMatchesWithConstraints(CompilationUnit cu, Pattern pattern,
+			String bodyConstraintPattern, PatternKind bodyConstraintKind, boolean negate) {
+<span class="pc bpc" id="L216" title="3 of 6 branches missed.">		if (cu == null || pattern == null || bodyConstraintPattern == null) {</span>
+<span class="nc" id="L217">			return List.of();</span>
+		}
+
+<span class="fc" id="L220">		List&lt;Match&gt; signatureMatches = findMatches(cu, pattern);</span>
+
+<span class="pc bpc" id="L222" title="2 of 4 branches missed.">		if (pattern.getKind() != PatternKind.METHOD_DECLARATION || bodyConstraintPattern.isEmpty()) {</span>
+<span class="nc" id="L223">			return signatureMatches;</span>
+		}
+
+<span class="fc" id="L226">		Pattern bodyPattern = new Pattern(bodyConstraintPattern, bodyConstraintKind);</span>
+<span class="fc" id="L227">		ASTNode bodyPatternNode = parser.parse(bodyPattern);</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		if (bodyPatternNode == null) {</span>
+<span class="nc" id="L229">			return signatureMatches;</span>
+		}
+
+<span class="fc" id="L232">		List&lt;Match&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">		for (Match match : signatureMatches) {</span>
+<span class="fc" id="L234">			ASTNode matchedNode = match.getMatchedNode();</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">			if (matchedNode instanceof MethodDeclaration methodDecl) {</span>
+<span class="fc" id="L236">				Block body = methodDecl.getBody();</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">				if (body != null) {</span>
+<span class="fc" id="L238">					boolean found = containsPattern(body, bodyPatternNode);</span>
+					// negate=true means trigger when pattern NOT found; negate=false means trigger when found
+<span class="fc bfc" id="L240" title="All 2 branches covered.">					if (found != negate) {</span>
+<span class="fc" id="L241">						result.add(match);</span>
+					}
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">				} else if (negate) {</span>
+					// Methods without a body (e.g., abstract/interface methods) trivially lack the pattern,
+					// so they satisfy a negated body constraint and are included in the results.
+<span class="fc" id="L246">					result.add(match);</span>
+				}
+			}
+		}
+<span class="fc" id="L250">		return result;</span>
+	}
+
+	/**
+	 * Checks if a method declaration matches the pattern and satisfies the override constraint.
+	 * 
+	 * &lt;p&gt;When the pattern specifies an overrides type, this method checks whether the
+	 * candidate method overrides a method from the specified type using binding resolution.
+	 * If binding resolution is not available (e.g., when parsing from source strings without
+	 * a project context), the override check fails and the method is not matched.&lt;/p&gt;
+	 * 
+	 * @param candidate the candidate method declaration
+	 * @param patternNode the parsed pattern AST node
+	 * @param pattern the pattern with potential overrides constraint
+	 * @param matches the list to add the match to
+	 */
+	private void checkMethodDeclarationMatch(MethodDeclaration candidate, ASTNode patternNode,
+			Pattern pattern, List&lt;Match&gt; matches) {
+<span class="fc" id="L268">		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();</span>
+
+<span class="fc bfc" id="L270" title="All 2 branches covered.">		if (!patternNode.subtreeMatch(matcher, candidate)) {</span>
+<span class="fc" id="L271">			return;</span>
+		}
+
+		// Check override constraint if specified
+<span class="fc" id="L275">		String overridesType = pattern.getOverridesType();</span>
+<span class="pc bpc" id="L276" title="1 of 4 branches missed.">		if (overridesType != null &amp;&amp; !overridesType.isEmpty()) {</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">			if (!checkOverrides(candidate, overridesType)) {</span>
+<span class="fc" id="L278">				return;</span>
+			}
+		}
+
+<span class="fc" id="L282">		Map&lt;String, Object&gt; bindings = new HashMap&lt;&gt;(matcher.getBindings());</span>
+<span class="fc" id="L283">		createMatchWithAutoBindings(candidate, bindings, matches);</span>
+<span class="fc" id="L284">	}</span>
+
+	/**
+	 * Checks if a method declaration overrides a method from the specified type.
+	 * 
+	 * &lt;p&gt;Uses binding resolution to traverse the type hierarchy and find overridden methods.
+	 * Returns {@code false} if bindings are not available (e.g., when parsing from raw source).&lt;/p&gt;
+	 * 
+	 * @param method the method declaration to check
+	 * @param overridesType the fully qualified type name that must declare the overridden method
+	 * @return {@code true} if the method overrides a method from the specified type
+	 */
+	private boolean checkOverrides(MethodDeclaration method, String overridesType) {
+<span class="fc" id="L297">		IMethodBinding methodBinding = method.resolveBinding();</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		if (methodBinding == null) {</span>
+<span class="fc" id="L299">			return false;</span>
+		}
+
+<span class="nc" id="L302">		ITypeBinding declaringClass = methodBinding.getDeclaringClass();</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">		if (declaringClass == null) {</span>
+<span class="nc" id="L304">			return false;</span>
+		}
+
+		// Walk the superclass chain looking for the overridden method
+<span class="nc" id="L308">		ITypeBinding superClass = declaringClass.getSuperclass();</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">		while (superClass != null) {</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">			if (overridesType.equals(superClass.getQualifiedName())) {</span>
+				// Found the target type - check if it declares a method that is overridden
+<span class="nc bnc" id="L312" title="All 2 branches missed.">				for (IMethodBinding superMethod : superClass.getDeclaredMethods()) {</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">					if (methodBinding.overrides(superMethod)) {</span>
+<span class="nc" id="L314">						return true;</span>
+					}
+				}
+				// Target type found but method not declared there - stop searching
+<span class="nc" id="L318">				return false;</span>
+			}
+<span class="nc" id="L320">			superClass = superClass.getSuperclass();</span>
+		}
+
+		// Also check interfaces
+<span class="nc" id="L324">		return checkOverridesInInterfaces(methodBinding, declaringClass, overridesType);</span>
+	}
+
+	/**
+	 * Checks if a method overrides a method declared in an interface matching the specified type.
+	 * 
+	 * @param methodBinding the method binding to check
+	 * @param typeBinding the declaring type
+	 * @param overridesType the target interface type
+	 * @return {@code true} if the method overrides a method from a matching interface
+	 */
+	private boolean checkOverridesInInterfaces(IMethodBinding methodBinding, ITypeBinding typeBinding,
+			String overridesType) {
+<span class="nc bnc" id="L337" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">			if (overridesType.equals(iface.getQualifiedName())) {</span>
+				// Found the target interface - check if it declares the overridden method
+<span class="nc bnc" id="L340" title="All 2 branches missed.">				for (IMethodBinding ifaceMethod : iface.getDeclaredMethods()) {</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">					if (methodBinding.overrides(ifaceMethod)) {</span>
+<span class="nc" id="L342">						return true;</span>
+					}
+				}
+				// Target interface found but method not declared there - stop searching
+<span class="nc" id="L346">				return false;</span>
+			}
+			// Recursively check super-interfaces
+<span class="nc bnc" id="L349" title="All 2 branches missed.">			if (checkOverridesInInterfaces(methodBinding, iface, overridesType)) {</span>
+<span class="nc" id="L350">				return true;</span>
+			}
+		}
+<span class="nc" id="L353">		return false;</span>
+	}
+
+	/**
+	 * Checks if a method body contains a match for the given pattern.
+	 * 
+	 * &lt;p&gt;Searches the entire body subtree, including nested blocks and
+	 * control flow structures.&lt;/p&gt;
+	 * 
+	 * @param body the method body to search
+	 * @param bodyPatternNode the pattern AST node to look for
+	 * @return {@code true} if the pattern is found in the body
+	 */
+	private boolean containsPattern(Block body, ASTNode bodyPatternNode) {
+<span class="fc" id="L367">		boolean[] found = {false};</span>
+<span class="fc" id="L368">		body.accept(new ASTVisitor() {</span>
+			@Override
+			public void preVisit(ASTNode node) {
+<span class="fc bfc" id="L371" title="All 2 branches covered.">				if (found[0]) {</span>
+<span class="fc" id="L372">					return;</span>
+				}
+				// Try matching against statements
+<span class="pc bpc" id="L375" title="1 of 4 branches missed.">				if (node instanceof Statement || node instanceof Expression) {</span>
+<span class="fc" id="L376">					PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">					if (bodyPatternNode.subtreeMatch(matcher, node)) {</span>
+<span class="fc" id="L378">						found[0] = true;</span>
+					}
+				}
+<span class="fc" id="L381">			}</span>
+		});
+<span class="fc" id="L383">		return found[0];</span>
+	}
+
 	/**
 	 * Checks if a candidate node matches the pattern node and adds a Match if it does.
 	 * 
@@ -178,14 +393,14 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 	 * &lt;/ul&gt;
 	 */
 	private void checkMatch(ASTNode candidate, ASTNode patternNode, List&lt;Match&gt; matches) {
-<span class="fc" id="L181">		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();</span>
+<span class="fc" id="L396">		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();</span>
 		
-<span class="fc bfc" id="L183" title="All 2 branches covered.">		if (patternNode.subtreeMatch(matcher, candidate)) {</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">		if (patternNode.subtreeMatch(matcher, candidate)) {</span>
 			// We have a match! Create a Match object with pattern bindings and auto-bindings
-<span class="fc" id="L185">			Map&lt;String, Object&gt; bindings = new HashMap&lt;&gt;(matcher.getBindings());</span>
-<span class="fc" id="L186">			createMatchWithAutoBindings(candidate, bindings, matches);</span>
+<span class="fc" id="L400">			Map&lt;String, Object&gt; bindings = new HashMap&lt;&gt;(matcher.getBindings());</span>
+<span class="fc" id="L401">			createMatchWithAutoBindings(candidate, bindings, matches);</span>
 		}
-<span class="fc" id="L188">	}</span>
+<span class="fc" id="L403">	}</span>
 	
 	/**
 	 * Creates a Match with auto-bindings for a matched node.
@@ -194,8 +409,8 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 	 * @param matches the list to add the match to
 	 */
 	private void createMatchWithAutoBindings(ASTNode node, List&lt;Match&gt; matches) {
-<span class="fc" id="L197">		createMatchWithAutoBindings(node, new HashMap&lt;&gt;(), matches);</span>
-<span class="fc" id="L198">	}</span>
+<span class="fc" id="L412">		createMatchWithAutoBindings(node, new HashMap&lt;&gt;(), matches);</span>
+<span class="fc" id="L413">	}</span>
 	
 	/**
 	 * Creates a Match with auto-bindings for a matched node.
@@ -205,21 +420,21 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 	 * @param matches the list to add the match to
 	 */
 	private void createMatchWithAutoBindings(ASTNode node, Map&lt;String, Object&gt; bindings, List&lt;Match&gt; matches) {
-<span class="fc" id="L208">		int offset = node.getStartPosition();</span>
-<span class="fc" id="L209">		int length = node.getLength();</span>
+<span class="fc" id="L423">		int offset = node.getStartPosition();</span>
+<span class="fc" id="L424">		int length = node.getLength();</span>
 		
 		// Add auto-bindings
-<span class="fc" id="L212">		bindings.put(&quot;$_&quot;, node); //$NON-NLS-1$</span>
+<span class="fc" id="L427">		bindings.put(&quot;$_&quot;, node); //$NON-NLS-1$</span>
 		
 		// Find enclosing type declaration
-<span class="fc" id="L215">		ASTNode enclosingType = findEnclosingType(node);</span>
-<span class="fc bfc" id="L216" title="All 2 branches covered.">		if (enclosingType != null) {</span>
-<span class="fc" id="L217">			bindings.put(&quot;$this&quot;, enclosingType); //$NON-NLS-1$</span>
+<span class="fc" id="L430">		ASTNode enclosingType = findEnclosingType(node);</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">		if (enclosingType != null) {</span>
+<span class="fc" id="L432">			bindings.put(&quot;$this&quot;, enclosingType); //$NON-NLS-1$</span>
 		}
 		
-<span class="fc" id="L220">		Match match = new Match(node, bindings, offset, length);</span>
-<span class="fc" id="L221">		matches.add(match);</span>
-<span class="fc" id="L222">	}</span>
+<span class="fc" id="L435">		Match match = new Match(node, bindings, offset, length);</span>
+<span class="fc" id="L436">		matches.add(match);</span>
+<span class="fc" id="L437">	}</span>
 	
 	/**
 	 * Finds the enclosing type declaration for a given node.
@@ -230,14 +445,14 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 	 * @return the enclosing AbstractTypeDeclaration, or null if none found
 	 */
 	private ASTNode findEnclosingType(ASTNode node) {
-<span class="fc" id="L233">		ASTNode current = node;</span>
-<span class="fc bfc" id="L234" title="All 2 branches covered.">		while (current != null) {</span>
-<span class="fc bfc" id="L235" title="All 2 branches covered.">			if (current instanceof AbstractTypeDeclaration) {</span>
-<span class="fc" id="L236">				return current;</span>
+<span class="fc" id="L448">		ASTNode current = node;</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">		while (current != null) {</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">			if (current instanceof AbstractTypeDeclaration) {</span>
+<span class="fc" id="L451">				return current;</span>
 			}
-<span class="fc" id="L238">			current = current.getParent();</span>
+<span class="fc" id="L453">			current = current.getParent();</span>
 		}
-<span class="fc" id="L240">		return null;</span>
+<span class="fc" id="L455">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

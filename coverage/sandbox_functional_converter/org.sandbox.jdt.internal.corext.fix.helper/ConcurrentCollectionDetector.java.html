@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConcurrentCollectionDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ConcurrentCollectionDetector.java</span></div><h1>ConcurrentCollectionDetector.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ITypeBinding;
+
+/**
+ * Detects concurrent collection types that require special handling during
+ * loop-to-stream conversions.
+ * 
+ * &lt;p&gt;Concurrent collections like {@link java.util.concurrent.CopyOnWriteArrayList}
+ * and {@link java.util.concurrent.ConcurrentHashMap} have different iteration
+ * semantics than standard collections:&lt;/p&gt;
+ * 
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;b&gt;CopyOnWrite collections:&lt;/b&gt; Iterators provide a snapshot of the collection
+ * at the time the iterator was created. Modifications during iteration do not throw
+ * {@code ConcurrentModificationException} but are not visible to the iterator.&lt;/li&gt;
+ * 
+ * &lt;li&gt;&lt;b&gt;Concurrent collections:&lt;/b&gt; Weakly consistent iterators that may reflect
+ * modifications made after iterator creation, but never throw {@code ConcurrentModificationException}.&lt;/li&gt;
+ * 
+ * &lt;li&gt;&lt;b&gt;iterator.remove() not supported:&lt;/b&gt; Many concurrent collections do not support
+ * {@code iterator.remove()}, and attempting to call it will throw
+ * {@code UnsupportedOperationException}.&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;&lt;b&gt;Safety Rules for Concurrent Collections:&lt;/b&gt;&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;Never generate {@code iterator.remove()} for concurrent collections&lt;/li&gt;
+ * &lt;li&gt;Be aware that modifications may not be visible during iteration&lt;/li&gt;
+ * &lt;li&gt;Consider the threading context (field vs local variable)&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/670&quot;&gt;Issue #670 - Point 2.4&lt;/a&gt;
+ * @since 1.0.0
+ */
+public final class ConcurrentCollectionDetector {
+
+	/**
+	 * Fully qualified names of concurrent collection types.
+	 * These collections have special iteration semantics and do not support iterator.remove().
+	 */
+<span class="fc" id="L57">	private static final Set&lt;String&gt; CONCURRENT_COLLECTION_TYPES = Set.of(</span>
+<span class="fc" id="L58">			&quot;java.util.concurrent.CopyOnWriteArrayList&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L59">			&quot;java.util.concurrent.CopyOnWriteArraySet&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L60">			&quot;java.util.concurrent.ConcurrentHashMap&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L61">			&quot;java.util.concurrent.ConcurrentSkipListMap&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L62">			&quot;java.util.concurrent.ConcurrentSkipListSet&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L63">			&quot;java.util.concurrent.ConcurrentLinkedQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L64">			&quot;java.util.concurrent.ConcurrentLinkedDeque&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L65">			&quot;java.util.concurrent.LinkedBlockingQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L66">			&quot;java.util.concurrent.LinkedBlockingDeque&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L67">			&quot;java.util.concurrent.ArrayBlockingQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L68">			&quot;java.util.concurrent.PriorityBlockingQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L69">			&quot;java.util.concurrent.DelayQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L70">			&quot;java.util.concurrent.SynchronousQueue&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L71">	);</span>
+
+	private ConcurrentCollectionDetector() {
+		// utility class
+	}
+
+	/**
+	 * Checks if the given type is a concurrent collection.
+	 * 
+	 * @param typeBinding the type to check (may be null)
+	 * @return {@code true} if the type is a concurrent collection
+	 */
+	public static boolean isConcurrentCollection(ITypeBinding typeBinding) {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		if (typeBinding == null) {</span>
+<span class="fc" id="L85">			return false;</span>
+		}
+
+		// Check the erasure (raw type) to handle generics
+<span class="fc" id="L89">		String qualifiedName = typeBinding.getErasure().getQualifiedName();</span>
+<span class="fc" id="L90">		return CONCURRENT_COLLECTION_TYPES.contains(qualifiedName);</span>
+	}
+
+	/**
+	 * Checks if the given qualified type name is a concurrent collection.
+	 * 
+	 * @param qualifiedTypeName the fully qualified type name (may be null)
+	 * @return {@code true} if the type name matches a concurrent collection
+	 */
+	public static boolean isConcurrentCollection(String qualifiedTypeName) {
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (qualifiedTypeName == null) {</span>
+<span class="fc" id="L101">			return false;</span>
+		}
+<span class="fc" id="L103">		return CONCURRENT_COLLECTION_TYPES.contains(qualifiedTypeName);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

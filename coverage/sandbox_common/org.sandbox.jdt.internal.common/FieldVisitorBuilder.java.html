@@ -23,7 +23,7 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
  * &lt;p&gt;&lt;b&gt;Example Usage:&lt;/b&gt;&lt;/p&gt;
  * &lt;pre&gt;
  * // Field with annotation and type
- * HelperVisitor.forField()
+ * HelperVisitorFactory.forField()
  *     .withAnnotation(&quot;org.junit.Rule&quot;)
  *     .ofType(&quot;org.junit.rules.TemporaryFolder&quot;)
  *     .in(compilationUnit)
@@ -77,7 +77,7 @@ import org.eclipse.jdt.core.dom.FieldDeclaration;
     @Override
     protected &lt;V, H&gt; void executeVisitors(ReferenceHolder&lt;V, H&gt; holder, 
             BiPredicate&lt;FieldDeclaration, ReferenceHolder&lt;V, H&gt;&gt; processor) {
-<span class="fc" id="L80">        HelperVisitor.callFieldDeclarationVisitor(annotationFQN, typeFQN, compilationUnit,</span>
+<span class="fc" id="L80">        HelperVisitorFactory.callFieldDeclarationVisitor(annotationFQN, typeFQN, compilationUnit,</span>
 <span class="fc" id="L81">                holder, nodesprocessed, processor);</span>
 <span class="fc" id="L82">    }</span>
 }

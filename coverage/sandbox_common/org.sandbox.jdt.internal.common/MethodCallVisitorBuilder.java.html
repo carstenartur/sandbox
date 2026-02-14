@@ -24,7 +24,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
  * &lt;p&gt;&lt;b&gt;Example Usage:&lt;/b&gt;&lt;/p&gt;
  * &lt;pre&gt;
  * // Single method
- * HelperVisitor.forMethodCall(&quot;org.junit.Assert&quot;, &quot;assertTrue&quot;)
+ * HelperVisitorFactory.forMethodCall(&quot;org.junit.Assert&quot;, &quot;assertTrue&quot;)
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
  *     .processEach((methodInv, holder) -&amp;gt; {
@@ -33,7 +33,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
  *     });
  *     
  * // Multiple methods with imports
- * HelperVisitor.forMethodCalls(&quot;org.junit.Assert&quot;, ALL_ASSERTION_METHODS)
+ * HelperVisitorFactory.forMethodCalls(&quot;org.junit.Assert&quot;, ALL_ASSERTION_METHODS)
  *     .andStaticImports()
  *     .andImportsOf(&quot;org.junit.Assert&quot;)
  *     .in(compilationUnit)
@@ -113,26 +113,26 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder&lt;ASTNode&gt
         // Visit method invocations for each method name
 <span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (typeFQN != null) {</span>
 <span class="fc" id="L115">            methodNames.forEach(methodName -&gt; {</span>
-<span class="fc" id="L116">                HelperVisitor.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,</span>
+<span class="fc" id="L116">                HelperVisitorFactory.callMethodInvocationVisitor(typeFQN, methodName, compilationUnit,</span>
 <span class="fc" id="L117">                        holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
 <span class="fc" id="L118">            });</span>
             
             // Optionally include static imports for each method
 <span class="fc bfc" id="L121" title="All 2 branches covered.">            if (includeStaticImports) {</span>
 <span class="fc" id="L122">                methodNames.forEach(methodName -&gt; {</span>
-<span class="fc" id="L123">                    HelperVisitor.callImportDeclarationVisitor(typeFQN + &quot;.&quot; + methodName, //$NON-NLS-1$</span>
+<span class="fc" id="L123">                    HelperVisitorFactory.callImportDeclarationVisitor(typeFQN + &quot;.&quot; + methodName, //$NON-NLS-1$</span>
 <span class="fc" id="L124">                            compilationUnit, holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
 <span class="fc" id="L125">                });</span>
             }
             
             // Optionally include the regular import
 <span class="fc bfc" id="L129" title="All 2 branches covered.">            if (importFQN != null) {</span>
-<span class="fc" id="L130">                HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
+<span class="fc" id="L130">                HelperVisitorFactory.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
 <span class="fc" id="L131">                        holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
             }
 <span class="pc bnc" id="L133" title="All 2 branches missed.">        } else if (typeClass != null) {</span>
 <span class="nc" id="L134">            methodNames.forEach(methodName -&gt; {</span>
-<span class="nc" id="L135">                HelperVisitor.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,</span>
+<span class="nc" id="L135">                HelperVisitorFactory.callMethodInvocationVisitor(typeClass, methodName, compilationUnit,</span>
 <span class="nc" id="L136">                        holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
 <span class="nc" id="L137">            });</span>
             
@@ -142,13 +142,13 @@ public class MethodCallVisitorBuilder extends HelperVisitorBuilder&lt;ASTNode&gt
                 
 <span class="nc bnc" id="L143" title="All 2 branches missed.">                if (includeStaticImports) {</span>
 <span class="nc" id="L144">                    methodNames.forEach(methodName -&gt; {</span>
-<span class="nc" id="L145">                        HelperVisitor.callImportDeclarationVisitor(classFQN + &quot;.&quot; + methodName, //$NON-NLS-1$</span>
+<span class="nc" id="L145">                        HelperVisitorFactory.callImportDeclarationVisitor(classFQN + &quot;.&quot; + methodName, //$NON-NLS-1$</span>
 <span class="nc" id="L146">                                compilationUnit, holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
 <span class="nc" id="L147">                    });</span>
                 }
                 
 <span class="nc bnc" id="L150" title="All 2 branches missed.">                if (importFQN != null) {</span>
-<span class="nc" id="L151">                    HelperVisitor.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
+<span class="nc" id="L151">                    HelperVisitorFactory.callImportDeclarationVisitor(importFQN, compilationUnit,</span>
 <span class="nc" id="L152">                            holder, nodesprocessed, (node, h) -&gt; processor.test(node, h));</span>
                 }
             }

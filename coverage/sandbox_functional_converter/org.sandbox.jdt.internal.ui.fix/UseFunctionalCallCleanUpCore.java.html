@@ -170,13 +170,13 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 			}
 <span class="fc" id="L171">			break;</span>
 		case &quot;iterator_while&quot;: //$NON-NLS-1$
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {</span>
 <span class="fc" id="L174">				fixSet.add(UseFunctionalCallFixCore.FOR_TO_ITERATOR);</span>
 			}
-<span class="pc bpc" id="L176" title="1 of 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {</span>
-<span class="nc" id="L177">				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_ITERATOR);</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {</span>
+<span class="fc" id="L177">				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_ITERATOR);</span>
 			}
-<span class="nc" id="L179">			break;</span>
+<span class="fc" id="L179">			break;</span>
 		case &quot;stream&quot;: //$NON-NLS-1$
 		default:
 <span class="nc bnc" id="L182" title="All 2 branches missed.">			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {</span>

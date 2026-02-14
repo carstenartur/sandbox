@@ -42,6 +42,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
@@ -57,207 +58,207 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
  * 
  * All transformations are wrapped in assertAll() per test method.
  */
-<span class="fc" id="L60">public class RuleErrorCollectorJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L61">public class RuleErrorCollectorJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L65">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
-<span class="fc" id="L66">		HelperVisitor.forField()</span>
-<span class="fc" id="L67">			.withAnnotation(ORG_JUNIT_RULE)</span>
-<span class="fc" id="L68">			.ofType(ORG_JUNIT_RULES_ERROR_COLLECTOR)</span>
-<span class="fc" id="L69">			.in(compilationUnit)</span>
-<span class="fc" id="L70">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L71">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
-<span class="fc" id="L72">	}</span>
+<span class="fc" id="L66">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L67">		HelperVisitorFactory.forField()</span>
+<span class="fc" id="L68">			.withAnnotation(ORG_JUNIT_RULE)</span>
+<span class="fc" id="L69">			.ofType(ORG_JUNIT_RULES_ERROR_COLLECTOR)</span>
+<span class="fc" id="L70">			.in(compilationUnit)</span>
+<span class="fc" id="L71">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L72">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
+<span class="fc" id="L73">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, FieldDeclaration node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L77">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);</span>
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (fragment.resolveBinding() == null) {</span>
+<span class="fc" id="L78">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (fragment.resolveBinding() == null) {</span>
 			// Return true to continue processing other fields
-<span class="nc" id="L80">			return true;</span>
+<span class="nc" id="L81">			return true;</span>
 		}
-<span class="fc" id="L82">		ITypeBinding binding = fragment.resolveBinding().getType();</span>
-<span class="pc bpc" id="L83" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L84">			JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L85">			mh.setMinv(node);</span>
-<span class="fc" id="L86">			dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L87">			operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L83">		ITypeBinding binding = fragment.resolveBinding().getType();</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L85">			JunitHolder mh = new JunitHolder();</span>
+<span class="fc" id="L86">			mh.setMinv(node);</span>
+<span class="fc" id="L87">			dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L88">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}
 		// Return true to continue processing other fields
-<span class="fc" id="L90">		return true;</span>
+<span class="fc" id="L91">		return true;</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L96">		FieldDeclaration field = junitHolder.getFieldDeclaration();</span>
-<span class="fc" id="L97">		TypeDeclaration parentClass = ASTNodes.getParent(field, TypeDeclaration.class);</span>
+<span class="fc" id="L97">		FieldDeclaration field = junitHolder.getFieldDeclaration();</span>
+<span class="fc" id="L98">		TypeDeclaration parentClass = ASTNodes.getParent(field, TypeDeclaration.class);</span>
 
-<span class="fc" id="L99">		VariableDeclarationFragment originalFragment = (VariableDeclarationFragment) field.fragments().get(0);</span>
-<span class="fc" id="L100">		String fieldName = originalFragment.getName().getIdentifier();</span>
+<span class="fc" id="L100">		VariableDeclarationFragment originalFragment = (VariableDeclarationFragment) field.fragments().get(0);</span>
+<span class="fc" id="L101">		String fieldName = originalFragment.getName().getIdentifier();</span>
 
 		// Remove the field declaration
-<span class="fc" id="L103">		rewriter.remove(field, group);</span>
+<span class="fc" id="L104">		rewriter.remove(field, group);</span>
 
 		// Remove old imports
-<span class="fc" id="L106">		importRewriter.removeImport(ORG_JUNIT_RULE);</span>
-<span class="fc" id="L107">		importRewriter.removeImport(ORG_JUNIT_RULES_ERROR_COLLECTOR);</span>
+<span class="fc" id="L107">		importRewriter.removeImport(ORG_JUNIT_RULE);</span>
+<span class="fc" id="L108">		importRewriter.removeImport(ORG_JUNIT_RULES_ERROR_COLLECTOR);</span>
 
 		// Add new imports
-<span class="fc" id="L110">		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertAll&quot;, false);</span>
+<span class="fc" id="L111">		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, &quot;assertAll&quot;, false);</span>
 
 		// Transform all test methods that use the ErrorCollector field
-<span class="fc bfc" id="L113" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
-<span class="fc" id="L114">			transformTestMethod(method, fieldName, rewriter, ast, group, importRewriter);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
+<span class="fc" id="L115">			transformTestMethod(method, fieldName, rewriter, ast, group, importRewriter);</span>
 		}
-<span class="fc" id="L116">	}</span>
+<span class="fc" id="L117">	}</span>
 
 	private void transformTestMethod(MethodDeclaration method, String fieldName, ASTRewrite rewriter, AST ast,
 			TextEditGroup group, ImportRewrite importRewriter) {
-<span class="fc" id="L120">		Block methodBody = method.getBody();</span>
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">		if (methodBody == null) {</span>
-<span class="nc" id="L122">			return;</span>
+<span class="fc" id="L121">		Block methodBody = method.getBody();</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">		if (methodBody == null) {</span>
+<span class="nc" id="L123">			return;</span>
 		}
 
-<span class="fc" id="L125">		List&lt;Statement&gt; statements = methodBody.statements();</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		if (statements.isEmpty()) {</span>
-<span class="nc" id="L127">			return;</span>
+<span class="fc" id="L126">		List&lt;Statement&gt; statements = methodBody.statements();</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">		if (statements.isEmpty()) {</span>
+<span class="nc" id="L128">			return;</span>
 		}
 
 		// Find all ErrorCollector method invocations in this method
-<span class="fc" id="L131">		List&lt;ErrorCollectorCall&gt; errorCollectorCalls = findErrorCollectorCalls(statements, fieldName);</span>
+<span class="fc" id="L132">		List&lt;ErrorCollectorCall&gt; errorCollectorCalls = findErrorCollectorCalls(statements, fieldName);</span>
 
-<span class="fc bfc" id="L133" title="All 2 branches covered.">		if (errorCollectorCalls.isEmpty()) {</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (errorCollectorCalls.isEmpty()) {</span>
 			// This method doesn't use the ErrorCollector field
-<span class="fc" id="L135">			return;</span>
+<span class="fc" id="L136">			return;</span>
 		}
 
 		// Create assertAll() call with lambda expressions for each error collector call
-<span class="fc" id="L139">		MethodInvocation assertAllCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L140">		assertAllCall.setName(ast.newSimpleName(&quot;assertAll&quot;));</span>
+<span class="fc" id="L140">		MethodInvocation assertAllCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L141">		assertAllCall.setName(ast.newSimpleName(&quot;assertAll&quot;));</span>
 
 		// Create lambda expressions for each ErrorCollector call
-<span class="fc bfc" id="L143" title="All 2 branches covered.">		for (ErrorCollectorCall call : errorCollectorCalls) {</span>
-<span class="fc" id="L144">			LambdaExpression lambda = createLambdaForErrorCollectorCall(call, ast, importRewriter);</span>
-<span class="fc" id="L145">			assertAllCall.arguments().add(lambda);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		for (ErrorCollectorCall call : errorCollectorCalls) {</span>
+<span class="fc" id="L145">			LambdaExpression lambda = createLambdaForErrorCollectorCall(call, ast, importRewriter);</span>
+<span class="fc" id="L146">			assertAllCall.arguments().add(lambda);</span>
 		}
 
 		// Create the new assertAll statement
-<span class="fc" id="L149">		ExpressionStatement assertAllStatement = ast.newExpressionStatement(assertAllCall);</span>
+<span class="fc" id="L150">		ExpressionStatement assertAllStatement = ast.newExpressionStatement(assertAllCall);</span>
 
 		// Remove all old ErrorCollector calls
-<span class="fc bfc" id="L152" title="All 2 branches covered.">		for (int i = errorCollectorCalls.size() - 1; i &gt;= 0; i--) {</span>
-<span class="fc" id="L153">			ErrorCollectorCall call = errorCollectorCalls.get(i);</span>
-<span class="fc" id="L154">			rewriter.remove(call.statement, group);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">		for (int i = errorCollectorCalls.size() - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L154">			ErrorCollectorCall call = errorCollectorCalls.get(i);</span>
+<span class="fc" id="L155">			rewriter.remove(call.statement, group);</span>
 		}
 
 		// Insert the assertAll statement where the first ErrorCollector call was
-<span class="pc bpc" id="L158" title="1 of 2 branches missed.">		if (!errorCollectorCalls.isEmpty()) {</span>
-<span class="fc" id="L159">			ErrorCollectorCall firstCall = errorCollectorCalls.get(0);</span>
-<span class="fc" id="L160">			int insertIndex = statements.indexOf(firstCall.statement);</span>
-<span class="fc" id="L161">			rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertAt(assertAllStatement, insertIndex, group);</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		if (!errorCollectorCalls.isEmpty()) {</span>
+<span class="fc" id="L160">			ErrorCollectorCall firstCall = errorCollectorCalls.get(0);</span>
+<span class="fc" id="L161">			int insertIndex = statements.indexOf(firstCall.statement);</span>
+<span class="fc" id="L162">			rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertAt(assertAllStatement, insertIndex, group);</span>
 		}
-<span class="fc" id="L163">	}</span>
+<span class="fc" id="L164">	}</span>
 
 	private List&lt;ErrorCollectorCall&gt; findErrorCollectorCalls(List&lt;Statement&gt; statements, String fieldName) {
-<span class="fc" id="L166">		List&lt;ErrorCollectorCall&gt; calls = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L167">		List&lt;ErrorCollectorCall&gt; calls = new ArrayList&lt;&gt;();</span>
 		
 		// Use ASTVisitor to find all ErrorCollector calls, including nested ones
-<span class="fc bfc" id="L169" title="All 2 branches covered.">		for (Statement stmt : statements) {</span>
-<span class="fc" id="L170">			stmt.accept(new ASTVisitor() {</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		for (Statement stmt : statements) {</span>
+<span class="fc" id="L171">			stmt.accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(MethodInvocation invocation) {
-<span class="fc" id="L173">					Expression expression = invocation.getExpression();</span>
-<span class="fc bfc" id="L174" title="All 2 branches covered.">					if (expression instanceof SimpleName) {</span>
-<span class="fc" id="L175">						SimpleName receiver = (SimpleName) expression;</span>
-<span class="pc bpc" id="L176" title="1 of 2 branches missed.">						if (fieldName.equals(receiver.getIdentifier())) {</span>
-<span class="fc" id="L177">							String methodName = invocation.getName().getIdentifier();</span>
-<span class="pc bpc" id="L178" title="3 of 6 branches missed.">							if (&quot;checkThat&quot;.equals(methodName) || &quot;addError&quot;.equals(methodName) || &quot;checkSucceeds&quot;.equals(methodName)) {</span>
+<span class="fc" id="L174">					Expression expression = invocation.getExpression();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">					if (expression instanceof SimpleName) {</span>
+<span class="fc" id="L176">						SimpleName receiver = (SimpleName) expression;</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">						if (fieldName.equals(receiver.getIdentifier())) {</span>
+<span class="fc" id="L178">							String methodName = invocation.getName().getIdentifier();</span>
+<span class="pc bpc" id="L179" title="3 of 6 branches missed.">							if (&quot;checkThat&quot;.equals(methodName) || &quot;addError&quot;.equals(methodName) || &quot;checkSucceeds&quot;.equals(methodName)) {</span>
 								// Find the parent statement that contains this invocation
-<span class="fc" id="L180">								Statement parentStmt = findParentStatement(invocation);</span>
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">								if (parentStmt != null) {</span>
-<span class="fc" id="L182">									calls.add(new ErrorCollectorCall(parentStmt, invocation, methodName));</span>
+<span class="fc" id="L181">								Statement parentStmt = findParentStatement(invocation);</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">								if (parentStmt != null) {</span>
+<span class="fc" id="L183">									calls.add(new ErrorCollectorCall(parentStmt, invocation, methodName));</span>
 								}
 							}
 						}
 					}
-<span class="fc" id="L187">					return super.visit(invocation);</span>
+<span class="fc" id="L188">					return super.visit(invocation);</span>
 				}
 			});
 		}
 
-<span class="fc" id="L192">		return calls;</span>
+<span class="fc" id="L193">		return calls;</span>
 	}
 
 	private Statement findParentStatement(ASTNode node) {
-<span class="fc" id="L196">		ASTNode current = node;</span>
-<span class="pc bpc" id="L197" title="1 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof Statement)) {</span>
-<span class="fc" id="L198">			current = current.getParent();</span>
+<span class="fc" id="L197">		ASTNode current = node;</span>
+<span class="pc bpc" id="L198" title="1 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof Statement)) {</span>
+<span class="fc" id="L199">			current = current.getParent();</span>
 		}
-<span class="fc" id="L200">		return (Statement) current;</span>
+<span class="fc" id="L201">		return (Statement) current;</span>
 	}
 
 	private LambdaExpression createLambdaForErrorCollectorCall(ErrorCollectorCall call, AST ast, ImportRewrite importRewriter) {
-<span class="fc" id="L204">		LambdaExpression lambda = ast.newLambdaExpression();</span>
-<span class="fc" id="L205">		lambda.setParentheses(true);</span>
+<span class="fc" id="L205">		LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="fc" id="L206">		lambda.setParentheses(true);</span>
 
-<span class="fc" id="L207">		MethodInvocation invocation = call.invocation;</span>
-<span class="fc" id="L208">		String methodName = call.methodName;</span>
+<span class="fc" id="L208">		MethodInvocation invocation = call.invocation;</span>
+<span class="fc" id="L209">		String methodName = call.methodName;</span>
 
-<span class="fc bfc" id="L210" title="All 2 branches covered.">		if (&quot;checkThat&quot;.equals(methodName)) {</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">		if (&quot;checkThat&quot;.equals(methodName)) {</span>
 			// checkThat(actual, matcher) → () -&gt; assertThat(actual, matcher)
 			// Use expression-body lambda for single-expression case
 			
 			// Create assertThat call with the same arguments
-<span class="fc" id="L215">			MethodInvocation assertThatCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L216">			assertThatCall.setName(ast.newSimpleName(&quot;assertThat&quot;));</span>
+<span class="fc" id="L216">			MethodInvocation assertThatCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L217">			assertThatCall.setName(ast.newSimpleName(&quot;assertThat&quot;));</span>
 			
 			// Copy arguments
-<span class="fc bfc" id="L219" title="All 2 branches covered.">			for (Object arg : invocation.arguments()) {</span>
-<span class="fc" id="L220">				assertThatCall.arguments().add(ASTNode.copySubtree(ast, (ASTNode) arg));</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">			for (Object arg : invocation.arguments()) {</span>
+<span class="fc" id="L221">				assertThatCall.arguments().add(ASTNode.copySubtree(ast, (ASTNode) arg));</span>
 			}
 			
 			// Set expression body directly (no block)
-<span class="fc" id="L224">			lambda.setBody(assertThatCall);</span>
+<span class="fc" id="L225">			lambda.setBody(assertThatCall);</span>
 			
 			// Add Hamcrest imports for assertThat
-<span class="fc" id="L227">			importRewriter.addStaticImport(&quot;org.hamcrest.MatcherAssert&quot;, &quot;assertThat&quot;, false);</span>
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		} else if (&quot;addError&quot;.equals(methodName)) {</span>
+<span class="fc" id="L228">			importRewriter.addStaticImport(&quot;org.hamcrest.MatcherAssert&quot;, &quot;assertThat&quot;, false);</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		} else if (&quot;addError&quot;.equals(methodName)) {</span>
 			// addError(throwable) → () -&gt; { throw throwable; }
 			// This requires a block body since throw is a statement, not an expression
-<span class="fc" id="L231">			Block lambdaBody = ast.newBlock();</span>
+<span class="fc" id="L232">			Block lambdaBody = ast.newBlock();</span>
 			
-<span class="fc" id="L233">			ThrowStatement throwStmt = ast.newThrowStatement();</span>
+<span class="fc" id="L234">			ThrowStatement throwStmt = ast.newThrowStatement();</span>
 			// The argument is the throwable to throw
-<span class="fc" id="L235">			Expression throwableArg = (Expression) invocation.arguments().get(0);</span>
-<span class="fc" id="L236">			throwStmt.setExpression((Expression) ASTNode.copySubtree(ast, throwableArg));</span>
+<span class="fc" id="L236">			Expression throwableArg = (Expression) invocation.arguments().get(0);</span>
+<span class="fc" id="L237">			throwStmt.setExpression((Expression) ASTNode.copySubtree(ast, throwableArg));</span>
 			
-<span class="fc" id="L238">			lambdaBody.statements().add(throwStmt);</span>
-<span class="fc" id="L239">			lambda.setBody(lambdaBody);</span>
-<span class="pc bnc" id="L240" title="All 2 branches missed.">		} else if (&quot;checkSucceeds&quot;.equals(methodName)) {</span>
+<span class="fc" id="L239">			lambdaBody.statements().add(throwStmt);</span>
+<span class="fc" id="L240">			lambda.setBody(lambdaBody);</span>
+<span class="pc bnc" id="L241" title="All 2 branches missed.">		} else if (&quot;checkSucceeds&quot;.equals(methodName)) {</span>
 			// checkSucceeds(callable) → () -&gt; callable.call()
 			// Use expression-body lambda for single-expression case
 			
 			// Create callable.call() invocation
-<span class="nc" id="L245">			Expression callableArg = (Expression) invocation.arguments().get(0);</span>
-<span class="nc" id="L246">			MethodInvocation callInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L247">			callInvocation.setExpression((Expression) ASTNode.copySubtree(ast, callableArg));</span>
-<span class="nc" id="L248">			callInvocation.setName(ast.newSimpleName(&quot;call&quot;));</span>
+<span class="nc" id="L246">			Expression callableArg = (Expression) invocation.arguments().get(0);</span>
+<span class="nc" id="L247">			MethodInvocation callInvocation = ast.newMethodInvocation();</span>
+<span class="nc" id="L248">			callInvocation.setExpression((Expression) ASTNode.copySubtree(ast, callableArg));</span>
+<span class="nc" id="L249">			callInvocation.setName(ast.newSimpleName(&quot;call&quot;));</span>
 			
 			// Set expression body directly (no block)
-<span class="nc" id="L251">			lambda.setBody(callInvocation);</span>
+<span class="nc" id="L252">			lambda.setBody(callInvocation);</span>
 		}
 
-<span class="fc" id="L254">		return lambda;</span>
+<span class="fc" id="L255">		return lambda;</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L259" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L260">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L261">			return &quot;&quot;&quot;</span>
 					import static org.junit.jupiter.api.Assertions.assertAll;
 					import static org.hamcrest.MatcherAssert.assertThat;
 					import static org.hamcrest.CoreMatchers.equalTo;
@@ -276,7 +277,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L279">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L280">		return &quot;&quot;&quot;</span>
 				import org.junit.Rule;
 				import org.junit.Test;
 				import org.junit.rules.ErrorCollector;
@@ -298,7 +299,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L301">		return &quot;RuleErrorCollector&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L302">		return &quot;RuleErrorCollector&quot;; //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -309,11 +310,11 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 		final MethodInvocation invocation;
 		final String methodName;
 
-<span class="fc" id="L312">		ErrorCollectorCall(Statement statement, MethodInvocation invocation, String methodName) {</span>
-<span class="fc" id="L313">			this.statement = statement;</span>
-<span class="fc" id="L314">			this.invocation = invocation;</span>
-<span class="fc" id="L315">			this.methodName = methodName;</span>
-<span class="fc" id="L316">		}</span>
+<span class="fc" id="L313">		ErrorCollectorCall(Statement statement, MethodInvocation invocation, String methodName) {</span>
+<span class="fc" id="L314">			this.statement = statement;</span>
+<span class="fc" id="L315">			this.invocation = invocation;</span>
+<span class="fc" id="L316">			this.methodName = methodName;</span>
+<span class="fc" id="L317">		}</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

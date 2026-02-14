@@ -399,7 +399,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&
 			@Override
 			public boolean visit(FieldDeclaration node) {
 <span class="fc" id="L401">				Type fieldType = node.getType();</span>
-<span class="pc bpc" id="L402" title="2 of 4 branches missed.">				if (fieldType != null &amp;&amp; isViewerSorterType(fieldType)) {</span>
+<span class="pc bpc" id="L402" title="1 of 4 branches missed.">				if (fieldType != null &amp;&amp; isViewerSorterType(fieldType)) {</span>
 <span class="fc" id="L403">					holder.typesToReplace.add(fieldType);</span>
 				}
 <span class="fc" id="L405">				return true;</span>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>IntToEnumCleanUpCore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_int_to_enum</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.fix</a> &gt; <span class="el_source">IntToEnumCleanUpCore.java</span></div><h1>IntToEnumCleanUpCore.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.fix;
+
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.INT_TO_ENUM_CLEANUP;
+import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUpFix_refactor;
+import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUp_description;
+
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.util.Messages;
+import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
+
+/**
+ * Core cleanup implementation that converts integer constants to enums.
+ */
+public class IntToEnumCleanUpCore extends AbstractCleanUp {
+	public IntToEnumCleanUpCore(final Map&lt;String, String&gt; options) {
+<span class="nc" id="L46">		super(options);</span>
+<span class="nc" id="L47">	}</span>
+	
+<span class="fc" id="L49">	public IntToEnumCleanUpCore() {</span>
+<span class="fc" id="L50">	}</span>
+
+	@Override
+	public CleanUpRequirements getRequirements() {
+<span class="fc" id="L54">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+	}
+
+	public boolean requireAST() {
+<span class="pc bpc" id="L58" title="1 of 4 branches missed.">		return isEnabled(INT_TO_ENUM_CLEANUP) &amp;&amp; !computeFixSet().isEmpty();</span>
+	}
+
+	@Override
+	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
+<span class="fc" id="L63">		CompilationUnit compilationUnit = context.getAST();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (compilationUnit == null) {</span>
+<span class="fc" id="L65">			return null;</span>
+		}
+		
+<span class="fc" id="L68">		EnumSet&lt;IntToEnumFixCore&gt; computeFixSet = computeFixSet();</span>
+<span class="pc bpc" id="L69" title="2 of 4 branches missed.">		if (!isEnabled(INT_TO_ENUM_CLEANUP) || computeFixSet.isEmpty()) {</span>
+<span class="nc" id="L70">			return null;</span>
+		}
+
+<span class="fc" id="L73">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L74">		Set&lt;ASTNode&gt; nodesProcessed = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L75">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, nodesProcessed));</span>
+		
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
+<span class="fc" id="L78">			return null;</span>
+		}
+
+<span class="fc" id="L81">		CompilationUnitRewriteOperationWithSourceRange[] array = operations.toArray(</span>
+<span class="fc" id="L82">				new CompilationUnitRewriteOperationWithSourceRange[0]);</span>
+<span class="fc" id="L83">		return new CompilationUnitRewriteOperationsFixCore(IntToEnumCleanUpFix_refactor, compilationUnit, array);</span>
+	}
+
+	@Override
+	public String[] getStepDescriptions() {
+<span class="fc" id="L88">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">		if (isEnabled(INT_TO_ENUM_CLEANUP)) {</span>
+<span class="nc" id="L90">			result.add(Messages.format(IntToEnumCleanUp_description,</span>
+<span class="nc" id="L91">					new Object[] { String.join(&quot;,&quot;, computeFixSet().stream()</span>
+<span class="nc" id="L92">							.map(IntToEnumFixCore::toString)</span>
+<span class="nc" id="L93">							.collect(Collectors.toList())) }));</span>
+		}
+<span class="fc" id="L95">		return result.toArray(new String[0]);</span>
+	}
+
+	@Override
+	public String getPreview() {
+<span class="nc" id="L100">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L101">		EnumSet&lt;IntToEnumFixCore&gt; computeFixSet = computeFixSet();</span>
+<span class="nc" id="L102">		EnumSet.allOf(IntToEnumFixCore.class).forEach(e -&gt; </span>
+<span class="nc" id="L103">			sb.append(e.getPreview(computeFixSet.contains(e))));</span>
+<span class="nc" id="L104">		return sb.toString();</span>
+	}
+
+	private EnumSet&lt;IntToEnumFixCore&gt; computeFixSet() {
+<span class="fc" id="L108">		EnumSet&lt;IntToEnumFixCore&gt; fixSet = EnumSet.noneOf(IntToEnumFixCore.class);</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (isEnabled(INT_TO_ENUM_CLEANUP)) {</span>
+<span class="fc" id="L110">			fixSet = EnumSet.allOf(IntToEnumFixCore.class);</span>
+		}
+<span class="fc" id="L112">		return fixSet;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

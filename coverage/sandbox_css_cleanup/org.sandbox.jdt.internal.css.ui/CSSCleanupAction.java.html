@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CSSCleanupAction.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_css_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.css.ui</a> &gt; <span class="el_source">CSSCleanupAction.java</span></div><h1>CSSCleanupAction.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.css.ui;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.Adapters;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IObjectActionDelegate;
+import org.eclipse.ui.IWorkbenchPart;
+
+import org.sandbox.jdt.internal.css.CSSCleanupPlugin;
+import org.sandbox.jdt.internal.css.core.CSSValidationResult;
+import org.sandbox.jdt.internal.css.core.NodeExecutor;
+import org.sandbox.jdt.internal.css.core.PrettierRunner;
+import org.sandbox.jdt.internal.css.core.StylelintRunner;
+import org.sandbox.jdt.internal.css.preferences.CSSPreferenceConstants;
+
+/**
+ * Action to format and validate CSS files.
+ */
+<span class="nc" id="L43">public class CSSCleanupAction implements IObjectActionDelegate {</span>
+
+	private ISelection selection;
+	private IWorkbenchPart targetPart;
+
+	@Override
+	public void run(IAction action) {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">		if (!(selection instanceof IStructuredSelection)) {</span>
+<span class="nc" id="L51">			return;</span>
+		}
+
+<span class="nc" id="L54">		Shell shell = targetPart.getSite().getShell();</span>
+
+		// Check if Node.js is available
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		if (!NodeExecutor.isNodeAvailable()) {</span>
+<span class="nc" id="L58">			MessageDialog.openError(shell, &quot;CSS Cleanup&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L59">					&quot;Node.js is not installed or not in PATH.\n\n&quot; + //$NON-NLS-1$</span>
+							&quot;Please install Node.js from https://nodejs.org/\n&quot; + //$NON-NLS-1$
+							&quot;and ensure 'node' and 'npx' are available in your PATH.&quot;); //$NON-NLS-1$
+<span class="nc" id="L62">			return;</span>
+		}
+
+<span class="nc" id="L65">		IStructuredSelection structuredSelection = (IStructuredSelection) selection;</span>
+
+		// Process each CSS file in a background job
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		for (Object element : structuredSelection.toList()) {</span>
+<span class="nc" id="L69">			IResource resource = Adapters.adapt(element, IResource.class);</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">			if (resource instanceof IFile) {</span>
+<span class="nc" id="L71">				IFile file = (IFile) resource;</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">				if (isCSSFile(file)) {</span>
+<span class="nc" id="L73">					scheduleProcessingJob(file, shell);</span>
+				}
+			}
+		}
+<span class="nc" id="L77">	}</span>
+
+	/**
+	 * Schedule a background job to process the CSS file.
+	 */
+	private void scheduleProcessingJob(IFile file, Shell shell) {
+<span class="nc" id="L83">		Job job = new Job(&quot;CSS Cleanup: &quot; + file.getName()) { //$NON-NLS-1$</span>
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				try {
+<span class="nc" id="L87">					monitor.beginTask(&quot;Processing &quot; + file.getName(), 100); //$NON-NLS-1$</span>
+					
+<span class="nc" id="L89">					IPreferenceStore store = CSSCleanupPlugin.getDefault().getPreferenceStore();</span>
+<span class="nc" id="L90">					boolean enablePrettier = store.getBoolean(CSSPreferenceConstants.ENABLE_PRETTIER);</span>
+<span class="nc" id="L91">					boolean enableStylelint = store.getBoolean(CSSPreferenceConstants.ENABLE_STYLELINT);</span>
+
+					// Format with Prettier if enabled
+<span class="nc bnc" id="L94" title="All 4 branches missed.">					if (enablePrettier &amp;&amp; !monitor.isCanceled()) {</span>
+<span class="nc" id="L95">						monitor.subTask(&quot;Formatting with Prettier...&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L96">						String formatted = PrettierRunner.format(file);</span>
+<span class="nc" id="L97">						monitor.worked(50);</span>
+
+<span class="nc bnc" id="L99" title="All 4 branches missed.">						if (formatted != null &amp;&amp; !monitor.isCanceled()) {</span>
+							// Write back to file
+<span class="nc" id="L101">							file.setContents(</span>
+<span class="nc" id="L102">									new java.io.ByteArrayInputStream(formatted.getBytes(java.nio.charset.StandardCharsets.UTF_8)),</span>
+<span class="nc" id="L103">									IResource.KEEP_HISTORY,</span>
+<span class="nc" id="L104">									null);</span>
+<span class="nc" id="L105">							file.refreshLocal(IResource.DEPTH_ZERO, null);</span>
+						}
+<span class="nc" id="L107">					} else {</span>
+<span class="nc" id="L108">						monitor.worked(50);</span>
+					}
+
+					// Validate with Stylelint if enabled
+<span class="nc bnc" id="L112" title="All 4 branches missed.">					if (enableStylelint &amp;&amp; !monitor.isCanceled()) {</span>
+<span class="nc" id="L113">						monitor.subTask(&quot;Validating with Stylelint...&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L114">						CSSValidationResult result = StylelintRunner.validate(file);</span>
+<span class="nc" id="L115">						monitor.worked(50);</span>
+
+<span class="nc bnc" id="L117" title="All 4 branches missed.">						if (!result.isValid() &amp;&amp; !monitor.isCanceled()) {</span>
+							// Show validation warnings on UI thread
+<span class="nc" id="L119">							Display.getDefault().asyncExec(() -&gt; {</span>
+<span class="nc" id="L120">								StringBuilder msg = new StringBuilder(&quot;CSS validation issues:%n%n&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">								for (CSSValidationResult.Issue issue : result.getIssues()) {</span>
+<span class="nc" id="L122">									msg.append(String.format(&quot;Line %d: [%s] %s%n&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L123">											Integer.valueOf(issue.line), issue.severity, issue.message));</span>
+								}
+<span class="nc" id="L125">								MessageDialog.openWarning(shell, &quot;CSS Validation&quot;, msg.toString()); //$NON-NLS-1$</span>
+<span class="nc" id="L126">							});</span>
+						}
+<span class="nc" id="L128">					} else {</span>
+<span class="nc" id="L129">						monitor.worked(50);</span>
+					}
+
+<span class="nc" id="L132">					monitor.done();</span>
+<span class="nc" id="L133">					return Status.OK_STATUS;</span>
+
+<span class="nc" id="L135">				} catch (Exception e) {</span>
+					// Show error dialog on UI thread
+<span class="nc" id="L137">					Display.getDefault().asyncExec(() -&gt; {</span>
+<span class="nc" id="L138">						MessageDialog.openError(shell, &quot;CSS Cleanup Error&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L139">								&quot;Failed to process CSS file: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="nc" id="L140">					});</span>
+<span class="nc" id="L141">					return new Status(IStatus.ERROR, CSSCleanupPlugin.PLUGIN_ID,</span>
+<span class="nc" id="L142">							&quot;Failed to process CSS file&quot;, e); //$NON-NLS-1$</span>
+				}
+			}
+		};
+<span class="nc" id="L146">		job.setUser(true); // Show in progress view</span>
+<span class="nc" id="L147">		job.schedule();</span>
+<span class="nc" id="L148">	}</span>
+
+	private boolean isCSSFile(IFile file) {
+<span class="nc" id="L151">		String ext = file.getFileExtension();</span>
+<span class="nc bnc" id="L152" title="All 8 branches missed.">		return ext != null &amp;&amp; (ext.equals(&quot;css&quot;) || ext.equals(&quot;scss&quot;) || ext.equals(&quot;less&quot;)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+	}
+
+
+
+	@Override
+	public void selectionChanged(IAction action, ISelection selection) {
+<span class="nc" id="L159">		this.selection = selection;</span>
+<span class="nc" id="L160">	}</span>
+
+	@Override
+	public void setActivePart(IAction action, IWorkbenchPart targetPart) {
+<span class="nc" id="L164">		this.targetPart = targetPart;</span>
+<span class="nc" id="L165">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

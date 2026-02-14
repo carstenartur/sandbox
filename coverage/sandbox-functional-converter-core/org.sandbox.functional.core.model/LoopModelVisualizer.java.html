@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoopModelVisualizer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-functional-converter-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.functional.core.model</a> &gt; <span class="el_source">LoopModelVisualizer.java</span></div><h1>LoopModelVisualizer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.functional.core.model;
+
+import java.util.List;
+
+import org.sandbox.functional.core.operation.FilterOp;
+import org.sandbox.functional.core.operation.MapOp;
+import org.sandbox.functional.core.operation.Operation;
+import org.sandbox.functional.core.terminal.CollectTerminal;
+import org.sandbox.functional.core.terminal.FindTerminal;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
+import org.sandbox.functional.core.terminal.MatchTerminal;
+import org.sandbox.functional.core.terminal.ReduceTerminal;
+import org.sandbox.functional.core.terminal.TerminalOperation;
+import org.sandbox.functional.core.tree.LoopTree;
+import org.sandbox.functional.core.tree.LoopTreeNode;
+
+/**
+ * Diagnostic visualization utility for ULR (Unified Loop Representation) models.
+ * 
+ * &lt;p&gt;Provides human-readable ASCII representations of {@link LoopModel} pipelines
+ * and {@link LoopTree} structures for debugging and testing purposes.&lt;/p&gt;
+ * 
+ * &lt;h2&gt;Usage in Tests&lt;/h2&gt;
+ * &lt;p&gt;Enable debug output by setting the system property {@code ulr.debug=true}
+ * or by calling the methods directly:&lt;/p&gt;
+ * &lt;pre&gt;{@code
+ * // Quick pipeline diagram
+ * System.out.println(LoopModelVisualizer.toAsciiPipeline(model));
+ * 
+ * // Detailed dump of all components
+ * System.out.println(LoopModelVisualizer.toDetailedDump(model));
+ * 
+ * // Tree structure visualization
+ * System.out.println(LoopModelVisualizer.toTreeDiagram(tree));
+ * }&lt;/pre&gt;
+ * 
+ * @see LoopModel
+ * @see LoopTree
+ * @since 1.0.0
+ */
+public final class LoopModelVisualizer {
+
+	private LoopModelVisualizer() {
+	}
+
+	/**
+	 * Renders a compact ASCII pipeline diagram of the loop model.
+	 * 
+	 * &lt;p&gt;Example output:&lt;/p&gt;
+	 * &lt;pre&gt;
+	 * ╔══════════════════════════════════════════╗
+	 * ║         ULR Pipeline Diagram             ║
+	 * ╠══════════════════════════════════════════╣
+	 * ║ Source: COLLECTION &quot;myList&quot; (String)      ║
+	 * ║ Element: item : String                    ║
+	 * ╠══════════════════════════════════════════╣
+	 * ║  myList.stream()                          ║
+	 * ║    │                                      ║
+	 * ║    ├── .filter(x -&amp;gt; x &amp;gt; 0)               ║
+	 * ║    │                                      ║
+	 * ║    ├── .map(x -&amp;gt; x.toString())            ║
+	 * ║    │                                      ║
+	 * ║    └── .forEach(...)                       ║
+	 * ╚══════════════════════════════════════════╝
+	 * &lt;/pre&gt;
+	 * 
+	 * @param model the loop model to visualize
+	 * @return the ASCII pipeline diagram
+	 */
+	public static String toAsciiPipeline(LoopModel model) {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		if (model == null) {</span>
+<span class="fc" id="L85">			return &quot;[null model]&quot;; //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L88">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L89">		sb.append(&quot;╔══════════════════════════════════════════╗\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L90">		sb.append(&quot;║         ULR Pipeline Diagram             ║\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L91">		sb.append(&quot;╠══════════════════════════════════════════╣\n&quot;); //$NON-NLS-1$</span>
+
+		// Source
+<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (model.getSource() != null) {</span>
+<span class="fc" id="L95">			SourceDescriptor src = model.getSource();</span>
+<span class="fc" id="L96">			sb.append(&quot;║ Source: &quot;).append(src.type()) //$NON-NLS-1$</span>
+<span class="fc" id="L97">				.append(&quot; \&quot;&quot;).append(src.expression()).append(&quot;\&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L98">				.append(&quot; (&quot;).append(src.elementTypeName()).append(&quot;)\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L99">		} else {</span>
+<span class="fc" id="L100">			sb.append(&quot;║ Source: [not set]\n&quot;); //$NON-NLS-1$</span>
+		}
+
+		// Element
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		if (model.getElement() != null) {</span>
+<span class="fc" id="L105">			ElementDescriptor elem = model.getElement();</span>
+<span class="fc" id="L106">			sb.append(&quot;║ Element: &quot;).append(elem.variableName()) //$NON-NLS-1$</span>
+<span class="fc" id="L107">				.append(&quot; : &quot;).append(elem.typeName()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">			if (elem.isFinal()) {</span>
+<span class="fc" id="L109">				sb.append(&quot; (final)&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L111">			sb.append('\n');</span>
+<span class="fc" id="L112">		} else {</span>
+<span class="fc" id="L113">			sb.append(&quot;║ Element: [not set]\n&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L116">		sb.append(&quot;╠══════════════════════════════════════════╣\n&quot;); //$NON-NLS-1$</span>
+
+		// Source expression
+<span class="fc" id="L119">		String sourceExpr = renderSourceExpression(model);</span>
+<span class="fc" id="L120">		sb.append(&quot;║  &quot;).append(sourceExpr).append('\n'); //$NON-NLS-1$</span>
+
+		// Operations
+<span class="fc" id="L123">		List&lt;Operation&gt; ops = model.getOperations();</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">		boolean hasTerminal = model.getTerminal() != null;</span>
+
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (int i = 0; i &lt; ops.size(); i++) {</span>
+<span class="fc" id="L127">			Operation op = ops.get(i);</span>
+<span class="pc bpc" id="L128" title="1 of 4 branches missed.">			boolean isLast = (i == ops.size() - 1) &amp;&amp; !hasTerminal;</span>
+<span class="fc" id="L129">			sb.append(&quot;║    │\n&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">			String connector = isLast ? &quot;└── &quot; : &quot;├── &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L131">			sb.append(&quot;║    &quot;).append(connector) //$NON-NLS-1$</span>
+<span class="fc" id="L132">				.append('.').append(renderOperation(op)).append('\n');</span>
+
+			// Show comments if present
+<span class="fc" id="L135">			List&lt;String&gt; comments = getComments(op);</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">			if (!comments.isEmpty()) {</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">				String commentIndent = isLast ? &quot;        &quot; : &quot;│       &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">				for (String comment : comments) {</span>
+<span class="fc" id="L139">					sb.append(&quot;║    &quot;).append(commentIndent) //$NON-NLS-1$</span>
+<span class="fc" id="L140">						.append(&quot;// &quot;).append(comment).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L141">				}</span>
+			}
+		}
+
+		// Terminal
+<span class="fc bfc" id="L146" title="All 2 branches covered.">		if (hasTerminal) {</span>
+<span class="fc" id="L147">			sb.append(&quot;║    │\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L148">			sb.append(&quot;║    └── .&quot;).append(renderTerminal(model.getTerminal())).append('\n'); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L151">		sb.append(&quot;╚══════════════════════════════════════════╝&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L152">		return sb.toString();</span>
+	}
+
+	/**
+	 * Renders a detailed dump of all components in the loop model.
+	 * 
+	 * &lt;p&gt;Includes source, element, metadata flags, operations with
+	 * comments, and terminal operation details.&lt;/p&gt;
+	 * 
+	 * @param model the loop model to dump
+	 * @return the detailed text dump
+	 */
+	public static String toDetailedDump(LoopModel model) {
+<span class="fc bfc" id="L165" title="All 2 branches covered.">		if (model == null) {</span>
+<span class="fc" id="L166">			return &quot;[null model]&quot;; //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L169">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L170">		sb.append(&quot;=== ULR Model Detailed Dump ===\n&quot;); //$NON-NLS-1$</span>
+
+		// Source
+<span class="fc" id="L173">		sb.append(&quot;\n[Source]\n&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">		if (model.getSource() != null) {</span>
+<span class="fc" id="L175">			SourceDescriptor src = model.getSource();</span>
+<span class="fc" id="L176">			sb.append(&quot;  type           = &quot;).append(src.type()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L177">			sb.append(&quot;  expression     = &quot;).append(src.expression()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L178">			sb.append(&quot;  elementType    = &quot;).append(src.elementTypeName()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L179">		} else {</span>
+<span class="nc" id="L180">			sb.append(&quot;  (not set)\n&quot;); //$NON-NLS-1$</span>
+		}
+
+		// Element
+<span class="fc" id="L184">		sb.append(&quot;\n[Element]\n&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">		if (model.getElement() != null) {</span>
+<span class="fc" id="L186">			ElementDescriptor elem = model.getElement();</span>
+<span class="fc" id="L187">			sb.append(&quot;  variableName   = &quot;).append(elem.variableName()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L188">			sb.append(&quot;  typeName       = &quot;).append(elem.typeName()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L189">			sb.append(&quot;  isFinal        = &quot;).append(elem.isFinal()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L190">		} else {</span>
+<span class="nc" id="L191">			sb.append(&quot;  (not set)\n&quot;); //$NON-NLS-1$</span>
+		}
+
+		// Metadata
+<span class="fc" id="L195">		sb.append(&quot;\n[Metadata]\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">		if (model.getMetadata() != null) {</span>
+<span class="fc" id="L197">			LoopMetadata meta = model.getMetadata();</span>
+<span class="fc" id="L198">			sb.append(&quot;  hasBreak             = &quot;).append(meta.hasBreak()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L199">			sb.append(&quot;  hasContinue          = &quot;).append(meta.hasContinue()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L200">			sb.append(&quot;  hasReturn            = &quot;).append(meta.hasReturn()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L201">			sb.append(&quot;  modifiesCollection   = &quot;).append(meta.modifiesCollection()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L202">			sb.append(&quot;  requiresOrdering     = &quot;).append(meta.requiresOrdering()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L203">			sb.append(&quot;  hasIteratorRemove    = &quot;).append(meta.hasIteratorRemove()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L204">			sb.append(&quot;  usesIndexBeyondGet   = &quot;).append(meta.usesIndexBeyondGet()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L205">			sb.append(&quot;  isConvertible        = &quot;).append(meta.isConvertible()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L206">		} else {</span>
+<span class="fc" id="L207">			sb.append(&quot;  (not set)\n&quot;); //$NON-NLS-1$</span>
+		}
+
+		// Operations
+<span class="fc" id="L211">		sb.append(&quot;\n[Operations] (&quot;).append(model.getOperations().size()).append(&quot;)\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">		for (int i = 0; i &lt; model.getOperations().size(); i++) {</span>
+<span class="fc" id="L213">			Operation op = model.getOperations().get(i);</span>
+<span class="fc" id="L214">			sb.append(&quot;  [&quot;).append(i).append(&quot;] &quot;).append(op.operationType()) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L215">				.append(&quot;(&quot;).append(op.expression()).append(&quot;)\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+<span class="fc" id="L217">			List&lt;String&gt; comments = getComments(op);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">			if (!comments.isEmpty()) {</span>
+<span class="fc" id="L219">				sb.append(&quot;       comments: &quot;).append(comments).append('\n'); //$NON-NLS-1$</span>
+			}
+
+<span class="fc bfc" id="L222" title="All 2 branches covered.">			if (op instanceof MapOp mapOp) {</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">				if (mapOp.targetType() != null) {</span>
+<span class="fc" id="L224">					sb.append(&quot;       targetType: &quot;).append(mapOp.targetType()).append('\n'); //$NON-NLS-1$</span>
+				}
+<span class="fc bfc" id="L226" title="All 2 branches covered.">				if (mapOp.isSideEffect()) {</span>
+<span class="fc" id="L227">					sb.append(&quot;       sideEffect: true\n&quot;); //$NON-NLS-1$</span>
+				}
+			}
+		}
+
+		// Terminal
+<span class="fc" id="L233">		sb.append(&quot;\n[Terminal]\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">		if (model.getTerminal() != null) {</span>
+<span class="fc" id="L235">			TerminalOperation term = model.getTerminal();</span>
+<span class="fc" id="L236">			sb.append(&quot;  type = &quot;).append(term.operationType()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L237">			appendTerminalDetails(sb, term);</span>
+<span class="fc" id="L238">		} else {</span>
+<span class="fc" id="L239">			sb.append(&quot;  (not set)\n&quot;); //$NON-NLS-1$</span>
+		}
+
+		// Convertibility summary
+<span class="fc" id="L243">		sb.append(&quot;\n[Convertibility]\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L244">		sb.append(&quot;  isConvertible = &quot;).append(model.isConvertible()).append('\n'); //$NON-NLS-1$</span>
+
+<span class="fc" id="L246">		return sb.toString();</span>
+	}
+
+	/**
+	 * Renders a tree diagram of a {@link LoopTree}.
+	 * 
+	 * &lt;p&gt;Example output:&lt;/p&gt;
+	 * &lt;pre&gt;
+	 * LoopTree
+	 * ├── ENHANCED_FOR [CONVERTIBLE]
+	 * │   └── TRADITIONAL_FOR [NOT_CONVERTIBLE]
+	 * └── ITERATOR_WHILE [PENDING]
+	 * &lt;/pre&gt;
+	 * 
+	 * @param tree the loop tree to visualize
+	 * @return the ASCII tree diagram
+	 */
+	public static String toTreeDiagram(LoopTree tree) {
+<span class="fc bfc" id="L264" title="All 2 branches covered.">		if (tree == null) {</span>
+<span class="fc" id="L265">			return &quot;[null tree]&quot;; //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L268">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L269">		sb.append(&quot;LoopTree\n&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L271">		List&lt;LoopTreeNode&gt; roots = tree.getRoots();</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">		for (int i = 0; i &lt; roots.size(); i++) {</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">			boolean isLast = (i == roots.size() - 1);</span>
+<span class="fc" id="L274">			appendTreeNode(sb, roots.get(i), &quot;&quot;, isLast); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L277">		return sb.toString();</span>
+	}
+
+	private static void appendTreeNode(StringBuilder sb, LoopTreeNode node, String prefix, boolean isLast) {
+<span class="fc bfc" id="L281" title="All 2 branches covered.">		String connector = isLast ? &quot;└── &quot; : &quot;├── &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L282">		sb.append(prefix).append(connector)</span>
+<span class="fc" id="L283">			.append(node.getKind())</span>
+<span class="fc" id="L284">			.append(&quot; [&quot;).append(node.getDecision()).append(&quot;]&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+<span class="fc bfc" id="L286" title="All 2 branches covered.">		if (node.getLoopModel() != null) {</span>
+<span class="fc" id="L287">			LoopModel m = node.getLoopModel();</span>
+<span class="fc" id="L288">			sb.append(&quot; ops=&quot;).append(m.getOperations().size()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">			if (m.getTerminal() != null) {</span>
+<span class="fc" id="L290">				sb.append(&quot; -&gt; &quot;).append(m.getTerminal().operationType()); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L293">		sb.append('\n');</span>
+
+<span class="fc bfc" id="L295" title="All 2 branches covered.">		String childPrefix = prefix + (isLast ? &quot;    &quot; : &quot;│   &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L296">		List&lt;LoopTreeNode&gt; children = node.getChildren();</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">		for (int i = 0; i &lt; children.size(); i++) {</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">			appendTreeNode(sb, children.get(i), childPrefix, i == children.size() - 1);</span>
+		}
+<span class="fc" id="L300">	}</span>
+
+	private static String renderSourceExpression(LoopModel model) {
+<span class="fc bfc" id="L303" title="All 2 branches covered.">		if (model.getSource() == null) {</span>
+<span class="fc" id="L304">			return &quot;[no source]&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L306">		SourceDescriptor src = model.getSource();</span>
+<span class="pc bpc" id="L307" title="4 of 7 branches missed.">		return switch (src.type()) {</span>
+<span class="fc" id="L308">			case COLLECTION -&gt; src.expression() + &quot;.stream()&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L309">			case ARRAY -&gt; &quot;Arrays.stream(&quot; + src.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L310">			case ITERABLE -&gt; &quot;StreamSupport.stream(&quot; + src.expression() + &quot;.spliterator(), false)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L311">			case STREAM -&gt; src.expression();</span>
+<span class="nc" id="L312">			case ITERATOR -&gt; src.expression() + &quot;.stream()&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L313">			case INT_RANGE -&gt; &quot;IntStream.range(0, &quot; + src.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+			case EXPLICIT_RANGE -&gt; {
+<span class="fc" id="L315">				String[] parts = src.expression().split(&quot;,&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">				if (parts.length == 2) {</span>
+<span class="fc" id="L317">					yield &quot;IntStream.range(&quot; + parts[0].trim() + &quot;, &quot; + parts[1].trim() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+				}
+<span class="nc" id="L319">				yield &quot;IntStream.range(&quot; + src.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+		};
+	}
+
+	private static String renderOperation(Operation op) {
+<span class="pc bpc" id="L325" title="1 of 3 branches missed.">		return switch (op) {</span>
+<span class="fc" id="L326">			case FilterOp f -&gt; &quot;filter(&quot; + f.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L327">			case MapOp m -&gt; renderMapOp(m);</span>
+<span class="nc" id="L328">			default -&gt; op.operationType() + &quot;(&quot; + //$NON-NLS-1$</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">				(op.expression() != null ? op.expression() : &quot;&quot;) + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+		};
+	}
+
+	private static String renderMapOp(MapOp m) {
+<span class="fc" id="L334">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L335">		sb.append(&quot;map(&quot;).append(m.expression()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L336" title="1 of 2 branches missed.">		if (m.targetType() != null) {</span>
+<span class="fc" id="L337">			sb.append(&quot; -&gt; &quot;).append(m.targetType()); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L339">		sb.append(')');</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">		if (m.isSideEffect()) {</span>
+<span class="nc" id="L341">			sb.append(&quot; [side-effect]&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L343">		return sb.toString();</span>
+	}
+
+	private static List&lt;String&gt; getComments(Operation op) {
+<span class="fc bfc" id="L347" title="All 2 branches covered.">		if (op instanceof FilterOp f) {</span>
+<span class="fc" id="L348">			return f.getComments();</span>
+		}
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">		if (op instanceof MapOp m) {</span>
+<span class="fc" id="L351">			return m.getComments();</span>
+		}
+<span class="nc" id="L353">		return List.of();</span>
+	}
+
+	private static String renderTerminal(TerminalOperation term) {
+<span class="pc bpc" id="L357" title="4 of 6 branches missed.">		return switch (term) {</span>
+<span class="pc bpc" id="L358" title="1 of 2 branches missed.">			case ForEachTerminal fe -&gt; fe.ordered() ? &quot;forEachOrdered(...)&quot; : &quot;forEach(...)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L359">			case CollectTerminal ct -&gt; &quot;collect(&quot; + ct.collectorType() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L360">			case ReduceTerminal rt -&gt; &quot;reduce(&quot; + rt.reduceType() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L361">			case MatchTerminal mt -&gt; mt.operationType() + &quot;(&quot; + mt.predicate() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L362">			case FindTerminal ft -&gt; ft.operationType() + &quot;()&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L363">			default -&gt; term.operationType() + &quot;()&quot;; //$NON-NLS-1$</span>
+		};
+	}
+
+	private static void appendTerminalDetails(StringBuilder sb, TerminalOperation term) {
+<span class="pc bpc" id="L368" title="3 of 5 branches missed.">		switch (term) {</span>
+<span class="fc" id="L369">			case ForEachTerminal fe -&gt; {</span>
+<span class="fc" id="L370">				sb.append(&quot;  ordered = &quot;).append(fe.ordered()).append('\n'); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L371" title="1 of 2 branches missed.">				if (!fe.bodyStatements().isEmpty()) {</span>
+<span class="fc" id="L372">					sb.append(&quot;  bodyStatements = &quot;).append(fe.bodyStatements()).append('\n'); //$NON-NLS-1$</span>
+				}
+			}
+<span class="nc" id="L375">			case CollectTerminal ct -&gt; {</span>
+<span class="nc" id="L376">				sb.append(&quot;  collectorType = &quot;).append(ct.collectorType()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">				if (ct.targetVariable() != null) {</span>
+<span class="nc" id="L378">					sb.append(&quot;  targetVariable = &quot;).append(ct.targetVariable()).append('\n'); //$NON-NLS-1$</span>
+				}
+			}
+<span class="fc" id="L381">			case ReduceTerminal rt -&gt; {</span>
+<span class="fc" id="L382">				sb.append(&quot;  reduceType = &quot;).append(rt.reduceType()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L383">				sb.append(&quot;  identity = &quot;).append(rt.identity()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L384">				sb.append(&quot;  accumulator = &quot;).append(rt.accumulator()).append('\n'); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">				if (rt.combiner() != null) {</span>
+<span class="nc" id="L386">					sb.append(&quot;  combiner = &quot;).append(rt.combiner()).append('\n'); //$NON-NLS-1$</span>
+				}
+			}
+<span class="nc" id="L389">			case MatchTerminal mt -&gt;</span>
+<span class="nc" id="L390">				sb.append(&quot;  predicate = &quot;).append(mt.predicate()).append('\n'); //$NON-NLS-1$</span>
+			default -&gt; { /* no extra details */ }
+		}
+<span class="fc" id="L393">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

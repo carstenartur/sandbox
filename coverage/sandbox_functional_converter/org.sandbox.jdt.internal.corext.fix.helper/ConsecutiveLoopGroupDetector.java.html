@@ -199,8 +199,8 @@ import org.eclipse.jdt.core.dom.Statement;
 		}
 
 		// Check invoked on a SimpleName (the collection variable)
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (!(methodInv.getExpression() instanceof SimpleName)) {</span>
-<span class="nc" id="L203">			return null;</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">		if (!(methodInv.getExpression() instanceof SimpleName)) {</span>
+<span class="fc" id="L203">			return null;</span>
 		}
 
 <span class="fc" id="L206">		SimpleName receiver = (SimpleName) methodInv.getExpression();</span>

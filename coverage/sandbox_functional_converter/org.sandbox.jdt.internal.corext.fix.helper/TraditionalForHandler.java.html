@@ -233,8 +233,8 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
         // patterns like a[i+1], a[i-1], or i%2 that indicate neighbor access or
         // non-trivial index semantics. These patterns suggest the loop relies on
         // index arithmetic that may not be safely convertible.
-<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (usesIndexBeyondSimpleAccess(body, loopVarName)) {</span>
-<span class="nc" id="L237">            return null;</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        if (usesIndexBeyondSimpleAccess(body, loopVarName)) {</span>
+<span class="fc" id="L237">            return null;</span>
         }
         
 <span class="fc" id="L240">        return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);</span>
@@ -329,11 +329,11 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
             public boolean visit(InfixExpression node) {
                 // Check if the index variable is used in arithmetic operations
                 // like i+1, i-1, i*2, i%2
-<span class="nc bnc" id="L332" title="All 2 branches missed.">                if (isIndexInArithmeticExpression(node, indexVarName)) {</span>
-<span class="nc" id="L333">                    hasComplexUsage[0] = true;</span>
-<span class="nc" id="L334">                    return false;</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">                if (isIndexInArithmeticExpression(node, indexVarName)) {</span>
+<span class="fc" id="L333">                    hasComplexUsage[0] = true;</span>
+<span class="fc" id="L334">                    return false;</span>
                 }
-<span class="nc" id="L336">                return true;</span>
+<span class="fc" id="L336">                return true;</span>
             }
         });
         
@@ -346,26 +346,26 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      * arithmetic expressions (e.g., (i + 1) + offset, multiplier * (i - 1)).
      */
     private boolean isIndexInArithmeticExpression(InfixExpression expr, String indexVarName) {
-<span class="nc bnc" id="L349" title="All 2 branches missed.">        if (!isArithmeticOperator(expr.getOperator())) {</span>
-<span class="nc" id="L350">            return false;</span>
+<span class="fc bfc" id="L349" title="All 2 branches covered.">        if (!isArithmeticOperator(expr.getOperator())) {</span>
+<span class="fc" id="L350">            return false;</span>
         }
 
         // Recursively inspect all operands (left, right, and extended) for
         // arithmetic usage of the index variable.
-<span class="nc bnc" id="L355" title="All 2 branches missed.">        if (containsIndexInArithmeticOperand(expr.getLeftOperand(), indexVarName)) {</span>
-<span class="nc" id="L356">            return true;</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">        if (containsIndexInArithmeticOperand(expr.getLeftOperand(), indexVarName)) {</span>
+<span class="fc" id="L356">            return true;</span>
         }
-<span class="nc bnc" id="L358" title="All 2 branches missed.">        if (containsIndexInArithmeticOperand(expr.getRightOperand(), indexVarName)) {</span>
+<span class="pc bpc" id="L358" title="1 of 2 branches missed.">        if (containsIndexInArithmeticOperand(expr.getRightOperand(), indexVarName)) {</span>
 <span class="nc" id="L359">            return true;</span>
         }
         @SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L362">        List&lt;Expression&gt; extended = expr.extendedOperands();</span>
-<span class="nc bnc" id="L363" title="All 2 branches missed.">        for (Expression operand : extended) {</span>
+<span class="fc" id="L362">        List&lt;Expression&gt; extended = expr.extendedOperands();</span>
+<span class="pc bpc" id="L363" title="1 of 2 branches missed.">        for (Expression operand : extended) {</span>
 <span class="nc bnc" id="L364" title="All 2 branches missed.">            if (containsIndexInArithmeticOperand(operand, indexVarName)) {</span>
 <span class="nc" id="L365">                return true;</span>
             }
         }
-<span class="nc" id="L368">        return false;</span>
+<span class="fc" id="L368">        return false;</span>
     }
 
     /**
@@ -373,11 +373,11 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      * relevant for index arithmetic detection.
      */
     private boolean isArithmeticOperator(InfixExpression.Operator op) {
-<span class="nc bnc" id="L376" title="All 2 branches missed.">        return op == InfixExpression.Operator.PLUS</span>
-<span class="nc bnc" id="L377" title="All 2 branches missed.">                || op == InfixExpression.Operator.MINUS</span>
-<span class="nc bnc" id="L378" title="All 2 branches missed.">                || op == InfixExpression.Operator.TIMES</span>
-<span class="nc bnc" id="L379" title="All 2 branches missed.">                || op == InfixExpression.Operator.DIVIDE</span>
-<span class="nc bnc" id="L380" title="All 2 branches missed.">                || op == InfixExpression.Operator.REMAINDER;</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">        return op == InfixExpression.Operator.PLUS</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">                || op == InfixExpression.Operator.MINUS</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">                || op == InfixExpression.Operator.TIMES</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">                || op == InfixExpression.Operator.DIVIDE</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">                || op == InfixExpression.Operator.REMAINDER;</span>
     }
 
     /**
@@ -385,20 +385,20 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      * use of the index variable.
      */
     private boolean containsIndexInArithmeticOperand(Expression expr, String indexVarName) {
-<span class="nc bnc" id="L388" title="All 2 branches missed.">        if (expr == null) {</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        if (expr == null) {</span>
 <span class="nc" id="L389">            return false;</span>
         }
 
-<span class="nc bnc" id="L392" title="All 2 branches missed.">        if (expr instanceof SimpleName) {</span>
-<span class="nc" id="L393">            return ((SimpleName) expr).getIdentifier().equals(indexVarName);</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">        if (expr instanceof SimpleName) {</span>
+<span class="fc" id="L393">            return ((SimpleName) expr).getIdentifier().equals(indexVarName);</span>
         }
 
-<span class="nc bnc" id="L396" title="All 2 branches missed.">        if (expr instanceof ParenthesizedExpression) {</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">        if (expr instanceof ParenthesizedExpression) {</span>
 <span class="nc" id="L397">            Expression inner = ((ParenthesizedExpression) expr).getExpression();</span>
 <span class="nc" id="L398">            return containsIndexInArithmeticOperand(inner, indexVarName);</span>
         }
 
-<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (expr instanceof InfixExpression infix) {</span>
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">        if (expr instanceof InfixExpression infix) {</span>
 <span class="nc bnc" id="L402" title="All 2 branches missed.">            if (!isArithmeticOperator(infix.getOperator())) {</span>
 <span class="nc" id="L403">                return false;</span>
             }
@@ -417,7 +417,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
             }
         }
 
-<span class="nc" id="L420">        return false;</span>
+<span class="fc" id="L420">        return false;</span>
     }
     
     @Override

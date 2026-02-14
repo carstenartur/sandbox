@@ -31,7 +31,7 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
  * &lt;li&gt;{@code NormalAnnotation} - annotations with named parameters (e.g., {@code @RequestMapping(path=&quot;/api&quot;, method=GET)})&lt;/li&gt;
  * &lt;/ul&gt;
  * 
- * &lt;p&gt;&lt;b&gt;Difference from underlying HelperVisitor:&lt;/b&gt; The {@code HelperVisitor.callMarkerAnnotationVisitor()} 
+ * &lt;p&gt;&lt;b&gt;Difference from underlying HelperVisitor:&lt;/b&gt; The {@code HelperVisitorFactory.callMarkerAnnotationVisitor()} 
  * method only matches {@code MarkerAnnotation} nodes (annotations without parameters). This fluent API 
  * abstracts away that limitation by calling visitors for all three annotation types, providing a more 
  * intuitive and flexible interface.&lt;/p&gt;
@@ -39,7 +39,7 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
  * &lt;p&gt;&lt;b&gt;Example Usage:&lt;/b&gt;&lt;/p&gt;
  * &lt;pre&gt;
  * // Simple annotation visitor - matches all annotation types
- * HelperVisitor.forAnnotation(&quot;java.lang.Deprecated&quot;)
+ * HelperVisitorFactory.forAnnotation(&quot;java.lang.Deprecated&quot;)
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
  *     .processEach((annotation, holder) -&amp;gt; {
@@ -48,7 +48,7 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
  *     });
  *     
  * // Include import declarations
- * HelperVisitor.forAnnotation(&quot;org.junit.Before&quot;)
+ * HelperVisitorFactory.forAnnotation(&quot;org.junit.Before&quot;)
  *     .andImports()
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
@@ -171,21 +171,21 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder&lt;ASTNode&gt
         
         // Call visitors for all three annotation types to match annotations regardless of parameters
 <span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (shouldContinue[0]) {</span>
-<span class="fc" id="L174">            HelperVisitor.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, </span>
+<span class="fc" id="L174">            HelperVisitorFactory.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, </span>
 <span class="fc" id="L175">                    holder, nodesprocessed, markerAdapter);</span>
         }
 <span class="fc bfc" id="L177" title="All 2 branches covered.">        if (shouldContinue[0]) {</span>
-<span class="fc" id="L178">            HelperVisitor.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,</span>
+<span class="fc" id="L178">            HelperVisitorFactory.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,</span>
 <span class="fc" id="L179">                    holder, nodesprocessed, singleMemberAdapter);</span>
         }
 <span class="fc bfc" id="L181" title="All 2 branches covered.">        if (shouldContinue[0]) {</span>
-<span class="fc" id="L182">            HelperVisitor.callNormalAnnotationVisitor(annotationFQN, compilationUnit,</span>
+<span class="fc" id="L182">            HelperVisitorFactory.callNormalAnnotationVisitor(annotationFQN, compilationUnit,</span>
 <span class="fc" id="L183">                    holder, nodesprocessed, normalAdapter);</span>
         }
         
         // Optionally include import declarations
 <span class="fc bfc" id="L187" title="All 4 branches covered.">        if (shouldContinue[0] &amp;&amp; includeImports) {</span>
-<span class="fc" id="L188">            HelperVisitor.callImportDeclarationVisitor(annotationFQN, compilationUnit,</span>
+<span class="fc" id="L188">            HelperVisitorFactory.callImportDeclarationVisitor(annotationFQN, compilationUnit,</span>
 <span class="fc" id="L189">                    holder, nodesprocessed, importAdapter);</span>
         }
 <span class="fc" id="L191">    }</span>

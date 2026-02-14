@@ -34,22 +34,34 @@ import org.eclipse.jdt.internal.core.JavaElement;
 /**
  * Content provider with progress monitoring support for processing large numbers
  * of compilation units in packages, source folders, or projects.
- * Extracts variable bindings from AST nodes.
+ * Extracts variable bindings from AST nodes and optionally populates
+ * a {@link TypeWideningCache} with type widening analysis results.
  */
 public class VariableBindingContentProviderWithProgress {
 	
-<span class="nc" id="L41">	private static final ILog logger = UsageViewPlugin.getDefault().getLog();</span>
+<span class="nc" id="L42">	private static final ILog logger = UsageViewPlugin.getDefault().getLog();</span>
 
 	private final IProgressMonitor progressMonitor;
+
+	private TypeWideningCache typeWideningCache;
 
 	/**
 	 * Creates a new content provider with progress monitoring.
 	 * 
 	 * @param progressMonitor the progress monitor to report progress to
 	 */
-<span class="nc" id="L50">	public VariableBindingContentProviderWithProgress(IProgressMonitor progressMonitor) {</span>
-<span class="nc" id="L51">		this.progressMonitor = progressMonitor;</span>
-<span class="nc" id="L52">	}</span>
+<span class="nc" id="L53">	public VariableBindingContentProviderWithProgress(IProgressMonitor progressMonitor) {</span>
+<span class="nc" id="L54">		this.progressMonitor = progressMonitor;</span>
+<span class="nc" id="L55">	}</span>
+
+	/**
+	 * Sets the type widening cache to populate during content loading.
+	 *
+	 * @param cache the cache to populate, or null to disable caching
+	 */
+	public void setTypeWideningCache(TypeWideningCache cache) {
+<span class="nc" id="L63">		this.typeWideningCache = cache;</span>
+<span class="nc" id="L64">	}</span>
 
 	/**
 	 * Gets the elements (variable bindings) from the input, reporting progress.
@@ -58,100 +70,103 @@ public class VariableBindingContentProviderWithProgress {
 	 * @return array of IVariableBinding objects
 	 */
 	public Object[] getElements(Object inputElement) {
-<span class="nc" id="L61">		VariableBindingVisitor variableVisitor = new VariableBindingVisitor();</span>
+<span class="nc" id="L73">		VariableBindingVisitor variableVisitor = new VariableBindingVisitor();</span>
 		
-<span class="nc bnc" id="L63" title="All 2 branches missed.">		if (inputElement instanceof List list) {</span>
-<span class="nc bnc" id="L64" title="All 2 branches missed.">			if (list.size() == 1) {</span>
-<span class="nc" id="L65">				Object object = list.get(0);</span>
-<span class="nc bnc" id="L66" title="All 2 branches missed.">				if (object == null) {</span>
-<span class="nc" id="L67">					return new Object[0];</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">		if (inputElement instanceof List list) {</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">			if (list.size() == 1) {</span>
+<span class="nc" id="L77">				Object object = list.get(0);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">				if (object == null) {</span>
+<span class="nc" id="L79">					return new Object[0];</span>
 				}
-<span class="nc bnc" id="L69" title="All 2 branches missed.">				if (object instanceof WorkspaceRoot root) {</span>
-<span class="nc" id="L70">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing workspace root: &quot; + root.getName()));</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">				} else if (object instanceof File file) {</span>
-<span class="nc" id="L72">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing file: &quot; + file.getName()));</span>
-<span class="nc bnc" id="L73" title="All 2 branches missed.">				} else if (object instanceof JavaElement) {</span>
-<span class="nc" id="L74">					IJavaElement javaElement = (IJavaElement) object;</span>
-<span class="nc" id="L75">					processJavaElement(variableVisitor, javaElement);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">				if (object instanceof WorkspaceRoot root) {</span>
+<span class="nc" id="L82">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing workspace root: &quot; + root.getName()));</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">				} else if (object instanceof File file) {</span>
+<span class="nc" id="L84">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing file: &quot; + file.getName()));</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">				} else if (object instanceof JavaElement) {</span>
+<span class="nc" id="L86">					IJavaElement javaElement = (IJavaElement) object;</span>
+<span class="nc" id="L87">					processJavaElement(variableVisitor, javaElement);</span>
 				}
 			}
 		}
 		
 		// Debug logging removed - use Eclipse Logger for debugging if needed
-<span class="nc" id="L81">		return variableVisitor.getVariableBindings().toArray();</span>
+<span class="nc" id="L93">		return variableVisitor.getVariableBindings().toArray();</span>
 	}
 
 	private void processJavaElement(VariableBindingVisitor variableVisitor, IJavaElement javaElement) {
-<span class="nc bnc" id="L85" title="All 2 branches missed.">		if (progressMonitor.isCanceled()) {</span>
-<span class="nc" id="L86">			return;</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">		if (progressMonitor.isCanceled()) {</span>
+<span class="nc" id="L98">			return;</span>
 		}
 		
-<span class="nc bnc" id="L89" title="All 2 branches missed.">		if (javaElement instanceof ICompilationUnit compilationUnit) {</span>
-<span class="nc" id="L90">			processCompilationUnit(variableVisitor, compilationUnit);</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">		} else if (javaElement instanceof IJavaProject javaProject) {</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">		if (javaElement instanceof ICompilationUnit compilationUnit) {</span>
+<span class="nc" id="L102">			processCompilationUnit(variableVisitor, compilationUnit);</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">		} else if (javaElement instanceof IJavaProject javaProject) {</span>
 			try {
-<span class="nc bnc" id="L93" title="All 2 branches missed.">				for (IPackageFragmentRoot packageRoot : javaProject.getAllPackageFragmentRoots()) {</span>
-<span class="nc bnc" id="L94" title="All 2 branches missed.">					if (progressMonitor.isCanceled()) {</span>
-<span class="nc" id="L95">						return;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">				for (IPackageFragmentRoot packageRoot : javaProject.getAllPackageFragmentRoots()) {</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">					if (progressMonitor.isCanceled()) {</span>
+<span class="nc" id="L107">						return;</span>
 					}
-<span class="nc bnc" id="L97" title="All 2 branches missed.">					if (packageRoot.getKind() == IPackageFragmentRoot.K_SOURCE) {</span>
-<span class="nc" id="L98">						processPackageFragmentRoot(variableVisitor, packageRoot);</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">					if (packageRoot.getKind() == IPackageFragmentRoot.K_SOURCE) {</span>
+<span class="nc" id="L110">						processPackageFragmentRoot(variableVisitor, packageRoot);</span>
 					}
 				}
-<span class="nc" id="L101">			} catch (JavaModelException e) {</span>
-<span class="nc" id="L102">				logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment roots&quot;, e));</span>
+<span class="nc" id="L113">			} catch (JavaModelException e) {</span>
+<span class="nc" id="L114">				logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment roots&quot;, e));</span>
 			}
-<span class="nc bnc" id="L104" title="All 2 branches missed.">		} else if (javaElement instanceof IPackageFragment packageFragment) {</span>
-<span class="nc" id="L105">			processPackageFragment(variableVisitor, packageFragment);</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">		} else if (javaElement instanceof IPackageFragmentRoot packageRoot) {</span>
-<span class="nc" id="L107">			processPackageFragmentRoot(variableVisitor, packageRoot);</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">		} else if (javaElement instanceof IPackageFragment packageFragment) {</span>
+<span class="nc" id="L117">			processPackageFragment(variableVisitor, packageFragment);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">		} else if (javaElement instanceof IPackageFragmentRoot packageRoot) {</span>
+<span class="nc" id="L119">			processPackageFragmentRoot(variableVisitor, packageRoot);</span>
 		}
-<span class="nc" id="L109">	}</span>
+<span class="nc" id="L121">	}</span>
 
 	private void processPackageFragmentRoot(VariableBindingVisitor variableVisitor, IPackageFragmentRoot packageRoot) {
 		try {
-<span class="nc bnc" id="L113" title="All 2 branches missed.">			for (IJavaElement child : packageRoot.getChildren()) {</span>
-<span class="nc bnc" id="L114" title="All 2 branches missed.">				if (progressMonitor.isCanceled()) {</span>
-<span class="nc" id="L115">					return;</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">			for (IJavaElement child : packageRoot.getChildren()) {</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">				if (progressMonitor.isCanceled()) {</span>
+<span class="nc" id="L127">					return;</span>
 				}
-<span class="nc bnc" id="L117" title="All 2 branches missed.">				if (child instanceof IPackageFragment packageFragment) {</span>
-<span class="nc" id="L118">					processPackageFragment(variableVisitor, packageFragment);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">				if (child instanceof IPackageFragment packageFragment) {</span>
+<span class="nc" id="L130">					processPackageFragment(variableVisitor, packageFragment);</span>
 				}
 			}
-<span class="nc" id="L121">		} catch (JavaModelException e) {</span>
-<span class="nc" id="L122">			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment root children&quot;, e));</span>
+<span class="nc" id="L133">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L134">			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment root children&quot;, e));</span>
 		}
-<span class="nc" id="L124">	}</span>
+<span class="nc" id="L136">	}</span>
 
 	private void processPackageFragment(VariableBindingVisitor variableVisitor, IPackageFragment packageFragment) {
 		try {
-<span class="nc bnc" id="L128" title="All 2 branches missed.">			if (!packageFragment.containsJavaResources()) {</span>
-<span class="nc" id="L129">				return;</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">			if (!packageFragment.containsJavaResources()) {</span>
+<span class="nc" id="L141">				return;</span>
 			}
-<span class="nc bnc" id="L131" title="All 2 branches missed.">			for (ICompilationUnit compilationUnit : packageFragment.getCompilationUnits()) {</span>
-<span class="nc bnc" id="L132" title="All 2 branches missed.">				if (progressMonitor.isCanceled()) {</span>
-<span class="nc" id="L133">					return;</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">			for (ICompilationUnit compilationUnit : packageFragment.getCompilationUnits()) {</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">				if (progressMonitor.isCanceled()) {</span>
+<span class="nc" id="L145">					return;</span>
 				}
-<span class="nc" id="L135">				processCompilationUnit(variableVisitor, compilationUnit);</span>
+<span class="nc" id="L147">				processCompilationUnit(variableVisitor, compilationUnit);</span>
 			}
-<span class="nc" id="L137">		} catch (JavaModelException e) {</span>
-<span class="nc" id="L138">			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment compilation units&quot;, e));</span>
+<span class="nc" id="L149">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L150">			logger.log(new Status(Status.ERROR, UsageViewPlugin.PLUGIN_ID, &quot;Failed to process package fragment compilation units&quot;, e));</span>
 		}
-<span class="nc" id="L140">	}</span>
+<span class="nc" id="L152">	}</span>
 
 	private void processCompilationUnit(VariableBindingVisitor variableVisitor, ICompilationUnit compilationUnit) {
-<span class="nc" id="L143">		progressMonitor.subTask(&quot;Processing &quot; + compilationUnit.getElementName()); //$NON-NLS-1$</span>
-<span class="nc" id="L144">		CompilationUnit astRoot = parseCompilationUnit(compilationUnit);</span>
-<span class="nc" id="L145">		variableVisitor.process(astRoot);</span>
-<span class="nc" id="L146">		progressMonitor.worked(1);</span>
-<span class="nc" id="L147">	}</span>
+<span class="nc" id="L155">		progressMonitor.subTask(&quot;Processing &quot; + compilationUnit.getElementName()); //$NON-NLS-1$</span>
+<span class="nc" id="L156">		CompilationUnit astRoot = parseCompilationUnit(compilationUnit);</span>
+<span class="nc" id="L157">		variableVisitor.process(astRoot);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">		if (typeWideningCache != null) {</span>
+<span class="nc" id="L159">			typeWideningCache.analyzeAndCache(astRoot);</span>
+		}
+<span class="nc" id="L161">		progressMonitor.worked(1);</span>
+<span class="nc" id="L162">	}</span>
 
 	private static CompilationUnit parseCompilationUnit(ICompilationUnit compilationUnit) {
-<span class="nc" id="L150">		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);</span>
-<span class="nc" id="L151">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="nc" id="L152">		parser.setSource(compilationUnit);</span>
-<span class="nc" id="L153">		parser.setResolveBindings(true);</span>
-<span class="nc" id="L154">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="nc" id="L165">		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);</span>
+<span class="nc" id="L166">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="nc" id="L167">		parser.setSource(compilationUnit);</span>
+<span class="nc" id="L168">		parser.setResolveBindings(true);</span>
+<span class="nc" id="L169">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

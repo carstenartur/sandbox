@@ -47,6 +47,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
@@ -61,15 +62,15 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
  * Renames lifecycle methods (before/after) to match JUnit 5 naming conventions.
  * &lt;/p&gt;
  */
-<span class="fc" id="L64">public class ExternalResourceJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L65">public class ExternalResourceJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L69">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
-<span class="fc" id="L70">		HelperVisitor.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataHolder,</span>
-<span class="fc" id="L71">				nodesprocessed, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder,nodesprocessed));</span>
-<span class="fc" id="L72">	}</span>
+<span class="fc" id="L70">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L71">		HelperVisitorFactory.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataHolder,</span>
+<span class="fc" id="L72">				nodesprocessed, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder,nodesprocessed));</span>
+<span class="fc" id="L73">	}</span>
 
 	/**
 	 * Processes a type declaration that extends ExternalResource.
@@ -87,45 +88,45 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, TypeDeclaration node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		if (nodesprocessed.contains(node)) {</span>
-<span class="nc" id="L91">			return false;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">		if (nodesprocessed.contains(node)) {</span>
+<span class="nc" id="L92">			return false;</span>
 		}
 		
 		// For indirect subclasses, only process if they have lifecycle methods
-<span class="fc bfc" id="L95" title="All 2 branches covered.">		if (!ExternalResourceRefactorer.isDirectlyExtendingExternalResource(node.resolveBinding())) {</span>
-<span class="fc" id="L96">			boolean hasLifecycleMethod = false;</span>
-<span class="pc bfc" id="L97" title="All 2 branches covered.">			for (MethodDeclaration method : node.getMethods()) {</span>
-<span class="fc" id="L98">				String methodName = method.getName().getIdentifier();</span>
-<span class="pc bpc" id="L99" title="3 of 4 branches missed.">				if (METHOD_BEFORE.equals(methodName) || METHOD_AFTER.equals(methodName)) {</span>
-<span class="fc" id="L100">					hasLifecycleMethod = true;</span>
-<span class="fc" id="L101">					break;</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		if (!ExternalResourceRefactorer.isDirectlyExtendingExternalResource(node.resolveBinding())) {</span>
+<span class="fc" id="L97">			boolean hasLifecycleMethod = false;</span>
+<span class="pc bfc" id="L98" title="All 2 branches covered.">			for (MethodDeclaration method : node.getMethods()) {</span>
+<span class="fc" id="L99">				String methodName = method.getName().getIdentifier();</span>
+<span class="pc bpc" id="L100" title="3 of 4 branches missed.">				if (METHOD_BEFORE.equals(methodName) || METHOD_AFTER.equals(methodName)) {</span>
+<span class="fc" id="L101">					hasLifecycleMethod = true;</span>
+<span class="fc" id="L102">					break;</span>
 				}
 			}
-<span class="fc bfc" id="L104" title="All 2 branches covered.">			if (!hasLifecycleMethod) {</span>
-<span class="fc" id="L105">				return false;</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">			if (!hasLifecycleMethod) {</span>
+<span class="fc" id="L106">				return false;</span>
 			}
 		}
 		
-<span class="fc" id="L109">		nodesprocessed.add(node);</span>
-<span class="fc" id="L110">		JunitHolder mh= new JunitHolder();</span>
-<span class="fc" id="L111">		mh.setMinv(node);</span>
-<span class="fc" id="L112">		dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L113">		operations.add(fixcore.rewrite(dataHolder));</span>
-<span class="fc" id="L114">		return false;</span>
+<span class="fc" id="L110">		nodesprocessed.add(node);</span>
+<span class="fc" id="L111">		JunitHolder mh= new JunitHolder();</span>
+<span class="fc" id="L112">		mh.setMinv(node);</span>
+<span class="fc" id="L113">		dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L114">		operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L115">		return false;</span>
 	}
 
 	@Override
 	protected
 	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L121">		TypeDeclaration node= junitHolder.getTypeDeclaration();</span>
-<span class="fc" id="L122">		ExternalResourceRefactorer.modifyExternalResourceClass(node, null, false, rewriter, ast, group, importRewriter);</span>
-<span class="fc" id="L123">	}</span>
+<span class="fc" id="L122">		TypeDeclaration node= junitHolder.getTypeDeclaration();</span>
+<span class="fc" id="L123">		ExternalResourceRefactorer.modifyExternalResourceClass(node, null, false, rewriter, ast, group, importRewriter);</span>
+<span class="fc" id="L124">	}</span>
 	
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L128">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L129">			return &quot;&quot;&quot;</span>
 					class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
 						@Override
 						public void beforeEach(ExtensionContext context) throws Exception {
@@ -137,7 +138,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L140">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L141">		return &quot;&quot;&quot;</span>
 				class MyExternalResource extends ExternalResource {
 					@Override
 					protected void before() throws Throwable {
@@ -152,7 +153,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L155">		return &quot;ExternalResource&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L156">		return &quot;ExternalResource&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

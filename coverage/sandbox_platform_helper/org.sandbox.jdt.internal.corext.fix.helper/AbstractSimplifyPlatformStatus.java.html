@@ -34,6 +34,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
 import org.sandbox.jdt.internal.corext.util.ImportUtils;
@@ -45,10 +46,10 @@ public abstract class AbstractSimplifyPlatformStatus&lt;T extends ASTNode&gt; {
 	String methodName;
 	String expectedStatusLiteral;
 
-<span class="fc" id="L48">	public AbstractSimplifyPlatformStatus(String methodName, String expectedStatusLiteral) {</span>
-<span class="fc" id="L49">		this.methodName= methodName;</span>
-<span class="fc" id="L50">		this.expectedStatusLiteral= expectedStatusLiteral;</span>
-<span class="fc" id="L51">	}</span>
+<span class="fc" id="L49">	public AbstractSimplifyPlatformStatus(String methodName, String expectedStatusLiteral) {</span>
+<span class="fc" id="L50">		this.methodName= methodName;</span>
+<span class="fc" id="L51">		this.expectedStatusLiteral= expectedStatusLiteral;</span>
+<span class="fc" id="L52">	}</span>
 
 	/**
 	 * Adds an import to the class. This method should be used for every class
@@ -61,27 +62,27 @@ public abstract class AbstractSimplifyPlatformStatus&lt;T extends ASTNode&gt; {
 	 *         name if there was a conflict
 	 */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-<span class="fc" id="L64">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
+<span class="fc" id="L65">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
 	}
 
 	public abstract String getPreview(boolean afterRefactoring);
 
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) throws CoreException {
-<span class="nc" id="L71">		find(fixcore, compilationUnit, operations, nodesprocessed, false);</span>
-<span class="nc" id="L72">	}</span>
+<span class="nc" id="L72">		find(fixcore, compilationUnit, operations, nodesprocessed, false);</span>
+<span class="nc" id="L73">	}</span>
 
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed,
 			boolean preservePluginId) throws CoreException {
 		try {
-<span class="fc" id="L78">			ReferenceHolder&lt;ASTNode, Object&gt; dataholder= ReferenceHolder.createForNodes();</span>
-<span class="fc" id="L79">			HelperVisitor.forClassInstanceCreation(Status.class)</span>
-<span class="fc" id="L80">				.in(compilationUnit)</span>
-<span class="fc" id="L81">				.excluding(nodesprocessed)</span>
-<span class="fc" id="L82">				.processEach(dataholder, (visited, holder) -&gt; {</span>
-<span class="nc bnc" id="L83" title="All 4 branches missed.">					if (nodesprocessed.contains(visited) || (visited.arguments().size() != 5)) {</span>
-<span class="nc" id="L84">						return false;</span>
+<span class="fc" id="L79">			ReferenceHolder&lt;ASTNode, Object&gt; dataholder= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L80">			HelperVisitorFactory.forClassInstanceCreation(Status.class)</span>
+<span class="fc" id="L81">				.in(compilationUnit)</span>
+<span class="fc" id="L82">				.excluding(nodesprocessed)</span>
+<span class="fc" id="L83">				.processEach(dataholder, (visited, holder) -&gt; {</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">					if (nodesprocessed.contains(visited) || (visited.arguments().size() != 5)) {</span>
+<span class="nc" id="L85">						return false;</span>
 					}
 					/**
 					 * Expected pattern: new Status(severity, pluginId, IStatus.OK, message, throwable)
@@ -94,85 +95,85 @@ public abstract class AbstractSimplifyPlatformStatus&lt;T extends ASTNode&gt; {
 					 *
 					 * Transforms to: Status.info(message, throwable) / Status.warning(message, throwable) / Status.error(message, throwable)
 					 */
-<span class="nc" id="L97">					List&lt;Expression&gt; arguments= visited.arguments();</span>
+<span class="nc" id="L98">					List&lt;Expression&gt; arguments= visited.arguments();</span>
 					
 					// Safely check if argument at index 2 (code) is IStatus.OK
-<span class="nc" id="L100">					Expression codeArg= arguments.get(2);</span>
-<span class="nc bnc" id="L101" title="All 2 branches missed.">					if (!(codeArg instanceof QualifiedName)) {</span>
-<span class="nc" id="L102">						return false;</span>
+<span class="nc" id="L101">					Expression codeArg= arguments.get(2);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">					if (!(codeArg instanceof QualifiedName)) {</span>
+<span class="nc" id="L103">						return false;</span>
 					}
-<span class="nc" id="L104">					QualifiedName codeQualifiedName= (QualifiedName) codeArg;</span>
-<span class="nc bnc" id="L105" title="All 2 branches missed.">					if (!&quot;IStatus.OK&quot;.equals(codeQualifiedName.toString())) { //$NON-NLS-1$</span>
-<span class="nc" id="L106">						return false;</span>
+<span class="nc" id="L105">					QualifiedName codeQualifiedName= (QualifiedName) codeArg;</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">					if (!&quot;IStatus.OK&quot;.equals(codeQualifiedName.toString())) { //$NON-NLS-1$</span>
+<span class="nc" id="L107">						return false;</span>
 					}
 					
 					// Safely check if argument at index 0 (severity) matches expected status literal
-<span class="nc" id="L110">					Expression severityArg= arguments.get(0);</span>
-<span class="nc bnc" id="L111" title="All 2 branches missed.">					if (!(severityArg instanceof QualifiedName)) {</span>
-<span class="nc" id="L112">						return false;</span>
+<span class="nc" id="L111">					Expression severityArg= arguments.get(0);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">					if (!(severityArg instanceof QualifiedName)) {</span>
+<span class="nc" id="L113">						return false;</span>
 					}
-<span class="nc" id="L114">					QualifiedName severityQualifiedName= (QualifiedName) severityArg;</span>
-<span class="nc bnc" id="L115" title="All 2 branches missed.">					if (expectedStatusLiteral.equals(severityQualifiedName.toString())) {</span>
-<span class="nc" id="L116">						operations.add(fixcore.rewrite(visited, holder, preservePluginId));</span>
-<span class="nc" id="L117">						nodesprocessed.add(visited);</span>
-<span class="nc" id="L118">						return false;</span>
+<span class="nc" id="L115">					QualifiedName severityQualifiedName= (QualifiedName) severityArg;</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">					if (expectedStatusLiteral.equals(severityQualifiedName.toString())) {</span>
+<span class="nc" id="L117">						operations.add(fixcore.rewrite(visited, holder, preservePluginId));</span>
+<span class="nc" id="L118">						nodesprocessed.add(visited);</span>
+<span class="nc" id="L119">						return false;</span>
 					}
-<span class="nc" id="L120">					return true;</span>
+<span class="nc" id="L121">					return true;</span>
 				});
-<span class="pc" id="L122">		} catch (Exception e) {</span>
-<span class="nc" id="L123">			throw new CoreException(Status.error(&quot;Problem in find&quot;, e)); //$NON-NLS-1$</span>
+<span class="pc" id="L123">		} catch (Exception e) {</span>
+<span class="nc" id="L124">			throw new CoreException(Status.error(&quot;Problem in find&quot;, e)); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L125">	}</span>
+<span class="fc" id="L126">	}</span>
 
 	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="nc" id="L129">		rewrite(upp, visited, cuRewrite, group, holder, false);</span>
-<span class="nc" id="L130">	}</span>
+<span class="nc" id="L130">		rewrite(upp, visited, cuRewrite, group, holder, false);</span>
+<span class="nc" id="L131">	}</span>
 
 	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; holder,
 			boolean preservePluginId) {
-<span class="nc" id="L135">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="nc" id="L136">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="nc" id="L137">		ImportRemover remover= cuRewrite.getImportRemover();</span>
+<span class="nc" id="L136">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="nc" id="L137">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="nc" id="L138">		ImportRemover remover= cuRewrite.getImportRemover();</span>
 
 		/**
 		 * Create call to Status.warning(), Status.error(), or Status.info()
 		 */
 		// Add imports in alphabetical order to match expected test output
 		// IStatus comes before Status alphabetically
-<span class="nc" id="L144">		addImport(&quot;org.eclipse.core.runtime.IStatus&quot;, cuRewrite, ast);</span>
+<span class="nc" id="L145">		addImport(&quot;org.eclipse.core.runtime.IStatus&quot;, cuRewrite, ast);</span>
 		
-<span class="nc" id="L146">		MethodInvocation staticCall= ast.newMethodInvocation();</span>
-<span class="nc" id="L147">		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);</span>
-<span class="nc" id="L148">		staticCall.setExpression(statusName);</span>
-<span class="nc" id="L149">		staticCall.setName(ast.newSimpleName(methodName));</span>
+<span class="nc" id="L147">		MethodInvocation staticCall= ast.newMethodInvocation();</span>
+<span class="nc" id="L148">		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);</span>
+<span class="nc" id="L149">		staticCall.setExpression(statusName);</span>
+<span class="nc" id="L150">		staticCall.setName(ast.newSimpleName(methodName));</span>
 		
-<span class="nc" id="L151">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
-<span class="nc" id="L152">		List&lt;ASTNode&gt; staticCallArguments= staticCall.arguments();</span>
+<span class="nc" id="L152">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="nc" id="L153">		List&lt;ASTNode&gt; staticCallArguments= staticCall.arguments();</span>
 		
 		// Note: preservePluginId parameter is not used for Status factory methods
 		// because the Eclipse Platform Status.error(), Status.warning(), and Status.info()
 		// methods only accept (message, exception) parameters, not plugin ID.
 		
 		// Add message argument (always at position 3 for 5-argument constructor)
-<span class="nc" id="L159">		int messagePosition= 3;</span>
-<span class="nc" id="L160">		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
-<span class="nc" id="L161">				ASTNodes.getUnparenthesedExpression(arguments.get(messagePosition))));</span>
+<span class="nc" id="L160">		int messagePosition= 3;</span>
+<span class="nc" id="L161">		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="nc" id="L162">				ASTNodes.getUnparenthesedExpression(arguments.get(messagePosition))));</span>
 		
 		// Add throwable argument if present (at position 4) and not null
-<span class="nc" id="L164">		ASTNode throwableArg= arguments.get(4);</span>
+<span class="nc" id="L165">		ASTNode throwableArg= arguments.get(4);</span>
 		// Add the exception parameter if it's not a null literal
 		// The code argument (position 2) was already validated as IStatus.OK in the find() method
-<span class="nc bnc" id="L167" title="All 2 branches missed.">		if (!(throwableArg instanceof NullLiteral)) {</span>
-<span class="nc" id="L168">			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">		if (!(throwableArg instanceof NullLiteral)) {</span>
+<span class="nc" id="L169">			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));</span>
 		}
 		
-<span class="nc" id="L171">		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);</span>
-<span class="nc" id="L172">		remover.registerRemovedNode(visited);</span>
+<span class="nc" id="L172">		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);</span>
+<span class="nc" id="L173">		remover.registerRemovedNode(visited);</span>
 		// Note: Do NOT call remover.applyRemoves(importRewrite) here
 		// ImportRewrite automatically manages import removal/addition throughout the transformation.
 		// The Status import is explicitly added via addImport() above, and IStatus is preserved from the variable declaration.
-<span class="nc" id="L176">	}</span>
+<span class="nc" id="L177">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

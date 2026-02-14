@@ -30,6 +30,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 
@@ -54,7 +55,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  *   &lt;li&gt;Parameter reordering (message to last position)&lt;/li&gt;
  * &lt;/ul&gt;
  */
-<span class="fc" id="L57">public abstract class AbstractMethodMigrationPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L58">public abstract class AbstractMethodMigrationPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
 	/**
 	 * Returns the fully qualified name of the source class (JUnit 4).
@@ -86,39 +87,39 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 	 * @return set of method names that need parameter reordering
 	 */
 	protected Set&lt;String&gt; getMethodsRequiringReorder() {
-<span class="fc" id="L89">		return getMethodNames();</span>
+<span class="fc" id="L90">		return getMethodNames();</span>
 	}
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L95">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
-<span class="fc" id="L96">		HelperVisitor.forMethodCalls(getSourceClass(), getMethodNames())</span>
-<span class="fc" id="L97">			.andStaticImports()</span>
-<span class="fc" id="L98">			.andImportsOf(getSourceClass())</span>
-<span class="fc" id="L99">			.in(compilationUnit)</span>
-<span class="fc" id="L100">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L101">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
-<span class="fc" id="L102">	}</span>
+<span class="fc" id="L96">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L97">		HelperVisitorFactory.forMethodCalls(getSourceClass(), getMethodNames())</span>
+<span class="fc" id="L98">			.andStaticImports()</span>
+<span class="fc" id="L99">			.andImportsOf(getSourceClass())</span>
+<span class="fc" id="L100">			.in(compilationUnit)</span>
+<span class="fc" id="L101">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L102">			.processEach(dataHolder, (visited, aholder) -&gt; processFoundNode(fixcore, operations, visited, aholder));</span>
+<span class="fc" id="L103">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, ASTNode node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
-<span class="fc" id="L107">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+<span class="fc" id="L108">		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
-<span class="fc" id="L113">		ASTNode node = junitHolder.getMinv();</span>
+<span class="fc" id="L114">		ASTNode node = junitHolder.getMinv();</span>
 		
-<span class="fc bfc" id="L115" title="All 2 branches covered.">		if (node instanceof MethodInvocation) {</span>
-<span class="fc" id="L116">			processMethodInvocation(group, rewriter, ast, importRewriter, (MethodInvocation) node);</span>
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		} else if (node instanceof ImportDeclaration) {</span>
-<span class="fc" id="L118">			processImportDeclaration(group, rewriter, ast, importRewriter, </span>
-<span class="fc" id="L119">				(ImportDeclaration) node);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">		if (node instanceof MethodInvocation) {</span>
+<span class="fc" id="L117">			processMethodInvocation(group, rewriter, ast, importRewriter, (MethodInvocation) node);</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		} else if (node instanceof ImportDeclaration) {</span>
+<span class="fc" id="L119">			processImportDeclaration(group, rewriter, ast, importRewriter, </span>
+<span class="fc" id="L120">				(ImportDeclaration) node);</span>
 		}
-<span class="fc" id="L121">	}</span>
+<span class="fc" id="L122">	}</span>
 
 	/**
 	 * Processes a method invocation, updating the class reference and reordering parameters if needed.
@@ -126,26 +127,26 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 	protected void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, MethodInvocation methodInvocation) {
 		
-<span class="fc" id="L129">		String methodName = methodInvocation.getName().getIdentifier();</span>
+<span class="fc" id="L130">		String methodName = methodInvocation.getName().getIdentifier();</span>
 		
 		// Update qualified expression if present (e.g., Assert.assertEquals → Assertions.assertEquals)
-<span class="fc" id="L132">		Expression expression = methodInvocation.getExpression();</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">		if (expression instanceof SimpleName) {</span>
-<span class="fc" id="L134">			SimpleName simpleName = (SimpleName) expression;</span>
-<span class="fc" id="L135">			String sourceSimpleName = getSourceClass().substring(getSourceClass().lastIndexOf('.') + 1);</span>
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">			if (sourceSimpleName.equals(simpleName.getIdentifier())) {</span>
-<span class="fc" id="L137">				SimpleName newName = ast.newSimpleName(getTargetSimpleName());</span>
-<span class="fc" id="L138">				ASTNodes.replaceButKeepComment(rewriter, simpleName, newName, group);</span>
-<span class="fc" id="L139">				importRewriter.addImport(getTargetClass());</span>
-<span class="fc" id="L140">				importRewriter.removeImport(getSourceClass());</span>
+<span class="fc" id="L133">		Expression expression = methodInvocation.getExpression();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (expression instanceof SimpleName) {</span>
+<span class="fc" id="L135">			SimpleName simpleName = (SimpleName) expression;</span>
+<span class="fc" id="L136">			String sourceSimpleName = getSourceClass().substring(getSourceClass().lastIndexOf('.') + 1);</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">			if (sourceSimpleName.equals(simpleName.getIdentifier())) {</span>
+<span class="fc" id="L138">				SimpleName newName = ast.newSimpleName(getTargetSimpleName());</span>
+<span class="fc" id="L139">				ASTNodes.replaceButKeepComment(rewriter, simpleName, newName, group);</span>
+<span class="fc" id="L140">				importRewriter.addImport(getTargetClass());</span>
+<span class="fc" id="L141">				importRewriter.removeImport(getSourceClass());</span>
 			}
 		}
 		
 		// Reorder parameters if needed (message moves to last position in JUnit 5)
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		if (getMethodsRequiringReorder().contains(methodName)) {</span>
-<span class="fc" id="L146">			reorderMessageParameter(group, rewriter, methodInvocation);</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (getMethodsRequiringReorder().contains(methodName)) {</span>
+<span class="fc" id="L147">			reorderMessageParameter(group, rewriter, methodInvocation);</span>
 		}
-<span class="fc" id="L148">	}</span>
+<span class="fc" id="L149">	}</span>
 
 	/**
 	 * Processes an import declaration, replacing the source import with target import.
@@ -159,34 +160,34 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 	protected void processImportDeclaration(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, ImportDeclaration importDecl) {
 		
-<span class="fc" id="L162">		String importName = importDecl.getName().getFullyQualifiedName();</span>
+<span class="fc" id="L163">		String importName = importDecl.getName().getFullyQualifiedName();</span>
 		
-<span class="fc bfc" id="L164" title="All 2 branches covered.">		if (importDecl.isStatic()) {</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">		if (importDecl.isStatic()) {</span>
 			// Handle static imports
-<span class="fc bfc" id="L166" title="All 2 branches covered.">			if (importDecl.isOnDemand()) {</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">			if (importDecl.isOnDemand()) {</span>
 				// Wildcard import: import static org.junit.Assert.*
 				// Note: importName is &quot;org.junit.Assert&quot; (without .*)
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">				if (getSourceClass().equals(importName)) {</span>
-<span class="fc" id="L170">					importRewriter.removeStaticImport(importName + &quot;.*&quot;);</span>
-<span class="fc" id="L171">					importRewriter.addStaticImport(getTargetClass(), &quot;*&quot;, false);</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">				if (getSourceClass().equals(importName)) {</span>
+<span class="fc" id="L171">					importRewriter.removeStaticImport(importName + &quot;.*&quot;);</span>
+<span class="fc" id="L172">					importRewriter.addStaticImport(getTargetClass(), &quot;*&quot;, false);</span>
 				}
-<span class="fc" id="L173">			} else {</span>
+<span class="fc" id="L174">			} else {</span>
 				// Specific import: import static org.junit.Assert.assertEquals
 				// Note: importName is &quot;org.junit.Assert.assertEquals&quot;
-<span class="pc bpc" id="L176" title="1 of 2 branches missed.">				if (importName.startsWith(getSourceClass() + &quot;.&quot;)) {</span>
-<span class="fc" id="L177">					String methodName = importName.substring(getSourceClass().length() + 1);</span>
-<span class="fc" id="L178">					importRewriter.removeStaticImport(importName);</span>
-<span class="fc" id="L179">					importRewriter.addStaticImport(getTargetClass(), methodName, false);</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">				if (importName.startsWith(getSourceClass() + &quot;.&quot;)) {</span>
+<span class="fc" id="L178">					String methodName = importName.substring(getSourceClass().length() + 1);</span>
+<span class="fc" id="L179">					importRewriter.removeStaticImport(importName);</span>
+<span class="fc" id="L180">					importRewriter.addStaticImport(getTargetClass(), methodName, false);</span>
 				}
 			}
-<span class="fc" id="L182">		} else {</span>
+<span class="fc" id="L183">		} else {</span>
 			// Handle regular imports
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">			if (getSourceClass().equals(importName)) {</span>
-<span class="fc" id="L185">				importRewriter.removeImport(getSourceClass());</span>
-<span class="fc" id="L186">				importRewriter.addImport(getTargetClass());</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">			if (getSourceClass().equals(importName)) {</span>
+<span class="fc" id="L186">				importRewriter.removeImport(getSourceClass());</span>
+<span class="fc" id="L187">				importRewriter.addImport(getTargetClass());</span>
 			}
 		}
-<span class="fc" id="L189">	}</span>
+<span class="fc" id="L190">	}</span>
 
 	/**
 	 * Reorders parameters so that the message parameter moves to the last position.
@@ -199,7 +200,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 			MethodInvocation methodInvocation) {
 		// Delegate to existing reorderParameters method in AbstractTool
 		// which handles the parameter reordering logic
-<span class="fc" id="L202">		reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
-<span class="fc" id="L203">	}</span>
+<span class="fc" id="L203">		reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
+<span class="fc" id="L204">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

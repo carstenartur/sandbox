@@ -29,7 +29,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
  * 
  * &lt;p&gt;&lt;b&gt;Example Usage:&lt;/b&gt;&lt;/p&gt;
  * &lt;pre&gt;
- * HelperVisitor.forAnnotation(&quot;org.junit.Before&quot;)
+ * HelperVisitorFactory.forAnnotation(&quot;org.junit.Before&quot;)
  *     .in(compilationUnit)
  *     .excluding(nodesprocessed)
  *     .processEach((node, holder) -&amp;gt; {
