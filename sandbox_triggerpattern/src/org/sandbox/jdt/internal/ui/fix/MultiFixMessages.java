@@ -24,6 +24,8 @@ public class MultiFixMessages extends NLS {
 	public static String ThreadingCleanUpFix_refactor;
 	public static String ShiftOutOfRangeCleanUp_description;
 	public static String ShiftOutOfRangeCleanUpFix_refactor;
+	public static String HintFileCleanUp_description;
+	public static String HintFileCleanUpFix_refactor;
 
 	static {
 		// initialize resource bundle

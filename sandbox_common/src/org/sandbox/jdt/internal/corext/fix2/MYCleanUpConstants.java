@@ -402,4 +402,20 @@ public class MYCleanUpConstants {
 	 * @since 1.2.6
 	 */
 	public static final String USE_GENERAL_TYPE_CLEANUP= "cleanup.use_general_type"; //$NON-NLS-1$
+
+	/**
+	 * Apply transformation rules from registered {@code .sandbox-hint} DSL files.
+	 * <p>
+	 * When enabled, all registered {@code .sandbox-hint} pattern libraries (collections,
+	 * modernize-java11, performance, etc.) are applied as cleanup operations. This enables
+	 * declarative code transformations without writing Java code.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 * @since 1.3.5
+	 */
+	public static final String HINTFILE_CLEANUP= "cleanup.hintfile"; //$NON-NLS-1$
 }

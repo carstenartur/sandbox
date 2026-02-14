@@ -252,6 +252,17 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] `BatchTransformationProcessor` constructor with pre-resolved rules
   - [x] Comprehensive test suite (PatternCompositionTest)
 
+### Completed (v1.3.5 - DSL-to-CleanUp/QuickAssist Bridge, Phase 7.3)
+- [x] Phase 7.3: Quick Fix / Clean Up Integration from `.sandbox-hint` files
+  - [x] `HintFileFixCore` — bridges `.sandbox-hint` DSL to `CompilationUnitRewriteOperation`
+  - [x] `HintFileCleanUpCore` / `HintFileCleanUp` — Eclipse CleanUp wrapper for hint file rules
+  - [x] `HintFileQuickAssistProcessor` — Quick Assist from `.sandbox-hint` file rules
+  - [x] CleanUp preference checkbox (`HINTFILE_CLEANUP` constant)
+  - [x] Save Actions integration via `DefaultCleanUpOptionsInitializer` / `SaveActionCleanUpOptionsInitializer`
+  - [x] UI preferences in `SandboxCodeTabPage`
+  - [x] Registered in `plugin.xml` (both CleanUp and QuickAssist)
+  - [x] Import directive support in rewrite operations
+
 ### Planned Enhancements
 
 #### High Priority
@@ -260,10 +271,11 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] `PlaceholderAstMatcher.mergeBindings()` for combining bindings across multiple matchers
 - [x] Cleanup integration
   - [x] Batch processing: `BatchTransformationProcessor` applies all rules from a `HintFile` in a single pass
-  - [ ] CleanUp implementation using TriggerPattern engine (Eclipse CleanUp wrapper)
-  - [ ] Save Actions integration
+  - [x] CleanUp implementation using TriggerPattern engine (Eclipse CleanUp wrapper) — `HintFileCleanUp`
+  - [x] Save Actions integration — `HintFileCleanUpCore` registered in `SaveActionCleanUpOptionsInitializer`
 - [x] Pattern composition
   - [x] Allow patterns to reference other patterns via `<!include:>` directive
+- [x] Quick Assist from `.sandbox-hint` files — `HintFileQuickAssistProcessor`
 - [ ] Add integration tests for HintRegistry and extension point loading
 - [ ] Add UI tests for Quick Assist processor (requires PDE test setup)
 - [ ] Documentation: User guide for creating custom hints

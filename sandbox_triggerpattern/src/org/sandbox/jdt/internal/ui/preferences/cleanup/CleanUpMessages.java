@@ -24,6 +24,8 @@ public class CleanUpMessages extends NLS {
 	public static String ThreadingTabPage_CheckboxName_Threading;
 	public static String ShiftOutOfRangeTabPage_GroupName;
 	public static String ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange;
+	public static String HintFileTabPage_GroupName;
+	public static String HintFileTabPage_CheckboxName_HintFile;
 
 	static {
 		// initialize resource bundle
