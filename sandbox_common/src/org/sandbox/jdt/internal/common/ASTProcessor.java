@@ -21,10 +21,8 @@ package org.sandbox.jdt.internal.common;
  */
 
 
-import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
@@ -75,7 +73,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 		}
 
 		@SuppressWarnings("unchecked")
-		public NodeHolder(BiPredicate<? extends ASTNode, E> callee, Function<ASTNode, ASTNode> navigate, Object object) {
+		public NodeHolder(BiPredicate<? extends ASTNode, E> callee, Function<ASTNode, ASTNode> navigate, VisitorConfigData object) {
 			this.callee= (BiPredicate<ASTNode, E>) callee;
 			this.navigate= navigate;
 			this.object= object;
@@ -93,7 +91,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 
 		public Function<ASTNode, ASTNode> navigate;
 
-		public Object object;
+		public VisitorConfigData object;
 	}
 
 	private final LinkedHashMap<VisitorEnum, NodeHolder> nodetypelist;
@@ -311,10 +309,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callAssignmentVisitor(org.eclipse.jdt.core.dom.Assignment.Operator operator, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.OPERATOR, operator)
-				);
-		nodetypelist.put(VisitorEnum.Assignment, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.operator(operator.toString())
+				.build();
+		nodetypelist.put(VisitorEnum.Assignment, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -328,10 +326,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callAssignmentVisitor(org.eclipse.jdt.core.dom.Assignment.Operator operator, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.OPERATOR, operator)
-				);
-		nodetypelist.put(VisitorEnum.Assignment, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.operator(operator.toString())
+				.build();
+		nodetypelist.put(VisitorEnum.Assignment, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -478,10 +476,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callCatchClauseVisitor(Class<?> exceptionType, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.EXCEPTIONTYPE, exceptionType)
-				);
-		nodetypelist.put(VisitorEnum.CatchClause, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.exceptionType(exceptionType)
+				.build();
+		nodetypelist.put(VisitorEnum.CatchClause, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -495,10 +493,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callCatchClauseVisitor(Class<?> exceptionType, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.EXCEPTIONTYPE, exceptionType)
-				);
-		nodetypelist.put(VisitorEnum.CatchClause, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.exceptionType(exceptionType)
+				.build();
+		nodetypelist.put(VisitorEnum.CatchClause, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -539,10 +537,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(Class<?> typeof,BiPredicate<ClassInstanceCreation, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
-				);
-		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeof(typeof)
+				.build();
+		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -558,10 +556,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @since 1.2.5
 	 */
 	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(String qualifiedTypeName, BiPredicate<ClassInstanceCreation, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF_BYNAME, qualifiedTypeName)
-				);
-		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeofByName(qualifiedTypeName)
+				.build();
+		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -587,10 +585,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(Class<?> typeof, BiPredicate<ClassInstanceCreation, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
-				);
-		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeof(typeof)
+				.build();
+		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -608,10 +606,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callClassInstanceCreationVisitor(String qualifiedTypeName, BiPredicate<ClassInstanceCreation, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF_BYNAME, qualifiedTypeName)
-				);
-		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeofByName(qualifiedTypeName)
+				.build();
+		nodetypelist.put(VisitorEnum.ClassInstanceCreation, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -958,10 +956,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callFieldDeclarationVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
-				);
-		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeof(typeof)
+				.build();
+		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -975,10 +973,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callFieldDeclarationVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
-				);
-		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeof(typeof)
+				.build();
+		nodetypelist.put(VisitorEnum.FieldDeclaration, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -1011,10 +1009,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callForStatementVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
-				);
-		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeof(typeof)
+				.build();
+		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -1028,10 +1026,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callForStatementVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
-				);
-		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeof(typeof)
+				.build();
+		nodetypelist.put(VisitorEnum.ForStatement, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -1106,10 +1104,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callInfixExpressionVisitor(org.eclipse.jdt.core.dom.InfixExpression.Operator operator, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.OPERATOR, operator)
-				);
-		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.operator(operator.toString())
+				.build();
+		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -1123,10 +1121,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callInfixExpressionVisitor(org.eclipse.jdt.core.dom.InfixExpression.Operator operator, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.OPERATOR, operator)
-				);
-		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.operator(operator.toString())
+				.build();
+		nodetypelist.put(VisitorEnum.InfixExpression, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -1408,10 +1406,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callMethodDeclarationVisitor(String methodName, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodName)
-				);
-		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.methodName(methodName)
+				.build();
+		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -1425,10 +1423,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callMethodDeclarationVisitor(String methodName, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodName)
-				);
-		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.methodName(methodName)
+				.build();
+		nodetypelist.put(VisitorEnum.MethodDeclaration, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -1459,10 +1457,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callMethodInvocationVisitor(String methodname, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodname)
-				);
-		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.methodName(methodname)
+				.build();
+		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -1472,10 +1470,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class<?> typeof, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
-				);
-		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeof(typeof)
+				.build();
+		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -1497,11 +1495,11 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callMethodInvocationVisitor(Class<?> typeof,String methodname, BiPredicate<MethodInvocation, E> bs, Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodname),
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPEOF, typeof)
-				);
-		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.methodName(methodname)
+				.typeof(typeof)
+				.build();
+		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -1513,10 +1511,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callMethodInvocationVisitor(String methodname, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodname)
-				);
-		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.methodName(methodname)
+				.build();
+		nodetypelist.put(VisitorEnum.MethodInvocation, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -2157,10 +2155,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callSuperMethodInvocationVisitor(String methodName, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodName)
-				);
-		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.methodName(methodName)
+				.build();
+		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -2174,10 +2172,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callSuperMethodInvocationVisitor(String methodName, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.METHODNAME, methodName)
-				);
-		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.methodName(methodName)
+				.build();
+		nodetypelist.put(VisitorEnum.SuperMethodInvocation, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -2440,10 +2438,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callTypeDeclarationVisitor(String typeName, BiPredicate<ASTNode, E> bs) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPENAME, typeName)
-				);
-		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, null, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeName(typeName)
+				.build();
+		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, null, config));
 		return this;
 	}
 
@@ -2457,10 +2455,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callTypeDeclarationVisitor(String typeName, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		Map<String, Object> map = Map.ofEntries(
-				new AbstractMap.SimpleEntry<>(HelperVisitor.TYPENAME, typeName)
-				);
-		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, navigate, map));
+		VisitorConfigData config = VisitorConfigData.builder()
+				.typeName(typeName)
+				.build();
+		nodetypelist.put(VisitorEnum.TypeDeclaration, new NodeHolder(bs, navigate, config));
 		return this;
 	}
 
@@ -2627,7 +2625,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 */
 	public ASTProcessor<E, V, T> callVariableDeclarationStatementVisitor(Class<?> class1, BiPredicate<ASTNode, E> bs,
 			Function<ASTNode, ASTNode> navigate) {
-		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, navigate, class1));
+		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, navigate, VisitorConfigData.builder().typeof(class1).build()));
 		return this;
 	}
 
@@ -2637,7 +2635,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	 * @return a reference to this object.
 	 */
 	public ASTProcessor<E, V, T> callVariableDeclarationStatementVisitor(Class<?> class1, BiPredicate<ASTNode, E> bs) {
-		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, null, class1));
+		nodetypelist.put(VisitorEnum.VariableDeclarationStatement, new NodeHolder(bs, null, VisitorConfigData.builder().typeof(class1).build()));
 		return this;
 	}
 
