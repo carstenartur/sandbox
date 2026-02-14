@@ -89,6 +89,39 @@ The framework provides two approaches to accommodate different use cases:
 
 **JUnit Example**: `TriggerPatternCleanupPlugin` extends `AbstractTool` (JUnit-specific) and uses `PatternCleanupHelper` via composition to access TriggerPattern functionality.
 
+### Mining Analysis (Refactoring Mining)
+
+**Since**: 1.2.6
+
+**Package**: `org.sandbox.jdt.triggerpattern.mining.analysis`
+
+The Mining Analysis package infers transformation rules by comparing before/after code snippets at the AST level. It implements Phase 2 (AST-Diff & Placeholder-Generalization) and Phase 3 (Rule-Inference-Engine) from the Refactoring-Mining plan (Issue #727).
+
+**Key Classes**:
+
+| Class | Purpose |
+|-------|---------|
+| `RuleInferenceEngine` | Main entry-point — `inferRule(String before, String after, PatternKind)` |
+| `AstDiffAnalyzer` | Structural recursive comparison of two AST trees |
+| `PlaceholderGeneralizer` | Replaces identical sub-trees with `$placeholder` names |
+| `PlaceholderNamer` | Generates meaningful placeholder names from AST context |
+| `ConfidenceCalculator` | Heuristic scoring (0.0–1.0) of inferred rules |
+| `ImportDiffAnalyzer` | Detects added/removed imports between CompilationUnits |
+| `RuleGrouper` | Groups similar rules across multiple occurrences |
+| `InferredRuleValidator` | Validates rules (parseable, placeholders consistent, confidence threshold) |
+
+**Data Structures**:
+
+| Record | Fields |
+|--------|--------|
+| `AstDiff` | `structurallyCompatible`, `alignments` |
+| `NodeAlignment` | `beforeNode`, `afterNode`, `kind` (IDENTICAL / MODIFIED / INSERTED / DELETED) |
+| `InferredRule` | `sourcePattern`, `replacementPattern`, `kind`, `confidence`, `placeholderNames`, `importChanges` |
+| `CodeChangePair` | `filePath`, `lineNumber`, `beforeSnippet`, `afterSnippet`, `beforeNode`, `afterNode`, `inferredKind` |
+| `RuleGroup` | `generalizedRule`, `instances`, `occurrenceCount`, `aggregatedConfidence` |
+
+**Integration**: `RuleInferenceEngine.toTransformationRule()` and `toHintFile()` convert inferred rules into the existing `TransformationRule` / `HintFile` API so they are immediately usable by the TriggerPattern cleanup framework.
+
 ### MYCleanUpConstants
 
 **Location**: `org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants`

@@ -12,6 +12,7 @@
 - ✅ Integration with all sandbox plugins
 - ✅ All constants in `LibStandardNames` are now public with comprehensive Javadoc
 - ✅ Comprehensive Javadoc for `ReferenceHolder`, `ASTProcessor`, and `VisitorEnum`
+- ✅ Mining Analysis Phase 2+3: `RuleInferenceEngine`, `AstDiffAnalyzer`, `PlaceholderGeneralizer`, `ConfidenceCalculator`, `ImportDiffAnalyzer`, `RuleGrouper`, `InferredRuleValidator` (Issue #727)
 
 ### In Progress
 - None currently
@@ -21,6 +22,9 @@
 - [ ] Extract additional shared utilities from individual plugins
 - [ ] Enhance documentation of available utilities
 - [ ] Monitor Eclipse JDT UI for new AST node types and update helper APIs accordingly
+- [ ] Mining Phase 1: Git-history access (`GitHistoryProvider`, `JGitHistoryProvider`, `DiffHunkRefiner`) (Issue #727)
+- [ ] Mining Phase 4: Eclipse UI — `RefactoringMiningView` (Issue #727)
+- [ ] Mining Phase 5: Integration with `HintFileRegistry` + feedback loop (Issue #727)
 
 ## Priority Tasks
 
