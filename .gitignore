@@ -87,3 +87,4 @@ test-report.json
 __pycache__/
 *.pyc
 *.pyo
+.tycho-consumer-pom.xml
