@@ -14,6 +14,10 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTIONS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_PERFORMANCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA9;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -74,7 +78,8 @@ public class HintFileCleanUpCore extends AbstractCleanUp {
 		}
 
 		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
-		HintFileFixCore.findOperations(compilationUnit, operations);
+		Set<String> enabledBundles = getEnabledBundles();
+		HintFileFixCore.findOperations(compilationUnit, operations, enabledBundles);
 
 		if (operations.isEmpty()) {
 			return null;
@@ -95,6 +100,32 @@ public class HintFileCleanUpCore extends AbstractCleanUp {
 			result.add(MultiFixMessages.HintFileCleanUp_description);
 		}
 		return result.toArray(new String[0]);
+	}
+
+	/**
+	 * Returns the set of enabled bundled hint file IDs based on the current options.
+	 * 
+	 * <p>If no per-bundle options are set (all bundles are unset), all bundles are
+	 * treated as enabled for backwards compatibility. If at least one bundle option
+	 * is explicitly set, only explicitly enabled bundles are included.</p>
+	 * 
+	 * @return set of enabled bundle IDs, or {@code null} to include all
+	 */
+	private Set<String> getEnabledBundles() {
+		Set<String> enabled = new LinkedHashSet<>();
+		if (isEnabled(HINTFILE_BUNDLE_COLLECTIONS)) {
+			enabled.add("collections"); //$NON-NLS-1$
+		}
+		if (isEnabled(HINTFILE_BUNDLE_PERFORMANCE)) {
+			enabled.add("performance"); //$NON-NLS-1$
+		}
+		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA9)) {
+			enabled.add("modernize-java9"); //$NON-NLS-1$
+		}
+		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA11)) {
+			enabled.add("modernize-java11"); //$NON-NLS-1$
+		}
+		return enabled;
 	}
 
 	@Override

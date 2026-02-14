@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -55,9 +56,12 @@ public class HintFileFixCore {
 	 *
 	 * @param compilationUnit the compilation unit to search
 	 * @param operations the set to add found operations to
+	 * @param enabledBundles set of enabled bundled hint file IDs; if {@code null},
+	 *        all bundles are processed
 	 */
 	public static void findOperations(CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations) {
+			Set<CompilationUnitRewriteOperation> operations,
+			Set<String> enabledBundles) {
 
 		HintFileRegistry registry = HintFileRegistry.getInstance();
 		// Ensure bundled libraries are loaded
@@ -71,7 +75,16 @@ public class HintFileFixCore {
 			registry.loadProjectHintFiles(project);
 		}
 
-		for (HintFile hintFile : registry.getAllHintFiles().values()) {
+		for (Map.Entry<String, HintFile> entry : registry.getAllHintFiles().entrySet()) {
+			String hintFileId = entry.getKey();
+			HintFile hintFile = entry.getValue();
+
+			// Filter by enabled bundles (project-level files are always included)
+			if (enabledBundles != null && !hintFileId.startsWith("project:") //$NON-NLS-1$
+					&& !enabledBundles.contains(hintFileId)) {
+				continue;
+			}
+
 			List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
 			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 			List<TransformationResult> results = processor.process(compilationUnit);

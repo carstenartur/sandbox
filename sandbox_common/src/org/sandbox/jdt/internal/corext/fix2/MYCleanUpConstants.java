@@ -418,4 +418,57 @@ public class MYCleanUpConstants {
 	 * @since 1.3.5
 	 */
 	public static final String HINTFILE_CLEANUP= "cleanup.hintfile"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code collections.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, Collection API improvement rules are applied
+	 * (e.g., {@code list.size() == 0} → {@code list.isEmpty()}).
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.6
+	 */
+	public static final String HINTFILE_BUNDLE_COLLECTIONS= "cleanup.hintfile.bundle.collections"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code performance.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, performance optimization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.6
+	 */
+	public static final String HINTFILE_BUNDLE_PERFORMANCE= "cleanup.hintfile.bundle.performance"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code modernize-java9.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, Java 9+ API modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.6
+	 */
+	public static final String HINTFILE_BUNDLE_MODERNIZE_JAVA9= "cleanup.hintfile.bundle.modernize-java9"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code modernize-java11.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, Java 11+ API modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.6
+	 */
+	public static final String HINTFILE_BUNDLE_MODERNIZE_JAVA11= "cleanup.hintfile.bundle.modernize-java11"; //$NON-NLS-1$
 }

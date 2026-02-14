@@ -30,5 +30,9 @@ public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsIniti
 		options.setOption(MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.HINTFILE_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTIONS, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_PERFORMANCE, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA9, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11, CleanUpOptions.TRUE);
 	}
 }
