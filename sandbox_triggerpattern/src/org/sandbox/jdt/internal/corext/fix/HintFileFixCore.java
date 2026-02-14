@@ -63,6 +63,14 @@ public class HintFileFixCore {
 		// Ensure bundled libraries are loaded
 		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());
 
+		// Load project-level .sandbox-hint files if available
+		if (compilationUnit.getJavaElement() != null
+				&& compilationUnit.getJavaElement().getJavaProject() != null) {
+			org.eclipse.core.resources.IProject project = compilationUnit.getJavaElement()
+					.getJavaProject().getProject();
+			registry.loadProjectHintFiles(project);
+		}
+
 		for (HintFile hintFile : registry.getAllHintFiles().values()) {
 			List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
 			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);

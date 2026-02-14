@@ -84,6 +84,12 @@ public class HintFileQuickAssistProcessor implements IQuickAssistProcessor {
 		// Ensure bundled libraries are loaded
 		registry.loadBundledLibraries(HintFileQuickAssistProcessor.class.getClassLoader());
 
+		// Load project-level .sandbox-hint files if available
+		if (icu.getJavaProject() != null) {
+			org.eclipse.core.resources.IProject project = icu.getJavaProject().getProject();
+			registry.loadProjectHintFiles(project);
+		}
+
 		for (Map.Entry<String, HintFile> entry : registry.getAllHintFiles().entrySet()) {
 			HintFile hintFile = entry.getValue();
 

@@ -23,6 +23,7 @@
 - ✅ Encoding pattern plugins (CharsetForName, StringConstructor, StringGetBytes)
 - ✅ `.sandbox-hint` DSL-based CleanUp and QuickAssist (`HintFileCleanUp`, `HintFileQuickAssistProcessor`)
 - ✅ Bundled pattern libraries: `collections`, `modernize-java9`, `modernize-java11`, `performance`
+- ✅ Workspace-level `.sandbox-hint` file loading — users can place hint files in project directories
 
 ### In Progress
 - [ ] Additional pattern variations

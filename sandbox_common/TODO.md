@@ -264,6 +264,16 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] Registered in `plugin.xml` (both CleanUp and QuickAssist)
   - [x] Import directive support in rewrite operations
 
+### Completed (v1.3.6 - Workspace Hint Files, Phase 5.4)
+- [x] Phase 5.4: Workspace configuration for per-project `.sandbox-hint` files
+  - [x] `HintFileRegistry.loadProjectHintFiles(IProject)` — discovers and loads `.sandbox-hint` files from project directories
+  - [x] `HintFileRegistry.invalidateProject(IProject)` — forces re-scan on next access
+  - [x] Automatic project scanning in `HintFileFixCore` (CleanUp) and `HintFileQuickAssistProcessor` (Quick Assist)
+  - [x] Project-scoped IDs: `project:<name>:<relative-path>` for namespace isolation
+  - [x] Skips hidden directories, `bin/`, and `target/` folders
+  - [x] At-most-once scanning per project (tracked via `loadedProjects` set)
+  - [x] Comprehensive test suite (`WorkspaceHintFileTest`)
+
 ### Planned Enhancements
 
 #### High Priority
@@ -277,6 +287,7 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] Pattern composition
   - [x] Allow patterns to reference other patterns via `<!include:>` directive
 - [x] Quick Assist from `.sandbox-hint` files — `HintFileQuickAssistProcessor`
+- [x] Workspace hint files — users can place `.sandbox-hint` files in projects
 - [ ] Add integration tests for HintRegistry and extension point loading
 - [ ] Add UI tests for Quick Assist processor (requires PDE test setup)
 - [ ] Documentation: User guide for creating custom hints

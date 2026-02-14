@@ -27,6 +27,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
@@ -67,6 +76,13 @@ public final class HintFileRegistry {
 	private final Map<String, HintFile> hintFilesByDeclaredId = new ConcurrentHashMap<>();
 	private final HintFileParser parser = new HintFileParser();
 	private final AtomicBoolean bundledLoaded = new AtomicBoolean(false);
+	/** Tracks which projects have been scanned for workspace hint files. */
+	private final Set<String> loadedProjects = ConcurrentHashMap.newKeySet();
+	
+	/**
+	 * File extension for hint files (including the dot).
+	 */
+	private static final String HINT_FILE_EXTENSION = ".sandbox-hint"; //$NON-NLS-1$
 	
 	/**
 	 * Bundled library resource names.
@@ -200,6 +216,7 @@ public final class HintFileRegistry {
 	public void clear() {
 		hintFiles.clear();
 		hintFilesByDeclaredId.clear();
+		loadedProjects.clear();
 		bundledLoaded.set(false);
 	}
 	
@@ -308,5 +325,82 @@ public final class HintFileRegistry {
 			}
 		}
 		return loaded;
+	}
+	
+	/**
+	 * Discovers and loads {@code .sandbox-hint} files from a workspace project.
+	 * 
+	 * <p>Scans the project root for files with the {@code .sandbox-hint} extension
+	 * and registers them. Each project is scanned at most once; subsequent calls
+	 * with the same project are no-ops.</p>
+	 * 
+	 * <p>This enables users to define custom transformation rules per project
+	 * by placing {@code .sandbox-hint} files in the project directory.</p>
+	 * 
+	 * @param project the Eclipse project to scan
+	 * @return list of successfully loaded hint file IDs from this project
+	 * @since 1.3.6
+	 */
+	public List<String> loadProjectHintFiles(IProject project) {
+		if (project == null || !project.isAccessible()) {
+			return Collections.emptyList();
+		}
+		
+		String projectKey = project.getName();
+		if (!loadedProjects.add(projectKey)) {
+			return Collections.emptyList(); // Already scanned
+		}
+		
+		List<String> loaded = new ArrayList<>();
+		try {
+			project.accept(new IResourceVisitor() {
+				@Override
+				public boolean visit(IResource resource) throws CoreException {
+					if (resource instanceof IFile file
+							&& file.getName().endsWith(HINT_FILE_EXTENSION)) {
+						String id = "project:" + projectKey + ":" //$NON-NLS-1$ //$NON-NLS-2$
+								+ file.getProjectRelativePath().toString();
+						try (InputStream is = file.getContents();
+								Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+							loadFromReader(id, reader);
+							loaded.add(id);
+						} catch (HintParseException | IOException e) {
+							ILog log = Platform.getLog(HintFileRegistry.class);
+							log.log(Status.warning(
+									"Failed to load hint file: " + file.getFullPath(), e)); //$NON-NLS-1$
+						}
+					}
+					// Skip output folders and hidden directories
+					if (resource instanceof IContainer container) {
+						String name = container.getName();
+						return !name.startsWith(".") //$NON-NLS-1$
+								&& !"bin".equals(name) //$NON-NLS-1$
+								&& !"target".equals(name); //$NON-NLS-1$
+					}
+					return true;
+				}
+			});
+		} catch (CoreException e) {
+			ILog log = Platform.getLog(HintFileRegistry.class);
+			log.log(Status.warning(
+					"Failed to scan project for hint files: " + projectKey, e)); //$NON-NLS-1$
+		}
+		return loaded;
+	}
+	
+	/**
+	 * Forces a re-scan of the given project on the next call to
+	 * {@link #loadProjectHintFiles(IProject)}.
+	 * 
+	 * <p>This is useful when a project's {@code .sandbox-hint} files have changed
+	 * and need to be reloaded.</p>
+	 * 
+	 * @param project the project to invalidate
+	 * @since 1.3.6
+	 */
+	public void invalidateProject(IProject project) {
+		if (project != null) {
+			loadedProjects.remove(project.getName());
+		}
 	}
 }
