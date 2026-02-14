@@ -23,6 +23,7 @@ package org.sandbox.jdt.internal.common;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 
 import org.eclipse.jdt.core.dom.*;
 
@@ -1468,6 +1469,74 @@ public final class AstProcessorBuilder<V, T> {
 					if (className.equals(((SimpleName) expr).getIdentifier())) {
 						return predicate.test(node, holder);
 					}
+				}
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Registers a NodeMatcher-based visitor for a specific AST node type.
+	 * The matcherConfig lambda configures the NodeMatcher chain for each visited node.
+	 * The matcher's handled-state controls whether the visitor reports the node as processed.
+	 *
+	 * <p>For concrete AST node types (e.g., IfStatement, ExpressionStatement), the
+	 * appropriate typed visitor is registered internally using VisitorEnum lookup.</p>
+	 *
+	 * <p>Example:
+	 * <pre>{@code
+	 * AstProcessorBuilder.with(holder)
+	 *     .matchNode(IfStatement.class, m -> m
+	 *         .ifIfStatementWithoutElse(is -> ops.add(createFilter(is)))
+	 *         .ifIfStatementWithElse(is -> ops.add(createMap(is)))
+	 *     )
+	 *     .build(compilationUnit);
+	 * }</pre>
+	 *
+	 * @param <A> the AST node type to visit
+	 * @param nodeClass the class of nodes to visit
+	 * @param matcherConfig the NodeMatcher configuration to apply for each visited node
+	 * @return this builder for method chaining
+	 */
+	@SuppressWarnings("unchecked")
+	public <A extends ASTNode> AstProcessorBuilder<V, T> matchNode(
+			Class<A> nodeClass,
+			Function<NodeMatcher<A>, NodeMatcher<A>> matcherConfig) {
+		BiPredicate<ASTNode, ReferenceHolder<V, T>> biPredicate = (node, holder) -> {
+			if (nodeClass.isInstance(node)) {
+				NodeMatcher<A> matcher = NodeMatcher.on(nodeClass.cast(node));
+				matcherConfig.apply(matcher);
+				return matcher.isHandled();
+			}
+			return true;
+		};
+		try {
+			VisitorEnum visitorType = VisitorEnum.valueOf(nodeClass.getSimpleName());
+			processor.callVisitor(visitorType,
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) biPredicate);
+		} catch (IllegalArgumentException e) {
+			// No matching VisitorEnum for this node type
+		}
+		return this;
+	}
+
+	/**
+	 * Registers a NodeMatcher that is applied to each Statement encountered during traversal.
+	 * This is a convenience shortcut equivalent to matchNode(Statement.class, matcherConfig)
+	 * optimized for the common case of analyzing loop bodies and block statements.
+	 *
+	 * <p>The matcher is applied to every Statement found inside Block nodes during AST traversal.</p>
+	 *
+	 * @param matcherConfig the NodeMatcher configuration to apply per statement
+	 * @return this builder for method chaining
+	 */
+	public AstProcessorBuilder<V, T> onEachStatement(
+			Function<NodeMatcher<Statement>, NodeMatcher<Statement>> matcherConfig) {
+		return onBlock((block, holder) -> {
+			for (Object obj : block.statements()) {
+				if (obj instanceof Statement stmt) {
+					NodeMatcher<Statement> matcher = NodeMatcher.on(stmt);
+					matcherConfig.apply(matcher);
 				}
 			}
 			return true;

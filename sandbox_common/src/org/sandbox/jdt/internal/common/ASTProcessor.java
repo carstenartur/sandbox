@@ -114,6 +114,20 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 	}
 
 	/**
+	 * Generic visitor registration using a VisitorEnum type.
+	 * This allows registering a visitor for any AST node type without
+	 * needing a type-specific method.
+	 *
+	 * @param visitorType the VisitorEnum identifying the node type
+	 * @param bs the predicate to test and process matching nodes
+	 * @return a reference to this object
+	 */
+	public ASTProcessor<E, V, T> callVisitor(VisitorEnum visitorType, BiPredicate<ASTNode, E> bs) {
+		nodetypelist.put(visitorType, new NodeHolder(bs, null));
+		return this;
+	}
+
+	/**
 	 *
 	 * @param bs
 	 * @return a reference to this object. a reference to this object.
