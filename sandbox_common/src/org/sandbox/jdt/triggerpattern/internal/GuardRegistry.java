@@ -15,6 +15,7 @@ package org.sandbox.jdt.triggerpattern.internal;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,7 +23,9 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -33,9 +36,11 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
@@ -179,7 +184,11 @@ public final class GuardRegistry {
 	/**
 	 * Returns true if a placeholder's text matches any of the given literals.
 	 * With a single argument, returns true if the binding exists and is non-null.
-	 * With multiple arguments, checks if the placeholder's source text matches any literal.
+	 * With multiple arguments, checks if the placeholder's value matches any literal.
+	 * 
+	 * <p>For literal AST nodes (StringLiteral, NumberLiteral, CharacterLiteral, BooleanLiteral),
+	 * the literal value is extracted for comparison. For other nodes, the source text is used.</p>
+	 * 
 	 * Args: [placeholderName] or [placeholderName, literal1, literal2, ...]
 	 */
 	private boolean evaluateMatchesAny(GuardContext ctx, Object... args) {
@@ -198,11 +207,11 @@ public final class GuardRegistry {
 			return !listBinding.isEmpty();
 		}
 		
-		// Multiple arguments: check if node text matches any literal
+		// Multiple arguments: check if node value matches any literal
 		if (node == null) {
 			return false;
 		}
-		String nodeText = node.toString().trim();
+		String nodeText = extractNodeText(node);
 		for (int i = 1; i < args.length; i++) {
 			String literal = stripQuotes(args[i].toString());
 			if (nodeText.equals(literal)) {
@@ -215,7 +224,11 @@ public final class GuardRegistry {
 	/**
 	 * Returns true if a placeholder's text matches none of the given literals.
 	 * With a single argument, returns true if the binding does not exist.
-	 * With multiple arguments, checks that the placeholder's source text matches no literal.
+	 * With multiple arguments, checks that the placeholder's value matches no literal.
+	 * 
+	 * <p>For literal AST nodes (StringLiteral, NumberLiteral, CharacterLiteral, BooleanLiteral),
+	 * the literal value is extracted for comparison. For other nodes, the source text is used.</p>
+	 * 
 	 * Args: [placeholderName] or [placeholderName, literal1, literal2, ...]
 	 */
 	private boolean evaluateMatchesNone(GuardContext ctx, Object... args) {
@@ -234,11 +247,11 @@ public final class GuardRegistry {
 			return listBinding.isEmpty();
 		}
 		
-		// Multiple arguments: check that node text matches none of the literals
+		// Multiple arguments: check that node value matches none of the literals
 		if (node == null) {
 			return true;
 		}
-		String nodeText = node.toString().trim();
+		String nodeText = extractNodeText(node);
 		for (int i = 1; i < args.length; i++) {
 			String literal = stripQuotes(args[i].toString());
 			if (nodeText.equals(literal)) {
@@ -472,7 +485,7 @@ public final class GuardRegistry {
 	 * Matches a binding against an element kind string.
 	 */
 	private boolean matchesBindingKind(IBinding binding, String elementKind) {
-		return switch (elementKind.toUpperCase()) {
+		return switch (elementKind.toUpperCase(Locale.ROOT)) {
 			case "FIELD" -> binding instanceof IVariableBinding vb && vb.isField(); //$NON-NLS-1$
 			case "METHOD" -> binding instanceof IMethodBinding; //$NON-NLS-1$
 			case "LOCAL_VARIABLE" -> binding instanceof IVariableBinding vb && !vb.isField() && !vb.isParameter(); //$NON-NLS-1$
@@ -486,7 +499,7 @@ public final class GuardRegistry {
 	 * Matches an AST node type against an element kind string (fallback when binding is unavailable).
 	 */
 	private boolean matchesNodeKind(ASTNode node, String elementKind) {
-		return switch (elementKind.toUpperCase()) {
+		return switch (elementKind.toUpperCase(Locale.ROOT)) {
 			case "FIELD" -> node instanceof FieldDeclaration //$NON-NLS-1$
 					|| (node instanceof VariableDeclarationFragment vdf && vdf.getParent() instanceof FieldDeclaration);
 			case "METHOD" -> node instanceof MethodDeclaration; //$NON-NLS-1$
@@ -498,6 +511,31 @@ public final class GuardRegistry {
 					|| node instanceof org.eclipse.jdt.core.dom.RecordDeclaration;
 			default -> false;
 		};
+	}
+	
+	/**
+	 * Extracts a comparable text value from an AST node.
+	 * 
+	 * <p>For literal nodes, extracts the literal value (without surrounding quotes).
+	 * For other nodes, falls back to {@code toString().trim()}.</p>
+	 * 
+	 * @param node the AST node to extract text from
+	 * @return the extracted text value
+	 */
+	private String extractNodeText(ASTNode node) {
+		if (node instanceof StringLiteral stringLiteral) {
+			return stringLiteral.getLiteralValue();
+		}
+		if (node instanceof CharacterLiteral charLiteral) {
+			return String.valueOf(charLiteral.charValue());
+		}
+		if (node instanceof NumberLiteral numberLiteral) {
+			return numberLiteral.getToken();
+		}
+		if (node instanceof BooleanLiteral boolLiteral) {
+			return String.valueOf(boolLiteral.booleanValue());
+		}
+		return node.toString().trim();
 	}
 	
 	/**

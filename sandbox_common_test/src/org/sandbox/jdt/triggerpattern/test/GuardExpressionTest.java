@@ -248,24 +248,26 @@ public class GuardExpressionTest {
 		assertNotNull(registry.get("isDeprecated")); //$NON-NLS-1$
 		assertNotNull(registry.get("referencedIn")); //$NON-NLS-1$
 		assertNotNull(registry.get("elementKindMatches")); //$NON-NLS-1$
+		assertNotNull(registry.get("contains")); //$NON-NLS-1$
+		assertNotNull(registry.get("notContains")); //$NON-NLS-1$
 	}
 	
 	@Test
 	public void testCustomGuardRegistration() {
 		GuardRegistry registry = GuardRegistry.getInstance();
 		
-		// Register a custom guard
-		registry.register("alwaysTrue", (ctx, args) -> true); //$NON-NLS-1$
-		assertNotNull(registry.get("alwaysTrue")); //$NON-NLS-1$
+		// Register a custom guard with a uniquely-scoped name
+		registry.register("GuardExpressionTest#alwaysTrue", (ctx, args) -> true); //$NON-NLS-1$
+		assertNotNull(registry.get("GuardExpressionTest#alwaysTrue")); //$NON-NLS-1$
 		
 		// Evaluate the custom guard
 		GuardContext ctx = createContextWithVersion("17"); //$NON-NLS-1$
-		GuardExpression expr = new GuardExpression.FunctionCall("alwaysTrue", List.of()); //$NON-NLS-1$
+		GuardExpression expr = new GuardExpression.FunctionCall("GuardExpressionTest#alwaysTrue", List.of()); //$NON-NLS-1$
 		assertTrue(expr.evaluate(ctx), "Custom guard should return true");
 		
-		// Register and evaluate a custom guard that returns false
-		registry.register("alwaysFalse", (ctx2, args) -> false); //$NON-NLS-1$
-		GuardExpression exprFalse = new GuardExpression.FunctionCall("alwaysFalse", List.of()); //$NON-NLS-1$
+		// Register and evaluate a custom guard that returns false, also with a unique name
+		registry.register("GuardExpressionTest#alwaysFalse", (ctx2, args) -> false); //$NON-NLS-1$
+		GuardExpression exprFalse = new GuardExpression.FunctionCall("GuardExpressionTest#alwaysFalse", List.of()); //$NON-NLS-1$
 		assertFalse(exprFalse.evaluate(ctx), "Custom guard should return false");
 	}
 	
@@ -330,6 +332,37 @@ public class GuardExpressionTest {
 		GuardExpression.FunctionCall fc = (GuardExpression.FunctionCall) expr;
 		assertEquals("elementKindMatches", fc.name());
 		assertEquals(List.of("$x", "FIELD"), fc.args());
+	}
+	
+	@Test
+	public void testParseUnterminatedStringLiteral() {
+		// Unterminated string literal should throw a clear error
+		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+				() -> parser.parse("matchesAny($x, \"unterminated)"));
+		assertTrue(ex.getMessage().contains("Unterminated string literal"),
+				"Error message should mention unterminated string literal, got: " + ex.getMessage());
+	}
+	
+	@Test
+	public void testParseContainsGuard() {
+		GuardExpression expr = parser.parse("contains($x, \"close()\")");
+		assertNotNull(expr);
+		assertInstanceOf(GuardExpression.FunctionCall.class, expr);
+		
+		GuardExpression.FunctionCall fc = (GuardExpression.FunctionCall) expr;
+		assertEquals("contains", fc.name());
+		assertEquals(2, fc.args().size());
+	}
+	
+	@Test
+	public void testParseNotContainsGuard() {
+		GuardExpression expr = parser.parse("notContains($x, \"close()\")");
+		assertNotNull(expr);
+		assertInstanceOf(GuardExpression.FunctionCall.class, expr);
+		
+		GuardExpression.FunctionCall fc = (GuardExpression.FunctionCall) expr;
+		assertEquals("notContains", fc.name());
+		assertEquals(2, fc.args().size());
 	}
 	
 	@Test
@@ -448,6 +481,10 @@ public class GuardExpressionTest {
 		// "hello" should not match "foo" or "bar"
 		GuardExpression expr = parser.parse("matchesAny($x, \"foo\", \"bar\")");
 		assertFalse(expr.evaluate(ctx), "\"hello\" should not match \"foo\" or \"bar\"");
+		
+		// Positive case: "hello" should match when "hello" is in the list
+		GuardExpression exprMatch = parser.parse("matchesAny($x, \"hello\", \"world\")");
+		assertTrue(exprMatch.evaluate(ctx), "\"hello\" should match \"hello\"");
 	}
 	
 	@Test
@@ -473,6 +510,10 @@ public class GuardExpressionTest {
 		// "hello" should not match "foo" or "bar", so matchesNone returns true
 		GuardExpression expr = parser.parse("matchesNone($x, \"foo\", \"bar\")");
 		assertTrue(expr.evaluate(ctx), "\"hello\" should match none of \"foo\", \"bar\"");
+		
+		// Negative case: matchesNone should return false when a literal matches
+		GuardExpression exprWithMatch = parser.parse("matchesNone($x, \"hello\", \"bar\")");
+		assertFalse(exprWithMatch.evaluate(ctx), "matchesNone should return false when \"hello\" is in the list");
 	}
 	
 	// --- Helper methods ---

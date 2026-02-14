@@ -257,10 +257,12 @@ public final class GuardExpressionParser {
 				sb.append(input.charAt(pos));
 				pos++;
 			}
-			if (pos < input.length()) {
-				sb.append('"');
-				pos++; // consume closing quote
+			if (pos >= input.length()) {
+				throw new IllegalArgumentException(
+						"Unterminated string literal starting at position " + start); //$NON-NLS-1$
 			}
+			sb.append('"');
+			pos++; // consume closing quote
 			return sb.toString();
 		}
 		
