@@ -10,6 +10,11 @@
             id="org.sandbox.jdt.triggerpattern.quickAssist"
             name="Trigger Pattern Quick Assist">
       </quickAssistProcessor>
+      <quickAssistProcessor
+            class="org.sandbox.jdt.triggerpattern.ui.HintFileQuickAssistProcessor"
+            id="org.sandbox.jdt.triggerpattern.hintFileQuickAssist"
+            name="Hint File Quick Assist">
+      </quickAssistProcessor>
    </extension>
    
    <extension

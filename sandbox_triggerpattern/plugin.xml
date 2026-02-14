@@ -37,5 +37,8 @@
       <cleanUp
             class="org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp" 
             id="org.eclipse.jdt.ui.cleanup.shift_out_of_range" />
+      <cleanUp
+            class="org.sandbox.jdt.internal.ui.fix.HintFileCleanUp"
+            id="org.eclipse.jdt.ui.cleanup.hintfile" />
    </extension>
 </plugin>

@@ -1,0 +1,43 @@
+// modernize-java9.sandbox-hint — Java 9+ API modernization
+// Replaces older API usage with Java 9+ equivalents
+
+<!id: modernize-java9>
+<!description: Java 9+ API modernization patterns>
+<!severity: info>
+<!minJavaVersion: 9>
+<!tags: modernization, java9>
+
+// Arrays.asList($args$) → List.of($args$) when unmodifiable usage
+Collections.unmodifiableList(Arrays.asList($args$)) :: sourceVersionGE(9)
+=> List.of($args$)
+;;
+
+// new ArrayList<>(Arrays.asList($args$)) → new ArrayList<>(List.of($args$))
+new ArrayList<>(Arrays.asList($args$)) :: sourceVersionGE(9)
+=> new ArrayList<>(List.of($args$))
+;;
+
+// $map.getOrDefault($key, null) → $map.get($key)
+$map.getOrDefault($key, null)
+=> $map.get($key)
+;;
+
+// $optional.isPresent() ? $optional.get() : $default → $optional.orElse($default)
+$optional.isPresent() ? $optional.get() : $default :: sourceVersionGE(9)
+=> $optional.orElse($default)
+;;
+
+// $stream.collect(Collectors.toList()) → $stream.toList()
+$stream.collect(Collectors.toList()) :: sourceVersionGE(16)
+=> $stream.toList()
+;;
+
+// $stream.collect(Collectors.toUnmodifiableList()) → $stream.toList()
+$stream.collect(Collectors.toUnmodifiableList()) :: sourceVersionGE(16)
+=> $stream.toList()
+;;
+
+// Hint-only: suggest InputStream.transferTo() for stream copy patterns
+"Consider using InputStream.transferTo() for stream copying (Java 9+)":
+$in.read($buf) :: sourceVersionGE(9) && notContains("transferTo")
+;;

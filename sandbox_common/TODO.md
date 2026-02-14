@@ -218,10 +218,11 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] Phase 6.2: Pattern Libraries
   - [x] `HintFileRegistry` singleton for loading/managing `.sandbox-hint` files
   - [x] Support for classpath resources, strings, and readers
-  - [x] Bundled library names defined (encoding, collections, modernize-java11, performance, junit5)
+  - [x] Bundled library names defined (encoding, collections, modernize-java9, modernize-java11, performance, junit5)
   - [x] Bundled `.sandbox-hint` pattern library files created:
     - [x] `encoding.sandbox-hint` — 7 StandardCharsets migration rules with guards and import directives
     - [x] `collections.sandbox-hint` — 7 Collection API modernization rules (Java 9+)
+    - [x] `modernize-java9.sandbox-hint` — 7 Java 9+ API modernization rules (Collections.unmodifiable, Optional, Stream.toList)
     - [x] `modernize-java11.sandbox-hint` — 7 Java 11+ API modernization rules
     - [x] `performance.sandbox-hint` — 9 performance optimization rules
     - [x] `junit5.sandbox-hint` — 8 JUnit 4 → 5 migration rules with import directives
@@ -243,6 +244,36 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] Placeholder substitution in suggested replacements
   - [x] Support for hint-only rules (no replacement)
 
+### Completed (v1.3.4 - Pattern Composition)
+- [x] Pattern composition via `<!include:>` directive
+  - [x] `HintFile.getIncludes()` / `HintFile.addInclude()` for referencing other hint files by ID
+  - [x] `HintFileRegistry.resolveIncludes()` for recursive include resolution
+  - [x] Circular include detection (silently breaks cycles)
+  - [x] Missing include references silently skipped
+  - [x] `BatchTransformationProcessor` constructor with pre-resolved rules
+  - [x] Comprehensive test suite (PatternCompositionTest)
+
+### Completed (v1.3.5 - DSL-to-CleanUp/QuickAssist Bridge, Phase 7.3)
+- [x] Phase 7.3: Quick Fix / Clean Up Integration from `.sandbox-hint` files
+  - [x] `HintFileFixCore` — bridges `.sandbox-hint` DSL to `CompilationUnitRewriteOperation`
+  - [x] `HintFileCleanUpCore` / `HintFileCleanUp` — Eclipse CleanUp wrapper for hint file rules
+  - [x] `HintFileQuickAssistProcessor` — Quick Assist from `.sandbox-hint` file rules
+  - [x] CleanUp preference checkbox (`HINTFILE_CLEANUP` constant)
+  - [x] Save Actions integration via `DefaultCleanUpOptionsInitializer` / `SaveActionCleanUpOptionsInitializer`
+  - [x] UI preferences in `SandboxCodeTabPage`
+  - [x] Registered in `plugin.xml` (both CleanUp and QuickAssist)
+  - [x] Import directive support in rewrite operations
+
+### Completed (v1.3.6 - Workspace Hint Files, Phase 5.4)
+- [x] Phase 5.4: Workspace configuration for per-project `.sandbox-hint` files
+  - [x] `HintFileRegistry.loadProjectHintFiles(IProject)` — discovers and loads `.sandbox-hint` files from project directories
+  - [x] `HintFileRegistry.invalidateProject(IProject)` — forces re-scan on next access
+  - [x] Automatic project scanning in `HintFileFixCore` (CleanUp) and `HintFileQuickAssistProcessor` (Quick Assist)
+  - [x] Project-scoped IDs: `project:<name>:<relative-path>` for namespace isolation
+  - [x] Skips hidden directories, `bin/`, and `target/` folders
+  - [x] At-most-once scanning per project (tracked via `loadedProjects` set)
+  - [x] Comprehensive test suite (`WorkspaceHintFileTest`)
+
 ### Planned Enhancements
 
 #### High Priority
@@ -251,13 +282,15 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] `PlaceholderAstMatcher.mergeBindings()` for combining bindings across multiple matchers
 - [x] Cleanup integration
   - [x] Batch processing: `BatchTransformationProcessor` applies all rules from a `HintFile` in a single pass
-  - [ ] CleanUp implementation using TriggerPattern engine (Eclipse CleanUp wrapper)
-  - [ ] Save Actions integration
+  - [x] CleanUp implementation using TriggerPattern engine (Eclipse CleanUp wrapper) — `HintFileCleanUp`
+  - [x] Save Actions integration — `HintFileCleanUpCore` registered in `SaveActionCleanUpOptionsInitializer`
+- [x] Pattern composition
+  - [x] Allow patterns to reference other patterns via `<!include:>` directive
+- [x] Quick Assist from `.sandbox-hint` files — `HintFileQuickAssistProcessor`
+- [x] Workspace hint files — users can place `.sandbox-hint` files in projects
 - [ ] Add integration tests for HintRegistry and extension point loading
 - [ ] Add UI tests for Quick Assist processor (requires PDE test setup)
 - [ ] Documentation: User guide for creating custom hints
-- [ ] Pattern composition
-  - [ ] Allow patterns to reference other patterns
 
 #### Low Priority
 - [ ] Pattern debugging tools

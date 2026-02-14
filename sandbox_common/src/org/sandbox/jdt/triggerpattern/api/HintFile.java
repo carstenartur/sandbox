@@ -45,6 +45,7 @@ public final class HintFile {
 	private int minJavaVersion;
 	private List<String> tags;
 	private final List<TransformationRule> rules;
+	private final List<String> includes;
 	
 	/**
 	 * Creates a new empty hint file.
@@ -52,6 +53,7 @@ public final class HintFile {
 	public HintFile() {
 		this.tags = new ArrayList<>();
 		this.rules = new ArrayList<>();
+		this.includes = new ArrayList<>();
 		this.severity = "info"; //$NON-NLS-1$
 	}
 	
@@ -161,5 +163,30 @@ public final class HintFile {
 	 */
 	public void addRule(TransformationRule rule) {
 		rules.add(rule);
+	}
+	
+	/**
+	 * Returns the list of included hint file IDs for pattern composition.
+	 * 
+	 * <p>When a hint file includes another hint file by ID, all rules from
+	 * the included file are also applied when this hint file is processed.</p>
+	 * 
+	 * @return unmodifiable list of included hint file IDs
+	 * @since 1.3.4
+	 */
+	public List<String> getIncludes() {
+		return Collections.unmodifiableList(includes);
+	}
+	
+	/**
+	 * Adds an include reference to another hint file by ID.
+	 * 
+	 * @param hintFileId the ID of the hint file to include
+	 * @since 1.3.4
+	 */
+	public void addInclude(String hintFileId) {
+		if (hintFileId != null && !hintFileId.isBlank()) {
+			includes.add(hintFileId.trim());
+		}
 	}
 }

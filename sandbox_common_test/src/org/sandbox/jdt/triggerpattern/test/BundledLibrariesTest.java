@@ -55,7 +55,16 @@ public class BundledLibrariesTest {
 	}
 
 	@Test
-	public void testLoadModernizeLibrary() throws Exception {
+	public void testLoadModernizeJava9Library() throws Exception {
+		HintFile hintFile = loadBundledLibrary("modernize-java9.sandbox-hint"); //$NON-NLS-1$
+		assertNotNull(hintFile, "modernize-java9 library should be loadable"); //$NON-NLS-1$
+		assertEquals("modernize-java9", hintFile.getId()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 5,
+				"modernize-java9 library should have at least 5 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testLoadModernizeJava11Library() throws Exception {
 		HintFile hintFile = loadBundledLibrary("modernize-java11.sandbox-hint"); //$NON-NLS-1$
 		assertNotNull(hintFile, "modernize-java11 library should be loadable"); //$NON-NLS-1$
 		assertEquals("modernize-java11", hintFile.getId()); //$NON-NLS-1$
@@ -96,8 +105,8 @@ public class BundledLibrariesTest {
 
 		assertFalse(loaded.isEmpty(),
 				"Should load at least one bundled library"); //$NON-NLS-1$
-		assertEquals(3, loaded.size(),
-				"Should load exactly 3 bundled libraries (collections, modernize-java11, performance)"); //$NON-NLS-1$
+		assertEquals(4, loaded.size(),
+				"Should load exactly 4 bundled libraries (collections, modernize-java9, modernize-java11, performance)"); //$NON-NLS-1$
 
 		// Verify each loaded library
 		for (String id : loaded) {
@@ -114,8 +123,8 @@ public class BundledLibrariesTest {
 	@Test
 	public void testBundledLibraryCount() {
 		String[] names = HintFileRegistry.getBundledLibraryNames();
-		assertEquals(3, names.length,
-				"Should have exactly 3 bundled libraries"); //$NON-NLS-1$
+		assertEquals(4, names.length,
+				"Should have exactly 4 bundled libraries"); //$NON-NLS-1$
 	}
 
 	// --- Helper methods ---

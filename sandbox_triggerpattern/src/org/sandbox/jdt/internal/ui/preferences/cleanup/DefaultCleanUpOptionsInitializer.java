@@ -29,5 +29,6 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 		options.setOption(MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.HINTFILE_CLEANUP, CleanUpOptions.FALSE);
 	}
 }

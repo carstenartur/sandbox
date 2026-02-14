@@ -57,6 +57,20 @@ public final class BatchTransformationProcessor {
 	}
 
 	/**
+	 * Creates a new batch transformation processor for the given hint file
+	 * with a pre-resolved list of rules (e.g., after resolving includes
+	 * via pattern composition).
+	 *
+	 * @param hintFile the hint file (for metadata access)
+	 * @param resolvedRules the complete list of rules including composed/included rules
+	 * @since 1.3.4
+	 */
+	public BatchTransformationProcessor(HintFile hintFile, List<TransformationRule> resolvedRules) {
+		this.hintFile = hintFile;
+		this.patternIndex = new PatternIndex(resolvedRules);
+	}
+
+	/**
 	 * Returns the hint file used by this processor.
 	 *
 	 * @return the hint file

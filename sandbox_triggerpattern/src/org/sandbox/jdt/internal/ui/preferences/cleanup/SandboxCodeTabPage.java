@@ -21,6 +21,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.internal.ui.fix.HintFileCleanUp;
 import org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp;
 import org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp;
 import org.sandbox.jdt.internal.ui.fix.ThreadingCleanUp;
@@ -49,7 +50,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		return new AbstractCleanUp[] {
 				new StringSimplificationCleanUp(values),
 				new ThreadingCleanUp(values),
-				new ShiftOutOfRangeCleanUp(values)
+				new ShiftOutOfRangeCleanUp(values),
+				new HintFileCleanUp(values)
 		};
 	}
 	
@@ -75,5 +77,12 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, FALSE_TRUE);
 		intent(shiftGroup);
 		registerPreference(shiftOutOfRange);
+
+		Group hintFileGroup = createGroup(numColumns, composite, CleanUpMessages.HintFileTabPage_GroupName);
+		final CheckboxPreference hintFile = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_HintFile,
+				MYCleanUpConstants.HINTFILE_CLEANUP, FALSE_TRUE);
+		intent(hintFileGroup);
+		registerPreference(hintFile);
 	}
 }

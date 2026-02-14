@@ -20,12 +20,24 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
 
 /**
@@ -39,6 +51,7 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
  * <p>Generic libraries bundled with the framework:</p>
  * <ul>
  *   <li>{@code collections.sandbox-hint} — Collection API improvements</li>
+ *   <li>{@code modernize-java9.sandbox-hint} — Java 9+ API modernization</li>
  *   <li>{@code modernize-java11.sandbox-hint} — Java 11+ API modernization</li>
  *   <li>{@code performance.sandbox-hint} — Performance optimizations</li>
  * </ul>
@@ -59,14 +72,24 @@ public final class HintFileRegistry {
 	private static final HintFileRegistry INSTANCE = new HintFileRegistry();
 	
 	private final Map<String, HintFile> hintFiles = new ConcurrentHashMap<>();
+	/** Secondary index: declared {@code <!id: ...>} → HintFile, for efficient include resolution. */
+	private final Map<String, HintFile> hintFilesByDeclaredId = new ConcurrentHashMap<>();
 	private final HintFileParser parser = new HintFileParser();
 	private final AtomicBoolean bundledLoaded = new AtomicBoolean(false);
+	/** Tracks which projects have been scanned for workspace hint files. */
+	private final Set<String> loadedProjects = ConcurrentHashMap.newKeySet();
+	
+	/**
+	 * File extension for hint files (including the dot).
+	 */
+	private static final String HINT_FILE_EXTENSION = ".sandbox-hint"; //$NON-NLS-1$
 	
 	/**
 	 * Bundled library resource names.
 	 */
 	private static final String[] BUNDLED_LIBRARIES = {
 		"collections.sandbox-hint", //$NON-NLS-1$
+		"modernize-java9.sandbox-hint", //$NON-NLS-1$
 		"modernize-java11.sandbox-hint", //$NON-NLS-1$
 		"performance.sandbox-hint" //$NON-NLS-1$
 	};
@@ -103,6 +126,7 @@ public final class HintFileRegistry {
 			hintFile.setId(id);
 		}
 		hintFiles.put(id, hintFile);
+		indexByDeclaredId(hintFile);
 	}
 	
 	/**
@@ -119,6 +143,7 @@ public final class HintFileRegistry {
 			hintFile.setId(id);
 		}
 		hintFiles.put(id, hintFile);
+		indexByDeclaredId(hintFile);
 	}
 	
 	/**
@@ -178,7 +203,11 @@ public final class HintFileRegistry {
 	 * @return the removed hint file, or {@code null} if not found
 	 */
 	public HintFile unregister(String id) {
-		return hintFiles.remove(id);
+		HintFile removed = hintFiles.remove(id);
+		if (removed != null && removed.getId() != null) {
+			hintFilesByDeclaredId.remove(removed.getId());
+		}
+		return removed;
 	}
 	
 	/**
@@ -186,7 +215,80 @@ public final class HintFileRegistry {
 	 */
 	public void clear() {
 		hintFiles.clear();
+		hintFilesByDeclaredId.clear();
+		loadedProjects.clear();
 		bundledLoaded.set(false);
+	}
+	
+	/**
+	 * Resolves include directives for a hint file by collecting all rules
+	 * from referenced hint files.
+	 * 
+	 * <p>When a hint file has {@code <!include: other-id>} directives, this method
+	 * looks up the referenced hint files by ID and returns a combined list of all
+	 * rules (the file's own rules plus all included rules).</p>
+	 * 
+	 * <p>Circular includes are detected and silently broken to prevent infinite loops.</p>
+	 * 
+	 * @param hintFile the hint file whose includes should be resolved
+	 * @return list of all rules including those from included files
+	 * @since 1.3.4
+	 */
+	public List<TransformationRule> resolveIncludes(HintFile hintFile) {
+		List<TransformationRule> allRules = new ArrayList<>(hintFile.getRules());
+		Set<String> visited = new HashSet<>();
+		if (hintFile.getId() != null) {
+			visited.add(hintFile.getId());
+		}
+		resolveIncludesRecursive(hintFile, allRules, visited);
+		return Collections.unmodifiableList(allRules);
+	}
+	
+	/**
+	 * Recursively resolves includes, tracking visited IDs to prevent cycles.
+	 * 
+	 * <p>Looks up included files first by registry key, then by declared
+	 * {@code <!id: ...>} so that {@code <!include:>} directives work
+	 * consistently regardless of how the hint file was registered.</p>
+	 */
+	private void resolveIncludesRecursive(HintFile hintFile, 
+			List<TransformationRule> allRules, Set<String> visited) {
+		for (String includeId : hintFile.getIncludes()) {
+			if (visited.contains(includeId)) {
+				continue; // Break circular reference
+			}
+			visited.add(includeId);
+			HintFile included = findByKeyOrDeclaredId(includeId);
+			if (included != null) {
+				allRules.addAll(included.getRules());
+				resolveIncludesRecursive(included, allRules, visited);
+			}
+		}
+	}
+	
+	/**
+	 * Finds a hint file by registry key first, then falls back to the
+	 * secondary index of declared {@link HintFile#getId()} values.
+	 * 
+	 * @param id the ID to look up
+	 * @return the matching hint file, or {@code null} if not found
+	 */
+	private HintFile findByKeyOrDeclaredId(String id) {
+		HintFile result = hintFiles.get(id);
+		if (result != null) {
+			return result;
+		}
+		// Fall back: lookup by declared <!id: ...> via secondary index
+		return hintFilesByDeclaredId.get(id);
+	}
+	
+	/**
+	 * Updates the secondary index for declared IDs.
+	 */
+	private void indexByDeclaredId(HintFile hintFile) {
+		if (hintFile.getId() != null) {
+			hintFilesByDeclaredId.put(hintFile.getId(), hintFile);
+		}
 	}
 	
 	/**
@@ -223,5 +325,82 @@ public final class HintFileRegistry {
 			}
 		}
 		return loaded;
+	}
+	
+	/**
+	 * Discovers and loads {@code .sandbox-hint} files from a workspace project.
+	 * 
+	 * <p>Scans the project root for files with the {@code .sandbox-hint} extension
+	 * and registers them. Each project is scanned at most once; subsequent calls
+	 * with the same project are no-ops.</p>
+	 * 
+	 * <p>This enables users to define custom transformation rules per project
+	 * by placing {@code .sandbox-hint} files in the project directory.</p>
+	 * 
+	 * @param project the Eclipse project to scan
+	 * @return list of successfully loaded hint file IDs from this project
+	 * @since 1.3.6
+	 */
+	public List<String> loadProjectHintFiles(IProject project) {
+		if (project == null || !project.isAccessible()) {
+			return Collections.emptyList();
+		}
+		
+		String projectKey = project.getName();
+		if (!loadedProjects.add(projectKey)) {
+			return Collections.emptyList(); // Already scanned
+		}
+		
+		List<String> loaded = new ArrayList<>();
+		try {
+			project.accept(new IResourceVisitor() {
+				@Override
+				public boolean visit(IResource resource) throws CoreException {
+					if (resource instanceof IFile file
+							&& file.getName().endsWith(HINT_FILE_EXTENSION)) {
+						String id = "project:" + projectKey + ":" //$NON-NLS-1$ //$NON-NLS-2$
+								+ file.getProjectRelativePath().toString();
+						try (InputStream is = file.getContents();
+								Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+							loadFromReader(id, reader);
+							loaded.add(id);
+						} catch (HintParseException | IOException e) {
+							ILog log = Platform.getLog(HintFileRegistry.class);
+							log.log(Status.warning(
+									"Failed to load hint file: " + file.getFullPath(), e)); //$NON-NLS-1$
+						}
+					}
+					// Skip output folders and hidden directories
+					if (resource instanceof IContainer container) {
+						String name = container.getName();
+						return !name.startsWith(".") //$NON-NLS-1$
+								&& !"bin".equals(name) //$NON-NLS-1$
+								&& !"target".equals(name); //$NON-NLS-1$
+					}
+					return true;
+				}
+			});
+		} catch (CoreException e) {
+			ILog log = Platform.getLog(HintFileRegistry.class);
+			log.log(Status.warning(
+					"Failed to scan project for hint files: " + projectKey, e)); //$NON-NLS-1$
+		}
+		return loaded;
+	}
+	
+	/**
+	 * Forces a re-scan of the given project on the next call to
+	 * {@link #loadProjectHintFiles(IProject)}.
+	 * 
+	 * <p>This is useful when a project's {@code .sandbox-hint} files have changed
+	 * and need to be reloaded.</p>
+	 * 
+	 * @param project the project to invalidate
+	 * @since 1.3.6
+	 */
+	public void invalidateProject(IProject project) {
+		if (project != null) {
+			loadedProjects.remove(project.getName());
+		}
 	}
 }
