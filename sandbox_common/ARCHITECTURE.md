@@ -138,6 +138,23 @@ The Mining Analysis package infers transformation rules by comparing before/afte
 
 **Integration**: `RuleInferenceEngine.toTransformationRule()` and `toHintFile()` convert inferred rules into the existing `TransformationRule` / `HintFile` API so they are immediately usable by the TriggerPattern cleanup framework.
 
+### Git History Access (Phase 1.1+1.2)
+
+**Package**: `org.sandbox.jdt.triggerpattern.mining.git`
+
+Provides abstraction for reading Git repositories and extracting file diffs.
+
+| Class/Interface | Purpose |
+|----------------|---------|
+| `GitHistoryProvider` | Interface — `getHistory()`, `getDiffs()`, `getFileContent()` |
+| `CommandLineGitProvider` | Implementation using the `git` CLI (no JGit dependency) |
+| `AsyncCommitAnalyzer` | Background commit analysis with bounded thread pool and `CommitAnalysisListener` callbacks |
+| `GitProviderException` | Exception type for git operation failures |
+
+**RuleInferenceEngine extended API**:
+- `inferFromCommit(git, repoPath, commitId)` — infers rules from a single commit
+- `inferFromHistory(git, repoPath, maxCommits)` — infers and groups rules across multiple commits
+
 ### MYCleanUpConstants
 
 **Location**: `org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants`
