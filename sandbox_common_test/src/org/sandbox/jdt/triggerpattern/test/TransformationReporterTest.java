@@ -98,27 +98,35 @@ public class TransformationReporterTest {
 	}
 
 	@Test
-	public void testCsvEscaping() {
-		String withComma = TransformationReporter.escapeCsv("a,b"); //$NON-NLS-1$
-		assertTrue(withComma.startsWith("\""), "Should quote fields with commas"); //$NON-NLS-1$ //$NON-NLS-2$
+	public void testCsvReportContainsCorrectFields() throws IOException {
+		List<TransformationResult> results = createResults();
+		assertFalse(results.isEmpty(), "Should have results"); //$NON-NLS-1$
 
-		String withQuote = TransformationReporter.escapeCsv("a\"b"); //$NON-NLS-1$
-		assertTrue(withQuote.contains("\"\""), "Should double-escape quotes"); //$NON-NLS-1$ //$NON-NLS-2$
+		TransformationReporter reporter = new TransformationReporter();
+		StringWriter writer = new StringWriter();
+		reporter.generateCsvReport(results, writer);
 
-		String simple = TransformationReporter.escapeCsv("abc"); //$NON-NLS-1$
-		assertFalse(simple.startsWith("\""), "Should not quote simple fields"); //$NON-NLS-1$ //$NON-NLS-2$
+		String csv = writer.toString();
+		// Verify header fields are present
+		assertTrue(csv.contains("line,"), "CSV should contain 'line' column"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(csv.contains(",matched,"), "CSV should contain 'matched' column"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(csv.contains(",replacement,"), "CSV should contain 'replacement' column"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(csv.contains(",pattern"), "CSV should contain 'pattern' column"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@Test
-	public void testJsonEscaping() {
-		String withQuote = TransformationReporter.escapeJson("a\"b"); //$NON-NLS-1$
-		assertTrue(withQuote.contains("\\\""), "Should escape quotes"); //$NON-NLS-1$ //$NON-NLS-2$
+	public void testJsonReportContainsCorrectFields() throws IOException {
+		List<TransformationResult> results = createResults();
+		assertFalse(results.isEmpty(), "Should have results"); //$NON-NLS-1$
 
-		String withNewline = TransformationReporter.escapeJson("a\nb"); //$NON-NLS-1$
-		assertTrue(withNewline.contains("\\n"), "Should escape newlines"); //$NON-NLS-1$ //$NON-NLS-2$
+		TransformationReporter reporter = new TransformationReporter();
+		StringWriter writer = new StringWriter();
+		reporter.generateJsonReport(results, writer);
 
-		String nullValue = TransformationReporter.escapeJson(null);
-		assertTrue("null".equals(nullValue), "Null should produce 'null'"); //$NON-NLS-1$ //$NON-NLS-2$
+		String json = writer.toString();
+		assertTrue(json.contains("\"severity\""), "JSON should contain severity field"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(json.contains("\"description\""), "JSON should contain description field"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(json.trim().endsWith("]"), "JSON should end with ]"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	// --- Helper methods ---
