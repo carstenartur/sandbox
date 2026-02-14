@@ -9,4 +9,9 @@
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.JUnitCleanUp" id="org.eclipse.jdt.ui.cleanup.junitcleanup" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
+	<extension point="org.sandbox.jdt.triggerpattern.hints">
+		<hintFile
+			id="junit5"
+			resource="org/sandbox/jdt/internal/corext/fix/hints/junit5.sandbox-hint" />
+	</extension>
 </plugin>
