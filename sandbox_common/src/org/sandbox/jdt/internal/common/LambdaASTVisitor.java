@@ -335,7 +335,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 
 	@Override
 	public boolean visit(ExpressionMethodReference node) {
-		if (this.helperVisitor.hasPredicate(VisitorEnum.BreakStatement)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ExpressionMethodReference)) {
 			return this.helperVisitor.testPredicate(VisitorEnum.ExpressionMethodReference, node);
 		}
 		return true;
