@@ -58,6 +58,8 @@ public class HintFileQuickAssistProcessor implements IQuickAssistProcessor {
 	@Override
 	public boolean hasAssists(IInvocationContext context) throws CoreException {
 		HintFileRegistry registry = HintFileRegistry.getInstance();
+		// Ensure bundled libraries are loaded so assists are discoverable in a fresh session
+		registry.loadBundledLibraries(HintFileQuickAssistProcessor.class.getClassLoader());
 		return !registry.getAllHintFiles().isEmpty();
 	}
 

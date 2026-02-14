@@ -63,6 +63,8 @@ public final class HintFileRegistry {
 	private static final HintFileRegistry INSTANCE = new HintFileRegistry();
 	
 	private final Map<String, HintFile> hintFiles = new ConcurrentHashMap<>();
+	/** Secondary index: declared {@code <!id: ...>} → HintFile, for efficient include resolution. */
+	private final Map<String, HintFile> hintFilesByDeclaredId = new ConcurrentHashMap<>();
 	private final HintFileParser parser = new HintFileParser();
 	private final AtomicBoolean bundledLoaded = new AtomicBoolean(false);
 	
@@ -108,6 +110,7 @@ public final class HintFileRegistry {
 			hintFile.setId(id);
 		}
 		hintFiles.put(id, hintFile);
+		indexByDeclaredId(hintFile);
 	}
 	
 	/**
@@ -124,6 +127,7 @@ public final class HintFileRegistry {
 			hintFile.setId(id);
 		}
 		hintFiles.put(id, hintFile);
+		indexByDeclaredId(hintFile);
 	}
 	
 	/**
@@ -183,7 +187,11 @@ public final class HintFileRegistry {
 	 * @return the removed hint file, or {@code null} if not found
 	 */
 	public HintFile unregister(String id) {
-		return hintFiles.remove(id);
+		HintFile removed = hintFiles.remove(id);
+		if (removed != null && removed.getId() != null) {
+			hintFilesByDeclaredId.remove(removed.getId());
+		}
+		return removed;
 	}
 	
 	/**
@@ -191,6 +199,7 @@ public final class HintFileRegistry {
 	 */
 	public void clear() {
 		hintFiles.clear();
+		hintFilesByDeclaredId.clear();
 		bundledLoaded.set(false);
 	}
 	
@@ -220,6 +229,10 @@ public final class HintFileRegistry {
 	
 	/**
 	 * Recursively resolves includes, tracking visited IDs to prevent cycles.
+	 * 
+	 * <p>Looks up included files first by registry key, then by declared
+	 * {@code <!id: ...>} so that {@code <!include:>} directives work
+	 * consistently regardless of how the hint file was registered.</p>
 	 */
 	private void resolveIncludesRecursive(HintFile hintFile, 
 			List<TransformationRule> allRules, Set<String> visited) {
@@ -228,11 +241,36 @@ public final class HintFileRegistry {
 				continue; // Break circular reference
 			}
 			visited.add(includeId);
-			HintFile included = hintFiles.get(includeId);
+			HintFile included = findByKeyOrDeclaredId(includeId);
 			if (included != null) {
 				allRules.addAll(included.getRules());
 				resolveIncludesRecursive(included, allRules, visited);
 			}
+		}
+	}
+	
+	/**
+	 * Finds a hint file by registry key first, then falls back to the
+	 * secondary index of declared {@link HintFile#getId()} values.
+	 * 
+	 * @param id the ID to look up
+	 * @return the matching hint file, or {@code null} if not found
+	 */
+	private HintFile findByKeyOrDeclaredId(String id) {
+		HintFile result = hintFiles.get(id);
+		if (result != null) {
+			return result;
+		}
+		// Fall back: lookup by declared <!id: ...> via secondary index
+		return hintFilesByDeclaredId.get(id);
+	}
+	
+	/**
+	 * Updates the secondary index for declared IDs.
+	 */
+	private void indexByDeclaredId(HintFile hintFile) {
+		if (hintFile.getId() != null) {
+			hintFilesByDeclaredId.put(hintFile.getId(), hintFile);
 		}
 	}
 	

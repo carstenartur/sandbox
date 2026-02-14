@@ -280,4 +280,34 @@ public class PatternCompositionTest {
 		assertEquals("base-rules", hintFile.getIncludes().get(0)); //$NON-NLS-1$
 		assertEquals(1, hintFile.getRules().size());
 	}
+	
+	@Test
+	public void testResolveIncludesByDeclaredIdNotRegistryKey() throws HintParseException {
+		// Register a hint file with a registry key that differs from the declared <!id:>
+		String baseContent = """
+			<!id: declared.base.id>
+			$x + 0
+			=> $x
+			;;
+			"""; //$NON-NLS-1$
+		// Registry key is "registry-key-for-base", but declared ID is "declared.base.id"
+		registry.loadFromString("registry-key-for-base", baseContent); //$NON-NLS-1$
+		
+		// Register composite that includes by declared ID
+		String compositeContent = """
+			<!id: composite>
+			<!include: declared.base.id>
+			
+			$x - 0
+			=> $x
+			;;
+			"""; //$NON-NLS-1$
+		registry.loadFromString("composite", compositeContent); //$NON-NLS-1$
+		
+		HintFile composite = registry.getHintFile("composite"); //$NON-NLS-1$
+		List<TransformationRule> allRules = registry.resolveIncludes(composite);
+		
+		assertEquals(2, allRules.size(), 
+				"Should resolve include by declared <!id:> even when registry key differs"); //$NON-NLS-1$
+	}
 }
