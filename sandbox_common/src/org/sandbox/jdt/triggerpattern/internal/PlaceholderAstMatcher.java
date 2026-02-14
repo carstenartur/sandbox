@@ -20,7 +20,9 @@ import java.util.Map;
 
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -439,6 +441,166 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	}
 	
 	/**
+	 * Matches blocks with support for variadic placeholders in statement sequences.
+	 * 
+	 * <p>Supports patterns like {@code { $before$; return $x; }} where {@code $before$}
+	 * matches zero or more statements before the return statement.</p>
+	 * 
+	 * @param patternNode the pattern block
+	 * @param other the candidate node
+	 * @return {@code true} if the blocks match
+	 * @since 1.3.2
+	 */
+	@Override
+	public boolean match(Block patternNode, Object other) {
+		if (!(other instanceof Block)) {
+			return false;
+		}
+		Block otherBlock = (Block) other;
+		
+		@SuppressWarnings("unchecked")
+		List<Statement> patternStmts = patternNode.statements();
+		@SuppressWarnings("unchecked")
+		List<Statement> otherStmts = otherBlock.statements();
+		
+		return matchStatementsWithMultiPlaceholders(patternStmts, otherStmts);
+	}
+	
+	/**
+	 * Matches statement lists with support for variadic placeholders.
+	 * 
+	 * <p>A variadic placeholder in a statement list is detected as an
+	 * {@link ExpressionStatement} containing a single {@link SimpleName} with
+	 * multi-placeholder syntax (e.g., {@code $before$;}).</p>
+	 * 
+	 * @param patternStmts the pattern statements
+	 * @param otherStmts the candidate statements
+	 * @return true if the statements match (considering multi-placeholders)
+	 */
+	private boolean matchStatementsWithMultiPlaceholders(List<Statement> patternStmts, List<Statement> otherStmts) {
+		// Find multi-placeholder position in pattern statements
+		int multiIndex = findMultiPlaceholderStatementIndex(patternStmts);
+		
+		if (multiIndex >= 0) {
+			return matchMixedStatements(patternStmts, otherStmts, multiIndex);
+		}
+		
+		// Standard matching: same number of statements, each matching
+		if (patternStmts.size() != otherStmts.size()) {
+			return false;
+		}
+		
+		for (int i = 0; i < patternStmts.size(); i++) {
+			if (!safeSubtreeMatch(patternStmts.get(i), otherStmts.get(i))) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Finds the index of a multi-placeholder statement in a statement list.
+	 * A multi-placeholder statement is an ExpressionStatement containing a SimpleName
+	 * with multi-placeholder syntax (e.g., {@code $before$;}).
+	 * 
+	 * @param stmts the statement list
+	 * @return the index of the multi-placeholder statement, or -1 if not found
+	 */
+	private int findMultiPlaceholderStatementIndex(List<Statement> stmts) {
+		for (int i = 0; i < stmts.size(); i++) {
+			if (stmts.get(i) instanceof ExpressionStatement) {
+				ExpressionStatement exprStmt = (ExpressionStatement) stmts.get(i);
+				if (exprStmt.getExpression() instanceof SimpleName) {
+					SimpleName name = (SimpleName) exprStmt.getExpression();
+					String id = name.getIdentifier();
+					if (id != null && id.startsWith("$")) { //$NON-NLS-1$
+						PlaceholderInfo info = parsePlaceholder(id);
+						if (info.isMulti()) {
+							return i;
+						}
+					}
+				}
+			}
+		}
+		return -1;
+	}
+	
+	/**
+	 * Matches statement lists containing a multi-placeholder with optional fixed statements
+	 * before and/or after the multi-placeholder.
+	 * 
+	 * <p>Examples:</p>
+	 * <ul>
+	 *   <li>{@code { $stmts$; }} - all statements captured in list</li>
+	 *   <li>{@code { $before$; return $x; }} - statements before return captured, return matched separately</li>
+	 * </ul>
+	 * 
+	 * @param patternStmts the pattern statements
+	 * @param otherStmts the candidate statements
+	 * @param multiIndex the index of the multi-placeholder statement
+	 * @return true if the statements match
+	 */
+	private boolean matchMixedStatements(List<Statement> patternStmts, List<Statement> otherStmts, int multiIndex) {
+		int fixedBefore = multiIndex;
+		int fixedAfter = patternStmts.size() - multiIndex - 1;
+		int totalFixed = fixedBefore + fixedAfter;
+		
+		// Need at least enough statements to satisfy the fixed patterns
+		if (otherStmts.size() < totalFixed) {
+			return false;
+		}
+		
+		// Match fixed statements before the multi-placeholder
+		for (int i = 0; i < fixedBefore; i++) {
+			if (!safeSubtreeMatch(patternStmts.get(i), otherStmts.get(i))) {
+				return false;
+			}
+		}
+		
+		// Match fixed statements after the multi-placeholder
+		for (int i = 0; i < fixedAfter; i++) {
+			int patternIdx = patternStmts.size() - fixedAfter + i;
+			int otherIdx = otherStmts.size() - fixedAfter + i;
+			if (!safeSubtreeMatch(patternStmts.get(patternIdx), otherStmts.get(otherIdx))) {
+				return false;
+			}
+		}
+		
+		// Bind the multi-placeholder to the remaining statements in between
+		ExpressionStatement multiStmt = (ExpressionStatement) patternStmts.get(multiIndex);
+		SimpleName multiName = (SimpleName) multiStmt.getExpression();
+		PlaceholderInfo info = parsePlaceholder(multiName.getIdentifier());
+		String placeholderName = info.name();
+		
+		int variadicStart = fixedBefore;
+		int variadicEnd = otherStmts.size() - fixedAfter;
+		List<ASTNode> variadicStmts = new ArrayList<>(otherStmts.subList(variadicStart, variadicEnd));
+		
+		// Check if already bound
+		if (bindings.containsKey(placeholderName)) {
+			Object boundValue = bindings.get(placeholderName);
+			if (boundValue instanceof List<?>) {
+				@SuppressWarnings("unchecked")
+				List<ASTNode> boundList = (List<ASTNode>) boundValue;
+				if (boundList.size() != variadicStmts.size()) {
+					return false;
+				}
+				for (int i = 0; i < boundList.size(); i++) {
+					if (!boundList.get(i).subtreeMatch(reusableMatcher, variadicStmts.get(i))) {
+						return false;
+					}
+				}
+				return true;
+			}
+			return false;
+		}
+		// First occurrence - bind to list
+		bindings.put(placeholderName, variadicStmts);
+		return true;
+	}
+	
+	/**
 	 * Matches argument lists with support for multi-placeholders.
 	 * 
 	 * @param patternArgs the pattern arguments
@@ -446,50 +608,12 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 * @return true if arguments match (considering multi-placeholders)
 	 */
 	private boolean matchArgumentsWithMultiPlaceholders(List<Expression> patternArgs, List<Expression> otherArgs) {
-		// Check if pattern has a single multi-placeholder argument
-		if (patternArgs.size() == 1 && patternArgs.get(0) instanceof SimpleName) {
-			SimpleName patternArg = (SimpleName) patternArgs.get(0);
-			String name = patternArg.getIdentifier();
-			
-			if (name != null && name.startsWith("$")) { //$NON-NLS-1$
-				PlaceholderInfo info = parsePlaceholder(name);
-				
-				if (info.isMulti()) {
-					// Multi-placeholder: bind to list of all arguments
-					String placeholderName = info.name();
-					
-					// Validate type constraints for all arguments if specified
-					if (info.typeConstraint() != null) {
-						for (Expression arg : otherArgs) {
-							if (!matchesTypeConstraint(arg, info.typeConstraint())) {
-								return false;
-							}
-						}
-					}
-					
-					// Check if already bound
-					if (bindings.containsKey(placeholderName)) {
-						Object boundValue = bindings.get(placeholderName);
-						if (boundValue instanceof List<?>) {
-							@SuppressWarnings("unchecked")
-							List<ASTNode> boundList = (List<ASTNode>) boundValue;
-							if (boundList.size() != otherArgs.size()) {
-								return false;
-							}
-							for (int i = 0; i < boundList.size(); i++) {
-								if (!boundList.get(i).subtreeMatch(reusableMatcher, otherArgs.get(i))) {
-									return false;
-								}
-							}
-							return true;
-						}
-						return false;
-					}
-					// First occurrence - bind to list
-					bindings.put(placeholderName, new ArrayList<>(otherArgs));
-					return true;
-				}
-			}
+		// Find multi-placeholder position in pattern arguments
+		int multiIndex = findMultiPlaceholderIndex(patternArgs);
+		
+		if (multiIndex >= 0) {
+			// Mixed pattern with multi-placeholder (e.g., method($a, $args$) or method($args$, $last))
+			return matchMixedArguments(patternArgs, otherArgs, multiIndex);
 		}
 		
 		// Standard matching: same number of arguments, each matching
@@ -503,6 +627,112 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			}
 		}
 		
+		return true;
+	}
+	
+	/**
+	 * Finds the index of a multi-placeholder in an argument list.
+	 * 
+	 * @param patternArgs the pattern arguments
+	 * @return the index of the multi-placeholder, or -1 if not found
+	 */
+	private int findMultiPlaceholderIndex(List<Expression> patternArgs) {
+		for (int i = 0; i < patternArgs.size(); i++) {
+			if (patternArgs.get(i) instanceof SimpleName) {
+				SimpleName name = (SimpleName) patternArgs.get(i);
+				String id = name.getIdentifier();
+				if (id != null && id.startsWith("$")) { //$NON-NLS-1$
+					PlaceholderInfo info = parsePlaceholder(id);
+					if (info.isMulti()) {
+						return i;
+					}
+				}
+			}
+		}
+		return -1;
+	}
+	
+	/**
+	 * Matches argument lists containing a multi-placeholder with optional fixed arguments
+	 * before and/or after the multi-placeholder.
+	 * 
+	 * <p>Examples:</p>
+	 * <ul>
+	 *   <li>{@code method($args$)} - all arguments captured in list</li>
+	 *   <li>{@code method($a, $args$)} - first argument matched separately, rest in list</li>
+	 *   <li>{@code method($args$, $last)} - last argument matched separately, rest in list</li>
+	 *   <li>{@code method($a, $args$, $last)} - first and last matched separately, middle in list</li>
+	 * </ul>
+	 * 
+	 * @param patternArgs the pattern arguments
+	 * @param otherArgs the candidate arguments
+	 * @param multiIndex the index of the multi-placeholder in patternArgs
+	 * @return true if the arguments match
+	 */
+	private boolean matchMixedArguments(List<Expression> patternArgs, List<Expression> otherArgs, int multiIndex) {
+		int fixedBefore = multiIndex;
+		int fixedAfter = patternArgs.size() - multiIndex - 1;
+		int totalFixed = fixedBefore + fixedAfter;
+		
+		// Need at least enough arguments to satisfy the fixed placeholders
+		if (otherArgs.size() < totalFixed) {
+			return false;
+		}
+		
+		// Match fixed arguments before the multi-placeholder
+		for (int i = 0; i < fixedBefore; i++) {
+			if (!safeSubtreeMatch(patternArgs.get(i), otherArgs.get(i))) {
+				return false;
+			}
+		}
+		
+		// Match fixed arguments after the multi-placeholder
+		for (int i = 0; i < fixedAfter; i++) {
+			int patternIdx = patternArgs.size() - fixedAfter + i;
+			int otherIdx = otherArgs.size() - fixedAfter + i;
+			if (!safeSubtreeMatch(patternArgs.get(patternIdx), otherArgs.get(otherIdx))) {
+				return false;
+			}
+		}
+		
+		// Bind the multi-placeholder to the remaining arguments in between
+		SimpleName multiName = (SimpleName) patternArgs.get(multiIndex);
+		PlaceholderInfo info = parsePlaceholder(multiName.getIdentifier());
+		String placeholderName = info.name();
+		
+		int variadicStart = fixedBefore;
+		int variadicEnd = otherArgs.size() - fixedAfter;
+		List<ASTNode> variadicArgs = new ArrayList<>(otherArgs.subList(variadicStart, variadicEnd));
+		
+		// Validate type constraints for all variadic arguments if specified
+		if (info.typeConstraint() != null) {
+			for (ASTNode arg : variadicArgs) {
+				if (!matchesTypeConstraint(arg, info.typeConstraint())) {
+					return false;
+				}
+			}
+		}
+		
+		// Check if already bound
+		if (bindings.containsKey(placeholderName)) {
+			Object boundValue = bindings.get(placeholderName);
+			if (boundValue instanceof List<?>) {
+				@SuppressWarnings("unchecked")
+				List<ASTNode> boundList = (List<ASTNode>) boundValue;
+				if (boundList.size() != variadicArgs.size()) {
+					return false;
+				}
+				for (int i = 0; i < boundList.size(); i++) {
+					if (!boundList.get(i).subtreeMatch(reusableMatcher, variadicArgs.get(i))) {
+						return false;
+					}
+				}
+				return true;
+			}
+			return false;
+		}
+		// First occurrence - bind to list
+		bindings.put(placeholderName, variadicArgs);
 		return true;
 	}
 	

@@ -63,5 +63,12 @@ public enum PatternKind {
 	 * Pattern represents a method declaration (e.g., {@code void dispose()}, {@code void $name($params$)})
 	 * @since 1.2.6
 	 */
-	METHOD_DECLARATION
+	METHOD_DECLARATION,
+	
+	/**
+	 * Pattern represents a block of statements (e.g., {@code { $before$; return $x; }}).
+	 * Used for matching statement sequences with variadic placeholders.
+	 * @since 1.3.2
+	 */
+	BLOCK
 }

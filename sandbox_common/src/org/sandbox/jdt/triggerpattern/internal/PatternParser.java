@@ -18,6 +18,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -72,6 +73,8 @@ public class PatternParser {
 			return parseConstructor(patternValue);
 		} else if (kind == PatternKind.METHOD_DECLARATION) {
 			return parseMethodDeclaration(patternValue);
+		} else if (kind == PatternKind.BLOCK) {
+			return parseBlock(patternValue);
 		}
 		
 		return null;
@@ -392,5 +395,43 @@ public class PatternParser {
 		}
 		
 		return typeDecl.getMethods()[0];
+	}
+	
+	/**
+	 * Parses a block pattern containing multiple statements with potential variadic placeholders.
+	 * 
+	 * @param blockSnippet the block snippet (e.g., {@code "{ $before$; return $x; }"})
+	 * @return the parsed Block node, or {@code null} if parsing fails
+	 * @since 1.3.2
+	 */
+	private Block parseBlock(String blockSnippet) {
+		// Ensure the block is wrapped in braces
+		String normalizedSnippet = blockSnippet.trim();
+		if (!normalizedSnippet.startsWith("{")) { //$NON-NLS-1$
+			normalizedSnippet = "{ " + normalizedSnippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		
+		// Wrap the block in a minimal method context
+		String source = "class _Pattern { void _method() " + normalizedSnippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+		
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setCompilerOptions(JavaCore.getOptions());
+		
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		
+		// Navigate to the block: CompilationUnit -> TypeDeclaration -> MethodDeclaration -> Block
+		if (cu.types().isEmpty()) {
+			return null;
+		}
+		
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		if (typeDecl.getMethods().length == 0) {
+			return null;
+		}
+		
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		return method.getBody();
 	}
 }

@@ -104,6 +104,8 @@ public class TriggerPatternEngine {
 					checkMatch(node, patternNode, matches);
 				} else if (pattern.getKind() == PatternKind.METHOD_DECLARATION && node instanceof MethodDeclaration) {
 					checkMethodDeclarationMatch((MethodDeclaration) node, patternNode, pattern, matches);
+				} else if (pattern.getKind() == PatternKind.BLOCK && node instanceof Block) {
+					checkMatch(node, patternNode, matches);
 				}
 			}
 		});
