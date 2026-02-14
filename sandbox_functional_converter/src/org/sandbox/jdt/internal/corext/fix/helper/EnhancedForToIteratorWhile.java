@@ -123,22 +123,14 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 		List<String> statements = new ArrayList<>();
 		if (body instanceof Block block) {
 			for (Object stmt : block.statements()) {
-				statements.add(stripTrailingSemicolon(stmt.toString()));
+				statements.add(ExpressionHelper.stripTrailingSemicolon(stmt.toString()));
 			}
 		} else if (body instanceof ExpressionStatement exprStmt) {
-			statements.add(stripTrailingSemicolon(exprStmt.toString()));
+			statements.add(ExpressionHelper.stripTrailingSemicolon(exprStmt.toString()));
 		} else {
-			statements.add(stripTrailingSemicolon(body.toString()));
+			statements.add(ExpressionHelper.stripTrailingSemicolon(body.toString()));
 		}
 		return statements;
-	}
-
-	private static String stripTrailingSemicolon(String stmtStr) {
-		String trimmed = stmtStr.trim();
-		if (trimmed.endsWith(";")) { //$NON-NLS-1$
-			trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
-		}
-		return trimmed;
 	}
 
 	@Override

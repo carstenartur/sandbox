@@ -235,20 +235,9 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
     private List<String> extractBodyStatementsAsStrings(List<Statement> statements) {
         List<String> bodyStmts = new java.util.ArrayList<>();
         for (Statement stmt : statements) {
-            bodyStmts.add(stripTrailingSemicolon(stmt.toString()));
+            bodyStmts.add(ExpressionHelper.stripTrailingSemicolon(stmt.toString()));
         }
         return bodyStmts;
-    }
-    
-    /**
-     * Strips a trailing semicolon (and surrounding whitespace) from a statement string.
-     */
-    private static String stripTrailingSemicolon(String stmtStr) {
-        String trimmed = stmtStr.trim();
-        if (trimmed.endsWith(";")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
-        }
-        return trimmed;
     }
     
     @Override

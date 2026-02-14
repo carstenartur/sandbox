@@ -514,26 +514,14 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
             Block block = (Block) body;
             List<Statement> statements = block.statements();
             for (Statement stmt : statements) {
-                bodyStmts.add(stripTrailingSemicolon(stmt.toString()));
+                bodyStmts.add(ExpressionHelper.stripTrailingSemicolon(stmt.toString()));
             }
         } else {
             // Single statement body
-            bodyStmts.add(stripTrailingSemicolon(body.toString()));
+            bodyStmts.add(ExpressionHelper.stripTrailingSemicolon(body.toString()));
         }
         
         return bodyStmts;
-    }
-    
-    /**
-     * Strips a trailing semicolon (and surrounding whitespace) from a statement string
-     * so that it can be parsed as an expression by {@code ASTStreamRenderer.createExpression()}.
-     */
-    private static String stripTrailingSemicolon(String stmtStr) {
-        String trimmed = stmtStr.trim();
-        if (trimmed.endsWith(";")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
-        }
-        return trimmed;
     }
     
     @Override

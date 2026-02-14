@@ -262,19 +262,7 @@ public class ASTIteratorWhileRenderer {
 		return decl;
 	}
 
-	/**
-	 * Creates an AST Expression from a string expression.
-	 */
 	private Expression createExpression(String expressionStr) {
-		// For simple names, create SimpleName directly
-		if (expressionStr.matches("[a-zA-Z_$][a-zA-Z0-9_$]*")) { //$NON-NLS-1$
-			return ast.newSimpleName(expressionStr);
-		}
-		// For qualified names (e.g., "this.items"), create QualifiedName
-		if (expressionStr.matches("[a-zA-Z_$][a-zA-Z0-9_$.]*")) { //$NON-NLS-1$
-			return ast.newName(expressionStr);
-		}
-		// For complex expressions, use string placeholder
-		return (Expression) rewrite.createStringPlaceholder(expressionStr, ASTNode.SIMPLE_NAME);
+		return ExpressionHelper.createExpression(ast, rewrite, expressionStr);
 	}
 }
