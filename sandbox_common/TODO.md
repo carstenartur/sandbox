@@ -219,6 +219,13 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] `HintFileRegistry` singleton for loading/managing `.sandbox-hint` files
   - [x] Support for classpath resources, strings, and readers
   - [x] Bundled library names defined (encoding, collections, modernize-java11, performance, junit5)
+  - [x] Bundled `.sandbox-hint` pattern library files created:
+    - [x] `encoding.sandbox-hint` — 7 StandardCharsets migration rules with guards and import directives
+    - [x] `collections.sandbox-hint` — 7 Collection API modernization rules (Java 9+)
+    - [x] `modernize-java11.sandbox-hint` — 7 Java 11+ API modernization rules
+    - [x] `performance.sandbox-hint` — 9 performance optimization rules
+    - [x] `junit5.sandbox-hint` — 8 JUnit 4 → 5 migration rules with import directives
+  - [x] `loadBundledLibraries()` loads all bundled files from classpath
 - [x] Phase 6.3: Negated Patterns
   - [x] `contains` guard: checks if text pattern occurs in enclosing method body
   - [x] `notContains` guard: checks if text pattern does NOT occur in method body
@@ -228,6 +235,13 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] `Preview` record with `before`, `after`, `description`, `format()`
   - [x] Default example values for common placeholder names
   - [x] Support for variadic placeholder substitution
+- [x] Phase 6.5: Dry-Run / Reporting
+  - [x] `DryRunReporter` — finds all matches without modifying code
+  - [x] `ReportEntry` record with line, offset, matched code, suggested replacement
+  - [x] JSON report generation via `toJson()`
+  - [x] CSV report generation via `toCsv()`
+  - [x] Placeholder substitution in suggested replacements
+  - [x] Support for hint-only rules (no replacement)
 
 ### Planned Enhancements
 
@@ -242,8 +256,6 @@ For questions about shared utilities or adding new common code, please open an i
   - [ ] Save Actions integration
 - [ ] Pattern composition
   - [ ] Allow patterns to reference other patterns
-- [ ] Bundled `.sandbox-hint` pattern library files
-  - [ ] Create actual `encoding.sandbox-hint`, `collections.sandbox-hint`, etc.
 
 #### Low Priority
 - [ ] Pattern debugging tools

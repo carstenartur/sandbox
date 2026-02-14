@@ -54,7 +54,7 @@ public final class HintFileRegistry {
 	private boolean bundledLoaded = false;
 	
 	/**
-	 * Bundled library resource paths (classpath-relative).
+	 * Bundled library resource names.
 	 */
 	private static final String[] BUNDLED_LIBRARIES = {
 		"encoding.sandbox-hint", //$NON-NLS-1$
@@ -63,6 +63,12 @@ public final class HintFileRegistry {
 		"performance.sandbox-hint", //$NON-NLS-1$
 		"junit5.sandbox-hint" //$NON-NLS-1$
 	};
+	
+	/**
+	 * Classpath resource prefix for bundled library files.
+	 */
+	private static final String BUNDLED_RESOURCE_PREFIX = 
+		"org/sandbox/jdt/triggerpattern/internal/"; //$NON-NLS-1$
 	
 	private HintFileRegistry() {
 		// Singleton
@@ -199,8 +205,9 @@ public final class HintFileRegistry {
 		List<String> loaded = new ArrayList<>();
 		for (String libraryName : BUNDLED_LIBRARIES) {
 			String id = libraryName.replace(".sandbox-hint", ""); //$NON-NLS-1$ //$NON-NLS-2$
+			String resourcePath = BUNDLED_RESOURCE_PREFIX + libraryName;
 			try {
-				if (loadFromClasspath(id, libraryName, classLoader)) {
+				if (loadFromClasspath(id, resourcePath, classLoader)) {
 					loaded.add(id);
 				}
 			} catch (HintParseException | IOException e) {
