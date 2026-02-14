@@ -195,9 +195,11 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] Phase 3: Guard Functions Framework
   - [x] Guard expression AST: `FunctionCall`, `And`, `Or`, `Not`
   - [x] Recursive descent parser for guard expressions
-  - [x] Built-in guards: `instanceof` (with array type support `Type[]`), `matchesAny` (with literal matching), `matchesNone` (with literal matching), `hasNoSideEffect`, `sourceVersionGE/LE/Between`, `isStatic`, `isFinal`, `hasAnnotation`, `isDeprecated`, `referencedIn`, `elementKindMatches`
+  - [x] Built-in guards: `instanceof` (with array type support `Type[]`), `matchesAny` (with literal matching via `extractNodeText()`), `matchesNone` (with literal matching), `hasNoSideEffect`, `sourceVersionGE/LE/Between`, `isStatic`, `isFinal`, `hasAnnotation`, `isDeprecated`, `referencedIn`, `elementKindMatches`, `contains`, `notContains`
   - [x] Custom guard registration via `GuardRegistry.register()`
   - [x] String literal support in guard expression arguments
+  - [x] Locale-safe `toUpperCase(Locale.ROOT)` in element kind matching
+  - [x] Unterminated string literal detection with clear error messages
 - [x] Phase 4: Conditional Multi-Rewrite
   - [x] `RewriteAlternative` with replacement + optional guard
   - [x] `TransformationRule` with ordered alternatives
@@ -206,6 +208,26 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] Metadata directives, comment stripping, pattern kind inference
   - [x] Rule syntax: Pattern `::` guard `=>` rewrite
   - [x] Multi-rewrite support, hint-only rules, error handling
+
+### Completed (v1.3.3 - Improvements over NetBeans, Phase 6)
+- [x] Phase 6.1: Import Management
+  - [x] `ImportDirective` class with `addImport`, `removeImport`, `addStaticImport`, `removeStaticImport`
+  - [x] Auto-detection from fully qualified names in replacement patterns
+  - [x] Integration into `TransformationRule` and `HintFileParser`
+  - [x] DSL syntax: `addImport`/`removeImport`/`addStaticImport`/`removeStaticImport` directives in rules
+- [x] Phase 6.2: Pattern Libraries
+  - [x] `HintFileRegistry` singleton for loading/managing `.sandbox-hint` files
+  - [x] Support for classpath resources, strings, and readers
+  - [x] Bundled library names defined (encoding, collections, modernize-java11, performance, junit5)
+- [x] Phase 6.3: Negated Patterns
+  - [x] `contains` guard: checks if text pattern occurs in enclosing method body
+  - [x] `notContains` guard: checks if text pattern does NOT occur in method body
+  - [x] `GuardContext.getMatchedNode()` for context-based search
+- [x] Phase 6.4: Preview Generation
+  - [x] `PreviewGenerator` with automatic placeholder substitution
+  - [x] `Preview` record with `before`, `after`, `description`, `format()`
+  - [x] Default example values for common placeholder names
+  - [x] Support for variadic placeholder substitution
 
 ### Planned Enhancements
 
@@ -220,7 +242,8 @@ For questions about shared utilities or adding new common code, please open an i
   - [ ] Save Actions integration
 - [ ] Pattern composition
   - [ ] Allow patterns to reference other patterns
-  - [ ] Pattern libraries/catalogs
+- [ ] Bundled `.sandbox-hint` pattern library files
+  - [ ] Create actual `encoding.sandbox-hint`, `collections.sandbox-hint`, etc.
 
 #### Low Priority
 - [ ] Pattern debugging tools
@@ -230,7 +253,6 @@ For questions about shared utilities or adding new common code, please open an i
   - [ ] Track pattern matching performance
   - [ ] Identify slow patterns
 - [ ] Advanced pattern features
-  - [ ] Negative patterns (must not match)
   - [ ] Optional parts: `$x?.method()`
   - [ ] Repetition: `$x+` (one or more)
 
