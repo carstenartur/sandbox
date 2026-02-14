@@ -25,7 +25,6 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -205,6 +204,8 @@ public class VariadicPlaceholderTest {
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode, "Block pattern should be parsed");
 		assertTrue(patternNode instanceof Block, "Should parse to a Block node");
+		Block block = (Block) patternNode;
+		assertEquals(1, block.statements().size(), "Should have 1 statement (the $stmts$ placeholder)");
 	}
 	
 	@Test
