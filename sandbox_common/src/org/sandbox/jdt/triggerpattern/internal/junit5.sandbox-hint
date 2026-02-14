@@ -1,0 +1,65 @@
+// junit5.sandbox-hint — JUnit 4 → JUnit 5 migration patterns
+// Helps migrate test annotations and assertions from JUnit 4 to JUnit 5
+
+<!id: junit5>
+<!description: JUnit 4 to JUnit 5 migration patterns>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: junit, testing, migration>
+
+// Assert.assertEquals(expected, actual) → assertEquals(expected, actual) with static import
+Assert.assertEquals($expected, $actual)
+=> Assertions.assertEquals($expected, $actual)
+addImport org.junit.jupiter.api.Assertions
+removeImport org.junit.Assert
+;;
+
+// Assert.assertTrue(condition) → assertTrue(condition)
+Assert.assertTrue($cond)
+=> Assertions.assertTrue($cond)
+addImport org.junit.jupiter.api.Assertions
+removeImport org.junit.Assert
+;;
+
+// Assert.assertFalse(condition) → assertFalse(condition)
+Assert.assertFalse($cond)
+=> Assertions.assertFalse($cond)
+addImport org.junit.jupiter.api.Assertions
+removeImport org.junit.Assert
+;;
+
+// Assert.assertNull(obj) → assertNull(obj)
+Assert.assertNull($obj)
+=> Assertions.assertNull($obj)
+addImport org.junit.jupiter.api.Assertions
+removeImport org.junit.Assert
+;;
+
+// Assert.assertNotNull(obj) → assertNotNull(obj)
+Assert.assertNotNull($obj)
+=> Assertions.assertNotNull($obj)
+addImport org.junit.jupiter.api.Assertions
+removeImport org.junit.Assert
+;;
+
+// Assert.assertEquals(message, expected, actual) → assertEquals(expected, actual, message)
+// Note: JUnit 5 swaps message to last position
+Assert.assertEquals($msg, $expected, $actual)
+=> Assertions.assertEquals($expected, $actual, $msg)
+addImport org.junit.jupiter.api.Assertions
+removeImport org.junit.Assert
+;;
+
+// Assert.fail() → fail()
+Assert.fail()
+=> Assertions.fail()
+addImport org.junit.jupiter.api.Assertions
+removeImport org.junit.Assert
+;;
+
+// Assert.fail(message) → fail(message)
+Assert.fail($msg)
+=> Assertions.fail($msg)
+addImport org.junit.jupiter.api.Assertions
+removeImport org.junit.Assert
+;;

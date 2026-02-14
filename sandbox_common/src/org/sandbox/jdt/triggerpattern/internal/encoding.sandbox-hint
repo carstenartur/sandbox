@@ -1,0 +1,50 @@
+// encoding.sandbox-hint — StandardCharsets migration rules
+// Replaces string-based charset specifications with StandardCharsets constants
+
+<!id: encoding>
+<!description: Replace string-based charset specifications with StandardCharsets>
+<!severity: warning>
+<!minJavaVersion: 7>
+<!tags: encoding, modernization>
+
+// new String(byte[], "UTF-8") → new String(byte[], StandardCharsets.UTF_8)
+new String($bytes, "UTF-8") :: sourceVersionGE(7)
+=> new String($bytes, StandardCharsets.UTF_8)
+addImport java.nio.charset.StandardCharsets
+;;
+
+// new String(byte[], "ISO-8859-1") → new String(byte[], StandardCharsets.ISO_8859_1)
+new String($bytes, "ISO-8859-1") :: sourceVersionGE(7)
+=> new String($bytes, StandardCharsets.ISO_8859_1)
+addImport java.nio.charset.StandardCharsets
+;;
+
+// new String(byte[], "US-ASCII") → new String(byte[], StandardCharsets.US_ASCII)
+new String($bytes, "US-ASCII") :: sourceVersionGE(7)
+=> new String($bytes, StandardCharsets.US_ASCII)
+addImport java.nio.charset.StandardCharsets
+;;
+
+// "UTF-8".getBytes() → getBytes(StandardCharsets.UTF_8)
+$str.getBytes("UTF-8") :: sourceVersionGE(7)
+=> $str.getBytes(StandardCharsets.UTF_8)
+addImport java.nio.charset.StandardCharsets
+;;
+
+// $str.getBytes("ISO-8859-1") → $str.getBytes(StandardCharsets.ISO_8859_1)
+$str.getBytes("ISO-8859-1") :: sourceVersionGE(7)
+=> $str.getBytes(StandardCharsets.ISO_8859_1)
+addImport java.nio.charset.StandardCharsets
+;;
+
+// new InputStreamReader(in, "UTF-8") → new InputStreamReader(in, StandardCharsets.UTF_8)
+new InputStreamReader($in, "UTF-8") :: sourceVersionGE(7)
+=> new InputStreamReader($in, StandardCharsets.UTF_8)
+addImport java.nio.charset.StandardCharsets
+;;
+
+// new OutputStreamWriter(out, "UTF-8") → new OutputStreamWriter(out, StandardCharsets.UTF_8)
+new OutputStreamWriter($out, "UTF-8") :: sourceVersionGE(7)
+=> new OutputStreamWriter($out, StandardCharsets.UTF_8)
+addImport java.nio.charset.StandardCharsets
+;;
