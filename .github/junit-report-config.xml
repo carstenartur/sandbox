@@ -28,7 +28,6 @@
             <map test="sandbox_method_reuse_test" source="sandbox_method_reuse"/>
             <map test="sandbox_platform_helper_test" source="sandbox_platform_helper"/>
             <map test="sandbox_tools_test" source="sandbox_tools"/>
-            <map test="sandbox_triggerpattern_string_test" source="sandbox_triggerpattern_string"/>
             <map test="sandbox_triggerpattern_test" source="sandbox_triggerpattern"/>
             <map test="sandbox_usage_view_test" source="sandbox_usage_view"/>
             <map test="sandbox_xml_cleanup_test" source="sandbox_xml_cleanup"/>

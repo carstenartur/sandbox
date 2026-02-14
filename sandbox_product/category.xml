@@ -39,9 +39,6 @@
    <feature id="sandbox_cleanup_application_feature">
       <category name="Sandbox"/>
    </feature>
-   <feature id="sandbox_triggerpattern_string_feature">
-      <category name="Sandbox"/>
-   </feature>
    <feature id="sandbox_use_general_type_feature">
       <category name="Sandbox"/>
    </feature>
