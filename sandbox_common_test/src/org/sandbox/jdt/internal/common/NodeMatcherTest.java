@@ -934,16 +934,6 @@ public class NodeMatcherTest {
 			String source = """
 				public class Test {
 					void test() {
-						{
-							continue;
-						}
-					}
-				}
-				""";
-			// Parse as a method body to get the Block with continue
-			String fullSource = """
-				public class Test {
-					void test() {
 						while (true) {
 							{
 								continue;
@@ -952,16 +942,11 @@ public class NodeMatcherTest {
 					}
 				}
 				""";
-			cu = parseSource(fullSource);
+			cu = parseSource(source);
 
 			// Find the inner block (not the method body block or while body)
-			Block innerBlock = null;
-			MethodDeclaration method = findFirstNodeOfType(cu, MethodDeclaration.class);
-			// The while loop body is a Block, inside it is another Block containing continue
-			Block whileBody = (Block) method.getBody().statements().get(0);
-			// whileBody is a WhileStatement, get its body
 			org.eclipse.jdt.core.dom.WhileStatement whileStmt = findFirstNodeOfType(cu, org.eclipse.jdt.core.dom.WhileStatement.class);
-			innerBlock = (Block) ((Block) whileStmt.getBody()).statements().get(0);
+			Block innerBlock = (Block) ((Block) whileStmt.getBody()).statements().get(0);
 
 			AtomicBoolean called = new AtomicBoolean(false);
 
