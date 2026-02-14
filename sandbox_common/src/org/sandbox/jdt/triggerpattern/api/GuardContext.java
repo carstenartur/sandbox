@@ -137,4 +137,14 @@ public final class GuardContext {
 		String version = compilerOptions.get(JavaCore.COMPILER_SOURCE);
 		return version != null ? version : "1.8"; //$NON-NLS-1$
 	}
+	
+	/**
+	 * Returns the matched AST node from the match.
+	 * 
+	 * @return the matched AST node
+	 * @since 1.3.2
+	 */
+	public ASTNode getMatchedNode() {
+		return match.getMatchedNode();
+	}
 }

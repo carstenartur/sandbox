@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IBinding;
@@ -64,6 +65,8 @@ import org.sandbox.jdt.triggerpattern.api.GuardFunction;
  *   <tr><td>{@code isFinal}</td><td>Checks if a binding has the final modifier</td></tr>
  *   <tr><td>{@code hasAnnotation}</td><td>Checks if a binding has a specific annotation</td></tr>
  *   <tr><td>{@code isDeprecated}</td><td>Checks if a binding is deprecated</td></tr>
+ *   <tr><td>{@code contains}</td><td>Checks if a text pattern occurs in the enclosing method body</td></tr>
+ *   <tr><td>{@code notContains}</td><td>Checks if a text pattern does NOT occur in the enclosing method body</td></tr>
  * </table>
  * 
  * @since 1.3.2
@@ -133,6 +136,10 @@ public final class GuardRegistry {
 		// Annotation guards
 		register("hasAnnotation", this::evaluateHasAnnotation); //$NON-NLS-1$
 		register("isDeprecated", this::evaluateIsDeprecated); //$NON-NLS-1$
+		
+		// Negated pattern guards (Phase 6.3)
+		register("contains", this::evaluateContains); //$NON-NLS-1$
+		register("notContains", this::evaluateNotContains); //$NON-NLS-1$
 	}
 	
 	/**
@@ -503,6 +510,72 @@ public final class GuardRegistry {
 			return value.substring(1, value.length() - 1);
 		}
 		return value;
+	}
+	
+	/**
+	 * Checks if a text pattern occurs within the enclosing method body.
+	 * 
+	 * <p>This guard traverses the enclosing method's body looking for a simple text
+	 * match in the source representation. Useful for checking whether a particular
+	 * call (e.g., {@code close()}) exists in the same method.</p>
+	 * 
+	 * Args: [textToFind] or [placeholderName, textToFind]
+	 */
+	private boolean evaluateContains(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		
+		String textToFind;
+		ASTNode contextNode;
+		
+		if (args.length >= 2) {
+			// contains($x, "text") - search in $x's enclosing method
+			String placeholderName = args[0].toString();
+			textToFind = stripQuotes(args[1].toString());
+			contextNode = ctx.getBinding(placeholderName);
+		} else {
+			// contains("text") - search in matched node's enclosing method
+			textToFind = stripQuotes(args[0].toString());
+			contextNode = ctx.getMatchedNode();
+		}
+		
+		if (contextNode == null) {
+			return false;
+		}
+		
+		Block methodBody = findEnclosingMethodBody(contextNode);
+		if (methodBody == null) {
+			return false;
+		}
+		
+		return methodBody.toString().contains(textToFind);
+	}
+	
+	/**
+	 * Checks if a text pattern does NOT occur within the enclosing method body.
+	 * 
+	 * <p>Negation of {@link #evaluateContains}. Useful for detecting "missing calls"
+	 * patterns (e.g., "close() is missing after open()").</p>
+	 * 
+	 * Args: [textToFind] or [placeholderName, textToFind]
+	 */
+	private boolean evaluateNotContains(GuardContext ctx, Object... args) {
+		return !evaluateContains(ctx, args);
+	}
+	
+	/**
+	 * Finds the enclosing method body for an AST node.
+	 */
+	private Block findEnclosingMethodBody(ASTNode node) {
+		ASTNode current = node;
+		while (current != null) {
+			if (current instanceof MethodDeclaration methodDecl) {
+				return methodDecl.getBody();
+			}
+			current = current.getParent();
+		}
+		return null;
 	}
 	
 	/**
