@@ -120,7 +120,10 @@ public final class TransformationRule {
 	 */
 	public RewriteAlternative findMatchingAlternative(GuardContext ctx) {
 		for (RewriteAlternative alt : alternatives) {
-			if (alt.isOtherwise() || alt.condition().evaluate(ctx)) {
+			if (alt.isOtherwise()) {
+				return alt;
+			}
+			if (alt.condition() != null && alt.condition().evaluate(ctx)) {
 				return alt;
 			}
 		}
