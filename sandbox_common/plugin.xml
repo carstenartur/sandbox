@@ -2,6 +2,7 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension-point id="org.sandbox.jdt.triggerpattern.hints" name="Trigger Pattern Hints" schema="schema/org.sandbox.jdt.triggerpattern.hints.exsd"/>
+   <extension-point id="org.sandbox.jdt.triggerpattern.guards" name="Trigger Pattern Guards" schema="schema/org.sandbox.jdt.triggerpattern.guards.exsd"/>
    
    <extension
          point="org.eclipse.jdt.ui.quickAssistProcessors">

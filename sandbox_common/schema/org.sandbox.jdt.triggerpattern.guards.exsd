@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Schema file written by PDE -->
+<schema targetNamespace="sandbox_common" xmlns="http://www.w3.org/2001/XMLSchema">
+<annotation>
+      <appinfo>
+         <meta.schema plugin="sandbox_common" id="org.sandbox.jdt.triggerpattern.guards" name="Trigger Pattern Guards"/>
+      </appinfo>
+      <documentation>
+         Extension point for registering custom guard functions for the TriggerPattern framework.
+Guard functions are used in .sandbox-hint files to add conditions to transformation rules.
+      </documentation>
+   </annotation>
+
+   <element name="extension">
+      <annotation>
+         <appinfo>
+            <meta.element />
+         </appinfo>
+      </annotation>
+      <complexType>
+         <choice minOccurs="1" maxOccurs="unbounded">
+            <element ref="guard"/>
+         </choice>
+         <attribute name="point" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="id" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="name" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute translatable="true"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="guard">
+      <annotation>
+         <documentation>
+            Registers a custom guard function for use in .sandbox-hint transformation rules.
+         </documentation>
+      </annotation>
+      <complexType>
+         <attribute name="name" type="string" use="required">
+            <annotation>
+               <documentation>
+                  The name of the guard function as used in .sandbox-hint files
+                  (e.g., "myCustomGuard" for use as ":: myCustomGuard($x)").
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="class" type="string" use="required">
+            <annotation>
+               <documentation>
+                  The fully qualified name of a class implementing
+                  org.sandbox.jdt.triggerpattern.api.GuardFunction.
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java" basedOn=":org.sandbox.jdt.triggerpattern.api.GuardFunction"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="since"/>
+      </appinfo>
+      <documentation>
+         1.3.6
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="examples"/>
+      </appinfo>
+      <documentation>
+         &lt;extension point="org.sandbox.jdt.triggerpattern.guards"&gt;
+   &lt;guard
+      name="myCustomGuard"
+      class="com.example.MyCustomGuardFunction"/&gt;
+&lt;/extension&gt;
+      </documentation>
+   </annotation>
+
+</schema>
