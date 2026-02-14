@@ -21,6 +21,8 @@
 - ✅ Shift out of range detection
 - ✅ Test module (`sandbox_triggerpattern_test`) with tests for all cleanup types
 - ✅ Encoding pattern plugins (CharsetForName, StringConstructor, StringGetBytes)
+- ✅ `.sandbox-hint` DSL-based CleanUp and QuickAssist (`HintFileCleanUp`, `HintFileQuickAssistProcessor`)
+- ✅ Bundled pattern libraries: `collections`, `modernize-java9`, `modernize-java11`, `performance`
 
 ### In Progress
 - [ ] Additional pattern variations

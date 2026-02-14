@@ -218,10 +218,11 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] Phase 6.2: Pattern Libraries
   - [x] `HintFileRegistry` singleton for loading/managing `.sandbox-hint` files
   - [x] Support for classpath resources, strings, and readers
-  - [x] Bundled library names defined (encoding, collections, modernize-java11, performance, junit5)
+  - [x] Bundled library names defined (encoding, collections, modernize-java9, modernize-java11, performance, junit5)
   - [x] Bundled `.sandbox-hint` pattern library files created:
     - [x] `encoding.sandbox-hint` — 7 StandardCharsets migration rules with guards and import directives
     - [x] `collections.sandbox-hint` — 7 Collection API modernization rules (Java 9+)
+    - [x] `modernize-java9.sandbox-hint` — 7 Java 9+ API modernization rules (Collections.unmodifiable, Optional, Stream.toList)
     - [x] `modernize-java11.sandbox-hint` — 7 Java 11+ API modernization rules
     - [x] `performance.sandbox-hint` — 9 performance optimization rules
     - [x] `junit5.sandbox-hint` — 8 JUnit 4 → 5 migration rules with import directives

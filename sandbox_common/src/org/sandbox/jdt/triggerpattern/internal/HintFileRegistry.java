@@ -42,6 +42,7 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
  * <p>Generic libraries bundled with the framework:</p>
  * <ul>
  *   <li>{@code collections.sandbox-hint} — Collection API improvements</li>
+ *   <li>{@code modernize-java9.sandbox-hint} — Java 9+ API modernization</li>
  *   <li>{@code modernize-java11.sandbox-hint} — Java 11+ API modernization</li>
  *   <li>{@code performance.sandbox-hint} — Performance optimizations</li>
  * </ul>
@@ -70,6 +71,7 @@ public final class HintFileRegistry {
 	 */
 	private static final String[] BUNDLED_LIBRARIES = {
 		"collections.sandbox-hint", //$NON-NLS-1$
+		"modernize-java9.sandbox-hint", //$NON-NLS-1$
 		"modernize-java11.sandbox-hint", //$NON-NLS-1$
 		"performance.sandbox-hint" //$NON-NLS-1$
 	};
