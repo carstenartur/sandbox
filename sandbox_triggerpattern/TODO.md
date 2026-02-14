@@ -18,9 +18,11 @@
 - ✅ Batch apply to entire project support
 - ✅ Fixed preference registration (v1.2.2) - Added missing `registerPreference()` call to properly count checkbox in cleanup UI
 - ✅ Double-checked locking detection (concurrency hint, inspired by NetBeans DoubleCheck)
+- ✅ Shift out of range detection
+- ✅ Test module (`sandbox_triggerpattern_test`) with tests for all cleanup types
+- ✅ Encoding pattern plugins (CharsetForName, StringConstructor, StringGetBytes)
 
 ### In Progress
-- [ ] Test module implementation (in progress)
 - [ ] Additional pattern variations
 
 ### Pending
@@ -30,30 +32,17 @@
 
 ## Priority Tasks
 
-### 1. Complete Test Module
+### 1. ~~Complete Test Module~~ ✅ COMPLETED
 **Priority**: High  
 **Effort**: 2-3 hours
 
-Create comprehensive test cases in `sandbox_triggerpattern_string_test`:
-- Test pattern matching for `"" + $x`
-- Test pattern matching for `$x + ""`
-- Verify proposals are generated
-- Verify replacements are correct
-- Test with various expression types (variables, method calls, literals)
-
-**Test Structure**:
-```java
-@Test
-void testEmptyStringPrefixSimplification() {
-    String input = """
-        String result = "" + value;
-        """;
-    String expected = """
-        String result = String.valueOf(value);
-        """;
-    // Test pattern match and replacement
-}
-```
+Test module `sandbox_triggerpattern_test` has been created with comprehensive test cases:
+- `StringSimplificationCleanUpTest` — string simplification cleanup tests
+- `ThreadingCleanUpTest` — threading cleanup tests
+- `ShiftOutOfRangeCleanUpTest` — shift out of range cleanup tests
+- `DoubleCheckLockingTest` — double-checked locking detection tests
+- `StringSimplificationTest` — unit tests for string simplification patterns
+- `EncodingPatternTest` — encoding pattern plugin tests
 
 ### 2. Add Edge Case Handling
 **Priority**: Medium  
@@ -127,7 +116,7 @@ Should check expression type before suggesting.
 
 ## Future Enhancements
 
-### Integration with Save Actions
+### ~~Integration with Save Actions~~ ✅ COMPLETED
 **Priority**: Medium → **COMPLETED**  
 **Effort**: Depends on TriggerPattern engine enhancements → **Completed in v1.2.2**
 

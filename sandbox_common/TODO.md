@@ -243,6 +243,15 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] Placeholder substitution in suggested replacements
   - [x] Support for hint-only rules (no replacement)
 
+### Completed (v1.3.4 - Pattern Composition)
+- [x] Pattern composition via `<!include:>` directive
+  - [x] `HintFile.getIncludes()` / `HintFile.addInclude()` for referencing other hint files by ID
+  - [x] `HintFileRegistry.resolveIncludes()` for recursive include resolution
+  - [x] Circular include detection (silently breaks cycles)
+  - [x] Missing include references silently skipped
+  - [x] `BatchTransformationProcessor` constructor with pre-resolved rules
+  - [x] Comprehensive test suite (PatternCompositionTest)
+
 ### Planned Enhancements
 
 #### High Priority
@@ -253,11 +262,11 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] Batch processing: `BatchTransformationProcessor` applies all rules from a `HintFile` in a single pass
   - [ ] CleanUp implementation using TriggerPattern engine (Eclipse CleanUp wrapper)
   - [ ] Save Actions integration
+- [x] Pattern composition
+  - [x] Allow patterns to reference other patterns via `<!include:>` directive
 - [ ] Add integration tests for HintRegistry and extension point loading
 - [ ] Add UI tests for Quick Assist processor (requires PDE test setup)
 - [ ] Documentation: User guide for creating custom hints
-- [ ] Pattern composition
-  - [ ] Allow patterns to reference other patterns
 
 #### Low Priority
 - [ ] Pattern debugging tools

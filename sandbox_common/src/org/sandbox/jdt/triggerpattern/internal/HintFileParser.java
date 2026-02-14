@@ -46,6 +46,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * &lt;!severity: warning&gt;
  * &lt;!minJavaVersion: 11&gt;
  * &lt;!tags: performance, modernization&gt;
+ * &lt;!include: other.hint.id&gt;
  *
  * // Simple rule
  * source_pattern
@@ -215,6 +216,9 @@ public final class HintFileParser {
 				break;
 			case "tags": //$NON-NLS-1$
 				hintFile.setTags(Arrays.asList(value.split("\\s*,\\s*"))); //$NON-NLS-1$
+				break;
+			case "include": //$NON-NLS-1$
+				hintFile.addInclude(value);
 				break;
 			default:
 				// Unknown metadata key is ignored for forward compatibility

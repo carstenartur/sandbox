@@ -20,12 +20,15 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
 
 /**
@@ -187,6 +190,48 @@ public final class HintFileRegistry {
 	public void clear() {
 		hintFiles.clear();
 		bundledLoaded.set(false);
+	}
+	
+	/**
+	 * Resolves include directives for a hint file by collecting all rules
+	 * from referenced hint files.
+	 * 
+	 * <p>When a hint file has {@code <!include: other-id>} directives, this method
+	 * looks up the referenced hint files by ID and returns a combined list of all
+	 * rules (the file's own rules plus all included rules).</p>
+	 * 
+	 * <p>Circular includes are detected and silently broken to prevent infinite loops.</p>
+	 * 
+	 * @param hintFile the hint file whose includes should be resolved
+	 * @return list of all rules including those from included files
+	 * @since 1.3.4
+	 */
+	public List<TransformationRule> resolveIncludes(HintFile hintFile) {
+		List<TransformationRule> allRules = new ArrayList<>(hintFile.getRules());
+		Set<String> visited = new HashSet<>();
+		if (hintFile.getId() != null) {
+			visited.add(hintFile.getId());
+		}
+		resolveIncludesRecursive(hintFile, allRules, visited);
+		return Collections.unmodifiableList(allRules);
+	}
+	
+	/**
+	 * Recursively resolves includes, tracking visited IDs to prevent cycles.
+	 */
+	private void resolveIncludesRecursive(HintFile hintFile, 
+			List<TransformationRule> allRules, Set<String> visited) {
+		for (String includeId : hintFile.getIncludes()) {
+			if (visited.contains(includeId)) {
+				continue; // Break circular reference
+			}
+			visited.add(includeId);
+			HintFile included = hintFiles.get(includeId);
+			if (included != null) {
+				allRules.addAll(included.getRules());
+				resolveIncludesRecursive(included, allRules, visited);
+			}
+		}
 	}
 	
 	/**
