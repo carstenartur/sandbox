@@ -116,16 +116,14 @@ public final class VariableResolver {
 
 		while (currentNode != null) {
 			// Search in blocks
-			if (currentNode instanceof Block) {
-				Block block = (Block) currentNode;
+			if (currentNode instanceof Block block) {
 				String type = searchBlockForVariableType(block, varName);
 				if (type != null) {
 					return type;
 				}
 			}
 			// Search in method bodies
-			else if (currentNode instanceof MethodDeclaration) {
-				MethodDeclaration method = (MethodDeclaration) currentNode;
+			else if (currentNode instanceof MethodDeclaration method) {
 				if (method.getBody() != null) {
 					String type = searchBlockForVariableType(method.getBody(), varName);
 					if (type != null) {
@@ -134,8 +132,7 @@ public final class VariableResolver {
 				}
 			}
 			// Search in initializer blocks (instance or static)
-			else if (currentNode instanceof Initializer) {
-				Initializer initializer = (Initializer) currentNode;
+			else if (currentNode instanceof Initializer initializer) {
 				if (initializer.getBody() != null) {
 					String type = searchBlockForVariableType(initializer.getBody(), varName);
 					if (type != null) {
@@ -144,13 +141,11 @@ public final class VariableResolver {
 				}
 			}
 			// Search in lambda expressions
-			else if (currentNode instanceof LambdaExpression) {
-				LambdaExpression lambda = (LambdaExpression) currentNode;
-				if (lambda.getBody() instanceof Block) {
-					String type = searchBlockForVariableType((Block) lambda.getBody(), varName);
-					if (type != null) {
-						return type;
-					}
+			else if (currentNode instanceof LambdaExpression lambda
+					&& lambda.getBody() instanceof Block lambdaBlock) {
+				String type = searchBlockForVariableType(lambdaBlock, varName);
+				if (type != null) {
+					return type;
 				}
 			}
 
@@ -195,14 +190,11 @@ public final class VariableResolver {
 		}
 
 		for (Object stmtObj : block.statements()) {
-			if (stmtObj instanceof VariableDeclarationStatement) {
-				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
+			if (stmtObj instanceof VariableDeclarationStatement varDecl) {
 				for (Object fragObj : varDecl.fragments()) {
-					if (fragObj instanceof VariableDeclarationFragment) {
-						VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
-						if (frag.getName().getIdentifier().equals(varName)) {
-							return extractTypeName(varDecl.getType());
-						}
+					if (fragObj instanceof VariableDeclarationFragment frag
+							&& frag.getName().getIdentifier().equals(varName)) {
+						return extractTypeName(varDecl.getType());
 					}
 				}
 			}
@@ -223,17 +215,14 @@ public final class VariableResolver {
 
 		if (type.isPrimitiveType()) {
 			return ((PrimitiveType) type).getPrimitiveTypeCode().toString();
-		} else if (type.isSimpleType()) {
-			SimpleType simpleType = (SimpleType) type;
+		} else if (type instanceof SimpleType simpleType) {
 			ITypeBinding binding = simpleType.resolveBinding();
 			if (binding != null) {
 				return binding.getName();
 			}
 			return simpleType.getName().getFullyQualifiedName();
-		} else if (type.isArrayType()) {
-			ArrayType arrayType = (ArrayType) type;
-			Type elementType = arrayType.getElementType();
-			String elementTypeName = extractTypeName(elementType);
+		} else if (type instanceof ArrayType arrayType) {
+			String elementTypeName = extractTypeName(arrayType.getElementType());
 			return elementTypeName != null ? elementTypeName + "[]" : null; //$NON-NLS-1$
 		} else {
 			return type.toString();
@@ -314,17 +303,13 @@ public final class VariableResolver {
 		// Start from the given node and walk up to find variable declarations
 		ASTNode current = startNode;
 		while (current != null) {
-			if (current instanceof Block) {
-				Block block = (Block) current;
+			if (current instanceof Block block) {
 				for (Object stmtObj : block.statements()) {
-					if (stmtObj instanceof VariableDeclarationStatement) {
-						VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmtObj;
+					if (stmtObj instanceof VariableDeclarationStatement varDecl) {
 						for (Object fragObj : varDecl.fragments()) {
-							if (fragObj instanceof VariableDeclarationFragment) {
-								VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
-								if (varName.equals(frag.getName().getIdentifier())) {
-									return frag;
-								}
+							if (fragObj instanceof VariableDeclarationFragment frag
+									&& varName.equals(frag.getName().getIdentifier())) {
+								return frag;
 							}
 						}
 					}

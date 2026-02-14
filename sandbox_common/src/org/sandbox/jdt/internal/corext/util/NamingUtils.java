@@ -127,12 +127,9 @@ public final class NamingUtils {
 	 */
 	public static String extractClassNameFromField(FieldDeclaration field) {
 		for (Object fragmentObj : field.fragments()) {
-			if (fragmentObj instanceof VariableDeclarationFragment) {
-				VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;
-				if (fragment.getInitializer() instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
-					return extractTypeName(
-							((org.eclipse.jdt.core.dom.ClassInstanceCreation) fragment.getInitializer()).getType());
-				}
+			if (fragmentObj instanceof VariableDeclarationFragment fragment
+					&& fragment.getInitializer() instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation creation) {
+				return extractTypeName(creation.getType());
 			}
 		}
 		return null;
@@ -162,8 +159,7 @@ public final class NamingUtils {
 		StringBuilder fullClassName = new StringBuilder();
 		Type currentType = qualifiedType;
 
-		while (currentType instanceof QualifiedType) {
-			QualifiedType currentQualified = (QualifiedType) currentType;
+		while (currentType instanceof QualifiedType currentQualified) {
 			if (fullClassName.length() > 0) {
 				fullClassName.insert(0, "."); //$NON-NLS-1$
 			}
@@ -180,10 +176,10 @@ public final class NamingUtils {
 	 * @return the type name, or null if not a recognized type
 	 */
 	public static String extractTypeName(Type type) {
-		if (type instanceof QualifiedType) {
-			return extractQualifiedTypeName((QualifiedType) type);
-		} else if (type instanceof SimpleType) {
-			return ((SimpleType) type).getName().getFullyQualifiedName();
+		if (type instanceof QualifiedType qualifiedType) {
+			return extractQualifiedTypeName(qualifiedType);
+		} else if (type instanceof SimpleType simpleType) {
+			return simpleType.getName().getFullyQualifiedName();
 		}
 		return null;
 	}

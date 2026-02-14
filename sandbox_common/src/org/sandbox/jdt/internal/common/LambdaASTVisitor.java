@@ -21,9 +21,6 @@ package org.sandbox.jdt.internal.common;
  */
 
 
-import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
-
 import org.eclipse.jdt.core.dom.*;
 
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
@@ -59,79 +56,71 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 
 	@Override
 	public boolean visit(AnnotationTypeDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AnnotationTypeDeclaration)) {
-			return ((BiPredicate<AnnotationTypeDeclaration, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.AnnotationTypeDeclaration))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.AnnotationTypeDeclaration)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.AnnotationTypeDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(AnnotationTypeMemberDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AnnotationTypeMemberDeclaration)) {
-			return ((BiPredicate<AnnotationTypeMemberDeclaration, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.AnnotationTypeMemberDeclaration))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.AnnotationTypeMemberDeclaration)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.AnnotationTypeMemberDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(AnonymousClassDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AnonymousClassDeclaration)) {
-			return ((BiPredicate<AnonymousClassDeclaration, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.AnonymousClassDeclaration))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.AnonymousClassDeclaration)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.AnonymousClassDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ArrayAccess node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayAccess)) {
-			return ((BiPredicate<ArrayAccess, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayAccess)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ArrayAccess)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ArrayAccess, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ArrayCreation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayCreation)) {
-			return ((BiPredicate<ArrayCreation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayCreation)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ArrayCreation)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ArrayCreation, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ArrayInitializer node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayInitializer)) {
-			return ((BiPredicate<ArrayInitializer, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayInitializer)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ArrayInitializer)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ArrayInitializer, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ArrayType node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ArrayType)) {
-			return ((BiPredicate<ArrayType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ArrayType)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ArrayType)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ArrayType, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(AssertStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.AssertStatement)) {
-			return ((BiPredicate<AssertStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.AssertStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.AssertStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.AssertStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Assignment node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Assignment)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.Assignment)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.Assignment);
 			if(config != null && config.getOperator() != null) {
 				Assignment.Operator operator = Assignment.Operator.toOperator(config.getOperator());
@@ -139,60 +128,54 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return true;
 				}
 			}
-			return ((BiPredicate<Assignment, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Assignment)))
-					.test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.Assignment, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Block node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Block)) {
-			return ((BiPredicate<Block, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Block))).test(node, this.helperVisitor.dataholder)
-					;
+		if (this.helperVisitor.hasPredicate(VisitorEnum.Block)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.Block, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(BlockComment node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BlockComment)) {
-			return ((BiPredicate<BlockComment, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.BlockComment)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.BlockComment)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.BlockComment, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(BooleanLiteral node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BooleanLiteral)) {
-			return ((BiPredicate<BooleanLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.BooleanLiteral)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.BooleanLiteral)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.BooleanLiteral, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(BreakStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BreakStatement)) {
-			return ((BiPredicate<BreakStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.BreakStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.BreakStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.BreakStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CastExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CastExpression)) {
-			return ((BiPredicate<CastExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CastExpression)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.CastExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.CastExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CatchClause node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CatchClause)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.CatchClause)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.CatchClause);
 			if(config != null) {
 				Class<?> exceptionType = config.getExceptionType();
@@ -213,24 +196,22 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 				}
 			}
-			return ((BiPredicate<CatchClause, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CatchClause)))
-					.test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.CatchClause, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CharacterLiteral node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CharacterLiteral)) {
-			return ((BiPredicate<CharacterLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CharacterLiteral)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.CharacterLiteral)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.CharacterLiteral, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ClassInstanceCreation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ClassInstanceCreation)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ClassInstanceCreation)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.ClassInstanceCreation);
 			if(config != null) {
 				Class<?> typeof = config.getTypeof();
@@ -251,150 +232,134 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 				}
 			}
-			return ((BiPredicate<ClassInstanceCreation, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.ClassInstanceCreation))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.ClassInstanceCreation, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CompilationUnit node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CompilationUnit)) {
-			return ((BiPredicate<CompilationUnit, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CompilationUnit)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.CompilationUnit)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.CompilationUnit, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ConditionalExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ConditionalExpression)) {
-			return ((BiPredicate<ConditionalExpression, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.ConditionalExpression))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ConditionalExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ConditionalExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ConstructorInvocation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ConstructorInvocation)) {
-			return ((BiPredicate<ConstructorInvocation, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.ConstructorInvocation))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ConstructorInvocation)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ConstructorInvocation, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ContinueStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ContinueStatement)) {
-			return ((BiPredicate<ContinueStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ContinueStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ContinueStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ContinueStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(CreationReference node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CreationReference)) {
-			return ((BiPredicate<CreationReference, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.CreationReference)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.CreationReference)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.CreationReference, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Dimension node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Dimension)) {
-			return ((BiPredicate<Dimension, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Dimension)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.Dimension)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.Dimension, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(DoStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.DoStatement)) {
-			return ((BiPredicate<DoStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.DoStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.DoStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.DoStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(EmptyStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EmptyStatement)) {
-			return ((BiPredicate<EmptyStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.EmptyStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.EmptyStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.EmptyStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(EnhancedForStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EnhancedForStatement)) {
-			return ((BiPredicate<EnhancedForStatement, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.EnhancedForStatement))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.EnhancedForStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.EnhancedForStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(EnumConstantDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EnumConstantDeclaration)) {
-			return ((BiPredicate<EnumConstantDeclaration, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.EnumConstantDeclaration))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.EnumConstantDeclaration)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.EnumConstantDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(EnumDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.EnumDeclaration)) {
-			return ((BiPredicate<EnumDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.EnumDeclaration)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.EnumDeclaration)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.EnumDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ExportsDirective node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ExportsDirective)) {
-			return ((BiPredicate<ExportsDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ExportsDirective)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ExportsDirective)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ExportsDirective, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ExpressionMethodReference node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.BreakStatement)) {
-			return ((BiPredicate<ExpressionMethodReference, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.ExpressionMethodReference))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ExpressionMethodReference)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ExpressionMethodReference, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ExpressionStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ExpressionStatement)) {
-			return ((BiPredicate<ExpressionStatement, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.ExpressionStatement))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ExpressionStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ExpressionStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(FieldAccess node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.FieldAccess)) {
-			return ((BiPredicate<FieldAccess, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.FieldAccess)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.FieldAccess)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.FieldAccess, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(FieldDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.FieldDeclaration)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.FieldDeclaration)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.FieldDeclaration);
 			if(config != null) {
 				Class<?> typeof = config.getTypeof();
@@ -428,7 +393,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 				}
 			}
-			return ((BiPredicate<FieldDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.FieldDeclaration))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.FieldDeclaration, node);
 		}
 		return true;
 	}
@@ -445,7 +410,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	
 	@Override
 	public boolean visit(ForStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ForStatement)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ForStatement)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.ForStatement);
 			if(config != null) {
 				Class<?> typeof = config.getTypeof();
@@ -466,24 +431,22 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 				}
 			}
-			return ((BiPredicate<ForStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ForStatement)))
-					.test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.ForStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(IfStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.IfStatement)) {
-			return ((BiPredicate<IfStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.IfStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.IfStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.IfStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ImportDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ImportDeclaration)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ImportDeclaration)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.ImportDeclaration);
 			if(config != null) {
 				String data = config.getImportName();
@@ -492,14 +455,14 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return true;
 				}
 			}
-			return ((BiPredicate<ImportDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ImportDeclaration))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.ImportDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(InfixExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.InfixExpression)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.InfixExpression)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.InfixExpression);
 			if(config != null && config.getOperator() != null) {
 				InfixExpression.Operator operator = InfixExpression.Operator.toOperator(config.getOperator());
@@ -507,78 +470,70 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return true;
 				}
 			}
-			return ((BiPredicate<InfixExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.InfixExpression)))
-					.test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.InfixExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Initializer node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Initializer)) {
-			return ((BiPredicate<Initializer, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Initializer)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.Initializer)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.Initializer, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(InstanceofExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.InstanceofExpression)) {
-			return ((BiPredicate<InstanceofExpression, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.InstanceofExpression))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.InstanceofExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.InstanceofExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(IntersectionType node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.IntersectionType)) {
-			return ((BiPredicate<IntersectionType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.IntersectionType)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.IntersectionType)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.IntersectionType, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(Javadoc node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Javadoc)) {
-			return ((BiPredicate<Javadoc, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Javadoc)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.Javadoc)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.Javadoc, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(LabeledStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.LabeledStatement)) {
-			return ((BiPredicate<LabeledStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.LabeledStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.LabeledStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.LabeledStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(LambdaExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.LambdaExpression)) {
-			return ((BiPredicate<LambdaExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.LambdaExpression)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.LambdaExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.LambdaExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(LineComment node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.LineComment)) {
-			return ((BiPredicate<LineComment, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.LineComment)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.LineComment)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.LineComment, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MarkerAnnotation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MarkerAnnotation)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.MarkerAnnotation)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MarkerAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
@@ -593,50 +548,46 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return true;
 				}
 			}
-			return ((BiPredicate<MarkerAnnotation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MarkerAnnotation))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.MarkerAnnotation, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MemberRef node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MemberRef)) {
-			return ((BiPredicate<MemberRef, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MemberRef)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberRef)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.MemberRef, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MemberValuePair node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MemberValuePair)) {
-			return ((BiPredicate<MemberValuePair, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MemberValuePair)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberValuePair)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.MemberValuePair, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MethodRef node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodRef)) {
-			return ((BiPredicate<MethodRef, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodRef)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodRef)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.MethodRef, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MethodRefParameter node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodRefParameter)) {
-			return ((BiPredicate<MethodRefParameter, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodRefParameter)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodRefParameter)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.MethodRefParameter, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MethodDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodDeclaration)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodDeclaration)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MethodDeclaration);
 			if(config != null) {
 				String methodName = config.getMethodName();
@@ -644,15 +595,14 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return true;
 				}
 			}
-			return ((BiPredicate<MethodDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodDeclaration)))
-					.test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.MethodDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(MethodInvocation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodInvocation)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.MethodInvocation)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);
 			if(config != null) {
 				String data = config.getMethodName();
@@ -679,7 +629,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 						}
 				}
 			}
-			return ((BiPredicate<MethodInvocation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.MethodInvocation))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.MethodInvocation, node);
 		}
 		return true;
 	}
@@ -757,43 +707,39 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 
 	@Override
 	public boolean visit(Modifier node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Modifier)) {
-			return ((BiPredicate<Modifier, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.Modifier)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.Modifier)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.Modifier, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ModuleDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleDeclaration)) {
-			return ((BiPredicate<ModuleDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleDeclaration)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ModuleDeclaration)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ModuleDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ModuleModifier node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleModifier)) {
-			return ((BiPredicate<ModuleModifier, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleModifier)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ModuleModifier)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ModuleModifier, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(NameQualifiedType node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NameQualifiedType)) {
-			return ((BiPredicate<NameQualifiedType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.NameQualifiedType)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.NameQualifiedType)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.NameQualifiedType, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(NormalAnnotation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NormalAnnotation)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.NormalAnnotation)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.NormalAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
@@ -808,185 +754,166 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return true;
 				}
 			}
-			return ((BiPredicate<NormalAnnotation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.NormalAnnotation))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.NormalAnnotation, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(NullLiteral node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NullLiteral)) {
-			return ((BiPredicate<NullLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.NullLiteral)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.NullLiteral)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.NullLiteral, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(NumberLiteral node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NumberLiteral)) {
-			return ((BiPredicate<NumberLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.NumberLiteral)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.NumberLiteral)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.NumberLiteral, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(OpensDirective node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.OpensDirective)) {
-			return ((BiPredicate<OpensDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.OpensDirective)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.OpensDirective)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.OpensDirective, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PackageDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PackageDeclaration)) {
-			return ((BiPredicate<PackageDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.PackageDeclaration)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.PackageDeclaration)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.PackageDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ParameterizedType node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ParameterizedType)) {
-			return ((BiPredicate<ParameterizedType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ParameterizedType)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ParameterizedType)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ParameterizedType, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ParenthesizedExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ParenthesizedExpression)) {
-			return ((BiPredicate<ParenthesizedExpression, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.ParenthesizedExpression))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ParenthesizedExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ParenthesizedExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PatternInstanceofExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PatternInstanceofExpression)) {
-			return ((BiPredicate<PatternInstanceofExpression, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.PatternInstanceofExpression))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.PatternInstanceofExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.PatternInstanceofExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PostfixExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PostfixExpression)) {
-			return ((BiPredicate<PostfixExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.PostfixExpression)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.PostfixExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.PostfixExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PrefixExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PrefixExpression)) {
-			return ((BiPredicate<PrefixExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.PrefixExpression)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.PrefixExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.PrefixExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ProvidesDirective node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ProvidesDirective)) {
-			return ((BiPredicate<ProvidesDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ProvidesDirective)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ProvidesDirective)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ProvidesDirective, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(PrimitiveType node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.PrimitiveType)) {
-			return ((BiPredicate<PrimitiveType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.PrimitiveType)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.PrimitiveType)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.PrimitiveType, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(QualifiedName node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.QualifiedName)) {
-			return ((BiPredicate<QualifiedName, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.QualifiedName)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.QualifiedName)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.QualifiedName, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(QualifiedType node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.QualifiedType)) {
-			return ((BiPredicate<QualifiedType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.QualifiedType)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.QualifiedType)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.QualifiedType, node);
 		}
 		return true;
 	}
 
 //	@Override
 //	public boolean visit(ModuleQualifiedName node) {
-//		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ModuleQualifiedName)) {
-//			return ((BiPredicate<ModuleQualifiedName, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ModuleQualifiedName)))
-//					.test(node, this.helperVisitor.dataholder);
+//		if (this.helperVisitor.hasPredicate(VisitorEnum.ModuleQualifiedName)) {
+//			return this.helperVisitor.testPredicate(VisitorEnum.ModuleQualifiedName, node);
 //		}
 //		return true;
 //	}
 
 	@Override
 	public boolean visit(RequiresDirective node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.RequiresDirective)) {
-			return ((BiPredicate<RequiresDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.RequiresDirective)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.RequiresDirective)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.RequiresDirective, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(RecordDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.RecordDeclaration)) {
-			return ((BiPredicate<RecordDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.RecordDeclaration)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.RecordDeclaration)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.RecordDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ReturnStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ReturnStatement)) {
-			return ((BiPredicate<ReturnStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ReturnStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ReturnStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ReturnStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SimpleName node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SimpleName)) {
-			return ((BiPredicate<SimpleName, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SimpleName)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SimpleName)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SimpleName, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SimpleType node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SimpleType)) {
-			return ((BiPredicate<SimpleType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SimpleType)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SimpleType)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SimpleType, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SingleMemberAnnotation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SingleMemberAnnotation)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SingleMemberAnnotation)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.SingleMemberAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
@@ -1001,50 +928,46 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return true;
 				}
 			}
-			return ((BiPredicate<SingleMemberAnnotation, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SingleMemberAnnotation))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.SingleMemberAnnotation, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SingleVariableDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SingleVariableDeclaration)) {
-			return ((BiPredicate<SingleVariableDeclaration, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.SingleVariableDeclaration))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SingleVariableDeclaration)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SingleVariableDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(StringLiteral node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.StringLiteral)) {
-			return ((BiPredicate<StringLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.StringLiteral)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.StringLiteral)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.StringLiteral, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SuperConstructorInvocation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperConstructorInvocation)) {
-			return ((BiPredicate<SuperConstructorInvocation, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.SuperConstructorInvocation))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperConstructorInvocation)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SuperConstructorInvocation, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SuperFieldAccess node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperFieldAccess)) {
-			return ((BiPredicate<SuperFieldAccess, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SuperFieldAccess)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperFieldAccess)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SuperFieldAccess, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SuperMethodInvocation node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperMethodInvocation)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperMethodInvocation)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.SuperMethodInvocation);
 			if(config != null) {
 				String methodName = config.getMethodName();
@@ -1052,114 +975,102 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return true;
 				}
 			}
-			return ((BiPredicate<SuperMethodInvocation, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.SuperMethodInvocation))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.SuperMethodInvocation, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SuperMethodReference node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperMethodReference)) {
-			return ((BiPredicate<SuperMethodReference, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.SuperMethodReference))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperMethodReference)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SuperMethodReference, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SwitchCase node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SwitchCase)) {
-			return ((BiPredicate<SwitchCase, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SwitchCase)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SwitchCase)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SwitchCase, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SwitchExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SwitchExpression)) {
-			return ((BiPredicate<SwitchExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SwitchExpression)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SwitchExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SwitchExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SwitchStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SwitchStatement)) {
-			return ((BiPredicate<SwitchStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.SwitchStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SwitchStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SwitchStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(SynchronizedStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SynchronizedStatement)) {
-			return ((BiPredicate<SynchronizedStatement, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.SynchronizedStatement))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.SynchronizedStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.SynchronizedStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TagElement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TagElement)) {
-			return ((BiPredicate<TagElement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TagElement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TagElement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.TagElement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TextBlock node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TextBlock)) {
-			return ((BiPredicate<TextBlock, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TextBlock)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TextBlock)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.TextBlock, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TextElement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TextElement)) {
-			return ((BiPredicate<TextElement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TextElement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TextElement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.TextElement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ThisExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ThisExpression)) {
-			return ((BiPredicate<ThisExpression, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ThisExpression)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ThisExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ThisExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(ThrowStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ThrowStatement)) {
-			return ((BiPredicate<ThrowStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.ThrowStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.ThrowStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.ThrowStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TryStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TryStatement)) {
-			return ((BiPredicate<TryStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TryStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TryStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.TryStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeDeclaration node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeDeclaration)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeDeclaration)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.TypeDeclaration);
 			if(config != null) {
 				String typeName = config.getTypeName();
@@ -1178,77 +1089,70 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 				}
 			}
-			return ((BiPredicate<TypeDeclaration, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeDeclaration))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.TypeDeclaration, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeDeclarationStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeDeclarationStatement)) {
-			return ((BiPredicate<TypeDeclarationStatement, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.TypeDeclarationStatement))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeDeclarationStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.TypeDeclarationStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeLiteral node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeLiteral)) {
-			return ((BiPredicate<TypeLiteral, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeLiteral)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeLiteral)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.TypeLiteral, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeMethodReference node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeMethodReference)) {
-			return ((BiPredicate<TypeMethodReference, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.TypeMethodReference))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeMethodReference)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.TypeMethodReference, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(TypeParameter node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeParameter)) {
-			return ((BiPredicate<TypeParameter, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.TypeParameter)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeParameter)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.TypeParameter, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(UnionType node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.UnionType)) {
-			return ((BiPredicate<UnionType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.UnionType)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.UnionType)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.UnionType, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(UsesDirective node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.UsesDirective)) {
-			return ((BiPredicate<UsesDirective, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.UsesDirective)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.UsesDirective)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.UsesDirective, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(VariableDeclarationExpression node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationExpression)) {
-			return ((BiPredicate<VariableDeclarationExpression, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.VariableDeclarationExpression))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.VariableDeclarationExpression)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.VariableDeclarationExpression, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(VariableDeclarationStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
+		if (this.helperVisitor.hasPredicate(VisitorEnum.VariableDeclarationStatement)) {
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.VariableDeclarationStatement);
 			if(config != null) {
 				Class<?> data = config.getTypeof();
@@ -1263,388 +1167,354 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 				}
 			}
-			return ((BiPredicate<VariableDeclarationStatement, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.VariableDeclarationStatement))).test(node, this.helperVisitor.dataholder);
+			return this.helperVisitor.testPredicate(VisitorEnum.VariableDeclarationStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(VariableDeclarationFragment node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationFragment)) {
-			return ((BiPredicate<VariableDeclarationFragment, E>) (this.helperVisitor.predicatemap
-					.get(VisitorEnum.VariableDeclarationFragment))).test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.VariableDeclarationFragment)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.VariableDeclarationFragment, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(WhileStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.WhileStatement)) {
-			return ((BiPredicate<WhileStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.WhileStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.WhileStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.WhileStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(WildcardType node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.WildcardType)) {
-			return ((BiPredicate<WildcardType, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.WildcardType)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.WildcardType)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.WildcardType, node);
 		}
 		return true;
 	}
 
 	@Override
 	public boolean visit(YieldStatement node) {
-		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.YieldStatement)) {
-			return ((BiPredicate<YieldStatement, E>) (this.helperVisitor.predicatemap.get(VisitorEnum.YieldStatement)))
-					.test(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasPredicate(VisitorEnum.YieldStatement)) {
+			return this.helperVisitor.testPredicate(VisitorEnum.YieldStatement, node);
 		}
 		return true;
 	}
 
 	@Override
 	public void endVisit(AnnotationTypeDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AnnotationTypeDeclaration)) {
-			((BiConsumer<AnnotationTypeDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.AnnotationTypeDeclaration)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.AnnotationTypeDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.AnnotationTypeDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(AnnotationTypeMemberDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AnnotationTypeMemberDeclaration)) {
-			((BiConsumer<AnnotationTypeMemberDeclaration, E>) (this.helperVisitor.consumermap
-					.get(VisitorEnum.AnnotationTypeMemberDeclaration))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.AnnotationTypeMemberDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.AnnotationTypeMemberDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(AnonymousClassDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AnonymousClassDeclaration)) {
-			((BiConsumer<AnonymousClassDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.AnonymousClassDeclaration)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.AnonymousClassDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.AnonymousClassDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ArrayAccess node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ArrayAccess)) {
-			((BiConsumer<ArrayAccess, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ArrayAccess))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayAccess)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayAccess, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ArrayCreation node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ArrayCreation)) {
-			((BiConsumer<ArrayCreation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ArrayCreation))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayCreation)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayCreation, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ArrayInitializer node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ArrayInitializer)) {
-			((BiConsumer<ArrayInitializer, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ArrayInitializer))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayInitializer)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayInitializer, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ArrayType node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ArrayType)) {
-			((BiConsumer<ArrayType, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ArrayType))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ArrayType)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ArrayType, node);
 		}
 	}
 
 	@Override
 	public void endVisit(AssertStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.AssertStatement)) {
-			((BiConsumer<AssertStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.AssertStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.AssertStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.AssertStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(Assignment node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Assignment)) {
-			((BiConsumer<Assignment, E>) (this.helperVisitor.consumermap.get(VisitorEnum.Assignment))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.Assignment)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.Assignment, node);
 		}
 	}
 
 	@Override
 	public void endVisit(Block node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Block)) {
-			((BiConsumer<Block, E>) (this.helperVisitor.consumermap.get(VisitorEnum.Block))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.Block)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.Block, node);
 		}
 	}
 
 	@Override
 	public void endVisit(BlockComment node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.BlockComment)) {
-			((BiConsumer<BlockComment, E>) (this.helperVisitor.consumermap.get(VisitorEnum.BlockComment))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.BlockComment)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.BlockComment, node);
 		}
 	}
 
 	@Override
 	public void endVisit(BooleanLiteral node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.BooleanLiteral)) {
-			((BiConsumer<BooleanLiteral, E>) (this.helperVisitor.consumermap.get(VisitorEnum.BooleanLiteral))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.BooleanLiteral)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.BooleanLiteral, node);
 		}
 	}
 
 	@Override
 	public void endVisit(BreakStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.BreakStatement)) {
-			((BiConsumer<BreakStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.BreakStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.BreakStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.BreakStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(CastExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CastExpression)) {
-			((BiConsumer<CastExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.CastExpression))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.CastExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.CastExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(CatchClause node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CatchClause)) {
-			((BiConsumer<CatchClause, E>) (this.helperVisitor.consumermap.get(VisitorEnum.CatchClause))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.CatchClause)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.CatchClause, node);
 		}
 	}
 
 	@Override
 	public void endVisit(CharacterLiteral node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CharacterLiteral)) {
-			((BiConsumer<CharacterLiteral, E>) (this.helperVisitor.consumermap.get(VisitorEnum.CharacterLiteral))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.CharacterLiteral)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.CharacterLiteral, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ClassInstanceCreation node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ClassInstanceCreation)) {
-			((BiConsumer<ClassInstanceCreation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ClassInstanceCreation)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ClassInstanceCreation)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ClassInstanceCreation, node);
 		}
 	}
 
 	@Override
 	public void endVisit(CompilationUnit node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CompilationUnit)) {
-			((BiConsumer<CompilationUnit, E>) (this.helperVisitor.consumermap.get(VisitorEnum.CompilationUnit))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.CompilationUnit)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.CompilationUnit, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ConditionalExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ConditionalExpression)) {
-			((BiConsumer<ConditionalExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ConditionalExpression)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ConditionalExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ConditionalExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ConstructorInvocation node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ConstructorInvocation)) {
-			((BiConsumer<ConstructorInvocation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ConstructorInvocation)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ConstructorInvocation)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ConstructorInvocation, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ContinueStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ContinueStatement)) {
-			((BiConsumer<ContinueStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ContinueStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ContinueStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ContinueStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(CreationReference node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.CreationReference)) {
-			((BiConsumer<CreationReference, E>) (this.helperVisitor.consumermap.get(VisitorEnum.CreationReference))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.CreationReference)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.CreationReference, node);
 		}
 	}
 
 	@Override
 	public void endVisit(Dimension node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Dimension)) {
-			((BiConsumer<Dimension, E>) (this.helperVisitor.consumermap.get(VisitorEnum.Dimension))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.Dimension)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.Dimension, node);
 		}
 	}
 
 	@Override
 	public void endVisit(DoStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.DoStatement)) {
-			((BiConsumer<DoStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.DoStatement))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.DoStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.DoStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(EmptyStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.EmptyStatement)) {
-			((BiConsumer<EmptyStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.EmptyStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.EmptyStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.EmptyStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(EnhancedForStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.EnhancedForStatement)) {
-			((BiConsumer<EnhancedForStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.EnhancedForStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.EnhancedForStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.EnhancedForStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(EnumConstantDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.EnumConstantDeclaration)) {
-			((BiConsumer<EnumConstantDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.EnumConstantDeclaration)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumConstantDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.EnumConstantDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(EnumDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.EnumDeclaration)) {
-			((BiConsumer<EnumDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.EnumDeclaration))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.EnumDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ExportsDirective node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ExportsDirective)) {
-			((BiConsumer<ExportsDirective, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ExportsDirective))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ExportsDirective)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ExportsDirective, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ExpressionMethodReference node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ExpressionMethodReference)) {
-			((BiConsumer<ExpressionMethodReference, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ExpressionMethodReference)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ExpressionMethodReference)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ExpressionMethodReference, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ExpressionStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ExpressionStatement)) {
-			((BiConsumer<ExpressionStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ExpressionStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ExpressionStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ExpressionStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(FieldAccess node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.FieldAccess)) {
-			((BiConsumer<FieldAccess, E>) (this.helperVisitor.consumermap.get(VisitorEnum.FieldAccess))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.FieldAccess)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.FieldAccess, node);
 		}
 	}
 
 	@Override
 	public void endVisit(FieldDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.FieldDeclaration)) {
-			((BiConsumer<FieldDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.FieldDeclaration))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.FieldDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.FieldDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ForStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ForStatement)) {
-			((BiConsumer<ForStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ForStatement))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ForStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ForStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(IfStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.IfStatement)) {
-			((BiConsumer<IfStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.IfStatement))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.IfStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.IfStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ImportDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ImportDeclaration)) {
-			((BiConsumer<ImportDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ImportDeclaration))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ImportDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ImportDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(InfixExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.InfixExpression)) {
-			((BiConsumer<InfixExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.InfixExpression))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.InfixExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.InfixExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(Initializer node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Initializer)) {
-			((BiConsumer<Initializer, E>) (this.helperVisitor.consumermap.get(VisitorEnum.Initializer))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.Initializer)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.Initializer, node);
 		}
 	}
 
 	@Override
 	public void endVisit(InstanceofExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.InstanceofExpression)) {
-			((BiConsumer<InstanceofExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.InstanceofExpression))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.InstanceofExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.InstanceofExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(IntersectionType node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.IntersectionType)) {
-			((BiConsumer<IntersectionType, E>) (this.helperVisitor.consumermap.get(VisitorEnum.IntersectionType))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.IntersectionType)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.IntersectionType, node);
 		}
 	}
 
 	@Override
 	public void endVisit(Javadoc node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Javadoc)) {
-			((BiConsumer<Javadoc, E>) (this.helperVisitor.consumermap.get(VisitorEnum.Javadoc))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.Javadoc)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.Javadoc, node);
 		}
 	}
 
 	@Override
 	public void endVisit(LabeledStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.LabeledStatement)) {
-			((BiConsumer<LabeledStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.LabeledStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.LabeledStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.LabeledStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(LambdaExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.LambdaExpression)) {
-			((BiConsumer<LambdaExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.LambdaExpression))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.LambdaExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.LambdaExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(LineComment node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.LineComment)) {
-			((BiConsumer<LineComment, E>) (this.helperVisitor.consumermap.get(VisitorEnum.LineComment))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.LineComment)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.LineComment, node);
 		}
 	}
 
 	@Override
 	public void endVisit(MarkerAnnotation node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MarkerAnnotation)) {
+		if (this.helperVisitor.hasConsumer(VisitorEnum.MarkerAnnotation)) {
 			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.MarkerAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
@@ -1659,52 +1529,48 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return;
 				}
 			}
-			((BiConsumer<MarkerAnnotation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.MarkerAnnotation))).accept(node,
-					this.helperVisitor.dataholder);
+			this.helperVisitor.acceptConsumer(VisitorEnum.MarkerAnnotation, node);
 		}
 	}
 
 	@Override
 	public void endVisit(MemberRef node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MemberRef)) {
-			((BiConsumer<MemberRef, E>) (this.helperVisitor.consumermap.get(VisitorEnum.MemberRef))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberRef)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.MemberRef, node);
 		}
 	}
 
 	@Override
 	public void endVisit(MemberValuePair node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MemberValuePair)) {
-			((BiConsumer<MemberValuePair, E>) (this.helperVisitor.consumermap.get(VisitorEnum.MemberValuePair))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberValuePair)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.MemberValuePair, node);
 		}
 	}
 
 	@Override
 	public void endVisit(MethodRef node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodRef)) {
-			((BiConsumer<MethodRef, E>) (this.helperVisitor.consumermap.get(VisitorEnum.MethodRef))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodRef)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.MethodRef, node);
 		}
 	}
 
 	@Override
 	public void endVisit(MethodRefParameter node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodRefParameter)) {
-			((BiConsumer<MethodRefParameter, E>) (this.helperVisitor.consumermap.get(VisitorEnum.MethodRefParameter))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodRefParameter)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.MethodRefParameter, node);
 		}
 	}
 
 	@Override
 	public void endVisit(MethodDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodDeclaration)) {
-			((BiConsumer<MethodDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.MethodDeclaration))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.MethodDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(MethodInvocation node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodInvocation)) {
+		if (this.helperVisitor.hasConsumer(VisitorEnum.MethodInvocation)) {
 			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);
 			if(config != null) {
 				String data = config.getMethodName();
@@ -1725,45 +1591,41 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 				}
 			}
-			((BiConsumer<MethodInvocation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.MethodInvocation))).accept(node,
-					this.helperVisitor.dataholder);
+			this.helperVisitor.acceptConsumer(VisitorEnum.MethodInvocation, node);
 		}
 	}
 
 	@Override
 	public void endVisit(Modifier node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.Modifier)) {
-			((BiConsumer<Modifier, E>) (this.helperVisitor.consumermap.get(VisitorEnum.Modifier))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.Modifier)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.Modifier, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ModuleDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleDeclaration)) {
-			((BiConsumer<ModuleDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleDeclaration))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ModuleDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ModuleDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ModuleModifier node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleModifier)) {
-			((BiConsumer<ModuleModifier, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleModifier))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ModuleModifier)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ModuleModifier, node);
 		}
 	}
 
 	@Override
 	public void endVisit(NameQualifiedType node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.NameQualifiedType)) {
-			((BiConsumer<NameQualifiedType, E>) (this.helperVisitor.consumermap.get(VisitorEnum.NameQualifiedType))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.NameQualifiedType)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.NameQualifiedType, node);
 		}
 	}
 
 	@Override
 	public void endVisit(NormalAnnotation node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.NormalAnnotation)) {
+		if (this.helperVisitor.hasConsumer(VisitorEnum.NormalAnnotation)) {
 			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.NormalAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
@@ -1778,349 +1640,321 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					return;
 				}
 			}
-			((BiConsumer<NormalAnnotation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.NormalAnnotation))).accept(node,
-					this.helperVisitor.dataholder);
+			this.helperVisitor.acceptConsumer(VisitorEnum.NormalAnnotation, node);
 		}
 	}
 
 	@Override
 	public void endVisit(NullLiteral node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.NullLiteral)) {
-			((BiConsumer<NullLiteral, E>) (this.helperVisitor.consumermap.get(VisitorEnum.NullLiteral))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.NullLiteral)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.NullLiteral, node);
 		}
 	}
 
 	@Override
 	public void endVisit(NumberLiteral node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.NumberLiteral)) {
-			((BiConsumer<NumberLiteral, E>) (this.helperVisitor.consumermap.get(VisitorEnum.NumberLiteral))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.NumberLiteral)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.NumberLiteral, node);
 		}
 	}
 
 	@Override
 	public void endVisit(OpensDirective node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.OpensDirective)) {
-			((BiConsumer<OpensDirective, E>) (this.helperVisitor.consumermap.get(VisitorEnum.OpensDirective))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.OpensDirective)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.OpensDirective, node);
 		}
 	}
 
 	@Override
 	public void endVisit(PackageDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PackageDeclaration)) {
-			((BiConsumer<PackageDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.PackageDeclaration))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.PackageDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.PackageDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ParameterizedType node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ParameterizedType)) {
-			((BiConsumer<ParameterizedType, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ParameterizedType))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ParameterizedType)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ParameterizedType, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ParenthesizedExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ParenthesizedExpression)) {
-			((BiConsumer<ParenthesizedExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ParenthesizedExpression)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ParenthesizedExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ParenthesizedExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(PatternInstanceofExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PatternInstanceofExpression)) {
-			((BiConsumer<PatternInstanceofExpression, E>) (this.helperVisitor.consumermap
-					.get(VisitorEnum.PatternInstanceofExpression))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.PatternInstanceofExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.PatternInstanceofExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(PostfixExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PostfixExpression)) {
-			((BiConsumer<PostfixExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.PostfixExpression))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.PostfixExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.PostfixExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(PrefixExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PrefixExpression)) {
-			((BiConsumer<PrefixExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.PrefixExpression))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.PrefixExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.PrefixExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ProvidesDirective node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ProvidesDirective)) {
-			((BiConsumer<ProvidesDirective, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ProvidesDirective))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ProvidesDirective)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ProvidesDirective, node);
 		}
 	}
 
 	@Override
 	public void endVisit(PrimitiveType node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.PrimitiveType)) {
-			((BiConsumer<PrimitiveType, E>) (this.helperVisitor.consumermap.get(VisitorEnum.PrimitiveType))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.PrimitiveType)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.PrimitiveType, node);
 		}
 	}
 
 	@Override
 	public void endVisit(QualifiedName node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.QualifiedName)) {
-			((BiConsumer<QualifiedName, E>) (this.helperVisitor.consumermap.get(VisitorEnum.QualifiedName))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.QualifiedName)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.QualifiedName, node);
 		}
 	}
 
 	@Override
 	public void endVisit(QualifiedType node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.QualifiedType)) {
-			((BiConsumer<QualifiedType, E>) (this.helperVisitor.consumermap.get(VisitorEnum.QualifiedType))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.QualifiedType)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.QualifiedType, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ModuleQualifiedName node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ModuleQualifiedName)) {
-			((BiConsumer<ModuleQualifiedName, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ModuleQualifiedName))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ModuleQualifiedName)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ModuleQualifiedName, node);
 		}
 	}
 
 	@Override
 	public void endVisit(RequiresDirective node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.RequiresDirective)) {
-			((BiConsumer<RequiresDirective, E>) (this.helperVisitor.consumermap.get(VisitorEnum.RequiresDirective))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.RequiresDirective)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.RequiresDirective, node);
 		}
 	}
 
 	@Override
 	public void endVisit(RecordDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.RecordDeclaration)) {
-			((BiConsumer<RecordDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.RecordDeclaration))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.RecordDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.RecordDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ReturnStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ReturnStatement)) {
-			((BiConsumer<ReturnStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ReturnStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ReturnStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ReturnStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SimpleName node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SimpleName)) {
-			((BiConsumer<SimpleName, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SimpleName))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SimpleName)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SimpleName, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SimpleType node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SimpleType)) {
-			((BiConsumer<SimpleType, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SimpleType))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SimpleType)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SimpleType, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SingleMemberAnnotation node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SingleMemberAnnotation)) {
-			((BiConsumer<SingleMemberAnnotation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SingleMemberAnnotation)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SingleMemberAnnotation)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SingleMemberAnnotation, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SingleVariableDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SingleVariableDeclaration)) {
-			((BiConsumer<SingleVariableDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SingleVariableDeclaration)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SingleVariableDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SingleVariableDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(StringLiteral node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.StringLiteral)) {
-			((BiConsumer<StringLiteral, E>) (this.helperVisitor.consumermap.get(VisitorEnum.StringLiteral))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.StringLiteral)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.StringLiteral, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SuperConstructorInvocation node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperConstructorInvocation)) {
-			((BiConsumer<SuperConstructorInvocation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SuperConstructorInvocation)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperConstructorInvocation)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SuperConstructorInvocation, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SuperFieldAccess node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperFieldAccess)) {
-			((BiConsumer<SuperFieldAccess, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SuperFieldAccess))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperFieldAccess)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SuperFieldAccess, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SuperMethodInvocation node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperMethodInvocation)) {
-			((BiConsumer<SuperMethodInvocation, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SuperMethodInvocation)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperMethodInvocation)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SuperMethodInvocation, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SuperMethodReference node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SuperMethodReference)) {
-			((BiConsumer<SuperMethodReference, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SuperMethodReference))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperMethodReference)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SuperMethodReference, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SwitchCase node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SwitchCase)) {
-			((BiConsumer<SwitchCase, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SwitchCase))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SwitchCase)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SwitchCase, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SwitchExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SwitchExpression)) {
-			((BiConsumer<SwitchExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SwitchExpression))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SwitchExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SwitchExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SwitchStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SwitchStatement)) {
-			((BiConsumer<SwitchStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SwitchStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SwitchStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SwitchStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(SynchronizedStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.SynchronizedStatement)) {
-			((BiConsumer<SynchronizedStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.SynchronizedStatement)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.SynchronizedStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.SynchronizedStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(TagElement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TagElement)) {
-			((BiConsumer<TagElement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TagElement))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TagElement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TagElement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(TextBlock node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TextBlock)) {
-			((BiConsumer<TextBlock, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TextBlock))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TextBlock)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TextBlock, node);
 		}
 	}
 
 	@Override
 	public void endVisit(TextElement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TextElement)) {
-			((BiConsumer<TextElement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TextElement))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TextElement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TextElement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ThisExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ThisExpression)) {
-			((BiConsumer<ThisExpression, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ThisExpression))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ThisExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ThisExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(ThrowStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.ThrowStatement)) {
-			((BiConsumer<ThrowStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.ThrowStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.ThrowStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.ThrowStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(TryStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TryStatement)) {
-			((BiConsumer<TryStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TryStatement))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TryStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TryStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(TypeDeclaration node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeDeclaration)) {
-			((BiConsumer<TypeDeclaration, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TypeDeclaration))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeDeclaration)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TypeDeclaration, node);
 		}
 	}
 
 	@Override
 	public void endVisit(TypeDeclarationStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeDeclarationStatement)) {
-			((BiConsumer<TypeDeclarationStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TypeDeclarationStatement)))
-					.accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeDeclarationStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TypeDeclarationStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(TypeLiteral node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeLiteral)) {
-			((BiConsumer<TypeLiteral, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TypeLiteral))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeLiteral)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TypeLiteral, node);
 		}
 	}
 
 	@Override
 	public void endVisit(TypeMethodReference node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeMethodReference)) {
-			((BiConsumer<TypeMethodReference, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TypeMethodReference))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeMethodReference)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TypeMethodReference, node);
 		}
 	}
 
 	@Override
 	public void endVisit(TypeParameter node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.TypeParameter)) {
-			((BiConsumer<TypeParameter, E>) (this.helperVisitor.consumermap.get(VisitorEnum.TypeParameter))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeParameter)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.TypeParameter, node);
 		}
 	}
 
 	@Override
 	public void endVisit(UnionType node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.UnionType)) {
-			((BiConsumer<UnionType, E>) (this.helperVisitor.consumermap.get(VisitorEnum.UnionType))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.UnionType)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.UnionType, node);
 		}
 	}
 
 	@Override
 	public void endVisit(UsesDirective node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.UsesDirective)) {
-			((BiConsumer<UsesDirective, E>) (this.helperVisitor.consumermap.get(VisitorEnum.UsesDirective))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.UsesDirective)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.UsesDirective, node);
 		}
 	}
 
 	@Override
 	public void endVisit(VariableDeclarationExpression node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.VariableDeclarationExpression)) {
-			((BiConsumer<VariableDeclarationExpression, E>) (this.helperVisitor.consumermap
-					.get(VisitorEnum.VariableDeclarationExpression))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.VariableDeclarationExpression)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.VariableDeclarationExpression, node);
 		}
 	}
 
 	@Override
 	public void endVisit(VariableDeclarationStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
+		if (this.helperVisitor.hasConsumer(VisitorEnum.VariableDeclarationStatement)) {
 			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
 			if(config != null) {
 				Class<?> data = config.getTypeof();
@@ -2135,39 +1969,35 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 				}
 			}
-			((BiConsumer<VariableDeclarationStatement, E>) (this.helperVisitor.consumermap
-					.get(VisitorEnum.VariableDeclarationStatement))).accept(node, this.helperVisitor.dataholder);
+			this.helperVisitor.acceptConsumer(VisitorEnum.VariableDeclarationStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(VariableDeclarationFragment node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.VariableDeclarationFragment)) {
-			((BiConsumer<VariableDeclarationFragment, E>) (this.helperVisitor.consumermap
-					.get(VisitorEnum.VariableDeclarationFragment))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.VariableDeclarationFragment)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.VariableDeclarationFragment, node);
 		}
 	}
 
 	@Override
 	public void endVisit(WhileStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.WhileStatement)) {
-			((BiConsumer<WhileStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.WhileStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.WhileStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.WhileStatement, node);
 		}
 	}
 
 	@Override
 	public void endVisit(WildcardType node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.WildcardType)) {
-			((BiConsumer<WildcardType, E>) (this.helperVisitor.consumermap.get(VisitorEnum.WildcardType))).accept(node, this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.WildcardType)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.WildcardType, node);
 		}
 	}
 
 	@Override
 	public void endVisit(YieldStatement node) {
-		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.YieldStatement)) {
-			((BiConsumer<YieldStatement, E>) (this.helperVisitor.consumermap.get(VisitorEnum.YieldStatement))).accept(node,
-					this.helperVisitor.dataholder);
+		if (this.helperVisitor.hasConsumer(VisitorEnum.YieldStatement)) {
+			this.helperVisitor.acceptConsumer(VisitorEnum.YieldStatement, node);
 		}
 	}
 }

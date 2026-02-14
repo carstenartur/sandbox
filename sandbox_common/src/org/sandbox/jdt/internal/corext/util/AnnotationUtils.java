@@ -23,15 +23,24 @@ import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.Modifier;
 
 /**
- * Utility class for annotation-related operations.
- * Provides methods for checking, finding, and validating annotations
- * commonly needed during JUnit migration.
+ * Utility class for annotation and modifier operations on AST declarations.
+ * Provides methods for checking, finding, and validating annotations and modifiers
+ * commonly needed during code cleanup and migration.
+ * 
+ * <p>This class operates on {@link BodyDeclaration#modifiers()}, which contains
+ * both annotations and Java modifiers. Methods are organized into two sections:</p>
+ * <ul>
+ * <li><b>Annotation Operations</b> — checking, finding, and creating annotations</li>
+ * <li><b>Modifier Operations</b> — checking for specific modifiers (static, final, etc.)</li>
+ * </ul>
  */
 public final class AnnotationUtils {
 
 	private AnnotationUtils() {
 		// Utility class - prevent instantiation
 	}
+
+	// ========== Annotation Operations ==========
 
 	/**
 	 * Creates a new MarkerAnnotation AST node with the given annotation name.
@@ -96,6 +105,8 @@ public final class AnnotationUtils {
 				.anyMatch(modifier -> modifier instanceof Annotation && ((Annotation) modifier).getTypeName()
 						.getFullyQualifiedName().equals(annotationSimpleName));
 	}
+
+	// ========== Modifier Operations ==========
 
 	/**
 	 * Checks if a field has the static modifier.
