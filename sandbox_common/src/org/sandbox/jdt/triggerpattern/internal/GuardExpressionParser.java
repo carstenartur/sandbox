@@ -220,6 +220,10 @@ public final class GuardExpressionParser {
 	
 	/**
 	 * Reads a token (identifier, placeholder with $ prefix, number, or quoted string literal).
+	 * 
+	 * <p>Quoted string literals are returned with their surrounding quotes preserved
+	 * (e.g., {@code "foo"} is returned as {@code "foo"}). Guard function implementations
+	 * use {@code stripQuotes()} during evaluation to extract the literal value.</p>
 	 */
 	private String readToken() {
 		skipWhitespace();
@@ -237,8 +241,18 @@ public final class GuardExpressionParser {
 			sb.append('"');
 			while (pos < input.length() && input.charAt(pos) != '"') {
 				if (input.charAt(pos) == '\\' && pos + 1 < input.length()) {
-					sb.append(input.charAt(pos));
-					pos++;
+					char escaped = input.charAt(pos + 1);
+					// Handle escaped quote: \" becomes " in the output
+					if (escaped == '"') {
+						sb.append('"');
+						pos += 2;
+						continue;
+					}
+					// Preserve other escape sequences as-is
+					sb.append('\\');
+					sb.append(escaped);
+					pos += 2;
+					continue;
 				}
 				sb.append(input.charAt(pos));
 				pos++;

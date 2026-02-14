@@ -183,24 +183,37 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] Comprehensive test suite for new pattern kinds (NewPatternKindsTest)
 - [x] Updated documentation with examples for JUnit migration use cases
 
+### Completed (v1.3.2 - Hint File Parser Engine, Phases 1-5)
+- [x] Phase 1: Variadic Placeholders (`$args$` syntax)
+  - [x] Match argument lists: `method($args$)` → 0..n arguments
+  - [x] Match statement sequences: `{ $stmts$ }` → 0..n statements
+  - [x] Mixed patterns: `method($a, $args$)` and `method($args$, $last)`
+  - [x] Binding as `List<ASTNode>` via `Match.getListBinding()`
+- [x] Phase 2: Multi-Statement Pattern Matching
+  - [x] `STATEMENT_SEQUENCE` PatternKind with sliding-window matching
+  - [x] Statement sequence matching within larger blocks
+- [x] Phase 3: Guard Functions Framework
+  - [x] Guard expression AST: `FunctionCall`, `And`, `Or`, `Not`
+  - [x] Recursive descent parser for guard expressions
+  - [x] Built-in guards: `instanceof` (with array type support `Type[]`), `matchesAny` (with literal matching), `matchesNone` (with literal matching), `hasNoSideEffect`, `sourceVersionGE/LE/Between`, `isStatic`, `isFinal`, `hasAnnotation`, `isDeprecated`, `referencedIn`, `elementKindMatches`
+  - [x] Custom guard registration via `GuardRegistry.register()`
+  - [x] String literal support in guard expression arguments
+- [x] Phase 4: Conditional Multi-Rewrite
+  - [x] `RewriteAlternative` with replacement + optional guard
+  - [x] `TransformationRule` with ordered alternatives
+  - [x] `otherwise` as catch-all (last alternative)
+- [x] Phase 5: DSL File Format Parser (`.sandbox-hint`)
+  - [x] Metadata directives, comment stripping, pattern kind inference
+  - [x] Rule syntax: Pattern `::` guard `=>` rewrite
+  - [x] Multi-rewrite support, hint-only rules, error handling
+
 ### Planned Enhancements
 
 #### High Priority
-- [ ] Add comprehensive statement pattern tests
 - [ ] Performance optimization: index patterns by kind and root node type
 - [ ] Add integration tests for HintRegistry and extension point loading
 - [ ] Add UI tests for Quick Assist processor (requires PDE test setup)
 - [ ] Documentation: User guide for creating custom hints
-
-#### Medium Priority
-- [ ] Multi-placeholder support (`$x$` for lists)
-  - [ ] Match argument lists: `method($args$)`
-  - [ ] Match statement sequences: `{ $stmts$ }`
-  - [ ] Tests for multi-placeholder matching
-- [ ] Placeholder constraints/guards
-  - [ ] Type constraints: `$x:SimpleName`, `$y:NumberLiteral`
-  - [ ] Pattern-based constraints: `$x matches "get.*"`
-  - [ ] Tests for constraint validation
 - [ ] Cleanup integration
   - [ ] CleanUp implementation using TriggerPattern engine
   - [ ] Batch processing support

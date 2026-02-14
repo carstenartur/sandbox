@@ -158,7 +158,7 @@ public final class GuardRegistry {
 		}
 		
 		// Handle array types: "Type[]"
-		if (typeName.endsWith("[]")) { //$NON-NLS-1$
+		if (typeName.endsWith("[]") && typeName.length() > 2) { //$NON-NLS-1$
 			if (!typeBinding.isArray()) {
 				return false;
 			}
