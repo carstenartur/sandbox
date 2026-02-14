@@ -119,6 +119,22 @@ The Mining Analysis package infers transformation rules by comparing before/afte
 | `InferredRule` | `sourcePattern`, `replacementPattern`, `kind`, `confidence`, `placeholderNames`, `importChanges` |
 | `CodeChangePair` | `filePath`, `lineNumber`, `beforeSnippet`, `afterSnippet`, `beforeNode`, `afterNode`, `inferredKind` |
 | `RuleGroup` | `generalizedRule`, `instances`, `occurrenceCount`, `aggregatedConfidence` |
+| `DiffHunk` | `beforeStartLine`, `beforeLineCount`, `afterStartLine`, `afterLineCount`, `beforeText`, `afterText` |
+| `FileDiff` | `filePath`, `contentBefore`, `contentAfter`, `hunks` |
+| `CommitInfo` | `id`, `shortId`, `message`, `author`, `timestamp`, `changedFileCount` |
+| `CommitAnalysisResult` | `commitId`, `status` (PENDING/ANALYZING/DONE/FAILED/NO_RULES), `inferredRules`, `analysisTime` |
+
+**Hunk-to-Statement Resolution** (Phase 1.3):
+
+| Class | Purpose |
+|-------|---------|
+| `DiffHunkRefiner` | Refines line-based diff hunks into statement/expression-level `CodeChangePair`s by parsing both file versions as CompilationUnits and mapping changed lines to the smallest enclosing AST nodes |
+
+**Async Analysis Callback** (Phase 3.2):
+
+| Interface | Purpose |
+|-----------|---------|
+| `CommitAnalysisListener` | Callback for async commit analysis: `onAnalysisStarted`, `onAnalysisComplete`, `onAnalysisFailed` |
 
 **Integration**: `RuleInferenceEngine.toTransformationRule()` and `toHintFile()` convert inferred rules into the existing `TransformationRule` / `HintFile` API so they are immediately usable by the TriggerPattern cleanup framework.
 
