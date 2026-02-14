@@ -21,7 +21,6 @@ package org.sandbox.jdt.internal.common;
  */
 
 
-import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
@@ -133,9 +132,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(Assignment node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.Assignment)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.Assignment);
-			if(map != null) {
-				Assignment.Operator operator=(Assignment.Operator) map.get(HelperVisitor.OPERATOR);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.Assignment);
+			if(config != null && config.getOperator() != null) {
+				Assignment.Operator operator = Assignment.Operator.toOperator(config.getOperator());
 				if(operator != null && !node.getOperator().equals(operator)) {
 					return true;
 				}
@@ -194,9 +193,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(CatchClause node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.CatchClause)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.CatchClause);
-			if(map != null) {
-				Class<?> exceptionType=(Class<?>) map.get(HelperVisitor.EXCEPTIONTYPE);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.CatchClause);
+			if(config != null) {
+				Class<?> exceptionType = config.getExceptionType();
 				if(exceptionType != null) {
 					ITypeBinding binding= node.getException().getType().resolveBinding();
 					if(binding != null) {
@@ -232,9 +231,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(ClassInstanceCreation node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ClassInstanceCreation)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.ClassInstanceCreation);
-			if(map != null) {
-				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.ClassInstanceCreation);
+			if(config != null) {
+				Class<?> typeof = config.getTypeof();
 				if(typeof!=null) {
 					ITypeBinding binding= node.resolveTypeBinding();
 					if (binding == null || !typeof.getSimpleName().equals(binding.getName())) {
@@ -242,7 +241,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					}
 				}
 				// Support filtering by fully qualified type name (String) to avoid deprecation warnings
-				String typeofByName=(String) map.get(HelperVisitor.TYPEOF_BYNAME);
+				String typeofByName = config.getTypeofByName();
 				if(typeofByName!=null) {
 					// Extract simple name for comparison (same approach as TYPEOF)
 					String simpleName = typeofByName.substring(typeofByName.lastIndexOf('.') + 1);
@@ -396,17 +395,17 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(FieldDeclaration node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.FieldDeclaration)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.FieldDeclaration);
-			if(map != null) {
-				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.FieldDeclaration);
+			if(config != null) {
+				Class<?> typeof = config.getTypeof();
 				if(typeof != null) {
 					ITypeBinding binding= node.getType().resolveBinding();
 					if(binding == null || !isTypeMatching(binding, typeof.getCanonicalName())) {
 						return true;
 					}
 				}
-				String superclassname=(String) map.get(HelperVisitor.SUPERCLASSNAME);
-				String annotationclass=(String) map.get(HelperVisitor.ANNOTATIONNAME);
+				String superclassname = config.getSuperClassName();
+				String annotationclass = config.getAnnotationName();
 				if(superclassname != null && annotationclass != null) {
 					boolean bothmatch=false;
 					for (Object modifier : node.modifiers()) {
@@ -447,9 +446,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(ForStatement node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ForStatement)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.ForStatement);
-			if(map != null) {
-				Class<?> typeof=(Class<?>) map.get(HelperVisitor.TYPEOF);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.ForStatement);
+			if(config != null) {
+				Class<?> typeof = config.getTypeof();
 				if(typeof != null) {
 					// Check if any initializer declares a variable of the specified type
 					boolean typeMatches = false;
@@ -485,9 +484,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(ImportDeclaration node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.ImportDeclaration)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.ImportDeclaration);
-			if(map != null) {
-				String data=(String) map.get(HelperVisitor.IMPORT);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.ImportDeclaration);
+			if(config != null) {
+				String data = config.getImportName();
 				String fullyQualifiedName = node.getName().getFullyQualifiedName();
 				if ((data!= null) && !fullyQualifiedName.equals(data)) {
 					return true;
@@ -501,9 +500,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(InfixExpression node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.InfixExpression)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.InfixExpression);
-			if(map != null) {
-				InfixExpression.Operator operator=(InfixExpression.Operator) map.get(HelperVisitor.OPERATOR);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.InfixExpression);
+			if(config != null && config.getOperator() != null) {
+				InfixExpression.Operator operator = InfixExpression.Operator.toOperator(config.getOperator());
 				if(operator != null && !node.getOperator().equals(operator)) {
 					return true;
 				}
@@ -580,9 +579,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(MarkerAnnotation node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MarkerAnnotation)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.MarkerAnnotation);
-			if(map != null) {
-				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MarkerAnnotation);
+			if(config != null) {
+				String data = config.getAnnotationName();
 				ITypeBinding binding = node.resolveTypeBinding();
 				String fullyQualifiedName;
 				if (binding != null) {
@@ -638,9 +637,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(MethodDeclaration node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodDeclaration)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodDeclaration);
-			if(map != null) {
-				String methodName=(String) map.get(HelperVisitor.METHODNAME);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MethodDeclaration);
+			if(config != null) {
+				String methodName = config.getMethodName();
 				if(methodName != null && !node.getName().getIdentifier().equals(methodName)) {
 					return true;
 				}
@@ -654,21 +653,22 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(MethodInvocation node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.MethodInvocation)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);
-			if(map != null) {
-				String data=(String) map.get(HelperVisitor.METHODNAME);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MethodInvocation);
+			if(config != null) {
+				String data = config.getMethodName();
 				if ((data!= null) && !node.getName().getIdentifier().equals(data)) {
 					return true;
 				}
-				Object object = map.get(HelperVisitor.TYPEOF);
-				String canonicaltype;
-				if(object!=null) {
-					if(object instanceof Class typeof) {
-						canonicaltype= typeof.getCanonicalName();
-					} else {
-						canonicaltype= (String)object;
-					}
-					String[] parameterTypesQualifiedNames=(String[]) map.get(HelperVisitor.PARAMTYPENAMES);
+				Class<?> typeof = config.getTypeof();
+				String typeofByName = config.getTypeofByName();
+				String canonicaltype = null;
+				if(typeof != null) {
+					canonicaltype = typeof.getCanonicalName();
+				} else if(typeofByName != null) {
+					canonicaltype = typeofByName;
+				}
+				if(canonicaltype != null) {
+					String[] parameterTypesQualifiedNames = config.getParamTypeNames();
 					if(parameterTypesQualifiedNames==null) {
 						if (!usesGivenSignature(node, canonicaltype, data)) {
 							return true;
@@ -794,9 +794,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(NormalAnnotation node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.NormalAnnotation)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.NormalAnnotation);
-			if(map != null) {
-				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.NormalAnnotation);
+			if(config != null) {
+				String data = config.getAnnotationName();
 				ITypeBinding binding = node.resolveTypeBinding();
 				String fullyQualifiedName;
 				if (binding != null) {
@@ -987,9 +987,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(SingleMemberAnnotation node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SingleMemberAnnotation)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.SingleMemberAnnotation);
-			if(map != null) {
-				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.SingleMemberAnnotation);
+			if(config != null) {
+				String data = config.getAnnotationName();
 				ITypeBinding binding = node.resolveTypeBinding();
 				String fullyQualifiedName;
 				if (binding != null) {
@@ -1045,9 +1045,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(SuperMethodInvocation node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.SuperMethodInvocation)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.SuperMethodInvocation);
-			if(map != null) {
-				String methodName=(String) map.get(HelperVisitor.METHODNAME);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.SuperMethodInvocation);
+			if(config != null) {
+				String methodName = config.getMethodName();
 				if(methodName != null && !node.getName().getIdentifier().equals(methodName)) {
 					return true;
 				}
@@ -1160,13 +1160,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(TypeDeclaration node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.TypeDeclaration)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getSupplierData().get(VisitorEnum.TypeDeclaration);
-			if(map != null) {
-				String typeName=(String) map.get(HelperVisitor.TYPENAME);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.TypeDeclaration);
+			if(config != null) {
+				String typeName = config.getTypeName();
 				if(typeName != null && !node.getName().getIdentifier().equals(typeName)) {
 					return true;
 				}
-				String superclassname=(String) map.get(HelperVisitor.SUPERCLASSNAME);
+				String superclassname = config.getSuperClassName();
 				if(superclassname != null) {
 					boolean bothmatch=false;
 					ITypeBinding binding = node.resolveBinding();
@@ -1249,9 +1249,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(VariableDeclarationStatement node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
-			Map<String, Object> map=(Map<String, Object>)this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
-			if(map != null) {
-				Class<?> data=(Class<?>) map.get(HelperVisitor.TYPEOF);
+			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
+			if(config != null) {
+				Class<?> data = config.getTypeof();
 				if (data!= null) {
 					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);
 					IVariableBinding resolveBinding = bli.resolveBinding();
@@ -1645,9 +1645,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public void endVisit(MarkerAnnotation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MarkerAnnotation)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getConsumerData().get(VisitorEnum.MarkerAnnotation);
-			if(map != null) {
-				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);
+			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.MarkerAnnotation);
+			if(config != null) {
+				String data = config.getAnnotationName();
 				ITypeBinding binding = node.resolveTypeBinding();
 				String fullyQualifiedName;
 				if (binding != null) {
@@ -1705,20 +1705,21 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public void endVisit(MethodInvocation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.MethodInvocation)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);
-			if(map != null) {
-				String data=(String) map.get(HelperVisitor.METHODNAME);
+			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.MethodInvocation);
+			if(config != null) {
+				String data = config.getMethodName();
 				if ((data!= null) && !node.getName().getIdentifier().equals(data)) {
 					return;
 				}
-				Object object = map.get(HelperVisitor.TYPEOF);
-				String canonicaltype;
-				if(object!=null) {
-					if(object instanceof Class typeof) {
-						canonicaltype= typeof.getCanonicalName();
-					} else {
-						canonicaltype= (String)object;
-					}
+				Class<?> typeof = config.getTypeof();
+				String typeofByName = config.getTypeofByName();
+				String canonicaltype = null;
+				if(typeof != null) {
+					canonicaltype = typeof.getCanonicalName();
+				} else if(typeofByName != null) {
+					canonicaltype = typeofByName;
+				}
+				if(canonicaltype != null) {
 					if (!ASTNodes.usesGivenSignature(node, canonicaltype, data)) {
 						return;
 					}
@@ -1763,9 +1764,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public void endVisit(NormalAnnotation node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.NormalAnnotation)) {
-			Map<String, Object> map=(Map<String, Object>) this.helperVisitor.getConsumerData().get(VisitorEnum.NormalAnnotation);
-			if(map != null) {
-				String data=(String) map.get(HelperVisitor.ANNOTATIONNAME);
+			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.NormalAnnotation);
+			if(config != null) {
+				String data = config.getAnnotationName();
 				ITypeBinding binding = node.resolveTypeBinding();
 				String fullyQualifiedName;
 				if (binding != null) {
@@ -2120,9 +2121,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public void endVisit(VariableDeclarationStatement node) {
 		if (this.helperVisitor.consumermap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
-			Map<String, Object> map=(Map<String, Object>)this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
-			if(map != null) {
-				Class<?> data=(Class<?>) map.get(HelperVisitor.TYPEOF);
+			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
+			if(config != null) {
+				Class<?> data = config.getTypeof();
 				if (data!= null) {
 					VariableDeclarationFragment bli = (VariableDeclarationFragment) node.fragments().get(0);
 					IVariableBinding resolveBinding = bli.resolveBinding();
