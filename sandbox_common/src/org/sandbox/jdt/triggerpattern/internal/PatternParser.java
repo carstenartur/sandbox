@@ -18,6 +18,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -72,6 +73,10 @@ public class PatternParser {
 			return parseConstructor(patternValue);
 		} else if (kind == PatternKind.METHOD_DECLARATION) {
 			return parseMethodDeclaration(patternValue);
+		} else if (kind == PatternKind.BLOCK) {
+			return parseBlock(patternValue);
+		} else if (kind == PatternKind.STATEMENT_SEQUENCE) {
+			return parseBlock(patternValue);
 		}
 		
 		return null;
@@ -392,5 +397,58 @@ public class PatternParser {
 		}
 		
 		return typeDecl.getMethods()[0];
+	}
+	
+	/**
+	 * Parses a block pattern containing multiple statements with potential variadic placeholders.
+	 * 
+	 * @param blockSnippet the block snippet (e.g., {@code "{ $before$; return $x; }"})
+	 * @return the parsed Block node, or {@code null} if parsing fails
+	 * @since 1.3.2
+	 */
+	private Block parseBlock(String blockSnippet) {
+		// Ensure the block is wrapped in braces
+		String normalizedSnippet = blockSnippet.trim();
+		if (!normalizedSnippet.startsWith("{")) { //$NON-NLS-1$
+			normalizedSnippet = "{ " + normalizedSnippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		
+		// Extract placeholder names (starting with $) from the snippet and declare them
+		// as Object variables so the parser doesn't drop them as undeclared references.
+		StringBuilder declarations = new StringBuilder();
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\$[a-zA-Z_][a-zA-Z0-9_]*\\$?").matcher(normalizedSnippet); //$NON-NLS-1$
+		java.util.Set<String> declared = new java.util.HashSet<>();
+		while (m.find()) {
+			String placeholder = m.group();
+			if (!declared.contains(placeholder)) {
+				declarations.append("Object ").append(placeholder).append("; "); //$NON-NLS-1$ //$NON-NLS-2$
+				declared.add(placeholder);
+			}
+		}
+		
+		// Wrap the block in a minimal method context with placeholder declarations
+		// The declarations go into a separate setup method so they don't pollute the block
+		String source = "class _Pattern { " + declarations + "void _method() " + normalizedSnippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+		
+		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setCompilerOptions(JavaCore.getOptions());
+		parser.setStatementsRecovery(true);
+		
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		
+		// Navigate to the block: CompilationUnit -> TypeDeclaration -> MethodDeclaration -> Block
+		if (cu.types().isEmpty()) {
+			return null;
+		}
+		
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		if (typeDecl.getMethods().length == 0) {
+			return null;
+		}
+		
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		return method.getBody();
 	}
 }
