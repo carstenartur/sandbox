@@ -20,7 +20,6 @@
 		<maven.compiler.release>21</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>5.11.4</junit.version>
-		<eclipse.jdt.version>3.40.0</eclipse.jdt.version>
 	</properties>
 	
 	<dependencies>

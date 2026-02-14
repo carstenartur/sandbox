@@ -1249,7 +1249,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 	@Override
 	public boolean visit(VariableDeclarationStatement node) {
 		if (this.helperVisitor.predicatemap.containsKey(VisitorEnum.VariableDeclarationStatement)) {
-			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.VariableDeclarationStatement);
+			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.VariableDeclarationStatement);
 			if(config != null) {
 				Class<?> data = config.getTypeof();
 				if (data!= null) {
