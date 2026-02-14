@@ -13,10 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.mining.analysis;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
 
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
@@ -103,6 +107,82 @@ public class RuleInferenceEngine {
 	 */
 	public Optional<InferredRule> inferRule(CodeChangePair change) {
 		return inferRule(change.beforeSnippet(), change.afterSnippet(), change.inferredKind());
+	}
+
+	/**
+	 * Infers transformation rules from all Java file changes in a single commit.
+	 *
+	 * <p>The method retrieves the file diffs from the git provider, refines them
+	 * into statement-level change pairs, and infers rules from each pair. Similar
+	 * rules are grouped to boost confidence.</p>
+	 *
+	 * @param git            the git history provider
+	 * @param repositoryPath path to the repository working tree
+	 * @param commitId       the commit hash to analyze
+	 * @return list of inferred rules (may be empty)
+	 */
+	public List<InferredRule> inferFromCommit(GitHistoryProvider git, Path repositoryPath,
+			String commitId) {
+		DiffHunkRefiner refiner = new DiffHunkRefiner();
+		RuleGrouper grouper = new RuleGrouper();
+
+		List<FileDiff> diffs = git.getDiffs(repositoryPath, commitId);
+		List<InferredRule> allRules = new ArrayList<>();
+
+		for (FileDiff diff : diffs) {
+			List<CodeChangePair> pairs = refiner.refineToStatements(diff);
+			for (CodeChangePair pair : pairs) {
+				inferRule(pair).ifPresent(allRules::add);
+			}
+		}
+
+		if (allRules.size() > 1) {
+			List<RuleGroup> groups = grouper.groupSimilar(allRules);
+			allRules = new ArrayList<>();
+			for (RuleGroup group : groups) {
+				allRules.add(group.generalizedRule());
+			}
+		}
+
+		return allRules;
+	}
+
+	/**
+	 * Infers transformation rules from the most recent commits in a repository.
+	 *
+	 * <p>Analyzes up to {@code maxCommits} commits from the repository history,
+	 * collecting and grouping inferred rules across all commits.</p>
+	 *
+	 * @param git            the git history provider
+	 * @param repositoryPath path to the repository working tree
+	 * @param maxCommits     maximum number of commits to analyze
+	 * @return list of grouped inferred rules
+	 */
+	public List<InferredRule> inferFromHistory(GitHistoryProvider git, Path repositoryPath,
+			int maxCommits) {
+		RuleGrouper grouper = new RuleGrouper();
+
+		List<CommitInfo> commits = git.getHistory(repositoryPath, maxCommits);
+		List<InferredRule> allRules = new ArrayList<>();
+
+		for (CommitInfo commit : commits) {
+			try {
+				List<InferredRule> commitRules = inferFromCommit(git, repositoryPath, commit.id());
+				allRules.addAll(commitRules);
+			} catch (Exception e) {
+				// Skip commits that fail to analyze
+			}
+		}
+
+		if (allRules.size() > 1) {
+			List<RuleGroup> groups = grouper.groupSimilar(allRules);
+			allRules = new ArrayList<>();
+			for (RuleGroup group : groups) {
+				allRules.add(group.generalizedRule());
+			}
+		}
+
+		return allRules;
 	}
 
 	/**

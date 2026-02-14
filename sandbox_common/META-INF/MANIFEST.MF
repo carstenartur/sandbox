@@ -30,4 +30,5 @@ Export-Package: org.sandbox.jdt.internal.common,
  org.sandbox.jdt.triggerpattern.cleanup,
  org.sandbox.jdt.triggerpattern.internal,
  org.sandbox.jdt.triggerpattern.mining.analysis,
+ org.sandbox.jdt.triggerpattern.mining.git,
  org.sandbox.jdt.triggerpattern.ui
