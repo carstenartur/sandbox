@@ -249,13 +249,13 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] Performance optimization: `PatternIndex` indexes patterns by kind for single-traversal batch matching
 - [x] Thread-safety: `HintFileRegistry` uses `ConcurrentHashMap` and `AtomicBoolean`
 - [x] `PlaceholderAstMatcher.mergeBindings()` for combining bindings across multiple matchers
+- [x] Cleanup integration
+  - [x] Batch processing: `BatchTransformationProcessor` applies all rules from a `HintFile` in a single pass
+  - [ ] CleanUp implementation using TriggerPattern engine (Eclipse CleanUp wrapper)
+  - [ ] Save Actions integration
 - [ ] Add integration tests for HintRegistry and extension point loading
 - [ ] Add UI tests for Quick Assist processor (requires PDE test setup)
 - [ ] Documentation: User guide for creating custom hints
-- [ ] Cleanup integration
-  - [ ] CleanUp implementation using TriggerPattern engine
-  - [ ] Batch processing support
-  - [ ] Save Actions integration
 - [ ] Pattern composition
   - [ ] Allow patterns to reference other patterns
 
