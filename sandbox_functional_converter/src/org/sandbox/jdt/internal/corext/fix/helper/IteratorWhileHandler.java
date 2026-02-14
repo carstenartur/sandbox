@@ -233,11 +233,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
      * expects pure expressions, not statements.
      */
     private List<String> extractBodyStatementsAsStrings(List<Statement> statements) {
-        List<String> bodyStmts = new java.util.ArrayList<>();
-        for (Statement stmt : statements) {
-            bodyStmts.add(ExpressionHelper.stripTrailingSemicolon(stmt.toString()));
-        }
-        return bodyStmts;
+        return ExpressionHelper.bodyStatementsToStrings(statements);
     }
     
     @Override

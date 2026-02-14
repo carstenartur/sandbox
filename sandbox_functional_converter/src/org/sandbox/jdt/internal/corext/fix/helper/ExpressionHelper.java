@@ -24,11 +24,16 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.sandbox.functional.core.builder.LoopModelBuilder;
+import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
@@ -130,6 +135,119 @@ public final class ExpressionHelper {
 			return svd.getType().toString();
 		}
 		return "String"; //$NON-NLS-1$
+	}
+
+	/**
+	 * Converts an AST {@link Statement} (possibly a {@link Block}) into a list of expression
+	 * strings with trailing semicolons stripped.
+	 *
+	 * <p>If the statement is a {@link Block}, each child statement is converted individually.
+	 * Otherwise the statement itself is converted as a single element.</p>
+	 *
+	 * @param body the loop body statement
+	 * @return list of expression strings (without trailing semicolons)
+	 */
+	public static List<String> bodyStatementsToStrings(Statement body) {
+		List<String> result = new ArrayList<>();
+		if (body instanceof Block block) {
+			for (Object stmt : block.statements()) {
+				result.add(stripTrailingSemicolon(stmt.toString()));
+			}
+		} else {
+			result.add(stripTrailingSemicolon(body.toString()));
+		}
+		return result;
+	}
+
+	/**
+	 * Converts a list of AST {@link Statement} nodes into expression strings
+	 * with trailing semicolons stripped.
+	 *
+	 * @param statements the statements to convert
+	 * @return list of expression strings (without trailing semicolons)
+	 */
+	public static List<String> bodyStatementsToStrings(List<Statement> statements) {
+		List<String> result = new ArrayList<>();
+		for (Statement stmt : statements) {
+			result.add(stripTrailingSemicolon(stmt.toString()));
+		}
+		return result;
+	}
+
+	/**
+	 * Holds the extracted information from a {@code collection.forEach(item -> ...)} or
+	 * {@code collection.stream().forEach(item -> ...)} call, ready for rendering.
+	 *
+	 * <p>This record eliminates the duplicated extraction logic previously present in both
+	 * {@link StreamToEnhancedFor} and {@link StreamToIteratorWhile}.</p>
+	 *
+	 * @param model the ULR LoopModel built from the forEach call
+	 * @param bodyStatements the lambda body statements as AST nodes
+	 * @param forEachStatement the original ExpressionStatement containing the forEach call
+	 */
+	public record ForEachRewriteInfo(
+			LoopModel model,
+			List<Statement> bodyStatements,
+			ExpressionStatement forEachStatement) {
+	}
+
+	/**
+	 * Extracts rewrite information from a forEach {@link MethodInvocation} AST node.
+	 *
+	 * <p>This consolidates the shared extraction logic used by both
+	 * {@link StreamToEnhancedFor} and {@link StreamToIteratorWhile}:
+	 * extracting the lambda, collection expression, parameter name/type,
+	 * building the LoopModel, and extracting body statements.</p>
+	 *
+	 * @param visited the visited ASTNode (expected to be a MethodInvocation)
+	 * @param ast the AST factory
+	 * @return the extracted info, or {@code null} if the node is not a convertible forEach call
+	 */
+	public static ForEachRewriteInfo extractForEachRewriteInfo(ASTNode visited, AST ast) {
+		if (!(visited instanceof MethodInvocation forEach)) {
+			return null;
+		}
+
+		// Get the lambda expression
+		if (forEach.arguments().isEmpty() || !(forEach.arguments().get(0) instanceof LambdaExpression lambda)) {
+			return null;
+		}
+
+		// Extract collection expression (either collection or collection.stream())
+		Expression collectionExpr = forEach.getExpression();
+		if (collectionExpr instanceof MethodInvocation methodInv) {
+			if ("stream".equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$
+				collectionExpr = methodInv.getExpression();
+			}
+		}
+
+		if (collectionExpr == null) {
+			return null;
+		}
+
+		// Extract parameter name and type from lambda
+		if (lambda.parameters().isEmpty()) {
+			return null;
+		}
+
+		VariableDeclaration param = (VariableDeclaration) lambda.parameters().get(0);
+		String paramName = param.getName().getIdentifier();
+		String paramType = extractParamType(param);
+
+		// Build LoopModel using ULR pipeline
+		LoopModel model = new LoopModelBuilder()
+			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr.toString(), paramType)
+			.element(paramName, paramType, false)
+			.terminal(new ForEachTerminal(List.of(), false))
+			.build();
+
+		// Extract body statements from lambda
+		List<Statement> bodyStatements = extractLambdaBodyStatements(lambda, ast);
+
+		// Get the parent ExpressionStatement
+		ExpressionStatement forEachStmt = (ExpressionStatement) forEach.getParent();
+
+		return new ForEachRewriteInfo(model, bodyStatements, forEachStmt);
 	}
 
 	/**

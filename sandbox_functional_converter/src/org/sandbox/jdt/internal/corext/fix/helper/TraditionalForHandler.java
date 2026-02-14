@@ -508,20 +508,7 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
      */
     @SuppressWarnings("unchecked")
     private List<String> extractBodyStatementsAsStrings(Statement body) {
-        List<String> bodyStmts = new java.util.ArrayList<>();
-        
-        if (body instanceof Block) {
-            Block block = (Block) body;
-            List<Statement> statements = block.statements();
-            for (Statement stmt : statements) {
-                bodyStmts.add(ExpressionHelper.stripTrailingSemicolon(stmt.toString()));
-            }
-        } else {
-            // Single statement body
-            bodyStmts.add(ExpressionHelper.stripTrailingSemicolon(body.toString()));
-        }
-        
-        return bodyStmts;
+        return ExpressionHelper.bodyStatementsToStrings(body);
     }
     
     @Override

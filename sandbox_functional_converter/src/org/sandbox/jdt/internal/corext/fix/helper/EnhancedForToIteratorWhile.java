@@ -13,18 +13,15 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -120,17 +117,7 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 	 * Extracts body statements as strings from the loop body.
 	 */
 	private List<String> extractBodyStatements(Statement body) {
-		List<String> statements = new ArrayList<>();
-		if (body instanceof Block block) {
-			for (Object stmt : block.statements()) {
-				statements.add(ExpressionHelper.stripTrailingSemicolon(stmt.toString()));
-			}
-		} else if (body instanceof ExpressionStatement exprStmt) {
-			statements.add(ExpressionHelper.stripTrailingSemicolon(exprStmt.toString()));
-		} else {
-			statements.add(ExpressionHelper.stripTrailingSemicolon(body.toString()));
-		}
-		return statements;
+		return ExpressionHelper.bodyStatementsToStrings(body);
 	}
 
 	@Override
