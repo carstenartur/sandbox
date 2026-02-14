@@ -19,8 +19,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -32,6 +34,9 @@ import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 
@@ -47,8 +52,10 @@ import org.sandbox.jdt.triggerpattern.api.GuardFunction;
  *   <caption>Available built-in guard functions</caption>
  *   <tr><th>Name</th><th>Description</th></tr>
  *   <tr><td>{@code instanceof}</td><td>Checks if a binding's type matches a given type name</td></tr>
- *   <tr><td>{@code matchesAny}</td><td>Returns {@code true} if a binding exists and is non-null</td></tr>
- *   <tr><td>{@code matchesNone}</td><td>Returns {@code true} if a binding does not exist or is null</td></tr>
+ *   <tr><td>{@code matchesAny}</td><td>Returns {@code true} if a placeholder's text matches any of the given literals, or if bound and no literals given</td></tr>
+ *   <tr><td>{@code matchesNone}</td><td>Returns {@code true} if a placeholder's text matches none of the given literals, or if unbound and no literals given</td></tr>
+ *   <tr><td>{@code referencedIn}</td><td>Checks if a variable is referenced within another expression</td></tr>
+ *   <tr><td>{@code elementKindMatches}</td><td>Checks if a binding is of a specific element kind (FIELD, METHOD, LOCAL_VARIABLE, PARAMETER, TYPE)</td></tr>
  *   <tr><td>{@code hasNoSideEffect}</td><td>Checks if an expression has no side effects</td></tr>
  *   <tr><td>{@code sourceVersionGE}</td><td>Checks if the source version is greater than or equal to a given version</td></tr>
  *   <tr><td>{@code sourceVersionLE}</td><td>Checks if the source version is less than or equal to a given version</td></tr>
@@ -111,6 +118,7 @@ public final class GuardRegistry {
 		register("matchesAny", this::evaluateMatchesAny); //$NON-NLS-1$
 		register("matchesNone", this::evaluateMatchesNone); //$NON-NLS-1$
 		register("hasNoSideEffect", this::evaluateHasNoSideEffect); //$NON-NLS-1$
+		register("referencedIn", this::evaluateReferencedIn); //$NON-NLS-1$
 		
 		// Java version guards
 		register("sourceVersionGE", this::evaluateSourceVersionGE); //$NON-NLS-1$
@@ -120,6 +128,7 @@ public final class GuardRegistry {
 		// Element kind guards
 		register("isStatic", this::evaluateIsStatic); //$NON-NLS-1$
 		register("isFinal", this::evaluateIsFinal); //$NON-NLS-1$
+		register("elementKindMatches", this::evaluateElementKindMatches); //$NON-NLS-1$
 		
 		// Annotation guards
 		register("hasAnnotation", this::evaluateHasAnnotation); //$NON-NLS-1$
@@ -128,6 +137,7 @@ public final class GuardRegistry {
 	
 	/**
 	 * Checks if the bound node's type matches a given type name via ITypeBinding.
+	 * Supports array types (e.g., {@code Type[]}).
 	 * Args: [placeholderName, typeName]
 	 */
 	private boolean evaluateInstanceOf(GuardContext ctx, Object... args) {
@@ -147,12 +157,23 @@ public final class GuardRegistry {
 			return false;
 		}
 		
+		// Handle array types: "Type[]"
+		if (typeName.endsWith("[]")) { //$NON-NLS-1$
+			if (!typeBinding.isArray()) {
+				return false;
+			}
+			String elementTypeName = typeName.substring(0, typeName.length() - 2);
+			return matchesTypeName(typeBinding.getElementType(), elementTypeName);
+		}
+		
 		return matchesTypeName(typeBinding, typeName);
 	}
 	
 	/**
-	 * Returns true if a binding exists and is non-null.
-	 * Args: [placeholderName]
+	 * Returns true if a placeholder's text matches any of the given literals.
+	 * With a single argument, returns true if the binding exists and is non-null.
+	 * With multiple arguments, checks if the placeholder's source text matches any literal.
+	 * Args: [placeholderName] or [placeholderName, literal1, literal2, ...]
 	 */
 	private boolean evaluateMatchesAny(GuardContext ctx, Object... args) {
 		if (args.length < 1) {
@@ -160,16 +181,35 @@ public final class GuardRegistry {
 		}
 		String placeholderName = args[0].toString();
 		ASTNode node = ctx.getBinding(placeholderName);
-		if (node != null) {
-			return true;
+		
+		// If only placeholder name given, check existence
+		if (args.length == 1) {
+			if (node != null) {
+				return true;
+			}
+			List<ASTNode> listBinding = ctx.getListBinding(placeholderName);
+			return !listBinding.isEmpty();
 		}
-		List<ASTNode> listBinding = ctx.getListBinding(placeholderName);
-		return !listBinding.isEmpty();
+		
+		// Multiple arguments: check if node text matches any literal
+		if (node == null) {
+			return false;
+		}
+		String nodeText = node.toString().trim();
+		for (int i = 1; i < args.length; i++) {
+			String literal = stripQuotes(args[i].toString());
+			if (nodeText.equals(literal)) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	/**
-	 * Returns true if a binding does not exist or is null.
-	 * Args: [placeholderName]
+	 * Returns true if a placeholder's text matches none of the given literals.
+	 * With a single argument, returns true if the binding does not exist.
+	 * With multiple arguments, checks that the placeholder's source text matches no literal.
+	 * Args: [placeholderName] or [placeholderName, literal1, literal2, ...]
 	 */
 	private boolean evaluateMatchesNone(GuardContext ctx, Object... args) {
 		if (args.length < 1) {
@@ -177,11 +217,28 @@ public final class GuardRegistry {
 		}
 		String placeholderName = args[0].toString();
 		ASTNode node = ctx.getBinding(placeholderName);
-		if (node != null) {
-			return false;
+		
+		// If only placeholder name given, check non-existence
+		if (args.length == 1) {
+			if (node != null) {
+				return false;
+			}
+			List<ASTNode> listBinding = ctx.getListBinding(placeholderName);
+			return listBinding.isEmpty();
 		}
-		List<ASTNode> listBinding = ctx.getListBinding(placeholderName);
-		return listBinding.isEmpty();
+		
+		// Multiple arguments: check that node text matches none of the literals
+		if (node == null) {
+			return true;
+		}
+		String nodeText = node.toString().trim();
+		for (int i = 1; i < args.length; i++) {
+			String literal = stripQuotes(args[i].toString());
+			if (nodeText.equals(literal)) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	/**
@@ -333,6 +390,122 @@ public final class GuardRegistry {
 	}
 	
 	/**
+	 * Checks if variable {@code $x} is referenced within the AST subtree bound to {@code $y}.
+	 * Args: [variablePlaceholderName, expressionPlaceholderName]
+	 */
+	private boolean evaluateReferencedIn(GuardContext ctx, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		String varName = args[0].toString();
+		String exprName = args[1].toString();
+		
+		ASTNode varNode = ctx.getBinding(varName);
+		ASTNode exprNode = ctx.getBinding(exprName);
+		if (varNode == null || exprNode == null) {
+			return false;
+		}
+		
+		// Get the identifier text of the variable
+		String varIdentifier;
+		if (varNode instanceof SimpleName simpleName) {
+			varIdentifier = simpleName.getIdentifier();
+		} else {
+			varIdentifier = varNode.toString().trim();
+		}
+		
+		// Walk the expression subtree looking for a SimpleName with the same identifier
+		boolean[] found = { false };
+		exprNode.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName name) {
+				if (name.getIdentifier().equals(varIdentifier)) {
+					found[0] = true;
+				}
+				return !found[0]; // stop visiting once found
+			}
+		});
+		return found[0];
+	}
+	
+	/**
+	 * Checks if a binding is of a specific element kind.
+	 * Supported kinds: FIELD, METHOD, LOCAL_VARIABLE, PARAMETER, TYPE.
+	 * Args: [placeholderName, elementKind]
+	 */
+	private boolean evaluateElementKindMatches(GuardContext ctx, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		String elementKind = args[1].toString();
+		
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		
+		return matchesElementKind(node, elementKind);
+	}
+	
+	/**
+	 * Checks if an AST node matches the given element kind string.
+	 */
+	private boolean matchesElementKind(ASTNode node, String elementKind) {
+		// Try via binding first
+		IBinding binding = resolveBinding(node);
+		if (binding != null) {
+			return matchesBindingKind(binding, elementKind);
+		}
+		// Fallback: check AST node type directly
+		return matchesNodeKind(node, elementKind);
+	}
+	
+	/**
+	 * Matches a binding against an element kind string.
+	 */
+	private boolean matchesBindingKind(IBinding binding, String elementKind) {
+		return switch (elementKind.toUpperCase()) {
+			case "FIELD" -> binding instanceof IVariableBinding vb && vb.isField(); //$NON-NLS-1$
+			case "METHOD" -> binding instanceof IMethodBinding; //$NON-NLS-1$
+			case "LOCAL_VARIABLE" -> binding instanceof IVariableBinding vb && !vb.isField() && !vb.isParameter(); //$NON-NLS-1$
+			case "PARAMETER" -> binding instanceof IVariableBinding vb && vb.isParameter(); //$NON-NLS-1$
+			case "TYPE" -> binding instanceof ITypeBinding; //$NON-NLS-1$
+			default -> false;
+		};
+	}
+	
+	/**
+	 * Matches an AST node type against an element kind string (fallback when binding is unavailable).
+	 */
+	private boolean matchesNodeKind(ASTNode node, String elementKind) {
+		return switch (elementKind.toUpperCase()) {
+			case "FIELD" -> node instanceof FieldDeclaration //$NON-NLS-1$
+					|| (node instanceof VariableDeclarationFragment vdf && vdf.getParent() instanceof FieldDeclaration);
+			case "METHOD" -> node instanceof MethodDeclaration; //$NON-NLS-1$
+			case "LOCAL_VARIABLE" -> node instanceof VariableDeclarationStatement //$NON-NLS-1$
+					|| (node instanceof VariableDeclarationFragment vdf && vdf.getParent() instanceof VariableDeclarationStatement);
+			case "PARAMETER" -> node instanceof SingleVariableDeclaration; //$NON-NLS-1$
+			case "TYPE" -> node instanceof org.eclipse.jdt.core.dom.TypeDeclaration //$NON-NLS-1$
+					|| node instanceof org.eclipse.jdt.core.dom.EnumDeclaration
+					|| node instanceof org.eclipse.jdt.core.dom.RecordDeclaration;
+			default -> false;
+		};
+	}
+	
+	/**
+	 * Strips surrounding quotes from a string literal argument.
+	 */
+	private String stripQuotes(String value) {
+		if (value.length() >= 2
+				&& ((value.startsWith("\"") && value.endsWith("\"")) //$NON-NLS-1$ //$NON-NLS-2$
+				|| (value.startsWith("'") && value.endsWith("'")))) { //$NON-NLS-1$ //$NON-NLS-2$
+			return value.substring(1, value.length() - 1);
+		}
+		return value;
+	}
+	
+	/**
 	 * Finds the nearest enclosing BodyDeclaration for an AST node.
 	 */
 	private BodyDeclaration findEnclosingBodyDeclaration(ASTNode node) {
@@ -403,6 +576,12 @@ public final class GuardRegistry {
 		}
 		if (node instanceof MethodDeclaration methodDecl) {
 			return methodDecl.resolveBinding();
+		}
+		if (node instanceof VariableDeclarationFragment varFrag) {
+			return varFrag.resolveBinding();
+		}
+		if (node instanceof SingleVariableDeclaration singleVar) {
+			return singleVar.resolveBinding();
 		}
 		return null;
 	}

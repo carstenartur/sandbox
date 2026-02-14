@@ -147,6 +147,12 @@ public final class GuardExpressionParser {
 			if (matchKeyword("instanceof")) { //$NON-NLS-1$
 				skipWhitespace();
 				String typeName = readToken();
+				// Handle array types: Type[]
+				skipWhitespace();
+				if (pos + 1 < input.length() && input.charAt(pos) == '[' && input.charAt(pos + 1) == ']') {
+					typeName = typeName + "[]"; //$NON-NLS-1$
+					pos += 2;
+				}
 				return new GuardExpression.FunctionCall("instanceof", List.of(placeholder, typeName)); //$NON-NLS-1$
 			}
 			
@@ -213,7 +219,7 @@ public final class GuardExpressionParser {
 	}
 	
 	/**
-	 * Reads a token (identifier, placeholder with $ prefix, or number).
+	 * Reads a token (identifier, placeholder with $ prefix, number, or quoted string literal).
 	 */
 	private String readToken() {
 		skipWhitespace();
@@ -223,6 +229,26 @@ public final class GuardExpressionParser {
 		
 		int start = pos;
 		char c = input.charAt(pos);
+		
+		// Quoted string literal: "..."
+		if (c == '"') {
+			pos++;
+			StringBuilder sb = new StringBuilder();
+			sb.append('"');
+			while (pos < input.length() && input.charAt(pos) != '"') {
+				if (input.charAt(pos) == '\\' && pos + 1 < input.length()) {
+					sb.append(input.charAt(pos));
+					pos++;
+				}
+				sb.append(input.charAt(pos));
+				pos++;
+			}
+			if (pos < input.length()) {
+				sb.append('"');
+				pos++; // consume closing quote
+			}
+			return sb.toString();
+		}
 		
 		// Placeholder: $identifier
 		if (c == '$') {
