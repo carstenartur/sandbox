@@ -192,13 +192,28 @@ EnumSet.of(VisitorEnum.MethodInvocation, VisitorEnum.FieldDeclaration)
 
 ## Running Tests
 
-### All Tests (no Xvfb required)
+### All Tests (No Tycho Required!)
 
-These tests use the Eclipse `ASTParser` in standalone mode and do **NOT** require a display server or UI harness.
+These tests use the Eclipse `ASTParser` in standalone mode and do **NOT** require:
+- Building the target platform
+- Tycho for test execution
+- Eclipse runtime/OSGi at test time
+- A display server or UI harness
 
+**Prerequisites**: `sandbox_common` must be built first (it still uses Tycho):
 ```bash
-# Run all tests without xvfb
+# One-time setup: Build sandbox_common with Tycho
+mvn install -pl sandbox_target,sandbox_common -DskipTests
+```
+
+**Run tests with standard Maven (no Tycho needed):**
+```bash
+# Run all tests
 mvn test -pl sandbox_common_test
+
+# Or from within the test directory
+cd sandbox_common_test
+mvn test
 ```
 
 ### Specific Test Class
@@ -206,10 +221,9 @@ mvn test -pl sandbox_common_test
 mvn test -Dtest=BasicVisitorUsageTest -pl sandbox_common_test
 ```
 
-### With full Tycho build (optional)
+### Specific Test Method
 ```bash
-# This works but is not required since useUIHarness=false
-mvn verify -pl sandbox_common_test
+mvn test -Dtest=BasicVisitorUsageTest#testSimpleVisitorRegistration -pl sandbox_common_test
 ```
 
 ## Code Examples
