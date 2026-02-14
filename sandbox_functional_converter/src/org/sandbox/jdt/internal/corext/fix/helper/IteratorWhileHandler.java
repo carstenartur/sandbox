@@ -131,16 +131,15 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
      */
     private boolean analyzeAndValidate(IteratorPattern pattern) {
         // Analyze for safety
-        SafetyAnalysis analysis = loopAnalyzer.analyze(pattern.loopBody, pattern.iteratorVariableName);
-        if (!analysis.isSafe) {
+        SafetyAnalysis analysis = loopAnalyzer.analyze(pattern.loopBody(), pattern.iteratorVariableName());
+        if (!analysis.isSafe()) {
             // Cannot convert unsafe patterns
             return false;
         }
         
         // Parse body to ensure it has the expected structure
-        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody, pattern.iteratorVariableName);
+        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());
         if (parsedBody == null) {
-            // Body doesn't match expected pattern
             return false;
         }
         
@@ -157,7 +156,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
             return;
         }
         
-        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody, pattern.iteratorVariableName);
+        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());
         
         if (parsedBody == null) {
             return;
@@ -170,7 +169,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
         LoopModel model = buildLoopModel(pattern, parsedBody);
         
         // Create renderer with the original loop body for AST node access
-        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.loopBody);
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.loopBody());
         
         // Transform using LoopModelTransformer
         LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
@@ -201,19 +200,19 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
         // Build COLLECTION source descriptor using the collection expression
         SourceDescriptor source = new SourceDescriptor(
             SourceDescriptor.SourceType.COLLECTION,
-            pattern.collectionExpression.toString(),
-            parsedBody.elementType
+            pattern.collectionExpression().toString(),
+            parsedBody.elementType()
         );
         
         // Build element descriptor for the loop variable
         ElementDescriptor element = new ElementDescriptor(
-            parsedBody.elementVariableName,
-            parsedBody.elementType,
+            parsedBody.elementVariableName(),
+            parsedBody.elementType(),
             true // is a collection element
         );
         
         // Extract body statements as expression strings (strip trailing semicolons)
-        List<String> bodyStatements = extractBodyStatementsAsStrings(parsedBody.actualBodyStatements);
+        List<String> bodyStatements = extractBodyStatementsAsStrings(parsedBody.actualBodyStatements());
         
         // Build ForEachTerminal
         ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false);

@@ -31,19 +31,14 @@ import org.eclipse.jdt.core.dom.*;
 public class IteratorLoopBodyParser {
     
     /**
-     * Result of parsing the loop body.
+     * Immutable result of parsing an iterator loop body.
+     *
+     * @param elementVariableName the element variable name (e.g. {@code "item"})
+     * @param elementType the element type string (e.g. {@code "String"})
+     * @param actualBodyStatements the body statements after the {@code it.next()} declaration
      */
-    public static class ParsedBody {
-        public final String elementVariableName;
-        public final String elementType;
-        public final List<Statement> actualBodyStatements;
-        
-        public ParsedBody(String elementVariableName, String elementType, 
-                          List<Statement> actualBodyStatements) {
-            this.elementVariableName = elementVariableName;
-            this.elementType = elementType;
-            this.actualBodyStatements = actualBodyStatements;
-        }
+    public record ParsedBody(String elementVariableName, String elementType,
+                             List<Statement> actualBodyStatements) {
     }
     
     /**
@@ -122,7 +117,7 @@ public class IteratorLoopBodyParser {
     public Block createSyntheticBlock(AST ast, ParsedBody parsedBody) {
         Block syntheticBlock = ast.newBlock();
         
-        for (Statement stmt : parsedBody.actualBodyStatements) {
+        for (Statement stmt : parsedBody.actualBodyStatements()) {
             syntheticBlock.statements().add(ASTNode.copySubtree(ast, stmt));
         }
         

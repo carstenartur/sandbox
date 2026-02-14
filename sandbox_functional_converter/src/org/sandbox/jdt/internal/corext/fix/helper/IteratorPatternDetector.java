@@ -27,23 +27,16 @@ import org.eclipse.jdt.core.dom.*;
 public class IteratorPatternDetector {
     
     /**
-     * Result of pattern detection.
+     * Immutable result of iterator pattern detection.
+     *
+     * @param collectionExpression the expression representing the iterated collection
+     * @param iteratorVariableName the name of the iterator variable
+     * @param elementType the element type (e.g. {@code "String"})
+     * @param loopBody the loop body statement
+     * @param isForLoop {@code true} for for-loop-iterator, {@code false} for while-iterator
      */
-    public static class IteratorPattern {
-        public final Expression collectionExpression;
-        public final String iteratorVariableName;
-        public final String elementType;
-        public final Statement loopBody;
-        public final boolean isForLoop; // true for for-loop pattern, false for while pattern
-        
-        public IteratorPattern(Expression collectionExpression, String iteratorVariableName, 
-                               String elementType, Statement loopBody, boolean isForLoop) {
-            this.collectionExpression = collectionExpression;
-            this.iteratorVariableName = iteratorVariableName;
-            this.elementType = elementType;
-            this.loopBody = loopBody;
-            this.isForLoop = isForLoop;
-        }
+    public record IteratorPattern(Expression collectionExpression, String iteratorVariableName,
+                                  String elementType, Statement loopBody, boolean isForLoop) {
     }
     
     /**

@@ -88,8 +88,8 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 				// Issue #670: Safety check - reject conversion if iterator has unsafe usage
 				// (remove(), multiple next(), break, labeled continue)
 				IteratorLoopAnalyzer.SafetyAnalysis analysis = loopAnalyzer.analyze(
-						node.getBody(), pattern.iteratorVariableName);
-				if (!analysis.isSafe) {
+						node.getBody(), pattern.iteratorVariableName());
+				if (!analysis.isSafe()) {
 					return true;
 				}
 				
@@ -143,8 +143,8 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 	 * Builds a LoopModel from an iterator-while pattern using the ULR pipeline.
 	 */
 	private LoopModel buildLoopModel(IteratorPattern pattern) {
-		String collectionExpr = pattern.collectionExpression.toString();
-		String elementType = pattern.elementType != null ? pattern.elementType : "Object"; //$NON-NLS-1$
+		String collectionExpr = pattern.collectionExpression().toString();
+		String elementType = pattern.elementType() != null ? pattern.elementType() : "Object"; //$NON-NLS-1$
 		String elementName = "item"; //$NON-NLS-1$
 		
 		return new LoopModelBuilder()

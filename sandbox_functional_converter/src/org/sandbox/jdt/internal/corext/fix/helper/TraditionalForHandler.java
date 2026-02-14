@@ -437,7 +437,7 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         LoopModel model = buildLoopModel(pattern, ast);
         
         // Create renderer
-        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body);
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body());
         
         // Transform using LoopModelTransformer
         LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
@@ -458,11 +458,11 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
      */
     private LoopModel buildLoopModel(ForLoopPattern pattern, AST ast) {
         // Get start and end expressions as strings
-        String startStr = pattern.startExpr.toString();
-        String endStr = pattern.endExpr.toString();
+        String startStr = pattern.startExpr().toString();
+        String endStr = pattern.endExpr().toString();
         
         // Adjust end expression for inclusive range (i <= end)
-        if (pattern.inclusive) {
+        if (pattern.inclusive()) {
             // For i <= end, we need IntStream.range(start, (end) + 1)
             // Parenthesize end expression to preserve operator precedence
             endStr = "(" + endStr + ") + 1";
@@ -478,13 +478,13 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         
         // Build element descriptor for the loop variable
         ElementDescriptor element = new ElementDescriptor(
-            pattern.loopVarName,
+            pattern.loopVarName(),
             "int",
             false // not a collection element
         );
         
         // Extract body statements and convert to strings
-        List<String> bodyStatements = extractBodyStatementsAsStrings(pattern.body);
+        List<String> bodyStatements = extractBodyStatementsAsStrings(pattern.body());
         
         // Build ForEachTerminal
         ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // uses forEach (not forEachOrdered)
@@ -518,22 +518,15 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
     }
     
     /**
-     * Represents an analyzed traditional for-loop pattern.
+     * Immutable representation of an analyzed traditional for-loop pattern.
+     *
+     * @param loopVarName the loop variable name (e.g. {@code "i"})
+     * @param startExpr the start expression (e.g. {@code 0})
+     * @param endExpr the end expression (e.g. {@code list.size()})
+     * @param inclusive {@code true} for {@code <=}, {@code false} for {@code <}
+     * @param body the loop body statement
      */
-    private static class ForLoopPattern {
-        final String loopVarName;
-        final Expression startExpr;
-        final Expression endExpr;
-        final boolean inclusive;  // true for <=, false for <
-        final Statement body;
-        
-        ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,
-                      boolean inclusive, Statement body) {
-            this.loopVarName = loopVarName;
-            this.startExpr = startExpr;
-            this.endExpr = endExpr;
-            this.inclusive = inclusive;
-            this.body = body;
-        }
+    private record ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,
+                                  boolean inclusive, Statement body) {
     }
 }

@@ -29,31 +29,23 @@ import org.eclipse.jdt.core.dom.*;
 public class IteratorLoopAnalyzer {
     
     /**
-     * Analysis result for an iterator loop.
+     * Immutable analysis result for an iterator loop's safety.
+     *
+     * @param isSafe whether the loop is safe for stream conversion
+     * @param reason the reason if not safe, or {@code null} if safe
+     * @param hasRemove whether the loop body calls {@code iterator.remove()}
+     * @param hasMultipleNext whether there are multiple {@code iterator.next()} calls
+     * @param hasBreak whether the loop body contains a {@code break} statement
+     * @param hasLabeledContinue whether the loop body contains a labeled {@code continue}
      */
-    public static class SafetyAnalysis {
-        public final boolean isSafe;
-        public final String reason; // reason if not safe
-        public final boolean hasRemove;
-        public final boolean hasMultipleNext;
-        public final boolean hasBreak;
-        public final boolean hasLabeledContinue;
-        
-        private SafetyAnalysis(boolean isSafe, String reason, boolean hasRemove, 
-                               boolean hasMultipleNext, boolean hasBreak, boolean hasLabeledContinue) {
-            this.isSafe = isSafe;
-            this.reason = reason;
-            this.hasRemove = hasRemove;
-            this.hasMultipleNext = hasMultipleNext;
-            this.hasBreak = hasBreak;
-            this.hasLabeledContinue = hasLabeledContinue;
-        }
-        
+    public record SafetyAnalysis(boolean isSafe, String reason, boolean hasRemove,
+                                 boolean hasMultipleNext, boolean hasBreak, boolean hasLabeledContinue) {
+
         public static SafetyAnalysis safe() {
             return new SafetyAnalysis(true, null, false, false, false, false);
         }
-        
-        public static SafetyAnalysis unsafe(String reason, boolean hasRemove, 
+
+        public static SafetyAnalysis unsafe(String reason, boolean hasRemove,
                                             boolean hasMultipleNext, boolean hasBreak, boolean hasLabeledContinue) {
             return new SafetyAnalysis(false, reason, hasRemove, hasMultipleNext, hasBreak, hasLabeledContinue);
         }
