@@ -232,8 +232,61 @@ public class HelperVisitor<E extends HelperVisitorProvider<V, T, E>,V,T> {
 	}
 
 	/**
+	 * Tests whether a predicate is registered for the given visitor enum key, and if so,
+	 * invokes it with the given node. This method is used by {@link LambdaASTVisitor} to
+	 * dispatch visit calls without directly accessing internal fields.
 	 *
-	 * @param ve
+	 * @param <N> the AST node type
+	 * @param key the visitor enum key identifying the node type
+	 * @param node the AST node to test
+	 * @return the result of the predicate test, or {@code true} (continue visiting) if no predicate is registered
+	 */
+	@SuppressWarnings("unchecked")
+	boolean hasPredicate(VisitorEnum key) {
+		return predicatemap.containsKey(key);
+	}
+
+	/**
+	 * Invokes the registered predicate for the given visitor enum key with the given node.
+	 * Callers should check {@link #hasPredicate(VisitorEnum)} first.
+	 *
+	 * @param <N> the AST node type
+	 * @param key the visitor enum key
+	 * @param node the AST node to test
+	 * @return the result of the predicate test
+	 */
+	@SuppressWarnings("unchecked")
+	<N extends ASTNode> boolean testPredicate(VisitorEnum key, N node) {
+		return ((BiPredicate<N, E>) predicatemap.get(key)).test(node, dataholder);
+	}
+
+	/**
+	 * Checks if a consumer is registered for the given visitor enum key.
+	 *
+	 * @param key the visitor enum key
+	 * @return {@code true} if a consumer is registered
+	 */
+	boolean hasConsumer(VisitorEnum key) {
+		return consumermap.containsKey(key);
+	}
+
+	/**
+	 * Invokes the registered consumer for the given visitor enum key with the given node.
+	 * Callers should check {@link #hasConsumer(VisitorEnum)} first.
+	 *
+	 * @param <N> the AST node type
+	 * @param key the visitor enum key
+	 * @param node the AST node to process
+	 */
+	@SuppressWarnings("unchecked")
+	<N extends ASTNode> void acceptConsumer(VisitorEnum key, N node) {
+		((BiConsumer<N, E>) consumermap.get(key)).accept(node, dataholder);
+	}
+
+	/**
+	 * Removes a visitor (both predicate and consumer) for the given enum key.
+	 *
+	 * @param ve the visitor enum key to remove
 	 */
 	public void removeVisitor(VisitorEnum ve) {
 		this.predicatemap.remove(ve);
