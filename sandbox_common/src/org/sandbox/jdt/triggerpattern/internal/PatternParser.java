@@ -75,6 +75,8 @@ public class PatternParser {
 			return parseMethodDeclaration(patternValue);
 		} else if (kind == PatternKind.BLOCK) {
 			return parseBlock(patternValue);
+		} else if (kind == PatternKind.STATEMENT_SEQUENCE) {
+			return parseBlock(patternValue);
 		}
 		
 		return null;

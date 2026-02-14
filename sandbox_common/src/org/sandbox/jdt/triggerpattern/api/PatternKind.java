@@ -70,5 +70,17 @@ public enum PatternKind {
 	 * Used for matching statement sequences with variadic placeholders.
 	 * @since 1.3.2
 	 */
-	BLOCK
+	BLOCK,
+	
+	/**
+	 * Pattern represents a sequence of consecutive statements to match within a block
+	 * using a sliding-window approach. Unlike {@link #BLOCK}, which matches the entire
+	 * block, this matches N consecutive statements anywhere within a block.
+	 * 
+	 * <p>Example: A two-statement pattern {@code "$T[] $copy = new $T[$len]; System.arraycopy($src, 0, $copy, 0, $len);"}
+	 * would match those two consecutive statements inside any method body.</p>
+	 * 
+	 * @since 1.3.2
+	 */
+	STATEMENT_SEQUENCE
 }

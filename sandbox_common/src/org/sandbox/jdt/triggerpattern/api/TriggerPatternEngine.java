@@ -106,6 +106,8 @@ public class TriggerPatternEngine {
 					checkMethodDeclarationMatch((MethodDeclaration) node, patternNode, pattern, matches);
 				} else if (pattern.getKind() == PatternKind.BLOCK && node instanceof Block) {
 					checkMatch(node, patternNode, matches);
+				} else if (pattern.getKind() == PatternKind.STATEMENT_SEQUENCE && node instanceof Block) {
+					checkStatementSequenceMatch((Block) node, patternNode, matches);
 				}
 			}
 		});
@@ -401,6 +403,68 @@ public class TriggerPatternEngine {
 			// We have a match! Create a Match object with pattern bindings and auto-bindings
 			Map<String, Object> bindings = new HashMap<>(matcher.getBindings());
 			createMatchWithAutoBindings(candidate, bindings, matches);
+		}
+	}
+	
+	/**
+	 * Checks if a sequence of consecutive statements in a block matches a pattern block
+	 * using a sliding-window approach.
+	 * 
+	 * <p>The pattern block is parsed as a {@link Block} containing N statements. This method
+	 * slides a window of size N across the candidate block's statements. When all N pattern
+	 * statements match N consecutive candidate statements, a match is created.</p>
+	 * 
+	 * <p>The match's offset and length span the entire matched sequence (from the start of
+	 * the first matched statement to the end of the last matched statement).</p>
+	 * 
+	 * @param candidateBlock the candidate block to search
+	 * @param patternNode the parsed pattern block (must be a {@link Block})
+	 * @param matches the list to add matches to
+	 * @since 1.3.2
+	 */
+	@SuppressWarnings("unchecked")
+	private void checkStatementSequenceMatch(Block candidateBlock, ASTNode patternNode, List<Match> matches) {
+		if (!(patternNode instanceof Block)) {
+			return;
+		}
+		Block patternBlock = (Block) patternNode;
+		List<Statement> patternStmts = patternBlock.statements();
+		List<Statement> candidateStmts = candidateBlock.statements();
+		int patternSize = patternStmts.size();
+		
+		if (patternSize == 0 || candidateStmts.size() < patternSize) {
+			return;
+		}
+		
+		// Slide a window of size patternSize across the candidate statements
+		for (int windowStart = 0; windowStart <= candidateStmts.size() - patternSize; windowStart++) {
+			PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+			boolean allMatch = true;
+			
+			for (int j = 0; j < patternSize; j++) {
+				if (!patternStmts.get(j).subtreeMatch(matcher, candidateStmts.get(windowStart + j))) {
+					allMatch = false;
+					break;
+				}
+			}
+			
+			if (allMatch) {
+				// Calculate offset/length spanning the entire matched sequence
+				Statement firstStmt = candidateStmts.get(windowStart);
+				Statement lastStmt = candidateStmts.get(windowStart + patternSize - 1);
+				int offset = firstStmt.getStartPosition();
+				int length = (lastStmt.getStartPosition() + lastStmt.getLength()) - offset;
+				
+				Map<String, Object> bindings = new HashMap<>(matcher.getBindings());
+				bindings.put("$_", firstStmt); //$NON-NLS-1$
+				ASTNode enclosingType = findEnclosingType(firstStmt);
+				if (enclosingType != null) {
+					bindings.put("$this", enclosingType); //$NON-NLS-1$
+				}
+				
+				Match match = new Match(firstStmt, bindings, offset, length);
+				matches.add(match);
+			}
 		}
 	}
 	
