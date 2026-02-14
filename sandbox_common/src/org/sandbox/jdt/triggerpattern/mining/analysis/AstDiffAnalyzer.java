@@ -73,6 +73,7 @@ public class AstDiffAnalyzer {
 
 		// Same node type but different content – recurse into children
 		boolean allChildrenCompatible = true;
+		boolean hasChildProperties = false;
 		List<StructuralPropertyDescriptor> properties = before.structuralPropertiesForType();
 		for (StructuralPropertyDescriptor prop : properties) {
 			if (prop.isSimpleProperty()) {
@@ -82,18 +83,25 @@ public class AstDiffAnalyzer {
 					allChildrenCompatible = false;
 				}
 			} else if (prop.isChildProperty()) {
+				hasChildProperties = true;
 				ASTNode bChild = (ASTNode) before.getStructuralProperty(prop);
 				ASTNode aChild = (ASTNode) after.getStructuralProperty(prop);
 				if (!diff(bChild, aChild, alignments)) {
 					allChildrenCompatible = false;
 				}
 			} else if (prop.isChildListProperty()) {
+				hasChildProperties = true;
 				List<ASTNode> bChildren = (List<ASTNode>) before.getStructuralProperty(prop);
 				List<ASTNode> aChildren = (List<ASTNode>) after.getStructuralProperty(prop);
 				if (!diffLists(bChildren, aChildren, alignments)) {
 					allChildrenCompatible = false;
 				}
 			}
+		}
+		// If the node has no child/list properties (leaf node) and simple props differ,
+		// register a MODIFIED alignment so the caller can see the change.
+		if (!allChildrenCompatible && !hasChildProperties) {
+			alignments.add(new NodeAlignment(before, after, AlignmentKind.MODIFIED));
 		}
 		return allChildrenCompatible;
 	}

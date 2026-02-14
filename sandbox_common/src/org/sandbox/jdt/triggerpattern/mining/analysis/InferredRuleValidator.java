@@ -13,11 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.mining.analysis;
 
-import java.util.List;
-
-import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
-import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 
 /**

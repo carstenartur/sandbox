@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.mining.analysis;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
 
 /**
  * Computes a heuristic confidence score for an {@link InferredRule}.
@@ -93,11 +94,13 @@ public class ConfidenceCalculator {
 		return 0.3;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static boolean isLeafNode(ASTNode node) {
 		if (node == null) {
 			return true;
 		}
-		return node.structuralPropertiesForType().stream()
+		java.util.List<StructuralPropertyDescriptor> props = node.structuralPropertiesForType();
+		return props.stream()
 				.noneMatch(p -> p.isChildProperty() || p.isChildListProperty());
 	}
 }
