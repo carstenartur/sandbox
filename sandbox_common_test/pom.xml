@@ -7,36 +7,76 @@
 		<groupId>org.sandbox</groupId>
 		<artifactId>central</artifactId>
 		<version>1.2.6-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<artifactId>sandbox_common_test</artifactId>
 	<name>Sandbox common test</name>
-	<packaging>eclipse-test-plugin</packaging>
+	<description>Tests for sandbox_common using Eclipse ASTParser in standalone mode</description>
+	<packaging>jar</packaging>
+	
+	<properties>
+		<maven.compiler.source>21</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
+		<maven.compiler.release>21</maven.compiler.release>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<junit.version>5.11.4</junit.version>
+	</properties>
+	
 	<dependencies>
+		<!-- Dependency on sandbox_common (Tycho-built, but can be used as regular JAR) -->
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_common</artifactId>
+			<version>${project.version}</version>
 		</dependency>
+		
+		<!-- JUnit 5 for testing -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		
+		<!-- Eclipse JDT Core for AST parsing -->
+		<dependency>
+			<groupId>org.eclipse.jdt</groupId>
+			<artifactId>org.eclipse.jdt.core</artifactId>
+			<version>3.44.0</version>
+		</dependency>
+		
+		<!-- Eclipse JDT UI for helper classes like ASTNodes, ScopeAnalyzer -->
+		<dependency>
+			<groupId>org.eclipse.jdt</groupId>
+			<artifactId>org.eclipse.jdt.ui</artifactId>
+			<version>3.36.0</version>
+		</dependency>
+		
+		<!-- We don't need Eclipse Platform dependencies for standalone ASTParser tests -->
+		<!-- The JDT core library contains everything needed for AST parsing in standalone mode -->
 	</dependencies>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>
+			<!-- Maven Compiler Plugin -->
 			<plugin>
-				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>tycho-surefire-plugin</artifactId>
-				<version>${tycho-version}</version>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.15.0</version>
 				<configuration>
-					<useJDK>BREE</useJDK>
-					<!-- These tests use ASTParser in standalone mode and do not require Eclipse UI -->
-					<useUIHarness>false</useUIHarness>
-					<dependencies>
-						<dependency>
-							<type>eclipse-plugin</type>
-							<groupId>org.sandbox</groupId>
-							<artifactId>sandbox_common</artifactId>
-							<!-- This is the minimum required version -->
-							<version>0.0.0</version>
-						</dependency>
-					</dependencies>
+					<release>21</release>
+				</configuration>
+			</plugin>
+			
+			<!-- Maven Surefire Plugin for running tests -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.5.4</version>
+				<configuration>
+					<includes>
+						<include>**/*Test.java</include>
+					</includes>
 				</configuration>
 			</plugin>
 		</plugins>
