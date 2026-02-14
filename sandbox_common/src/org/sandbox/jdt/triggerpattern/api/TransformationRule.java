@@ -29,11 +29,15 @@ import java.util.Objects;
  * <p>If no alternatives are provided, the rule acts as a hint-only rule
  * (warning/inspection without rewrite).</p>
  * 
+ * <p>Optionally, a rule may have import directives ({@link ImportDirective}) that
+ * specify imports to add or remove when the rule is applied.</p>
+ * 
  * <p>Example DSL syntax:</p>
  * <pre>
  * new FileReader($path) :: sourceVersionGE(11)
  * =&gt; new FileReader($path, StandardCharsets.UTF_8) :: sourceVersionGE(11)
  * =&gt; new FileReader($path, Charset.defaultCharset()) :: otherwise
+ *    addImport java.nio.charset.StandardCharsets
  * ;;
  * </pre>
  * 
@@ -45,6 +49,7 @@ public final class TransformationRule {
 	private final Pattern sourcePattern;
 	private final GuardExpression sourceGuard;
 	private final List<RewriteAlternative> alternatives;
+	private final ImportDirective importDirective;
 	
 	/**
 	 * Creates a new transformation rule.
@@ -56,12 +61,28 @@ public final class TransformationRule {
 	 */
 	public TransformationRule(String description, Pattern sourcePattern,
 			GuardExpression sourceGuard, List<RewriteAlternative> alternatives) {
+		this(description, sourcePattern, sourceGuard, alternatives, null);
+	}
+	
+	/**
+	 * Creates a new transformation rule with import directives.
+	 * 
+	 * @param description optional description (may be {@code null})
+	 * @param sourcePattern the pattern to match
+	 * @param sourceGuard optional guard on the source pattern (may be {@code null})
+	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
+	 * @param importDirective optional import directives (may be {@code null})
+	 */
+	public TransformationRule(String description, Pattern sourcePattern,
+			GuardExpression sourceGuard, List<RewriteAlternative> alternatives,
+			ImportDirective importDirective) {
 		this.description = description;
 		this.sourcePattern = Objects.requireNonNull(sourcePattern, "Source pattern cannot be null"); //$NON-NLS-1$
 		this.sourceGuard = sourceGuard;
 		this.alternatives = alternatives != null
 				? Collections.unmodifiableList(alternatives)
 				: Collections.emptyList();
+		this.importDirective = importDirective;
 	}
 	
 	/**
@@ -107,6 +128,26 @@ public final class TransformationRule {
 	 */
 	public boolean isHintOnly() {
 		return alternatives.isEmpty();
+	}
+	
+	/**
+	 * Returns the import directive for this rule.
+	 * 
+	 * @return the import directive, or {@code null} if no imports are specified
+	 * @since 1.3.2
+	 */
+	public ImportDirective getImportDirective() {
+		return importDirective;
+	}
+	
+	/**
+	 * Returns {@code true} if this rule has import directives.
+	 * 
+	 * @return {@code true} if imports are specified
+	 * @since 1.3.2
+	 */
+	public boolean hasImportDirective() {
+		return importDirective != null && !importDirective.isEmpty();
 	}
 	
 	/**

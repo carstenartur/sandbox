@@ -84,6 +84,16 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	}
 	
 	/**
+	 * Merges bindings from another matcher into this one.
+	 * Existing bindings are not overwritten.
+	 * 
+	 * @param other the matcher whose bindings to merge
+	 */
+	public void mergeBindings(PlaceholderAstMatcher other) {
+		other.bindings.forEach(bindings::putIfAbsent);
+	}
+	
+	/**
 	 * Detects if a placeholder name represents a multi-placeholder (e.g., $args$).
 	 * 
 	 * @param name the placeholder name

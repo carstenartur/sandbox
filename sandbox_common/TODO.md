@@ -183,31 +183,81 @@ For questions about shared utilities or adding new common code, please open an i
 - [x] Comprehensive test suite for new pattern kinds (NewPatternKindsTest)
 - [x] Updated documentation with examples for JUnit migration use cases
 
+### Completed (v1.3.2 - Hint File Parser Engine, Phases 1-5)
+- [x] Phase 1: Variadic Placeholders (`$args$` syntax)
+  - [x] Match argument lists: `method($args$)` → 0..n arguments
+  - [x] Match statement sequences: `{ $stmts$ }` → 0..n statements
+  - [x] Mixed patterns: `method($a, $args$)` and `method($args$, $last)`
+  - [x] Binding as `List<ASTNode>` via `Match.getListBinding()`
+- [x] Phase 2: Multi-Statement Pattern Matching
+  - [x] `STATEMENT_SEQUENCE` PatternKind with sliding-window matching
+  - [x] Statement sequence matching within larger blocks
+- [x] Phase 3: Guard Functions Framework
+  - [x] Guard expression AST: `FunctionCall`, `And`, `Or`, `Not`
+  - [x] Recursive descent parser for guard expressions
+  - [x] Built-in guards: `instanceof` (with array type support `Type[]`), `matchesAny` (with literal matching via `extractNodeText()`), `matchesNone` (with literal matching), `hasNoSideEffect`, `sourceVersionGE/LE/Between`, `isStatic`, `isFinal`, `hasAnnotation`, `isDeprecated`, `referencedIn`, `elementKindMatches`, `contains`, `notContains`
+  - [x] Custom guard registration via `GuardRegistry.register()`
+  - [x] String literal support in guard expression arguments
+  - [x] Locale-safe `toUpperCase(Locale.ROOT)` in element kind matching
+  - [x] Unterminated string literal detection with clear error messages
+- [x] Phase 4: Conditional Multi-Rewrite
+  - [x] `RewriteAlternative` with replacement + optional guard
+  - [x] `TransformationRule` with ordered alternatives
+  - [x] `otherwise` as catch-all (last alternative)
+- [x] Phase 5: DSL File Format Parser (`.sandbox-hint`)
+  - [x] Metadata directives, comment stripping, pattern kind inference
+  - [x] Rule syntax: Pattern `::` guard `=>` rewrite
+  - [x] Multi-rewrite support, hint-only rules, error handling
+
+### Completed (v1.3.3 - Improvements over NetBeans, Phase 6)
+- [x] Phase 6.1: Import Management
+  - [x] `ImportDirective` class with `addImport`, `removeImport`, `addStaticImport`, `removeStaticImport`
+  - [x] Auto-detection from fully qualified names in replacement patterns
+  - [x] Integration into `TransformationRule` and `HintFileParser`
+  - [x] DSL syntax: `addImport`/`removeImport`/`addStaticImport`/`removeStaticImport` directives in rules
+- [x] Phase 6.2: Pattern Libraries
+  - [x] `HintFileRegistry` singleton for loading/managing `.sandbox-hint` files
+  - [x] Support for classpath resources, strings, and readers
+  - [x] Bundled library names defined (encoding, collections, modernize-java11, performance, junit5)
+  - [x] Bundled `.sandbox-hint` pattern library files created:
+    - [x] `encoding.sandbox-hint` — 7 StandardCharsets migration rules with guards and import directives
+    - [x] `collections.sandbox-hint` — 7 Collection API modernization rules (Java 9+)
+    - [x] `modernize-java11.sandbox-hint` — 7 Java 11+ API modernization rules
+    - [x] `performance.sandbox-hint` — 9 performance optimization rules
+    - [x] `junit5.sandbox-hint` — 8 JUnit 4 → 5 migration rules with import directives
+  - [x] `loadBundledLibraries()` loads all bundled files from classpath
+- [x] Phase 6.3: Negated Patterns
+  - [x] `contains` guard: checks if text pattern occurs in enclosing method body
+  - [x] `notContains` guard: checks if text pattern does NOT occur in method body
+  - [x] `GuardContext.getMatchedNode()` for context-based search
+- [x] Phase 6.4: Preview Generation
+  - [x] `PreviewGenerator` with automatic placeholder substitution
+  - [x] `Preview` record with `before`, `after`, `description`, `format()`
+  - [x] Default example values for common placeholder names
+  - [x] Support for variadic placeholder substitution
+- [x] Phase 6.5: Dry-Run / Reporting
+  - [x] `DryRunReporter` — finds all matches without modifying code
+  - [x] `ReportEntry` record with line, offset, matched code, suggested replacement
+  - [x] JSON report generation via `toJson()`
+  - [x] CSV report generation via `toCsv()`
+  - [x] Placeholder substitution in suggested replacements
+  - [x] Support for hint-only rules (no replacement)
+
 ### Planned Enhancements
 
 #### High Priority
-- [ ] Add comprehensive statement pattern tests
-- [ ] Performance optimization: index patterns by kind and root node type
+- [x] Performance optimization: `PatternIndex` indexes patterns by kind for single-traversal batch matching
+- [x] Thread-safety: `HintFileRegistry` uses `ConcurrentHashMap` and `AtomicBoolean`
+- [x] `PlaceholderAstMatcher.mergeBindings()` for combining bindings across multiple matchers
+- [x] Cleanup integration
+  - [x] Batch processing: `BatchTransformationProcessor` applies all rules from a `HintFile` in a single pass
+  - [ ] CleanUp implementation using TriggerPattern engine (Eclipse CleanUp wrapper)
+  - [ ] Save Actions integration
 - [ ] Add integration tests for HintRegistry and extension point loading
 - [ ] Add UI tests for Quick Assist processor (requires PDE test setup)
 - [ ] Documentation: User guide for creating custom hints
-
-#### Medium Priority
-- [ ] Multi-placeholder support (`$x$` for lists)
-  - [ ] Match argument lists: `method($args$)`
-  - [ ] Match statement sequences: `{ $stmts$ }`
-  - [ ] Tests for multi-placeholder matching
-- [ ] Placeholder constraints/guards
-  - [ ] Type constraints: `$x:SimpleName`, `$y:NumberLiteral`
-  - [ ] Pattern-based constraints: `$x matches "get.*"`
-  - [ ] Tests for constraint validation
-- [ ] Cleanup integration
-  - [ ] CleanUp implementation using TriggerPattern engine
-  - [ ] Batch processing support
-  - [ ] Save Actions integration
 - [ ] Pattern composition
   - [ ] Allow patterns to reference other patterns
-  - [ ] Pattern libraries/catalogs
 
 #### Low Priority
 - [ ] Pattern debugging tools
@@ -217,7 +267,6 @@ For questions about shared utilities or adding new common code, please open an i
   - [ ] Track pattern matching performance
   - [ ] Identify slow patterns
 - [ ] Advanced pattern features
-  - [ ] Negative patterns (must not match)
   - [ ] Optional parts: `$x?.method()`
   - [ ] Repetition: `$x+` (one or more)
 
@@ -227,4 +276,3 @@ For questions about shared utilities or adding new common code, please open an i
 ### Technical Debt
 - Consider separating TriggerPattern into its own plugin for better modularity
 - Pattern parser could be made more robust with better error handling
-- HintRegistry needs thread-safety improvements for concurrent access

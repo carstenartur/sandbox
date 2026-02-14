@@ -1,0 +1,53 @@
+// performance.sandbox-hint — Performance optimization patterns
+// Identifies common performance anti-patterns
+
+<!id: performance>
+<!description: Performance optimization suggestions>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: performance, optimization>
+
+// new Boolean(true) → Boolean.TRUE
+new Boolean(true)
+=> Boolean.TRUE
+;;
+
+// new Boolean(false) → Boolean.FALSE
+new Boolean(false)
+=> Boolean.FALSE
+;;
+
+// new Boolean($str) → Boolean.valueOf($str)
+new Boolean($str)
+=> Boolean.valueOf($str)
+;;
+
+// new Integer($val) → Integer.valueOf($val)
+new Integer($val)
+=> Integer.valueOf($val)
+;;
+
+// new Long($val) → Long.valueOf($val)
+new Long($val)
+=> Long.valueOf($val)
+;;
+
+// new Double($val) → Double.valueOf($val)
+new Double($val)
+=> Double.valueOf($val)
+;;
+
+// new Float($val) → Float.valueOf($val)
+new Float($val)
+=> Float.valueOf($val)
+;;
+
+// $sb.append("" + $x) → $sb.append($x)
+$sb.append("" + $x)
+=> $sb.append($x)
+;;
+
+// new String($str) where $str is a String literal → $str
+"Unnecessary String constructor":
+new String($str)
+;;

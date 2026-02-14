@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
@@ -285,9 +286,33 @@ public final class HintFileParser {
 		}
 		ruleLineIdx++;
 		
-		// Parse rewrite alternatives (lines starting with =>)
+		// Parse rewrite alternatives (lines starting with =>) and import directives
+		ImportDirective currentImports = new ImportDirective();
 		while (ruleLineIdx < ruleLines.size()) {
 			String altLine = ruleLines.get(ruleLineIdx);
+			
+			// Import directives
+			if (altLine.startsWith("addImport ")) { //$NON-NLS-1$
+				currentImports.addImport(altLine.substring(10).trim());
+				ruleLineIdx++;
+				continue;
+			}
+			if (altLine.startsWith("removeImport ")) { //$NON-NLS-1$
+				currentImports.removeImport(altLine.substring(13).trim());
+				ruleLineIdx++;
+				continue;
+			}
+			if (altLine.startsWith("addStaticImport ")) { //$NON-NLS-1$
+				currentImports.addStaticImport(altLine.substring(16).trim());
+				ruleLineIdx++;
+				continue;
+			}
+			if (altLine.startsWith("removeStaticImport ")) { //$NON-NLS-1$
+				currentImports.removeStaticImport(altLine.substring(19).trim());
+				ruleLineIdx++;
+				continue;
+			}
+			
 			if (!altLine.startsWith("=>")) { //$NON-NLS-1$
 				// Might be continuation of source pattern - for now, error
 				throw new HintParseException(
@@ -317,8 +342,17 @@ public final class HintFileParser {
 		PatternKind kind = inferPatternKind(sourcePatternText);
 		Pattern sourcePattern = new Pattern(sourcePatternText, kind);
 		
+		// Auto-detect imports from replacement patterns if no explicit imports given
+		if (currentImports.isEmpty() && !alternatives.isEmpty()) {
+			for (RewriteAlternative alt : alternatives) {
+				ImportDirective detected = ImportDirective.detectFromPattern(alt.replacementPattern());
+				currentImports.merge(detected);
+			}
+		}
+		
 		TransformationRule rule = new TransformationRule(
-				description, sourcePattern, sourceGuard, alternatives);
+				description, sourcePattern, sourceGuard, alternatives, 
+				currentImports.isEmpty() ? null : currentImports);
 		hintFile.addRule(rule);
 		
 		return i;
