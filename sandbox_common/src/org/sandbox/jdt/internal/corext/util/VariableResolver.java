@@ -215,13 +215,13 @@ public final class VariableResolver {
 
 		if (type.isPrimitiveType()) {
 			return ((PrimitiveType) type).getPrimitiveTypeCode().toString();
-		} else if (type.isSimpleType() && type instanceof SimpleType simpleType) {
+		} else if (type instanceof SimpleType simpleType) {
 			ITypeBinding binding = simpleType.resolveBinding();
 			if (binding != null) {
 				return binding.getName();
 			}
 			return simpleType.getName().getFullyQualifiedName();
-		} else if (type.isArrayType() && type instanceof ArrayType arrayType) {
+		} else if (type instanceof ArrayType arrayType) {
 			String elementTypeName = extractTypeName(arrayType.getElementType());
 			return elementTypeName != null ? elementTypeName + "[]" : null; //$NON-NLS-1$
 		} else {
