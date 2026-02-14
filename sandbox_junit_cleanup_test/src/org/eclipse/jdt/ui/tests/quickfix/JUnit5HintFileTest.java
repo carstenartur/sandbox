@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 
 /**
@@ -43,8 +44,8 @@ public class JUnit5HintFileTest {
 		HintFile hintFile = loadHintFile();
 		assertNotNull(hintFile, "junit5 library should be loadable"); //$NON-NLS-1$
 		assertEquals("junit5", hintFile.getId()); //$NON-NLS-1$
-		assertTrue(hintFile.getRules().size() >= 5,
-				"junit5 library should have at least 5 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 24,
+				"junit5 library should have at least 24 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
 	}
 
 	@Test
@@ -64,6 +65,39 @@ public class JUnit5HintFileTest {
 		assertEquals("warning", hintFile.getSeverity()); //$NON-NLS-1$
 		assertTrue(hintFile.getMinJavaVersion() > 0,
 				"junit5 library should have a minimum Java version"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testJUnit5CoversMajorAssertionMethods() throws Exception {
+		HintFile hintFile = loadHintFile();
+		String[] expectedMethods = {
+				"Assert.assertEquals", //$NON-NLS-1$
+				"Assert.assertNotEquals", //$NON-NLS-1$
+				"Assert.assertTrue", //$NON-NLS-1$
+				"Assert.assertFalse", //$NON-NLS-1$
+				"Assert.assertNull", //$NON-NLS-1$
+				"Assert.assertNotNull", //$NON-NLS-1$
+				"Assert.assertSame", //$NON-NLS-1$
+				"Assert.assertNotSame", //$NON-NLS-1$
+				"Assert.assertArrayEquals", //$NON-NLS-1$
+				"Assert.fail" //$NON-NLS-1$
+		};
+		for (String method : expectedMethods) {
+			boolean found = hintFile.getRules().stream()
+					.map(TransformationRule::sourcePattern)
+					.anyMatch(p -> p.getValue().startsWith(method));
+			assertTrue(found,
+					"junit5 library should cover " + method); //$NON-NLS-1$
+		}
+	}
+
+	@Test
+	public void testAllRulesHaveImportDirectives() throws Exception {
+		HintFile hintFile = loadHintFile();
+		for (TransformationRule rule : hintFile.getRules()) {
+			assertTrue(rule.hasImportDirective(),
+					"Rule should have import directives: " + rule.sourcePattern().getValue()); //$NON-NLS-1$
+		}
 	}
 
 	/**
