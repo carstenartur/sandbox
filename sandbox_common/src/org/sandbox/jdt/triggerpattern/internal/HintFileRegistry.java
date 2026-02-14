@@ -20,9 +20,10 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
@@ -43,15 +44,18 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
  *   <li>{@code junit5.sandbox-hint} — JUnit 4 → 5 migration</li>
  * </ul>
  * 
+ * <p>This class is thread-safe. All mutable state is protected by
+ * synchronization or concurrent data structures.</p>
+ * 
  * @since 1.3.2
  */
 public final class HintFileRegistry {
 	
 	private static final HintFileRegistry INSTANCE = new HintFileRegistry();
 	
-	private final Map<String, HintFile> hintFiles = new LinkedHashMap<>();
+	private final Map<String, HintFile> hintFiles = new ConcurrentHashMap<>();
 	private final HintFileParser parser = new HintFileParser();
-	private boolean bundledLoaded = false;
+	private final AtomicBoolean bundledLoaded = new AtomicBoolean(false);
 	
 	/**
 	 * Bundled library resource names.
@@ -179,7 +183,7 @@ public final class HintFileRegistry {
 	 */
 	public void clear() {
 		hintFiles.clear();
-		bundledLoaded = false;
+		bundledLoaded.set(false);
 	}
 	
 	/**
@@ -199,7 +203,7 @@ public final class HintFileRegistry {
 	 * @return list of successfully loaded library IDs
 	 */
 	public List<String> loadBundledLibraries(ClassLoader classLoader) {
-		if (bundledLoaded) {
+		if (!bundledLoaded.compareAndSet(false, true)) {
 			return getRegisteredIds();
 		}
 		List<String> loaded = new ArrayList<>();
@@ -215,7 +219,6 @@ public final class HintFileRegistry {
 				// In a full Eclipse environment, this would be logged
 			}
 		}
-		bundledLoaded = true;
 		return loaded;
 	}
 }

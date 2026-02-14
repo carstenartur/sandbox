@@ -246,7 +246,9 @@ For questions about shared utilities or adding new common code, please open an i
 ### Planned Enhancements
 
 #### High Priority
-- [ ] Performance optimization: index patterns by kind and root node type
+- [x] Performance optimization: `PatternIndex` indexes patterns by kind for single-traversal batch matching
+- [x] Thread-safety: `HintFileRegistry` uses `ConcurrentHashMap` and `AtomicBoolean`
+- [x] `PlaceholderAstMatcher.mergeBindings()` for combining bindings across multiple matchers
 - [ ] Add integration tests for HintRegistry and extension point loading
 - [ ] Add UI tests for Quick Assist processor (requires PDE test setup)
 - [ ] Documentation: User guide for creating custom hints
@@ -274,4 +276,3 @@ For questions about shared utilities or adding new common code, please open an i
 ### Technical Debt
 - Consider separating TriggerPattern into its own plugin for better modularity
 - Pattern parser could be made more robust with better error handling
-- HintRegistry needs thread-safety improvements for concurrent access
