@@ -49,10 +49,9 @@ public final class StreamOperationDetector {
 	 */
 	public static boolean hasChainedStreamOperations(MethodInvocation forEach) {
 		Expression receiver = forEach.getExpression();
-		if (!(receiver instanceof MethodInvocation)) {
+		if (!(receiver instanceof MethodInvocation chainedCall)) {
 			return false; // collection.forEach() — no chain
 		}
-		MethodInvocation chainedCall = (MethodInvocation) receiver;
 		String methodName = chainedCall.getName().getIdentifier();
 
 		// collection.stream().forEach() is OK — no intermediate ops

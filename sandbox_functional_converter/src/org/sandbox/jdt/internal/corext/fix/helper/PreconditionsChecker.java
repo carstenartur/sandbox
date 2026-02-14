@@ -447,8 +447,7 @@ public final class PreconditionsChecker {
 		// statement (if any). This lets us detect patterns that depend on the statement
 		// right after the loop without pulling in unrelated statements.
 		ASTNode parent = loop.getParent();
-		if (parent instanceof Block) {
-			Block block = (Block) parent;
+		if (parent instanceof Block block) {
 			List<Statement> statements = block.statements();
 			int loopIndex = statements.indexOf(loop);
 			if (loopIndex != -1 && loopIndex + 1 < statements.size()) {
@@ -497,8 +496,8 @@ public final class PreconditionsChecker {
 		// Extract target variable from the MethodInvocation
 		if (node instanceof MethodInvocation methodInv && collectTargetVariable == null) {
 			Expression receiver = methodInv.getExpression();
-			if (receiver instanceof SimpleName) {
-				collectTargetVariable = ((SimpleName) receiver).getIdentifier();
+			if (receiver instanceof SimpleName simpleName) {
+				collectTargetVariable = simpleName.getIdentifier();
 			}
 		}
 	}
@@ -618,11 +617,10 @@ public final class PreconditionsChecker {
 	 * </pre>
 	 */
 	private void detectEarlyReturnPatterns() {
-		if (!containsReturn || !(loop instanceof EnhancedForStatement)) {
+		if (!containsReturn || !(loop instanceof EnhancedForStatement forLoop)) {
 			return;
 		}
 
-		EnhancedForStatement forLoop = (EnhancedForStatement) loop;
 		Statement body = forLoop.getBody();
 
 		// Find all IF statements with return statements in the loop
@@ -746,12 +744,12 @@ public final class PreconditionsChecker {
 	 */
 	private boolean isNegatedCondition(Expression expr) {
 		// Unwrap parentheses
-		while (expr instanceof ParenthesizedExpression) {
-			expr = ((ParenthesizedExpression) expr).getExpression();
+		while (expr instanceof ParenthesizedExpression parenthesized) {
+			expr = parenthesized.getExpression();
 		}
 		
-		return expr instanceof PrefixExpression
-				&& ((PrefixExpression) expr).getOperator() == PrefixExpression.Operator.NOT;
+		return expr instanceof PrefixExpression prefixExpr
+				&& prefixExpr.getOperator() == PrefixExpression.Operator.NOT;
 	}
 
 	/**
@@ -770,11 +768,10 @@ public final class PreconditionsChecker {
 		ASTNode parent = forLoop.getParent();
 		
 		// The loop must be in a Block (method body, if-then block, etc.)
-		if (!(parent instanceof Block)) {
+		if (!(parent instanceof Block block)) {
 			return null;
 		}
 		
-		Block block = (Block) parent;
 		List<?> statements = block.statements();
 		
 		// Find the loop in the block's statements
@@ -788,11 +785,10 @@ public final class PreconditionsChecker {
 		Statement nextStmt = (Statement) statements.get(loopIndex + 1);
 		
 		// We expect a return statement with a boolean literal
-		if (nextStmt instanceof ReturnStatement) {
-			ReturnStatement returnStmt = (ReturnStatement) nextStmt;
+		if (nextStmt instanceof ReturnStatement returnStmt) {
 			Expression expr = returnStmt.getExpression();
-			if (expr instanceof BooleanLiteral) {
-				return (BooleanLiteral) expr;
+			if (expr instanceof BooleanLiteral boolLiteral) {
+				return boolLiteral;
 			}
 		}
 		
@@ -809,8 +805,8 @@ public final class PreconditionsChecker {
 	private String extractIteratedCollectionName() {
 		if (loop instanceof EnhancedForStatement enhancedFor) {
 			Expression expression = enhancedFor.getExpression();
-			if (expression instanceof SimpleName) {
-				return ((SimpleName) expression).getIdentifier();
+			if (expression instanceof SimpleName simpleName) {
+				return simpleName.getIdentifier();
 			}
 			// Unwrap common map view-producing calls like map.entrySet(), map.keySet(), map.values()
 			if (expression instanceof MethodInvocation methodInvocation) {

@@ -88,8 +88,8 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 				// Issue #670: Safety check - reject conversion if iterator has unsafe usage
 				// (remove(), multiple next(), break, labeled continue)
 				IteratorLoopAnalyzer.SafetyAnalysis analysis = loopAnalyzer.analyze(
-						node.getBody(), pattern.iteratorVariableName);
-				if (!analysis.isSafe) {
+						node.getBody(), pattern.iteratorVariableName());
+				if (!analysis.isSafe()) {
 					return true;
 				}
 				
@@ -112,21 +112,19 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> data)
 			throws CoreException {
-		if (!(visited instanceof WhileStatement)) {
+		if (!(visited instanceof WhileStatement whileStmt)) {
 			return;
 		}
 		
 		Object patternObj = data.get(visited);
-		if (!(patternObj instanceof IteratorPattern)) {
+		if (!(patternObj instanceof IteratorPattern pattern)) {
 			return;
 		}
 		
-		IteratorPattern pattern = (IteratorPattern) patternObj;
 		AST ast = cuRewrite.getAST();
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		
 		// Find the iterator declaration statement that should be removed
-		WhileStatement whileStmt = (WhileStatement) visited;
 		Block parentBlock = (Block) whileStmt.getParent();
 		Statement iteratorDecl = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);
 		
@@ -145,8 +143,8 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 	 * Builds a LoopModel from an iterator-while pattern using the ULR pipeline.
 	 */
 	private LoopModel buildLoopModel(IteratorPattern pattern) {
-		String collectionExpr = pattern.collectionExpression.toString();
-		String elementType = pattern.elementType != null ? pattern.elementType : "Object"; //$NON-NLS-1$
+		String collectionExpr = pattern.collectionExpression().toString();
+		String elementType = pattern.elementType() != null ? pattern.elementType() : "Object"; //$NON-NLS-1$
 		String elementName = "item"; //$NON-NLS-1$
 		
 		return new LoopModelBuilder()

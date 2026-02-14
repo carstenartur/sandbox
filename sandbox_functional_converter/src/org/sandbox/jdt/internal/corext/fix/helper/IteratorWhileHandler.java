@@ -131,16 +131,15 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
      */
     private boolean analyzeAndValidate(IteratorPattern pattern) {
         // Analyze for safety
-        SafetyAnalysis analysis = loopAnalyzer.analyze(pattern.loopBody, pattern.iteratorVariableName);
-        if (!analysis.isSafe) {
+        SafetyAnalysis analysis = loopAnalyzer.analyze(pattern.loopBody(), pattern.iteratorVariableName());
+        if (!analysis.isSafe()) {
             // Cannot convert unsafe patterns
             return false;
         }
         
         // Parse body to ensure it has the expected structure
-        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody, pattern.iteratorVariableName);
+        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());
         if (parsedBody == null) {
-            // Body doesn't match expected pattern
             return false;
         }
         
@@ -153,12 +152,11 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
                         ReferenceHolder<ASTNode, Object> holder) throws CoreException {
         
         Object data = holder.get(node);
-        if (!(data instanceof IteratorPattern)) {
+        if (!(data instanceof IteratorPattern pattern)) {
             return;
         }
         
-        IteratorPattern pattern = (IteratorPattern) data;
-        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody, pattern.iteratorVariableName);
+        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());
         
         if (parsedBody == null) {
             return;
@@ -171,7 +169,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
         LoopModel model = buildLoopModel(pattern, parsedBody);
         
         // Create renderer with the original loop body for AST node access
-        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.loopBody);
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.loopBody());
         
         // Transform using LoopModelTransformer
         LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
@@ -179,9 +177,9 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
         
         if (streamExpression != null) {
             // For while pattern, also remove the iterator declaration
-            if (node instanceof WhileStatement) {
-                Block parentBlock = (Block) node.getParent();
-                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, (Statement) node);
+            if (node instanceof WhileStatement whileStmt) {
+                Block parentBlock = (Block) whileStmt.getParent();
+                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);
                 
                 if (previousStmt != null) {
                     rewrite.remove(previousStmt, group);
@@ -202,19 +200,19 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
         // Build COLLECTION source descriptor using the collection expression
         SourceDescriptor source = new SourceDescriptor(
             SourceDescriptor.SourceType.COLLECTION,
-            pattern.collectionExpression.toString(),
-            parsedBody.elementType
+            pattern.collectionExpression().toString(),
+            parsedBody.elementType()
         );
         
         // Build element descriptor for the loop variable
         ElementDescriptor element = new ElementDescriptor(
-            parsedBody.elementVariableName,
-            parsedBody.elementType,
+            parsedBody.elementVariableName(),
+            parsedBody.elementType(),
             true // is a collection element
         );
         
         // Extract body statements as expression strings (strip trailing semicolons)
-        List<String> bodyStatements = extractBodyStatementsAsStrings(parsedBody.actualBodyStatements);
+        List<String> bodyStatements = extractBodyStatementsAsStrings(parsedBody.actualBodyStatements());
         
         // Build ForEachTerminal
         ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false);
@@ -233,22 +231,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
      * expects pure expressions, not statements.
      */
     private List<String> extractBodyStatementsAsStrings(List<Statement> statements) {
-        List<String> bodyStmts = new java.util.ArrayList<>();
-        for (Statement stmt : statements) {
-            bodyStmts.add(stripTrailingSemicolon(stmt.toString()));
-        }
-        return bodyStmts;
-    }
-    
-    /**
-     * Strips a trailing semicolon (and surrounding whitespace) from a statement string.
-     */
-    private static String stripTrailingSemicolon(String stmtStr) {
-        String trimmed = stmtStr.trim();
-        if (trimmed.endsWith(";")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
-        }
-        return trimmed;
+        return ExpressionHelper.bodyStatementsToStrings(statements);
     }
     
     @Override

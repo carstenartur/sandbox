@@ -76,13 +76,6 @@ public class FunctionalHolder
 		this.enhancedForStatement = enhancedForStatement;
 	}
 
-	/**
-	 * Legacy field access for backward compatibility.
-	 * @deprecated Use {@link #getEnhancedForStatement()} instead
-	 */
-	@Deprecated
-	public EnhancedForStatement minv;
-
 	@Override
 	public HelperVisitor<FunctionalHolder, ReferenceHolder<String, Object>, String> getHelperVisitor() {
 		return helperVisitor;

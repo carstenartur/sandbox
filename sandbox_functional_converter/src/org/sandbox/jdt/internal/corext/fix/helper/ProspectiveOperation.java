@@ -210,8 +210,7 @@ public final class ProspectiveOperation {
 				}
 				
 				// Skip if this is the name part of a method invocation (e.g., "println" in "out.println()")
-				if (parent instanceof MethodInvocation) {
-					MethodInvocation mi = (MethodInvocation) parent;
+				if (parent instanceof MethodInvocation mi) {
 					if (mi.getName() == node) {
 						return super.visit(node); // Skip method name
 					}
@@ -247,8 +246,7 @@ public final class ProspectiveOperation {
 				}
 				
 				// Skip if this is the name of a type declaration (e.g., class or interface name)
-				if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration) {
-					org.eclipse.jdt.core.dom.TypeDeclaration typeDecl = (org.eclipse.jdt.core.dom.TypeDeclaration) parent;
+				if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration typeDecl) {
 					if (typeDecl.getName() == node) {
 						return super.visit(node);
 					}
@@ -296,8 +294,8 @@ public final class ProspectiveOperation {
 		this.originalStatement = statement;
 		this.operationType = operationType;
 		this.loopVariableName = loopVarName;
-		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
-			this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
+		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement expressionStatement) {
+			this.originalExpression = expressionStatement.getExpression();
 			collectNeededVariables(this.originalExpression);
 		}
 		updateConsumedVariables();
@@ -345,8 +343,8 @@ public final class ProspectiveOperation {
 		this.operationType = OperationType.REDUCE;
 		this.accumulatorVariableName = accumulatorVarName;
 		this.reducerType = reducerType;
-		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {
-			this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();
+		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement expressionStatement) {
+			this.originalExpression = expressionStatement.getExpression();
 			collectNeededVariables(this.originalExpression);
 		}
 		updateConsumedVariables();
@@ -633,8 +631,7 @@ public final class ProspectiveOperation {
 
 	/** Determines the identity element (0, 1) for reduce() operation. */
 	private Expression getIdentityElement(AST ast) {
-		if (operationType == OperationType.REDUCE && originalExpression instanceof Assignment) {
-			Assignment assignment = (Assignment) originalExpression;
+		if (operationType == OperationType.REDUCE && originalExpression instanceof Assignment assignment) {
 			if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {
 				return ast.newNumberLiteral("0");
 			} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {

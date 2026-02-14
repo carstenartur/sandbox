@@ -71,18 +71,8 @@ public class ASTIteratorWhileRenderer {
 		// Create while (it.hasNext()) { T item = it.next(); body... }
 		WhileStatement whileStmt = createWhileStatement(elementType, elementName, originalBody);
 
-		// Replace the original for-loop with iterator decl + while
-		ASTNode parent = originalStatement.getParent();
-		if (parent instanceof Block parentBlock) {
-			ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
-			listRewrite.insertBefore(iteratorDecl, originalStatement, group);
-			listRewrite.replace(originalStatement, whileStmt, group);
-		} else {
-			Block newBlock = ast.newBlock();
-			newBlock.statements().add(iteratorDecl);
-			newBlock.statements().add(whileStmt);
-			rewrite.replace(originalStatement, newBlock, group);
-		}
+		// Replace the original statement with iterator decl + while
+		replaceWithIteratorAndWhile(originalStatement, iteratorDecl, whileStmt, group);
 	}
 
 	/**
@@ -104,18 +94,8 @@ public class ASTIteratorWhileRenderer {
 		// Create while statement with body from model terminal
 		WhileStatement whileStmt = createWhileStatementFromModel(elementType, elementName, model);
 
-		// Replace the original for-loop with iterator decl + while
-		ASTNode parent = originalStatement.getParent();
-		if (parent instanceof Block parentBlock) {
-			ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
-			listRewrite.insertBefore(iteratorDecl, originalStatement, group);
-			listRewrite.replace(originalStatement, whileStmt, group);
-		} else {
-			Block newBlock = ast.newBlock();
-			newBlock.statements().add(iteratorDecl);
-			newBlock.statements().add(whileStmt);
-			rewrite.replace(originalStatement, newBlock, group);
-		}
+		// Replace the original statement with iterator decl + while
+		replaceWithIteratorAndWhile(originalStatement, iteratorDecl, whileStmt, group);
 	}
 
 	/**
@@ -159,6 +139,16 @@ public class ASTIteratorWhileRenderer {
 		whileStmt.setBody(whileBody);
 
 		// Replace the original statement with iterator decl + while
+		replaceWithIteratorAndWhile(originalStatement, iteratorDecl, whileStmt, group);
+	}
+
+	/**
+	 * Replaces the original statement with an iterator declaration followed by a while-loop.
+	 * Handles both block-level (inserts before + replaces) and non-block parents (wraps in new block).
+	 */
+	@SuppressWarnings("unchecked")
+	private void replaceWithIteratorAndWhile(Statement originalStatement,
+			VariableDeclarationStatement iteratorDecl, WhileStatement whileStmt, TextEditGroup group) {
 		ASTNode parent = originalStatement.getParent();
 		if (parent instanceof Block parentBlock) {
 			ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
@@ -262,19 +252,7 @@ public class ASTIteratorWhileRenderer {
 		return decl;
 	}
 
-	/**
-	 * Creates an AST Expression from a string expression.
-	 */
 	private Expression createExpression(String expressionStr) {
-		// For simple names, create SimpleName directly
-		if (expressionStr.matches("[a-zA-Z_$][a-zA-Z0-9_$]*")) { //$NON-NLS-1$
-			return ast.newSimpleName(expressionStr);
-		}
-		// For qualified names (e.g., "this.items"), create QualifiedName
-		if (expressionStr.matches("[a-zA-Z_$][a-zA-Z0-9_$.]*")) { //$NON-NLS-1$
-			return ast.newName(expressionStr);
-		}
-		// For complex expressions, use string placeholder
-		return (Expression) rewrite.createStringPlaceholder(expressionStr, ASTNode.SIMPLE_NAME);
+		return ExpressionHelper.createExpression(ast, rewrite, expressionStr);
 	}
 }
