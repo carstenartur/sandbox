@@ -19,6 +19,7 @@
 
    <requires>
       <import plugin="org.opentest4j"/>
+      <import plugin="sandbox_common_core"/>
       <import plugin="sandbox_common"/>
       <import plugin="org.junit"/>
    </requires>
