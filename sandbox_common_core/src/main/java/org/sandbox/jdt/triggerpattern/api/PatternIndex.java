@@ -136,7 +136,7 @@ public final class PatternIndex {
 		cu.accept(new ASTVisitor() {
 			@Override
 			public void preVisit(ASTNode node) {
-				checkNodeAgainstIndex(node, results);
+				checkNodeAgainstIndex(node, cu, results);
 			}
 		});
 
@@ -146,34 +146,34 @@ public final class PatternIndex {
 	/**
 	 * Checks a single AST node against all applicable indexed patterns.
 	 */
-	private void checkNodeAgainstIndex(ASTNode node, Map<TransformationRule, List<Match>> results) {
+	private void checkNodeAgainstIndex(ASTNode node, CompilationUnit cu, Map<TransformationRule, List<Match>> results) {
 		// Determine which pattern kinds could match this node type
 		if (node instanceof Expression) {
-			matchAgainstKind(node, PatternKind.EXPRESSION, results);
+			matchAgainstKind(node, PatternKind.EXPRESSION, cu, results);
 		}
 		if (node instanceof MethodInvocation) {
-			matchAgainstKind(node, PatternKind.METHOD_CALL, results);
+			matchAgainstKind(node, PatternKind.METHOD_CALL, cu, results);
 		}
 		if (node instanceof ClassInstanceCreation) {
-			matchAgainstKind(node, PatternKind.CONSTRUCTOR, results);
+			matchAgainstKind(node, PatternKind.CONSTRUCTOR, cu, results);
 		}
 		if (node instanceof Statement) {
-			matchAgainstKind(node, PatternKind.STATEMENT, results);
+			matchAgainstKind(node, PatternKind.STATEMENT, cu, results);
 		}
 		if (node instanceof Annotation) {
-			matchAgainstKind(node, PatternKind.ANNOTATION, results);
+			matchAgainstKind(node, PatternKind.ANNOTATION, cu, results);
 		}
 		if (node instanceof ImportDeclaration) {
-			matchAgainstKind(node, PatternKind.IMPORT, results);
+			matchAgainstKind(node, PatternKind.IMPORT, cu, results);
 		}
 		if (node instanceof FieldDeclaration) {
-			matchAgainstKind(node, PatternKind.FIELD, results);
+			matchAgainstKind(node, PatternKind.FIELD, cu, results);
 		}
 		if (node instanceof MethodDeclaration) {
-			matchAgainstKind(node, PatternKind.METHOD_DECLARATION, results);
+			matchAgainstKind(node, PatternKind.METHOD_DECLARATION, cu, results);
 		}
 		if (node instanceof Block block) {
-			matchAgainstKind(node, PatternKind.BLOCK, results);
+			matchAgainstKind(node, PatternKind.BLOCK, cu, results);
 			matchStatementSequences(block, results);
 		}
 	}
@@ -181,7 +181,7 @@ public final class PatternIndex {
 	/**
 	 * Attempts to match a node against all rules of the given pattern kind.
 	 */
-	private void matchAgainstKind(ASTNode node, PatternKind kind,
+	private void matchAgainstKind(ASTNode node, PatternKind kind, CompilationUnit cu,
 			Map<TransformationRule, List<Match>> results) {
 		List<IndexEntry> entries = rulesByKind.get(kind);
 		if (entries == null || entries.isEmpty()) {
@@ -189,7 +189,7 @@ public final class PatternIndex {
 		}
 
 		for (IndexEntry entry : entries) {
-			PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+			PlaceholderAstMatcher matcher = new PlaceholderAstMatcher(cu);
 			if (entry.patternNode().subtreeMatch(matcher, node)) {
 				Match match = new Match(node, matcher.getBindings(),
 						node.getStartPosition(), node.getLength());

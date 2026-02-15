@@ -21,10 +21,12 @@ import java.util.Map;
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -59,12 +61,28 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	
 	private final Map<String, Object> bindings = new HashMap<>();  // Object can be ASTNode or List<ASTNode>
 	private final ASTMatcher reusableMatcher = new ASTMatcher();
+	private final CompilationUnit compilationUnit;
 	
 	/**
 	 * Creates a new placeholder matcher.
 	 */
 	public PlaceholderAstMatcher() {
+		this(null);
+	}
+	
+	/**
+	 * Creates a new placeholder matcher with a compilation unit context.
+	 * 
+	 * <p>When a compilation unit is provided, the matcher can resolve
+	 * unqualified method calls against qualified patterns by checking
+	 * if a matching static import exists in the compilation unit.</p>
+	 * 
+	 * @param compilationUnit the compilation unit for static import resolution (may be null)
+	 * @since 1.3.5
+	 */
+	public PlaceholderAstMatcher(CompilationUnit compilationUnit) {
 		super();
+		this.compilationUnit = compilationUnit;
 	}
 	
 	/**
@@ -401,6 +419,63 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	}
 	
 	/**
+	 * Checks if the compilation unit has a static import that covers a
+	 * method call matching the given qualifier and method name.
+	 * 
+	 * <p>For example, if the pattern is {@code Assert.assertEquals(...)} and the
+	 * code has {@code assertEquals(...)}, this checks for either:
+	 * <ul>
+	 *   <li>{@code import static org.junit.Assert.assertEquals;} (specific import)</li>
+	 *   <li>{@code import static org.junit.Assert.*;} (wildcard import)</li>
+	 * </ul>
+	 * where "Assert" is the simple name of the qualifying type.</p>
+	 * 
+	 * @param qualifierName the qualifier from the pattern (e.g., "Assert")
+	 * @param methodName the method name (e.g., "assertEquals")
+	 * @param node the AST node to find the enclosing compilation unit from
+	 * @return {@code true} if a matching static import exists
+	 * @since 1.3.5
+	 */
+	private boolean hasMatchingStaticImport(String qualifierName, String methodName, ASTNode node) {
+		CompilationUnit cu = this.compilationUnit;
+		if (cu == null) {
+			// Try to find the CU from the node's root
+			ASTNode root = node.getRoot();
+			if (root instanceof CompilationUnit) {
+				cu = (CompilationUnit) root;
+			}
+		}
+		if (cu == null) {
+			return false;
+		}
+		
+		@SuppressWarnings("unchecked")
+		List<ImportDeclaration> imports = cu.imports();
+		for (ImportDeclaration imp : imports) {
+			if (!imp.isStatic()) {
+				continue;
+			}
+			String importName = imp.getName().getFullyQualifiedName();
+			
+			if (imp.isOnDemand()) {
+				// Wildcard static import: import static org.junit.Assert.*
+				// Check if the import ends with the qualifier name
+				if (importName.equals(qualifierName) || importName.endsWith("." + qualifierName)) { //$NON-NLS-1$
+					return true;
+				}
+			} else {
+				// Specific static import: import static org.junit.Assert.assertEquals
+				// Check if the import ends with QualifierName.methodName
+				String expectedSuffix = qualifierName + "." + methodName; //$NON-NLS-1$
+				if (importName.equals(expectedSuffix) || importName.endsWith("." + expectedSuffix)) { //$NON-NLS-1$
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	/**
 	 * Matches method invocations with support for multi-placeholder arguments.
 	 * 
 	 * @param patternNode the pattern method invocation
@@ -420,8 +495,17 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			return false;
 		}
 		
-		// Match expression (receiver)
-		if (!safeSubtreeMatch(patternNode.getExpression(), otherInvocation.getExpression())) {
+		// Match expression (receiver) with static import support
+		Expression patternExpr = patternNode.getExpression();
+		Expression otherExpr = otherInvocation.getExpression();
+		
+		if (patternExpr != null && otherExpr == null) {
+			// Pattern is qualified (e.g., Assert.assertEquals) but code is unqualified (e.g., assertEquals)
+			// Check if a static import covers this call
+			if (!hasMatchingStaticImport(patternExpr.toString(), otherInvocation.getName().getIdentifier(), otherInvocation)) {
+				return false;
+			}
+		} else if (!safeSubtreeMatch(patternExpr, otherExpr)) {
 			return false;
 		}
 		
