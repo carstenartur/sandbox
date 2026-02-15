@@ -32,4 +32,27 @@
       <super type="org.eclipse.core.resources.textmarker"/>
       <persistent value="false"/>
    </extension>
+   
+   <extension
+         point="org.eclipse.core.contenttype.contentTypes">
+      <content-type
+            id="org.sandbox.jdt.triggerpattern.sandboxHintContentType"
+            name="Sandbox Hint File"
+            file-extensions="sandbox-hint"
+            base-type="org.eclipse.core.runtime.text"
+            priority="normal">
+      </content-type>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            id="org.sandbox.jdt.triggerpattern.editor.sandboxHint"
+            name="Sandbox Hint Editor"
+            class="org.sandbox.jdt.triggerpattern.editor.SandboxHintEditor"
+            extensions="sandbox-hint"
+            default="true"
+            contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor">
+      </editor>
+   </extension>
 </plugin>

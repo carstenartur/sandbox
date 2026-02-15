@@ -34,6 +34,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.HintFileFixCore;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /**
  * CleanUp that applies transformation rules from {@code .sandbox-hint} files.
@@ -105,25 +106,25 @@ public class HintFileCleanUpCore extends AbstractCleanUp {
 	/**
 	 * Returns the set of enabled bundled hint file IDs based on the current options.
 	 * 
-	 * <p>If no per-bundle options are set (all bundles are unset), all bundles are
-	 * treated as enabled for backwards compatibility. If at least one bundle option
-	 * is explicitly set, only explicitly enabled bundles are included.</p>
+	 * <p>Returns a set of bundle IDs corresponding to the enabled per-bundle
+	 * options. If all bundles are disabled, an empty set is returned, causing
+	 * only project-level hint files to be processed.</p>
 	 * 
-	 * @return set of enabled bundle IDs, or {@code null} to include all
+	 * @return set of enabled bundle IDs (never {@code null})
 	 */
 	private Set<String> getEnabledBundles() {
 		Set<String> enabled = new LinkedHashSet<>();
 		if (isEnabled(HINTFILE_BUNDLE_COLLECTIONS)) {
-			enabled.add("collections"); //$NON-NLS-1$
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTIONS);
 		}
 		if (isEnabled(HINTFILE_BUNDLE_PERFORMANCE)) {
-			enabled.add("performance"); //$NON-NLS-1$
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PERFORMANCE);
 		}
 		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA9)) {
-			enabled.add("modernize-java9"); //$NON-NLS-1$
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MODERNIZE_JAVA9);
 		}
 		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA11)) {
-			enabled.add("modernize-java11"); //$NON-NLS-1$
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MODERNIZE_JAVA11);
 		}
 		return enabled;
 	}

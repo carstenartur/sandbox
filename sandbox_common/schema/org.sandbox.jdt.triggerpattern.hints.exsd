@@ -162,6 +162,15 @@ Hints can provide code suggestions based on pattern matching.
                </appinfo>
             </annotation>
          </attribute>
+         <attribute name="enabled" type="boolean" use="default" value="true">
+            <annotation>
+               <documentation>
+                  Whether this hint file is enabled by default. Set to false to register
+                  the hint file without loading it automatically. Users can enable it
+                  via the preference page.
+               </documentation>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 

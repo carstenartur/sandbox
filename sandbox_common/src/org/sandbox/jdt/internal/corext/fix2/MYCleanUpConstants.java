@@ -471,4 +471,32 @@ public class MYCleanUpConstants {
 	 * @since 1.3.6
 	 */
 	public static final String HINTFILE_BUNDLE_MODERNIZE_JAVA11= "cleanup.hintfile.bundle.modernize-java11"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the collections hint file, matching the registry key
+	 * derived from {@code collections.sandbox-hint}.
+	 * @since 1.3.6
+	 */
+	public static final String HINTFILE_BUNDLE_ID_COLLECTIONS= "collections"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the performance hint file, matching the registry key
+	 * derived from {@code performance.sandbox-hint}.
+	 * @since 1.3.6
+	 */
+	public static final String HINTFILE_BUNDLE_ID_PERFORMANCE= "performance"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the modernize-java9 hint file, matching the registry key
+	 * derived from {@code modernize-java9.sandbox-hint}.
+	 * @since 1.3.6
+	 */
+	public static final String HINTFILE_BUNDLE_ID_MODERNIZE_JAVA9= "modernize-java9"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the modernize-java11 hint file, matching the registry key
+	 * derived from {@code modernize-java11.sandbox-hint}.
+	 * @since 1.3.6
+	 */
+	public static final String HINTFILE_BUNDLE_ID_MODERNIZE_JAVA11= "modernize-java11"; //$NON-NLS-1$
 }

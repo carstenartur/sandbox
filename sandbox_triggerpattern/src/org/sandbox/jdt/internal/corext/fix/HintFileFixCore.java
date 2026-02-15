@@ -56,8 +56,9 @@ public class HintFileFixCore {
 	 *
 	 * @param compilationUnit the compilation unit to search
 	 * @param operations the set to add found operations to
-	 * @param enabledBundles set of enabled bundled hint file IDs; if {@code null},
-	 *        all bundles are processed
+	 * @param enabledBundles set of enabled bundled hint file IDs; project-level
+	 *        hint files (with {@code "project:"} prefix) are always included
+	 *        regardless of this parameter
 	 */
 	public static void findOperations(CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations,

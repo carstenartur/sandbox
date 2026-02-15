@@ -366,6 +366,12 @@ public final class HintFileRegistry {
 				continue;
 			}
 			
+			// Check enabled attribute (default: true)
+			String enabledAttr = element.getAttribute("enabled"); //$NON-NLS-1$
+			if (enabledAttr != null && "false".equalsIgnoreCase(enabledAttr)) { //$NON-NLS-1$
+				continue;
+			}
+			
 			// Skip already loaded hint files
 			if (hintFiles.containsKey(id)) {
 				loaded.add(id);

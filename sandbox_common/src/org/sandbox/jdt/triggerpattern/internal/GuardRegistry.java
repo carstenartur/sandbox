@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -122,6 +123,16 @@ public final class GuardRegistry {
 	 */
 	public GuardFunction get(String name) {
 		return guards.get(name);
+	}
+	
+	/**
+	 * Returns the names of all registered guard functions.
+	 * 
+	 * @return unmodifiable set of guard function names
+	 * @since 1.3.6
+	 */
+	public Set<String> getRegisteredNames() {
+		return java.util.Collections.unmodifiableSet(guards.keySet());
 	}
 	
 	/**
