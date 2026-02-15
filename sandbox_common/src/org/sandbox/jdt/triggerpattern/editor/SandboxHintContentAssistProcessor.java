@@ -65,10 +65,10 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 	 * from fully qualified names in source/replacement patterns.</p>
 	 */
 	private static final String[][] IMPORT_PROPOSALS = {
-		{ "addImport ", "addImport pkg.ClassName – add import (optional if FQN used in replacement)" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "removeImport ", "removeImport pkg.ClassName – remove import (optional if FQN used in source)" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "addStaticImport ", "addStaticImport pkg.Class.member – add static import" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "removeStaticImport ", "removeStaticImport pkg.Class.member – remove static import" }, //$NON-NLS-1$ //$NON-NLS-2$
+		{ "addImport ", "pkg.ClassName – add import (optional if FQN used in replacement)" }, //$NON-NLS-1$ //$NON-NLS-2$
+		{ "removeImport ", "pkg.ClassName – remove import (optional if FQN used in source)" }, //$NON-NLS-1$ //$NON-NLS-2$
+		{ "addStaticImport ", "pkg.Class.member – add static import" }, //$NON-NLS-1$ //$NON-NLS-2$
+		{ "removeStaticImport ", "pkg.Class.member – remove static import" }, //$NON-NLS-1$ //$NON-NLS-2$
 	};
 
 	@Override

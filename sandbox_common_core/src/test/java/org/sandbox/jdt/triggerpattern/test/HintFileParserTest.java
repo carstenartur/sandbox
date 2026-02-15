@@ -380,7 +380,9 @@ public class HintFileParserTest {
 	
 	@Test
 	public void testAutoDetectRemoveImportFromSourceReplacementDiff() throws HintParseException {
-		// Phase 2: FQN in source but not in replacement should generate removeImport
+		// Phase 2 auto-detection of removeImport from source/replacement FQN diff
+		// is intentionally disabled because it's unsafe (import may be used elsewhere
+		// in the compilation unit). Only addImport auto-detection is active.
 		String content = """
 			java.io.FileReader.create($path)
 			=> java.nio.charset.StandardCharsets.UTF_8
@@ -390,9 +392,9 @@ public class HintFileParserTest {
 		HintFile hintFile = parser.parse(content);
 		TransformationRule rule = hintFile.getRules().get(0);
 		assertTrue(rule.hasImportDirective(), "Import directive should be auto-detected");
-		// java.io.FileReader is in source but not in replacement → removeImport candidate
-		assertTrue(rule.getImportDirective().getRemoveImports().contains("java.io.FileReader"),
-				"FQN in source but not in replacement should be auto-detected as removeImport");
+		// java.io.FileReader is in source but not in replacement — NOT auto-removed (unsafe)
+		assertFalse(rule.getImportDirective().getRemoveImports().contains("java.io.FileReader"),
+				"removeImport should NOT be auto-detected from source FQN diff (unsafe)");
 		// java.nio.charset.StandardCharsets is in replacement but not in source → addImport
 		assertTrue(rule.getImportDirective().getAddImports().contains("java.nio.charset.StandardCharsets"),
 				"FQN in replacement but not in source should be auto-detected as addImport");

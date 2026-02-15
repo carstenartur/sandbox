@@ -27,19 +27,18 @@ import java.lang.annotation.Target;
  * <h2>Implicit Import Derivation</h2>
  * <p>Import directives can often be omitted because they are derived automatically:</p>
  * <ul>
- *   <li><b>{@code addImports}:</b> If empty, imports are auto-detected from fully qualified
- *       names in the {@code replaceWith} pattern (e.g., {@code "org.junit.jupiter.api.BeforeEach"}
- *       in {@code "@org.junit.jupiter.api.BeforeEach"}).</li>
+ *   <li><b>{@code addImports}:</b> If empty and the {@code replaceWith} pattern is a short name,
+ *       you must specify explicit {@code addImports}. Fully qualified annotation names in
+ *       {@code replaceWith} are not currently supported.</li>
  *   <li><b>{@code removeImports}:</b> If empty, the {@code qualifiedType} from the associated
  *       {@link CleanupPattern} annotation is used as the import to remove.</li>
  * </ul>
  * 
- * <p><b>Example 1: Fully implicit imports (recommended)</b></p>
+ * <p><b>Example 1: Implicit removeImports (recommended)</b></p>
  * <pre>
  * {@literal @}CleanupPattern(value = "@Before", kind = PatternKind.ANNOTATION, qualifiedType = "org.junit.Before")
- * {@literal @}RewriteRule(replaceWith = "@BeforeEach")
+ * {@literal @}RewriteRule(replaceWith = "@BeforeEach", addImports = {"org.junit.jupiter.api.BeforeEach"})
  * // removeImport: implicitly derived from qualifiedType = "org.junit.Before"
- * // addImport: not derivable from short name — use addImports or FQN in replaceWith
  * </pre>
  * 
  * <p><b>Example 2: Simple marker annotation replacement (explicit)</b></p>

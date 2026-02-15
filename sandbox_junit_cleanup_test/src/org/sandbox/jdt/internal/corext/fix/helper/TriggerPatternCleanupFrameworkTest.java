@@ -91,7 +91,8 @@ public class TriggerPatternCleanupFrameworkTest {
 
 			assertNotNull(rewriteRule, "@RewriteRule annotation should be present"); //$NON-NLS-1$
 			assertEquals("@BeforeEach", rewriteRule.replaceWith()); //$NON-NLS-1$
-			assertArrayEquals(new String[]{"org.junit.Before"}, rewriteRule.removeImports()); //$NON-NLS-1$
+			assertArrayEquals(new String[]{}, rewriteRule.removeImports(),
+					"removeImports should be empty (derived from @CleanupPattern.qualifiedType)"); //$NON-NLS-1$
 			assertArrayEquals(new String[]{"org.junit.jupiter.api.BeforeEach"}, rewriteRule.addImports()); //$NON-NLS-1$
 		}
 
