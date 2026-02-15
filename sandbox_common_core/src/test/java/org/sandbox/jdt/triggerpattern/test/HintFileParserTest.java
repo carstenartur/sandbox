@@ -399,7 +399,7 @@ public class HintFileParserTest {
 	}
 	
 	@Test
-	public void testExplicitImportsTakePrecedenceOverAutoDetect() throws HintParseException {
+	public void testExplicitAddImportsPrecludeAutoDetection() throws HintParseException {
 		// When explicit addImports are given, auto-detection should not add more
 		String content = """
 			$x.getBytes("UTF-8")
@@ -416,6 +416,6 @@ public class HintFileParserTest {
 				"Explicit addImport should be preserved");
 		// Auto-detected addImport should NOT be added since explicit addImport was given
 		assertFalse(rule.getImportDirective().getAddImports().contains("java.nio.charset.StandardCharsets"),
-				"Auto-detected addImport should not override explicit addImports");
+				"Auto-detected addImport should not be added when explicit addImports are specified");
 	}
 }

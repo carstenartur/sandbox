@@ -45,6 +45,13 @@ import java.util.regex.Matcher;
  */
 public final class ImportDirective {
 	
+	/**
+	 * Compiled regex for detecting fully qualified type names in patterns.
+	 * Matches patterns like {@code java.util.Objects} or {@code org.junit.Assert}.
+	 */
+	private static final java.util.regex.Pattern FQN_PATTERN = java.util.regex.Pattern.compile(
+			"\\b([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\b"); //$NON-NLS-1$
+
 	private final List<String> addImports;
 	private final List<String> removeImports;
 	private final List<String> addStaticImports;
@@ -176,11 +183,7 @@ public final class ImportDirective {
 		}
 		
 		Set<String> detected = new HashSet<>();
-		// Pattern: qualified name like com.example.ClassName or java.util.Objects
-		// Must start with lowercase (package), contain dots, and end with an uppercase class name
-		java.util.regex.Pattern fqnPattern = java.util.regex.Pattern.compile(
-				"\\b([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\b"); //$NON-NLS-1$
-		Matcher matcher = fqnPattern.matcher(replacementPattern);
+		Matcher matcher = FQN_PATTERN.matcher(replacementPattern);
 		
 		while (matcher.find()) {
 			String fqn = matcher.group(1);
@@ -252,9 +255,7 @@ public final class ImportDirective {
 		if (pattern == null || pattern.isEmpty()) {
 			return fqns;
 		}
-		java.util.regex.Pattern fqnPattern = java.util.regex.Pattern.compile(
-				"\\b([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\b"); //$NON-NLS-1$
-		Matcher matcher = fqnPattern.matcher(pattern);
+		java.util.regex.Matcher matcher = FQN_PATTERN.matcher(pattern);
 		while (matcher.find()) {
 			String fqn = matcher.group(1);
 			if (fqn.contains("$")) { //$NON-NLS-1$
