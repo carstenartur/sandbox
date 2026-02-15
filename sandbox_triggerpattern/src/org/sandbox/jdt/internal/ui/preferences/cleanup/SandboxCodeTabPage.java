@@ -83,6 +83,26 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.HintFileTabPage_CheckboxName_HintFile,
 				MYCleanUpConstants.HINTFILE_CLEANUP, FALSE_TRUE);
 		intent(hintFileGroup);
+		final CheckboxPreference bundleCollections = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollections,
+				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTIONS, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundlePerformance = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundlePerformance,
+				MYCleanUpConstants.HINTFILE_BUNDLE_PERFORMANCE, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleModernizeJava9 = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleModernizeJava9,
+				MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA9, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleModernizeJava11 = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleModernizeJava11,
+				MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11, FALSE_TRUE);
+		intent(hintFileGroup);
+		registerSlavePreference(hintFile, new CheckboxPreference[] {
+				bundleCollections, bundlePerformance,
+				bundleModernizeJava9, bundleModernizeJava11
+		});
 		registerPreference(hintFile);
 	}
 }

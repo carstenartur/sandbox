@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,9 +34,12 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.osgi.framework.Bundle;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
@@ -68,6 +72,8 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
  * @since 1.3.2
  */
 public final class HintFileRegistry {
+	
+	private static final String HINTS_EXTENSION_POINT_ID = "org.sandbox.jdt.triggerpattern.hints"; //$NON-NLS-1$
 	
 	private static final HintFileRegistry INSTANCE = new HintFileRegistry();
 	
@@ -324,6 +330,80 @@ public final class HintFileRegistry {
 				// In a full Eclipse environment, this would be logged
 			}
 		}
+		return loaded;
+	}
+	
+	/**
+	 * Loads {@code .sandbox-hint} files registered via the
+	 * {@code org.sandbox.jdt.triggerpattern.hints} extension point.
+	 * 
+	 * <p>This method queries the Eclipse extension registry for {@code hintFile}
+	 * elements contributed by other plugins. Each element specifies an {@code id}
+	 * and a {@code resource} path pointing to a {@code .sandbox-hint} file on the
+	 * contributing bundle's classpath.</p>
+	 * 
+	 * @return list of successfully loaded hint file IDs
+	 * @since 1.3.6
+	 */
+	public List<String> loadFromExtensions() {
+		List<String> loaded = new ArrayList<>();
+		
+		IExtensionRegistry registry = Platform.getExtensionRegistry();
+		if (registry == null) {
+			return loaded;
+		}
+		
+		IConfigurationElement[] elements = registry.getConfigurationElementsFor(HINTS_EXTENSION_POINT_ID);
+		
+		for (IConfigurationElement element : elements) {
+			if (!"hintFile".equals(element.getName())) { //$NON-NLS-1$
+				continue;
+			}
+			String id = element.getAttribute("id"); //$NON-NLS-1$
+			String resource = element.getAttribute("resource"); //$NON-NLS-1$
+			
+			if (id == null || resource == null) {
+				continue;
+			}
+			
+			// Check enabled attribute (default: true)
+			String enabledAttr = element.getAttribute("enabled"); //$NON-NLS-1$
+			if (enabledAttr != null && "false".equalsIgnoreCase(enabledAttr)) { //$NON-NLS-1$
+				continue;
+			}
+			
+			// Skip already loaded hint files
+			if (hintFiles.containsKey(id)) {
+				loaded.add(id);
+				continue;
+			}
+			
+			Bundle bundle = Platform.getBundle(element.getContributor().getName());
+			if (bundle == null) {
+				continue;
+			}
+			
+			try {
+				URL resourceUrl = bundle.getResource(resource);
+				if (resourceUrl == null) {
+					ILog log = Platform.getLog(HintFileRegistry.class);
+					log.log(Status.warning(
+							"Hint file resource not found: " + resource //$NON-NLS-1$
+							+ " in bundle " + bundle.getSymbolicName())); //$NON-NLS-1$
+					continue;
+				}
+				try (InputStream is = resourceUrl.openStream();
+						Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+					loadFromReader(id, reader);
+					loaded.add(id);
+				}
+			} catch (HintParseException | IOException e) {
+				ILog log = Platform.getLog(HintFileRegistry.class);
+				log.log(Status.warning(
+						"Failed to load hint file from extension: " + id, e)); //$NON-NLS-1$
+			}
+		}
+		
 		return loaded;
 	}
 	

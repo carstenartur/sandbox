@@ -14,11 +14,18 @@
 package org.sandbox.jdt.triggerpattern.internal;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtensionRegistry;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -43,6 +50,7 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.osgi.framework.Bundle;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 
@@ -77,6 +85,8 @@ import org.sandbox.jdt.triggerpattern.api.GuardFunction;
  * @since 1.3.2
  */
 public final class GuardRegistry {
+	
+	private static final String GUARDS_EXTENSION_POINT_ID = "org.sandbox.jdt.triggerpattern.guards"; //$NON-NLS-1$
 	
 	private static final GuardRegistry INSTANCE = new GuardRegistry();
 	
@@ -113,6 +123,74 @@ public final class GuardRegistry {
 	 */
 	public GuardFunction get(String name) {
 		return guards.get(name);
+	}
+	
+	/**
+	 * Returns the names of all registered guard functions.
+	 * 
+	 * @return unmodifiable set of guard function names
+	 * @since 1.3.6
+	 */
+	public Set<String> getRegisteredNames() {
+		return java.util.Collections.unmodifiableSet(guards.keySet());
+	}
+	
+	/**
+	 * Loads custom guard functions from the Eclipse extension registry.
+	 * 
+	 * <p>This method queries the {@code org.sandbox.jdt.triggerpattern.guards}
+	 * extension point for contributed guard function implementations. Each
+	 * contribution specifies a name and a class implementing
+	 * {@link GuardFunction}.</p>
+	 * 
+	 * <p>Guards loaded from extensions are registered in addition to the
+	 * built-in guards. If a contributed guard has the same name as a built-in
+	 * guard, it overrides the built-in.</p>
+	 * 
+	 * @return list of successfully loaded guard names
+	 * @since 1.3.6
+	 */
+	public List<String> loadExtensions() {
+		List<String> loaded = new ArrayList<>();
+		
+		IExtensionRegistry registry = Platform.getExtensionRegistry();
+		if (registry == null) {
+			return loaded;
+		}
+		
+		IConfigurationElement[] elements = registry.getConfigurationElementsFor(GUARDS_EXTENSION_POINT_ID);
+		
+		for (IConfigurationElement element : elements) {
+			if (!"guard".equals(element.getName())) { //$NON-NLS-1$
+				continue;
+			}
+			String name = element.getAttribute("name"); //$NON-NLS-1$
+			if (name == null || name.isEmpty()) {
+				continue;
+			}
+			try {
+				Bundle bundle = Platform.getBundle(element.getContributor().getName());
+				if (bundle == null) {
+					continue;
+				}
+				String className = element.getAttribute("class"); //$NON-NLS-1$
+				if (className == null) {
+					continue;
+				}
+				Class<?> guardClass = bundle.loadClass(className);
+				Object instance = guardClass.getDeclaredConstructor().newInstance();
+				if (instance instanceof GuardFunction guardFunction) {
+					register(name, guardFunction);
+					loaded.add(name);
+				}
+			} catch (Exception e) {
+				ILog log = Platform.getLog(GuardRegistry.class);
+				log.log(Status.warning(
+						"Failed to load guard function from extension: " + name, e)); //$NON-NLS-1$
+			}
+		}
+		
+		return loaded;
 	}
 	
 	/**
