@@ -48,6 +48,13 @@ import java.util.regex.Matcher;
  */
 public final class ImportDirective {
 	
+	/**
+	 * Compiled regex for detecting fully qualified type names in patterns.
+	 * Matches patterns like {@code java.util.Objects} or {@code org.junit.Assert}.
+	 */
+	private static final java.util.regex.Pattern FQN_PATTERN = java.util.regex.Pattern.compile(
+			"\\b([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\b"); //$NON-NLS-1$
+
 	private final List<String> addImports;
 	private final List<String> removeImports;
 	private final List<String> addStaticImports;
@@ -212,11 +219,7 @@ public final class ImportDirective {
 		}
 		
 		Set<String> detected = new HashSet<>();
-		// Pattern: qualified name like com.example.ClassName or java.util.Objects
-		// Must start with lowercase (package), contain dots, and end with an uppercase class name
-		java.util.regex.Pattern fqnPattern = java.util.regex.Pattern.compile(
-				"\\b([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\b"); //$NON-NLS-1$
-		Matcher matcher = fqnPattern.matcher(replacementPattern);
+		Matcher matcher = FQN_PATTERN.matcher(replacementPattern);
 		
 		while (matcher.find()) {
 			String fqn = matcher.group(1);
@@ -239,6 +242,67 @@ public final class ImportDirective {
 		}
 		
 		return directive;
+	}
+	
+	/**
+	 * Detects types that appear as FQNs in the source pattern but not in any replacement pattern.
+	 * These are candidates for {@code removeImport} directives.
+	 * 
+	 * <p>Only works when the source pattern contains fully qualified names (e.g.,
+	 * {@code java.io.FileReader}). Short-form type names cannot be resolved without
+	 * additional context.</p>
+	 * 
+	 * @param sourcePattern the source pattern text
+	 * @param alternatives the list of replacement alternatives
+	 * @return an {@link ImportDirective} with detected removeImport candidates
+	 */
+	public static ImportDirective detectRemovedTypes(String sourcePattern, List<RewriteAlternative> alternatives) {
+		ImportDirective directive = new ImportDirective();
+		if (sourcePattern == null || sourcePattern.isEmpty() || alternatives == null || alternatives.isEmpty()) {
+			return directive;
+		}
+		
+		Set<String> sourceFqns = extractFqns(sourcePattern);
+		if (sourceFqns.isEmpty()) {
+			return directive;
+		}
+		
+		// Collect all FQNs from all replacement patterns
+		Set<String> replacementFqns = new HashSet<>();
+		for (RewriteAlternative alt : alternatives) {
+			replacementFqns.addAll(extractFqns(alt.replacementPattern()));
+		}
+		
+		// Types in source but not in any replacement are candidates for removeImport
+		for (String fqn : sourceFqns) {
+			if (!replacementFqns.contains(fqn)) {
+				directive.removeImport(fqn);
+			}
+		}
+		
+		return directive;
+	}
+	
+	/**
+	 * Extracts fully qualified type names from a pattern string.
+	 */
+	private static Set<String> extractFqns(String pattern) {
+		Set<String> fqns = new HashSet<>();
+		if (pattern == null || pattern.isEmpty()) {
+			return fqns;
+		}
+		java.util.regex.Matcher matcher = FQN_PATTERN.matcher(pattern);
+		while (matcher.find()) {
+			String fqn = matcher.group(1);
+			if (fqn.contains("$")) { //$NON-NLS-1$
+				continue;
+			}
+			int lastDot = fqn.lastIndexOf('.');
+			if (lastDot > 0 && Character.isUpperCase(fqn.substring(lastDot + 1).charAt(0))) {
+				fqns.add(fqn);
+			}
+		}
+		return fqns;
 	}
 	
 	/**

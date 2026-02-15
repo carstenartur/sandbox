@@ -19,7 +19,9 @@ replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
 
 // Assert.assertEquals(message, expected, actual) → Assertions.assertEquals(expected, actual, message)
 // Note: JUnit 5 swaps message to last position
+// Type guard: first argument must be a String (message) to disambiguate from delta form
 Assert.assertEquals($msg, $expected, $actual)
+  :: $msg instanceof java.lang.String
 => Assertions.assertEquals($expected, $actual, $msg)
 addImport org.junit.jupiter.api.Assertions
 removeImport org.junit.Assert
@@ -35,7 +37,9 @@ replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
 ;;
 
 // Assert.assertEquals(expected, actual, delta) → Assertions.assertEquals(expected, actual, delta)
+// Type guard: third argument must be a double (delta) to disambiguate from message form
 Assert.assertEquals($expected, $actual, $delta)
+  :: $delta instanceof double
 => Assertions.assertEquals($expected, $actual, $delta)
 addImport org.junit.jupiter.api.Assertions
 removeImport org.junit.Assert
@@ -53,7 +57,9 @@ replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
 ;;
 
 // Assert.assertNotEquals(message, unexpected, actual) → Assertions.assertNotEquals(unexpected, actual, message)
+// Type guard: first argument must be a String (message) to disambiguate from delta form
 Assert.assertNotEquals($msg, $unexpected, $actual)
+  :: $msg instanceof java.lang.String
 => Assertions.assertNotEquals($unexpected, $actual, $msg)
 addImport org.junit.jupiter.api.Assertions
 removeImport org.junit.Assert
@@ -69,7 +75,9 @@ replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
 ;;
 
 // Assert.assertNotEquals(unexpected, actual, delta) → Assertions.assertNotEquals(unexpected, actual, delta)
+// Type guard: third argument must be a double (delta) to disambiguate from message form
 Assert.assertNotEquals($unexpected, $actual, $delta)
+  :: $delta instanceof double
 => Assertions.assertNotEquals($unexpected, $actual, $delta)
 addImport org.junit.jupiter.api.Assertions
 removeImport org.junit.Assert

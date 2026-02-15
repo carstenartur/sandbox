@@ -208,4 +208,124 @@ public class BatchTransformationProcessorTest {
 		astParser.setCompilerOptions(options);
 		return (CompilationUnit) astParser.createAST(null);
 	}
+
+	// --- instanceof guard tests ---
+
+	@Test
+	public void testInstanceOfGuardParsingFromHintFile() throws Exception {
+		// Verify that instanceof guards are properly parsed from hint file syntax
+		String hintContent = """
+				<!id: test-instanceof>
+
+				Assert.assertEquals($msg, $expected, $actual)
+				  :: $msg instanceof java.lang.String
+				=> Assertions.assertEquals($expected, $actual, $msg)
+				;;
+				"""; //$NON-NLS-1$
+
+		HintFileParser parser = new HintFileParser();
+		HintFile hintFile = parser.parse(hintContent);
+
+		assertEquals(1, hintFile.getRules().size(), "Should have one rule"); //$NON-NLS-1$
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.sourceGuard(), "Rule should have a source guard"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testInstanceOfGuardGracefulDegradation() throws Exception {
+		// When bindings are not resolved, instanceof guard should return true
+		// (graceful degradation), allowing the rule to match
+		registerBuiltInGuards();
+
+		String hintContent = """
+				<!id: test-graceful>
+
+				Assert.assertEquals($msg, $expected, $actual)
+				  :: $msg instanceof java.lang.String
+				=> Assertions.assertEquals($expected, $actual, $msg)
+				;;
+				"""; //$NON-NLS-1$
+
+		HintFileParser parser = new HintFileParser();
+		HintFile hintFile = parser.parse(hintContent);
+		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
+
+		// Parse without bindings (setResolveBindings not called)
+		String code = """
+				class Test {
+				    void m() {
+				        Assert.assertEquals("message", 1, 2);
+				    }
+				}
+				"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCode(code);
+
+		List<TransformationResult> results = processor.process(cu);
+
+		// Should match because instanceof guard gracefully degrades to true
+		assertFalse(results.isEmpty(), "Should find matches with graceful degradation"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testTypeGuardDisambiguatesRules() throws Exception {
+		// Test that type guards help disambiguate ambiguous 3-arg assertEquals rules
+		registerBuiltInGuards();
+
+		String hintContent = """
+				<!id: test-disambiguation>
+
+				// Message form: first arg is String
+				Assert.assertEquals($msg, $expected, $actual)
+				  :: $msg instanceof java.lang.String
+				=> Assertions.assertEquals($expected, $actual, $msg)
+				;;
+
+				// Delta form: third arg is double
+				Assert.assertEquals($expected, $actual, $delta)
+				  :: $delta instanceof double
+				=> Assertions.assertEquals($expected, $actual, $delta)
+				;;
+				"""; //$NON-NLS-1$
+
+		HintFileParser parser = new HintFileParser();
+		HintFile hintFile = parser.parse(hintContent);
+
+		assertEquals(2, hintFile.getRules().size(), "Should have two rules"); //$NON-NLS-1$
+
+		// Verify both rules have guards
+		for (TransformationRule rule : hintFile.getRules()) {
+			assertNotNull(rule.sourceGuard(),
+					"Each rule should have a source guard for disambiguation"); //$NON-NLS-1$
+		}
+	}
+
+	@Test
+	public void testMultipleGuardContinuationLines() throws Exception {
+		// Test that multiple :: continuation lines are combined with AND
+		registerBuiltInGuards();
+
+		String hintContent = """
+				<!id: test-multi-guard>
+
+				Assert.method($a, $b, $c)
+				  :: $a instanceof java.lang.String
+				  :: $c instanceof double
+				=> Assertions.method($b, $c, $a)
+				;;
+				"""; //$NON-NLS-1$
+
+		HintFileParser parser = new HintFileParser();
+		HintFile hintFile = parser.parse(hintContent);
+
+		assertEquals(1, hintFile.getRules().size()); //$NON-NLS-1$
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.sourceGuard(),
+				"Rule should have a combined source guard"); //$NON-NLS-1$
+	}
+
+	private void registerBuiltInGuards() {
+		java.util.HashMap<String, org.sandbox.jdt.triggerpattern.api.GuardFunction> guards = new java.util.HashMap<>();
+		org.sandbox.jdt.triggerpattern.internal.BuiltInGuards.registerAll(guards);
+		org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder.setResolver(guards::get);
+	}
 }

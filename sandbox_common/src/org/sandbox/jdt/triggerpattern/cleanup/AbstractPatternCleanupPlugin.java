@@ -30,6 +30,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -88,7 +89,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * @return the pattern for matching, or null if no @CleanupPattern annotation is present
      */
     public Pattern getPattern() {
-        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        CleanupPattern annotation = getCleanupPatternAnnotation();
         if (annotation == null) {
             return null; // Subclass uses getPatterns() instead
         }
@@ -120,7 +121,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * @return the cleanup ID, or empty string if annotation is not present or cleanupId is not set
      */
     public String getCleanupId() {
-        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        CleanupPattern annotation = getCleanupPatternAnnotation();
         return annotation != null ? annotation.cleanupId() : ""; //$NON-NLS-1$
     }
     
@@ -130,7 +131,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * @return the description, or empty string if annotation is not present or description is not set
      */
     public String getDescription() {
-        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        CleanupPattern annotation = getCleanupPatternAnnotation();
         return annotation != null ? annotation.description() : ""; //$NON-NLS-1$
     }
     
@@ -310,6 +311,19 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      */
     protected RewriteRule getRewriteRule() {
         return this.getClass().getAnnotation(RewriteRule.class);
+    }
+    
+    /**
+     * Returns the CleanupPattern annotation for this plugin.
+     * 
+     * <p>Subclasses can override this method to provide a CleanupPattern from a different source
+     * (e.g., when using composition/delegation patterns where the annotation is on
+     * an outer class).</p>
+     * 
+     * @return the CleanupPattern annotation, or null if not present
+     */
+    protected CleanupPattern getCleanupPatternAnnotation() {
+        return this.getClass().getAnnotation(CleanupPattern.class);
     }
     
     /**
@@ -501,13 +515,35 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     
     /**
      * Processes import additions and removals from RewriteRule.
+     * 
+     * <p>Supports implicit import derivation:</p>
+     * <ul>
+     *   <li>If {@code addImports} is empty, imports are auto-detected from FQNs in {@code replaceWith}</li>
+     *   <li>If {@code removeImports} is empty, the {@code qualifiedType} from {@code @CleanupPattern} is used</li>
+     * </ul>
      */
     private void processImports(ImportRewrite importRewriter, RewriteRule rewriteRule) {
-        for (String importToRemove : rewriteRule.removeImports()) {
-            importRewriter.removeImport(importToRemove);
+        // Phase 3: auto-detect removeImport from @CleanupPattern.qualifiedType
+        if (rewriteRule.removeImports().length == 0) {
+            CleanupPattern cleanupPattern = getCleanupPatternAnnotation();
+            if (cleanupPattern != null && !cleanupPattern.qualifiedType().isEmpty()) {
+                importRewriter.removeImport(cleanupPattern.qualifiedType());
+            }
+        } else {
+            for (String importToRemove : rewriteRule.removeImports()) {
+                importRewriter.removeImport(importToRemove);
+            }
         }
-        for (String importToAdd : rewriteRule.addImports()) {
-            importRewriter.addImport(importToAdd);
+        // Phase 1: auto-detect addImport from FQNs in replaceWith
+        if (rewriteRule.addImports().length == 0) {
+            ImportDirective detected = ImportDirective.detectFromPattern(rewriteRule.replaceWith());
+            for (String importToAdd : detected.getAddImports()) {
+                importRewriter.addImport(importToAdd);
+            }
+        } else {
+            for (String importToAdd : rewriteRule.addImports()) {
+                importRewriter.addImport(importToAdd);
+            }
         }
         for (String staticImportToRemove : rewriteRule.removeStaticImports()) {
             importRewriter.removeStaticImport(staticImportToRemove);
