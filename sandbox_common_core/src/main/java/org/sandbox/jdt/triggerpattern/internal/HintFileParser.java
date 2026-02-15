@@ -290,6 +290,22 @@ public final class HintFileParser {
 		}
 		ruleLineIdx++;
 		
+		// Check for continuation line with guard expression (starts with ::)
+		if (ruleLineIdx < ruleLines.size()) {
+			String nextLine = ruleLines.get(ruleLineIdx).trim();
+			if (nextLine.startsWith("::")) { //$NON-NLS-1$
+				String guardText = nextLine.substring(2).trim();
+				if (sourceGuard != null) {
+					// Combine with existing guard using AND
+					sourceGuard = new GuardExpression.And(
+							sourceGuard, guardParser.parse(guardText));
+				} else {
+					sourceGuard = guardParser.parse(guardText);
+				}
+				ruleLineIdx++;
+			}
+		}
+		
 		// Parse rewrite alternatives (lines starting with =>) and import directives
 		ImportDirective currentImports = new ImportDirective();
 		while (ruleLineIdx < ruleLines.size()) {

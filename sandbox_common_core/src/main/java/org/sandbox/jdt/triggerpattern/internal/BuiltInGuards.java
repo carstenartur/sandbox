@@ -104,6 +104,14 @@ public final class BuiltInGuards {
 	/**
 	 * Checks if the bound node's type matches a given type name via ITypeBinding.
 	 * Supports array types (e.g., {@code Type[]}).
+	 *
+	 * <p><b>Graceful degradation:</b> If the type binding cannot be resolved
+	 * (e.g., because {@code ASTParser.setResolveBindings(false)} was used),
+	 * this guard returns {@code true} to allow the rule to match.
+	 * This ensures that rules with type guards still work in environments
+	 * where binding resolution is not available, though disambiguation
+	 * between ambiguous rules will not be possible.</p>
+	 *
 	 * Args: [placeholderName, typeName]
 	 */
 	private static boolean evaluateInstanceOf(GuardContext ctx, Object... args) {
@@ -120,7 +128,9 @@ public final class BuiltInGuards {
 
 		ITypeBinding typeBinding = resolveTypeBinding(node);
 		if (typeBinding == null) {
-			return false;
+			// Graceful degradation: if bindings are not available,
+			// assume the guard matches (allows the rule to apply).
+			return true;
 		}
 
 		// Handle array types: "Type[]"
