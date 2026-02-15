@@ -153,13 +153,17 @@ Replaces platform-dependent or implicit encoding usage with explicit, safe alter
 
 ### Extra Search (`sandbox_extra_search`)
 
-Experimental search tool for identifying critical classes when upgrading Eclipse or Java versions.
+Specialized search view for identifying deprecated and critical API usage during Eclipse or Java version upgrades. Integrates with Eclipse JDT SearchEngine for workspace-wide type, method, and field reference searches. Includes a pre-populated list of commonly deprecated classes (Observable, Hashtable, SecurityManager, Applet, etc.) with jump-to-definition navigation and sortable results table.
+
+📖 **Full Documentation**: [Plugin README](sandbox_extra_search/README.md) | [Architecture](sandbox_extra_search/ARCHITECTURE.md) | [TODO](sandbox_extra_search/TODO.md)
 
 ---
 
 ### Usage View (`sandbox_usage_view`)
 
-Provides a table view of code objects, sorted by name, to detect inconsistent naming that could confuse developers.
+Eclipse view plugin that detects **naming conflicts** in Java code — variables with the same name but different types (e.g., `String userId` vs `int userId`). Uses AST-based analysis with full binding resolution via `AstProcessorBuilder` from `sandbox_common`. Features a sortable table with columns for Name, Qualified Name, Package, Deprecated status, and Declaring Method. Automatically updates when switching between editors (`IPartListener2`), supports filtering for naming conflicts only (`NamingConflictFilter`), provides type-aware variable name suggestions (`VariableNameSuggester`), and can optionally auto-show at Eclipse startup via preferences.
+
+📖 **Full Documentation**: [Plugin README](sandbox_usage_view/README.md) | [Architecture](sandbox_usage_view/ARCHITECTURE.md) | [TODO](sandbox_usage_view/TODO.md)
 
 ---
 
@@ -187,7 +191,7 @@ Automates migration from deprecated `SubProgressMonitor` to modern `SubMonitor` 
 
 ### Functional Loop Converter (`sandbox_functional_converter`)
 
-Transforms imperative Java loops into functional Java 8 Stream equivalents (`forEach`, `map`, `filter`, `reduce`, `anyMatch`, `allMatch`, etc.). Supports 25+ tested transformation patterns including max/min reductions, nested filters, and compound operations. Maintains semantic safety by excluding complex patterns with labeled breaks, throws, or multiple mutable accumulators.
+Transforms imperative Java loops into functional Java 8 Stream equivalents (`forEach`, `map`, `filter`, `reduce`, `anyMatch`, `allMatch`, etc.). Supports 34 tested transformation patterns including max/min reductions, nested filters, compound operations, and Math.max/Math.min method references. Automatically **preserves comments** (line, block, Javadoc) during transformations. Supports **bidirectional loop conversions** (Enhanced-For ↔ Iterator-While) with comment preservation. Includes **target format selection** UI (Stream/For/While). Maintains semantic safety with variable scope validation, labeled continue detection, and side-effect analysis.
 
 📖 **Full Documentation**: [Plugin README](sandbox_functional_converter/README.md) | [Architecture](sandbox_functional_converter/ARCHITECTURE.md) | [TODO](sandbox_functional_converter/TODO.md)
 
@@ -255,7 +259,7 @@ Plain Java core module providing AST-independent representation of loop structur
 
 📖 **Full Documentation**: [Plugin README](sandbox-functional-converter-core/README.md)
 
-**Relationship**: This core module is used by `sandbox_functional_converter` (#8) to provide the underlying loop transformation logic without Eclipse dependencies.
+**Relationship**: This core module is used by `sandbox_functional_converter` to provide the underlying loop transformation logic without Eclipse dependencies.
 
 ---
 ### Oomph Workspace Setup (`sandbox_oomph`)

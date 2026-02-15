@@ -97,7 +97,7 @@ See [Architecture](ARCHITECTURE.md) for implementation patterns that were accept
 
 - **[Architecture](ARCHITECTURE.md)** - Implementation details and design patterns
 - **[TODO](TODO.md)** - Status and lessons learned
-- **[Main README](../README.md#6-sandbox_tools)** - Overview and usage
+- **[Main README](../README.md#while-to-for-converter-sandbox_tools)** - Overview and usage
 
 ## Testing
 

@@ -81,7 +81,7 @@ The plugin converts to these factory methods (Java 11+):
 
 - **[Architecture](ARCHITECTURE.md)** - Implementation details and AST visitor patterns
 - **[TODO](TODO.md)** - Future enhancements and known issues
-- **[Main README](../README.md#5-sandbox_platform_helper)** - Detailed examples
+- **[Main README](../README.md#platform-status-helper-sandbox_platform_helper)** - Detailed examples
 
 ## Testing
 

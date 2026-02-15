@@ -677,7 +677,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design documentation.
 - **[Architecture](ARCHITECTURE.md)** - Implementation details and class structure
 - **[TODO](TODO.md)** - Pending features and known issues
 - **[Testing Guide](../sandbox_junit_cleanup_test/TESTING.md)** - Test organization
-- **[Main README](../README.md#9-sandbox_junit)** - Comprehensive examples
+- **[Main README](../README.md#junit-5-migration-cleanup-sandbox_junit_cleanup)** - Comprehensive examples
 
 ## Testing
 
