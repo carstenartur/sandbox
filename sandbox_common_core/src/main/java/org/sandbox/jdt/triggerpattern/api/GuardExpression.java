@@ -53,7 +53,7 @@ public sealed interface GuardExpression
 	 * @return the resolver, or {@code null} if not set
 	 */
 	static Function<String, GuardFunction> getGuardFunctionResolver() {
-		return GuardFunctionResolverHolder.resolver;
+		return GuardFunctionResolverHolder.getResolver();
 	}
 	
 	/**
@@ -90,7 +90,7 @@ public sealed interface GuardExpression
 		
 		@Override
 		public boolean evaluate(GuardContext ctx) {
-			Function<String, GuardFunction> resolver = GuardFunctionResolverHolder.resolver;
+			Function<String, GuardFunction> resolver = GuardFunctionResolverHolder.getResolver();
 			GuardFunction fn = resolver != null ? resolver.apply(name) : null;
 			if (fn == null) {
 				throw new IllegalStateException("Unknown guard function: " + name); //$NON-NLS-1$
