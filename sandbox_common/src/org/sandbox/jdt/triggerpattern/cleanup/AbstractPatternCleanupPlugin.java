@@ -30,6 +30,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -501,13 +502,35 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     
     /**
      * Processes import additions and removals from RewriteRule.
+     * 
+     * <p>Supports implicit import derivation:</p>
+     * <ul>
+     *   <li>If {@code addImports} is empty, imports are auto-detected from FQNs in {@code replaceWith}</li>
+     *   <li>If {@code removeImports} is empty, the {@code qualifiedType} from {@code @CleanupPattern} is used</li>
+     * </ul>
      */
     private void processImports(ImportRewrite importRewriter, RewriteRule rewriteRule) {
-        for (String importToRemove : rewriteRule.removeImports()) {
-            importRewriter.removeImport(importToRemove);
+        // Phase 3: auto-detect removeImport from @CleanupPattern.qualifiedType
+        if (rewriteRule.removeImports().length == 0) {
+            CleanupPattern cleanupPattern = this.getClass().getAnnotation(CleanupPattern.class);
+            if (cleanupPattern != null && !cleanupPattern.qualifiedType().isEmpty()) {
+                importRewriter.removeImport(cleanupPattern.qualifiedType());
+            }
+        } else {
+            for (String importToRemove : rewriteRule.removeImports()) {
+                importRewriter.removeImport(importToRemove);
+            }
         }
-        for (String importToAdd : rewriteRule.addImports()) {
-            importRewriter.addImport(importToAdd);
+        // Phase 1: auto-detect addImport from FQNs in replaceWith
+        if (rewriteRule.addImports().length == 0) {
+            ImportDirective detected = ImportDirective.detectFromPattern(rewriteRule.replaceWith());
+            for (String importToAdd : detected.getAddImports()) {
+                importRewriter.addImport(importToAdd);
+            }
+        } else {
+            for (String importToAdd : rewriteRule.addImports()) {
+                importRewriter.addImport(importToAdd);
+            }
         }
         for (String staticImportToRemove : rewriteRule.removeStaticImports()) {
             importRewriter.removeStaticImport(staticImportToRemove);

@@ -24,7 +24,25 @@ import java.lang.annotation.Target;
  * <p>Eliminates the need for manual {@code process2Rewrite()} implementations by specifying
  * the transformation declaratively. Works in conjunction with {@link CleanupPattern}.</p>
  * 
- * <p><b>Example 1: Simple marker annotation replacement</b></p>
+ * <h2>Implicit Import Derivation</h2>
+ * <p>Import directives can often be omitted because they are derived automatically:</p>
+ * <ul>
+ *   <li><b>{@code addImports}:</b> If empty, imports are auto-detected from fully qualified
+ *       names in the {@code replaceWith} pattern (e.g., {@code "org.junit.jupiter.api.BeforeEach"}
+ *       in {@code "@org.junit.jupiter.api.BeforeEach"}).</li>
+ *   <li><b>{@code removeImports}:</b> If empty, the {@code qualifiedType} from the associated
+ *       {@link CleanupPattern} annotation is used as the import to remove.</li>
+ * </ul>
+ * 
+ * <p><b>Example 1: Fully implicit imports (recommended)</b></p>
+ * <pre>
+ * {@literal @}CleanupPattern(value = "@Before", kind = PatternKind.ANNOTATION, qualifiedType = "org.junit.Before")
+ * {@literal @}RewriteRule(replaceWith = "@BeforeEach")
+ * // removeImport: implicitly derived from qualifiedType = "org.junit.Before"
+ * // addImport: not derivable from short name — use addImports or FQN in replaceWith
+ * </pre>
+ * 
+ * <p><b>Example 2: Simple marker annotation replacement (explicit)</b></p>
  * <pre>
  * {@literal @}CleanupPattern(value = "@Before", kind = PatternKind.ANNOTATION, qualifiedType = "org.junit.Before")
  * {@literal @}RewriteRule(
@@ -35,7 +53,7 @@ import java.lang.annotation.Target;
  * public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin { }
  * </pre>
  * 
- * <p><b>Example 2: Annotation with preserved value</b></p>
+ * <p><b>Example 3: Annotation with preserved value</b></p>
  * <pre>
  * {@literal @}CleanupPattern(value = "@Ignore($value)", kind = PatternKind.ANNOTATION, qualifiedType = "org.junit.Ignore")
  * {@literal @}RewriteRule(
