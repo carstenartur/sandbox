@@ -23,6 +23,13 @@
 	</properties>
 	
 	<dependencies>
+		<!-- Dependency on sandbox_common_core (plain Maven JAR, core utilities) -->
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_common_core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
 		<!-- Dependency on sandbox_common (Tycho-built, but can be used as regular JAR) -->
 		<dependency>
 			<groupId>org.sandbox</groupId>

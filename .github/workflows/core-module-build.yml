@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - 'sandbox-functional-converter-core/**'
+      - 'sandbox_common_core/**'
       - '.github/workflows/core-module-build.yml'
   pull_request:
     paths:
       - 'sandbox-functional-converter-core/**'
+      - 'sandbox_common_core/**'
       - '.github/workflows/core-module-build.yml'
 
 jobs:
@@ -25,8 +27,12 @@ jobs:
           distribution: 'temurin'
           cache: maven
           
-      - name: Build and Test Core Module
+      - name: Build and Test Functional Converter Core
         working-directory: sandbox-functional-converter-core
+        run: mvn clean verify
+        
+      - name: Build and Test Common Core
+        working-directory: sandbox_common_core
         run: mvn clean verify
         
       - name: Upload Test Results
@@ -34,4 +40,6 @@ jobs:
         if: always()
         with:
           name: test-results
-          path: sandbox-functional-converter-core/target/surefire-reports/
+          path: |
+            sandbox-functional-converter-core/target/surefire-reports/
+            sandbox_common_core/target/surefire-reports/

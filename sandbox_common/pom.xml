@@ -11,6 +11,13 @@
 	<artifactId>sandbox_common</artifactId>
 	<name>Sandbox common</name>
 	<packaging>eclipse-plugin</packaging>
+	<dependencies>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_common_core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
 	<build>
 		<sourceDirectory>${project.basedir}/src</sourceDirectory>
 	</build>
