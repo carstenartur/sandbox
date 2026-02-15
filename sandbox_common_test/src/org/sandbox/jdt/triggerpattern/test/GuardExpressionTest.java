@@ -32,6 +32,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
@@ -49,6 +50,14 @@ import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 public class GuardExpressionTest {
 	
 	private final GuardExpressionParser parser = new GuardExpressionParser();
+	
+	@BeforeAll
+	static void initRegistry() {
+		// Ensure the GuardRegistry singleton is initialized so that
+		// GuardFunctionResolverHolder has the resolver registered
+		// before any guard expression evaluation tests run.
+		GuardRegistry.getInstance();
+	}
 	
 	// --- Parsing tests ---
 	

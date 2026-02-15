@@ -94,6 +94,8 @@ public final class GuardRegistry {
 	
 	private GuardRegistry() {
 		registerBuiltins();
+		// Register this registry as the resolver for GuardExpression evaluation
+		org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder.setResolver(this::get);
 	}
 	
 	/**

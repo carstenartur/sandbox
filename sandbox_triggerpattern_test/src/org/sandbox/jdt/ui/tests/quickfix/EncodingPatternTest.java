@@ -29,7 +29,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.FixUtilities;
-import org.sandbox.jdt.triggerpattern.api.HintContext;
+import org.sandbox.jdt.triggerpattern.eclipse.HintContext;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -127,13 +127,12 @@ public class EncodingPatternTest {
 
 		Match match = matches.get(0);
 		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
-		HintContext ctx = new HintContext(cu, null, match, rewrite);
 
 		// Apply declarative rewrite
-		FixUtilities.rewriteFix(ctx, "new String($bytes, StandardCharsets.UTF_8)");
+		FixUtilities.rewriteFix(match, rewrite, "new String($bytes, StandardCharsets.UTF_8)");
 
 		// Verify rewrite was created successfully
-		assertNotNull(ctx.getASTRewrite());
+		assertNotNull(rewrite);
 	}
 
 	// ========== Charset.forName Tests ==========
@@ -284,13 +283,12 @@ public class EncodingPatternTest {
 
 		Match match = matches.get(0);
 		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
-		HintContext ctx = new HintContext(cu, null, match, rewrite);
 
 		// Apply declarative rewrite with placeholder preservation
-		FixUtilities.rewriteFix(ctx, "$str.getBytes(StandardCharsets.UTF_8)");
+		FixUtilities.rewriteFix(match, rewrite, "$str.getBytes(StandardCharsets.UTF_8)");
 
 		// Verify rewrite was created successfully
-		assertNotNull(ctx.getASTRewrite());
+		assertNotNull(rewrite);
 	}
 
 	// ========== Multiple Matches Tests ==========

@@ -15,8 +15,7 @@ package org.sandbox.jdt.triggerpattern.api;
 
 import java.util.List;
 import java.util.Objects;
-
-import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
+import java.util.function.Function;
 
 /**
  * AST model for guard expressions using a sealed interface pattern.
@@ -37,6 +36,25 @@ import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
  */
 public sealed interface GuardExpression
 		permits GuardExpression.FunctionCall, GuardExpression.And, GuardExpression.Or, GuardExpression.Not {
+	
+	/**
+	 * Sets the guard function resolver used by {@link FunctionCall} to look up
+	 * guard functions by name.
+	 * 
+	 * @param resolver a function that maps guard function names to implementations
+	 */
+	static void setGuardFunctionResolver(Function<String, GuardFunction> resolver) {
+		GuardFunctionResolverHolder.setResolver(resolver);
+	}
+	
+	/**
+	 * Returns the current guard function resolver.
+	 * 
+	 * @return the resolver, or {@code null} if not set
+	 */
+	static Function<String, GuardFunction> getGuardFunctionResolver() {
+		return GuardFunctionResolverHolder.getResolver();
+	}
 	
 	/**
 	 * Evaluates this guard expression against the given context.
@@ -72,7 +90,8 @@ public sealed interface GuardExpression
 		
 		@Override
 		public boolean evaluate(GuardContext ctx) {
-			GuardFunction fn = GuardRegistry.getInstance().get(name);
+			Function<String, GuardFunction> resolver = GuardFunctionResolverHolder.getResolver();
+			GuardFunction fn = resolver != null ? resolver.apply(name) : null;
 			if (fn == null) {
 				throw new IllegalStateException("Unknown guard function: " + name); //$NON-NLS-1$
 			}

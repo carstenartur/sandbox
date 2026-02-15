@@ -7,7 +7,8 @@ Bundle-Version: 1.2.6.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: global
-Require-Bundle: org.eclipse.core.runtime,
+Require-Bundle: sandbox_common_core;visibility:=reexport,
+ org.eclipse.core.runtime,
  org.eclipse.core.filebuffers,
  org.eclipse.core.filesystem,
  org.eclipse.core.resources,
@@ -26,11 +27,10 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.search,
  org.eclipse.e4.core.services
 Automatic-Module-Name: sandbox.common
-Export-Package: org.sandbox.jdt.internal.common,
- org.sandbox.jdt.internal.corext.fix2,
+Export-Package: org.sandbox.jdt.internal.corext.fix2,
  org.sandbox.jdt.internal.corext.util,
- org.sandbox.jdt.triggerpattern.api,
  org.sandbox.jdt.triggerpattern.cleanup,
+ org.sandbox.jdt.triggerpattern.eclipse,
  org.sandbox.jdt.triggerpattern.editor,
  org.sandbox.jdt.triggerpattern.internal,
  org.sandbox.jdt.triggerpattern.mining.analysis,

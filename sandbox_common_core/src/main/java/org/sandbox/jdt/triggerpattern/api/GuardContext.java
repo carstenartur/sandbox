@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
@@ -54,15 +53,16 @@ public final class GuardContext {
 	}
 	
 	/**
-	 * Creates a guard context from a match and compilation unit using default
-	 * compiler options.
+	 * Creates a guard context from a match and compilation unit with empty
+	 * compiler options. Use the 3-argument overload to pass explicit compiler
+	 * options.
 	 * 
 	 * @param match the match providing placeholder bindings
 	 * @param cu the compilation unit
 	 * @return a new guard context
 	 */
 	public static GuardContext fromMatch(Match match, CompilationUnit cu) {
-		return new GuardContext(match, cu, JavaCore.getOptions());
+		return new GuardContext(match, cu, java.util.Collections.emptyMap());
 	}
 	
 	/**
@@ -134,7 +134,7 @@ public final class GuardContext {
 	 * @return the source version string (e.g., {@code "11"}, {@code "17"}, {@code "21"})
 	 */
 	public String getSourceVersion() {
-		String version = compilerOptions.get(JavaCore.COMPILER_SOURCE);
+		String version = compilerOptions.get("org.eclipse.jdt.core.compiler.source"); //$NON-NLS-1$
 		return version != null ? version : "1.8"; //$NON-NLS-1$
 	}
 	

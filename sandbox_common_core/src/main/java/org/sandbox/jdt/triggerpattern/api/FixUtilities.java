@@ -60,17 +60,16 @@ public final class FixUtilities {
 	 * <p>Supports both single placeholders ($x) and multi-placeholders ($args$).
 	 * The replacement pattern is parsed using the same syntax as trigger patterns.</p>
 	 * 
-	 * @param ctx the hint context containing the match and rewrite
+	 * @param match the pattern match result
+	 * @param rewrite the AST rewrite for making changes
 	 * @param replacementPattern the replacement pattern with placeholders
 	 * @throws IllegalArgumentException if the replacement pattern cannot be parsed
 	 */
-	public static void rewriteFix(HintContext ctx, String replacementPattern) {
-		if (ctx == null || replacementPattern == null) {
-			throw new IllegalArgumentException("Context and replacement pattern must not be null"); //$NON-NLS-1$
+	public static void rewriteFix(Match match, ASTRewrite rewrite, String replacementPattern) {
+		if (match == null || rewrite == null || replacementPattern == null) {
+			throw new IllegalArgumentException("Match, rewrite, and replacement pattern must not be null"); //$NON-NLS-1$
 		}
 		
-		Match match = ctx.getMatch();
-		ASTRewrite rewrite = ctx.getASTRewrite();
 		ASTNode matchedNode = match.getMatchedNode();
 		
 		// Determine pattern kind from matched node type

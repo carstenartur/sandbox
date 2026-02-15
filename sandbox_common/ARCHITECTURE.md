@@ -6,6 +6,8 @@
 
 The `sandbox_common` module provides shared utilities, constants, and base classes used across all sandbox cleanup plugins. This module serves as the foundation for the entire sandbox ecosystem.
 
+**Note**: Eclipse-independent core classes (HelperVisitor, TriggerPattern API, parsers) have been extracted to [`sandbox_common_core`](../sandbox_common_core/ARCHITECTURE.md). This module re-exports `sandbox_common_core` via `Require-Bundle: sandbox_common_core;visibility:=reexport`, so downstream plugins do not need to change their dependencies.
+
 ## Purpose
 
 - Centralize common cleanup infrastructure and utilities

@@ -23,7 +23,6 @@ package org.sandbox.jdt.internal.common;
 
 import org.eclipse.jdt.core.dom.*;
 
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 /**
  *
@@ -624,7 +623,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 							return true;
 						}
 					} else
-						if (!ASTNodes.usesGivenSignature(node, canonicaltype, data, parameterTypesQualifiedNames)) {
+						if (!usesGivenSignatureWithParams(node, canonicaltype, data, parameterTypesQualifiedNames)) {
 							return true;
 						}
 				}
@@ -649,6 +648,32 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Checks if a method invocation matches a given type, method name, and parameter types.
+	 * This is a local replacement for ASTNodes.usesGivenSignature to avoid
+	 * dependency on org.eclipse.jdt.ui.
+	 */
+	private static boolean usesGivenSignatureWithParams(MethodInvocation node, String typeQualifiedName, String methodName, String... parameterTypesQualifiedNames) {
+		IMethodBinding methodBinding = node.resolveMethodBinding();
+		if (methodBinding == null) {
+			return false;
+		}
+		if (!methodName.equals(methodBinding.getName())) {
+			return false;
+		}
+		ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();
+		if (parameterTypes.length != parameterTypesQualifiedNames.length) {
+			return false;
+		}
+		for (int i = 0; i < parameterTypes.length; i++) {
+			ITypeBinding paramType = parameterTypes[i].getErasure();
+			if (!parameterTypesQualifiedNames[i].equals(paramType.getQualifiedName())) {
+				return false;
+			}
+		}
+		return isClassQualifiedNameMatching(node, typeQualifiedName);
 	}
 
 	/**
@@ -1586,7 +1611,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					canonicaltype = typeofByName;
 				}
 				if(canonicaltype != null) {
-					if (!ASTNodes.usesGivenSignature(node, canonicaltype, data)) {
+					if (!usesGivenSignature(node, canonicaltype, data)) {
 						return;
 					}
 				}

@@ -19,7 +19,7 @@ import java.util.Map;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.CompilationUnit;
+//import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -30,7 +30,6 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
-import org.sandbox.jdt.triggerpattern.api.HintContext;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -472,14 +471,9 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         // Create a Match from the holder data
         Match match = new Match(matchedNode, bindings, matchedNode.getStartPosition(), matchedNode.getLength());
         
-        // Create a HintContext for FixUtilities.rewriteFix()
-        CompilationUnit cu = (CompilationUnit) matchedNode.getRoot();
-        HintContext ctx = new HintContext(cu, null, match, rewriter);
-        ctx.setImportRewrite(importRewriter);
-        
         // Use FixUtilities.rewriteFix() to perform the replacement
         String replacementPattern = rewriteRule.replaceWith();
-        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(ctx, replacementPattern);
+        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(match, rewriter, replacementPattern);
         
         // Handle imports
         processImports(importRewriter, rewriteRule);
@@ -497,14 +491,9 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         // Create a Match from the holder data
         Match match = new Match(matchedNode, bindings, matchedNode.getStartPosition(), matchedNode.getLength());
         
-        // Create a HintContext for FixUtilities.rewriteFix()
-        CompilationUnit cu = (CompilationUnit) matchedNode.getRoot();
-        HintContext ctx = new HintContext(cu, null, match, rewriter);
-        ctx.setImportRewrite(importRewriter);
-        
         // Use FixUtilities.rewriteFix() to perform the replacement
         String replacementPattern = rewriteRule.replaceWith();
-        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(ctx, replacementPattern);
+        org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(match, rewriter, replacementPattern);
         
         // Handle imports
         processImports(importRewriter, rewriteRule);

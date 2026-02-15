@@ -28,9 +28,12 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
+import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -44,6 +47,26 @@ import org.sandbox.jdt.triggerpattern.internal.GuardExpressionParser;
 public class TransformationRuleTest {
 	
 	private final GuardExpressionParser guardParser = new GuardExpressionParser();
+	
+	@BeforeAll
+	static void registerGuardFunctions() {
+		Map<String, GuardFunction> guards = new HashMap<>();
+		guards.put("sourceVersionGE", (ctx, args) -> { //$NON-NLS-1$
+			if (args.length < 1) return false;
+			double required = Double.parseDouble(args[0].toString());
+			String sv = ctx.getSourceVersion();
+			double source = (sv != null && !sv.isEmpty()) ? Double.parseDouble(sv) : 0;
+			return source >= required;
+		});
+		guards.put("sourceVersionLE", (ctx, args) -> { //$NON-NLS-1$
+			if (args.length < 1) return false;
+			double required = Double.parseDouble(args[0].toString());
+			String sv = ctx.getSourceVersion();
+			double source = (sv != null && !sv.isEmpty()) ? Double.parseDouble(sv) : 0;
+			return source <= required;
+		});
+		GuardFunctionResolverHolder.setResolver(guards::get);
+	}
 	
 	@Test
 	public void testSimpleRuleWithOneAlternative() {
