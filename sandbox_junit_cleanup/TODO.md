@@ -25,8 +25,9 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ **assume5.sandbox-hint DSL file** - Declarative Assume→Assumptions migration rules (assumeTrue, assumeFalse) with `replaceStaticImport`; assumeNotNull/assumeNoException excluded (no direct JUnit 5 equivalents)
 - ✅ **`replaceStaticImport` directive** - All junit5/assume5 rules include `replaceStaticImport` for static import migration
 - ✅ **annotations5.sandbox-hint DSL file** - Declarative annotation migration rules (`@Before→@BeforeEach`, `@After→@AfterEach`, `@BeforeClass→@BeforeAll`, `@AfterClass→@AfterAll`, `@Ignore→@Disabled`, `@Test→@Test`)
-- ✅ **Annotation rewrite in HintFileRewriteOperation** - DSL-matched annotations can now be replaced via ASTRewrite
+- ✅ **Annotation rewrite in HintFileRewriteOperation** - DSL-matched annotations can now be replaced via ASTRewrite; handles MarkerAnnotation, SingleMemberAnnotation (preserves value), and NormalAnnotation (preserves member-value pairs)
 - ✅ **assertThat Hamcrest migration** - `Assert.assertThat→MatcherAssert.assertThat` rules in junit5.sandbox-hint
+- ✅ **DSL integration tests** - `DslHintFileIntegrationTests` in TriggerPatternCleanupFrameworkTest covering annotations5, assume5, junit5 rules (disabled until wiring complete)
 
 ### In Progress
 - None currently

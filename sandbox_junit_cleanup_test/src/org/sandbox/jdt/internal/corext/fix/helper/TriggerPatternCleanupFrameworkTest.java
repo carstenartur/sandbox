@@ -854,4 +854,207 @@ public class TriggerPatternCleanupFrameworkTest {
 			assertNotNull(plugin, "Plugin with custom shouldProcess should be created"); //$NON-NLS-1$
 		}
 	}
+
+	/**
+	 * Integration tests for DSL-based (.sandbox-hint) JUnit migration rules.
+	 * These tests verify that the annotations5.sandbox-hint and assume5.sandbox-hint
+	 * DSL rules work end-to-end via the HintFile cleanup mechanism.
+	 */
+	@Nested
+	@DisplayName("DSL Hint File Integration Tests")
+	class DslHintFileIntegrationTests {
+
+		@Test
+		@DisplayName("DSL: @Before marker annotation → @BeforeEach via annotations5.sandbox-hint")
+		@org.junit.jupiter.api.Disabled("DSL-based annotation cleanup not yet wired to integration test infrastructure")
+		void testDsl_beforeAnnotation_markerAnnotation() throws CoreException {
+			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+					"""
+					package test;
+					import org.junit.Before;
+
+					public class MyTest {
+					    @Before
+					    public void setUp() {
+					    }
+					}
+					""", false, null);
+
+			context.enable(MYCleanUpConstants.HINTFILE_CLEANUP);
+			context.enable(MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5);
+
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+					"""
+					package test;
+					import org.junit.jupiter.api.BeforeEach;
+
+					public class MyTest {
+					    @BeforeEach
+					    public void setUp() {
+					    }
+					}
+					"""
+			}, null);
+		}
+
+		@Test
+		@DisplayName("DSL: @Ignore(\"reason\") → @Disabled(\"reason\") preserves value via annotations5.sandbox-hint")
+		@org.junit.jupiter.api.Disabled("DSL-based annotation cleanup not yet wired to integration test infrastructure")
+		void testDsl_ignoreAnnotation_preservesValue() throws CoreException {
+			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+					"""
+					package test;
+					import org.junit.Ignore;
+					import org.junit.Test;
+
+					public class MyTest {
+					    @Ignore("Feature not ready")
+					    @Test
+					    public void testFeature() {
+					    }
+					}
+					""", false, null);
+
+			context.enable(MYCleanUpConstants.HINTFILE_CLEANUP);
+			context.enable(MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5);
+
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+					"""
+					package test;
+					import org.junit.jupiter.api.Disabled;
+					import org.junit.jupiter.api.Test;
+
+					public class MyTest {
+					    @Disabled("Feature not ready")
+					    @Test
+					    public void testFeature() {
+					    }
+					}
+					"""
+			}, null);
+		}
+
+		@Test
+		@DisplayName("DSL: Assume.assumeTrue() → Assumptions.assumeTrue() via assume5.sandbox-hint")
+		@org.junit.jupiter.api.Disabled("DSL-based assume cleanup not yet wired to integration test infrastructure")
+		void testDsl_assumeTrue_migration() throws CoreException {
+			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+					"""
+					package test;
+					import org.junit.Assume;
+					import org.junit.Test;
+
+					public class MyTest {
+					    @Test
+					    public void testFeature() {
+					        Assume.assumeTrue(System.getenv("CI") != null);
+					    }
+					}
+					""", false, null);
+
+			context.enable(MYCleanUpConstants.HINTFILE_CLEANUP);
+			context.enable(MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5);
+
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+					"""
+					package test;
+					import org.junit.jupiter.api.Assumptions;
+					import org.junit.jupiter.api.Test;
+
+					public class MyTest {
+					    @Test
+					    public void testFeature() {
+					        Assumptions.assumeTrue(System.getenv("CI") != null);
+					    }
+					}
+					"""
+			}, null);
+		}
+
+		@Test
+		@DisplayName("DSL: Assert.assertEquals() → Assertions.assertEquals() via junit5.sandbox-hint")
+		@org.junit.jupiter.api.Disabled("DSL-based assert cleanup not yet wired to integration test infrastructure")
+		void testDsl_assertEquals_migration() throws CoreException {
+			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+					"""
+					package test;
+					import org.junit.Assert;
+					import org.junit.Test;
+
+					public class MyTest {
+					    @Test
+					    public void testFeature() {
+					        Assert.assertEquals("expected", "actual");
+					    }
+					}
+					""", false, null);
+
+			context.enable(MYCleanUpConstants.HINTFILE_CLEANUP);
+			context.enable(MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5);
+
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+					"""
+					package test;
+					import org.junit.jupiter.api.Assertions;
+					import org.junit.jupiter.api.Test;
+
+					public class MyTest {
+					    @Test
+					    public void testFeature() {
+					        Assertions.assertEquals("expected", "actual");
+					    }
+					}
+					"""
+			}, null);
+		}
+
+		@Test
+		@DisplayName("DSL: Assert.assertThat() → MatcherAssert.assertThat() via junit5.sandbox-hint")
+		@org.junit.jupiter.api.Disabled("DSL-based assertThat cleanup not yet wired to integration test infrastructure")
+		void testDsl_assertThat_hamcrestMigration() throws CoreException {
+			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+					"""
+					package test;
+					import org.junit.Assert;
+					import org.junit.Test;
+					import static org.hamcrest.CoreMatchers.is;
+
+					public class MyTest {
+					    @Test
+					    public void testFeature() {
+					        Assert.assertThat("hello", is("hello"));
+					    }
+					}
+					""", false, null);
+
+			context.enable(MYCleanUpConstants.HINTFILE_CLEANUP);
+			context.enable(MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5);
+
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+					"""
+					package test;
+					import org.hamcrest.MatcherAssert;
+					import org.junit.jupiter.api.Test;
+					import static org.hamcrest.CoreMatchers.is;
+
+					public class MyTest {
+					    @Test
+					    public void testFeature() {
+					        MatcherAssert.assertThat("hello", is("hello"));
+					    }
+					}
+					"""
+			}, null);
+		}
+	}
 }
