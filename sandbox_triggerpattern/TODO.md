@@ -25,6 +25,14 @@
 - ✅ Bundled pattern libraries: `collections`, `modernize-java9`, `modernize-java11`, `performance`
 - ✅ Workspace-level `.sandbox-hint` file loading — users can place hint files in project directories
 
+### Implementation Status vs. Issue #709
+
+All 7 phases of the [TriggerPattern DSL Implementierungsplan (#709)](https://github.com/carstenartur/sandbox/issues/709) are **complete**.
+See [sandbox_common/TODO.md](../sandbox_common/TODO.md#implementation-status-vs-issue-709) for the detailed per-phase checklist.
+
+**Closeable related issues**: #709 (all phases done), #722 (extension points), #723 (reporting + Problem-View), #725 (editor support).
+**Remaining related issues**: #724 (granular preference page), #729 (DSL-based JUnit migration gaps).
+
 ### In Progress
 - [ ] Additional pattern variations
 

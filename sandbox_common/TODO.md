@@ -319,6 +319,66 @@ For questions about shared utilities or adding new common code, please open an i
   - [ ] Optional parts: `$x?.method()`
   - [ ] Repetition: `$x+` (one or more)
 
+### Implementation Status vs. Issue #709
+
+The following tracks the implementation status of all 7 phases from
+[Issue #709](https://github.com/carstenartur/sandbox/issues/709)
+(`.hint`-Datei-Parser für TriggerPattern Engine).
+
+#### Phase 1: Variadic Placeholders (`$name$`) — ✅ COMPLETE
+- [x] 1.1 PatternParser: `$name$` syntax recognition, `VariadicPlaceholder` in arguments and statements
+- [x] 1.2 PlaceholderAstMatcher: Matching in `MethodInvocation.arguments()`, `Block.statements()`, binding as `List<ASTNode>`
+- [x] 1.3 Tests: 15+ tests in `VariadicPlaceholderTest` (empty args, single, multiple, mixed patterns, block patterns)
+
+#### Phase 2: Multi-Statement Pattern Matching — ✅ COMPLETE
+- [x] 2.1 `PatternKind.BLOCK` and `PatternKind.STATEMENT_SEQUENCE`
+- [x] 2.2 Sliding-window matching in `TriggerPatternEngine.checkStatementSequenceMatch()`
+- [x] 2.4 Tests: `StatementSequenceTest` (two/three consecutive statements, within larger blocks, non-consecutive)
+
+#### Phase 3: Guard Functions Framework — ✅ COMPLETE
+- [x] 3.1 `GuardExpressionParser`: recursive descent parser, `&&`, `||`, `!`, parentheses
+- [x] 3.2 Built-in guards (16): `instanceof`, `matchesAny`, `matchesNone`, `hasNoSideEffect`, `sourceVersionGE/LE/Between`, `isStatic`, `isFinal`, `hasAnnotation`, `isDeprecated`, `referencedIn`, `elementKindMatches`, `contains`, `notContains`
+- [x] 3.3 `GuardRegistry` with `GuardFunction` interface, extension point `org.sandbox.jdt.triggerpattern.guards`, `.exsd` schema
+- [x] 3.4 Tests: 30+ tests in `GuardExpressionTest`
+
+#### Phase 4: Conditional Multi-Rewrite — ✅ COMPLETE
+- [x] 4.1 `RewriteAlternative` with `replacementPattern` + `condition`, `otherwise()` factory
+- [x] 4.2 `TransformationRule` with ordered `List<RewriteAlternative>`
+- [x] 4.3 Evaluation: ordered guard evaluation, `otherwise` catch-all
+- [x] 4.4 Tests: `TransformationRuleTest`
+
+#### Phase 5: DSL File Format and Parser — ✅ COMPLETE
+- [x] 5.1 `.sandbox-hint` format with comments, metadata (`<!id:>`, `<!description:>`, `<!severity:>`, `<!minJavaVersion:>`, `<!tags:>`)
+- [x] 5.2 `HintFileParser`: lexer/parser, error handling with line numbers
+- [x] 5.3 `HintFile` data model (id, description, severity, minJavaVersion, tags, rules, includes)
+- [x] 5.4 Integration: `HintFileRegistry` with extension point, workspace scanning, `HintFileStore` for Eclipse-independent usage
+- [x] 5.5 Tests: `HintFileParserTest`, `PatternCompositionTest`, `WorkspaceHintFileTest`
+
+#### Phase 6: Improvements over NetBeans — ✅ COMPLETE
+- [x] 6.1 Import management: `ImportDirective`, auto-detection, `addImport`/`removeImport`/`addStaticImport`/`removeStaticImport`
+- [x] 6.2 Pattern libraries: 6 bundled `.sandbox-hint` files (encoding, collections, modernize-java9, modernize-java11, performance, junit5)
+- [x] 6.3 Negated patterns: `contains`/`notContains` guards
+- [x] 6.4 Preview generation: `PreviewGenerator` with automatic placeholder substitution
+- [x] 6.5 Dry-run/reporting: `DryRunReporter`, `TransformationReporter` with CSV/JSON export
+
+#### Phase 7: Eclipse UI Integration — ✅ COMPLETE
+- [x] 7.1 Preference page: `SandboxCodeTabPage` with `HINTFILE_CLEANUP` checkbox
+- [x] 7.2 Editor support: `SandboxHintEditor` with syntax highlighting, content assist, validation, hover
+- [x] 7.3 Quick Fix / Clean Up: `HintFileCleanUp`, `HintFileCleanUpCore`, `HintFileQuickAssistProcessor`
+- [x] Extension points: `org.sandbox.jdt.triggerpattern.guards` and `org.sandbox.jdt.triggerpattern.hints` with `.exsd` schemas
+- [x] Problem-View integration: `HintMarkerManager` creates `IMarker` for transformation results
+
+#### Related Issues — Closability Assessment
+
+| Issue | Title | Status | Recommendation |
+|-------|-------|--------|----------------|
+| [#709](https://github.com/carstenartur/sandbox/issues/709) | Implementierungsplan: `.hint`-Datei-Parser | All 7 phases complete | **Can be closed** |
+| [#722](https://github.com/carstenartur/sandbox/issues/722) | Eclipse Extension Points | Guards + hints extension points + `.exsd` schemas exist | **Can be closed** |
+| [#723](https://github.com/carstenartur/sandbox/issues/723) | Report-Generierung + Problem-View | `TransformationReporter` (CSV/JSON) + `HintMarkerManager` exist | **Can be closed** |
+| [#724](https://github.com/carstenartur/sandbox/issues/724) | Erweiterte Preference Page | Basic preference exists; granular per-bundle control not yet implemented | Keep open |
+| [#725](https://github.com/carstenartur/sandbox/issues/725) | Editor-Support für `.sandbox-hint` | `SandboxHintEditor` with highlighting, content assist, validation, hover | **Can be closed** |
+| [#729](https://github.com/carstenartur/sandbox/issues/729) | DSL-basierte JUnit-Migrationen | Infrastructure ready; DSL gaps remain (static-import matching, type guards) | Keep open |
+
 ### Known Issues
 - None at this time
 
