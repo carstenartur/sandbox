@@ -17,7 +17,7 @@ Eclipse-independent common core module for sandbox utilities.
 |---------|-------------|
 | `org.sandbox.jdt.internal.common` | HelperVisitor API, LambdaASTVisitor, builders, and visitor utilities |
 | `org.sandbox.jdt.triggerpattern.api` | TriggerPattern engine, pattern matching, guard expressions, fix utilities |
-| `org.sandbox.jdt.triggerpattern.internal` | Pattern/hint file parsers, placeholder matching |
+| `org.sandbox.jdt.triggerpattern.internal` | Pattern/hint file parsers, placeholder matching, BuiltInGuards, HintFileStore |
 
 ## Dependency Graph
 

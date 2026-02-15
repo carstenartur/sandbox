@@ -22,6 +22,10 @@
 - ✅ Mining Phase 5.1: `HintFileRegistry.registerInferredRules()`, `getInferredHintFiles()`, `promoteToManual()` (Issue #727)
 - ✅ Mining Phase 5.2: Export functionality — `.sandbox-hint` file export from RefactoringMiningView (Issue #727)
 - ✅ Mining Tests: `HintFileRegistryInferredTest` (Issue #727)
+- ✅ `sandbox_common_core` extraction: HelperVisitor, TriggerPattern API, parsers, data classes, annotations (Issue #730)
+- ✅ Grenzfall 2: `BuiltInGuards` extracted to `sandbox_common_core`, `GuardRegistry` delegates to it (Issue #730)
+- ✅ Grenzfall 3: `HintFileStore` extracted to `sandbox_common_core`, `HintFileRegistry` delegates to it (Issue #730)
+- ✅ Feature.xml files updated: all features that import `sandbox_common` now also import `sandbox_common_core` (Issue #730)
 
 ### In Progress
 - None currently
