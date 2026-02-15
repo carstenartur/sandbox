@@ -385,7 +385,7 @@ The following tracks the implementation status of all 7 phases from
   - DSL syntax: `replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions`
   - Handles both wildcard (`import static Assert.*`) and specific member imports
 - [x] Per-bundle preference page: `encoding` and `junit5` bundles added to SandboxCodeTabPage
-- [x] `assume5.sandbox-hint`: 7 Assume→Assumptions migration rules with replaceStaticImport
+- [x] `assume5.sandbox-hint`: 4 Assume→Assumptions migration rules (assumeTrue, assumeFalse) with replaceStaticImport; assumeNotNull/assumeNoException excluded (no direct JUnit 5 equivalents)
 - [x] `junit5.sandbox-hint`: All 24 rules updated with `replaceStaticImport` directives
 - [x] Extension-point hint files (`encoding`, `junit5`) now loaded via `loadFromExtensions()` in HintFileFixCore
 

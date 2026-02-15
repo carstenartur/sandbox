@@ -43,32 +43,7 @@ removeImport org.junit.Assume
 replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
 ;;
 
-// --- assumeNotNull ---
-
-// Assume.assumeNotNull(objects...) → Assumptions.assumeTrue(objects != null)
-// Note: JUnit 5 does not have assumeNotNull, using variadic for all overloads
-Assume.assumeNotNull($args$)
-=> Assumptions.assumeTrue($args$ != null)
-addImport org.junit.jupiter.api.Assumptions
-removeImport org.junit.Assume
-replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
-;;
-
-// --- assumeNoException ---
-
-// Assume.assumeNoException(throwable) → Assumptions.assumeTrue(false) (no direct equivalent)
-// Note: JUnit 5 has no direct assumeNoException equivalent
-Assume.assumeNoException($t)
-=> Assumptions.abort($t)
-addImport org.junit.jupiter.api.Assumptions
-removeImport org.junit.Assume
-replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
-;;
-
-// Assume.assumeNoException(message, throwable) → Assumptions.abort(message)
-Assume.assumeNoException($msg, $t)
-=> Assumptions.abort($msg)
-addImport org.junit.jupiter.api.Assumptions
-removeImport org.junit.Assume
-replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
-;;
+// Note: Assume.assumeNotNull() and Assume.assumeNoException() have no direct
+// JUnit 5 equivalents and require manual migration. assumeNotNull checks all
+// arguments individually, which cannot be expressed in a single DSL rule.
+// assumeNoException semantics (skip test on exception) differ from abort().
