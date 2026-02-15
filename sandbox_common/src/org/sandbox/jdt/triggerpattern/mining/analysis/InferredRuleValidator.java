@@ -49,6 +49,12 @@ public class InferredRuleValidator {
 	public record ValidationResult(ValidationStatus status, String message) {
 	}
 
+	/**
+	 * Minimum confidence required for an inferred rule to be considered reliable.
+	 * <p>
+	 * This value was chosen empirically to filter out very low-confidence rules
+	 * that are typically noisy while still allowing potentially useful patterns.
+	 */
 	private static final double MIN_CONFIDENCE = 0.3;
 	private final PatternParser parser = new PatternParser();
 

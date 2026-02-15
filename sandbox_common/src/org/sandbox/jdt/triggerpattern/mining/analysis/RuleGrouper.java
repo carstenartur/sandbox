@@ -29,6 +29,15 @@ import java.util.Map;
  */
 public class RuleGrouper {
 
+	/** Confidence boost per additional occurrence when aggregating grouped rules. */
+	private static final double OCCURRENCE_BOOST_PER_INSTANCE = 0.02;
+
+	/** Maximum total boost from multiple occurrences. */
+	private static final double MAX_OCCURRENCE_BOOST = 0.1;
+
+	/** Absolute upper bound for any confidence value. */
+	private static final double MAX_CONFIDENCE = 1.0;
+
 	/**
 	 * Groups a list of inferred rules by their normalized pattern signature.
 	 *
@@ -57,10 +66,17 @@ public class RuleGrouper {
 		// Normalize by replacing concrete placeholder names with positional markers
 		String src = rule.sourcePattern();
 		String repl = rule.replacementPattern();
-		for (String name : rule.placeholderNames()) {
-			String positional = "$_" + rule.placeholderNames().indexOf(name); //$NON-NLS-1$
-			src = src.replace(name, positional);
-			repl = repl.replace(name, positional);
+
+		Map<String, Integer> placeholderIndices = new LinkedHashMap<>();
+		for (int i = 0; i < rule.placeholderNames().size(); i++) {
+			String name = rule.placeholderNames().get(i);
+			placeholderIndices.putIfAbsent(name, Integer.valueOf(i));
+		}
+
+		for (Map.Entry<String, Integer> entry : placeholderIndices.entrySet()) {
+			String positional = "$_" + entry.getValue(); //$NON-NLS-1$
+			src = src.replace(entry.getKey(), positional);
+			repl = repl.replace(entry.getKey(), positional);
 		}
 		return src + " => " + repl + " :: " + rule.kind(); //$NON-NLS-1$ //$NON-NLS-2$
 	}
@@ -69,7 +85,7 @@ public class RuleGrouper {
 		double maxConfidence = group.stream()
 				.mapToDouble(InferredRule::confidence).max().orElse(0.0);
 		// Boost confidence slightly for each additional occurrence
-		double boost = Math.min(0.1, 0.02 * (group.size() - 1));
-		return Math.min(1.0, maxConfidence + boost);
+		double boost = Math.min(MAX_OCCURRENCE_BOOST, OCCURRENCE_BOOST_PER_INSTANCE * (group.size() - 1));
+		return Math.min(MAX_CONFIDENCE, maxConfidence + boost);
 	}
 }

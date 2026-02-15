@@ -30,6 +30,30 @@ import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
  */
 public class ConfidenceCalculator {
 
+	/** Base confidence for leaf-only modifications (API renames, etc.). */
+	private static final double LEAF_MODIFICATION_BASE_CONFIDENCE = 0.8;
+
+	/** Bonus multiplied by the identical-ratio when only leaf nodes are modified. */
+	private static final double LEAF_MODIFICATION_IDENTICAL_BONUS = 0.15;
+
+	/** Base confidence when structural (non-leaf) changes are present. */
+	private static final double STRUCTURAL_CHANGE_BASE_CONFIDENCE = 0.5;
+
+	/** Bonus multiplied by the identical-ratio for structural changes. */
+	private static final double STRUCTURAL_CHANGE_IDENTICAL_BONUS = 0.4;
+
+	/** Minimum confidence returned for structurally incompatible diffs. */
+	private static final double MIN_INCOMPATIBLE_CONFIDENCE = 0.1;
+
+	/** Scaling factor for the identical-ratio in incompatible diffs. */
+	private static final double INCOMPATIBLE_IDENTICAL_SCALE = 0.5;
+
+	/** Default confidence for structurally incompatible diffs without inserts/deletes. */
+	private static final double DEFAULT_INCOMPATIBLE_CONFIDENCE = 0.3;
+
+	/** Absolute upper bound for any confidence value. */
+	private static final double MAX_CONFIDENCE = 1.0;
+
 	/**
 	 * Calculates a confidence score for the given diff.
 	 *
@@ -52,7 +76,7 @@ public class ConfidenceCalculator {
 		long total = diff.alignments().size();
 
 		if (modified == 0 && identical == total) {
-			return 1.0;
+			return MAX_CONFIDENCE;
 		}
 
 		// High confidence when mostly identical with only leaf-level modifications
@@ -62,20 +86,26 @@ public class ConfidenceCalculator {
 				.allMatch(a -> isLeafNode(a.beforeNode()) || isLeafNode(a.afterNode()));
 
 		if (onlyLeafModifications) {
-			return 0.8 + 0.15 * identicalRatio;
+			return LEAF_MODIFICATION_BASE_CONFIDENCE + LEAF_MODIFICATION_IDENTICAL_BONUS * identicalRatio;
 		}
 
-		return 0.5 + 0.4 * identicalRatio;
+		return STRUCTURAL_CHANGE_BASE_CONFIDENCE + STRUCTURAL_CHANGE_IDENTICAL_BONUS * identicalRatio;
 	}
 
 	/**
-	 * Calculates a confidence score for a diff with incompatible structure.
+	 * Calculates a confidence score for the given diff with optional change-pair
+	 * context.
+	 * <p>
+	 * The {@code pair} parameter is currently ignored and reserved for future
+	 * heuristics that may take additional change context into account.
+	 * </p>
 	 *
 	 * @param diff the AST diff
-	 * @param pair the code change pair providing additional context
+	 * @param pair the code change pair providing additional context (currently unused)
 	 * @return a value between 0.0 and 1.0
 	 */
 	public double calculate(AstDiff diff, CodeChangePair pair) {
+		// pair is intentionally not used yet; kept for future heuristic extensions
 		return calculate(diff);
 	}
 
@@ -89,9 +119,10 @@ public class ConfidenceCalculator {
 			long identical = diff.alignments().stream()
 					.filter(a -> a.kind() == AlignmentKind.IDENTICAL).count();
 			long total = diff.alignments().size();
-			return Math.max(0.1, 0.5 * ((double) identical / total));
+			return Math.max(MIN_INCOMPATIBLE_CONFIDENCE,
+					INCOMPATIBLE_IDENTICAL_SCALE * ((double) identical / total));
 		}
-		return 0.3;
+		return DEFAULT_INCOMPATIBLE_CONFIDENCE;
 	}
 
 	@SuppressWarnings("unchecked")

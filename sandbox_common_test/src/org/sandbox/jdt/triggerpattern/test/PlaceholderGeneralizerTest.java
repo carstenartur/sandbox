@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
@@ -95,7 +96,7 @@ public class PlaceholderGeneralizerTest {
 	public void testGeneralizeReturnsNullForEmptyDiff() {
 		AstDiff emptyDiff = new AstDiff(true, java.util.List.of());
 		InferredRule rule = generalizer.generalize(emptyDiff, "a", "b", PatternKind.EXPRESSION); //$NON-NLS-1$ //$NON-NLS-2$
-		assertTrue(rule == null, "Empty diff should produce null"); //$NON-NLS-1$
+		assertNull(rule, "Empty diff should produce null"); //$NON-NLS-1$
 	}
 
 	// ---- helpers ----

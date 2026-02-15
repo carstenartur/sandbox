@@ -106,6 +106,9 @@ public class PlaceholderGeneralizer {
 					placeholderNames.add(placeholder);
 				}
 
+				// Note: replaceFirst uses indexOf which may match the wrong occurrence
+				// if the target substring appears multiple times in the source.
+				// TODO: Use AST node positions for precise replacement (issue #727)
 				sourcePattern = replaceFirst(sourcePattern, beforeText, placeholder);
 				replacementPattern = replaceFirst(replacementPattern, afterText, placeholder);
 			}
