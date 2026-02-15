@@ -499,4 +499,40 @@ public class MYCleanUpConstants {
 	 * @since 1.3.6
 	 */
 	public static final String HINTFILE_BUNDLE_ID_MODERNIZE_JAVA11= "modernize-java11"; //$NON-NLS-1$
+
+	/**
+	 * Enables or disables the encoding hint file bundle.
+	 * <p>
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * Controls whether StandardCharsets migration rules are applied.
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.7
+	 */
+	public static final String HINTFILE_BUNDLE_ENCODING= "cleanup.hintfile.bundle.encoding"; //$NON-NLS-1$
+
+	/**
+	 * Enables or disables the junit5 hint file bundle.
+	 * <p>
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * Controls whether JUnit 4 to JUnit 5 migration rules are applied.
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.7
+	 */
+	public static final String HINTFILE_BUNDLE_JUNIT5= "cleanup.hintfile.bundle.junit5"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the encoding hint file, matching the registry key
+	 * derived from {@code encoding.sandbox-hint}.
+	 * @since 1.3.7
+	 */
+	public static final String HINTFILE_BUNDLE_ID_ENCODING= "encoding"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the junit5 hint file, matching the registry key
+	 * derived from {@code junit5.sandbox-hint}.
+	 * @since 1.3.7
+	 */
+	public static final String HINTFILE_BUNDLE_ID_JUNIT5= "junit5"; //$NON-NLS-1$
 }
