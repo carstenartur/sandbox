@@ -22,6 +22,8 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ **@Rule Timeout migration to class-level @Timeout** (RuleTimeoutJUnitPlugin)
 - ✅ **@RewriteRule annotation framework** - Declarative transformation for simple annotation migrations
 - ✅ **junit5.sandbox-hint DSL file** - Declarative JUnit 4→5 assertion migration rules bundled with this plugin
+- ✅ **assume5.sandbox-hint DSL file** - Declarative Assume→Assumptions migration rules with `replaceStaticImport`
+- ✅ **`replaceStaticImport` directive** - All junit5/assume5 rules include `replaceStaticImport` for static import migration
 
 ### In Progress
 - None currently

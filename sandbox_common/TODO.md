@@ -375,9 +375,19 @@ The following tracks the implementation status of all 7 phases from
 | [#709](https://github.com/carstenartur/sandbox/issues/709) | Implementierungsplan: `.hint`-Datei-Parser | All 7 phases complete | **Can be closed** |
 | [#722](https://github.com/carstenartur/sandbox/issues/722) | Eclipse Extension Points | Guards + hints extension points + `.exsd` schemas exist | **Can be closed** |
 | [#723](https://github.com/carstenartur/sandbox/issues/723) | Report-Generierung + Problem-View | `TransformationReporter` (CSV/JSON) + `HintMarkerManager` exist | **Can be closed** |
-| [#724](https://github.com/carstenartur/sandbox/issues/724) | Erweiterte Preference Page | Basic preference exists; granular per-bundle control not yet implemented | Keep open |
+| [#724](https://github.com/carstenartur/sandbox/issues/724) | Erweiterte Preference Page | Per-bundle checkboxes for all 6 bundles (collections, performance, modernize-java9, modernize-java11, encoding, junit5) with master/slave pattern | **Can be closed** |
 | [#725](https://github.com/carstenartur/sandbox/issues/725) | Editor-Support für `.sandbox-hint` | `SandboxHintEditor` with highlighting, content assist, validation, hover | **Can be closed** |
-| [#729](https://github.com/carstenartur/sandbox/issues/729) | DSL-basierte JUnit-Migrationen | Infrastructure ready; DSL gaps remain (static-import matching, type guards) | Keep open |
+| [#729](https://github.com/carstenartur/sandbox/issues/729) | DSL-basierte JUnit-Migrationen | Phase 1 (`replaceStaticImport` directive) + Phase 3 (`assume5.sandbox-hint`) implemented; type guards remain | Keep open |
+
+### Recently Implemented (v1.3.7)
+
+- [x] `replaceStaticImport` directive in `ImportDirective`, `HintFileParser`, `HintFileRewriteOperation`
+  - DSL syntax: `replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions`
+  - Handles both wildcard (`import static Assert.*`) and specific member imports
+- [x] Per-bundle preference page: `encoding` and `junit5` bundles added to SandboxCodeTabPage
+- [x] `assume5.sandbox-hint`: 7 Assume→Assumptions migration rules with replaceStaticImport
+- [x] `junit5.sandbox-hint`: All 24 rules updated with `replaceStaticImport` directives
+- [x] Extension-point hint files (`encoding`, `junit5`) now loaded via `loadFromExtensions()` in HintFileFixCore
 
 ### Known Issues
 - None at this time
