@@ -127,7 +127,7 @@
   <setupTask
       xsi:type="pde:TargetPlatformTask"
       id="sandbox.target"
-      name="sandbox target platform">
+      name="target platform for sandbox">
     <description>Activate the sandbox target platform so the workspace uses the correct Eclipse version and dependencies.</description>
   </setupTask>
   <!-- Build imported projects -->
