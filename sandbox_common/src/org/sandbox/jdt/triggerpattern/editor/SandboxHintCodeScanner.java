@@ -66,6 +66,7 @@ public class SandboxHintCodeScanner extends RuleBasedScanner {
 		"isDeprecated", //$NON-NLS-1$
 		"otherwise", //$NON-NLS-1$
 		"contains", //$NON-NLS-1$
+		"notContains", //$NON-NLS-1$
 		"parent", //$NON-NLS-1$
 		"enclosingMethod", //$NON-NLS-1$
 	};

@@ -56,7 +56,8 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 		{ "isDeprecated", "isDeprecated($x) – element is @Deprecated" }, //$NON-NLS-1$ //$NON-NLS-2$
 		{ "otherwise", "otherwise – catch-all guard (always true)" }, //$NON-NLS-1$ //$NON-NLS-2$
 		{ "parent", "parent($x, Type) – parent node is of the given type" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "contains", "contains($x, pattern) – expression contains the pattern" }, //$NON-NLS-1$ //$NON-NLS-2$
+		{ "contains", "contains($x, \"text\") – enclosing method contains the text" }, //$NON-NLS-1$ //$NON-NLS-2$
+		{ "notContains", "notContains($x, \"text\") – enclosing method does not contain the text" }, //$NON-NLS-1$ //$NON-NLS-2$
 	};
 
 	/**

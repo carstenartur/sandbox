@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  * <p>Import directives can often be omitted because they are derived automatically:</p>
  * <ul>
  *   <li><b>{@code addImports}:</b> Must be specified explicitly because {@code replaceWith}
- *       only supports short (unqualified) names. Fully qualified annotation names in
+ *       only supports short (unqualified) names. Fully qualified type names in
  *       {@code replaceWith} (e.g., {@code @org.junit.jupiter.api.BeforeEach}) are
  *       <b>not</b> supported.</li>
  *   <li><b>{@code removeImports}:</b> If empty, the {@code qualifiedType} from the associated
