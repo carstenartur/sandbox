@@ -1,0 +1,43 @@
+// collections.sandbox-hint — Collections API improvements
+// Replaces verbose collection patterns with modern API equivalents
+
+<!id: collections>
+<!description: Collection API improvements and modernization>
+<!severity: info>
+<!minJavaVersion: 9>
+<!tags: collections, modernization>
+
+// Collections.unmodifiableList(Arrays.asList(...)) → List.of(...)
+Collections.unmodifiableList(Arrays.asList($args$)) :: sourceVersionGE(9)
+=> List.of($args$)
+;;
+
+// Collections.singletonList($x) → List.of($x)
+Collections.singletonList($x) :: sourceVersionGE(9)
+=> List.of($x)
+;;
+
+// Collections.emptyList() → List.of()
+Collections.emptyList() :: sourceVersionGE(9)
+=> List.of()
+;;
+
+// Collections.singletonMap($k, $v) → Map.of($k, $v)
+Collections.singletonMap($k, $v) :: sourceVersionGE(9)
+=> Map.of($k, $v)
+;;
+
+// Collections.emptyMap() → Map.of()
+Collections.emptyMap() :: sourceVersionGE(9)
+=> Map.of()
+;;
+
+// Collections.emptySet() → Set.of()
+Collections.emptySet() :: sourceVersionGE(9)
+=> Set.of()
+;;
+
+// Collections.singleton($x) → Set.of($x)
+Collections.singleton($x) :: sourceVersionGE(9)
+=> Set.of($x)
+;;
