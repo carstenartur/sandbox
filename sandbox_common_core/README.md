@@ -34,6 +34,19 @@ sandbox_common_core (JAR, only JDT Core)
     └── sandbox_common_test (plain Maven JAR, tests core + common)
 ```
 
+## Testing
+
+Tests that only depend on `sandbox_common_core` classes live in `src/test/java/`. These
+run as plain JUnit 5 tests without Xvfb, Eclipse runtime, or target platform resolution:
+
+```bash
+# Run all core tests (~324 tests, finishes in seconds)
+mvn test -pl sandbox_common_core
+```
+
+Tests that require OSGi, Eclipse Platform, or classes from `sandbox_common` (mining,
+registries, HintContext, corext utilities) remain in `sandbox_common_test`.
+
 ## Building
 
 ```bash
