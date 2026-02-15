@@ -69,6 +69,18 @@ public class SandboxHintCodeScanner extends RuleBasedScanner {
 		"enclosingMethod", //$NON-NLS-1$
 	};
 
+	/**
+	 * Import directive keywords for the DSL.
+	 * <p>These are now optional when imports can be implicitly derived
+	 * from fully qualified names in source/replacement patterns.</p>
+	 */
+	private static final String[] IMPORT_KEYWORDS = {
+		"addImport", //$NON-NLS-1$
+		"removeImport", //$NON-NLS-1$
+		"addStaticImport", //$NON-NLS-1$
+		"removeStaticImport", //$NON-NLS-1$
+	};
+
 	public SandboxHintCodeScanner() {
 		Color operatorColor = new Color(Display.getDefault(), 128, 0, 128);
 		IToken operatorToken = new Token(new TextAttribute(operatorColor, null, SWT.BOLD));
@@ -110,6 +122,9 @@ public class SandboxHintCodeScanner extends RuleBasedScanner {
 		}, Token.UNDEFINED);
 
 		for (String keyword : GUARD_KEYWORDS) {
+			keywordRule.addWord(keyword, keywordToken);
+		}
+		for (String keyword : IMPORT_KEYWORDS) {
 			keywordRule.addWord(keyword, keywordToken);
 		}
 		rules.add(keywordRule);
