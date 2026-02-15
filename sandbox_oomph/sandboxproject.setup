@@ -104,6 +104,14 @@
       checkoutBranch="main">
     <description>Clone the ${scope.project.label} repository from GitHub</description>
   </setupTask>
+  <!-- Oomph redirection task: redirect remote setup URL to local Git clone -->
+  <setupTask
+      xsi:type="setup:EclipseIniTask"
+      option="-Doomph.redirection.sandbox"
+      value="=https://raw.githubusercontent.com/carstenartur/sandbox/main/sandbox_oomph/sandboxproject.setup->${git.clone.sandbox.location|uri}/sandbox_oomph/sandboxproject.setup"
+      vm="true">
+    <description>Set an Oomph redirection system property to redirect the logical location of this setup to its physical location in the Git clone.</description>
+  </setupTask>
   <!-- Import all Eclipse projects from the cloned repository -->
   <setupTask
       xsi:type="projects:ProjectsImportTask">
