@@ -15,6 +15,7 @@ package org.sandbox.jdt.triggerpattern.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -24,13 +25,20 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
+import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternIndex;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.internal.BuiltInGuards;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 
 /**
  * Tests for static import-aware matching in {@link PatternIndex} and
@@ -43,6 +51,13 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * @since 1.3.5
  */
 public class StaticImportMatchingTest {
+
+	@BeforeEach
+	public void setUp() {
+		java.util.HashMap<String, org.sandbox.jdt.triggerpattern.api.GuardFunction> guards = new java.util.HashMap<>();
+		BuiltInGuards.registerAll(guards);
+		GuardFunctionResolverHolder.setResolver(guards::get);
+	}
 
 	@Test
 	public void testMatchesUnqualifiedCallWithWildcardStaticImport() {
@@ -218,6 +233,114 @@ public class StaticImportMatchingTest {
 		Match match = results.get(rule).get(0);
 		assertTrue(match.getBindings().containsKey("$expected"), "Should have binding for $expected"); //$NON-NLS-1$ //$NON-NLS-2$
 		assertTrue(match.getBindings().containsKey("$actual"), "Should have binding for $actual"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	// --- End-to-end batch processing tests ---
+
+	@Test
+	public void testBatchProcessorMatchesUnqualifiedViaStaticImport() throws Exception {
+		String hintContent = """
+				<!id: test-static>
+
+				Assert.assertEquals($expected, $actual)
+				=> Assertions.assertEquals($expected, $actual)
+				addImport org.junit.jupiter.api.Assertions
+				removeImport org.junit.Assert
+				replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+				;;
+				"""; //$NON-NLS-1$
+
+		String code = "import static org.junit.Assert.*;\n" //$NON-NLS-1$
+				+ "class Test {\n" //$NON-NLS-1$
+				+ "  void m() {\n" //$NON-NLS-1$
+				+ "    assertEquals(1, 2);\n" //$NON-NLS-1$
+				+ "  }\n" //$NON-NLS-1$
+				+ "}"; //$NON-NLS-1$
+
+		HintFileParser parser = new HintFileParser();
+		HintFile hintFile = parser.parse(hintContent);
+		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
+		CompilationUnit cu = parseCode(code);
+
+		List<TransformationResult> results = processor.process(cu);
+
+		assertFalse(results.isEmpty(), "Should find match via static import"); //$NON-NLS-1$
+		TransformationResult result = results.get(0);
+		assertTrue(result.hasReplacement());
+		assertNotNull(result.replacement());
+		assertTrue(result.hasImportDirective(), "Should have import directives"); //$NON-NLS-1$
+		assertFalse(result.importDirective().getReplaceStaticImports().isEmpty(),
+				"Should have replaceStaticImport directive"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testBatchProcessorWithTypeGuardAndStaticImport() throws Exception {
+		String hintContent = """
+				<!id: test-guard-static>
+
+				Assert.assertEquals($msg, $expected, $actual)
+				  :: $msg instanceof java.lang.String
+				=> Assertions.assertEquals($expected, $actual, $msg)
+				addImport org.junit.jupiter.api.Assertions
+				removeImport org.junit.Assert
+				replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+				;;
+
+				Assert.assertEquals($expected, $actual)
+				=> Assertions.assertEquals($expected, $actual)
+				addImport org.junit.jupiter.api.Assertions
+				removeImport org.junit.Assert
+				replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+				;;
+				"""; //$NON-NLS-1$
+
+		String code = "import static org.junit.Assert.*;\n" //$NON-NLS-1$
+				+ "class Test {\n" //$NON-NLS-1$
+				+ "  void m() {\n" //$NON-NLS-1$
+				+ "    assertEquals(1, 2);\n" //$NON-NLS-1$
+				+ "  }\n" //$NON-NLS-1$
+				+ "}"; //$NON-NLS-1$
+
+		HintFileParser parser = new HintFileParser();
+		HintFile hintFile = parser.parse(hintContent);
+		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
+		CompilationUnit cu = parseCode(code);
+
+		List<TransformationResult> results = processor.process(cu);
+
+		// The 2-arg call should match the 2-arg rule (not the guarded 3-arg rule)
+		assertFalse(results.isEmpty(), "Should find match for 2-arg assertEquals"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testBatchProcessorAssumeMigrationViaStaticImport() throws Exception {
+		String hintContent = """
+				<!id: test-assume>
+
+				Assume.assumeTrue($cond)
+				=> Assumptions.assumeTrue($cond)
+				addImport org.junit.jupiter.api.Assumptions
+				removeImport org.junit.Assume
+				replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
+				;;
+				"""; //$NON-NLS-1$
+
+		String code = "import static org.junit.Assume.assumeTrue;\n" //$NON-NLS-1$
+				+ "class Test {\n" //$NON-NLS-1$
+				+ "  void m() {\n" //$NON-NLS-1$
+				+ "    assumeTrue(true);\n" //$NON-NLS-1$
+				+ "  }\n" //$NON-NLS-1$
+				+ "}"; //$NON-NLS-1$
+
+		HintFileParser parser = new HintFileParser();
+		HintFile hintFile = parser.parse(hintContent);
+		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
+		CompilationUnit cu = parseCode(code);
+
+		List<TransformationResult> results = processor.process(cu);
+
+		assertFalse(results.isEmpty(), "Should find match via explicit static import"); //$NON-NLS-1$
+		assertTrue(results.get(0).hasReplacement());
 	}
 
 	// --- Helper methods ---

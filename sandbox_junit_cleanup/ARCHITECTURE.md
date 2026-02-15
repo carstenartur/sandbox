@@ -695,16 +695,76 @@ These files enable Eclipse's built-in localization mechanism and provide user-fa
 
 ## DSL Pattern Library
 
-The JUnit cleanup plugin provides a declarative `.sandbox-hint` file (`junit5.sandbox-hint`) that defines JUnit 4→5 migration rules using the TriggerPattern DSL. This file is located at `src/org/sandbox/jdt/internal/corext/fix/hints/junit5.sandbox-hint` and is registered via the `org.sandbox.jdt.triggerpattern.hints` extension point in `plugin.xml`.
+The JUnit cleanup plugin provides three declarative `.sandbox-hint` files that define JUnit 4→5 migration rules using the TriggerPattern DSL. These are registered via the `org.sandbox.jdt.triggerpattern.hints` extension point in `plugin.xml`.
 
-The hint file contains rules for migrating JUnit 4 assertions to JUnit 5 equivalents, including:
+### Hint Files
+
+| File | Location | Purpose |
+|------|----------|---------|
+| `junit5.sandbox-hint` | `src/org/sandbox/jdt/internal/corext/fix/hints/` | Assertion migrations (assertEquals, assertTrue, assertNull, etc.) |
+| `assume5.sandbox-hint` | `src/org/sandbox/jdt/internal/corext/fix/hints/` | Assumption migrations (assumeTrue, assumeFalse) |
+| `annotations5.sandbox-hint` | `src/org/sandbox/jdt/internal/corext/fix/hints/` | Annotation migrations (@Before→@BeforeEach, @After→@AfterEach, etc.) |
+
+### junit5.sandbox-hint
+
+Contains 24+ rules for migrating JUnit 4 assertions to JUnit 5 equivalents:
 - `Assert.assertEquals(expected, actual)` → `Assertions.assertEquals(expected, actual)`
 - `Assert.assertTrue(cond)` → `Assertions.assertTrue(cond)`
-- `Assert.assertEquals(msg, expected, actual)` → `Assertions.assertEquals(expected, actual, msg)` (parameter reorder)
+- `Assert.assertEquals(msg, expected, actual)` → `Assertions.assertEquals(expected, actual, msg)` (parameter reorder with type guard `:: $msg instanceof java.lang.String`)
+- `Assert.assertEquals(expected, actual, delta)` → `Assertions.assertEquals(expected, actual, delta)` (type guard `:: $delta instanceof double`)
+- `Assert.assertThat(actual, matcher)` → `MatcherAssert.assertThat(actual, matcher)` (Hamcrest special case)
 
-Each rule includes `addImport org.junit.jupiter.api.Assertions` and `removeImport org.junit.Assert` directives.
+Each assertion rule includes `addImport`, `removeImport`, and `replaceStaticImport` directives for comprehensive import management.
 
-This file was moved from `sandbox_common` to this plugin to prevent duplication of functionality with the annotation-based cleanup implementation, keeping domain-specific rules together with their domain-specific plugin.
+### assume5.sandbox-hint
+
+Contains rules for migrating JUnit 4 assumptions to JUnit 5:
+- `Assume.assumeTrue(cond)` → `Assumptions.assumeTrue(cond)`
+- `Assume.assumeTrue(msg, cond)` → `Assumptions.assumeTrue(cond, msg)` (parameter reorder)
+- `Assume.assumeFalse(cond)` → `Assumptions.assumeFalse(cond)`
+- `Assume.assumeFalse(msg, cond)` → `Assumptions.assumeFalse(cond, msg)` (parameter reorder)
+
+Note: `assumeNotNull()` and `assumeNoException()` have no direct JUnit 5 equivalents and require manual migration.
+
+### annotations5.sandbox-hint
+
+Contains rules for simple annotation migrations:
+- `@org.junit.Before` → `@BeforeEach`
+- `@org.junit.After` → `@AfterEach`
+- `@org.junit.BeforeClass` → `@BeforeAll`
+- `@org.junit.AfterClass` → `@AfterAll`
+- `@org.junit.Ignore` → `@Disabled` (preserves annotation value)
+- `@org.junit.Test` → `@Test` (simple migration; `@Test(expected=...)` and `@Test(timeout=...)` remain imperative)
+
+### DSL Engine Features
+
+The TriggerPattern DSL engine supports the following features used by these rules:
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Qualified call matching | ✅ | Match `Assert.assertEquals(...)` patterns |
+| Static import matching | ✅ | Match unqualified `assertEquals(...)` calls via static imports |
+| `replaceStaticImport` | ✅ | Replace `import static org.junit.Assert.*` with JUnit 5 equivalents |
+| Type guards (`instanceof`) | ✅ | Disambiguate 3-arg assertEquals (message vs. delta) |
+| Annotation matching | ✅ | Match and replace annotation types |
+| Annotation value preservation | ✅ | Preserve `@Ignore("reason")` → `@Disabled("reason")` |
+| Variadic placeholders (`$args$`) | ✅ | Match variable argument lists |
+| Import management | ✅ | `addImport`, `removeImport`, `addStaticImport`, `removeStaticImport` |
+
+### Bundle Activation
+
+All three hint files are activated together when `HINTFILE_BUNDLE_JUNIT5` is enabled via the preferences UI. The `HintFileCleanUpCore` maps this single toggle to the bundle IDs `"junit5"`, `"assume5"`, and `"annotations5"`.
+
+### Imperative Plugins Not Replaced by DSL
+
+The following plugins remain imperative because their transformations require structural analysis beyond pattern matching:
+- `AssertOptimizationJUnitPlugin` — semantic analysis for `assertTrue(a==b)` → `assertEquals(a,b)`
+- `ExternalResourceJUnitPlugin` — complex field refactoring with `@Rule` → `@RegisterExtension`
+- `RuleExpectedExceptionJUnitPlugin` — lambda wrapping
+- `TestExpectedJUnitPlugin` — `@Test(expected=...)` → `assertThrows()` (body wrapping)
+- `TestTimeoutJUnitPlugin` — `@Test(timeout=...)` → `@Timeout`
+- `TestJUnit3Plugin` — `TestCase` superclass removal
+- `LostTestFinderJUnitPlugin` — heuristic search
 
 ## Maintainers
 

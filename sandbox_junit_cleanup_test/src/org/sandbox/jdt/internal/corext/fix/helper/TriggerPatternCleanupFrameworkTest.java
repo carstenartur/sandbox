@@ -867,7 +867,6 @@ public class TriggerPatternCleanupFrameworkTest {
 
 		@Test
 		@DisplayName("DSL: @Before marker annotation → @BeforeEach via annotations5.sandbox-hint")
-		@org.junit.jupiter.api.Disabled("DSL-based annotation cleanup not yet wired to integration test infrastructure")
 		void testDsl_beforeAnnotation_markerAnnotation() throws CoreException {
 			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
@@ -902,7 +901,6 @@ public class TriggerPatternCleanupFrameworkTest {
 
 		@Test
 		@DisplayName("DSL: @Ignore(\"reason\") → @Disabled(\"reason\") preserves value via annotations5.sandbox-hint")
-		@org.junit.jupiter.api.Disabled("DSL-based annotation cleanup not yet wired to integration test infrastructure")
 		void testDsl_ignoreAnnotation_preservesValue() throws CoreException {
 			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
@@ -941,7 +939,6 @@ public class TriggerPatternCleanupFrameworkTest {
 
 		@Test
 		@DisplayName("DSL: Assume.assumeTrue() → Assumptions.assumeTrue() via assume5.sandbox-hint")
-		@org.junit.jupiter.api.Disabled("DSL-based assume cleanup not yet wired to integration test infrastructure")
 		void testDsl_assumeTrue_migration() throws CoreException {
 			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
@@ -980,7 +977,6 @@ public class TriggerPatternCleanupFrameworkTest {
 
 		@Test
 		@DisplayName("DSL: Assert.assertEquals() → Assertions.assertEquals() via junit5.sandbox-hint")
-		@org.junit.jupiter.api.Disabled("DSL-based assert cleanup not yet wired to integration test infrastructure")
 		void testDsl_assertEquals_migration() throws CoreException {
 			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
@@ -1019,7 +1015,6 @@ public class TriggerPatternCleanupFrameworkTest {
 
 		@Test
 		@DisplayName("DSL: Assert.assertThat() → MatcherAssert.assertThat() via junit5.sandbox-hint")
-		@org.junit.jupiter.api.Disabled("DSL-based assertThat cleanup not yet wired to integration test infrastructure")
 		void testDsl_assertThat_hamcrestMigration() throws CoreException {
 			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
