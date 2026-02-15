@@ -483,4 +483,59 @@ public final class HintFileRegistry {
 			loadedProjects.remove(project.getName());
 		}
 	}
+
+	/**
+	 * Registers a set of inferred rules as a new hint file in the registry.
+	 *
+	 * <p>The rules are wrapped in a {@link HintFile} with the tag
+	 * {@code "inferred"} and the given source commit ID for traceability.
+	 * The hint file is immediately available for CleanUp and QuickAssist.</p>
+	 *
+	 * @param hintFile     the hint file containing inferred rules
+	 * @param sourceCommit the commit ID from which the rules were derived
+	 * @since 1.2.6
+	 */
+	public void registerInferredRules(HintFile hintFile, String sourceCommit) {
+		String id = "inferred:" + sourceCommit; //$NON-NLS-1$
+		hintFile.setId(id);
+		if (hintFile.getTags() == null || hintFile.getTags().isEmpty()) {
+			hintFile.setTags(List.of("inferred", "mining", sourceCommit)); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		hintFiles.put(id, hintFile);
+		hintFilesByDeclaredId.put(id, hintFile);
+	}
+
+	/**
+	 * Returns all hint files that were inferred (have the "inferred" tag prefix).
+	 *
+	 * @return list of inferred hint files
+	 * @since 1.2.6
+	 */
+	public List<HintFile> getInferredHintFiles() {
+		List<HintFile> inferred = new ArrayList<>();
+		for (Map.Entry<String, HintFile> entry : hintFiles.entrySet()) {
+			if (entry.getKey().startsWith("inferred:")) { //$NON-NLS-1$
+				inferred.add(entry.getValue());
+			}
+		}
+		return inferred;
+	}
+
+	/**
+	 * Promotes an inferred hint file to a manual (user-authored) one by
+	 * removing the "inferred:" prefix from its ID and re-registering it.
+	 *
+	 * @param hintFileId the original inferred hint file ID
+	 * @since 1.2.6
+	 */
+	public void promoteToManual(String hintFileId) {
+		HintFile hintFile = hintFiles.remove(hintFileId);
+		if (hintFile != null) {
+			hintFilesByDeclaredId.remove(hintFileId);
+			String newId = hintFileId.replace("inferred:", "manual:"); //$NON-NLS-1$ //$NON-NLS-2$
+			hintFile.setId(newId);
+			hintFiles.put(newId, hintFile);
+			hintFilesByDeclaredId.put(newId, hintFile);
+		}
+	}
 }
