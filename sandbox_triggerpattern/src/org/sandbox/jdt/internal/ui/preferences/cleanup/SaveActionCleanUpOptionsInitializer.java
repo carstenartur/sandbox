@@ -34,5 +34,7 @@ public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsIniti
 		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_PERFORMANCE, CleanUpOptions.TRUE);
 		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA9, CleanUpOptions.TRUE);
 		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_ENCODING, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5, CleanUpOptions.TRUE);
 	}
 }

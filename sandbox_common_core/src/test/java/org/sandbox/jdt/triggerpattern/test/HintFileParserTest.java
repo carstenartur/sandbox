@@ -341,4 +341,144 @@ public class HintFileParserTest {
 		assertTrue(hintFile.getRules().get(2).isHintOnly());
 		assertEquals("Avoid raw types", hintFile.getRules().get(2).getDescription());
 	}
+
+	@Test
+	public void testParseReplaceStaticImportDirective() throws HintParseException {
+		String content = """
+			Assert.assertEquals($expected, $actual)
+			=> Assertions.assertEquals($expected, $actual)
+			addImport org.junit.jupiter.api.Assertions
+			removeImport org.junit.Assert
+			replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.getImportDirective(), "Rule should have import directives");
+		assertFalse(rule.getImportDirective().getReplaceStaticImports().isEmpty(),
+				"Rule should have replaceStaticImport directives");
+		assertEquals("org.junit.jupiter.api.Assertions",
+				rule.getImportDirective().getReplaceStaticImports().get("org.junit.Assert"));
+	}
+
+	@Test
+	public void testParseMultipleReplaceStaticImportDirectives() throws HintParseException {
+		String content = """
+			Assume.assumeTrue($cond)
+			=> Assumptions.assumeTrue($cond)
+			addImport org.junit.jupiter.api.Assumptions
+			removeImport org.junit.Assume
+			replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.getImportDirective());
+		assertEquals("org.junit.jupiter.api.Assumptions",
+				rule.getImportDirective().getReplaceStaticImports().get("org.junit.Assume"));
+		assertTrue(rule.getImportDirective().getAddImports().contains("org.junit.jupiter.api.Assumptions"));
+		assertTrue(rule.getImportDirective().getRemoveImports().contains("org.junit.Assume"));
+	}
+
+	@Test
+	public void testParseAnnotationRuleWithImports() throws HintParseException {
+		String content = """
+			@org.junit.Before
+			=> @BeforeEach
+			addImport org.junit.jupiter.api.BeforeEach
+			removeImport org.junit.Before
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(PatternKind.ANNOTATION, rule.sourcePattern().getKind());
+		assertEquals("@org.junit.Before", rule.sourcePattern().getValue());
+		assertFalse(rule.isHintOnly());
+		assertEquals(1, rule.alternatives().size());
+		assertEquals("@BeforeEach", rule.alternatives().get(0).replacementPattern());
+		assertNotNull(rule.getImportDirective());
+		assertTrue(rule.getImportDirective().getAddImports().contains("org.junit.jupiter.api.BeforeEach"));
+		assertTrue(rule.getImportDirective().getRemoveImports().contains("org.junit.Before"));
+	}
+
+	@Test
+	public void testParseAnnotations5File() throws HintParseException {
+		String content = """
+			<!id: annotations5>
+			<!description: JUnit 4 to JUnit 5 annotation migration>
+			<!severity: warning>
+			<!minJavaVersion: 8>
+			<!tags: junit, testing, migration>
+
+			@org.junit.Before
+			=> @BeforeEach
+			addImport org.junit.jupiter.api.BeforeEach
+			removeImport org.junit.Before
+			;;
+
+			@org.junit.After
+			=> @AfterEach
+			addImport org.junit.jupiter.api.AfterEach
+			removeImport org.junit.After
+			;;
+
+			@org.junit.Ignore
+			=> @Disabled
+			addImport org.junit.jupiter.api.Disabled
+			removeImport org.junit.Ignore
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals("annotations5", hintFile.getId());
+		assertEquals(3, hintFile.getRules().size());
+
+		// All rules should be annotation patterns
+		for (TransformationRule rule : hintFile.getRules()) {
+			assertEquals(PatternKind.ANNOTATION, rule.sourcePattern().getKind());
+			assertFalse(rule.isHintOnly());
+			assertNotNull(rule.getImportDirective());
+		}
+
+		// Check specific rules
+		assertEquals("@org.junit.Before", hintFile.getRules().get(0).sourcePattern().getValue());
+		assertEquals("@BeforeEach", hintFile.getRules().get(0).alternatives().get(0).replacementPattern());
+
+		assertEquals("@org.junit.After", hintFile.getRules().get(1).sourcePattern().getValue());
+		assertEquals("@AfterEach", hintFile.getRules().get(1).alternatives().get(0).replacementPattern());
+
+		assertEquals("@org.junit.Ignore", hintFile.getRules().get(2).sourcePattern().getValue());
+		assertEquals("@Disabled", hintFile.getRules().get(2).alternatives().get(0).replacementPattern());
+	}
+
+	@Test
+	public void testParseAssertThatHamcrestRule() throws HintParseException {
+		String content = """
+			Assert.assertThat($actual, $matcher)
+			=> MatcherAssert.assertThat($actual, $matcher)
+			addImport org.hamcrest.MatcherAssert
+			removeImport org.junit.Assert
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(PatternKind.METHOD_CALL, rule.sourcePattern().getKind());
+		assertEquals("MatcherAssert.assertThat($actual, $matcher)",
+				rule.alternatives().get(0).replacementPattern());
+		assertTrue(rule.getImportDirective().getAddImports().contains("org.hamcrest.MatcherAssert"));
+		assertTrue(rule.getImportDirective().getRemoveImports().contains("org.junit.Assert"));
+	}
 }

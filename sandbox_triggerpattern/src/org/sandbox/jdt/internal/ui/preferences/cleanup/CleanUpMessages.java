@@ -30,6 +30,8 @@ public class CleanUpMessages extends NLS {
 	public static String HintFileTabPage_CheckboxName_BundlePerformance;
 	public static String HintFileTabPage_CheckboxName_BundleModernizeJava9;
 	public static String HintFileTabPage_CheckboxName_BundleModernizeJava11;
+	public static String HintFileTabPage_CheckboxName_BundleEncoding;
+	public static String HintFileTabPage_CheckboxName_BundleJunit5;
 
 	static {
 		// initialize resource bundle

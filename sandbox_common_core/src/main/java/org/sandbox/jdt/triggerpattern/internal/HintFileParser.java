@@ -316,6 +316,15 @@ public final class HintFileParser {
 				ruleLineIdx++;
 				continue;
 			}
+			if (altLine.startsWith("replaceStaticImport ")) { //$NON-NLS-1$
+				String args = altLine.substring(20).trim();
+				String[] parts = args.split("\\s+"); //$NON-NLS-1$
+				if (parts.length == 2) {
+					currentImports.replaceStaticImport(parts[0], parts[1]);
+				}
+				ruleLineIdx++;
+				continue;
+			}
 			
 			if (!altLine.startsWith("=>")) { //$NON-NLS-1$
 				// Might be continuation of source pattern - for now, error
