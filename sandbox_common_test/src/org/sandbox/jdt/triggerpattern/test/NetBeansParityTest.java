@@ -274,13 +274,12 @@ public class NetBeansParityTest {
 		assertEquals(1, matches.size());
 		Match match = matches.get(0);
 		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
-		HintContext ctx = new HintContext(cu, null, match, rewrite);
 		
 		// Replace "$x + 1" with just "$x"
-		FixUtilities.rewriteFix(ctx, "$x");
+		FixUtilities.rewriteFix(match, rewrite, "$x");
 		
 		// Verify the replacement was created (checking that no exception was thrown)
-		assertNotNull(ctx.getASTRewrite());
+		assertNotNull(rewrite);
 	}
 	
 	@Test
@@ -300,13 +299,12 @@ public class NetBeansParityTest {
 		assertEquals(1, matches.size());
 		Match match = matches.get(0);
 		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
-		HintContext ctx = new HintContext(cu, null, match, rewrite);
 		
 		// Replace "$x + 1" with "++$x" (embedded placeholder)
-		FixUtilities.rewriteFix(ctx, "++$x");
+		FixUtilities.rewriteFix(match, rewrite, "++$x");
 		
 		// Verify the replacement was created
-		assertNotNull(ctx.getASTRewrite());
+		assertNotNull(rewrite);
 	}
 	
 	@Test
@@ -326,11 +324,10 @@ public class NetBeansParityTest {
 		assertEquals(1, matches.size());
 		Match match = matches.get(0);
 		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
-		HintContext ctx = new HintContext(cu, null, match, rewrite);
 		
 		// Invalid pattern should throw exception
 		try {
-			FixUtilities.rewriteFix(ctx, "invalid syntax @#$");
+			FixUtilities.rewriteFix(match, rewrite, "invalid syntax @#$");
 			// Should not reach here
 			assertTrue(false, "Expected IllegalArgumentException");
 		} catch (IllegalArgumentException e) {
@@ -356,9 +353,8 @@ public class NetBeansParityTest {
 		
 		// Verify it works for expressions
 		ASTRewrite rewrite1 = ASTRewrite.create(cu1.getAST());
-		HintContext ctx1 = new HintContext(cu1, null, matches1.get(0), rewrite1);
-		FixUtilities.rewriteFix(ctx1, "$x");
-		assertNotNull(ctx1.getASTRewrite());
+		FixUtilities.rewriteFix(matches1.get(0), rewrite1, "$x");
+		assertNotNull(rewrite1);
 	}
 	
 	@Test
@@ -378,13 +374,12 @@ public class NetBeansParityTest {
 		assertEquals(1, matches.size(), "Should find one constructor match");
 		Match match = matches.get(0);
 		ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
-		HintContext ctx = new HintContext(cu, null, match, rewrite);
 		
 		// Replace constructor with StandardCharsets version
-		FixUtilities.rewriteFix(ctx, "new String($bytes, StandardCharsets.UTF_8)");
+		FixUtilities.rewriteFix(match, rewrite, "new String($bytes, StandardCharsets.UTF_8)");
 		
 		// Verify the rewrite was created
-		assertNotNull(ctx.getASTRewrite());
+		assertNotNull(rewrite);
 		
 		// Verify placeholders are bound
 		assertTrue(match.getBindings().containsKey("$bytes"));
