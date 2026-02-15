@@ -13,6 +13,18 @@
       </hintProvider>
    </extension>
    
+   <extension point="org.eclipse.ui.views">
+      <category
+            id="org.sandbox.jdt.views"
+            name="Sandbox" />
+      <view
+            category="org.sandbox.jdt.views"
+            class="org.sandbox.jdt.internal.ui.views.mining.RefactoringMiningView"
+            icon="icons/mining.png"
+            id="org.sandbox.jdt.views.refactoringMining"
+            name="Refactoring Mining" />
+   </extension>
+   
    <extension point="org.eclipse.jdt.ui.cleanUps">
       <cleanUpConfigurationUI 
             class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" 
