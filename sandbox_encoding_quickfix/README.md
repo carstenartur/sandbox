@@ -270,7 +270,7 @@ xvfb-run --auto-servernum mvn test -pl sandbox_encoding_quickfix_test
 
 - **[Architecture](ARCHITECTURE.md)** - Implementation details, design patterns, and internal components
 - **[TODO](TODO.md)** - Pending features and known issues
-- **[Main README](../README.md#2-sandbox_encoding_quickfix)** - Project overview
+- **[Main README](../README.md#encoding-cleanup-sandbox_encoding_quickfix)** - Project overview
 
 ## References
 

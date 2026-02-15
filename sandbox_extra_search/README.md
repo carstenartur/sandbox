@@ -75,7 +75,7 @@ Common searches when upgrading Java:
 
 - **[Architecture](ARCHITECTURE.md)** - Implementation details
 - **[TODO](TODO.md)** - Future enhancements
-- **[Main README](../README.md#3-sandbox_extra_search)** - Overview
+- **[Main README](../README.md#extra-search-sandbox_extra_search)** - Overview
 
 ## Integration
 

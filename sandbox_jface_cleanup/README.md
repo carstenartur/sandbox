@@ -185,7 +185,7 @@ This cleanup aligns with Eclipse Platform guidelines:
 
 - **[Architecture](ARCHITECTURE.md)** - Implementation details and AST visitor patterns
 - **[TODO](TODO.md)** - Future enhancements
-- **[Main README](../README.md#7-sandbox_jface_cleanup)** - Detailed examples
+- **[Main README](../README.md#jface-submonitor-migration-sandbox_jface_cleanup)** - Detailed examples
 
 ## Testing
 

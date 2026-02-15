@@ -83,6 +83,7 @@ All sandbox plugins depend on `sandbox_common` for:
 ```
 sandbox_common (this module)
     ↑
+    ├── sandbox_common_core (lightweight Plain Maven JAR extraction)
     ├── sandbox_encoding_quickfix
     ├── sandbox_platform_helper
     ├── sandbox_functional_converter
@@ -93,6 +94,8 @@ sandbox_common (this module)
     ├── sandbox_usage_view
     └── sandbox_extra_search
 ```
+
+`sandbox_common_core` is a lightweight Plain Maven JAR extraction of `sandbox_common` without OSGi dependencies. It contains the TriggerPattern engine, pattern matching, hint file parsing, batch transformation processing, and HelperVisitor utilities. It can be used standalone outside Eclipse for CLI tools, testing, and refactoring mining.
 
 ## Design Principles
 

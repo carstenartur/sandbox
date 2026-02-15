@@ -102,7 +102,7 @@ Currently, the preference system supports controlling startup behavior. Addition
 
 - **[Architecture](ARCHITECTURE.md)** - Implementation details
 - **[TODO](TODO.md)** - Future enhancements
-- **[Main README](../README.md#4-sandbox_usage_view)** - Overview
+- **[Main README](../README.md#usage-view-sandbox_usage_view)** - Overview
 
 ## Integration
 
