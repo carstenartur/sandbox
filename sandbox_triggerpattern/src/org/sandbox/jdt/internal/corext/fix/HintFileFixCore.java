@@ -23,6 +23,9 @@ import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
@@ -188,6 +191,9 @@ public class HintFileFixCore {
 				}
 
 				// Handle replaceStaticImport directives
+				// Note: This may execute multiple times for the same imports when multiple
+				// rules match in the same file. ImportRewrite handles duplicate add/remove
+				// operations gracefully, so this is an acceptable tradeoff for simplicity.
 				for (Map.Entry<String, String> entry : imports.getReplaceStaticImports().entrySet()) {
 					String oldType = entry.getKey();
 					String newType = entry.getValue();
@@ -230,8 +236,31 @@ public class HintFileFixCore {
 				if (annotationName.startsWith("@")) { //$NON-NLS-1$
 					annotationName = annotationName.substring(1);
 				}
-				MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
-				newAnnotation.setTypeName(ast.newName(annotationName));
+				Annotation newAnnotation;
+				if (matchedNode instanceof SingleMemberAnnotation oldSingleMember) {
+					// Preserve the value: @Ignore("reason") → @Disabled("reason")
+					SingleMemberAnnotation newSingleMember = ast.newSingleMemberAnnotation();
+					newSingleMember.setTypeName(ast.newName(annotationName));
+					newSingleMember.setValue((Expression) ASTNode.copySubtree(ast, oldSingleMember.getValue()));
+					newAnnotation = newSingleMember;
+				} else if (matchedNode instanceof NormalAnnotation oldNormal) {
+					// Preserve member-value pairs: @Test(expected=X.class) → @Test(expected=X.class)
+					NormalAnnotation newNormal = ast.newNormalAnnotation();
+					newNormal.setTypeName(ast.newName(annotationName));
+					for (Object obj : oldNormal.values()) {
+						MemberValuePair oldPair = (MemberValuePair) obj;
+						MemberValuePair newPair = ast.newMemberValuePair();
+						newPair.setName(ast.newSimpleName(oldPair.getName().getIdentifier()));
+						newPair.setValue((Expression) ASTNode.copySubtree(ast, oldPair.getValue()));
+						newNormal.values().add(newPair);
+					}
+					newAnnotation = newNormal;
+				} else {
+					// MarkerAnnotation: @Before → @BeforeEach
+					MarkerAnnotation newMarker = ast.newMarkerAnnotation();
+					newMarker.setTypeName(ast.newName(annotationName));
+					newAnnotation = newMarker;
+				}
 				rewrite.replace(matchedNode, newAnnotation, group);
 			}
 		}

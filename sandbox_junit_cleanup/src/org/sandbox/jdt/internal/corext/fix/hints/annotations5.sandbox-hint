@@ -39,7 +39,9 @@ removeImport org.junit.AfterClass
 
 // --- Test Annotations ---
 
-// @Ignore → @Disabled (marker annotation without value)
+// @Ignore → @Disabled
+// Note: annotations with parameters (e.g., @Ignore("reason")) will preserve
+// their values (e.g., @Disabled("reason")) via the annotation rewrite support
 @org.junit.Ignore
 => @Disabled
 addImport org.junit.jupiter.api.Disabled

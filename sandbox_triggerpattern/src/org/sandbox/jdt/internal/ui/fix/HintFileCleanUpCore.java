@@ -133,6 +133,9 @@ public class HintFileCleanUpCore extends AbstractCleanUp {
 		}
 		if (isEnabled(HINTFILE_BUNDLE_JUNIT5)) {
 			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_JUNIT5);
+			// assume5 and annotations5 are part of the JUnit 4→5 migration bundle
+			enabled.add("assume5"); //$NON-NLS-1$
+			enabled.add("annotations5"); //$NON-NLS-1$
 		}
 		return enabled;
 	}
