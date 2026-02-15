@@ -155,6 +155,34 @@ Provides abstraction for reading Git repositories and extracting file diffs.
 - `inferFromCommit(git, repoPath, commitId)` — infers rules from a single commit
 - `inferFromHistory(git, repoPath, maxCommits)` — infers and groups rules across multiple commits
 
+### Eclipse UI — RefactoringMiningView (Phase 4)
+
+**Package**: `org.sandbox.jdt.internal.ui.views.mining` (in `sandbox_triggerpattern`)
+
+Provides an Eclipse View for browsing Git commit history and discovering transformation rules.
+
+| Class | Purpose |
+|-------|---------|
+| `RefactoringMiningView` | Eclipse `ViewPart` with SashForm (commit table + detail panel), toolbar actions |
+| `CommitTableEntry` | Mutable model wrapping `CommitInfo` + analysis status and inferred rules |
+| `CommitTableContentProvider` | `IStructuredContentProvider` for the commit table |
+| `CommitTableLabelProvider` | `ITableLabelProvider` with columns: Commit, Message, Files, DSL Status |
+| `CommitAnalysisJob` | Eclipse `Job` that analyzes a single commit in the background |
+| `CommitAnalysisScheduler` | Orchestrates parallel analysis jobs with `Display.asyncExec()` UI updates |
+| `InferredRuleDetailPanel` | Detail panel with styled text, checkboxes, and action buttons |
+
+**Registration**: `plugin.xml` → `org.eclipse.ui.views` extension with id `org.sandbox.jdt.views.refactoringMining`
+
+### HintFileRegistry Integration (Phase 5.1)
+
+The `HintFileRegistry` has been extended with methods for managing inferred rules:
+
+| Method | Purpose |
+|--------|---------|
+| `registerInferredRules(hintFile, sourceCommit)` | Registers inferred rules with "inferred:" ID prefix and tags |
+| `getInferredHintFiles()` | Returns only hint files with "inferred:" ID prefix |
+| `promoteToManual(hintFileId)` | Renames "inferred:" → "manual:" to promote a rule set |
+
 ### MYCleanUpConstants
 
 **Location**: `org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants`
