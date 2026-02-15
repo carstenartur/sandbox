@@ -16,5 +16,8 @@
 		<hintFile
 			id="assume5"
 			resource="org/sandbox/jdt/internal/corext/fix/hints/assume5.sandbox-hint" />
+		<hintFile
+			id="annotations5"
+			resource="org/sandbox/jdt/internal/corext/fix/hints/annotations5.sandbox-hint" />
 	</extension>
 </plugin>

@@ -19,8 +19,10 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
@@ -222,6 +224,15 @@ public class HintFileFixCore {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
 					rewrite.replace(matchedNode, copy, group);
 				}
+			} else if (matchedNode instanceof Annotation) {
+				// Handle annotation replacement (e.g., @Before → @BeforeEach)
+				String annotationName = replacement.trim();
+				if (annotationName.startsWith("@")) { //$NON-NLS-1$
+					annotationName = annotationName.substring(1);
+				}
+				MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
+				newAnnotation.setTypeName(ast.newName(annotationName));
+				rewrite.replace(matchedNode, newAnnotation, group);
 			}
 		}
 	}

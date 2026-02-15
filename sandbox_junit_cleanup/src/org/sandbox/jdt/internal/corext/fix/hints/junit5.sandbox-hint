@@ -213,3 +213,20 @@ addImport org.junit.jupiter.api.Assertions
 removeImport org.junit.Assert
 replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
 ;;
+
+// --- assertThat (Hamcrest special case) ---
+
+// Assert.assertThat(actual, matcher) → MatcherAssert.assertThat(actual, matcher)
+// Note: JUnit 5 does not have assertThat - uses Hamcrest's MatcherAssert instead
+Assert.assertThat($actual, $matcher)
+=> MatcherAssert.assertThat($actual, $matcher)
+addImport org.hamcrest.MatcherAssert
+removeImport org.junit.Assert
+;;
+
+// Assert.assertThat(message, actual, matcher) → MatcherAssert.assertThat(message, actual, matcher)
+Assert.assertThat($msg, $actual, $matcher)
+=> MatcherAssert.assertThat($msg, $actual, $matcher)
+addImport org.hamcrest.MatcherAssert
+removeImport org.junit.Assert
+;;

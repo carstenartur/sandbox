@@ -1,0 +1,55 @@
+// annotations5.sandbox-hint — JUnit 4 → JUnit 5 annotation migration patterns
+// Migrates JUnit 4 lifecycle and test annotations to their JUnit 5 equivalents
+
+<!id: annotations5>
+<!description: JUnit 4 to JUnit 5 annotation migration patterns>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: junit, testing, migration, annotations>
+
+// --- Lifecycle Annotations ---
+
+// @Before → @BeforeEach
+@org.junit.Before
+=> @BeforeEach
+addImport org.junit.jupiter.api.BeforeEach
+removeImport org.junit.Before
+;;
+
+// @After → @AfterEach
+@org.junit.After
+=> @AfterEach
+addImport org.junit.jupiter.api.AfterEach
+removeImport org.junit.After
+;;
+
+// @BeforeClass → @BeforeAll
+@org.junit.BeforeClass
+=> @BeforeAll
+addImport org.junit.jupiter.api.BeforeAll
+removeImport org.junit.BeforeClass
+;;
+
+// @AfterClass → @AfterAll
+@org.junit.AfterClass
+=> @AfterAll
+addImport org.junit.jupiter.api.AfterAll
+removeImport org.junit.AfterClass
+;;
+
+// --- Test Annotations ---
+
+// @Ignore → @Disabled (marker annotation without value)
+@org.junit.Ignore
+=> @Disabled
+addImport org.junit.jupiter.api.Disabled
+removeImport org.junit.Ignore
+;;
+
+// @Test → @Test (simple annotation migration, JUnit 4 → JUnit 5)
+// Note: @Test(expected=...) and @Test(timeout=...) are handled imperatively
+@org.junit.Test
+=> @Test
+addImport org.junit.jupiter.api.Test
+removeImport org.junit.Test
+;;
