@@ -44,7 +44,8 @@ class RewriteRuleTest {
         
         assertNotNull(rewriteRule, "@RewriteRule annotation should be present");
         assertEquals("@BeforeEach", rewriteRule.replaceWith());
-        assertArrayEquals(new String[]{"org.junit.Before"}, rewriteRule.removeImports());
+        assertArrayEquals(new String[]{}, rewriteRule.removeImports(),
+                "removeImports should be empty (derived from @CleanupPattern.qualifiedType)");
         assertArrayEquals(new String[]{"org.junit.jupiter.api.BeforeEach"}, rewriteRule.addImports());
     }
     
@@ -56,7 +57,8 @@ class RewriteRuleTest {
         
         assertNotNull(rewriteRule, "@RewriteRule annotation should be present");
         assertEquals("@AfterEach", rewriteRule.replaceWith());
-        assertArrayEquals(new String[]{"org.junit.After"}, rewriteRule.removeImports());
+        assertArrayEquals(new String[]{}, rewriteRule.removeImports(),
+                "removeImports should be empty (derived from @CleanupPattern.qualifiedType)");
         assertArrayEquals(new String[]{"org.junit.jupiter.api.AfterEach"}, rewriteRule.addImports());
     }
     
@@ -68,7 +70,8 @@ class RewriteRuleTest {
         
         assertNotNull(rewriteRule, "@RewriteRule annotation should be present");
         assertEquals("@BeforeAll", rewriteRule.replaceWith());
-        assertArrayEquals(new String[]{"org.junit.BeforeClass"}, rewriteRule.removeImports());
+        assertArrayEquals(new String[]{}, rewriteRule.removeImports(),
+                "removeImports should be empty (derived from @CleanupPattern.qualifiedType)");
         assertArrayEquals(new String[]{"org.junit.jupiter.api.BeforeAll"}, rewriteRule.addImports());
     }
     
@@ -80,7 +83,8 @@ class RewriteRuleTest {
         
         assertNotNull(rewriteRule, "@RewriteRule annotation should be present");
         assertEquals("@AfterAll", rewriteRule.replaceWith());
-        assertArrayEquals(new String[]{"org.junit.AfterClass"}, rewriteRule.removeImports());
+        assertArrayEquals(new String[]{}, rewriteRule.removeImports(),
+                "removeImports should be empty (derived from @CleanupPattern.qualifiedType)");
         assertArrayEquals(new String[]{"org.junit.jupiter.api.AfterAll"}, rewriteRule.addImports());
     }
     

@@ -89,7 +89,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * @return the pattern for matching, or null if no @CleanupPattern annotation is present
      */
     public Pattern getPattern() {
-        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        CleanupPattern annotation = getCleanupPatternAnnotation();
         if (annotation == null) {
             return null; // Subclass uses getPatterns() instead
         }
@@ -121,7 +121,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * @return the cleanup ID, or empty string if annotation is not present or cleanupId is not set
      */
     public String getCleanupId() {
-        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        CleanupPattern annotation = getCleanupPatternAnnotation();
         return annotation != null ? annotation.cleanupId() : ""; //$NON-NLS-1$
     }
     
@@ -131,7 +131,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * @return the description, or empty string if annotation is not present or description is not set
      */
     public String getDescription() {
-        CleanupPattern annotation = this.getClass().getAnnotation(CleanupPattern.class);
+        CleanupPattern annotation = getCleanupPatternAnnotation();
         return annotation != null ? annotation.description() : ""; //$NON-NLS-1$
     }
     
@@ -311,6 +311,19 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      */
     protected RewriteRule getRewriteRule() {
         return this.getClass().getAnnotation(RewriteRule.class);
+    }
+    
+    /**
+     * Returns the CleanupPattern annotation for this plugin.
+     * 
+     * <p>Subclasses can override this method to provide a CleanupPattern from a different source
+     * (e.g., when using composition/delegation patterns where the annotation is on
+     * an outer class).</p>
+     * 
+     * @return the CleanupPattern annotation, or null if not present
+     */
+    protected CleanupPattern getCleanupPatternAnnotation() {
+        return this.getClass().getAnnotation(CleanupPattern.class);
     }
     
     /**
@@ -512,7 +525,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     private void processImports(ImportRewrite importRewriter, RewriteRule rewriteRule) {
         // Phase 3: auto-detect removeImport from @CleanupPattern.qualifiedType
         if (rewriteRule.removeImports().length == 0) {
-            CleanupPattern cleanupPattern = this.getClass().getAnnotation(CleanupPattern.class);
+            CleanupPattern cleanupPattern = getCleanupPatternAnnotation();
             if (cleanupPattern != null && !cleanupPattern.qualifiedType().isEmpty()) {
                 importRewriter.removeImport(cleanupPattern.qualifiedType());
             }

@@ -303,6 +303,15 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         protected RewriteRule getRewriteRule() {
             return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(RewriteRule.class);
         }
+        
+        /**
+         * Override to get the CleanupPattern annotation from the outer plugin class
+         * rather than this delegate class.
+         */
+        @Override
+        protected CleanupPattern getCleanupPatternAnnotation() {
+            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(CleanupPattern.class);
+        }
     }
     
     /**
