@@ -31,7 +31,7 @@ All 7 phases of the [TriggerPattern DSL Implementierungsplan (#709)](https://git
 See [sandbox_common/TODO.md](../sandbox_common/TODO.md#implementation-status-vs-issue-709) for the detailed per-phase checklist.
 
 **Closeable related issues**: #709 (all phases done), #722 (extension points), #723 (reporting + Problem-View), #724 (per-bundle preferences for all 6 bundles), #725 (editor support).
-**Remaining related issues**: #729 (DSL-based JUnit migration — Phase 1 replaceStaticImport + Phase 3 assume5 done; type guards remain).
+**Remaining related issues**: #729 (DSL-based JUnit migration — Phases 1, 3, 4, 5 done; Phase 2 type guards and Phase 6 complex annotation params remain).
 
 ### In Progress
 - [ ] Additional pattern variations
