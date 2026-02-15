@@ -17,13 +17,12 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.sandbox.jdt.internal.common.NodeMatcher;
 import org.sandbox.jdt.internal.corext.util.VariableResolver;
 
 /**
@@ -112,19 +111,14 @@ public final class CollectPatternDetector {
 	 * @return a COLLECT operation if detected, null otherwise
 	 */
 	public ProspectiveOperation detectCollectOperation(Statement stmt) {
-		if (!(stmt instanceof ExpressionStatement)) {
-			return null;
-		}
-
-		ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-		Expression expr = exprStmt.getExpression();
-
-		// Check for method invocation: result.add(item)
-		if (expr instanceof MethodInvocation) {
-			return detectAddMethodPattern((MethodInvocation) expr, stmt);
-		}
-
-		return null;
+		final ProspectiveOperation[] result = {null};
+		NodeMatcher.on(stmt)
+			.ifExpressionStatement(exprStmt -> {
+				Expression expr = exprStmt.getExpression();
+				NodeMatcher.on(expr)
+					.ifMethodInvocation(mi -> result[0] = detectAddMethodPattern(mi, stmt));
+			});
+		return result[0];
 	}
 
 	/**
@@ -183,42 +177,38 @@ public final class CollectPatternDetector {
 	 * @return the variable name if it's an empty collection initialization, null otherwise
 	 */
 	public static String isEmptyCollectionDeclaration(Statement stmt) {
-		if (!(stmt instanceof VariableDeclarationStatement)) {
-			return null;
-		}
+		final String[] result = {null};
+		NodeMatcher.on(stmt)
+			.ifVariableDeclaration(varDecl -> {
+				if (varDecl.fragments().size() != 1) {
+					return;
+				}
 
-		VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;
-		if (varDecl.fragments().size() != 1) {
-			return null;
-		}
+				VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);
+				Expression initializer = fragment.getInitializer();
 
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) varDecl.fragments().get(0);
-		Expression initializer = fragment.getInitializer();
+				// Check if initialized with new ArrayList<>() or new HashSet<>()
+				if (!(initializer instanceof ClassInstanceCreation creation)) {
+					return;
+				}
 
-		// Check if initialized with new ArrayList<>() or new HashSet<>()
-		if (!(initializer instanceof ClassInstanceCreation)) {
-			return null;
-		}
+				// Check that no arguments are passed (empty collection)
+				if (!creation.arguments().isEmpty()) {
+					return;
+				}
 
-		ClassInstanceCreation creation = (ClassInstanceCreation) initializer;
-		
-		// Check that no arguments are passed (empty collection)
-		if (!creation.arguments().isEmpty()) {
-			return null;
-		}
+				ITypeBinding typeBinding = creation.resolveTypeBinding();
+				if (typeBinding == null) {
+					return;
+				}
 
-		ITypeBinding typeBinding = creation.resolveTypeBinding();
-		if (typeBinding == null) {
-			return null;
-		}
-
-		// Check if it's a supported collection type
-		String qualifiedName = typeBinding.getErasure().getQualifiedName();
-		if (CollectorType.fromCollectionType(qualifiedName) != null) {
-			return fragment.getName().getIdentifier();
-		}
-
-		return null;
+				// Check if it's a supported collection type
+				String qualifiedName = typeBinding.getErasure().getQualifiedName();
+				if (CollectorType.fromCollectionType(qualifiedName) != null) {
+					result[0] = fragment.getName().getIdentifier();
+				}
+			});
+		return result[0];
 	}
 
 	/**
@@ -229,21 +219,17 @@ public final class CollectPatternDetector {
 	 * @return the expression to be collected, or null if none
 	 */
 	public Expression extractCollectExpression(Statement stmt) {
-		if (!(stmt instanceof ExpressionStatement)) {
-			return null;
-		}
-
-		ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-		Expression expr = exprStmt.getExpression();
-
-		if (expr instanceof MethodInvocation) {
-			MethodInvocation methodInv = (MethodInvocation) expr;
-			if ("add".equals(methodInv.getName().getIdentifier()) && !methodInv.arguments().isEmpty()) {
-				return (Expression) methodInv.arguments().get(0);
-			}
-		}
-
-		return null;
+		final Expression[] result = {null};
+		NodeMatcher.on(stmt)
+			.ifExpressionStatement(exprStmt -> {
+				NodeMatcher.on(exprStmt.getExpression())
+					.ifMethodInvocation(methodInv -> {
+						if ("add".equals(methodInv.getName().getIdentifier()) && !methodInv.arguments().isEmpty()) { //$NON-NLS-1$
+							result[0] = (Expression) methodInv.arguments().get(0);
+						}
+					});
+			});
+		return result[0];
 	}
 
 	/**
