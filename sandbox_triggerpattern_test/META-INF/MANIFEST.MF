@@ -20,5 +20,6 @@ Import-Package: org.junit.jupiter.api;version="5.7.1",
  org.junit.jupiter.params;version="5.7.1",
  org.junit.jupiter.params.provider;version="5.7.1",
  org.opentest4j;version="1.2.0",
- org.sandbox.jdt.triggerpattern.api
+ org.sandbox.jdt.triggerpattern.api,
+ org.sandbox.jdt.triggerpattern.eclipse
 Automatic-Module-Name: sandbox.triggerpattern.test

@@ -29,7 +29,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.FixUtilities;
-import org.sandbox.jdt.triggerpattern.api.HintContext;
+import org.sandbox.jdt.triggerpattern.eclipse.HintContext;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;

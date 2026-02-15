@@ -27,5 +27,6 @@ Import-Package: org.junit.jupiter.api;version="5.7.1",
  org.sandbox.jdt.internal.common,
  org.sandbox.jdt.internal.corext.fix2,
  org.sandbox.jdt.triggerpattern.api,
+ org.sandbox.jdt.triggerpattern.eclipse,
  org.sandbox.jdt.triggerpattern.internal
 Automatic-Module-Name: sandbox.common.test

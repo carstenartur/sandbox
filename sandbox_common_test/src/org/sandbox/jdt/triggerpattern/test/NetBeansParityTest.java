@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.ConstraintVariableType;
 import org.sandbox.jdt.triggerpattern.api.FixUtilities;
 import org.sandbox.jdt.triggerpattern.api.Hint;
-import org.sandbox.jdt.triggerpattern.api.HintContext;
+import org.sandbox.jdt.triggerpattern.eclipse.HintContext;
 import org.sandbox.jdt.triggerpattern.api.HintKind;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.Pattern;

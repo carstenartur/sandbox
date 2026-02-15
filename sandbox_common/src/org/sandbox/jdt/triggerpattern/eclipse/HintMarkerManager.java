@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.triggerpattern.api;
+package org.sandbox.jdt.triggerpattern.eclipse;
 
 import java.util.List;
 

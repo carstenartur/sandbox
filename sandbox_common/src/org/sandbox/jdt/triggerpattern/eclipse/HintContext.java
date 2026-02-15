@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.triggerpattern.api;
+package org.sandbox.jdt.triggerpattern.eclipse;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.sandbox.jdt.triggerpattern.api.Match;
 
 /**
  * Context information provided to hint implementations.
