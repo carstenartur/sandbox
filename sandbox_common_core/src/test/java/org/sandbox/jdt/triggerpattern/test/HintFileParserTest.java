@@ -341,4 +341,48 @@ public class HintFileParserTest {
 		assertTrue(hintFile.getRules().get(2).isHintOnly());
 		assertEquals("Avoid raw types", hintFile.getRules().get(2).getDescription());
 	}
+
+	@Test
+	public void testParseReplaceStaticImportDirective() throws HintParseException {
+		String content = """
+			Assert.assertEquals($expected, $actual)
+			=> Assertions.assertEquals($expected, $actual)
+			addImport org.junit.jupiter.api.Assertions
+			removeImport org.junit.Assert
+			replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.getImportDirective(), "Rule should have import directives");
+		assertFalse(rule.getImportDirective().getReplaceStaticImports().isEmpty(),
+				"Rule should have replaceStaticImport directives");
+		assertEquals("org.junit.jupiter.api.Assertions",
+				rule.getImportDirective().getReplaceStaticImports().get("org.junit.Assert"));
+	}
+
+	@Test
+	public void testParseMultipleReplaceStaticImportDirectives() throws HintParseException {
+		String content = """
+			Assume.assumeTrue($cond)
+			=> Assumptions.assumeTrue($cond)
+			addImport org.junit.jupiter.api.Assumptions
+			removeImport org.junit.Assume
+			replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.getImportDirective());
+		assertEquals("org.junit.jupiter.api.Assumptions",
+				rule.getImportDirective().getReplaceStaticImports().get("org.junit.Assume"));
+		assertTrue(rule.getImportDirective().getAddImports().contains("org.junit.jupiter.api.Assumptions"));
+		assertTrue(rule.getImportDirective().getRemoveImports().contains("org.junit.Assume"));
+	}
 }

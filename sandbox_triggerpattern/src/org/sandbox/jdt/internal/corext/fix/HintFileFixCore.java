@@ -67,6 +67,8 @@ public class HintFileFixCore {
 		HintFileRegistry registry = HintFileRegistry.getInstance();
 		// Ensure bundled libraries are loaded
 		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());
+		// Load extension-point contributed hint files (encoding, junit5, etc.)
+		registry.loadFromExtensions();
 
 		// Load project-level .sandbox-hint files if available
 		if (compilationUnit.getJavaElement() != null
@@ -180,6 +182,31 @@ public class HintFileFixCore {
 						String type = removeStatic.substring(0, lastDot);
 						String member = removeStatic.substring(lastDot + 1);
 						importRewrite.removeStaticImport(type + "." + member); //$NON-NLS-1$
+					}
+				}
+
+				// Handle replaceStaticImport directives
+				for (Map.Entry<String, String> entry : imports.getReplaceStaticImports().entrySet()) {
+					String oldType = entry.getKey();
+					String newType = entry.getValue();
+					// Find existing static imports from oldType and replace with newType
+					CompilationUnit cu = cuRewrite.getRoot();
+					for (Object importObj : cu.imports()) {
+						org.eclipse.jdt.core.dom.ImportDeclaration importDecl =
+								(org.eclipse.jdt.core.dom.ImportDeclaration) importObj;
+						if (importDecl.isStatic()) {
+							String importName = importDecl.getName().getFullyQualifiedName();
+							if (importDecl.isOnDemand() && importName.equals(oldType)) {
+								// Wildcard: import static org.junit.Assert.* → import static org.junit.jupiter.api.Assertions.*
+								importRewrite.removeStaticImport(oldType + ".*"); //$NON-NLS-1$
+								importRewrite.addStaticImport(newType, "*", false); //$NON-NLS-1$
+							} else if (importName.startsWith(oldType + ".")) { //$NON-NLS-1$
+								// Specific: import static org.junit.Assert.assertEquals → ...Assertions.assertEquals
+								String member = importName.substring(oldType.length() + 1);
+								importRewrite.removeStaticImport(importName);
+								importRewrite.addStaticImport(newType, member, false);
+							}
+						}
 					}
 				}
 			}

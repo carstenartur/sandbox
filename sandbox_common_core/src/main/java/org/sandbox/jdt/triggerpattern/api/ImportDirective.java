@@ -16,7 +16,9 @@ package org.sandbox.jdt.triggerpattern.api;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 
@@ -34,6 +36,7 @@ import java.util.regex.Matcher;
  *    addImport java.nio.charset.StandardCharsets
  *    removeImport java.io.UnsupportedEncodingException
  *    addStaticImport java.util.Objects.requireNonNull
+ *    replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
  * </pre>
  * 
  * <h2>Auto-detection</h2>
@@ -49,6 +52,7 @@ public final class ImportDirective {
 	private final List<String> removeImports;
 	private final List<String> addStaticImports;
 	private final List<String> removeStaticImports;
+	private final Map<String, String> replaceStaticImports;
 	
 	/**
 	 * Creates an empty import directive.
@@ -58,6 +62,7 @@ public final class ImportDirective {
 		this.removeImports = new ArrayList<>();
 		this.addStaticImports = new ArrayList<>();
 		this.removeStaticImports = new ArrayList<>();
+		this.replaceStaticImports = new LinkedHashMap<>();
 	}
 	
 	/**
@@ -74,6 +79,7 @@ public final class ImportDirective {
 		this.removeImports = removeImports != null ? new ArrayList<>(removeImports) : new ArrayList<>();
 		this.addStaticImports = addStaticImports != null ? new ArrayList<>(addStaticImports) : new ArrayList<>();
 		this.removeStaticImports = removeStaticImports != null ? new ArrayList<>(removeStaticImports) : new ArrayList<>();
+		this.replaceStaticImports = new LinkedHashMap<>();
 	}
 	
 	/**
@@ -114,6 +120,23 @@ public final class ImportDirective {
 	}
 	
 	/**
+	 * Adds a static import replacement mapping.
+	 * 
+	 * <p>This replaces all static imports from the old type with static imports
+	 * from the new type. Works for both wildcard imports
+	 * ({@code import static org.junit.Assert.*}) and specific member imports
+	 * ({@code import static org.junit.Assert.assertEquals}).</p>
+	 * 
+	 * <p>DSL syntax: {@code replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions}</p>
+	 * 
+	 * @param oldType the fully qualified old type name
+	 * @param newType the fully qualified new type name
+	 */
+	public void replaceStaticImport(String oldType, String newType) {
+		replaceStaticImports.put(oldType, newType);
+	}
+	
+	/**
 	 * Returns the list of imports to add.
 	 * 
 	 * @return unmodifiable list of imports to add
@@ -150,13 +173,26 @@ public final class ImportDirective {
 	}
 	
 	/**
+	 * Returns the static import replacement mappings.
+	 * 
+	 * <p>Each entry maps the old fully qualified type name to the new one.
+	 * For example: {@code org.junit.Assert → org.junit.jupiter.api.Assertions}.</p>
+	 * 
+	 * @return unmodifiable map of old type → new type
+	 */
+	public Map<String, String> getReplaceStaticImports() {
+		return Collections.unmodifiableMap(replaceStaticImports);
+	}
+	
+	/**
 	 * Returns {@code true} if there are no import directives.
 	 * 
 	 * @return {@code true} if empty
 	 */
 	public boolean isEmpty() {
 		return addImports.isEmpty() && removeImports.isEmpty()
-				&& addStaticImports.isEmpty() && removeStaticImports.isEmpty();
+				&& addStaticImports.isEmpty() && removeStaticImports.isEmpty()
+				&& replaceStaticImports.isEmpty();
 	}
 	
 	/**
@@ -218,6 +254,7 @@ public final class ImportDirective {
 		removeImports.addAll(other.removeImports);
 		addStaticImports.addAll(other.addStaticImports);
 		removeStaticImports.addAll(other.removeStaticImports);
+		replaceStaticImports.putAll(other.replaceStaticImports);
 	}
 	
 	@Override
@@ -234,6 +271,9 @@ public final class ImportDirective {
 		}
 		if (!removeStaticImports.isEmpty()) {
 			sb.append(", removeStatic=").append(removeStaticImports); //$NON-NLS-1$
+		}
+		if (!replaceStaticImports.isEmpty()) {
+			sb.append(", replaceStatic=").append(replaceStaticImports); //$NON-NLS-1$
 		}
 		sb.append(']');
 		return sb.toString();

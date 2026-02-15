@@ -1,0 +1,49 @@
+// assume5.sandbox-hint — JUnit 4 Assume → JUnit 5 Assumptions migration patterns
+// Helps migrate Assume calls from JUnit 4 to JUnit 5 Assumptions
+
+<!id: assume5>
+<!description: JUnit 4 Assume to JUnit 5 Assumptions migration patterns>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: junit, testing, migration>
+
+// --- assumeTrue ---
+
+// Assume.assumeTrue(condition) → Assumptions.assumeTrue(condition)
+Assume.assumeTrue($cond)
+=> Assumptions.assumeTrue($cond)
+addImport org.junit.jupiter.api.Assumptions
+removeImport org.junit.Assume
+replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
+;;
+
+// Assume.assumeTrue(message, condition) → Assumptions.assumeTrue(condition, message)
+Assume.assumeTrue($msg, $cond)
+=> Assumptions.assumeTrue($cond, $msg)
+addImport org.junit.jupiter.api.Assumptions
+removeImport org.junit.Assume
+replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
+;;
+
+// --- assumeFalse ---
+
+// Assume.assumeFalse(condition) → Assumptions.assumeFalse(condition)
+Assume.assumeFalse($cond)
+=> Assumptions.assumeFalse($cond)
+addImport org.junit.jupiter.api.Assumptions
+removeImport org.junit.Assume
+replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
+;;
+
+// Assume.assumeFalse(message, condition) → Assumptions.assumeFalse(condition, message)
+Assume.assumeFalse($msg, $cond)
+=> Assumptions.assumeFalse($cond, $msg)
+addImport org.junit.jupiter.api.Assumptions
+removeImport org.junit.Assume
+replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
+;;
+
+// Note: Assume.assumeNotNull() and Assume.assumeNoException() have no direct
+// JUnit 5 equivalents and require manual migration. assumeNotNull checks all
+// arguments individually, which cannot be expressed in a single DSL rule.
+// assumeNoException semantics (skip test on exception) differ from abort().

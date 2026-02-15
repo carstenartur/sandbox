@@ -18,6 +18,8 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_B
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_PERFORMANCE;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA9;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_ENCODING;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -125,6 +127,12 @@ public class HintFileCleanUpCore extends AbstractCleanUp {
 		}
 		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA11)) {
 			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MODERNIZE_JAVA11);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_ENCODING)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_ENCODING);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_JUNIT5)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_JUNIT5);
 		}
 		return enabled;
 	}

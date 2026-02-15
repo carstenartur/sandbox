@@ -13,5 +13,8 @@
 		<hintFile
 			id="junit5"
 			resource="org/sandbox/jdt/internal/corext/fix/hints/junit5.sandbox-hint" />
+		<hintFile
+			id="assume5"
+			resource="org/sandbox/jdt/internal/corext/fix/hints/assume5.sandbox-hint" />
 	</extension>
 </plugin>
