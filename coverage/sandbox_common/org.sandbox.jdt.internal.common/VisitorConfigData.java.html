@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>VisitorConfigData.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">VisitorConfigData.java</span></div><h1>VisitorConfigData.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.common;
+
+import java.util.Arrays;
+
+/**
+ * Immutable configuration data for visitor predicates and consumers.
+ * This class replaces the stringly-typed {@code Map&lt;String, Object&gt;} pattern
+ * with a type-safe, immutable value object.
+ * 
+ * &lt;p&gt;Use the builder pattern to construct instances:&lt;/p&gt;
+ * &lt;pre&gt;
+ * VisitorConfigData config = VisitorConfigData.builder()
+ *     .methodName(&quot;toString&quot;)
+ *     .typeof(String.class)
+ *     .build();
+ * &lt;/pre&gt;
+ *
+ * @since 1.15
+ */
+public final class VisitorConfigData {
+	
+	private final Class&lt;?&gt; typeof;
+	private final String typeofByName;
+	private final String methodName;
+	private final String annotationName;
+	private final String importName;
+	private final String superClassName;
+	private final String[] paramTypeNames;
+	private final String operator;
+	private final String typeName;
+	private final Class&lt;?&gt; exceptionType;
+	
+<span class="fc" id="L46">	private VisitorConfigData(Builder builder) {</span>
+<span class="fc" id="L47">		this.typeof = builder.typeof;</span>
+<span class="fc" id="L48">		this.typeofByName = builder.typeofByName;</span>
+<span class="fc" id="L49">		this.methodName = builder.methodName;</span>
+<span class="fc" id="L50">		this.annotationName = builder.annotationName;</span>
+<span class="fc" id="L51">		this.importName = builder.importName;</span>
+<span class="fc" id="L52">		this.superClassName = builder.superClassName;</span>
+<span class="fc" id="L53">		this.paramTypeNames = builder.paramTypeNames;</span>
+<span class="fc" id="L54">		this.operator = builder.operator;</span>
+<span class="fc" id="L55">		this.typeName = builder.typeName;</span>
+<span class="fc" id="L56">		this.exceptionType = builder.exceptionType;</span>
+<span class="fc" id="L57">	}</span>
+	
+	/**
+	 * Creates a new builder for constructing {@code VisitorConfigData} instances.
+	 * 
+	 * @return a new builder
+	 */
+	public static Builder builder() {
+<span class="fc" id="L65">		return new Builder();</span>
+	}
+	
+	/**
+	 * Gets the type filter (as a Class object).
+	 * 
+	 * @return the type filter, or {@code null} if not set
+	 */
+	public Class&lt;?&gt; getTypeof() {
+<span class="fc" id="L74">		return typeof;</span>
+	}
+	
+	/**
+	 * Gets the type filter by fully qualified name.
+	 * This is used to avoid deprecation warnings when filtering deprecated types.
+	 * 
+	 * @return the fully qualified type name, or {@code null} if not set
+	 */
+	public String getTypeofByName() {
+<span class="fc" id="L84">		return typeofByName;</span>
+	}
+	
+	/**
+	 * Gets the method name filter.
+	 * 
+	 * @return the method name, or {@code null} if not set
+	 */
+	public String getMethodName() {
+<span class="fc" id="L93">		return methodName;</span>
+	}
+	
+	/**
+	 * Gets the annotation name filter.
+	 * 
+	 * @return the annotation name, or {@code null} if not set
+	 */
+	public String getAnnotationName() {
+<span class="fc" id="L102">		return annotationName;</span>
+	}
+	
+	/**
+	 * Gets the import name filter.
+	 * 
+	 * @return the import name, or {@code null} if not set
+	 */
+	public String getImportName() {
+<span class="fc" id="L111">		return importName;</span>
+	}
+	
+	/**
+	 * Gets the superclass name filter.
+	 * 
+	 * @return the superclass name, or {@code null} if not set
+	 */
+	public String getSuperClassName() {
+<span class="fc" id="L120">		return superClassName;</span>
+	}
+	
+	/**
+	 * Gets the parameter type names filter.
+	 * 
+	 * @return a defensive copy of the parameter type names, or {@code null} if not set
+	 */
+	public String[] getParamTypeNames() {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		return paramTypeNames != null ? Arrays.copyOf(paramTypeNames, paramTypeNames.length) : null;</span>
+	}
+	
+	/**
+	 * Gets the operator filter.
+	 * 
+	 * @return the operator, or {@code null} if not set
+	 */
+	public String getOperator() {
+<span class="fc" id="L138">		return operator;</span>
+	}
+	
+	/**
+	 * Gets the type name filter.
+	 * 
+	 * @return the type name, or {@code null} if not set
+	 */
+	public String getTypeName() {
+<span class="fc" id="L147">		return typeName;</span>
+	}
+	
+	/**
+	 * Gets the exception type filter.
+	 * 
+	 * @return the exception type, or {@code null} if not set
+	 */
+	public Class&lt;?&gt; getExceptionType() {
+<span class="fc" id="L156">		return exceptionType;</span>
+	}
+	
+	/**
+	 * Builder for constructing immutable {@code VisitorConfigData} instances.
+	 */
+	public static final class Builder {
+		private Class&lt;?&gt; typeof;
+		private String typeofByName;
+		private String methodName;
+		private String annotationName;
+		private String importName;
+		private String superClassName;
+		private String[] paramTypeNames;
+		private String operator;
+		private String typeName;
+		private Class&lt;?&gt; exceptionType;
+		
+		private Builder() {
+		}
+		
+		/**
+		 * Sets the type filter (as a Class object).
+		 * 
+		 * @param typeof the type to filter
+		 * @return this builder
+		 */
+		public Builder typeof(Class&lt;?&gt; typeof) {
+<span class="fc" id="L184">			this.typeof = typeof;</span>
+<span class="fc" id="L185">			return this;</span>
+		}
+		
+		/**
+		 * Sets the type filter by fully qualified name.
+		 * Use this to avoid deprecation warnings when filtering deprecated types.
+		 * 
+		 * @param typeofByName the fully qualified type name
+		 * @return this builder
+		 */
+		public Builder typeofByName(String typeofByName) {
+<span class="fc" id="L196">			this.typeofByName = typeofByName;</span>
+<span class="fc" id="L197">			return this;</span>
+		}
+		
+		/**
+		 * Sets the method name filter.
+		 * 
+		 * @param methodName the method name
+		 * @return this builder
+		 */
+		public Builder methodName(String methodName) {
+<span class="fc" id="L207">			this.methodName = methodName;</span>
+<span class="fc" id="L208">			return this;</span>
+		}
+		
+		/**
+		 * Sets the annotation name filter.
+		 * 
+		 * @param annotationName the annotation name
+		 * @return this builder
+		 */
+		public Builder annotationName(String annotationName) {
+<span class="fc" id="L218">			this.annotationName = annotationName;</span>
+<span class="fc" id="L219">			return this;</span>
+		}
+		
+		/**
+		 * Sets the import name filter.
+		 * 
+		 * @param importName the import name
+		 * @return this builder
+		 */
+		public Builder importName(String importName) {
+<span class="fc" id="L229">			this.importName = importName;</span>
+<span class="fc" id="L230">			return this;</span>
+		}
+		
+		/**
+		 * Sets the superclass name filter.
+		 * 
+		 * @param superClassName the superclass name
+		 * @return this builder
+		 */
+		public Builder superClassName(String superClassName) {
+<span class="fc" id="L240">			this.superClassName = superClassName;</span>
+<span class="fc" id="L241">			return this;</span>
+		}
+		
+		/**
+		 * Sets the parameter type names filter.
+		 * 
+		 * @param paramTypeNames the parameter type names
+		 * @return this builder
+		 */
+		public Builder paramTypeNames(String[] paramTypeNames) {
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">			this.paramTypeNames = paramTypeNames != null ? Arrays.copyOf(paramTypeNames, paramTypeNames.length) : null;</span>
+<span class="fc" id="L252">			return this;</span>
+		}
+		
+		/**
+		 * Sets the operator filter.
+		 * 
+		 * @param operator the operator
+		 * @return this builder
+		 */
+		public Builder operator(String operator) {
+<span class="fc" id="L262">			this.operator = operator;</span>
+<span class="fc" id="L263">			return this;</span>
+		}
+		
+		/**
+		 * Sets the type name filter.
+		 * 
+		 * @param typeName the type name
+		 * @return this builder
+		 */
+		public Builder typeName(String typeName) {
+<span class="fc" id="L273">			this.typeName = typeName;</span>
+<span class="fc" id="L274">			return this;</span>
+		}
+		
+		/**
+		 * Sets the exception type filter.
+		 * 
+		 * @param exceptionType the exception type
+		 * @return this builder
+		 */
+		public Builder exceptionType(Class&lt;?&gt; exceptionType) {
+<span class="fc" id="L284">			this.exceptionType = exceptionType;</span>
+<span class="fc" id="L285">			return this;</span>
+		}
+		
+		/**
+		 * Builds an immutable {@code VisitorConfigData} instance.
+		 * 
+		 * @return the constructed {@code VisitorConfigData}
+		 */
+		public VisitorConfigData build() {
+<span class="fc" id="L294">			return new VisitorConfigData(this);</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

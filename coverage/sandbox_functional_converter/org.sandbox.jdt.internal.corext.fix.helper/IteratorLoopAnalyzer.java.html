@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>IteratorLoopAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">IteratorLoopAnalyzer.java</span></div><h1>IteratorLoopAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>IteratorLoopAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">IteratorLoopAnalyzer.java</span></div><h1>IteratorLoopAnalyzer.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
  * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -29,33 +29,25 @@ import org.eclipse.jdt.core.dom.*;
 <span class="fc" id="L29">public class IteratorLoopAnalyzer {</span>
     
     /**
-     * Analysis result for an iterator loop.
+     * Immutable analysis result for an iterator loop's safety.
+     *
+     * @param isSafe whether the loop is safe for stream conversion
+     * @param reason the reason if not safe, or {@code null} if safe
+     * @param hasRemove whether the loop body calls {@code iterator.remove()}
+     * @param hasMultipleNext whether there are multiple {@code iterator.next()} calls
+     * @param hasBreak whether the loop body contains a {@code break} statement
+     * @param hasLabeledContinue whether the loop body contains a labeled {@code continue}
      */
-    public static class SafetyAnalysis {
-        public final boolean isSafe;
-        public final String reason; // reason if not safe
-        public final boolean hasRemove;
-        public final boolean hasMultipleNext;
-        public final boolean hasBreak;
-        public final boolean hasLabeledContinue;
-        
-<span class="fc" id="L42">        private SafetyAnalysis(boolean isSafe, String reason, boolean hasRemove, </span>
-                               boolean hasMultipleNext, boolean hasBreak, boolean hasLabeledContinue) {
-<span class="fc" id="L44">            this.isSafe = isSafe;</span>
-<span class="fc" id="L45">            this.reason = reason;</span>
-<span class="fc" id="L46">            this.hasRemove = hasRemove;</span>
-<span class="fc" id="L47">            this.hasMultipleNext = hasMultipleNext;</span>
-<span class="fc" id="L48">            this.hasBreak = hasBreak;</span>
-<span class="fc" id="L49">            this.hasLabeledContinue = hasLabeledContinue;</span>
-<span class="fc" id="L50">        }</span>
-        
+    public record SafetyAnalysis(boolean isSafe, String reason, boolean hasRemove,
+                                 boolean hasMultipleNext, boolean hasBreak, boolean hasLabeledContinue) {
+
         public static SafetyAnalysis safe() {
-<span class="fc" id="L53">            return new SafetyAnalysis(true, null, false, false, false, false);</span>
+<span class="fc" id="L45">            return new SafetyAnalysis(true, null, false, false, false, false);</span>
         }
-        
-        public static SafetyAnalysis unsafe(String reason, boolean hasRemove, 
+
+        public static SafetyAnalysis unsafe(String reason, boolean hasRemove,
                                             boolean hasMultipleNext, boolean hasBreak, boolean hasLabeledContinue) {
-<span class="fc" id="L58">            return new SafetyAnalysis(false, reason, hasRemove, hasMultipleNext, hasBreak, hasLabeledContinue);</span>
+<span class="fc" id="L50">            return new SafetyAnalysis(false, reason, hasRemove, hasMultipleNext, hasBreak, hasLabeledContinue);</span>
         }
     }
     
@@ -67,32 +59,32 @@ import org.eclipse.jdt.core.dom.*;
      * @return safety analysis result
      */
     public SafetyAnalysis analyze(Statement loopBody, String iteratorVarName) {
-<span class="fc" id="L70">        IteratorUsageVisitor visitor = new IteratorUsageVisitor(iteratorVarName);</span>
-<span class="fc" id="L71">        loopBody.accept(visitor);</span>
+<span class="fc" id="L62">        IteratorUsageVisitor visitor = new IteratorUsageVisitor(iteratorVarName);</span>
+<span class="fc" id="L63">        loopBody.accept(visitor);</span>
         
-<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (visitor.hasRemove) {</span>
-<span class="fc" id="L74">            return SafetyAnalysis.unsafe(&quot;Iterator.remove() is not supported in stream operations&quot;, </span>
-<span class="fc" id="L75">                                         true, visitor.hasMultipleNext, visitor.hasBreak, visitor.hasLabeledContinue);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (visitor.hasRemove) {</span>
+<span class="fc" id="L66">            return SafetyAnalysis.unsafe(&quot;Iterator.remove() is not supported in stream operations&quot;, </span>
+<span class="fc" id="L67">                                         true, visitor.hasMultipleNext, visitor.hasBreak, visitor.hasLabeledContinue);</span>
         }
         
-<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (visitor.hasMultipleNext) {</span>
-<span class="fc" id="L79">            return SafetyAnalysis.unsafe(&quot;Multiple iterator.next() calls detected&quot;, </span>
-<span class="fc" id="L80">                                         false, true, visitor.hasBreak, visitor.hasLabeledContinue);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (visitor.hasMultipleNext) {</span>
+<span class="fc" id="L71">            return SafetyAnalysis.unsafe(&quot;Multiple iterator.next() calls detected&quot;, </span>
+<span class="fc" id="L72">                                         false, true, visitor.hasBreak, visitor.hasLabeledContinue);</span>
         }
         
-<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (visitor.hasLabeledContinue) {</span>
-<span class="nc" id="L84">            return SafetyAnalysis.unsafe(&quot;Labeled continue statement is not supported&quot;, </span>
-<span class="nc" id="L85">                                         false, false, visitor.hasBreak, true);</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (visitor.hasLabeledContinue) {</span>
+<span class="nc" id="L76">            return SafetyAnalysis.unsafe(&quot;Labeled continue statement is not supported&quot;, </span>
+<span class="nc" id="L77">                                         false, false, visitor.hasBreak, true);</span>
         }
         
         // break statements are not yet supported for conversion
         // Future enhancement: could be converted using takeWhile or filter with short-circuit
-<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (visitor.hasBreak) {</span>
-<span class="fc" id="L91">            return SafetyAnalysis.unsafe(&quot;break statements in the loop body are not yet supported for stream conversion&quot;,</span>
-<span class="fc" id="L92">                                         false, false, true, false);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        if (visitor.hasBreak) {</span>
+<span class="fc" id="L83">            return SafetyAnalysis.unsafe(&quot;break statements in the loop body are not yet supported for stream conversion&quot;,</span>
+<span class="fc" id="L84">                                         false, false, true, false);</span>
         }
         
-<span class="fc" id="L95">        return SafetyAnalysis.safe();</span>
+<span class="fc" id="L87">        return SafetyAnalysis.safe();</span>
     }
     
     /**
@@ -100,73 +92,72 @@ import org.eclipse.jdt.core.dom.*;
      */
     private static class IteratorUsageVisitor extends ASTVisitor {
         private final String iteratorVarName;
-<span class="fc" id="L103">        private boolean hasRemove = false;</span>
-<span class="fc" id="L104">        private int nextCallCount = 0;</span>
-<span class="fc" id="L105">        private boolean hasMultipleNext = false;</span>
-<span class="fc" id="L106">        private boolean hasBreak = false;</span>
-<span class="fc" id="L107">        private boolean hasLabeledContinue = false;</span>
+<span class="fc" id="L95">        private boolean hasRemove = false;</span>
+<span class="fc" id="L96">        private int nextCallCount = 0;</span>
+<span class="fc" id="L97">        private boolean hasMultipleNext = false;</span>
+<span class="fc" id="L98">        private boolean hasBreak = false;</span>
+<span class="fc" id="L99">        private boolean hasLabeledContinue = false;</span>
         
-<span class="fc" id="L109">        public IteratorUsageVisitor(String iteratorVarName) {</span>
-<span class="fc" id="L110">            this.iteratorVarName = iteratorVarName;</span>
-<span class="fc" id="L111">        }</span>
+<span class="fc" id="L101">        public IteratorUsageVisitor(String iteratorVarName) {</span>
+<span class="fc" id="L102">            this.iteratorVarName = iteratorVarName;</span>
+<span class="fc" id="L103">        }</span>
         
         @Override
         public boolean visit(MethodInvocation node) {
-<span class="fc" id="L115">            Expression expr = node.getExpression();</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">            if (expr instanceof SimpleName) {</span>
-<span class="fc" id="L117">                SimpleName name = (SimpleName) expr;</span>
-<span class="fc bfc" id="L118" title="All 2 branches covered.">                if (name.getIdentifier().equals(iteratorVarName)) {</span>
-<span class="fc" id="L119">                    String methodName = node.getName().getIdentifier();</span>
+<span class="fc" id="L107">            Expression expr = node.getExpression();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (expr instanceof SimpleName name) {</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">                if (name.getIdentifier().equals(iteratorVarName)) {</span>
+<span class="fc" id="L110">                    String methodName = node.getName().getIdentifier();</span>
                     
-<span class="fc bfc" id="L121" title="All 2 branches covered.">                    if (&quot;remove&quot;.equals(methodName)) {</span>
-<span class="fc" id="L122">                        hasRemove = true;</span>
-<span class="fc bfc" id="L123" title="All 2 branches covered.">                    } else if (&quot;next&quot;.equals(methodName)) {</span>
-<span class="fc" id="L124">                        nextCallCount++;</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">                        if (nextCallCount &gt; 1) {</span>
-<span class="fc" id="L126">                            hasMultipleNext = true;</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                    if (&quot;remove&quot;.equals(methodName)) {</span>
+<span class="fc" id="L113">                        hasRemove = true;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                    } else if (&quot;next&quot;.equals(methodName)) {</span>
+<span class="fc" id="L115">                        nextCallCount++;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                        if (nextCallCount &gt; 1) {</span>
+<span class="fc" id="L117">                            hasMultipleNext = true;</span>
                         }
                     }
                 }
             }
-<span class="fc" id="L131">            return true;</span>
+<span class="fc" id="L122">            return true;</span>
         }
         
         @Override
         public boolean visit(BreakStatement node) {
-<span class="fc" id="L136">            hasBreak = true;</span>
-<span class="fc" id="L137">            return false;</span>
+<span class="fc" id="L127">            hasBreak = true;</span>
+<span class="fc" id="L128">            return false;</span>
         }
         
         @Override
         public boolean visit(ContinueStatement node) {
-<span class="nc bnc" id="L142" title="All 2 branches missed.">            if (node.getLabel() != null) {</span>
-<span class="nc" id="L143">                hasLabeledContinue = true;</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            if (node.getLabel() != null) {</span>
+<span class="nc" id="L134">                hasLabeledContinue = true;</span>
             }
-<span class="nc" id="L145">            return false;</span>
+<span class="nc" id="L136">            return false;</span>
         }
         
         @Override
         public boolean visit(WhileStatement node) {
             // Don't visit nested loops
-<span class="nc" id="L151">            return false;</span>
+<span class="nc" id="L142">            return false;</span>
         }
         
         @Override
         public boolean visit(ForStatement node) {
             // Don't visit nested loops
-<span class="nc" id="L157">            return false;</span>
+<span class="nc" id="L148">            return false;</span>
         }
         
         @Override
         public boolean visit(EnhancedForStatement node) {
             // Don't visit nested loops
-<span class="nc" id="L163">            return false;</span>
+<span class="nc" id="L154">            return false;</span>
         }
         
         @Override
         public boolean visit(DoStatement node) {
             // Don't visit nested loops
-<span class="nc" id="L169">            return false;</span>
+<span class="nc" id="L160">            return false;</span>
         }
     }
 }

@@ -131,20 +131,19 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
      */
     private boolean analyzeAndValidate(IteratorPattern pattern) {
         // Analyze for safety
-<span class="fc" id="L134">        SafetyAnalysis analysis = loopAnalyzer.analyze(pattern.loopBody, pattern.iteratorVariableName);</span>
-<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (!analysis.isSafe) {</span>
+<span class="fc" id="L134">        SafetyAnalysis analysis = loopAnalyzer.analyze(pattern.loopBody(), pattern.iteratorVariableName());</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (!analysis.isSafe()) {</span>
             // Cannot convert unsafe patterns
 <span class="fc" id="L137">            return false;</span>
         }
         
         // Parse body to ensure it has the expected structure
-<span class="fc" id="L141">        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody, pattern.iteratorVariableName);</span>
+<span class="fc" id="L141">        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());</span>
 <span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (parsedBody == null) {</span>
-            // Body doesn't match expected pattern
-<span class="nc" id="L144">            return false;</span>
+<span class="nc" id="L143">            return false;</span>
         }
         
-<span class="fc" id="L147">        return true;</span>
+<span class="fc" id="L146">        return true;</span>
     }
     
     @Override
@@ -152,47 +151,46 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
                         CompilationUnitRewrite cuRewrite, TextEditGroup group,
                         ReferenceHolder&lt;ASTNode, Object&gt; holder) throws CoreException {
         
-<span class="fc" id="L155">        Object data = holder.get(node);</span>
-<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (!(data instanceof IteratorPattern)) {</span>
-<span class="nc" id="L157">            return;</span>
+<span class="fc" id="L154">        Object data = holder.get(node);</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (!(data instanceof IteratorPattern pattern)) {</span>
+<span class="nc" id="L156">            return;</span>
         }
         
-<span class="fc" id="L160">        IteratorPattern pattern = (IteratorPattern) data;</span>
-<span class="fc" id="L161">        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody, pattern.iteratorVariableName);</span>
+<span class="fc" id="L159">        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());</span>
         
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (parsedBody == null) {</span>
-<span class="nc" id="L164">            return;</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (parsedBody == null) {</span>
+<span class="nc" id="L162">            return;</span>
         }
         
-<span class="fc" id="L167">        AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L168">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L165">        AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L166">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
         
         // Build LoopModel using the ULR pipeline
-<span class="fc" id="L171">        LoopModel model = buildLoopModel(pattern, parsedBody);</span>
+<span class="fc" id="L169">        LoopModel model = buildLoopModel(pattern, parsedBody);</span>
         
         // Create renderer with the original loop body for AST node access
-<span class="fc" id="L174">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.loopBody);</span>
+<span class="fc" id="L172">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.loopBody());</span>
         
         // Transform using LoopModelTransformer
-<span class="fc" id="L177">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
-<span class="fc" id="L178">        Expression streamExpression = transformer.transform(model);</span>
+<span class="fc" id="L175">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
+<span class="fc" id="L176">        Expression streamExpression = transformer.transform(model);</span>
         
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
             // For while pattern, also remove the iterator declaration
-<span class="fc bfc" id="L182" title="All 2 branches covered.">            if (node instanceof WhileStatement) {</span>
-<span class="fc" id="L183">                Block parentBlock = (Block) node.getParent();</span>
-<span class="fc" id="L184">                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, (Statement) node);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            if (node instanceof WhileStatement whileStmt) {</span>
+<span class="fc" id="L181">                Block parentBlock = (Block) whileStmt.getParent();</span>
+<span class="fc" id="L182">                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);</span>
                 
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">                if (previousStmt != null) {</span>
-<span class="fc" id="L187">                    rewrite.remove(previousStmt, group);</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">                if (previousStmt != null) {</span>
+<span class="fc" id="L185">                    rewrite.remove(previousStmt, group);</span>
                 }
             }
             
             // Wrap in ExpressionStatement and replace the loop
-<span class="fc" id="L192">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
-<span class="fc" id="L193">            rewrite.replace(node, newStatement, group);</span>
+<span class="fc" id="L190">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
+<span class="fc" id="L191">            rewrite.replace(node, newStatement, group);</span>
         }
-<span class="fc" id="L195">    }</span>
+<span class="fc" id="L193">    }</span>
     
     /**
      * Builds a LoopModel from the iterator pattern using the ULR pipeline.
@@ -200,31 +198,31 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
      */
     private LoopModel buildLoopModel(IteratorPattern pattern, ParsedBody parsedBody) {
         // Build COLLECTION source descriptor using the collection expression
-<span class="fc" id="L203">        SourceDescriptor source = new SourceDescriptor(</span>
-<span class="fc" id="L204">            SourceDescriptor.SourceType.COLLECTION,</span>
-<span class="fc" id="L205">            pattern.collectionExpression.toString(),</span>
-<span class="fc" id="L206">            parsedBody.elementType</span>
+<span class="fc" id="L201">        SourceDescriptor source = new SourceDescriptor(</span>
+<span class="fc" id="L202">            SourceDescriptor.SourceType.COLLECTION,</span>
+<span class="fc" id="L203">            pattern.collectionExpression().toString(),</span>
+<span class="fc" id="L204">            parsedBody.elementType()</span>
         );
         
         // Build element descriptor for the loop variable
-<span class="fc" id="L210">        ElementDescriptor element = new ElementDescriptor(</span>
-<span class="fc" id="L211">            parsedBody.elementVariableName,</span>
-<span class="fc" id="L212">            parsedBody.elementType,</span>
-<span class="fc" id="L213">            true // is a collection element</span>
+<span class="fc" id="L208">        ElementDescriptor element = new ElementDescriptor(</span>
+<span class="fc" id="L209">            parsedBody.elementVariableName(),</span>
+<span class="fc" id="L210">            parsedBody.elementType(),</span>
+<span class="fc" id="L211">            true // is a collection element</span>
         );
         
         // Extract body statements as expression strings (strip trailing semicolons)
-<span class="fc" id="L217">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(parsedBody.actualBodyStatements);</span>
+<span class="fc" id="L215">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(parsedBody.actualBodyStatements());</span>
         
         // Build ForEachTerminal
-<span class="fc" id="L220">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false);</span>
+<span class="fc" id="L218">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false);</span>
         
         // Build and return LoopModel
-<span class="fc" id="L223">        return new LoopModelBuilder()</span>
-<span class="fc" id="L224">            .source(source)</span>
-<span class="fc" id="L225">            .element(element)</span>
-<span class="fc" id="L226">            .terminal(terminal)</span>
-<span class="fc" id="L227">            .build();</span>
+<span class="fc" id="L221">        return new LoopModelBuilder()</span>
+<span class="fc" id="L222">            .source(source)</span>
+<span class="fc" id="L223">            .element(element)</span>
+<span class="fc" id="L224">            .terminal(terminal)</span>
+<span class="fc" id="L225">            .build();</span>
     }
     
     /**
@@ -233,33 +231,18 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
      * expects pure expressions, not statements.
      */
     private List&lt;String&gt; extractBodyStatementsAsStrings(List&lt;Statement&gt; statements) {
-<span class="fc" id="L236">        List&lt;String&gt; bodyStmts = new java.util.ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L237" title="All 2 branches covered.">        for (Statement stmt : statements) {</span>
-<span class="fc" id="L238">            bodyStmts.add(stripTrailingSemicolon(stmt.toString()));</span>
-        }
-<span class="fc" id="L240">        return bodyStmts;</span>
-    }
-    
-    /**
-     * Strips a trailing semicolon (and surrounding whitespace) from a statement string.
-     */
-    private static String stripTrailingSemicolon(String stmtStr) {
-<span class="fc" id="L247">        String trimmed = stmtStr.trim();</span>
-<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        if (trimmed.endsWith(&quot;;&quot;)) {</span>
-<span class="fc" id="L249">            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();</span>
-        }
-<span class="fc" id="L251">        return trimmed;</span>
+<span class="fc" id="L234">        return ExpressionHelper.bodyStatementsToStrings(statements);</span>
     }
     
     @Override
     public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L256" title="All 2 branches missed.">        if (afterRefactoring) {</span>
-<span class="nc" id="L257">            return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">        if (afterRefactoring) {</span>
+<span class="nc" id="L240">            return &quot;&quot;&quot;</span>
                    items.stream()
                        .forEach(item -&gt; System.out.println(item));
                    &quot;&quot;&quot;;
         } else {
-<span class="nc" id="L262">            return &quot;&quot;&quot;</span>
+<span class="nc" id="L245">            return &quot;&quot;&quot;</span>
                    Iterator&lt;String&gt; it = items.iterator();
                    while (it.hasNext()) {
                        String item = it.next();

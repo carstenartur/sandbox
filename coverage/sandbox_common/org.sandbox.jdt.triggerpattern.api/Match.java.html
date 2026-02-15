@@ -80,10 +80,10 @@ public final class Match {
 	 */
 	public ASTNode getBinding(String placeholderName) {
 <span class="fc" id="L82">		Object binding = bindings.get(placeholderName);</span>
-<span class="pc bpc" id="L83" title="1 of 2 branches missed.">		if (binding instanceof ASTNode) {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (binding instanceof ASTNode) {</span>
 <span class="fc" id="L84">			return (ASTNode) binding;</span>
 		}
-<span class="nc" id="L86">		return null;</span>
+<span class="fc" id="L86">		return null;</span>
 	}
 	
 	/**
@@ -94,11 +94,11 @@ public final class Match {
 	 */
 	@SuppressWarnings(&quot;unchecked&quot;)
 	public List&lt;ASTNode&gt; getListBinding(String placeholderName) {
-<span class="nc" id="L97">		Object binding = bindings.get(placeholderName);</span>
-<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (binding instanceof List&lt;?&gt;) {</span>
+<span class="fc" id="L97">		Object binding = bindings.get(placeholderName);</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (binding instanceof List&lt;?&gt;) {</span>
 <span class="nc" id="L99">			return (List&lt;ASTNode&gt;) binding;</span>
 		}
-<span class="nc" id="L101">		return Collections.emptyList();</span>
+<span class="fc" id="L101">		return Collections.emptyList();</span>
 	}
 	
 	/**

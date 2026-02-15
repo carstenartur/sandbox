@@ -107,87 +107,64 @@ public class AnnotationVisitorBuilder extends HelperVisitorBuilder&lt;ASTNode&gt
         // and break indexing when users call holder.size() to get the next key
 <span class="fc" id="L108">        final boolean[] shouldContinue = { true };</span>
         
-        // Create adapter BiPredicates for each annotation type that delegate to the processor
-<span class="fc" id="L111">        BiPredicate&lt;MarkerAnnotation, ReferenceHolder&lt;V, H&gt;&gt; markerAdapter = (MarkerAnnotation node, ReferenceHolder&lt;V, H&gt; h) -&gt; {</span>
-            // Check if already processed (excluded)
-<span class="pc bpc" id="L113" title="1 of 4 branches missed.">            if (nodesprocessed != null &amp;&amp; nodesprocessed.contains(node)) {</span>
-<span class="fc" id="L114">                return true; // Skip this node but continue processing others</span>
-            }
-<span class="fc bfc" id="L116" title="All 2 branches covered.">            if (!shouldContinue[0]) {</span>
-<span class="fc" id="L117">                return false;</span>
-            }
-<span class="fc" id="L119">            boolean result = processor.test(node, h);</span>
-<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (!result) {</span>
-<span class="fc" id="L121">                shouldContinue[0] = false;</span>
-            }
-<span class="fc" id="L123">            return result;</span>
-        };
-        
-<span class="fc" id="L126">        BiPredicate&lt;SingleMemberAnnotation, ReferenceHolder&lt;V, H&gt;&gt; singleMemberAdapter = (SingleMemberAnnotation node, ReferenceHolder&lt;V, H&gt; h) -&gt; {</span>
-            // Check if already processed (excluded)
-<span class="pc bpc" id="L128" title="1 of 4 branches missed.">            if (nodesprocessed != null &amp;&amp; nodesprocessed.contains(node)) {</span>
-<span class="fc" id="L129">                return true; // Skip this node but continue processing others</span>
-            }
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">            if (!shouldContinue[0]) {</span>
-<span class="nc" id="L132">                return false;</span>
-            }
-<span class="fc" id="L134">            boolean result = processor.test(node, h);</span>
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">            if (!result) {</span>
-<span class="nc" id="L136">                shouldContinue[0] = false;</span>
-            }
-<span class="fc" id="L138">            return result;</span>
-        };
-        
-<span class="fc" id="L141">        BiPredicate&lt;NormalAnnotation, ReferenceHolder&lt;V, H&gt;&gt; normalAdapter = (NormalAnnotation node, ReferenceHolder&lt;V, H&gt; h) -&gt; {</span>
-            // Check if already processed (excluded)
-<span class="pc bpc" id="L143" title="2 of 4 branches missed.">            if (nodesprocessed != null &amp;&amp; nodesprocessed.contains(node)) {</span>
-<span class="nc" id="L144">                return true; // Skip this node but continue processing others</span>
-            }
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            if (!shouldContinue[0]) {</span>
-<span class="nc" id="L147">                return false;</span>
-            }
-<span class="fc" id="L149">            boolean result = processor.test(node, h);</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">            if (!result) {</span>
-<span class="nc" id="L151">                shouldContinue[0] = false;</span>
-            }
-<span class="fc" id="L153">            return result;</span>
-        };
-        
-<span class="fc" id="L156">        BiPredicate&lt;ImportDeclaration, ReferenceHolder&lt;V, H&gt;&gt; importAdapter = (ImportDeclaration node, ReferenceHolder&lt;V, H&gt; h) -&gt; {</span>
-            // Check if already processed (excluded)
-<span class="pc bpc" id="L158" title="2 of 4 branches missed.">            if (nodesprocessed != null &amp;&amp; nodesprocessed.contains(node)) {</span>
-<span class="nc" id="L159">                return true; // Skip this node but continue processing others</span>
-            }
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">            if (!shouldContinue[0]) {</span>
-<span class="nc" id="L162">                return false;</span>
-            }
-            // For imports, pass as ASTNode (polymorphic handling when imports are included)
-<span class="fc" id="L165">            boolean result = processor.test(node, h);</span>
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">            if (!result) {</span>
-<span class="nc" id="L167">                shouldContinue[0] = false;</span>
-            }
-<span class="fc" id="L169">            return result;</span>
-        };
+        // Create a single adapter that handles exclusion, continuation, and delegation
+        // for all node types (annotations and imports) uniformly
+<span class="fc" id="L112">        BiPredicate&lt;MarkerAnnotation, ReferenceHolder&lt;V, H&gt;&gt; markerAdapter =</span>
+<span class="fc" id="L113">                createNodeAdapter(processor, shouldContinue);</span>
+<span class="fc" id="L114">        BiPredicate&lt;SingleMemberAnnotation, ReferenceHolder&lt;V, H&gt;&gt; singleMemberAdapter =</span>
+<span class="fc" id="L115">                createNodeAdapter(processor, shouldContinue);</span>
+<span class="fc" id="L116">        BiPredicate&lt;NormalAnnotation, ReferenceHolder&lt;V, H&gt;&gt; normalAdapter =</span>
+<span class="fc" id="L117">                createNodeAdapter(processor, shouldContinue);</span>
         
         // Call visitors for all three annotation types to match annotations regardless of parameters
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (shouldContinue[0]) {</span>
-<span class="fc" id="L174">            HelperVisitorFactory.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, </span>
-<span class="fc" id="L175">                    holder, nodesprocessed, markerAdapter);</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (shouldContinue[0]) {</span>
+<span class="fc" id="L121">            HelperVisitorFactory.callMarkerAnnotationVisitor(annotationFQN, compilationUnit, </span>
+<span class="fc" id="L122">                    holder, nodesprocessed, markerAdapter);</span>
         }
-<span class="fc bfc" id="L177" title="All 2 branches covered.">        if (shouldContinue[0]) {</span>
-<span class="fc" id="L178">            HelperVisitorFactory.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,</span>
-<span class="fc" id="L179">                    holder, nodesprocessed, singleMemberAdapter);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        if (shouldContinue[0]) {</span>
+<span class="fc" id="L125">            HelperVisitorFactory.callSingleMemberAnnotationVisitor(annotationFQN, compilationUnit,</span>
+<span class="fc" id="L126">                    holder, nodesprocessed, singleMemberAdapter);</span>
         }
-<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (shouldContinue[0]) {</span>
-<span class="fc" id="L182">            HelperVisitorFactory.callNormalAnnotationVisitor(annotationFQN, compilationUnit,</span>
-<span class="fc" id="L183">                    holder, nodesprocessed, normalAdapter);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (shouldContinue[0]) {</span>
+<span class="fc" id="L129">            HelperVisitorFactory.callNormalAnnotationVisitor(annotationFQN, compilationUnit,</span>
+<span class="fc" id="L130">                    holder, nodesprocessed, normalAdapter);</span>
         }
         
         // Optionally include import declarations
-<span class="fc bfc" id="L187" title="All 4 branches covered.">        if (shouldContinue[0] &amp;&amp; includeImports) {</span>
-<span class="fc" id="L188">            HelperVisitorFactory.callImportDeclarationVisitor(annotationFQN, compilationUnit,</span>
-<span class="fc" id="L189">                    holder, nodesprocessed, importAdapter);</span>
+<span class="fc bfc" id="L134" title="All 4 branches covered.">        if (shouldContinue[0] &amp;&amp; includeImports) {</span>
+<span class="fc" id="L135">            BiPredicate&lt;ImportDeclaration, ReferenceHolder&lt;V, H&gt;&gt; importAdapter =</span>
+<span class="fc" id="L136">                    createNodeAdapter(processor, shouldContinue);</span>
+<span class="fc" id="L137">            HelperVisitorFactory.callImportDeclarationVisitor(annotationFQN, compilationUnit,</span>
+<span class="fc" id="L138">                    holder, nodesprocessed, importAdapter);</span>
         }
-<span class="fc" id="L191">    }</span>
+<span class="fc" id="L140">    }</span>
+    
+    /**
+     * Creates a type-safe adapter BiPredicate that handles exclusion checking,
+     * continuation tracking, and delegation to the main processor.
+     * 
+     * @param &lt;N&gt; the specific AST node type (e.g., MarkerAnnotation, ImportDeclaration)
+     * @param &lt;V&gt; the key type of the reference holder
+     * @param &lt;H&gt; the value type of the reference holder
+     * @param processor the main processor to delegate to
+     * @param shouldContinue shared continuation flag (modified on processor returning false)
+     * @return a BiPredicate adapter for the specific node type
+     */
+    private &lt;N extends ASTNode, V, H&gt; BiPredicate&lt;N, ReferenceHolder&lt;V, H&gt;&gt; createNodeAdapter(
+            BiPredicate&lt;ASTNode, ReferenceHolder&lt;V, H&gt;&gt; processor, boolean[] shouldContinue) {
+<span class="fc" id="L155">        return (N node, ReferenceHolder&lt;V, H&gt; h) -&gt; {</span>
+<span class="pc bpc" id="L156" title="1 of 4 branches missed.">            if (nodesprocessed != null &amp;&amp; nodesprocessed.contains(node)) {</span>
+<span class="fc" id="L157">                return true; // Skip this node but continue processing others</span>
+            }
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            if (!shouldContinue[0]) {</span>
+<span class="fc" id="L160">                return false;</span>
+            }
+<span class="fc" id="L162">            boolean result = processor.test(node, h);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            if (!result) {</span>
+<span class="fc" id="L164">                shouldContinue[0] = false;</span>
+            }
+<span class="fc" id="L166">            return result;</span>
+        };
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

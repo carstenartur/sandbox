@@ -402,5 +402,21 @@
 	 * @since 1.2.6
 	 */
 	public static final String USE_GENERAL_TYPE_CLEANUP= &quot;cleanup.use_general_type&quot;; //$NON-NLS-1$
+
+	/**
+	 * Apply transformation rules from registered {@code .sandbox-hint} DSL files.
+	 * &lt;p&gt;
+	 * When enabled, all registered {@code .sandbox-hint} pattern libraries (collections,
+	 * modernize-java11, performance, etc.) are applied as cleanup operations. This enables
+	 * declarative code transformations without writing Java code.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 * &lt;p&gt;
+	 *
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 * @since 1.3.5
+	 */
+	public static final String HINTFILE_CLEANUP= &quot;cleanup.hintfile&quot;; //$NON-NLS-1$
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

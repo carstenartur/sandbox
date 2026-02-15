@@ -52,7 +52,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 	/**
 	 * The associated helper visitor for processing AST nodes.
 	 */
-	HelperVisitor&lt;ReferenceHolder&lt;V,T&gt;,V,T&gt; hv;
+	private transient HelperVisitor&lt;ReferenceHolder&lt;V,T&gt;,V,T&gt; hv;
 	
 	/**
 	 * Creates a new empty ReferenceHolder.

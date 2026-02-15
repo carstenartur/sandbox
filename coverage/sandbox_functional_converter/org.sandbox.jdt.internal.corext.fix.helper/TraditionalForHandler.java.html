@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TraditionalForHandler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">TraditionalForHandler.java</span></div><h1>TraditionalForHandler.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TraditionalForHandler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">TraditionalForHandler.java</span></div><h1>TraditionalForHandler.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
  * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -426,77 +426,75 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
                         ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
         
 <span class="fc" id="L428">        Object patternObj = data.get(visited);</span>
-<span class="pc bpc" id="L429" title="1 of 2 branches missed.">        if (!(patternObj instanceof ForLoopPattern)) {</span>
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">        if (!(patternObj instanceof ForLoopPattern pattern)) {</span>
 <span class="nc" id="L430">            return;</span>
         }
         
-<span class="fc" id="L433">        ForLoopPattern pattern = (ForLoopPattern) patternObj;</span>
-        
-<span class="fc" id="L435">        AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L436">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L433">        AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L434">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
         
         // Build LoopModel
-<span class="fc" id="L439">        LoopModel model = buildLoopModel(pattern, ast);</span>
+<span class="fc" id="L437">        LoopModel model = buildLoopModel(pattern, ast);</span>
         
         // Create renderer
-<span class="fc" id="L442">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body);</span>
+<span class="fc" id="L440">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body());</span>
         
         // Transform using LoopModelTransformer
-<span class="fc" id="L445">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
-<span class="fc" id="L446">        Expression streamExpression = transformer.transform(model);</span>
+<span class="fc" id="L443">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
+<span class="fc" id="L444">        Expression streamExpression = transformer.transform(model);</span>
         
-<span class="pc bpc" id="L448" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
             // Wrap in ExpressionStatement
-<span class="fc" id="L450">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
-<span class="fc" id="L451">            rewrite.replace(visited, newStatement, group);</span>
+<span class="fc" id="L448">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
+<span class="fc" id="L449">            rewrite.replace(visited, newStatement, group);</span>
             
             // Add IntStream import
-<span class="fc" id="L454">            cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.IntStream&quot;);</span>
+<span class="fc" id="L452">            cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.IntStream&quot;);</span>
         }
-<span class="fc" id="L456">    }</span>
+<span class="fc" id="L454">    }</span>
     
     /**
      * Builds a LoopModel from the analyzed ForLoopPattern.
      */
     private LoopModel buildLoopModel(ForLoopPattern pattern, AST ast) {
         // Get start and end expressions as strings
-<span class="fc" id="L463">        String startStr = pattern.startExpr.toString();</span>
-<span class="fc" id="L464">        String endStr = pattern.endExpr.toString();</span>
+<span class="fc" id="L461">        String startStr = pattern.startExpr().toString();</span>
+<span class="fc" id="L462">        String endStr = pattern.endExpr().toString();</span>
         
         // Adjust end expression for inclusive range (i &lt;= end)
-<span class="pc bpc" id="L467" title="1 of 2 branches missed.">        if (pattern.inclusive) {</span>
+<span class="pc bpc" id="L465" title="1 of 2 branches missed.">        if (pattern.inclusive()) {</span>
             // For i &lt;= end, we need IntStream.range(start, (end) + 1)
             // Parenthesize end expression to preserve operator precedence
-<span class="nc" id="L470">            endStr = &quot;(&quot; + endStr + &quot;) + 1&quot;;</span>
+<span class="nc" id="L468">            endStr = &quot;(&quot; + endStr + &quot;) + 1&quot;;</span>
         }
         
         // Build EXPLICIT_RANGE source descriptor
-<span class="fc" id="L474">        String rangeExpression = startStr + &quot;,&quot; + endStr;</span>
-<span class="fc" id="L475">        SourceDescriptor source = new SourceDescriptor(</span>
-<span class="fc" id="L476">            SourceDescriptor.SourceType.EXPLICIT_RANGE,</span>
-<span class="fc" id="L477">            rangeExpression,</span>
-<span class="fc" id="L478">            &quot;int&quot;</span>
+<span class="fc" id="L472">        String rangeExpression = startStr + &quot;,&quot; + endStr;</span>
+<span class="fc" id="L473">        SourceDescriptor source = new SourceDescriptor(</span>
+<span class="fc" id="L474">            SourceDescriptor.SourceType.EXPLICIT_RANGE,</span>
+<span class="fc" id="L475">            rangeExpression,</span>
+<span class="fc" id="L476">            &quot;int&quot;</span>
         );
         
         // Build element descriptor for the loop variable
-<span class="fc" id="L482">        ElementDescriptor element = new ElementDescriptor(</span>
-<span class="fc" id="L483">            pattern.loopVarName,</span>
-<span class="fc" id="L484">            &quot;int&quot;,</span>
-<span class="fc" id="L485">            false // not a collection element</span>
+<span class="fc" id="L480">        ElementDescriptor element = new ElementDescriptor(</span>
+<span class="fc" id="L481">            pattern.loopVarName(),</span>
+<span class="fc" id="L482">            &quot;int&quot;,</span>
+<span class="fc" id="L483">            false // not a collection element</span>
         );
         
         // Extract body statements and convert to strings
-<span class="fc" id="L489">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(pattern.body);</span>
+<span class="fc" id="L487">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(pattern.body());</span>
         
         // Build ForEachTerminal
-<span class="fc" id="L492">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // uses forEach (not forEachOrdered)</span>
+<span class="fc" id="L490">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false); // uses forEach (not forEachOrdered)</span>
         
         // Build and return LoopModel
-<span class="fc" id="L495">        return new LoopModelBuilder()</span>
-<span class="fc" id="L496">            .source(source)</span>
-<span class="fc" id="L497">            .element(element)</span>
-<span class="fc" id="L498">            .terminal(terminal)</span>
-<span class="fc" id="L499">            .build();</span>
+<span class="fc" id="L493">        return new LoopModelBuilder()</span>
+<span class="fc" id="L494">            .source(source)</span>
+<span class="fc" id="L495">            .element(element)</span>
+<span class="fc" id="L496">            .terminal(terminal)</span>
+<span class="fc" id="L497">            .build();</span>
     }
     
     /**
@@ -508,60 +506,28 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      */
     @SuppressWarnings(&quot;unchecked&quot;)
     private List&lt;String&gt; extractBodyStatementsAsStrings(Statement body) {
-<span class="fc" id="L511">        List&lt;String&gt; bodyStmts = new java.util.ArrayList&lt;&gt;();</span>
-        
-<span class="pc bpc" id="L513" title="1 of 2 branches missed.">        if (body instanceof Block) {</span>
-<span class="fc" id="L514">            Block block = (Block) body;</span>
-<span class="fc" id="L515">            List&lt;Statement&gt; statements = block.statements();</span>
-<span class="fc bfc" id="L516" title="All 2 branches covered.">            for (Statement stmt : statements) {</span>
-<span class="fc" id="L517">                bodyStmts.add(stripTrailingSemicolon(stmt.toString()));</span>
-            }
-<span class="fc" id="L519">        } else {</span>
-            // Single statement body
-<span class="nc" id="L521">            bodyStmts.add(stripTrailingSemicolon(body.toString()));</span>
-        }
-        
-<span class="fc" id="L524">        return bodyStmts;</span>
-    }
-    
-    /**
-     * Strips a trailing semicolon (and surrounding whitespace) from a statement string
-     * so that it can be parsed as an expression by {@code ASTStreamRenderer.createExpression()}.
-     */
-    private static String stripTrailingSemicolon(String stmtStr) {
-<span class="fc" id="L532">        String trimmed = stmtStr.trim();</span>
-<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        if (trimmed.endsWith(&quot;;&quot;)) {</span>
-<span class="fc" id="L534">            trimmed = trimmed.substring(0, trimmed.length() - 1).trim();</span>
-        }
-<span class="fc" id="L536">        return trimmed;</span>
+<span class="fc" id="L509">        return ExpressionHelper.bodyStatementsToStrings(body);</span>
     }
     
     @Override
     public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L541" title="All 2 branches missed.">        if (afterRefactoring) {</span>
-<span class="nc" id="L542">            return &quot;IntStream.range(0, 10).forEach(i -&gt; System.out.println(i));\n&quot;;</span>
+<span class="nc bnc" id="L514" title="All 2 branches missed.">        if (afterRefactoring) {</span>
+<span class="nc" id="L515">            return &quot;IntStream.range(0, 10).forEach(i -&gt; System.out.println(i));\n&quot;;</span>
         }
-<span class="nc" id="L544">        return &quot;for (int i = 0; i &lt; 10; i++)\n    System.out.println(i);\n&quot;;</span>
+<span class="nc" id="L517">        return &quot;for (int i = 0; i &lt; 10; i++)\n    System.out.println(i);\n&quot;;</span>
     }
     
     /**
-     * Represents an analyzed traditional for-loop pattern.
+     * Immutable representation of an analyzed traditional for-loop pattern.
+     *
+     * @param loopVarName the loop variable name (e.g. {@code &quot;i&quot;})
+     * @param startExpr the start expression (e.g. {@code 0})
+     * @param endExpr the end expression (e.g. {@code list.size()})
+     * @param inclusive {@code true} for {@code &lt;=}, {@code false} for {@code &lt;}
+     * @param body the loop body statement
      */
-    private static class ForLoopPattern {
-        final String loopVarName;
-        final Expression startExpr;
-        final Expression endExpr;
-        final boolean inclusive;  // true for &lt;=, false for &lt;
-        final Statement body;
-        
-<span class="fc" id="L557">        ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,</span>
-                      boolean inclusive, Statement body) {
-<span class="fc" id="L559">            this.loopVarName = loopVarName;</span>
-<span class="fc" id="L560">            this.startExpr = startExpr;</span>
-<span class="fc" id="L561">            this.endExpr = endExpr;</span>
-<span class="fc" id="L562">            this.inclusive = inclusive;</span>
-<span class="fc" id="L563">            this.body = body;</span>
-<span class="fc" id="L564">        }</span>
+    private record ForLoopPattern(String loopVarName, Expression startExpr, Expression endExpr,
+                                  boolean inclusive, Statement body) {
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

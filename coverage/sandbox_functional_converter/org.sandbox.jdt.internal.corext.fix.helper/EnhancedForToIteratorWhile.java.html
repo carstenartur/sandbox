@@ -13,18 +13,15 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -55,96 +52,77 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/453&quot;&gt;Issue #453&lt;/a&gt;
  * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/549&quot;&gt;Issue #549&lt;/a&gt;
  */
-<span class="fc" id="L58">public class EnhancedForToIteratorWhile extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
+<span class="fc" id="L55">public class EnhancedForToIteratorWhile extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L63">		org.sandbox.jdt.internal.common.HelperVisitorFactory.callEnhancedForStatementVisitor(compilationUnit, </span>
-<span class="fc" id="L64">			new ReferenceHolder&lt;Integer, Object&gt;(), nodesprocessed, (visited, aholder) -&gt; {</span>
+<span class="fc" id="L60">		org.sandbox.jdt.internal.common.HelperVisitorFactory.callEnhancedForStatementVisitor(compilationUnit, </span>
+<span class="fc" id="L61">			new ReferenceHolder&lt;Integer, Object&gt;(), nodesprocessed, (visited, aholder) -&gt; {</span>
 				// Safety: reject arrays — arrays don't have .iterator() method
-<span class="fc" id="L66">				Expression iterable = visited.getExpression();</span>
-<span class="fc" id="L67">				ITypeBinding typeBinding = iterable.resolveTypeBinding();</span>
-<span class="pc bpc" id="L68" title="2 of 4 branches missed.">				if (typeBinding != null &amp;&amp; typeBinding.isArray()) {</span>
-<span class="nc" id="L69">					return false;</span>
+<span class="fc" id="L63">				Expression iterable = visited.getExpression();</span>
+<span class="fc" id="L64">				ITypeBinding typeBinding = iterable.resolveTypeBinding();</span>
+<span class="pc bpc" id="L65" title="2 of 4 branches missed.">				if (typeBinding != null &amp;&amp; typeBinding.isArray()) {</span>
+<span class="nc" id="L66">					return false;</span>
 				}
 				
-<span class="fc" id="L72">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
-<span class="fc" id="L73">				nodesprocessed.add(visited);</span>
-<span class="fc" id="L74">				return false;</span>
+<span class="fc" id="L69">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
+<span class="fc" id="L70">				nodesprocessed.add(visited);</span>
+<span class="fc" id="L71">				return false;</span>
 			});
-<span class="fc" id="L76">	}</span>
+<span class="fc" id="L73">	}</span>
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data)
 			throws CoreException {
-<span class="pc bpc" id="L82" title="1 of 2 branches missed.">		if (!(visited instanceof EnhancedForStatement)) {</span>
-<span class="nc" id="L83">			return;</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (!(visited instanceof EnhancedForStatement forStmt)) {</span>
+<span class="nc" id="L80">			return;</span>
 		}
 		
-<span class="fc" id="L86">		EnhancedForStatement forStmt = (EnhancedForStatement) visited;</span>
-<span class="fc" id="L87">		AST ast = cuRewrite.getAST();</span>
-<span class="fc" id="L88">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L83">		AST ast = cuRewrite.getAST();</span>
+<span class="fc" id="L84">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
 		
 		// Build LoopModel from the enhanced for-loop using ULR pipeline
-<span class="fc" id="L91">		LoopModel model = buildLoopModel(forStmt);</span>
+<span class="fc" id="L87">		LoopModel model = buildLoopModel(forStmt);</span>
 		
 		// Render iterator-while loop using ULR-based renderer
-<span class="fc" id="L94">		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(ast, rewrite);</span>
-<span class="fc" id="L95">		renderer.render(model, forStmt, forStmt.getBody(), group);</span>
+<span class="fc" id="L90">		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(ast, rewrite);</span>
+<span class="fc" id="L91">		renderer.render(model, forStmt, forStmt.getBody(), group);</span>
 		
 		// Add Iterator import
-<span class="fc" id="L98">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L99">	}</span>
+<span class="fc" id="L94">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L95">	}</span>
 
 	/**
 	 * Builds a LoopModel from an enhanced for-loop using the ULR pipeline.
 	 */
 	private LoopModel buildLoopModel(EnhancedForStatement forStmt) {
-<span class="fc" id="L105">		String paramName = forStmt.getParameter().getName().getIdentifier();</span>
-<span class="fc" id="L106">		String paramType = forStmt.getParameter().getType().toString();</span>
-<span class="fc" id="L107">		String collectionExpr = forStmt.getExpression().toString();</span>
+<span class="fc" id="L101">		String paramName = forStmt.getParameter().getName().getIdentifier();</span>
+<span class="fc" id="L102">		String paramType = forStmt.getParameter().getType().toString();</span>
+<span class="fc" id="L103">		String collectionExpr = forStmt.getExpression().toString();</span>
 		
 		// Extract body statements as expression strings
-<span class="fc" id="L110">		List&lt;String&gt; bodyStatements = extractBodyStatements(forStmt.getBody());</span>
+<span class="fc" id="L106">		List&lt;String&gt; bodyStatements = extractBodyStatements(forStmt.getBody());</span>
 		
-<span class="fc" id="L112">		return new LoopModelBuilder()</span>
-<span class="fc" id="L113">			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr, paramType)</span>
-<span class="fc" id="L114">			.element(paramName, paramType, false)</span>
-<span class="fc" id="L115">			.terminal(new ForEachTerminal(bodyStatements, false))</span>
-<span class="fc" id="L116">			.build();</span>
+<span class="fc" id="L108">		return new LoopModelBuilder()</span>
+<span class="fc" id="L109">			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr, paramType)</span>
+<span class="fc" id="L110">			.element(paramName, paramType, false)</span>
+<span class="fc" id="L111">			.terminal(new ForEachTerminal(bodyStatements, false))</span>
+<span class="fc" id="L112">			.build();</span>
 	}
 
 	/**
 	 * Extracts body statements as strings from the loop body.
 	 */
 	private List&lt;String&gt; extractBodyStatements(Statement body) {
-<span class="fc" id="L123">		List&lt;String&gt; statements = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		if (body instanceof Block block) {</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">			for (Object stmt : block.statements()) {</span>
-<span class="fc" id="L126">				statements.add(stripTrailingSemicolon(stmt.toString()));</span>
-			}
-<span class="pc bnc" id="L128" title="All 2 branches missed.">		} else if (body instanceof ExpressionStatement exprStmt) {</span>
-<span class="nc" id="L129">			statements.add(stripTrailingSemicolon(exprStmt.toString()));</span>
-<span class="nc" id="L130">		} else {</span>
-<span class="nc" id="L131">			statements.add(stripTrailingSemicolon(body.toString()));</span>
-		}
-<span class="fc" id="L133">		return statements;</span>
-	}
-
-	private static String stripTrailingSemicolon(String stmtStr) {
-<span class="fc" id="L137">		String trimmed = stmtStr.trim();</span>
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		if (trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L139">			trimmed = trimmed.substring(0, trimmed.length() - 1).trim();</span>
-		}
-<span class="fc" id="L141">		return trimmed;</span>
+<span class="fc" id="L119">		return ExpressionHelper.bodyStatementsToStrings(body);</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L146" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L147">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L125">			return &quot;&quot;&quot;</span>
 					Iterator&lt;String&gt; it = items.iterator();
 					while (it.hasNext()) {
 						String item = it.next();
@@ -152,7 +130,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 					}
 					&quot;&quot;&quot;;
 		}
-<span class="nc" id="L155">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L133">		return &quot;&quot;&quot;</span>
 				for (String item : items) {
 					System.out.println(item);
 				}

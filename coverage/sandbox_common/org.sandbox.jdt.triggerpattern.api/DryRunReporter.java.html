@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DryRunReporter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">DryRunReporter.java</span></div><h1>DryRunReporter.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.core.dom.CompilationUnit;
+
+/**
+ * Performs dry-run analysis by finding all matches for a set of transformation
+ * rules without modifying any code.
+ *
+ * &lt;p&gt;Generates a report of all matches found, including the file, line number,
+ * matched code, and suggested replacement. This is useful for:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;Previewing changes before applying them&lt;/li&gt;
+ *   &lt;li&gt;Generating CSV/JSON reports of code improvement opportunities&lt;/li&gt;
+ *   &lt;li&gt;Integration with Eclipse Problem View as markers&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;h2&gt;Usage example&lt;/h2&gt;
+ * &lt;pre&gt;
+ * DryRunReporter reporter = new DryRunReporter();
+ * List&amp;lt;ReportEntry&amp;gt; entries = reporter.analyze(cu, hintFile.getRules());
+ * String json = reporter.toJson(entries);
+ * &lt;/pre&gt;
+ *
+ * @since 1.3.3
+ */
+public final class DryRunReporter {
+
+	private final TriggerPatternEngine engine;
+
+	/**
+	 * Creates a new dry-run reporter using the default engine.
+	 */
+<span class="fc" id="L51">	public DryRunReporter() {</span>
+<span class="fc" id="L52">		this.engine = new TriggerPatternEngine();</span>
+<span class="fc" id="L53">	}</span>
+
+	/**
+	 * Creates a new dry-run reporter using the given engine.
+	 *
+	 * @param engine the trigger pattern engine to use for matching
+	 */
+<span class="nc" id="L60">	public DryRunReporter(TriggerPatternEngine engine) {</span>
+<span class="nc" id="L61">		this.engine = engine;</span>
+<span class="nc" id="L62">	}</span>
+
+	/**
+	 * Analyzes a compilation unit against a list of transformation rules.
+	 *
+	 * @param cu the compilation unit to analyze
+	 * @param rules the transformation rules to apply
+	 * @return list of report entries for all matches found
+	 */
+	public List&lt;ReportEntry&gt; analyze(CompilationUnit cu, List&lt;TransformationRule&gt; rules) {
+<span class="fc" id="L72">		return analyze(cu, rules, null);</span>
+	}
+
+	/**
+	 * Analyzes a compilation unit against a list of transformation rules
+	 * with compiler options for guard evaluation.
+	 *
+	 * @param cu the compilation unit to analyze
+	 * @param rules the transformation rules to apply
+	 * @param compilerOptions compiler options for source version guards (may be {@code null})
+	 * @return list of report entries for all matches found
+	 */
+	public List&lt;ReportEntry&gt; analyze(CompilationUnit cu, List&lt;TransformationRule&gt; rules,
+			Map&lt;String, String&gt; compilerOptions) {
+<span class="fc bfc" id="L86" title="All 6 branches covered.">		if (cu == null || rules == null || rules.isEmpty()) {</span>
+<span class="fc" id="L87">			return Collections.emptyList();</span>
+		}
+
+<span class="fc" id="L90">		List&lt;ReportEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		for (TransformationRule rule : rules) {</span>
+<span class="fc" id="L93">			Pattern sourcePattern = rule.sourcePattern();</span>
+<span class="fc" id="L94">			List&lt;Match&gt; matches = engine.findMatches(cu, sourcePattern);</span>
+
+<span class="fc bfc" id="L96" title="All 2 branches covered.">			for (Match match : matches) {</span>
+<span class="fc" id="L97">				int lineNumber = cu.getLineNumber(match.getOffset());</span>
+<span class="fc" id="L98">				String matchedCode = match.getMatchedNode().toString().trim();</span>
+
+				// Determine replacement if available
+<span class="fc" id="L101">				String suggestedReplacement = null;</span>
+<span class="pc bpc" id="L102" title="1 of 4 branches missed.">				if (!rule.isHintOnly() &amp;&amp; !rule.alternatives().isEmpty()) {</span>
+					// Try to find the matching alternative using guards
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">					if (compilerOptions != null) {</span>
+<span class="nc" id="L105">						GuardContext guardCtx = GuardContext.fromMatch(match, cu, compilerOptions);</span>
+<span class="nc" id="L106">						RewriteAlternative alt = rule.findMatchingAlternative(guardCtx);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">						if (alt != null) {</span>
+<span class="nc" id="L108">							suggestedReplacement = substitutePlaceholders(</span>
+<span class="nc" id="L109">									alt.replacementPattern(), match.getBindings());</span>
+						}
+<span class="nc" id="L111">					} else {</span>
+						// Without compiler options, use the first alternative
+<span class="fc" id="L113">						suggestedReplacement = substitutePlaceholders(</span>
+<span class="fc" id="L114">								rule.alternatives().get(0).replacementPattern(),</span>
+<span class="fc" id="L115">								match.getBindings());</span>
+					}
+				}
+
+<span class="fc" id="L119">				String severity = &quot;info&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L120">				String description = rule.getDescription();</span>
+
+<span class="fc" id="L122">				entries.add(new ReportEntry(</span>
+<span class="fc" id="L123">						lineNumber,</span>
+<span class="fc" id="L124">						match.getOffset(),</span>
+<span class="fc" id="L125">						match.getLength(),</span>
+<span class="fc" id="L126">						matchedCode,</span>
+<span class="fc" id="L127">						suggestedReplacement,</span>
+<span class="fc" id="L128">						description,</span>
+<span class="fc" id="L129">						severity,</span>
+<span class="fc" id="L130">						sourcePattern.getValue(),</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">						rule.hasImportDirective() ? rule.getImportDirective() : null));</span>
+			}
+		}
+
+<span class="fc" id="L135">		return entries;</span>
+	}
+
+	/**
+	 * Performs simple placeholder substitution for generating replacement previews.
+	 * Replaces {@code $name} placeholders with the text of their bound AST nodes.
+	 */
+	private String substitutePlaceholders(String pattern, Map&lt;String, Object&gt; bindings) {
+<span class="fc" id="L143">		String result = pattern;</span>
+		// Sort by key length descending to handle $args$ before $a
+<span class="fc" id="L145">		List&lt;Map.Entry&lt;String, Object&gt;&gt; sorted = new ArrayList&lt;&gt;(bindings.entrySet());</span>
+<span class="fc" id="L146">		sorted.sort((a, b) -&gt; Integer.compare(b.getKey().length(), a.getKey().length()));</span>
+
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		for (Map.Entry&lt;String, Object&gt; entry : sorted) {</span>
+<span class="fc" id="L149">			String placeholder = entry.getKey();</span>
+<span class="fc" id="L150">			Object value = entry.getValue();</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">			if (value instanceof org.eclipse.jdt.core.dom.ASTNode) {</span>
+<span class="fc" id="L152">				result = result.replace(placeholder, value.toString().trim());</span>
+<span class="pc bnc" id="L153" title="All 2 branches missed.">			} else if (value instanceof List&lt;?&gt; list) {</span>
+				// Variadic placeholder: join with &quot;, &quot;
+<span class="nc" id="L155">				StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">				for (int i = 0; i &lt; list.size(); i++) {</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">					if (i &gt; 0) {</span>
+<span class="nc" id="L158">						sb.append(&quot;, &quot;); //$NON-NLS-1$</span>
+					}
+<span class="nc" id="L160">					sb.append(list.get(i).toString().trim());</span>
+				}
+<span class="nc" id="L162">				result = result.replace(placeholder, sb.toString());</span>
+			}
+		}
+<span class="fc" id="L165">		return result;</span>
+	}
+
+	/**
+	 * Converts a list of report entries to JSON format.
+	 *
+	 * @param entries the report entries
+	 * @return JSON string representation
+	 */
+	public String toJson(List&lt;ReportEntry&gt; entries) {
+<span class="fc" id="L175">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L176">		sb.append(&quot;[\n&quot;); //$NON-NLS-1$</span>
+
+<span class="fc bfc" id="L178" title="All 2 branches covered.">		for (int i = 0; i &lt; entries.size(); i++) {</span>
+<span class="fc" id="L179">			ReportEntry entry = entries.get(i);</span>
+<span class="fc" id="L180">			sb.append(&quot;  {\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L181">			sb.append(&quot;    \&quot;line\&quot;: &quot;).append(entry.lineNumber()).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L182">			sb.append(&quot;    \&quot;offset\&quot;: &quot;).append(entry.offset()).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L183">			sb.append(&quot;    \&quot;length\&quot;: &quot;).append(entry.length()).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L184">			sb.append(&quot;    \&quot;matched\&quot;: &quot;).append(escapeJson(entry.matchedCode())).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L185">			sb.append(&quot;    \&quot;replacement\&quot;: &quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">					.append(entry.suggestedReplacement() != null</span>
+<span class="fc" id="L187">							? escapeJson(entry.suggestedReplacement())</span>
+<span class="nc" id="L188">							: &quot;null&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L189">					.append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L190">			sb.append(&quot;    \&quot;description\&quot;: &quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">					.append(entry.description() != null</span>
+<span class="fc" id="L192">							? escapeJson(entry.description())</span>
+<span class="nc" id="L193">							: &quot;null&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L194">					.append(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L195">			sb.append(&quot;    \&quot;severity\&quot;: &quot;).append(escapeJson(entry.severity())).append(&quot;,\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L196">			sb.append(&quot;    \&quot;pattern\&quot;: &quot;).append(escapeJson(entry.sourcePattern())).append(&quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L197">			sb.append(&quot;  }&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">			if (i &lt; entries.size() - 1) {</span>
+<span class="nc" id="L199">				sb.append(',');</span>
+			}
+<span class="fc" id="L201">			sb.append('\n');</span>
+		}
+
+<span class="fc" id="L204">		sb.append(&quot;]&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L205">		return sb.toString();</span>
+	}
+
+	/**
+	 * Converts a list of report entries to CSV format.
+	 *
+	 * @param entries the report entries
+	 * @return CSV string with header row
+	 */
+	public String toCsv(List&lt;ReportEntry&gt; entries) {
+<span class="fc" id="L215">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L216">		sb.append(&quot;line,offset,length,matched,replacement,description,severity,pattern\n&quot;); //$NON-NLS-1$</span>
+
+<span class="fc bfc" id="L218" title="All 2 branches covered.">		for (ReportEntry entry : entries) {</span>
+<span class="fc" id="L219">			sb.append(entry.lineNumber()).append(',');</span>
+<span class="fc" id="L220">			sb.append(entry.offset()).append(',');</span>
+<span class="fc" id="L221">			sb.append(entry.length()).append(',');</span>
+<span class="fc" id="L222">			sb.append(escapeCsv(entry.matchedCode())).append(',');</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">			sb.append(entry.suggestedReplacement() != null</span>
+<span class="pc" id="L224">					? escapeCsv(entry.suggestedReplacement()) : &quot;&quot;).append(','); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">			sb.append(entry.description() != null</span>
+<span class="pc" id="L226">					? escapeCsv(entry.description()) : &quot;&quot;).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L227">			sb.append(escapeCsv(entry.severity())).append(',');</span>
+<span class="fc" id="L228">			sb.append(escapeCsv(entry.sourcePattern()));</span>
+<span class="fc" id="L229">			sb.append('\n');</span>
+		}
+
+<span class="fc" id="L232">		return sb.toString();</span>
+	}
+
+	/**
+	 * Escapes a string for JSON output.
+	 */
+	private static String escapeJson(String value) {
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L240">			return &quot;null&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L242">		StringBuilder sb = new StringBuilder(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">		for (char c : value.toCharArray()) {</span>
+<span class="pc bpc" id="L244" title="3 of 6 branches missed.">			switch (c) {</span>
+			case '&quot;':
+<span class="fc" id="L246">				sb.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L247">				break;</span>
+			case '\\':
+<span class="nc" id="L249">				sb.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L250">				break;</span>
+			case '\n':
+<span class="fc" id="L252">				sb.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L253">				break;</span>
+			case '\r':
+<span class="nc" id="L255">				sb.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L256">				break;</span>
+			case '\t':
+<span class="nc" id="L258">				sb.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L259">				break;</span>
+			default:
+<span class="fc" id="L261">				sb.append(c);</span>
+				break;
+			}
+		}
+<span class="fc" id="L265">		sb.append('&quot;');</span>
+<span class="fc" id="L266">		return sb.toString();</span>
+	}
+
+	/**
+	 * Escapes a string for CSV output.
+	 */
+	private static String escapeCsv(String value) {
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L274">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L276" title="3 of 6 branches missed.">		if (value.contains(&quot;,&quot;) || value.contains(&quot;\&quot;&quot;) || value.contains(&quot;\n&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L277">			return &quot;\&quot;&quot; + value.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;) + &quot;\&quot;&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+		}
+<span class="fc" id="L279">		return value;</span>
+	}
+
+	/**
+	 * Represents a single entry in a dry-run report.
+	 *
+	 * @param lineNumber the line number in the source file (1-based)
+	 * @param offset the character offset of the match
+	 * @param length the character length of the match
+	 * @param matchedCode the matched source code text
+	 * @param suggestedReplacement the suggested replacement (null for hint-only)
+	 * @param description the rule description (may be null)
+	 * @param severity the severity level (info, warning, error)
+	 * @param sourcePattern the source pattern that matched
+	 * @param importDirective the import directives if any (may be null)
+	 * @since 1.3.3
+	 */
+	public record ReportEntry(
+			int lineNumber,
+			int offset,
+			int length,
+			String matchedCode,
+			String suggestedReplacement,
+			String description,
+			String severity,
+			String sourcePattern,
+			ImportDirective importDirective) {
+
+		/**
+		 * Returns {@code true} if this entry has a suggested replacement.
+		 *
+		 * @return {@code true} if not hint-only
+		 */
+		public boolean hasReplacement() {
+<span class="fc bfc" id="L313" title="All 2 branches covered.">			return suggestedReplacement != null;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -23,15 +23,24 @@ import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.Modifier;
 
 /**
- * Utility class for annotation-related operations.
- * Provides methods for checking, finding, and validating annotations
- * commonly needed during JUnit migration.
+ * Utility class for annotation and modifier operations on AST declarations.
+ * Provides methods for checking, finding, and validating annotations and modifiers
+ * commonly needed during code cleanup and migration.
+ * 
+ * &lt;p&gt;This class operates on {@link BodyDeclaration#modifiers()}, which contains
+ * both annotations and Java modifiers. Methods are organized into two sections:&lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;&lt;b&gt;Annotation Operations&lt;/b&gt; — checking, finding, and creating annotations&lt;/li&gt;
+ * &lt;li&gt;&lt;b&gt;Modifier Operations&lt;/b&gt; — checking for specific modifiers (static, final, etc.)&lt;/li&gt;
+ * &lt;/ul&gt;
  */
 public final class AnnotationUtils {
 
 	private AnnotationUtils() {
 		// Utility class - prevent instantiation
 	}
+
+	// ========== Annotation Operations ==========
 
 	/**
 	 * Creates a new MarkerAnnotation AST node with the given annotation name.
@@ -42,9 +51,9 @@ public final class AnnotationUtils {
 	 * @return the created MarkerAnnotation
 	 */
 	public static MarkerAnnotation createMarkerAnnotation(AST ast, String annotationName) {
-<span class="fc" id="L45">		MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
-<span class="fc" id="L46">		annotation.setTypeName(ast.newName(annotationName));</span>
-<span class="fc" id="L47">		return annotation;</span>
+<span class="fc" id="L54">		MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L55">		annotation.setTypeName(ast.newName(annotationName));</span>
+<span class="fc" id="L56">		return annotation;</span>
 	}
 
 	/**
@@ -55,7 +64,7 @@ public final class AnnotationUtils {
 	 * @return true if the field has the annotation
 	 */
 	public static boolean isFieldAnnotatedWith(FieldDeclaration field, String annotationClass) {
-<span class="fc" id="L58">		return hasAnnotation(field.modifiers(), annotationClass);</span>
+<span class="fc" id="L67">		return hasAnnotation(field.modifiers(), annotationClass);</span>
 	}
 
 	/**
@@ -66,7 +75,7 @@ public final class AnnotationUtils {
 	 * @return true if the declaration has the annotation
 	 */
 	public static boolean isAnnotatedWith(BodyDeclaration declaration, String annotationClass) {
-<span class="fc" id="L69">		return hasAnnotation(declaration.modifiers(), annotationClass);</span>
+<span class="fc" id="L78">		return hasAnnotation(declaration.modifiers(), annotationClass);</span>
 	}
 
 	/**
@@ -77,11 +86,11 @@ public final class AnnotationUtils {
 	 * @return true if the annotation is present
 	 */
 	public static boolean hasAnnotation(List&lt;?&gt; modifiers, String annotationClass) {
-<span class="fc" id="L80">		return modifiers.stream()</span>
-<span class="fc" id="L81">				.filter(Annotation.class::isInstance)</span>
-<span class="fc" id="L82">				.map(Annotation.class::cast)</span>
-<span class="fc" id="L83">				.map(Annotation::resolveTypeBinding)</span>
-<span class="pc bpc" id="L84" title="1 of 4 branches missed.">				.anyMatch(binding -&gt; binding != null &amp;&amp; annotationClass.equals(binding.getQualifiedName()));</span>
+<span class="fc" id="L89">		return modifiers.stream()</span>
+<span class="fc" id="L90">				.filter(Annotation.class::isInstance)</span>
+<span class="fc" id="L91">				.map(Annotation.class::cast)</span>
+<span class="fc" id="L92">				.map(Annotation::resolveTypeBinding)</span>
+<span class="pc bpc" id="L93" title="1 of 4 branches missed.">				.anyMatch(binding -&gt; binding != null &amp;&amp; annotationClass.equals(binding.getQualifiedName()));</span>
 	}
 
 	/**
@@ -92,10 +101,12 @@ public final class AnnotationUtils {
 	 * @return true if the annotation is present
 	 */
 	public static boolean hasAnnotationBySimpleName(List&lt;?&gt; modifiers, String annotationSimpleName) {
-<span class="fc" id="L95">		return modifiers.stream()</span>
-<span class="fc bfc" id="L96" title="All 2 branches covered.">				.anyMatch(modifier -&gt; modifier instanceof Annotation &amp;&amp; ((Annotation) modifier).getTypeName()</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">						.getFullyQualifiedName().equals(annotationSimpleName));</span>
+<span class="fc" id="L104">		return modifiers.stream()</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">				.anyMatch(modifier -&gt; modifier instanceof Annotation &amp;&amp; ((Annotation) modifier).getTypeName()</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">						.getFullyQualifiedName().equals(annotationSimpleName));</span>
 	}
+
+	// ========== Modifier Operations ==========
 
 	/**
 	 * Checks if a field has the static modifier.
@@ -104,7 +115,7 @@ public final class AnnotationUtils {
 	 * @return true if the field is static
 	 */
 	public static boolean isFieldStatic(FieldDeclaration field) {
-<span class="nc" id="L107">		return hasModifier(field.modifiers(), Modifier.ModifierKeyword.STATIC_KEYWORD);</span>
+<span class="nc" id="L118">		return hasModifier(field.modifiers(), Modifier.ModifierKeyword.STATIC_KEYWORD);</span>
 	}
 
 	/**
@@ -115,10 +126,10 @@ public final class AnnotationUtils {
 	 * @return true if the modifier is present
 	 */
 	public static boolean hasModifier(List&lt;?&gt; modifiers, Modifier.ModifierKeyword keyword) {
-<span class="nc" id="L118">		return modifiers.stream()</span>
-<span class="nc" id="L119">				.filter(Modifier.class::isInstance)</span>
-<span class="nc" id="L120">				.map(Modifier.class::cast)</span>
-<span class="nc" id="L121">				.anyMatch(modifier -&gt; modifier.getKeyword().equals(keyword));</span>
+<span class="nc" id="L129">		return modifiers.stream()</span>
+<span class="nc" id="L130">				.filter(Modifier.class::isInstance)</span>
+<span class="nc" id="L131">				.map(Modifier.class::cast)</span>
+<span class="nc" id="L132">				.anyMatch(modifier -&gt; modifier.getKeyword().equals(keyword));</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

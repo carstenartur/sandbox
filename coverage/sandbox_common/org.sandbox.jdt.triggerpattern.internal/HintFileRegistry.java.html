@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintFileRegistry.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">HintFileRegistry.java</span></div><h1>HintFileRegistry.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+
+/**
+ * Registry for loading and managing {@code .sandbox-hint} files.
+ * 
+ * &lt;p&gt;The registry provides access to bundled pattern libraries and
+ * user-defined hint files. Bundled libraries are loaded from the
+ * classpath, while user-defined files can be loaded from the filesystem.&lt;/p&gt;
+ * 
+ * &lt;h2&gt;Bundled Pattern Libraries&lt;/h2&gt;
+ * &lt;p&gt;Generic libraries bundled with the framework:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code collections.sandbox-hint} — Collection API improvements&lt;/li&gt;
+ *   &lt;li&gt;{@code modernize-java9.sandbox-hint} — Java 9+ API modernization&lt;/li&gt;
+ *   &lt;li&gt;{@code modernize-java11.sandbox-hint} — Java 11+ API modernization&lt;/li&gt;
+ *   &lt;li&gt;{@code performance.sandbox-hint} — Performance optimizations&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;Domain-specific libraries are provided by their dedicated plugins:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code encoding.sandbox-hint} — in {@code sandbox_encoding_quickfix}&lt;/li&gt;
+ *   &lt;li&gt;{@code junit5.sandbox-hint} — in {@code sandbox_junit_cleanup}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;This class is thread-safe. All mutable state is protected by
+ * synchronization or concurrent data structures.&lt;/p&gt;
+ * 
+ * @since 1.3.2
+ */
+public final class HintFileRegistry {
+	
+<span class="fc" id="L72">	private static final HintFileRegistry INSTANCE = new HintFileRegistry();</span>
+	
+<span class="fc" id="L74">	private final Map&lt;String, HintFile&gt; hintFiles = new ConcurrentHashMap&lt;&gt;();</span>
+	/** Secondary index: declared {@code &lt;!id: ...&gt;} → HintFile, for efficient include resolution. */
+<span class="fc" id="L76">	private final Map&lt;String, HintFile&gt; hintFilesByDeclaredId = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L77">	private final HintFileParser parser = new HintFileParser();</span>
+<span class="fc" id="L78">	private final AtomicBoolean bundledLoaded = new AtomicBoolean(false);</span>
+	/** Tracks which projects have been scanned for workspace hint files. */
+<span class="fc" id="L80">	private final Set&lt;String&gt; loadedProjects = ConcurrentHashMap.newKeySet();</span>
+	
+	/**
+	 * File extension for hint files (including the dot).
+	 */
+	private static final String HINT_FILE_EXTENSION = &quot;.sandbox-hint&quot;; //$NON-NLS-1$
+	
+	/**
+	 * Bundled library resource names.
+	 */
+<span class="fc" id="L90">	private static final String[] BUNDLED_LIBRARIES = {</span>
+<span class="fc" id="L91">		&quot;collections.sandbox-hint&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L92">		&quot;modernize-java9.sandbox-hint&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L93">		&quot;modernize-java11.sandbox-hint&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L94">		&quot;performance.sandbox-hint&quot; //$NON-NLS-1$</span>
+	};
+	
+	/**
+	 * Classpath resource prefix for bundled library files.
+	 */
+	private static final String BUNDLED_RESOURCE_PREFIX = 
+<span class="fc" id="L101">		&quot;org/sandbox/jdt/triggerpattern/internal/&quot;; //$NON-NLS-1$</span>
+	
+<span class="fc" id="L103">	private HintFileRegistry() {</span>
+		// Singleton
+<span class="fc" id="L105">	}</span>
+	
+	/**
+	 * Returns the singleton instance.
+	 * 
+	 * @return the hint file registry
+	 */
+	public static HintFileRegistry getInstance() {
+<span class="fc" id="L113">		return INSTANCE;</span>
+	}
+	
+	/**
+	 * Loads and registers a hint file from a string.
+	 * 
+	 * @param id the unique ID for this hint file
+	 * @param content the hint file content
+	 * @throws HintParseException if parsing fails
+	 */
+	public void loadFromString(String id, String content) throws HintParseException {
+<span class="fc" id="L124">		HintFile hintFile = parser.parse(content);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">		if (hintFile.getId() == null) {</span>
+<span class="fc" id="L126">			hintFile.setId(id);</span>
+		}
+<span class="fc" id="L128">		hintFiles.put(id, hintFile);</span>
+<span class="fc" id="L129">		indexByDeclaredId(hintFile);</span>
+<span class="fc" id="L130">	}</span>
+	
+	/**
+	 * Loads and registers a hint file from a reader.
+	 * 
+	 * @param id the unique ID for this hint file
+	 * @param reader the reader to read from
+	 * @throws HintParseException if parsing fails
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void loadFromReader(String id, Reader reader) throws HintParseException, IOException {
+<span class="fc" id="L141">		HintFile hintFile = parser.parse(reader);</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">		if (hintFile.getId() == null) {</span>
+<span class="nc" id="L143">			hintFile.setId(id);</span>
+		}
+<span class="fc" id="L145">		hintFiles.put(id, hintFile);</span>
+<span class="fc" id="L146">		indexByDeclaredId(hintFile);</span>
+<span class="fc" id="L147">	}</span>
+	
+	/**
+	 * Loads and registers a hint file from a classpath resource.
+	 * 
+	 * @param id the unique ID for this hint file
+	 * @param resourcePath the classpath resource path
+	 * @param classLoader the class loader to use for loading
+	 * @return {@code true} if the resource was found and loaded
+	 * @throws HintParseException if parsing fails
+	 * @throws IOException if an I/O error occurs
+	 */
+	public boolean loadFromClasspath(String id, String resourcePath, ClassLoader classLoader) 
+			throws HintParseException, IOException {
+<span class="fc" id="L161">		InputStream is = classLoader.getResourceAsStream(resourcePath);</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">		if (is == null) {</span>
+<span class="nc" id="L163">			return false;</span>
+		}
+<span class="fc" id="L165">		try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L166">			loadFromReader(id, reader);</span>
+<span class="fc" id="L167">			return true;</span>
+		}
+	}
+	
+	/**
+	 * Returns a registered hint file by ID.
+	 * 
+	 * @param id the hint file ID
+	 * @return the hint file, or {@code null} if not found
+	 */
+	public HintFile getHintFile(String id) {
+<span class="fc" id="L178">		return hintFiles.get(id);</span>
+	}
+	
+	/**
+	 * Returns all registered hint files.
+	 * 
+	 * @return unmodifiable map of ID to hint file
+	 */
+	public Map&lt;String, HintFile&gt; getAllHintFiles() {
+<span class="fc" id="L187">		return Collections.unmodifiableMap(hintFiles);</span>
+	}
+	
+	/**
+	 * Returns the IDs of all registered hint files.
+	 * 
+	 * @return unmodifiable list of hint file IDs
+	 */
+	public List&lt;String&gt; getRegisteredIds() {
+<span class="fc" id="L196">		return Collections.unmodifiableList(new ArrayList&lt;&gt;(hintFiles.keySet()));</span>
+	}
+	
+	/**
+	 * Removes a registered hint file.
+	 * 
+	 * @param id the hint file ID to remove
+	 * @return the removed hint file, or {@code null} if not found
+	 */
+	public HintFile unregister(String id) {
+<span class="fc" id="L206">		HintFile removed = hintFiles.remove(id);</span>
+<span class="pc bpc" id="L207" title="2 of 4 branches missed.">		if (removed != null &amp;&amp; removed.getId() != null) {</span>
+<span class="fc" id="L208">			hintFilesByDeclaredId.remove(removed.getId());</span>
+		}
+<span class="fc" id="L210">		return removed;</span>
+	}
+	
+	/**
+	 * Removes all registered hint files.
+	 */
+	public void clear() {
+<span class="fc" id="L217">		hintFiles.clear();</span>
+<span class="fc" id="L218">		hintFilesByDeclaredId.clear();</span>
+<span class="fc" id="L219">		loadedProjects.clear();</span>
+<span class="fc" id="L220">		bundledLoaded.set(false);</span>
+<span class="fc" id="L221">	}</span>
+	
+	/**
+	 * Resolves include directives for a hint file by collecting all rules
+	 * from referenced hint files.
+	 * 
+	 * &lt;p&gt;When a hint file has {@code &lt;!include: other-id&gt;} directives, this method
+	 * looks up the referenced hint files by ID and returns a combined list of all
+	 * rules (the file's own rules plus all included rules).&lt;/p&gt;
+	 * 
+	 * &lt;p&gt;Circular includes are detected and silently broken to prevent infinite loops.&lt;/p&gt;
+	 * 
+	 * @param hintFile the hint file whose includes should be resolved
+	 * @return list of all rules including those from included files
+	 * @since 1.3.4
+	 */
+	public List&lt;TransformationRule&gt; resolveIncludes(HintFile hintFile) {
+<span class="fc" id="L238">		List&lt;TransformationRule&gt; allRules = new ArrayList&lt;&gt;(hintFile.getRules());</span>
+<span class="fc" id="L239">		Set&lt;String&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">		if (hintFile.getId() != null) {</span>
+<span class="fc" id="L241">			visited.add(hintFile.getId());</span>
+		}
+<span class="fc" id="L243">		resolveIncludesRecursive(hintFile, allRules, visited);</span>
+<span class="fc" id="L244">		return Collections.unmodifiableList(allRules);</span>
+	}
+	
+	/**
+	 * Recursively resolves includes, tracking visited IDs to prevent cycles.
+	 * 
+	 * &lt;p&gt;Looks up included files first by registry key, then by declared
+	 * {@code &lt;!id: ...&gt;} so that {@code &lt;!include:&gt;} directives work
+	 * consistently regardless of how the hint file was registered.&lt;/p&gt;
+	 */
+	private void resolveIncludesRecursive(HintFile hintFile, 
+			List&lt;TransformationRule&gt; allRules, Set&lt;String&gt; visited) {
+<span class="fc bfc" id="L256" title="All 2 branches covered.">		for (String includeId : hintFile.getIncludes()) {</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">			if (visited.contains(includeId)) {</span>
+<span class="fc" id="L258">				continue; // Break circular reference</span>
+			}
+<span class="fc" id="L260">			visited.add(includeId);</span>
+<span class="fc" id="L261">			HintFile included = findByKeyOrDeclaredId(includeId);</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">			if (included != null) {</span>
+<span class="fc" id="L263">				allRules.addAll(included.getRules());</span>
+<span class="fc" id="L264">				resolveIncludesRecursive(included, allRules, visited);</span>
+			}
+		}
+<span class="fc" id="L267">	}</span>
+	
+	/**
+	 * Finds a hint file by registry key first, then falls back to the
+	 * secondary index of declared {@link HintFile#getId()} values.
+	 * 
+	 * @param id the ID to look up
+	 * @return the matching hint file, or {@code null} if not found
+	 */
+	private HintFile findByKeyOrDeclaredId(String id) {
+<span class="fc" id="L277">		HintFile result = hintFiles.get(id);</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">		if (result != null) {</span>
+<span class="fc" id="L279">			return result;</span>
+		}
+		// Fall back: lookup by declared &lt;!id: ...&gt; via secondary index
+<span class="fc" id="L282">		return hintFilesByDeclaredId.get(id);</span>
+	}
+	
+	/**
+	 * Updates the secondary index for declared IDs.
+	 */
+	private void indexByDeclaredId(HintFile hintFile) {
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">		if (hintFile.getId() != null) {</span>
+<span class="fc" id="L290">			hintFilesByDeclaredId.put(hintFile.getId(), hintFile);</span>
+		}
+<span class="fc" id="L292">	}</span>
+	
+	/**
+	 * Returns the names of bundled pattern libraries.
+	 * 
+	 * @return array of bundled library resource names
+	 */
+	public static String[] getBundledLibraryNames() {
+<span class="fc" id="L300">		return BUNDLED_LIBRARIES.clone();</span>
+	}
+	
+	/**
+	 * Attempts to load all bundled pattern libraries from the classpath.
+	 * Libraries that are not found are silently skipped.
+	 * 
+	 * @param classLoader the class loader to use for loading resources
+	 * @return list of successfully loaded library IDs
+	 */
+	public List&lt;String&gt; loadBundledLibraries(ClassLoader classLoader) {
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">		if (!bundledLoaded.compareAndSet(false, true)) {</span>
+<span class="nc" id="L312">			return getRegisteredIds();</span>
+		}
+<span class="fc" id="L314">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">		for (String libraryName : BUNDLED_LIBRARIES) {</span>
+<span class="fc" id="L316">			String id = libraryName.replace(&quot;.sandbox-hint&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L317">			String resourcePath = BUNDLED_RESOURCE_PREFIX + libraryName;</span>
+			try {
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">				if (loadFromClasspath(id, resourcePath, classLoader)) {</span>
+<span class="fc" id="L320">					loaded.add(id);</span>
+				}
+<span class="pc" id="L322">			} catch (HintParseException | IOException e) {</span>
+				// Silently skip libraries that fail to load
+				// In a full Eclipse environment, this would be logged
+			}
+		}
+<span class="fc" id="L327">		return loaded;</span>
+	}
+	
+	/**
+	 * Discovers and loads {@code .sandbox-hint} files from a workspace project.
+	 * 
+	 * &lt;p&gt;Scans the project root for files with the {@code .sandbox-hint} extension
+	 * and registers them. Each project is scanned at most once; subsequent calls
+	 * with the same project are no-ops.&lt;/p&gt;
+	 * 
+	 * &lt;p&gt;This enables users to define custom transformation rules per project
+	 * by placing {@code .sandbox-hint} files in the project directory.&lt;/p&gt;
+	 * 
+	 * @param project the Eclipse project to scan
+	 * @return list of successfully loaded hint file IDs from this project
+	 * @since 1.3.6
+	 */
+	public List&lt;String&gt; loadProjectHintFiles(IProject project) {
+<span class="pc bpc" id="L345" title="3 of 4 branches missed.">		if (project == null || !project.isAccessible()) {</span>
+<span class="fc" id="L346">			return Collections.emptyList();</span>
+		}
+		
+<span class="nc" id="L349">		String projectKey = project.getName();</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">		if (!loadedProjects.add(projectKey)) {</span>
+<span class="nc" id="L351">			return Collections.emptyList(); // Already scanned</span>
+		}
+		
+<span class="nc" id="L354">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
+		try {
+<span class="nc" id="L356">			project.accept(new IResourceVisitor() {</span>
+				@Override
+				public boolean visit(IResource resource) throws CoreException {
+<span class="nc bnc" id="L359" title="All 2 branches missed.">					if (resource instanceof IFile file</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">							&amp;&amp; file.getName().endsWith(HINT_FILE_EXTENSION)) {</span>
+<span class="nc" id="L361">						String id = &quot;project:&quot; + projectKey + &quot;:&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L362">								+ file.getProjectRelativePath().toString();</span>
+<span class="nc" id="L363">						try (InputStream is = file.getContents();</span>
+<span class="nc" id="L364">								Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="nc" id="L365">							loadFromReader(id, reader);</span>
+<span class="nc" id="L366">							loaded.add(id);</span>
+<span class="nc" id="L367">						} catch (HintParseException | IOException e) {</span>
+<span class="nc" id="L368">							ILog log = Platform.getLog(HintFileRegistry.class);</span>
+<span class="nc" id="L369">							log.log(Status.warning(</span>
+<span class="nc" id="L370">									&quot;Failed to load hint file: &quot; + file.getFullPath(), e)); //$NON-NLS-1$</span>
+						}
+					}
+					// Skip output folders and hidden directories
+<span class="nc bnc" id="L374" title="All 2 branches missed.">					if (resource instanceof IContainer container) {</span>
+<span class="nc" id="L375">						String name = container.getName();</span>
+<span class="nc bnc" id="L376" title="All 2 branches missed.">						return !name.startsWith(&quot;.&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">								&amp;&amp; !&quot;bin&quot;.equals(name) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">								&amp;&amp; !&quot;target&quot;.equals(name); //$NON-NLS-1$</span>
+					}
+<span class="nc" id="L380">					return true;</span>
+				}
+			});
+<span class="nc" id="L383">		} catch (CoreException e) {</span>
+<span class="nc" id="L384">			ILog log = Platform.getLog(HintFileRegistry.class);</span>
+<span class="nc" id="L385">			log.log(Status.warning(</span>
+<span class="nc" id="L386">					&quot;Failed to scan project for hint files: &quot; + projectKey, e)); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L388">		return loaded;</span>
+	}
+	
+	/**
+	 * Forces a re-scan of the given project on the next call to
+	 * {@link #loadProjectHintFiles(IProject)}.
+	 * 
+	 * &lt;p&gt;This is useful when a project's {@code .sandbox-hint} files have changed
+	 * and need to be reloaded.&lt;/p&gt;
+	 * 
+	 * @param project the project to invalidate
+	 * @since 1.3.6
+	 */
+	public void invalidateProject(IProject project) {
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">		if (project != null) {</span>
+<span class="nc" id="L403">			loadedProjects.remove(project.getName());</span>
+		}
+<span class="fc" id="L405">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

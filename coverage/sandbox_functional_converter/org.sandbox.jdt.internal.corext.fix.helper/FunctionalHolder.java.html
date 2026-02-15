@@ -76,21 +76,14 @@ public class FunctionalHolder
 <span class="nc" id="L76">		this.enhancedForStatement = enhancedForStatement;</span>
 <span class="nc" id="L77">	}</span>
 
-	/**
-	 * Legacy field access for backward compatibility.
-	 * @deprecated Use {@link #getEnhancedForStatement()} instead
-	 */
-	@Deprecated
-	public EnhancedForStatement minv;
-
 	@Override
 	public HelperVisitor&lt;FunctionalHolder, ReferenceHolder&lt;String, Object&gt;, String&gt; getHelperVisitor() {
-<span class="nc" id="L88">		return helperVisitor;</span>
+<span class="nc" id="L81">		return helperVisitor;</span>
 	}
 
 	@Override
 	public void setHelperVisitor(HelperVisitor&lt;FunctionalHolder, ReferenceHolder&lt;String, Object&gt;, String&gt; hv) {
-<span class="nc" id="L93">		this.helperVisitor = hv;</span>
-<span class="nc" id="L94">	}</span>
+<span class="nc" id="L86">		this.helperVisitor = hv;</span>
+<span class="nc" id="L87">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

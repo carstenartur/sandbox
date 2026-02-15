@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PreviewGenerator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">PreviewGenerator.java</span></div><h1>PreviewGenerator.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+
+/**
+ * Generates before/after preview text from source and replacement patterns.
+ * 
+ * &lt;p&gt;Automatically substitutes placeholders with example values to produce
+ * human-readable preview text. Eliminates the need for manually writing
+ * preview code for each transformation rule.&lt;/p&gt;
+ * 
+ * &lt;h2&gt;Example&lt;/h2&gt;
+ * &lt;pre&gt;
+ * Source pattern:  &quot;new String($bytes, \&quot;UTF-8\&quot;)&quot;
+ * Replacement:    &quot;new String($bytes, java.nio.charset.StandardCharsets.UTF_8)&quot;
+ * 
+ * Generated preview:
+ *   Before: new String(bytes, &quot;UTF-8&quot;)
+ *   After:  new String(bytes, java.nio.charset.StandardCharsets.UTF_8)
+ * &lt;/pre&gt;
+ * 
+ * @since 1.3.2
+ */
+public final class PreviewGenerator {
+	
+	/**
+	 * Default example values for placeholders by naming convention.
+	 */
+<span class="fc" id="L45">	private static final Map&lt;String, String&gt; DEFAULT_EXAMPLES = new HashMap&lt;&gt;();</span>
+	
+	static {
+<span class="fc" id="L48">		DEFAULT_EXAMPLES.put(&quot;$x&quot;, &quot;x&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L49">		DEFAULT_EXAMPLES.put(&quot;$y&quot;, &quot;y&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L50">		DEFAULT_EXAMPLES.put(&quot;$z&quot;, &quot;z&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L51">		DEFAULT_EXAMPLES.put(&quot;$a&quot;, &quot;a&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L52">		DEFAULT_EXAMPLES.put(&quot;$b&quot;, &quot;b&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L53">		DEFAULT_EXAMPLES.put(&quot;$var&quot;, &quot;value&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L54">		DEFAULT_EXAMPLES.put(&quot;$obj&quot;, &quot;obj&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L55">		DEFAULT_EXAMPLES.put(&quot;$name&quot;, &quot;name&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L56">		DEFAULT_EXAMPLES.put(&quot;$type&quot;, &quot;MyType&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L57">		DEFAULT_EXAMPLES.put(&quot;$T&quot;, &quot;String&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L58">		DEFAULT_EXAMPLES.put(&quot;$path&quot;, &quot;path&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L59">		DEFAULT_EXAMPLES.put(&quot;$bytes&quot;, &quot;bytes&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L60">		DEFAULT_EXAMPLES.put(&quot;$enc&quot;, &quot;\&quot;UTF-8\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L61">		DEFAULT_EXAMPLES.put(&quot;$encoding&quot;, &quot;\&quot;UTF-8\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L62">		DEFAULT_EXAMPLES.put(&quot;$charset&quot;, &quot;charset&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L63">		DEFAULT_EXAMPLES.put(&quot;$src&quot;, &quot;source&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L64">		DEFAULT_EXAMPLES.put(&quot;$msg&quot;, &quot;message&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L65">		DEFAULT_EXAMPLES.put(&quot;$message&quot;, &quot;message&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L66">		DEFAULT_EXAMPLES.put(&quot;$expected&quot;, &quot;expected&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L67">		DEFAULT_EXAMPLES.put(&quot;$actual&quot;, &quot;actual&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L68">		DEFAULT_EXAMPLES.put(&quot;$cond&quot;, &quot;condition&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L69">		DEFAULT_EXAMPLES.put(&quot;$result&quot;, &quot;result&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L70">		DEFAULT_EXAMPLES.put(&quot;$list&quot;, &quot;list&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L71">		DEFAULT_EXAMPLES.put(&quot;$map&quot;, &quot;map&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L72">		DEFAULT_EXAMPLES.put(&quot;$key&quot;, &quot;key&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L73">		DEFAULT_EXAMPLES.put(&quot;$value&quot;, &quot;value&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L74">		DEFAULT_EXAMPLES.put(&quot;$stream&quot;, &quot;stream&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L75">		DEFAULT_EXAMPLES.put(&quot;$length&quot;, &quot;length&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L76">		DEFAULT_EXAMPLES.put(&quot;$len&quot;, &quot;len&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L77">		DEFAULT_EXAMPLES.put(&quot;$size&quot;, &quot;size&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L78">		DEFAULT_EXAMPLES.put(&quot;$copy&quot;, &quot;copy&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L79">		DEFAULT_EXAMPLES.put(&quot;$srcPos&quot;, &quot;0&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L80">	}</span>
+	
+	private PreviewGenerator() {
+		// Utility class
+	}
+	
+	/**
+	 * Generates a preview for a transformation rule.
+	 * 
+	 * @param rule the transformation rule
+	 * @return the generated preview
+	 */
+	public static Preview generatePreview(TransformationRule rule) {
+<span class="fc" id="L93">		String sourceText = rule.sourcePattern().getValue();</span>
+		
+		// Collect all placeholders from the source pattern
+<span class="fc" id="L96">		Map&lt;String, String&gt; examples = collectPlaceholderExamples(sourceText);</span>
+		
+<span class="fc" id="L98">		String before = substitutePlaceholders(sourceText, examples);</span>
+		
+<span class="fc" id="L100">		String after = null;</span>
+<span class="pc bpc" id="L101" title="2 of 4 branches missed.">		if (!rule.isHintOnly() &amp;&amp; !rule.alternatives().isEmpty()) {</span>
+<span class="fc" id="L102">			String firstReplacement = rule.alternatives().get(0).replacementPattern();</span>
+<span class="fc" id="L103">			after = substitutePlaceholders(firstReplacement, examples);</span>
+		}
+		
+<span class="fc" id="L106">		return new Preview(before, after, rule.getDescription());</span>
+	}
+	
+	/**
+	 * Generates a preview from a source pattern and replacement pattern.
+	 * 
+	 * @param sourcePattern the source pattern text
+	 * @param replacementPattern the replacement pattern text (may be {@code null} for hint-only)
+	 * @return the generated preview
+	 */
+	public static Preview generatePreview(String sourcePattern, String replacementPattern) {
+<span class="fc" id="L117">		Map&lt;String, String&gt; examples = collectPlaceholderExamples(sourcePattern);</span>
+		
+<span class="fc" id="L119">		String before = substitutePlaceholders(sourcePattern, examples);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		String after = replacementPattern != null </span>
+<span class="fc" id="L121">				? substitutePlaceholders(replacementPattern, examples) </span>
+<span class="fc" id="L122">				: null;</span>
+		
+<span class="fc" id="L124">		return new Preview(before, after, null);</span>
+	}
+	
+	/**
+	 * Collects placeholder names from a pattern and assigns example values.
+	 * 
+	 * @param patternText the pattern text
+	 * @return map of placeholder name to example value
+	 */
+	static Map&lt;String, String&gt; collectPlaceholderExamples(String patternText) {
+<span class="fc" id="L134">		Map&lt;String, String&gt; examples = new HashMap&lt;&gt;();</span>
+		
+<span class="fc" id="L136">		java.util.regex.Pattern phPattern = java.util.regex.Pattern.compile(&quot;\\$([a-zA-Z_][a-zA-Z0-9_]*)\\$?&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L137">		Matcher matcher = phPattern.matcher(patternText);</span>
+		
+<span class="fc" id="L139">		int varCounter = 0;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		while (matcher.find()) {</span>
+<span class="fc" id="L141">			String fullPlaceholder = matcher.group(0);</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">			if (!examples.containsKey(fullPlaceholder)) {</span>
+<span class="fc" id="L143">				String example = DEFAULT_EXAMPLES.get(fullPlaceholder);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">				if (example == null) {</span>
+					// Generate a meaningful name from the placeholder
+<span class="fc" id="L146">					String name = matcher.group(1);</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">					if (fullPlaceholder.endsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+						// Variadic placeholder: use &quot;arg1, arg2&quot;
+<span class="fc" id="L149">						example = &quot;arg&quot; + (++varCounter) + &quot;, arg&quot; + (++varCounter); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L150">					} else {</span>
+<span class="nc" id="L151">						example = name;</span>
+					}
+				}
+<span class="fc" id="L154">				examples.put(fullPlaceholder, example);</span>
+			}
+		}
+		
+<span class="fc" id="L158">		return examples;</span>
+	}
+	
+	/**
+	 * Substitutes placeholders in a pattern with example values.
+	 * 
+	 * @param patternText the pattern text with placeholders
+	 * @param examples the placeholder-to-value mapping
+	 * @return the substituted text
+	 */
+	static String substitutePlaceholders(String patternText, Map&lt;String, String&gt; examples) {
+<span class="fc" id="L169">		String result = patternText;</span>
+		// Sort by length descending to replace longer placeholders first (e.g., $args$ before $a)
+<span class="fc" id="L171">		List&lt;Map.Entry&lt;String, String&gt;&gt; sorted = new java.util.ArrayList&lt;&gt;(examples.entrySet());</span>
+<span class="fc" id="L172">		sorted.sort((a, b) -&gt; Integer.compare(b.getKey().length(), a.getKey().length()));</span>
+		
+<span class="fc bfc" id="L174" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; entry : sorted) {</span>
+<span class="fc" id="L175">			result = result.replace(entry.getKey(), entry.getValue());</span>
+		}
+<span class="fc" id="L177">		return result;</span>
+	}
+	
+	/**
+	 * Represents a before/after preview for a transformation rule.
+	 * 
+	 * @param before the code before transformation
+	 * @param after the code after transformation (null for hint-only rules)
+	 * @param description optional description of the transformation
+	 */
+	public record Preview(String before, String after, String description) {
+		
+		/**
+		 * Returns {@code true} if this preview has an &quot;after&quot; transformation.
+		 * 
+		 * @return {@code true} if not hint-only
+		 */
+		public boolean hasTransformation() {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">			return after != null;</span>
+		}
+		
+		/**
+		 * Formats the preview as a human-readable string.
+		 * 
+		 * @return formatted preview text
+		 */
+		public String format() {
+<span class="fc" id="L204">			StringBuilder sb = new StringBuilder();</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">			if (description != null) {</span>
+<span class="nc" id="L206">				sb.append(&quot;// &quot;).append(description).append('\n'); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L208">			sb.append(&quot;Before: &quot;).append(before); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">			if (after != null) {</span>
+<span class="fc" id="L210">				sb.append('\n');</span>
+<span class="fc" id="L211">				sb.append(&quot;After:  &quot;).append(after); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L213">			return sb.toString();</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

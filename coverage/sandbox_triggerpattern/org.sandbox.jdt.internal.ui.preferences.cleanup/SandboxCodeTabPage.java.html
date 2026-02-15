@@ -21,6 +21,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.internal.ui.fix.HintFileCleanUp;
 import org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp;
 import org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp;
 import org.sandbox.jdt.internal.ui.fix.ThreadingCleanUp;
@@ -32,49 +33,57 @@ import org.sandbox.jdt.internal.ui.fix.ThreadingCleanUp;
  * 
  * @since 1.2.2
  */
-<span class="nc" id="L35">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
+<span class="nc" id="L36">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
 	
 	/**
 	 * Constant array for boolean selection
 	 */
-<span class="nc" id="L40">	static final String[] FALSE_TRUE = {</span>
-<span class="nc" id="L41">			CleanUpOptions.FALSE,</span>
-<span class="nc" id="L42">			CleanUpOptions.TRUE</span>
+<span class="nc" id="L41">	static final String[] FALSE_TRUE = {</span>
+<span class="nc" id="L42">			CleanUpOptions.FALSE,</span>
+<span class="nc" id="L43">			CleanUpOptions.TRUE</span>
 	};
 	
-<span class="nc" id="L45">	public static final String ID = &quot;org.sandbox.jdt.ui.cleanup.tabpage.triggerpattern&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L46">	public static final String ID = &quot;org.sandbox.jdt.ui.cleanup.tabpage.triggerpattern&quot;; //$NON-NLS-1$</span>
 	
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
-<span class="nc" id="L49">		return new AbstractCleanUp[] {</span>
-<span class="nc" id="L50">				new StringSimplificationCleanUp(values),</span>
-<span class="nc" id="L51">				new ThreadingCleanUp(values),</span>
-<span class="nc" id="L52">				new ShiftOutOfRangeCleanUp(values)</span>
+<span class="nc" id="L50">		return new AbstractCleanUp[] {</span>
+<span class="nc" id="L51">				new StringSimplificationCleanUp(values),</span>
+<span class="nc" id="L52">				new ThreadingCleanUp(values),</span>
+<span class="nc" id="L53">				new ShiftOutOfRangeCleanUp(values),</span>
+<span class="nc" id="L54">				new HintFileCleanUp(values)</span>
 		};
 	}
 	
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-<span class="nc" id="L58">		Group stringGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);</span>
-<span class="nc" id="L59">		final CheckboxPreference stringSimplification = createCheckboxPref(stringGroup, numColumns, </span>
-<span class="nc" id="L60">				CleanUpMessages.StringSimplificationTabPage_CheckboxName_StringSimplification, </span>
-<span class="nc" id="L61">				MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L62">		intent(stringGroup);</span>
-<span class="nc" id="L63">		registerPreference(stringSimplification);</span>
+<span class="nc" id="L60">		Group stringGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);</span>
+<span class="nc" id="L61">		final CheckboxPreference stringSimplification = createCheckboxPref(stringGroup, numColumns, </span>
+<span class="nc" id="L62">				CleanUpMessages.StringSimplificationTabPage_CheckboxName_StringSimplification, </span>
+<span class="nc" id="L63">				MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L64">		intent(stringGroup);</span>
+<span class="nc" id="L65">		registerPreference(stringSimplification);</span>
 
-<span class="nc" id="L65">		Group threadingGroup = createGroup(numColumns, composite, CleanUpMessages.ThreadingTabPage_GroupName);</span>
-<span class="nc" id="L66">		final CheckboxPreference threading = createCheckboxPref(threadingGroup, numColumns, </span>
-<span class="nc" id="L67">				CleanUpMessages.ThreadingTabPage_CheckboxName_Threading, </span>
-<span class="nc" id="L68">				MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L69">		intent(threadingGroup);</span>
-<span class="nc" id="L70">		registerPreference(threading);</span>
+<span class="nc" id="L67">		Group threadingGroup = createGroup(numColumns, composite, CleanUpMessages.ThreadingTabPage_GroupName);</span>
+<span class="nc" id="L68">		final CheckboxPreference threading = createCheckboxPref(threadingGroup, numColumns, </span>
+<span class="nc" id="L69">				CleanUpMessages.ThreadingTabPage_CheckboxName_Threading, </span>
+<span class="nc" id="L70">				MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L71">		intent(threadingGroup);</span>
+<span class="nc" id="L72">		registerPreference(threading);</span>
     
-<span class="nc" id="L72">		Group shiftGroup = createGroup(numColumns, composite, CleanUpMessages.ShiftOutOfRangeTabPage_GroupName);</span>
-<span class="nc" id="L73">		final CheckboxPreference shiftOutOfRange = createCheckboxPref(shiftGroup, numColumns,</span>
-<span class="nc" id="L74">				CleanUpMessages.ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange,</span>
-<span class="nc" id="L75">				MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L76">		intent(shiftGroup);</span>
-<span class="nc" id="L77">		registerPreference(shiftOutOfRange);</span>
-<span class="nc" id="L78">	}</span>
+<span class="nc" id="L74">		Group shiftGroup = createGroup(numColumns, composite, CleanUpMessages.ShiftOutOfRangeTabPage_GroupName);</span>
+<span class="nc" id="L75">		final CheckboxPreference shiftOutOfRange = createCheckboxPref(shiftGroup, numColumns,</span>
+<span class="nc" id="L76">				CleanUpMessages.ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange,</span>
+<span class="nc" id="L77">				MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L78">		intent(shiftGroup);</span>
+<span class="nc" id="L79">		registerPreference(shiftOutOfRange);</span>
+
+<span class="nc" id="L81">		Group hintFileGroup = createGroup(numColumns, composite, CleanUpMessages.HintFileTabPage_GroupName);</span>
+<span class="nc" id="L82">		final CheckboxPreference hintFile = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L83">				CleanUpMessages.HintFileTabPage_CheckboxName_HintFile,</span>
+<span class="nc" id="L84">				MYCleanUpConstants.HINTFILE_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L85">		intent(hintFileGroup);</span>
+<span class="nc" id="L86">		registerPreference(hintFile);</span>
+<span class="nc" id="L87">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

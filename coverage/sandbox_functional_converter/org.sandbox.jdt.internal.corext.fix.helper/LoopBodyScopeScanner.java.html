@@ -142,51 +142,49 @@ public class LoopBodyScopeScanner {
 				
 				// Try to resolve binding to filter out fields
 <span class="fc" id="L144">				IBinding binding = node.resolveBinding();</span>
-<span class="fc bfc" id="L145" title="All 2 branches covered.">				if (binding instanceof IVariableBinding) {</span>
-<span class="fc" id="L146">					IVariableBinding varBinding = (IVariableBinding) binding;</span>
-					
+<span class="fc bfc" id="L145" title="All 2 branches covered.">				if (binding instanceof IVariableBinding varBinding) {</span>
 					// Skip fields - they're not in local scope
-<span class="fc bfc" id="L149" title="All 2 branches covered.">					if (varBinding.isField()) {</span>
-<span class="fc" id="L150">						return true;</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">					if (varBinding.isField()) {</span>
+<span class="fc" id="L148">						return true;</span>
 					}
 				}
 				
 				// This is a reference to a variable from outer scope
-<span class="fc" id="L155">				referencedVariables.add(varName);</span>
+<span class="fc" id="L153">				referencedVariables.add(varName);</span>
 				
 				// Check if this variable is being modified
-<span class="fc bfc" id="L158" title="All 2 branches covered.">				if (isModification(node)) {</span>
-<span class="fc" id="L159">					modifiedVariables.add(varName);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">				if (isModification(node)) {</span>
+<span class="fc" id="L157">					modifiedVariables.add(varName);</span>
 				}
 				
-<span class="fc" id="L162">				return true;</span>
+<span class="fc" id="L160">				return true;</span>
 			}
 			
 			@Override
 			public boolean visit(EnhancedForStatement node) {
 				// Don't descend into nested loops - they'll be analyzed separately
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">				return node == loop;</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">				return node == loop;</span>
 			}
 			
 			@Override
 			public boolean visit(ForStatement node) {
 				// Don't descend into nested loops
-<span class="fc" id="L174">				return false;</span>
+<span class="fc" id="L172">				return false;</span>
 			}
 			
 			@Override
 			public boolean visit(WhileStatement node) {
 				// Don't descend into nested loops
-<span class="fc" id="L180">				return false;</span>
+<span class="fc" id="L178">				return false;</span>
 			}
 			
 			@Override
 			public boolean visit(DoStatement node) {
 				// Don't descend into nested loops
-<span class="fc" id="L186">				return false;</span>
+<span class="fc" id="L184">				return false;</span>
 			}
 		});
-<span class="fc" id="L189">	}</span>
+<span class="fc" id="L187">	}</span>
 	
 	/**
 	 * Checks if a SimpleName node represents a modification of the variable.
@@ -209,31 +207,28 @@ public class LoopBodyScopeScanner {
 	private boolean isModification(SimpleName node) {
 		// Check if node is the DIRECT left-hand side of an assignment
 		// (not part of a complex LHS like arr[i] or obj.field)
-<span class="fc bfc" id="L212" title="All 2 branches covered.">		if (node.getParent() instanceof Assignment) {</span>
-<span class="fc" id="L213">			Assignment assignment = (Assignment) node.getParent();</span>
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">			if (assignment.getLeftHandSide() == node) {</span>
-<span class="fc" id="L215">				return true;</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">		if (node.getParent() instanceof Assignment assignment) {</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">			if (assignment.getLeftHandSide() == node) {</span>
+<span class="fc" id="L212">				return true;</span>
 			}
 		}
 		
 		// Check if node is part of increment/decrement expression
-<span class="fc bfc" id="L220" title="All 2 branches covered.">		if (node.getParent() instanceof PostfixExpression) {</span>
-<span class="fc" id="L221">			PostfixExpression postfix = (PostfixExpression) node.getParent();</span>
-<span class="fc" id="L222">			PostfixExpression.Operator op = postfix.getOperator();</span>
-<span class="pc bpc" id="L223" title="3 of 4 branches missed.">			if (op == PostfixExpression.Operator.INCREMENT || op == PostfixExpression.Operator.DECREMENT) {</span>
-<span class="fc" id="L224">				return true;</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">		if (node.getParent() instanceof PostfixExpression postfix) {</span>
+<span class="fc" id="L218">			PostfixExpression.Operator op = postfix.getOperator();</span>
+<span class="pc bpc" id="L219" title="3 of 4 branches missed.">			if (op == PostfixExpression.Operator.INCREMENT || op == PostfixExpression.Operator.DECREMENT) {</span>
+<span class="fc" id="L220">				return true;</span>
 			}
 		}
 		
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		if (node.getParent() instanceof PrefixExpression) {</span>
-<span class="nc" id="L229">			PrefixExpression prefix = (PrefixExpression) node.getParent();</span>
-<span class="nc" id="L230">			PrefixExpression.Operator op = prefix.getOperator();</span>
-<span class="nc bnc" id="L231" title="All 4 branches missed.">			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {</span>
-<span class="nc" id="L232">				return true;</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		if (node.getParent() instanceof PrefixExpression prefix) {</span>
+<span class="nc" id="L225">			PrefixExpression.Operator op = prefix.getOperator();</span>
+<span class="nc bnc" id="L226" title="All 4 branches missed.">			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {</span>
+<span class="nc" id="L227">				return true;</span>
 			}
 		}
 		
-<span class="fc" id="L236">		return false;</span>
+<span class="fc" id="L231">		return false;</span>
 	}
 	
 	/**
@@ -243,19 +238,19 @@ public class LoopBodyScopeScanner {
 	 */
 	public void populateScopeInfo(ScopeInfo scopeInfo) {
 		// Add local variables declared in this loop
-<span class="fc bfc" id="L246" title="All 2 branches covered.">		for (String varName : localVariables) {</span>
-<span class="fc" id="L247">			scopeInfo.addLocalVariable(varName);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">		for (String varName : localVariables) {</span>
+<span class="fc" id="L242">			scopeInfo.addLocalVariable(varName);</span>
 		}
 		
 		// Add modified variables
-<span class="fc bfc" id="L251" title="All 2 branches covered.">		for (String varName : modifiedVariables) {</span>
-<span class="fc" id="L252">			scopeInfo.addModifiedVariable(varName);</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">		for (String varName : modifiedVariables) {</span>
+<span class="fc" id="L247">			scopeInfo.addModifiedVariable(varName);</span>
 		}
 		
 		// Note: outerScopeVariables are handled by ScopeInfo.createChildScope()
 		// which already propagates parent scope variables. We don't need to
 		// explicitly add them here, they're already in the ScopeInfo from the parent.
-<span class="fc" id="L258">	}</span>
+<span class="fc" id="L253">	}</span>
 	
 	/**
 	 * Gets the set of variables referenced from outer scope.
@@ -263,7 +258,7 @@ public class LoopBodyScopeScanner {
 	 * @return unmodifiable set of referenced variable names
 	 */
 	public Set&lt;String&gt; getReferencedVariables() {
-<span class="fc" id="L266">		return Set.copyOf(referencedVariables);</span>
+<span class="fc" id="L261">		return Set.copyOf(referencedVariables);</span>
 	}
 	
 	/**
@@ -272,7 +267,7 @@ public class LoopBodyScopeScanner {
 	 * @return unmodifiable set of modified variable names
 	 */
 	public Set&lt;String&gt; getModifiedVariables() {
-<span class="nc" id="L275">		return Set.copyOf(modifiedVariables);</span>
+<span class="nc" id="L270">		return Set.copyOf(modifiedVariables);</span>
 	}
 	
 	/**
@@ -281,7 +276,7 @@ public class LoopBodyScopeScanner {
 	 * @return unmodifiable set of local variable names
 	 */
 	public Set&lt;String&gt; getLocalVariables() {
-<span class="nc" id="L284">		return Set.copyOf(localVariables);</span>
+<span class="nc" id="L279">		return Set.copyOf(localVariables);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

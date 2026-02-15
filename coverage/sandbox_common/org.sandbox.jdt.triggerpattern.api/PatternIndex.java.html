@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PatternIndex.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">PatternIndex.java</span></div><h1>PatternIndex.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.triggerpattern.internal.PatternParser;
+import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
+
+/**
+ * Indexes transformation rules by their {@link PatternKind} for efficient
+ * batch matching against a compilation unit.
+ *
+ * &lt;p&gt;Instead of traversing the AST once per rule (O(N*M) where N is the number
+ * of AST nodes and M is the number of rules), a {@code PatternIndex} groups
+ * rules by their pattern kind and traverses the AST only once. Each visited
+ * node is checked against only the rules of the matching kind.&lt;/p&gt;
+ *
+ * &lt;h2&gt;Usage&lt;/h2&gt;
+ * &lt;pre&gt;
+ * PatternIndex index = new PatternIndex(hintFile.getRules());
+ * Map&amp;lt;TransformationRule, List&amp;lt;Match&amp;gt;&amp;gt; results = index.findAllMatches(cu);
+ * &lt;/pre&gt;
+ *
+ * @since 1.3.3
+ */
+public final class PatternIndex {
+
+	private final Map&lt;PatternKind, List&lt;IndexEntry&gt;&gt; rulesByKind;
+	private final PatternParser parser;
+
+	/**
+	 * Creates a new pattern index from a list of transformation rules.
+	 *
+	 * &lt;p&gt;Pre-parses all source patterns and groups them by kind for efficient
+	 * batch matching.&lt;/p&gt;
+	 *
+	 * @param rules the rules to index
+	 */
+<span class="fc" id="L67">	public PatternIndex(List&lt;TransformationRule&gt; rules) {</span>
+<span class="fc" id="L68">		this.parser = new PatternParser();</span>
+<span class="fc" id="L69">		this.rulesByKind = buildIndex(rules);</span>
+<span class="fc" id="L70">	}</span>
+
+	private Map&lt;PatternKind, List&lt;IndexEntry&gt;&gt; buildIndex(List&lt;TransformationRule&gt; rules) {
+<span class="fc" id="L73">		Map&lt;PatternKind, List&lt;IndexEntry&gt;&gt; index = new EnumMap&lt;&gt;(PatternKind.class);</span>
+
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		for (TransformationRule rule : rules) {</span>
+<span class="fc" id="L76">			Pattern sourcePattern = rule.sourcePattern();</span>
+<span class="fc" id="L77">			ASTNode patternNode = parser.parse(sourcePattern);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">			if (patternNode == null) {</span>
+<span class="nc" id="L79">				continue;</span>
+			}
+
+<span class="fc" id="L82">			PatternKind kind = sourcePattern.getKind();</span>
+<span class="fc" id="L83">			index.computeIfAbsent(kind, k -&gt; new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L84">					.add(new IndexEntry(rule, sourcePattern, patternNode));</span>
+		}
+
+<span class="fc" id="L87">		return index;</span>
+	}
+
+	/**
+	 * Returns the number of indexed rules.
+	 *
+	 * @return the total number of rules in the index
+	 */
+	public int size() {
+<span class="fc" id="L96">		return rulesByKind.values().stream().mapToInt(List::size).sum();</span>
+	}
+
+	/**
+	 * Returns the number of distinct pattern kinds in the index.
+	 *
+	 * @return the number of distinct pattern kinds
+	 */
+	public int kindCount() {
+<span class="fc" id="L105">		return rulesByKind.size();</span>
+	}
+
+	/**
+	 * Returns the rules for a specific pattern kind.
+	 *
+	 * @param kind the pattern kind
+	 * @return unmodifiable list of transformation rules for the given kind
+	 */
+	public List&lt;TransformationRule&gt; getRulesForKind(PatternKind kind) {
+<span class="fc" id="L115">		List&lt;IndexEntry&gt; entries = rulesByKind.getOrDefault(kind, Collections.emptyList());</span>
+<span class="fc" id="L116">		return entries.stream().map(IndexEntry::rule).toList();</span>
+	}
+
+	/**
+	 * Finds all matches for all indexed rules in a single AST traversal.
+	 *
+	 * &lt;p&gt;This is significantly more efficient than calling
+	 * {@link TriggerPatternEngine#findMatches(CompilationUnit, Pattern)} once per
+	 * rule, because the AST is traversed only once.&lt;/p&gt;
+	 *
+	 * @param cu the compilation unit to search
+	 * @return map from each rule that had matches to its list of matches
+	 */
+	public Map&lt;TransformationRule, List&lt;Match&gt;&gt; findAllMatches(CompilationUnit cu) {
+<span class="pc bpc" id="L130" title="1 of 4 branches missed.">		if (cu == null || rulesByKind.isEmpty()) {</span>
+<span class="fc" id="L131">			return Collections.emptyMap();</span>
+		}
+
+<span class="fc" id="L134">		Map&lt;TransformationRule, List&lt;Match&gt;&gt; results = new java.util.LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L136">		cu.accept(new ASTVisitor() {</span>
+			@Override
+			public void preVisit(ASTNode node) {
+<span class="fc" id="L139">				checkNodeAgainstIndex(node, results);</span>
+<span class="fc" id="L140">			}</span>
+		});
+
+<span class="fc" id="L143">		return results;</span>
+	}
+
+	/**
+	 * Checks a single AST node against all applicable indexed patterns.
+	 */
+	private void checkNodeAgainstIndex(ASTNode node, Map&lt;TransformationRule, List&lt;Match&gt;&gt; results) {
+		// Determine which pattern kinds could match this node type
+<span class="fc bfc" id="L151" title="All 2 branches covered.">		if (node instanceof Expression) {</span>
+<span class="fc" id="L152">			matchAgainstKind(node, PatternKind.EXPRESSION, results);</span>
+		}
+<span class="fc bfc" id="L154" title="All 2 branches covered.">		if (node instanceof MethodInvocation) {</span>
+<span class="fc" id="L155">			matchAgainstKind(node, PatternKind.METHOD_CALL, results);</span>
+		}
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		if (node instanceof ClassInstanceCreation) {</span>
+<span class="fc" id="L158">			matchAgainstKind(node, PatternKind.CONSTRUCTOR, results);</span>
+		}
+<span class="fc bfc" id="L160" title="All 2 branches covered.">		if (node instanceof Statement) {</span>
+<span class="fc" id="L161">			matchAgainstKind(node, PatternKind.STATEMENT, results);</span>
+		}
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		if (node instanceof Annotation) {</span>
+<span class="nc" id="L164">			matchAgainstKind(node, PatternKind.ANNOTATION, results);</span>
+		}
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (node instanceof ImportDeclaration) {</span>
+<span class="nc" id="L167">			matchAgainstKind(node, PatternKind.IMPORT, results);</span>
+		}
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		if (node instanceof FieldDeclaration) {</span>
+<span class="nc" id="L170">			matchAgainstKind(node, PatternKind.FIELD, results);</span>
+		}
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		if (node instanceof MethodDeclaration) {</span>
+<span class="fc" id="L173">			matchAgainstKind(node, PatternKind.METHOD_DECLARATION, results);</span>
+		}
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		if (node instanceof Block block) {</span>
+<span class="fc" id="L176">			matchAgainstKind(node, PatternKind.BLOCK, results);</span>
+<span class="fc" id="L177">			matchStatementSequences(block, results);</span>
+		}
+<span class="fc" id="L179">	}</span>
+
+	/**
+	 * Attempts to match a node against all rules of the given pattern kind.
+	 */
+	private void matchAgainstKind(ASTNode node, PatternKind kind,
+			Map&lt;TransformationRule, List&lt;Match&gt;&gt; results) {
+<span class="fc" id="L186">		List&lt;IndexEntry&gt; entries = rulesByKind.get(kind);</span>
+<span class="pc bpc" id="L187" title="1 of 4 branches missed.">		if (entries == null || entries.isEmpty()) {</span>
+<span class="fc" id="L188">			return;</span>
+		}
+
+<span class="fc bfc" id="L191" title="All 2 branches covered.">		for (IndexEntry entry : entries) {</span>
+<span class="fc" id="L192">			PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">			if (entry.patternNode().subtreeMatch(matcher, node)) {</span>
+<span class="fc" id="L194">				Match match = new Match(node, matcher.getBindings(),</span>
+<span class="fc" id="L195">						node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L196">				results.computeIfAbsent(entry.rule(), r -&gt; new ArrayList&lt;&gt;()).add(match);</span>
+			}
+		}
+<span class="fc" id="L199">	}</span>
+
+	/**
+	 * Attempts statement sequence matching for all STATEMENT_SEQUENCE rules.
+	 */
+	private void matchStatementSequences(Block block,
+			Map&lt;TransformationRule, List&lt;Match&gt;&gt; results) {
+<span class="fc" id="L206">		List&lt;IndexEntry&gt; entries = rulesByKind.get(PatternKind.STATEMENT_SEQUENCE);</span>
+<span class="pc bpc" id="L207" title="3 of 4 branches missed.">		if (entries == null || entries.isEmpty()) {</span>
+<span class="fc" id="L208">			return;</span>
+		}
+
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L212">		List&lt;Statement&gt; statements = block.statements();</span>
+
+<span class="nc bnc" id="L214" title="All 2 branches missed.">		for (IndexEntry entry : entries) {</span>
+<span class="nc" id="L215">			ASTNode patternNode = entry.patternNode();</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">			if (!(patternNode instanceof Block patternBlock)) {</span>
+				continue;
+			}
+			@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L220">			List&lt;Statement&gt; patternStatements = patternBlock.statements();</span>
+<span class="nc" id="L221">			int patternSize = patternStatements.size();</span>
+<span class="nc bnc" id="L222" title="All 4 branches missed.">			if (patternSize == 0 || patternSize &gt; statements.size()) {</span>
+<span class="nc" id="L223">				continue;</span>
+			}
+
+			// Sliding window
+<span class="nc bnc" id="L227" title="All 2 branches missed.">			for (int i = 0; i &lt;= statements.size() - patternSize; i++) {</span>
+<span class="nc" id="L228">				boolean allMatch = true;</span>
+<span class="nc" id="L229">				PlaceholderAstMatcher combinedMatcher = new PlaceholderAstMatcher();</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">				for (int j = 0; j &lt; patternSize; j++) {</span>
+<span class="nc" id="L231">					PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">					if (!patternStatements.get(j).subtreeMatch(matcher, statements.get(i + j))) {</span>
+<span class="nc" id="L233">						allMatch = false;</span>
+<span class="nc" id="L234">						break;</span>
+					}
+<span class="nc" id="L236">					combinedMatcher.mergeBindings(matcher);</span>
+				}
+<span class="nc bnc" id="L238" title="All 2 branches missed.">				if (allMatch) {</span>
+<span class="nc" id="L239">					Statement first = statements.get(i);</span>
+<span class="nc" id="L240">					Statement last = statements.get(i + patternSize - 1);</span>
+<span class="nc" id="L241">					int offset = first.getStartPosition();</span>
+<span class="nc" id="L242">					int length = (last.getStartPosition() + last.getLength()) - offset;</span>
+<span class="nc" id="L243">					Match match = new Match(first, combinedMatcher.getBindings(), offset, length);</span>
+<span class="nc" id="L244">					results.computeIfAbsent(entry.rule(), r -&gt; new ArrayList&lt;&gt;()).add(match);</span>
+				}
+			}
+		}
+<span class="nc" id="L248">	}</span>
+
+	/**
+	 * An entry in the pattern index, containing a rule and its pre-parsed pattern node.
+	 */
+	private record IndexEntry(TransformationRule rule, Pattern sourcePattern, ASTNode patternNode) {
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

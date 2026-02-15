@@ -127,15 +127,12 @@ public final class NamingUtils {
 	 */
 	public static String extractClassNameFromField(FieldDeclaration field) {
 <span class="nc bnc" id="L129" title="All 2 branches missed.">		for (Object fragmentObj : field.fragments()) {</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">			if (fragmentObj instanceof VariableDeclarationFragment) {</span>
-<span class="nc" id="L131">				VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObj;</span>
-<span class="nc bnc" id="L132" title="All 2 branches missed.">				if (fragment.getInitializer() instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
-<span class="nc" id="L133">					return extractTypeName(</span>
-<span class="nc" id="L134">							((org.eclipse.jdt.core.dom.ClassInstanceCreation) fragment.getInitializer()).getType());</span>
-				}
+<span class="nc bnc" id="L130" title="All 2 branches missed.">			if (fragmentObj instanceof VariableDeclarationFragment fragment</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">					&amp;&amp; fragment.getInitializer() instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation creation) {</span>
+<span class="nc" id="L132">				return extractTypeName(creation.getType());</span>
 			}
 		}
-<span class="nc" id="L138">		return null;</span>
+<span class="nc" id="L135">		return null;</span>
 	}
 
 	/**
@@ -145,11 +142,11 @@ public final class NamingUtils {
 	 * @return the field name, or &quot;UnnamedField&quot; if not found
 	 */
 	public static String extractFieldName(FieldDeclaration fieldDeclaration) {
-<span class="fc" id="L148">		return (String) fieldDeclaration.fragments().stream()</span>
-<span class="fc" id="L149">				.filter(VariableDeclarationFragment.class::isInstance)</span>
-<span class="fc" id="L150">				.map(fragment -&gt; ((VariableDeclarationFragment) fragment).getName().getIdentifier())</span>
-<span class="fc" id="L151">				.findFirst()</span>
-<span class="fc" id="L152">				.orElse(&quot;UnnamedField&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L145">		return (String) fieldDeclaration.fragments().stream()</span>
+<span class="fc" id="L146">				.filter(VariableDeclarationFragment.class::isInstance)</span>
+<span class="fc" id="L147">				.map(fragment -&gt; ((VariableDeclarationFragment) fragment).getName().getIdentifier())</span>
+<span class="fc" id="L148">				.findFirst()</span>
+<span class="fc" id="L149">				.orElse(&quot;UnnamedField&quot;); //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -159,18 +156,17 @@ public final class NamingUtils {
 	 * @return the fully qualified class name
 	 */
 	public static String extractQualifiedTypeName(QualifiedType qualifiedType) {
-<span class="nc" id="L162">		StringBuilder fullClassName = new StringBuilder();</span>
-<span class="nc" id="L163">		Type currentType = qualifiedType;</span>
+<span class="nc" id="L159">		StringBuilder fullClassName = new StringBuilder();</span>
+<span class="nc" id="L160">		Type currentType = qualifiedType;</span>
 
-<span class="nc bnc" id="L165" title="All 2 branches missed.">		while (currentType instanceof QualifiedType) {</span>
-<span class="nc" id="L166">			QualifiedType currentQualified = (QualifiedType) currentType;</span>
-<span class="nc bnc" id="L167" title="All 2 branches missed.">			if (fullClassName.length() &gt; 0) {</span>
-<span class="nc" id="L168">				fullClassName.insert(0, &quot;.&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">		while (currentType instanceof QualifiedType currentQualified) {</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">			if (fullClassName.length() &gt; 0) {</span>
+<span class="nc" id="L164">				fullClassName.insert(0, &quot;.&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L170">			fullClassName.insert(0, currentQualified.getName().getFullyQualifiedName());</span>
-<span class="nc" id="L171">			currentType = currentQualified.getQualifier();</span>
+<span class="nc" id="L166">			fullClassName.insert(0, currentQualified.getName().getFullyQualifiedName());</span>
+<span class="nc" id="L167">			currentType = currentQualified.getQualifier();</span>
 		}
-<span class="nc" id="L173">		return fullClassName.toString();</span>
+<span class="nc" id="L169">		return fullClassName.toString();</span>
 	}
 
 	/**
@@ -180,12 +176,12 @@ public final class NamingUtils {
 	 * @return the type name, or null if not a recognized type
 	 */
 	public static String extractTypeName(Type type) {
-<span class="nc bnc" id="L183" title="All 2 branches missed.">		if (type instanceof QualifiedType) {</span>
-<span class="nc" id="L184">			return extractQualifiedTypeName((QualifiedType) type);</span>
-<span class="nc bnc" id="L185" title="All 2 branches missed.">		} else if (type instanceof SimpleType) {</span>
-<span class="nc" id="L186">			return ((SimpleType) type).getName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">		if (type instanceof QualifiedType qualifiedType) {</span>
+<span class="nc" id="L180">			return extractQualifiedTypeName(qualifiedType);</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">		} else if (type instanceof SimpleType simpleType) {</span>
+<span class="nc" id="L182">			return simpleType.getName().getFullyQualifiedName();</span>
 		}
-<span class="nc" id="L188">		return null;</span>
+<span class="nc" id="L184">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

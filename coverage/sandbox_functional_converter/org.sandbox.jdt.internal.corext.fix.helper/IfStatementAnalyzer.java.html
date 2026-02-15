@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.internal.common.NodeMatcher;
 import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 
 /**
@@ -62,19 +63,19 @@ public final class IfStatementAnalyzer {
 	/**
 	 * Represents the type of match pattern detected in an IF statement.
 	 */
-<span class="fc" id="L65">	public enum MatchPatternType {</span>
-<span class="fc" id="L66">		/** {@code if (condition) return true;} followed by {@code return false;} */</span>
-<span class="fc" id="L67">		ANY_MATCH,</span>
-<span class="fc" id="L68">		/** {@code if (condition) return false;} followed by {@code return true;} */</span>
-<span class="fc" id="L69">		NONE_MATCH,</span>
-<span class="fc" id="L70">		/** {@code if (!condition) return false;} followed by {@code return true;} */</span>
-<span class="fc" id="L71">		ALL_MATCH,</span>
-<span class="fc" id="L72">		/** No match pattern detected */</span>
-<span class="fc" id="L73">		NONE</span>
+<span class="fc" id="L66">	public enum MatchPatternType {</span>
+<span class="fc" id="L67">		/** {@code if (condition) return true;} followed by {@code return false;} */</span>
+<span class="fc" id="L68">		ANY_MATCH,</span>
+<span class="fc" id="L69">		/** {@code if (condition) return false;} followed by {@code return true;} */</span>
+<span class="fc" id="L70">		NONE_MATCH,</span>
+<span class="fc" id="L71">		/** {@code if (!condition) return false;} followed by {@code return true;} */</span>
+<span class="fc" id="L72">		ALL_MATCH,</span>
+<span class="fc" id="L73">		/** No match pattern detected */</span>
+<span class="fc" id="L74">		NONE</span>
 	}
 
 	private final EnhancedForStatement forLoop;
-<span class="fc" id="L77">	private MatchPatternType detectedPattern = MatchPatternType.NONE;</span>
+<span class="fc" id="L78">	private MatchPatternType detectedPattern = MatchPatternType.NONE;</span>
 
 	/**
 	 * Creates a new IfStatementAnalyzer for the given for-loop context.
@@ -82,12 +83,12 @@ public final class IfStatementAnalyzer {
 	 * @param forLoop the enhanced for-loop being analyzed
 	 * @throws IllegalArgumentException if forLoop is null
 	 */
-<span class="fc" id="L85">	public IfStatementAnalyzer(EnhancedForStatement forLoop) {</span>
-<span class="pc bpc" id="L86" title="1 of 2 branches missed.">		if (forLoop == null) {</span>
-<span class="nc" id="L87">			throw new IllegalArgumentException(&quot;forLoop cannot be null&quot;);</span>
+<span class="fc" id="L86">	public IfStatementAnalyzer(EnhancedForStatement forLoop) {</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">		if (forLoop == null) {</span>
+<span class="nc" id="L88">			throw new IllegalArgumentException(&quot;forLoop cannot be null&quot;);</span>
 		}
-<span class="fc" id="L89">		this.forLoop = forLoop;</span>
-<span class="fc" id="L90">	}</span>
+<span class="fc" id="L90">		this.forLoop = forLoop;</span>
+<span class="fc" id="L91">	}</span>
 
 	/**
 	 * Returns the match pattern type detected by the last call to
@@ -96,7 +97,7 @@ public final class IfStatementAnalyzer {
 	 * @return the detected pattern type, or {@link MatchPatternType#NONE} if none detected
 	 */
 	public MatchPatternType getDetectedPattern() {
-<span class="nc" id="L99">		return detectedPattern;</span>
+<span class="nc" id="L100">		return detectedPattern;</span>
 	}
 
 	/**
@@ -109,22 +110,15 @@ public final class IfStatementAnalyzer {
 	 * @return true if the then branch contains an unlabeled continue statement
 	 */
 	public boolean isIfWithContinue(IfStatement ifStatement) {
-<span class="nc bnc" id="L112" title="All 2 branches missed.">		if (ifStatement == null) {</span>
-<span class="nc" id="L113">			return false;</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L114">			return false;</span>
 		}
-<span class="nc" id="L115">		Statement thenStatement = ifStatement.getThenStatement();</span>
-<span class="nc bnc" id="L116" title="All 2 branches missed.">		if (thenStatement instanceof ContinueStatement) {</span>
-<span class="nc" id="L117">			ContinueStatement continueStmt = (ContinueStatement) thenStatement;</span>
-<span class="nc bnc" id="L118" title="All 2 branches missed.">			return continueStmt.getLabel() == null;</span>
-		}
-<span class="nc bnc" id="L120" title="All 2 branches missed.">		if (thenStatement instanceof Block) {</span>
-<span class="nc" id="L121">			Block block = (Block) thenStatement;</span>
-<span class="nc bnc" id="L122" title="All 4 branches missed.">			if (block.statements().size() == 1 &amp;&amp; block.statements().get(0) instanceof ContinueStatement) {</span>
-<span class="nc" id="L123">				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);</span>
-<span class="nc bnc" id="L124" title="All 2 branches missed.">				return continueStmt.getLabel() == null;</span>
-			}
-		}
-<span class="nc" id="L127">		return false;</span>
+<span class="nc" id="L116">		boolean[] result = { false };</span>
+<span class="nc" id="L117">		NodeMatcher.on(ifStatement)</span>
+<span class="nc" id="L118">			.ifThenStatementIs(ContinueStatement.class,</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">				cs -&gt; cs.getLabel() == null,</span>
+<span class="nc" id="L120">				cs -&gt; result[0] = true);</span>
+<span class="nc" id="L121">		return result[0];</span>
 	}
 
 	/**
@@ -135,22 +129,15 @@ public final class IfStatementAnalyzer {
 	 * @return true if the IF contains a labeled continue statement
 	 */
 	public boolean isIfWithLabeledContinue(IfStatement ifStatement) {
-<span class="nc bnc" id="L138" title="All 2 branches missed.">		if (ifStatement == null) {</span>
-<span class="nc" id="L139">			return false;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L133">			return false;</span>
 		}
-<span class="nc" id="L141">		Statement thenStatement = ifStatement.getThenStatement();</span>
-<span class="nc bnc" id="L142" title="All 2 branches missed.">		if (thenStatement instanceof ContinueStatement) {</span>
-<span class="nc" id="L143">			ContinueStatement continueStmt = (ContinueStatement) thenStatement;</span>
-<span class="nc bnc" id="L144" title="All 2 branches missed.">			return continueStmt.getLabel() != null;</span>
-		}
-<span class="nc bnc" id="L146" title="All 2 branches missed.">		if (thenStatement instanceof Block) {</span>
-<span class="nc" id="L147">			Block block = (Block) thenStatement;</span>
-<span class="nc bnc" id="L148" title="All 4 branches missed.">			if (block.statements().size() == 1 &amp;&amp; block.statements().get(0) instanceof ContinueStatement) {</span>
-<span class="nc" id="L149">				ContinueStatement continueStmt = (ContinueStatement) block.statements().get(0);</span>
-<span class="nc bnc" id="L150" title="All 2 branches missed.">				return continueStmt.getLabel() != null;</span>
-			}
-		}
-<span class="nc" id="L153">		return false;</span>
+<span class="nc" id="L135">		boolean[] result = { false };</span>
+<span class="nc" id="L136">		NodeMatcher.on(ifStatement)</span>
+<span class="nc" id="L137">			.ifThenStatementIs(ContinueStatement.class,</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">				cs -&gt; cs.getLabel() != null,</span>
+<span class="nc" id="L139">				cs -&gt; result[0] = true);</span>
+<span class="nc" id="L140">		return result[0];</span>
 	}
 
 	/**
@@ -161,20 +148,15 @@ public final class IfStatementAnalyzer {
 	 * @return true if the IF contains a break statement
 	 */
 	public boolean isIfWithBreak(IfStatement ifStatement) {
-<span class="nc bnc" id="L164" title="All 2 branches missed.">		if (ifStatement == null) {</span>
-<span class="nc" id="L165">			return false;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L152">			return false;</span>
 		}
-<span class="nc" id="L167">		Statement thenStatement = ifStatement.getThenStatement();</span>
-<span class="nc bnc" id="L168" title="All 2 branches missed.">		if (thenStatement instanceof BreakStatement) {</span>
-<span class="nc" id="L169">			return true;</span>
-		}
-<span class="nc bnc" id="L171" title="All 2 branches missed.">		if (thenStatement instanceof Block) {</span>
-<span class="nc" id="L172">			Block block = (Block) thenStatement;</span>
-<span class="nc bnc" id="L173" title="All 4 branches missed.">			if (block.statements().size() == 1 &amp;&amp; block.statements().get(0) instanceof BreakStatement) {</span>
-<span class="nc" id="L174">				return true;</span>
-			}
-		}
-<span class="nc" id="L177">		return false;</span>
+<span class="nc" id="L154">		boolean[] result = { false };</span>
+<span class="nc" id="L155">		NodeMatcher.on(ifStatement)</span>
+<span class="nc" id="L156">			.ifThenStatementIs(BreakStatement.class,</span>
+<span class="nc" id="L157">				bs -&gt; true,</span>
+<span class="nc" id="L158">				bs -&gt; result[0] = true);</span>
+<span class="nc" id="L159">		return result[0];</span>
 	}
 
 	/**
@@ -186,25 +168,25 @@ public final class IfStatementAnalyzer {
 	 * @return true if the IF contains a non-convertible return statement
 	 */
 	public boolean isIfWithUnconvertibleReturn(IfStatement ifStatement) {
-<span class="nc bnc" id="L189" title="All 2 branches missed.">		if (ifStatement == null) {</span>
-<span class="nc" id="L190">			return false;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L172">			return false;</span>
 		}
-<span class="nc" id="L192">		Statement thenStatement = ifStatement.getThenStatement();</span>
-<span class="nc" id="L193">		ReturnStatement returnStmt = extractReturnStatement(thenStatement);</span>
+<span class="nc" id="L174">		Statement thenStatement = ifStatement.getThenStatement();</span>
+<span class="nc" id="L175">		ReturnStatement returnStmt = extractReturnStatement(thenStatement);</span>
 		
-<span class="nc bnc" id="L195" title="All 2 branches missed.">		if (returnStmt == null) {</span>
-<span class="nc" id="L196">			return false;</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">		if (returnStmt == null) {</span>
+<span class="nc" id="L178">			return false;</span>
 		}
 		
 		// Check if it's a boolean literal - those can be converted to anyMatch/noneMatch/allMatch
-<span class="nc" id="L200">		Expression returnExpr = returnStmt.getExpression();</span>
-<span class="nc bnc" id="L201" title="All 2 branches missed.">		if (returnExpr instanceof BooleanLiteral) {</span>
+<span class="nc" id="L182">		Expression returnExpr = returnStmt.getExpression();</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">		if (returnExpr instanceof BooleanLiteral) {</span>
 			// This could be part of a match pattern - let other methods handle it
-<span class="nc" id="L203">			return false;</span>
+<span class="nc" id="L185">			return false;</span>
 		}
 		
 		// Any other return (null, variable, method call, etc.) cannot be converted
-<span class="nc" id="L207">		return true;</span>
+<span class="nc" id="L189">		return true;</span>
 	}
 
 	/**
@@ -220,11 +202,11 @@ public final class IfStatementAnalyzer {
 	 * @return true if the IF body contains a simple assignment to an external variable
 	 */
 	public boolean isIfWithExternalAssignment(IfStatement ifStatement, String loopVarName) {
-<span class="nc bnc" id="L223" title="All 2 branches missed.">		if (ifStatement == null) {</span>
-<span class="nc" id="L224">			return false;</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">		if (ifStatement == null) {</span>
+<span class="nc" id="L206">			return false;</span>
 		}
-<span class="nc" id="L226">		Statement thenStatement = ifStatement.getThenStatement();</span>
-<span class="nc" id="L227">		return containsExternalSimpleAssignment(thenStatement, loopVarName);</span>
+<span class="nc" id="L208">		Statement thenStatement = ifStatement.getThenStatement();</span>
+<span class="nc" id="L209">		return containsExternalSimpleAssignment(thenStatement, loopVarName);</span>
 	}
 
 	/**
@@ -232,54 +214,54 @@ public final class IfStatementAnalyzer {
 	 * Compound assignments (+=, -=, *=, etc.) are NOT flagged because they are accumulator patterns.
 	 */
 	private boolean containsExternalSimpleAssignment(Statement stmt, String loopVarName) {
-<span class="nc bnc" id="L235" title="All 2 branches missed.">		if (stmt == null) {</span>
-<span class="nc" id="L236">			return false;</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">		if (stmt == null) {</span>
+<span class="nc" id="L218">			return false;</span>
 		}
 		
-<span class="nc bnc" id="L239" title="All 2 branches missed.">		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
-<span class="nc" id="L240">			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;</span>
-<span class="nc" id="L241">			Expression expr = exprStmt.getExpression();</span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">			if (expr instanceof org.eclipse.jdt.core.dom.Assignment) {</span>
-<span class="nc" id="L243">				org.eclipse.jdt.core.dom.Assignment assignment = (org.eclipse.jdt.core.dom.Assignment) expr;</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">		if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
+<span class="nc" id="L222">			org.eclipse.jdt.core.dom.ExpressionStatement exprStmt = (org.eclipse.jdt.core.dom.ExpressionStatement) stmt;</span>
+<span class="nc" id="L223">			Expression expr = exprStmt.getExpression();</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">			if (expr instanceof org.eclipse.jdt.core.dom.Assignment) {</span>
+<span class="nc" id="L225">				org.eclipse.jdt.core.dom.Assignment assignment = (org.eclipse.jdt.core.dom.Assignment) expr;</span>
 				
 				// Compound assignments (+=, -=, *=, etc.) are accumulator patterns - allow them
-<span class="nc bnc" id="L246" title="All 2 branches missed.">				if (assignment.getOperator() != org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN) {</span>
-<span class="nc" id="L247">					return false; // Not a simple assignment, it's an accumulator pattern - this single statement is OK</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">				if (assignment.getOperator() != org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN) {</span>
+<span class="nc" id="L229">					return false; // Not a simple assignment, it's an accumulator pattern - this single statement is OK</span>
 				}
 				
 				// Simple assignment (=) to something other than the loop variable
-<span class="nc" id="L251">				Expression lhs = assignment.getLeftHandSide();</span>
-<span class="nc bnc" id="L252" title="All 2 branches missed.">				if (lhs instanceof org.eclipse.jdt.core.dom.SimpleName) {</span>
-<span class="nc" id="L253">					String varName = ((org.eclipse.jdt.core.dom.SimpleName) lhs).getIdentifier();</span>
+<span class="nc" id="L233">				Expression lhs = assignment.getLeftHandSide();</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">				if (lhs instanceof org.eclipse.jdt.core.dom.SimpleName) {</span>
+<span class="nc" id="L235">					String varName = ((org.eclipse.jdt.core.dom.SimpleName) lhs).getIdentifier();</span>
 					// If simple-assigning to something other than the loop variable, it's problematic
-<span class="nc bnc" id="L255" title="All 2 branches missed.">					if (!varName.equals(loopVarName)) {</span>
-<span class="nc" id="L256">						return true;</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">					if (!varName.equals(loopVarName)) {</span>
+<span class="nc" id="L238">						return true;</span>
 					}
 				}
 			}
 			// Other expression statements (method calls, etc.) are OK
-<span class="nc" id="L261">			return false;</span>
-<span class="nc bnc" id="L262" title="All 2 branches missed.">		} else if (stmt instanceof Block) {</span>
-<span class="nc" id="L263">			Block block = (Block) stmt;</span>
-<span class="nc bnc" id="L264" title="All 2 branches missed.">			for (Object obj : block.statements()) {</span>
-<span class="nc bnc" id="L265" title="All 2 branches missed.">				if (containsExternalSimpleAssignment((Statement) obj, loopVarName)) {</span>
-<span class="nc" id="L266">					return true;</span>
+<span class="nc" id="L243">			return false;</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">		} else if (stmt instanceof Block) {</span>
+<span class="nc" id="L245">			Block block = (Block) stmt;</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">			for (Object obj : block.statements()) {</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">				if (containsExternalSimpleAssignment((Statement) obj, loopVarName)) {</span>
+<span class="nc" id="L248">					return true;</span>
 				}
 			}
-<span class="nc" id="L269">			return false;</span>
-<span class="nc bnc" id="L270" title="All 2 branches missed.">		} else if (stmt instanceof IfStatement) {</span>
-<span class="nc" id="L271">			IfStatement nested = (IfStatement) stmt;</span>
-<span class="nc bnc" id="L272" title="All 2 branches missed.">			if (containsExternalSimpleAssignment(nested.getThenStatement(), loopVarName)) {</span>
-<span class="nc" id="L273">				return true;</span>
+<span class="nc" id="L251">			return false;</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">		} else if (stmt instanceof IfStatement) {</span>
+<span class="nc" id="L253">			IfStatement nested = (IfStatement) stmt;</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">			if (containsExternalSimpleAssignment(nested.getThenStatement(), loopVarName)) {</span>
+<span class="nc" id="L255">				return true;</span>
 			}
-<span class="nc bnc" id="L275" title="All 4 branches missed.">			if (nested.getElseStatement() != null &amp;&amp; containsExternalSimpleAssignment(nested.getElseStatement(), loopVarName)) {</span>
-<span class="nc" id="L276">				return true;</span>
+<span class="nc bnc" id="L257" title="All 4 branches missed.">			if (nested.getElseStatement() != null &amp;&amp; containsExternalSimpleAssignment(nested.getElseStatement(), loopVarName)) {</span>
+<span class="nc" id="L258">				return true;</span>
 			}
-<span class="nc" id="L278">			return false;</span>
+<span class="nc" id="L260">			return false;</span>
 		}
 		
 		// Other statement types (variable declarations, etc.) are OK
-<span class="nc" id="L282">		return false;</span>
+<span class="nc" id="L264">		return false;</span>
 	}
 
 	/**
@@ -300,45 +282,45 @@ public final class IfStatementAnalyzer {
 	 * @return true if an early return pattern is detected
 	 */
 	public boolean isEarlyReturnIf(IfStatement ifStatement) {
-<span class="nc" id="L303">		detectedPattern = MatchPatternType.NONE;</span>
+<span class="nc" id="L285">		detectedPattern = MatchPatternType.NONE;</span>
 
-<span class="nc bnc" id="L305" title="All 4 branches missed.">		if (ifStatement == null || ifStatement.getElseStatement() != null) {</span>
-<span class="nc" id="L306">			return false;</span>
+<span class="nc bnc" id="L287" title="All 4 branches missed.">		if (ifStatement == null || ifStatement.getElseStatement() != null) {</span>
+<span class="nc" id="L288">			return false;</span>
 		}
 
-<span class="nc" id="L309">		Statement thenStmt = ifStatement.getThenStatement();</span>
-<span class="nc" id="L310">		ReturnStatement returnStmt = extractReturnStatement(thenStmt);</span>
+<span class="nc" id="L291">		Statement thenStmt = ifStatement.getThenStatement();</span>
+<span class="nc" id="L292">		ReturnStatement returnStmt = extractReturnStatement(thenStmt);</span>
 
-<span class="nc bnc" id="L312" title="All 4 branches missed.">		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {</span>
-<span class="nc" id="L313">			return false;</span>
+<span class="nc bnc" id="L294" title="All 4 branches missed.">		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {</span>
+<span class="nc" id="L295">			return false;</span>
 		}
 
-<span class="nc" id="L316">		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();</span>
-<span class="nc" id="L317">		BooleanLiteral followingReturn = getReturnAfterLoop();</span>
+<span class="nc" id="L298">		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();</span>
+<span class="nc" id="L299">		BooleanLiteral followingReturn = getReturnAfterLoop();</span>
 
-<span class="nc bnc" id="L319" title="All 2 branches missed.">		if (followingReturn == null) {</span>
-<span class="nc" id="L320">			return false;</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">		if (followingReturn == null) {</span>
+<span class="nc" id="L302">			return false;</span>
 		}
 
 		// Detect pattern based on return values
-<span class="nc bnc" id="L324" title="All 4 branches missed.">		if (returnValue.booleanValue() &amp;&amp; !followingReturn.booleanValue()) {</span>
+<span class="nc bnc" id="L306" title="All 4 branches missed.">		if (returnValue.booleanValue() &amp;&amp; !followingReturn.booleanValue()) {</span>
 			// if (condition) return true; ... return false; → anyMatch
-<span class="nc" id="L326">			detectedPattern = MatchPatternType.ANY_MATCH;</span>
-<span class="nc" id="L327">			return true;</span>
-<span class="nc bnc" id="L328" title="All 4 branches missed.">		} else if (!returnValue.booleanValue() &amp;&amp; followingReturn.booleanValue()) {</span>
+<span class="nc" id="L308">			detectedPattern = MatchPatternType.ANY_MATCH;</span>
+<span class="nc" id="L309">			return true;</span>
+<span class="nc bnc" id="L310" title="All 4 branches missed.">		} else if (!returnValue.booleanValue() &amp;&amp; followingReturn.booleanValue()) {</span>
 			// if (condition) return false; ... return true; → noneMatch or allMatch
-<span class="nc" id="L330">			Expression condition = ifStatement.getExpression();</span>
-<span class="nc bnc" id="L331" title="All 2 branches missed.">			if (ExpressionHelper.isNegatedExpression(condition)) {</span>
+<span class="nc" id="L312">			Expression condition = ifStatement.getExpression();</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">			if (ExpressionHelper.isNegatedExpression(condition)) {</span>
 				// if (!condition) return false; ... return true; → allMatch
-<span class="nc" id="L333">				detectedPattern = MatchPatternType.ALL_MATCH;</span>
-<span class="nc" id="L334">			} else {</span>
+<span class="nc" id="L315">				detectedPattern = MatchPatternType.ALL_MATCH;</span>
+<span class="nc" id="L316">			} else {</span>
 				// if (condition) return false; ... return true; → noneMatch
-<span class="nc" id="L336">				detectedPattern = MatchPatternType.NONE_MATCH;</span>
+<span class="nc" id="L318">				detectedPattern = MatchPatternType.NONE_MATCH;</span>
 			}
-<span class="nc" id="L338">			return true;</span>
+<span class="nc" id="L320">			return true;</span>
 		}
 
-<span class="nc" id="L341">		return false;</span>
+<span class="nc" id="L323">		return false;</span>
 	}
 
 	/**
@@ -352,33 +334,33 @@ public final class IfStatementAnalyzer {
 	 * @return true if the IF matches the specified pattern
 	 */
 	public boolean isEarlyReturnIf(IfStatement ifStatement, boolean isAnyMatch, boolean isNoneMatch, boolean isAllMatch) {
-<span class="nc bnc" id="L355" title="All 4 branches missed.">		if (ifStatement == null || ifStatement.getElseStatement() != null) {</span>
-<span class="nc" id="L356">			return false;</span>
+<span class="nc bnc" id="L337" title="All 4 branches missed.">		if (ifStatement == null || ifStatement.getElseStatement() != null) {</span>
+<span class="nc" id="L338">			return false;</span>
 		}
 
-<span class="nc" id="L359">		Statement thenStmt = ifStatement.getThenStatement();</span>
-<span class="nc" id="L360">		ReturnStatement returnStmt = extractReturnStatement(thenStmt);</span>
+<span class="nc" id="L341">		Statement thenStmt = ifStatement.getThenStatement();</span>
+<span class="nc" id="L342">		ReturnStatement returnStmt = extractReturnStatement(thenStmt);</span>
 
-<span class="nc bnc" id="L362" title="All 4 branches missed.">		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {</span>
-<span class="nc" id="L363">			return false;</span>
+<span class="nc bnc" id="L344" title="All 4 branches missed.">		if (returnStmt == null || !(returnStmt.getExpression() instanceof BooleanLiteral)) {</span>
+<span class="nc" id="L345">			return false;</span>
 		}
 
-<span class="nc" id="L366">		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();</span>
+<span class="nc" id="L348">		BooleanLiteral returnValue = (BooleanLiteral) returnStmt.getExpression();</span>
 
 		// Check against precomputed flags
-<span class="nc bnc" id="L369" title="All 4 branches missed.">		if (isAnyMatch &amp;&amp; returnValue.booleanValue()) {</span>
-<span class="nc" id="L370">			detectedPattern = MatchPatternType.ANY_MATCH;</span>
-<span class="nc" id="L371">			return true;</span>
-<span class="nc bnc" id="L372" title="All 4 branches missed.">		} else if (isNoneMatch &amp;&amp; !returnValue.booleanValue()) {</span>
-<span class="nc" id="L373">			detectedPattern = MatchPatternType.NONE_MATCH;</span>
-<span class="nc" id="L374">			return true;</span>
-<span class="nc bnc" id="L375" title="All 4 branches missed.">		} else if (isAllMatch &amp;&amp; !returnValue.booleanValue()) {</span>
-<span class="nc" id="L376">			detectedPattern = MatchPatternType.ALL_MATCH;</span>
-<span class="nc" id="L377">			return true;</span>
+<span class="nc bnc" id="L351" title="All 4 branches missed.">		if (isAnyMatch &amp;&amp; returnValue.booleanValue()) {</span>
+<span class="nc" id="L352">			detectedPattern = MatchPatternType.ANY_MATCH;</span>
+<span class="nc" id="L353">			return true;</span>
+<span class="nc bnc" id="L354" title="All 4 branches missed.">		} else if (isNoneMatch &amp;&amp; !returnValue.booleanValue()) {</span>
+<span class="nc" id="L355">			detectedPattern = MatchPatternType.NONE_MATCH;</span>
+<span class="nc" id="L356">			return true;</span>
+<span class="nc bnc" id="L357" title="All 4 branches missed.">		} else if (isAllMatch &amp;&amp; !returnValue.booleanValue()) {</span>
+<span class="nc" id="L358">			detectedPattern = MatchPatternType.ALL_MATCH;</span>
+<span class="nc" id="L359">			return true;</span>
 		}
 
 		// Fall back to auto-detection
-<span class="nc" id="L381">		return isEarlyReturnIf(ifStatement);</span>
+<span class="nc" id="L363">		return isEarlyReturnIf(ifStatement);</span>
 	}
 
 	/**
@@ -388,32 +370,32 @@ public final class IfStatementAnalyzer {
 	 * @return a ProspectiveOperation for the match, or null if no pattern detected
 	 */
 	public ProspectiveOperation createMatchOperation(IfStatement ifStmt) {
-<span class="nc bnc" id="L391" title="All 2 branches missed.">		if (detectedPattern == MatchPatternType.NONE) {</span>
-<span class="nc" id="L392">			return null;</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">		if (detectedPattern == MatchPatternType.NONE) {</span>
+<span class="nc" id="L374">			return null;</span>
 		}
 
 		OperationType opType;
-<span class="nc bnc" id="L396" title="All 4 branches missed.">		switch (detectedPattern) {</span>
+<span class="nc bnc" id="L378" title="All 4 branches missed.">		switch (detectedPattern) {</span>
 		case ANY_MATCH:
-<span class="nc" id="L398">			opType = OperationType.ANYMATCH;</span>
-<span class="nc" id="L399">			break;</span>
+<span class="nc" id="L380">			opType = OperationType.ANYMATCH;</span>
+<span class="nc" id="L381">			break;</span>
 		case NONE_MATCH:
-<span class="nc" id="L401">			opType = OperationType.NONEMATCH;</span>
-<span class="nc" id="L402">			break;</span>
+<span class="nc" id="L383">			opType = OperationType.NONEMATCH;</span>
+<span class="nc" id="L384">			break;</span>
 		case ALL_MATCH:
-<span class="nc" id="L404">			opType = OperationType.ALLMATCH;</span>
-<span class="nc" id="L405">			break;</span>
+<span class="nc" id="L386">			opType = OperationType.ALLMATCH;</span>
+<span class="nc" id="L387">			break;</span>
 		default:
-<span class="nc" id="L407">			return null;</span>
+<span class="nc" id="L389">			return null;</span>
 		}
 
-<span class="nc" id="L410">		Expression condition = ifStmt.getExpression();</span>
+<span class="nc" id="L392">		Expression condition = ifStmt.getExpression();</span>
 		// For allMatch, strip the negation since the pattern is &quot;if (!condition) return false&quot;
-<span class="nc bnc" id="L412" title="All 2 branches missed.">		if (detectedPattern == MatchPatternType.ALL_MATCH) {</span>
-<span class="nc" id="L413">			condition = ExpressionHelper.stripNegation(condition);</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">		if (detectedPattern == MatchPatternType.ALL_MATCH) {</span>
+<span class="nc" id="L395">			condition = ExpressionHelper.stripNegation(condition);</span>
 		}
 
-<span class="nc" id="L416">		return new ProspectiveOperation(condition, opType);</span>
+<span class="nc" id="L398">		return new ProspectiveOperation(condition, opType);</span>
 	}
 
 	/**
@@ -421,16 +403,13 @@ public final class IfStatementAnalyzer {
 	 * Handles both direct return statements and blocks containing a single return.
 	 */
 	private ReturnStatement extractReturnStatement(Statement thenStmt) {
-<span class="nc bnc" id="L424" title="All 2 branches missed.">		if (thenStmt instanceof ReturnStatement) {</span>
-<span class="nc" id="L425">			return (ReturnStatement) thenStmt;</span>
-		}
-<span class="nc bnc" id="L427" title="All 2 branches missed.">		if (thenStmt instanceof Block) {</span>
-<span class="nc" id="L428">			Block block = (Block) thenStmt;</span>
-<span class="nc bnc" id="L429" title="All 4 branches missed.">			if (block.statements().size() == 1 &amp;&amp; block.statements().get(0) instanceof ReturnStatement) {</span>
-<span class="nc" id="L430">				return (ReturnStatement) block.statements().get(0);</span>
-			}
-		}
-<span class="nc" id="L433">		return null;</span>
+<span class="nc" id="L406">		ReturnStatement[] result = { null };</span>
+<span class="nc" id="L407">		NodeMatcher.on(thenStmt)</span>
+<span class="nc" id="L408">			.ifReturnStatement(rs -&gt; result[0] = rs)</span>
+<span class="nc" id="L409">			.ifBlockWithSingleStatement(ReturnStatement.class,</span>
+<span class="nc" id="L410">				rs -&gt; true,</span>
+<span class="nc" id="L411">				rs -&gt; result[0] = rs);</span>
+<span class="nc" id="L412">		return result[0];</span>
 	}
 
 	/**
@@ -439,31 +418,31 @@ public final class IfStatementAnalyzer {
 	 * @return the BooleanLiteral returned after the loop, or null if not found
 	 */
 	private BooleanLiteral getReturnAfterLoop() {
-<span class="nc" id="L442">		ASTNode parent = forLoop.getParent();</span>
+<span class="nc" id="L421">		ASTNode parent = forLoop.getParent();</span>
 
-<span class="nc bnc" id="L444" title="All 2 branches missed.">		if (!(parent instanceof Block)) {</span>
-<span class="nc" id="L445">			return null;</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">		if (!(parent instanceof Block)) {</span>
+<span class="nc" id="L424">			return null;</span>
 		}
 
-<span class="nc" id="L448">		Block block = (Block) parent;</span>
-<span class="nc" id="L449">		List&lt;?&gt; statements = block.statements();</span>
+<span class="nc" id="L427">		Block block = (Block) parent;</span>
+<span class="nc" id="L428">		List&lt;?&gt; statements = block.statements();</span>
 
-<span class="nc" id="L451">		int loopIndex = statements.indexOf(forLoop);</span>
-<span class="nc bnc" id="L452" title="All 4 branches missed.">		if (loopIndex == -1 || loopIndex &gt;= statements.size() - 1) {</span>
-<span class="nc" id="L453">			return null;</span>
+<span class="nc" id="L430">		int loopIndex = statements.indexOf(forLoop);</span>
+<span class="nc bnc" id="L431" title="All 4 branches missed.">		if (loopIndex == -1 || loopIndex &gt;= statements.size() - 1) {</span>
+<span class="nc" id="L432">			return null;</span>
 		}
 
-<span class="nc" id="L456">		Statement nextStmt = (Statement) statements.get(loopIndex + 1);</span>
+<span class="nc" id="L435">		Statement nextStmt = (Statement) statements.get(loopIndex + 1);</span>
 
-<span class="nc bnc" id="L458" title="All 2 branches missed.">		if (nextStmt instanceof ReturnStatement) {</span>
-<span class="nc" id="L459">			ReturnStatement returnStmt = (ReturnStatement) nextStmt;</span>
-<span class="nc" id="L460">			Expression expr = returnStmt.getExpression();</span>
-<span class="nc bnc" id="L461" title="All 2 branches missed.">			if (expr instanceof BooleanLiteral) {</span>
-<span class="nc" id="L462">				return (BooleanLiteral) expr;</span>
+<span class="nc bnc" id="L437" title="All 2 branches missed.">		if (nextStmt instanceof ReturnStatement) {</span>
+<span class="nc" id="L438">			ReturnStatement returnStmt = (ReturnStatement) nextStmt;</span>
+<span class="nc" id="L439">			Expression expr = returnStmt.getExpression();</span>
+<span class="nc bnc" id="L440" title="All 2 branches missed.">			if (expr instanceof BooleanLiteral) {</span>
+<span class="nc" id="L441">				return (BooleanLiteral) expr;</span>
 			}
 		}
 
-<span class="nc" id="L466">		return null;</span>
+<span class="nc" id="L445">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -52,7 +52,7 @@ import org.eclipse.text.edits.TextEditGroup;
  * &lt;p&gt;&lt;b&gt;Usage Example:&lt;/b&gt;&lt;/p&gt;
  * &lt;pre&gt;{@code
  * PreconditionsChecker preconditions = new PreconditionsChecker(forLoop, cu);
- * Refactorer refactorer = new Refactorer(forLoop, rewrite, preconditions, group);
+ * Refactorer refactorer = new Refactorer(forLoop, rewrite, preconditions, group, cuRewrite);
  * 
  * if (refactorer.isRefactorable()) {
  *     refactorer.refactor(); // Performs the transformation
@@ -85,21 +85,6 @@ public class Refactorer {
 	private final CompilationUnitRewrite cuRewrite;
 
 	/**
-	 * Creates a new Refactorer.
-	 * 
-	 * @param forLoop       the enhanced for-loop to refactor
-	 * @param rewrite       the AST rewrite to use
-	 * @param preconditions the preconditions checker
-	 * @param group         the text edit group for tracking changes
-	 * @deprecated Use {@link #Refactorer(EnhancedForStatement, ASTRewrite, PreconditionsChecker, TextEditGroup, CompilationUnitRewrite)} instead
-	 */
-	@Deprecated
-	public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions,
-			TextEditGroup group) {
-<span class="nc" id="L99">		this(forLoop, rewrite, preconditions, group, null);</span>
-<span class="nc" id="L100">	}</span>
-	
-	/**
 	 * Creates a new Refactorer with CompilationUnitRewrite for import management.
 	 * 
 	 * @param forLoop       the enhanced for-loop to refactor
@@ -108,23 +93,23 @@ public class Refactorer {
 	 * @param group         the text edit group for tracking changes
 	 * @param cuRewrite     the compilation unit rewrite for import management (may be null)
 	 */
-<span class="nc" id="L111">	public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions,</span>
+<span class="nc" id="L96">	public Refactorer(EnhancedForStatement forLoop, ASTRewrite rewrite, PreconditionsChecker preconditions,</span>
 			TextEditGroup group, CompilationUnitRewrite cuRewrite) {
-<span class="nc" id="L113">		this.forLoop = forLoop;</span>
-<span class="nc" id="L114">		this.rewrite = rewrite;</span>
-<span class="nc" id="L115">		this.preconditions = preconditions;</span>
-<span class="nc" id="L116">		this.group = group;</span>
-<span class="nc" id="L117">		this.cuRewrite = cuRewrite;</span>
-<span class="nc" id="L118">	}</span>
+<span class="nc" id="L98">		this.forLoop = forLoop;</span>
+<span class="nc" id="L99">		this.rewrite = rewrite;</span>
+<span class="nc" id="L100">		this.preconditions = preconditions;</span>
+<span class="nc" id="L101">		this.group = group;</span>
+<span class="nc" id="L102">		this.cuRewrite = cuRewrite;</span>
+<span class="nc" id="L103">	}</span>
 
 	/** Checks if the loop can be refactored to a stream operation. */
 	public boolean isRefactorable() {
-<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (!preconditions.isSafeToRefactor()) {</span>
-<span class="nc" id="L123">			return false;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">		if (!preconditions.isSafeToRefactor()) {</span>
+<span class="nc" id="L108">			return false;</span>
 		}
 		// Also verify that the StreamPipelineBuilder can analyze and build the pipeline
-<span class="nc" id="L126">		StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);</span>
-<span class="nc bnc" id="L127" title="All 4 branches missed.">		return builder.analyze() &amp;&amp; builder.buildPipeline() != null;</span>
+<span class="nc" id="L111">		StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">		return builder.analyze() &amp;&amp; builder.buildPipeline() != null;</span>
 	}
 
 	/**
@@ -132,41 +117,41 @@ public class Refactorer {
 	 * StreamPipelineBuilder for all conversions.
 	 */
 	public void refactor() {
-<span class="nc" id="L135">		refactorWithBuilder();</span>
-<span class="nc" id="L136">	}</span>
+<span class="nc" id="L120">		refactorWithBuilder();</span>
+<span class="nc" id="L121">	}</span>
 
 	/**
 	 * Refactors the loop using the StreamPipelineBuilder approach.
 	 */
 	private void refactorWithBuilder() {
-<span class="nc" id="L142">		StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);</span>
+<span class="nc" id="L127">		StreamPipelineBuilder builder = new StreamPipelineBuilder(forLoop, preconditions);</span>
 
-<span class="nc bnc" id="L144" title="All 2 branches missed.">		if (!builder.analyze()) {</span>
-<span class="nc" id="L145">			return; // Cannot convert</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		if (!builder.analyze()) {</span>
+<span class="nc" id="L130">			return; // Cannot convert</span>
 		}
 
-<span class="nc" id="L148">		MethodInvocation pipeline = builder.buildPipeline();</span>
-<span class="nc" id="L149">		Statement replacement = builder.wrapPipeline(pipeline);</span>
-<span class="nc bnc" id="L150" title="All 2 branches missed.">		if (replacement != null) {</span>
+<span class="nc" id="L133">		MethodInvocation pipeline = builder.buildPipeline();</span>
+<span class="nc" id="L134">		Statement replacement = builder.wrapPipeline(pipeline);</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">		if (replacement != null) {</span>
 			// Add Arrays import if needed (for array iteration)
-<span class="nc bnc" id="L152" title="All 4 branches missed.">			if (builder.needsArraysImport() &amp;&amp; cuRewrite != null) {</span>
-<span class="nc" id="L153">				cuRewrite.getImportRewrite().addImport(JAVA_UTIL_ARRAYS);</span>
+<span class="nc bnc" id="L137" title="All 4 branches missed.">			if (builder.needsArraysImport() &amp;&amp; cuRewrite != null) {</span>
+<span class="nc" id="L138">				cuRewrite.getImportRewrite().addImport(JAVA_UTIL_ARRAYS);</span>
 			}
 			// Add Collectors import if needed (for collect operations)
-<span class="nc bnc" id="L156" title="All 4 branches missed.">			if (builder.needsCollectorsImport() &amp;&amp; cuRewrite != null) {</span>
-<span class="nc" id="L157">				cuRewrite.getImportRewrite().addImport(JAVA_UTIL_STREAM_COLLECTORS);</span>
+<span class="nc bnc" id="L141" title="All 4 branches missed.">			if (builder.needsCollectorsImport() &amp;&amp; cuRewrite != null) {</span>
+<span class="nc" id="L142">				cuRewrite.getImportRewrite().addImport(JAVA_UTIL_STREAM_COLLECTORS);</span>
 			}
 			
 			// Check if this is a COLLECT operation with a preceding empty collection declaration
-<span class="nc" id="L161">			Statement mergedDeclaration = tryMergeWithPrecedingDeclaration(builder, pipeline, replacement);</span>
-<span class="nc bnc" id="L162" title="All 2 branches missed.">			if (mergedDeclaration != null) {</span>
+<span class="nc" id="L146">			Statement mergedDeclaration = tryMergeWithPrecedingDeclaration(builder, pipeline, replacement);</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">			if (mergedDeclaration != null) {</span>
 				// Use the merged declaration instead
-<span class="nc" id="L164">				replacement = mergedDeclaration;</span>
+<span class="nc" id="L149">				replacement = mergedDeclaration;</span>
 			}
 			
-<span class="nc" id="L167">			ASTNodes.replaceButKeepComment(rewrite, forLoop, replacement, group);</span>
+<span class="nc" id="L152">			ASTNodes.replaceButKeepComment(rewrite, forLoop, replacement, group);</span>
 		}
-<span class="nc" id="L169">	}</span>
+<span class="nc" id="L154">	}</span>
 	
 	/**
 	 * Attempts to merge a COLLECT operation with its preceding empty collection declaration.
@@ -192,74 +177,73 @@ public class Refactorer {
 	private Statement tryMergeWithPrecedingDeclaration(StreamPipelineBuilder builder, 
 			MethodInvocation pipeline, Statement replacement) {
 		// Only apply to COLLECT operations
-<span class="nc bnc" id="L195" title="All 2 branches missed.">		if (!builder.isCollectOperation()) {</span>
-<span class="nc" id="L196">			return null;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">		if (!builder.isCollectOperation()) {</span>
+<span class="nc" id="L181">			return null;</span>
 		}
 		
 		// The replacement must be an ExpressionStatement containing an assignment
-<span class="nc bnc" id="L200" title="All 2 branches missed.">		if (!(replacement instanceof ExpressionStatement)) {</span>
-<span class="nc" id="L201">			return null;</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">		if (!(replacement instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L186">			return null;</span>
 		}
 		
 		// Find the target variable from the CollectPatternDetector
-<span class="nc" id="L205">		String targetVariable = builder.getCollectTargetVariable();</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">		if (targetVariable == null) {</span>
-<span class="nc" id="L207">			return null;</span>
+<span class="nc" id="L190">		String targetVariable = builder.getCollectTargetVariable();</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">		if (targetVariable == null) {</span>
+<span class="nc" id="L192">			return null;</span>
 		}
 		
 		// Get the parent block
-<span class="nc" id="L211">		ASTNode parent = forLoop.getParent();</span>
-<span class="nc bnc" id="L212" title="All 2 branches missed.">		if (!(parent instanceof Block)) {</span>
-<span class="nc" id="L213">			return null;</span>
+<span class="nc" id="L196">		ASTNode parent = forLoop.getParent();</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">		if (!(parent instanceof Block block)) {</span>
+<span class="nc" id="L198">			return null;</span>
 		}
 		
-<span class="nc" id="L216">		Block block = (Block) parent;</span>
-<span class="nc" id="L217">		List&lt;?&gt; statements = block.statements();</span>
+<span class="nc" id="L201">		List&lt;?&gt; statements = block.statements();</span>
 		
 		// Find the index of the for-loop
-<span class="nc" id="L220">		int forLoopIndex = -1;</span>
-<span class="nc bnc" id="L221" title="All 2 branches missed.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
-<span class="nc bnc" id="L222" title="All 2 branches missed.">			if (statements.get(i) == forLoop) {</span>
-<span class="nc" id="L223">				forLoopIndex = i;</span>
-<span class="nc" id="L224">				break;</span>
+<span class="nc" id="L204">		int forLoopIndex = -1;</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">			if (statements.get(i) == forLoop) {</span>
+<span class="nc" id="L207">				forLoopIndex = i;</span>
+<span class="nc" id="L208">				break;</span>
 			}
 		}
 		
 		// Check if there's a statement before the for-loop
-<span class="nc bnc" id="L229" title="All 2 branches missed.">		if (forLoopIndex &lt;= 0) {</span>
-<span class="nc" id="L230">			return null;</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">		if (forLoopIndex &lt;= 0) {</span>
+<span class="nc" id="L214">			return null;</span>
 		}
 		
-<span class="nc" id="L233">		Statement precedingStmt = (Statement) statements.get(forLoopIndex - 1);</span>
+<span class="nc" id="L217">		Statement precedingStmt = (Statement) statements.get(forLoopIndex - 1);</span>
 		
 		// Check if the preceding statement is an empty collection declaration for the same variable
-<span class="nc" id="L236">		String declaredVar = CollectPatternDetector.isEmptyCollectionDeclaration(precedingStmt);</span>
-<span class="nc bnc" id="L237" title="All 4 branches missed.">		if (declaredVar == null || !declaredVar.equals(targetVariable)) {</span>
-<span class="nc" id="L238">			return null;</span>
+<span class="nc" id="L220">		String declaredVar = CollectPatternDetector.isEmptyCollectionDeclaration(precedingStmt);</span>
+<span class="nc bnc" id="L221" title="All 4 branches missed.">		if (declaredVar == null || !declaredVar.equals(targetVariable)) {</span>
+<span class="nc" id="L222">			return null;</span>
 		}
 		
 		// We have a match! Create a merged VariableDeclarationStatement
-<span class="nc" id="L242">		VariableDeclarationStatement originalDecl = (VariableDeclarationStatement) precedingStmt;</span>
+<span class="nc" id="L226">		VariableDeclarationStatement originalDecl = (VariableDeclarationStatement) precedingStmt;</span>
 		
-<span class="nc" id="L244">		AST ast = forLoop.getAST();</span>
+<span class="nc" id="L228">		AST ast = forLoop.getAST();</span>
 		
 		// Create new VariableDeclarationFragment with the pipeline as initializer
-<span class="nc" id="L247">		VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
-<span class="nc" id="L248">		newFragment.setName(ast.newSimpleName(targetVariable));</span>
-<span class="nc" id="L249">		newFragment.setInitializer((MethodInvocation) ASTNode.copySubtree(ast, pipeline));</span>
+<span class="nc" id="L231">		VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();</span>
+<span class="nc" id="L232">		newFragment.setName(ast.newSimpleName(targetVariable));</span>
+<span class="nc" id="L233">		newFragment.setInitializer((MethodInvocation) ASTNode.copySubtree(ast, pipeline));</span>
 		
 		// Create new VariableDeclarationStatement with the same type
-<span class="nc" id="L252">		VariableDeclarationStatement newDecl = ast.newVariableDeclarationStatement(newFragment);</span>
-<span class="nc" id="L253">		Type originalType = originalDecl.getType();</span>
-<span class="nc" id="L254">		newDecl.setType((Type) ASTNode.copySubtree(ast, originalType));</span>
+<span class="nc" id="L236">		VariableDeclarationStatement newDecl = ast.newVariableDeclarationStatement(newFragment);</span>
+<span class="nc" id="L237">		Type originalType = originalDecl.getType();</span>
+<span class="nc" id="L238">		newDecl.setType((Type) ASTNode.copySubtree(ast, originalType));</span>
 		
 		// Copy modifiers if any
-<span class="nc" id="L257">		newDecl.modifiers().addAll(ASTNode.copySubtrees(ast, originalDecl.modifiers()));</span>
+<span class="nc" id="L241">		newDecl.modifiers().addAll(ASTNode.copySubtrees(ast, originalDecl.modifiers()));</span>
 		
 		// Remove the preceding declaration
-<span class="nc" id="L260">		rewrite.remove(precedingStmt, group);</span>
+<span class="nc" id="L244">		rewrite.remove(precedingStmt, group);</span>
 		
-<span class="nc" id="L262">		return newDecl;</span>
+<span class="nc" id="L246">		return newDecl;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

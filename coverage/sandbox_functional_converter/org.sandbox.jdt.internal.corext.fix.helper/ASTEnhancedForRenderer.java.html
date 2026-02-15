@@ -124,20 +124,8 @@ public class ASTEnhancedForRenderer {
 <span class="fc" id="L124">		return forStmt;</span>
 	}
 
-	/**
-	 * Creates an AST Expression from a string expression.
-	 */
 	private Expression createExpression(String expressionStr) {
-		// For simple names, create SimpleName directly
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		if (expressionStr.matches(&quot;[a-zA-Z_$][a-zA-Z0-9_$]*&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L133">			return ast.newSimpleName(expressionStr);</span>
-		}
-		// For qualified names (e.g., &quot;this.items&quot;), create QualifiedName
-<span class="nc bnc" id="L136" title="All 2 branches missed.">		if (expressionStr.matches(&quot;[a-zA-Z_$][a-zA-Z0-9_$.]*&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L137">			return ast.newName(expressionStr);</span>
-		}
-		// For complex expressions, use string placeholder
-<span class="nc" id="L140">		return (Expression) rewrite.createStringPlaceholder(expressionStr, ASTNode.SIMPLE_NAME);</span>
+<span class="fc" id="L128">		return ExpressionHelper.createExpression(ast, rewrite, expressionStr);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

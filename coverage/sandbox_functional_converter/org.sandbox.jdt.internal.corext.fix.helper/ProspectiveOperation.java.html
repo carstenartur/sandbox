@@ -210,56 +210,54 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 				}
 				
 				// Skip if this is the name part of a method invocation (e.g., &quot;println&quot; in &quot;out.println()&quot;)
-<span class="fc bfc" id="L213" title="All 2 branches covered.">				if (parent instanceof MethodInvocation) {</span>
-<span class="fc" id="L214">					MethodInvocation mi = (MethodInvocation) parent;</span>
-<span class="fc bfc" id="L215" title="All 2 branches covered.">					if (mi.getName() == node) {</span>
-<span class="fc" id="L216">						return super.visit(node); // Skip method name</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">				if (parent instanceof MethodInvocation mi) {</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">					if (mi.getName() == node) {</span>
+<span class="fc" id="L215">						return super.visit(node); // Skip method name</span>
 					}
 					// Skip class names used as method invocation receivers (e.g., &quot;Math&quot; in &quot;Math.max()&quot;)
 					// but NOT variable references (e.g., &quot;list&quot; in &quot;list.forEach()&quot;)
-<span class="fc bfc" id="L220" title="All 2 branches covered.">					if (mi.getExpression() == node) {</span>
-<span class="fc" id="L221">						IBinding binding = node.resolveBinding();</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">					if (mi.getExpression() == node) {</span>
+<span class="fc" id="L220">						IBinding binding = node.resolveBinding();</span>
 						// If it's a type binding (class name), skip it
 						// If it's a variable binding, we want to collect it
-<span class="pc bpc" id="L224" title="2 of 4 branches missed.">						if (binding != null &amp;&amp; !(binding instanceof IVariableBinding)) {</span>
-<span class="nc" id="L225">							return super.visit(node); // Skip class name</span>
+<span class="pc bpc" id="L223" title="2 of 4 branches missed.">						if (binding != null &amp;&amp; !(binding instanceof IVariableBinding)) {</span>
+<span class="nc" id="L224">							return super.visit(node); // Skip class name</span>
 						}
 						// Fallback: If binding resolution failed, check if the name starts with uppercase
 						// (convention for class names in Java) and has no local variable conflict
-<span class="pc bpc" id="L229" title="1 of 2 branches missed.">						if (binding == null) {</span>
-<span class="nc" id="L230">							String name = node.getIdentifier();</span>
-<span class="nc bnc" id="L231" title="All 4 branches missed.">							if (name.length() &gt; 0 &amp;&amp; Character.isUpperCase(name.charAt(0))) {</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">						if (binding == null) {</span>
+<span class="nc" id="L229">							String name = node.getIdentifier();</span>
+<span class="nc bnc" id="L230" title="All 4 branches missed.">							if (name.length() &gt; 0 &amp;&amp; Character.isUpperCase(name.charAt(0))) {</span>
 								// Likely a class name like Math, System, Integer, etc.
-<span class="nc" id="L233">								return super.visit(node);</span>
+<span class="nc" id="L232">								return super.visit(node);</span>
 							}
 						}
 					}
 				}
 				
 				// Skip if this is part of a type reference (e.g., class names)
-<span class="fc bfc" id="L240" title="All 2 branches covered.">				if (parent instanceof org.eclipse.jdt.core.dom.Type) {</span>
-<span class="fc" id="L241">					return super.visit(node);</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">				if (parent instanceof org.eclipse.jdt.core.dom.Type) {</span>
+<span class="fc" id="L240">					return super.visit(node);</span>
 				}
 				
 				// Skip if this is the type name in a constructor invocation (e.g., &quot;MyClass&quot; in &quot;new MyClass()&quot;)
-<span class="fc bfc" id="L245" title="All 2 branches covered.">				if (parent instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
-<span class="fc" id="L246">					return super.visit(node);</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">				if (parent instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
+<span class="fc" id="L245">					return super.visit(node);</span>
 				}
 				
 				// Skip if this is the name of a type declaration (e.g., class or interface name)
-<span class="pc bpc" id="L250" title="1 of 2 branches missed.">				if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration) {</span>
-<span class="nc" id="L251">					org.eclipse.jdt.core.dom.TypeDeclaration typeDecl = (org.eclipse.jdt.core.dom.TypeDeclaration) parent;</span>
-<span class="nc bnc" id="L252" title="All 2 branches missed.">					if (typeDecl.getName() == node) {</span>
-<span class="nc" id="L253">						return super.visit(node);</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">				if (parent instanceof org.eclipse.jdt.core.dom.TypeDeclaration typeDecl) {</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">					if (typeDecl.getName() == node) {</span>
+<span class="nc" id="L251">						return super.visit(node);</span>
 					}
 				}
 				
 				// Otherwise, this is a variable reference - collect it
-<span class="fc" id="L258">				neededVariables.add(node.getIdentifier());</span>
-<span class="fc" id="L259">				return super.visit(node);</span>
+<span class="fc" id="L256">				neededVariables.add(node.getIdentifier());</span>
+<span class="fc" id="L257">				return super.visit(node);</span>
 			}
 		});
-<span class="fc" id="L262">	}</span>
+<span class="fc" id="L260">	}</span>
 
 	/**
 	 * Constructor for operations with an expression.
@@ -267,15 +265,15 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @param expression    the expression to process (must not be null)
 	 * @param operationType the type of operation (must not be null)
 	 */
-<span class="fc" id="L270">	public ProspectiveOperation(Expression expression, OperationType operationType) {</span>
-<span class="pc bnc" id="L271" title="All 2 branches missed.">		assert expression != null : &quot;expression cannot be null&quot;;</span>
-<span class="pc bnc" id="L272" title="All 2 branches missed.">		assert operationType != null : &quot;operationType cannot be null&quot;;</span>
+<span class="fc" id="L268">	public ProspectiveOperation(Expression expression, OperationType operationType) {</span>
+<span class="pc bnc" id="L269" title="All 2 branches missed.">		assert expression != null : &quot;expression cannot be null&quot;;</span>
+<span class="pc bnc" id="L270" title="All 2 branches missed.">		assert operationType != null : &quot;operationType cannot be null&quot;;</span>
 
-<span class="fc" id="L274">		this.originalExpression = expression;</span>
-<span class="fc" id="L275">		this.operationType = operationType;</span>
-<span class="fc" id="L276">		collectNeededVariables(expression);</span>
-<span class="fc" id="L277">		updateConsumedVariables();</span>
-<span class="fc" id="L278">	}</span>
+<span class="fc" id="L272">		this.originalExpression = expression;</span>
+<span class="fc" id="L273">		this.operationType = operationType;</span>
+<span class="fc" id="L274">		collectNeededVariables(expression);</span>
+<span class="fc" id="L275">		updateConsumedVariables();</span>
+<span class="fc" id="L276">	}</span>
 
 	/**
 	 * Constructor for operations with a statement.
@@ -288,20 +286,20 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 *                      lambda body (may be the current variable name in the
 	 *                      pipeline, not necessarily the original loop variable)
 	 */
-<span class="nc" id="L291">	public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, OperationType operationType,</span>
+<span class="nc" id="L289">	public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, OperationType operationType,</span>
 			String loopVarName) {
-<span class="nc bnc" id="L293" title="All 2 branches missed.">		assert statement != null : &quot;statement cannot be null&quot;;</span>
-<span class="nc bnc" id="L294" title="All 2 branches missed.">		assert operationType != null : &quot;operationType cannot be null&quot;;</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">		assert statement != null : &quot;statement cannot be null&quot;;</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">		assert operationType != null : &quot;operationType cannot be null&quot;;</span>
 
-<span class="nc" id="L296">		this.originalStatement = statement;</span>
-<span class="nc" id="L297">		this.operationType = operationType;</span>
-<span class="nc" id="L298">		this.loopVariableName = loopVarName;</span>
-<span class="nc bnc" id="L299" title="All 2 branches missed.">		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
-<span class="nc" id="L300">			this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();</span>
-<span class="nc" id="L301">			collectNeededVariables(this.originalExpression);</span>
+<span class="nc" id="L294">		this.originalStatement = statement;</span>
+<span class="nc" id="L295">		this.operationType = operationType;</span>
+<span class="nc" id="L296">		this.loopVariableName = loopVarName;</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement expressionStatement) {</span>
+<span class="nc" id="L298">			this.originalExpression = expressionStatement.getExpression();</span>
+<span class="nc" id="L299">			collectNeededVariables(this.originalExpression);</span>
 		}
-<span class="nc" id="L303">		updateConsumedVariables();</span>
-<span class="nc" id="L304">	}</span>
+<span class="nc" id="L301">		updateConsumedVariables();</span>
+<span class="nc" id="L302">	}</span>
 
 	/**
 	 * Constructor for MAP operations with a produced variable name. Used when a
@@ -313,16 +311,16 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 *                        null)
 	 * @param producedVarName the name of the variable produced by this operation
 	 */
-<span class="fc" id="L316">	public ProspectiveOperation(Expression expression, OperationType operationType, String producedVarName) {</span>
-<span class="pc bnc" id="L317" title="All 2 branches missed.">		assert expression != null : &quot;expression cannot be null&quot;;</span>
-<span class="pc bnc" id="L318" title="All 2 branches missed.">		assert operationType != null : &quot;operationType cannot be null&quot;;</span>
+<span class="fc" id="L314">	public ProspectiveOperation(Expression expression, OperationType operationType, String producedVarName) {</span>
+<span class="pc bnc" id="L315" title="All 2 branches missed.">		assert expression != null : &quot;expression cannot be null&quot;;</span>
+<span class="pc bnc" id="L316" title="All 2 branches missed.">		assert operationType != null : &quot;operationType cannot be null&quot;;</span>
 
-<span class="fc" id="L320">		this.originalExpression = expression;</span>
-<span class="fc" id="L321">		this.operationType = operationType;</span>
-<span class="fc" id="L322">		this.producedVariableName = producedVarName;</span>
-<span class="fc" id="L323">		collectNeededVariables(expression);</span>
-<span class="fc" id="L324">		updateConsumedVariables();</span>
-<span class="fc" id="L325">	}</span>
+<span class="fc" id="L318">		this.originalExpression = expression;</span>
+<span class="fc" id="L319">		this.operationType = operationType;</span>
+<span class="fc" id="L320">		this.producedVariableName = producedVarName;</span>
+<span class="fc" id="L321">		collectNeededVariables(expression);</span>
+<span class="fc" id="L322">		updateConsumedVariables();</span>
+<span class="fc" id="L323">	}</span>
 
 	/**
 	 * Constructor for REDUCE operations with accumulator variable and reducer type.
@@ -335,26 +333,26 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @param reducerType        the type of reducer (INCREMENT, SUM, etc.) (must
 	 *                           not be null)
 	 */
-<span class="nc" id="L338">	public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, String accumulatorVarName,</span>
+<span class="nc" id="L336">	public ProspectiveOperation(org.eclipse.jdt.core.dom.Statement statement, String accumulatorVarName,</span>
 			ReducerType reducerType) {
-<span class="nc bnc" id="L340" title="All 2 branches missed.">		assert statement != null : &quot;statement cannot be null&quot;;</span>
-<span class="nc bnc" id="L341" title="All 2 branches missed.">		assert accumulatorVarName != null : &quot;accumulatorVarName cannot be null&quot;;</span>
-<span class="nc bnc" id="L342" title="All 2 branches missed.">		assert reducerType != null : &quot;reducerType cannot be null&quot;;</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">		assert statement != null : &quot;statement cannot be null&quot;;</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">		assert accumulatorVarName != null : &quot;accumulatorVarName cannot be null&quot;;</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">		assert reducerType != null : &quot;reducerType cannot be null&quot;;</span>
 
-<span class="nc" id="L344">		this.originalStatement = statement;</span>
-<span class="nc" id="L345">		this.operationType = OperationType.REDUCE;</span>
-<span class="nc" id="L346">		this.accumulatorVariableName = accumulatorVarName;</span>
-<span class="nc" id="L347">		this.reducerType = reducerType;</span>
-<span class="nc bnc" id="L348" title="All 2 branches missed.">		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement) {</span>
-<span class="nc" id="L349">			this.originalExpression = ((org.eclipse.jdt.core.dom.ExpressionStatement) statement).getExpression();</span>
-<span class="nc" id="L350">			collectNeededVariables(this.originalExpression);</span>
+<span class="nc" id="L342">		this.originalStatement = statement;</span>
+<span class="nc" id="L343">		this.operationType = OperationType.REDUCE;</span>
+<span class="nc" id="L344">		this.accumulatorVariableName = accumulatorVarName;</span>
+<span class="nc" id="L345">		this.reducerType = reducerType;</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">		if (statement instanceof org.eclipse.jdt.core.dom.ExpressionStatement expressionStatement) {</span>
+<span class="nc" id="L347">			this.originalExpression = expressionStatement.getExpression();</span>
+<span class="nc" id="L348">			collectNeededVariables(this.originalExpression);</span>
 		}
-<span class="nc" id="L352">		updateConsumedVariables();</span>
-<span class="nc" id="L353">	}</span>
+<span class="nc" id="L350">		updateConsumedVariables();</span>
+<span class="nc" id="L351">	}</span>
 
 	/** Returns the operation type. */
 	public OperationType getOperationType() {
-<span class="fc" id="L357">		return this.operationType;</span>
+<span class="fc" id="L355">		return this.operationType;</span>
 	}
 
 	/**
@@ -368,59 +366,59 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @throws IllegalArgumentException if ast is null
 	 */
 	public List&lt;Expression&gt; getArguments(AST ast, String paramName) {
-<span class="pc bpc" id="L371" title="1 of 2 branches missed.">		if (ast == null) {</span>
-<span class="nc" id="L372">			throw new IllegalArgumentException(&quot;ast cannot be null&quot;);</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">		if (ast == null) {</span>
+<span class="nc" id="L370">			throw new IllegalArgumentException(&quot;ast cannot be null&quot;);</span>
 		}
 
-<span class="fc" id="L375">		List&lt;Expression&gt; args = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L373">		List&lt;Expression&gt; args = new ArrayList&lt;&gt;();</span>
 
 		// REDUCE and COLLECT have special argument handling
-<span class="fc bfc" id="L378" title="All 2 branches covered.">		if (operationType.hasSpecialArgumentHandling()) {</span>
-<span class="pc bpc" id="L379" title="1 of 2 branches missed.">			if (operationType == OperationType.REDUCE) {</span>
-<span class="nc" id="L380">				return getArgumentsForReducer(ast);</span>
-<span class="pc bpc" id="L381" title="1 of 2 branches missed.">			} else if (operationType == OperationType.COLLECT) {</span>
-<span class="fc" id="L382">				return getArgumentsForCollector(ast);</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">		if (operationType.hasSpecialArgumentHandling()) {</span>
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">			if (operationType == OperationType.REDUCE) {</span>
+<span class="nc" id="L378">				return getArgumentsForReducer(ast);</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">			} else if (operationType == OperationType.COLLECT) {</span>
+<span class="fc" id="L380">				return getArgumentsForCollector(ast);</span>
 			}
 		}
 
 		// Create lambda expression for MAP, FILTER, FOREACH, ANYMATCH, NONEMATCH, ALLMATCH
-<span class="fc" id="L387">		LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="fc" id="L385">		LambdaExpression lambda = ast.newLambdaExpression();</span>
 
 		// Create parameter with defensive null check
 		// Use the provided paramName, or generate a unique default name
-<span class="fc" id="L391">		VariableDeclarationFragment param = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L389">		VariableDeclarationFragment param = ast.newVariableDeclarationFragment();</span>
 		String effectiveParamName;
-<span class="pc bpc" id="L393" title="2 of 4 branches missed.">		if (paramName != null &amp;&amp; !paramName.isEmpty()) {</span>
-<span class="fc" id="L394">			effectiveParamName = paramName;</span>
-<span class="fc" id="L395">		} else {</span>
+<span class="pc bpc" id="L391" title="2 of 4 branches missed.">		if (paramName != null &amp;&amp; !paramName.isEmpty()) {</span>
+<span class="fc" id="L392">			effectiveParamName = paramName;</span>
+<span class="fc" id="L393">		} else {</span>
 			// Generate a unique default name to avoid clashes
-<span class="nc" id="L397">			effectiveParamName = generateUniqueVariableName(&quot;item&quot;);</span>
+<span class="nc" id="L395">			effectiveParamName = generateUniqueVariableName(&quot;item&quot;);</span>
 		}
-<span class="fc" id="L399">		param.setName(ast.newSimpleName(effectiveParamName));</span>
-<span class="fc" id="L400">		lambda.parameters().add(param);</span>
+<span class="fc" id="L397">		param.setName(ast.newSimpleName(effectiveParamName));</span>
+<span class="fc" id="L398">		lambda.parameters().add(param);</span>
 		
 		// For single parameter without type annotation, don't use parentheses
-<span class="fc" id="L403">		lambda.setParentheses(false);</span>
+<span class="fc" id="L401">		lambda.setParentheses(false);</span>
 
 		// Create lambda body using OperationType delegation
-<span class="fc" id="L406">		OperationType.LambdaBodyContext context = new OperationType.LambdaBodyContext(</span>
-<span class="fc" id="L407">				originalExpression, originalStatement, loopVariableName);</span>
-<span class="fc" id="L408">		ASTNode lambdaBody = operationType.createLambdaBody(ast, context);</span>
+<span class="fc" id="L404">		OperationType.LambdaBodyContext context = new OperationType.LambdaBodyContext(</span>
+<span class="fc" id="L405">				originalExpression, originalStatement, loopVariableName);</span>
+<span class="fc" id="L406">		ASTNode lambdaBody = operationType.createLambdaBody(ast, context);</span>
 		
-<span class="pc bpc" id="L410" title="1 of 2 branches missed.">		if (lambdaBody != null) {</span>
-<span class="fc" id="L411">			lambda.setBody(lambdaBody);</span>
-<span class="pc bnc" id="L412" title="All 2 branches missed.">		} else if (originalExpression != null) {</span>
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">		if (lambdaBody != null) {</span>
+<span class="fc" id="L409">			lambda.setBody(lambdaBody);</span>
+<span class="pc bnc" id="L410" title="All 2 branches missed.">		} else if (originalExpression != null) {</span>
 			// Fallback: use expression as body
-<span class="nc" id="L414">			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));</span>
-<span class="nc" id="L415">		} else {</span>
+<span class="nc" id="L412">			lambda.setBody(ASTNode.copySubtree(ast, originalExpression));</span>
+<span class="nc" id="L413">		} else {</span>
 			// Defensive: neither originalExpression nor originalStatement is available
-<span class="nc" id="L417">			throw new IllegalStateException(</span>
-<span class="nc" id="L418">					&quot;Cannot create lambda: both originalExpression and originalStatement are null for operationType &quot;</span>
-<span class="nc" id="L419">							+ operationType);</span>
+<span class="nc" id="L415">			throw new IllegalStateException(</span>
+<span class="nc" id="L416">					&quot;Cannot create lambda: both originalExpression and originalStatement are null for operationType &quot;</span>
+<span class="nc" id="L417">							+ operationType);</span>
 		}
 
-<span class="fc" id="L422">		args.add(lambda);</span>
-<span class="fc" id="L423">		return args;</span>
+<span class="fc" id="L420">		args.add(lambda);</span>
+<span class="fc" id="L421">		return args;</span>
 	}
 
 	/**
@@ -428,7 +426,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * This is used to track variable names through the stream pipeline.
 	 */
 	public String getProducedVariableName() {
-<span class="fc" id="L431">		return producedVariableName;</span>
+<span class="fc" id="L429">		return producedVariableName;</span>
 	}
 
 	/**
@@ -437,7 +435,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @return the accumulator variable name, or null if not a REDUCE operation
 	 */
 	public String getAccumulatorVariableName() {
-<span class="nc" id="L440">		return accumulatorVariableName;</span>
+<span class="nc" id="L438">		return accumulatorVariableName;</span>
 	}
 
 	/**
@@ -446,7 +444,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @return the reducer type, or null if not a REDUCE operation
 	 */
 	public ReducerType getReducerType() {
-<span class="nc" id="L449">		return reducerType;</span>
+<span class="nc" id="L447">		return reducerType;</span>
 	}
 
 	/**
@@ -455,8 +453,8 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @param isNullSafe true if the operation is null-safe
 	 */
 	public void setNullSafe(boolean isNullSafe) {
-<span class="fc" id="L458">		this.isNullSafe = isNullSafe;</span>
-<span class="fc" id="L459">	}</span>
+<span class="fc" id="L456">		this.isNullSafe = isNullSafe;</span>
+<span class="fc" id="L457">	}</span>
 
 	/**
 	 * Returns whether this operation is null-safe.
@@ -464,7 +462,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @return true if the operation is null-safe
 	 */
 	public boolean isNullSafe() {
-<span class="fc" id="L467">		return isNullSafe;</span>
+<span class="fc" id="L465">		return isNullSafe;</span>
 	}
 
 	/**
@@ -473,8 +471,8 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @param collectorType the collector type (TO_LIST, TO_SET, etc.)
 	 */
 	public void setCollectorType(CollectorType collectorType) {
-<span class="fc" id="L476">		this.collectorType = collectorType;</span>
-<span class="fc" id="L477">	}</span>
+<span class="fc" id="L474">		this.collectorType = collectorType;</span>
+<span class="fc" id="L475">	}</span>
 
 	/**
 	 * Returns the collector type for COLLECT operations.
@@ -482,7 +480,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @return the collector type, or null if not a COLLECT operation
 	 */
 	public CollectorType getCollectorType() {
-<span class="nc" id="L485">		return collectorType;</span>
+<span class="nc" id="L483">		return collectorType;</span>
 	}
 
 	/**
@@ -491,8 +489,8 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @param targetVariable the target variable name (e.g., &quot;result&quot;)
 	 */
 	public void setTargetVariable(String targetVariable) {
-<span class="fc" id="L494">		this.targetVariable = targetVariable;</span>
-<span class="fc" id="L495">	}</span>
+<span class="fc" id="L492">		this.targetVariable = targetVariable;</span>
+<span class="fc" id="L493">	}</span>
 
 	/**
 	 * Returns the target collection variable for COLLECT operations.
@@ -500,7 +498,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @return the target variable name, or null if not a COLLECT operation
 	 */
 	public String getTargetVariable() {
-<span class="nc" id="L503">		return targetVariable;</span>
+<span class="nc" id="L501">		return targetVariable;</span>
 	}
 
 	/**
@@ -510,8 +508,8 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @param accumulatorType the type of the accumulator variable (e.g., &quot;int&quot;, &quot;double&quot;, &quot;long&quot;)
 	 */
 	public void setAccumulatorType(String accumulatorType) {
-<span class="fc" id="L513">		this.accumulatorType = accumulatorType;</span>
-<span class="fc" id="L514">	}</span>
+<span class="fc" id="L511">		this.accumulatorType = accumulatorType;</span>
+<span class="fc" id="L512">	}</span>
 
 	/**
 	 * Returns the accumulator type for REDUCE operations.
@@ -519,7 +517,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @return the accumulator type (e.g., &quot;int&quot;, &quot;double&quot;, &quot;long&quot;), or null if not set
 	 */
 	public String getAccumulatorType() {
-<span class="fc" id="L522">		return accumulatorType;</span>
+<span class="fc" id="L520">		return accumulatorType;</span>
 	}
 
 	/**
@@ -530,10 +528,10 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @param usedNames the collection of variable names in use (may be null)
 	 */
 	public void setUsedVariableNames(Collection&lt;String&gt; usedNames) {
-<span class="pc bpc" id="L533" title="1 of 2 branches missed.">		if (usedNames != null) {</span>
-<span class="fc" id="L534">			this.usedVariableNames = usedNames;</span>
+<span class="pc bpc" id="L531" title="1 of 2 branches missed.">		if (usedNames != null) {</span>
+<span class="fc" id="L532">			this.usedVariableNames = usedNames;</span>
 		}
-<span class="fc" id="L536">	}</span>
+<span class="fc" id="L534">	}</span>
 
 	/**
 	 * Generates a unique variable name that doesn't collide with existing variables in scope.
@@ -547,22 +545,22 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 */
 	private String generateUniqueVariableName(String baseName) {
 		// Combine neededVariables (from expression analysis) with usedVariableNames (from scope)
-<span class="nc" id="L550">		Set&lt;String&gt; allUsedNames = new HashSet&lt;&gt;(neededVariables);</span>
-<span class="nc" id="L551">		allUsedNames.addAll(usedVariableNames);</span>
+<span class="nc" id="L548">		Set&lt;String&gt; allUsedNames = new HashSet&lt;&gt;(neededVariables);</span>
+<span class="nc" id="L549">		allUsedNames.addAll(usedVariableNames);</span>
 		
 		// If base name is not used, return it
-<span class="nc bnc" id="L554" title="All 2 branches missed.">		if (!allUsedNames.contains(baseName)) {</span>
-<span class="nc" id="L555">			return baseName;</span>
+<span class="nc bnc" id="L552" title="All 2 branches missed.">		if (!allUsedNames.contains(baseName)) {</span>
+<span class="nc" id="L553">			return baseName;</span>
 		}
 		
 		// Otherwise, append a number until we find an unused name
-<span class="nc" id="L559">		int counter = 2;</span>
-<span class="nc" id="L560">		String candidate = baseName + counter;</span>
-<span class="nc bnc" id="L561" title="All 2 branches missed.">		while (allUsedNames.contains(candidate)) {</span>
-<span class="nc" id="L562">			counter++;</span>
-<span class="nc" id="L563">			candidate = baseName + counter;</span>
+<span class="nc" id="L557">		int counter = 2;</span>
+<span class="nc" id="L558">		String candidate = baseName + counter;</span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">		while (allUsedNames.contains(candidate)) {</span>
+<span class="nc" id="L560">			counter++;</span>
+<span class="nc" id="L561">			candidate = baseName + counter;</span>
 		}
-<span class="nc" id="L565">		return candidate;</span>
+<span class="nc" id="L563">		return candidate;</span>
 	}
 
 	/**
@@ -572,7 +570,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * @return the set of consumed variable names
 	 */
 	public Set&lt;String&gt; getConsumedVariables() {
-<span class="fc" id="L575">		return consumedVariables;</span>
+<span class="fc" id="L573">		return consumedVariables;</span>
 	}
 
 	/**
@@ -580,29 +578,29 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * This is called during operation construction to track variable usage.
 	 */
 	private void updateConsumedVariables() {
-<span class="fc" id="L583">		consumedVariables.addAll(neededVariables);</span>
-<span class="fc" id="L584">	}</span>
+<span class="fc" id="L581">		consumedVariables.addAll(neededVariables);</span>
+<span class="fc" id="L582">	}</span>
 
 	/** Determines the arguments for reduce() operation. */
 	private List&lt;Expression&gt; getArgumentsForReducer(AST ast) {
-<span class="nc" id="L588">		List&lt;Expression&gt; arguments = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L589" title="All 2 branches missed.">		if (operationType == OperationType.REDUCE) {</span>
+<span class="nc" id="L586">		List&lt;Expression&gt; arguments = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L587" title="All 2 branches missed.">		if (operationType == OperationType.REDUCE) {</span>
 			// First argument: identity element (the accumulator variable reference)
-<span class="nc bnc" id="L591" title="All 2 branches missed.">			if (accumulatorVariableName != null) {</span>
-<span class="nc" id="L592">				arguments.add(ast.newSimpleName(accumulatorVariableName));</span>
-<span class="nc" id="L593">			} else {</span>
+<span class="nc bnc" id="L589" title="All 2 branches missed.">			if (accumulatorVariableName != null) {</span>
+<span class="nc" id="L590">				arguments.add(ast.newSimpleName(accumulatorVariableName));</span>
+<span class="nc" id="L591">			} else {</span>
 				// Fallback to default identity
-<span class="nc" id="L595">				Expression identity = getIdentityElement(ast);</span>
-<span class="nc bnc" id="L596" title="All 2 branches missed.">				if (identity != null)</span>
-<span class="nc" id="L597">					arguments.add(identity);</span>
+<span class="nc" id="L593">				Expression identity = getIdentityElement(ast);</span>
+<span class="nc bnc" id="L594" title="All 2 branches missed.">				if (identity != null)</span>
+<span class="nc" id="L595">					arguments.add(identity);</span>
 			}
 
 			// Second argument: accumulator function (method reference or lambda)
-<span class="nc" id="L601">			Expression accumulator = createAccumulatorExpression(ast);</span>
-<span class="nc bnc" id="L602" title="All 2 branches missed.">			if (accumulator != null)</span>
-<span class="nc" id="L603">				arguments.add(accumulator);</span>
+<span class="nc" id="L599">			Expression accumulator = createAccumulatorExpression(ast);</span>
+<span class="nc bnc" id="L600" title="All 2 branches missed.">			if (accumulator != null)</span>
+<span class="nc" id="L601">				arguments.add(accumulator);</span>
 		}
-<span class="nc" id="L605">		return arguments;</span>
+<span class="nc" id="L603">		return arguments;</span>
 	}
 
 	/**
@@ -610,13 +608,13 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * Returns a single argument: the Collectors method invocation (e.g., Collectors.toList()).
 	 */
 	private List&lt;Expression&gt; getArgumentsForCollector(AST ast) {
-<span class="fc" id="L613">		List&lt;Expression&gt; arguments = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L614" title="2 of 4 branches missed.">		if (operationType == OperationType.COLLECT &amp;&amp; collectorType != null) {</span>
+<span class="fc" id="L611">		List&lt;Expression&gt; arguments = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L612" title="2 of 4 branches missed.">		if (operationType == OperationType.COLLECT &amp;&amp; collectorType != null) {</span>
 			// Single argument: Collectors.toList() or Collectors.toSet()
-<span class="fc" id="L616">			Expression collector = collectorType.createCollectorExpression(ast);</span>
-<span class="fc" id="L617">			arguments.add(collector);</span>
+<span class="fc" id="L614">			Expression collector = collectorType.createCollectorExpression(ast);</span>
+<span class="fc" id="L615">			arguments.add(collector);</span>
 		}
-<span class="fc" id="L619">		return arguments;</span>
+<span class="fc" id="L617">		return arguments;</span>
 	}
 
 	/**
@@ -625,29 +623,28 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 	 * The method reference type is determined by the accumulator variable type.
 	 */
 	private Expression createAccumulatorExpression(AST ast) {
-<span class="nc" id="L628">		LambdaGenerator generator = new LambdaGenerator(ast);</span>
-<span class="nc" id="L629">		generator.setNeededVariables(neededVariables);</span>
-<span class="nc" id="L630">		generator.setUsedVariableNames(usedVariableNames);</span>
-<span class="nc" id="L631">		return generator.createAccumulatorExpression(reducerType, accumulatorType, isNullSafe);</span>
+<span class="nc" id="L626">		LambdaGenerator generator = new LambdaGenerator(ast);</span>
+<span class="nc" id="L627">		generator.setNeededVariables(neededVariables);</span>
+<span class="nc" id="L628">		generator.setUsedVariableNames(usedVariableNames);</span>
+<span class="nc" id="L629">		return generator.createAccumulatorExpression(reducerType, accumulatorType, isNullSafe);</span>
 	}
 
 	/** Determines the identity element (0, 1) for reduce() operation. */
 	private Expression getIdentityElement(AST ast) {
-<span class="nc bnc" id="L636" title="All 4 branches missed.">		if (operationType == OperationType.REDUCE &amp;&amp; originalExpression instanceof Assignment) {</span>
-<span class="nc" id="L637">			Assignment assignment = (Assignment) originalExpression;</span>
-<span class="nc bnc" id="L638" title="All 2 branches missed.">			if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {</span>
-<span class="nc" id="L639">				return ast.newNumberLiteral(&quot;0&quot;);</span>
-<span class="nc bnc" id="L640" title="All 2 branches missed.">			} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {</span>
-<span class="nc" id="L641">				return ast.newNumberLiteral(&quot;1&quot;);</span>
+<span class="nc bnc" id="L634" title="All 4 branches missed.">		if (operationType == OperationType.REDUCE &amp;&amp; originalExpression instanceof Assignment assignment) {</span>
+<span class="nc bnc" id="L635" title="All 2 branches missed.">			if (assignment.getOperator() == Assignment.Operator.PLUS_ASSIGN) {</span>
+<span class="nc" id="L636">				return ast.newNumberLiteral(&quot;0&quot;);</span>
+<span class="nc bnc" id="L637" title="All 2 branches missed.">			} else if (assignment.getOperator() == Assignment.Operator.TIMES_ASSIGN) {</span>
+<span class="nc" id="L638">				return ast.newNumberLiteral(&quot;1&quot;);</span>
 			}
 		}
-<span class="nc" id="L644">		return null;</span>
+<span class="nc" id="L641">		return null;</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="nc" id="L649">		return &quot;ProspectiveOperation{&quot; + &quot;expression=&quot; + originalExpression + &quot;, operationType=&quot; + operationType</span>
-<span class="nc" id="L650">				+ &quot;, neededVariables=&quot; + neededVariables + '}';</span>
+<span class="nc" id="L646">		return &quot;ProspectiveOperation{&quot; + &quot;expression=&quot; + originalExpression + &quot;, operationType=&quot; + operationType</span>
+<span class="nc" id="L647">				+ &quot;, neededVariables=&quot; + neededVariables + '}';</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
