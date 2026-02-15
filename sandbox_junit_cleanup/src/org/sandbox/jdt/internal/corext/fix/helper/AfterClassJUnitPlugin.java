@@ -58,7 +58,6 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 )
 @RewriteRule(
     replaceWith = "@AfterAll",
-    removeImports = {ORG_JUNIT_AFTERCLASS},
     addImports = {ORG_JUNIT_JUPITER_API_AFTER_ALL}
 )
 public class AfterClassJUnitPlugin extends TriggerPatternCleanupPlugin {

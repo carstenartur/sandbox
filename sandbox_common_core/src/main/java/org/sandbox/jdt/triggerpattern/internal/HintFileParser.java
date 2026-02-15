@@ -355,11 +355,24 @@ public final class HintFileParser {
 		PatternKind kind = inferPatternKind(sourcePatternText);
 		Pattern sourcePattern = new Pattern(sourcePatternText, kind);
 		
-		// Auto-detect imports from replacement patterns if no explicit imports given
-		if (currentImports.isEmpty() && !alternatives.isEmpty()) {
+		// Auto-detect imports from replacement patterns and merge with explicit imports
+		// Phase 5: Always run auto-detection and merge with explicit directives
+		if (!alternatives.isEmpty()) {
+			ImportDirective autoDetected = new ImportDirective();
 			for (RewriteAlternative alt : alternatives) {
 				ImportDirective detected = ImportDirective.detectFromPattern(alt.replacementPattern());
-				currentImports.merge(detected);
+				autoDetected.merge(detected);
+			}
+			// Note: Phase 2 (auto-detect removeImport from source/replacement FQN diff)
+			// is intentionally disabled. Removing imports based on FQN presence in a
+			// matched snippet is unsafe because the import may still be needed elsewhere
+			// in the compilation unit. Use explicit removeImport directives instead.
+			// Merge: explicit directives take precedence (already in currentImports),
+			// auto-detected ones are added for any import types not explicitly specified
+			if (currentImports.getAddImports().isEmpty()) {
+				for (String imp : autoDetected.getAddImports()) {
+					currentImports.addImport(imp);
+				}
 			}
 		}
 		

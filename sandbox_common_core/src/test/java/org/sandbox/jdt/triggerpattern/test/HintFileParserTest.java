@@ -481,4 +481,83 @@ public class HintFileParserTest {
 		assertTrue(rule.getImportDirective().getAddImports().contains("org.hamcrest.MatcherAssert"));
 		assertTrue(rule.getImportDirective().getRemoveImports().contains("org.junit.Assert"));
 	}
+	
+	@Test
+	public void testAutoDetectAddImportFromFqnInReplacement() throws HintParseException {
+		String content = """
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertTrue(rule.hasImportDirective(), "Import directive should be auto-detected");
+		assertTrue(rule.getImportDirective().getAddImports().contains("java.util.Objects"),
+				"java.util.Objects should be auto-detected from FQN in replacement");
+	}
+	
+	@Test
+	public void testAutoDetectMergesWithExplicitImports() throws HintParseException {
+		// Phase 5: Explicit removeImport + auto-detected addImport from FQN should merge
+		String content = """
+			new FileReader($path)
+			=> new FileReader($path, java.nio.charset.StandardCharsets.UTF_8)
+			removeImport java.io.FileReader
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertTrue(rule.hasImportDirective(), "Import directive should exist");
+		// Explicit removeImport should be present
+		assertTrue(rule.getImportDirective().getRemoveImports().contains("java.io.FileReader"),
+				"Explicit removeImport should be preserved");
+		// Auto-detected addImport from FQN in replacement should also be present
+		assertTrue(rule.getImportDirective().getAddImports().contains("java.nio.charset.StandardCharsets"),
+				"addImport should be auto-detected from FQN even when explicit removeImport is given");
+	}
+	
+	@Test
+	public void testAutoDetectRemoveImportFromSourceReplacementDiff() throws HintParseException {
+		// Phase 2 auto-detection of removeImport from source/replacement FQN diff
+		// is intentionally disabled because it's unsafe (import may be used elsewhere
+		// in the compilation unit). Only addImport auto-detection is active.
+		String content = """
+			java.io.FileReader.create($path)
+			=> java.nio.charset.StandardCharsets.UTF_8
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertTrue(rule.hasImportDirective(), "Import directive should be auto-detected");
+		// java.io.FileReader is in source but not in replacement — NOT auto-removed (unsafe)
+		assertFalse(rule.getImportDirective().getRemoveImports().contains("java.io.FileReader"),
+				"removeImport should NOT be auto-detected from source FQN diff (unsafe)");
+		// java.nio.charset.StandardCharsets is in replacement but not in source → addImport
+		assertTrue(rule.getImportDirective().getAddImports().contains("java.nio.charset.StandardCharsets"),
+				"FQN in replacement but not in source should be auto-detected as addImport");
+	}
+	
+	@Test
+	public void testExplicitAddImportsPrecludeAutoDetection() throws HintParseException {
+		// When explicit addImports are given, auto-detection should not add more
+		String content = """
+			$x.getBytes("UTF-8")
+			=> $x.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+			addImport com.example.CustomCharset
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertTrue(rule.hasImportDirective(), "Import directive should exist");
+		// Explicit addImport should be present
+		assertTrue(rule.getImportDirective().getAddImports().contains("com.example.CustomCharset"),
+				"Explicit addImport should be preserved");
+		// Auto-detected addImport should NOT be added since explicit addImport was given
+		assertFalse(rule.getImportDirective().getAddImports().contains("java.nio.charset.StandardCharsets"),
+				"Auto-detected addImport should not be added when explicit addImports are specified");
+	}
 }
