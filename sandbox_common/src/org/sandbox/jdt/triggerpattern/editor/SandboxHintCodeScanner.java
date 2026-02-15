@@ -33,13 +33,14 @@ import org.eclipse.swt.widgets.Display;
  *
  * <p>Highlights:</p>
  * <ul>
+ *   <li>{@code <!...>} metadata directives – teal italic</li>
  *   <li>{@code ::} guard separator – purple bold</li>
  *   <li>{@code =>} rewrite arrow – purple bold</li>
  *   <li>{@code ;;} rule terminator – purple bold</li>
  *   <li>{@code $placeholder} – dark red</li>
  *   <li>{@code $variadic$} – dark red bold</li>
- *   <li>Guard function keywords – dark blue</li>
- *   <li>{@code otherwise} – dark blue bold</li>
+ *   <li>Guard function keywords – dark blue bold</li>
+ *   <li>Import directive keywords – dark blue bold</li>
  * </ul>
  *
  * @since 1.3.6
@@ -79,6 +80,7 @@ public class SandboxHintCodeScanner extends RuleBasedScanner {
 		"removeImport", //$NON-NLS-1$
 		"addStaticImport", //$NON-NLS-1$
 		"removeStaticImport", //$NON-NLS-1$
+		"replaceStaticImport", //$NON-NLS-1$
 	};
 
 	public SandboxHintCodeScanner() {
@@ -95,7 +97,13 @@ public class SandboxHintCodeScanner extends RuleBasedScanner {
 		Color stringColor = new Color(Display.getDefault(), 42, 0, 255);
 		IToken stringToken = new Token(new TextAttribute(stringColor));
 
+		Color metadataColor = new Color(Display.getDefault(), 64, 128, 128);
+		IToken metadataToken = new Token(new TextAttribute(metadataColor, null, SWT.ITALIC));
+
 		List<IRule> rules = new ArrayList<>();
+
+		// Metadata directives: <!id: ...>, <!description: ...>, etc.
+		rules.add(new SingleLineRule("<!", ">", metadataToken)); //$NON-NLS-1$ //$NON-NLS-2$
 
 		// String literals in guard expressions
 		rules.add(new SingleLineRule("\"", "\"", stringToken, '\\')); //$NON-NLS-1$ //$NON-NLS-2$
