@@ -294,7 +294,7 @@ public final class HintFileRegistry {
 				}
 			} catch (HintParseException | IOException e) {
 				ILog log = Platform.getLog(HintFileRegistry.class);
-				log.log(Status.error(
+				log.log(Status.warning(
 						"Failed to load hint file from extension: " + id, e)); //$NON-NLS-1$
 			}
 		}
@@ -338,7 +338,7 @@ public final class HintFileRegistry {
 							loaded.add(id);
 						} catch (HintParseException | IOException e) {
 							ILog log = Platform.getLog(HintFileRegistry.class);
-							log.log(Status.error(
+							log.log(Status.warning(
 									"Failed to load hint file: " + file.getFullPath(), e)); //$NON-NLS-1$
 						}
 					}
@@ -354,7 +354,7 @@ public final class HintFileRegistry {
 			});
 		} catch (CoreException e) {
 			ILog log = Platform.getLog(HintFileRegistry.class);
-			log.log(Status.error(
+			log.log(Status.warning(
 					"Failed to scan project for hint files: " + projectKey, e)); //$NON-NLS-1$
 		}
 		return loaded;
