@@ -1,0 +1,55 @@
+package org.sandbox.jdt.ui.tests.quickfix;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.sandbox.jdt.internal.common.HelperVisitor;
+import org.sandbox.jdt.internal.common.HelperVisitorProvider;
+
+public class ExpectationTracer extends ConcurrentHashMap<ASTNode,SimpleName> implements HelperVisitorProvider<ASTNode,SimpleName,ExpectationTracer>{
+
+	public Stack<Integer> stack = new Stack<>();
+
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
+	private transient HelperVisitor<ExpectationTracer,ASTNode,SimpleName> hv;
+
+	@Override
+	public HelperVisitor<ExpectationTracer,ASTNode,SimpleName> getHelperVisitor() {
+		return hv;
+	}
+
+	@Override
+	public void setHelperVisitor(HelperVisitor<ExpectationTracer,ASTNode,SimpleName> hv) {
+		this.hv=hv;
+	}
+
+	@SuppressWarnings("unused") // Required by Serializable contract
+	private static void writeObject(ObjectOutputStream stream)
+			throws IOException {
+		stream.defaultWriteObject();
+	}
+
+	@SuppressWarnings("unused") // Required by Serializable contract
+	private static void readObject(ObjectInputStream stream)
+			throws IOException, ClassNotFoundException {
+		stream.defaultReadObject();
+	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		return super.equals(o);
+	}
+}
