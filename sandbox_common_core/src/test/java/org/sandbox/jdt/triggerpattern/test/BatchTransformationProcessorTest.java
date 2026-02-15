@@ -299,6 +299,30 @@ public class BatchTransformationProcessorTest {
 		}
 	}
 
+	@Test
+	public void testMultipleGuardContinuationLines() throws Exception {
+		// Test that multiple :: continuation lines are combined with AND
+		registerBuiltInGuards();
+
+		String hintContent = """
+				<!id: test-multi-guard>
+
+				Assert.method($a, $b, $c)
+				  :: $a instanceof java.lang.String
+				  :: $c instanceof double
+				=> Assertions.method($b, $c, $a)
+				;;
+				"""; //$NON-NLS-1$
+
+		HintFileParser parser = new HintFileParser();
+		HintFile hintFile = parser.parse(hintContent);
+
+		assertEquals(1, hintFile.getRules().size()); //$NON-NLS-1$
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.sourceGuard(),
+				"Rule should have a combined source guard"); //$NON-NLS-1$
+	}
+
 	private void registerBuiltInGuards() {
 		java.util.HashMap<String, org.sandbox.jdt.triggerpattern.api.GuardFunction> guards = new java.util.HashMap<>();
 		org.sandbox.jdt.triggerpattern.internal.BuiltInGuards.registerAll(guards);
