@@ -38,7 +38,23 @@ final class Messages extends NLS {
 
 	public static String CommandLineStart;
 
+	public static String CommandLineMode;
+
 	public static String CommandLineDone;
+
+	public static String CommandLineChangedFiles;
+
+	public static String CommandLinePatchWritten;
+
+	public static String CommandLinePatchError;
+
+	public static String CommandLineReportWritten;
+
+	public static String CommandLineReportError;
+
+	public static String CommandLineErrorInvalidMode;
+
+	public static String CommandLineErrorInvalidScope;
 
 	public static String FileOutsideWorkspace;
 
