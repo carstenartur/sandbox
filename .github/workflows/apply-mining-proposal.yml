@@ -72,21 +72,28 @@ jobs:
           git push
 
       # Option B: Pull Request
+      - name: Build PR Body
+        if: inputs.action == 'pull-request'
+        run: |
+          DSL_DECODED=$(echo "${{ inputs.dsl_rule }}" | base64 -d)
+          cat > /tmp/pr-body.md << 'HEREDOC_END'
+          ## Gemini Mining Proposal
+
+          **Source commit:** `${{ inputs.commit_hash }}`
+          **Category:** ${{ inputs.category }}
+          **Target file:** `${{ inputs.target_hint_file }}`
+
+          ### New DSL Rule
+          ```
+          HEREDOC_END
+          echo "${DSL_DECODED}" >> /tmp/pr-body.md
+          echo '```' >> /tmp/pr-body.md
+
       - name: Create PR
         if: inputs.action == 'pull-request'
         uses: peter-evans/create-pull-request@v8
         with:
           title: "🔧 Mining: ${{ inputs.summary }}"
-          body: |
-            ## Gemini Mining Proposal
-
-            **Source commit:** `${{ inputs.commit_hash }}`
-            **Category:** ${{ inputs.category }}
-            **Target file:** `${{ inputs.target_hint_file }}`
-
-            ### New DSL Rule
-            ```
-            $(echo "${{ inputs.dsl_rule }}" | base64 -d)
-            ```
+          body-path: /tmp/pr-body.md
           branch: "mining/proposal-${{ inputs.commit_hash }}"
           commit-message: "mining: DSL rule from ${{ inputs.commit_hash }}"

@@ -15,10 +15,19 @@ package org.sandbox.mining.gemini.report;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 import org.sandbox.mining.gemini.gemini.CommitEvaluation;
 
@@ -26,11 +35,20 @@ import org.sandbox.mining.gemini.gemini.CommitEvaluation;
  * Generates an HTML page from evaluations and statistics for GitHub Pages.
  *
  * <p>Loads the report template from resources and writes the output HTML
- * along with the data JSON files.</p>
+ * along with the data JSON files (evaluations.json and statistics.json).</p>
  */
 public class GithubPagesGenerator {
 
 	private static final String TEMPLATE_RESOURCE = "/templates/report-template.html";
+	private final Gson gson;
+
+	public GithubPagesGenerator() {
+		this.gson = new GsonBuilder()
+				.setPrettyPrinting()
+				.registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) ->
+						new JsonPrimitive(src.toString()))
+				.create();
+	}
 
 	/**
 	 * Generates the GitHub Pages output (index.html, evaluations.json, statistics.json).
@@ -48,6 +66,10 @@ public class GithubPagesGenerator {
 		String html = injectStatistics(template, stats);
 
 		Files.writeString(outputDir.resolve("index.html"), html, StandardCharsets.UTF_8);
+		Files.writeString(outputDir.resolve("evaluations.json"),
+				gson.toJson(evaluations), StandardCharsets.UTF_8);
+		Files.writeString(outputDir.resolve("statistics.json"),
+				gson.toJson(stats), StandardCharsets.UTF_8);
 	}
 
 	/**

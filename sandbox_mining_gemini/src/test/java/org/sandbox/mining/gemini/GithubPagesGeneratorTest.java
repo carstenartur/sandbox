@@ -61,6 +61,17 @@ class GithubPagesGeneratorTest {
 		assertNotNull(content);
 		assertTrue(content.contains("1")); // totalProcessed
 		assertTrue(content.contains("html"));
+
+		// Verify evaluations.json and statistics.json are generated
+		Path evaluationsJson = tempDir.resolve("evaluations.json");
+		assertTrue(Files.exists(evaluationsJson));
+		String evalContent = Files.readString(evaluationsJson, StandardCharsets.UTF_8);
+		assertTrue(evalContent.contains("abc123"));
+
+		Path statisticsJson = tempDir.resolve("statistics.json");
+		assertTrue(Files.exists(statisticsJson));
+		String statsContent = Files.readString(statisticsJson, StandardCharsets.UTF_8);
+		assertTrue(statsContent.contains("totalProcessed"));
 	}
 
 	@Test

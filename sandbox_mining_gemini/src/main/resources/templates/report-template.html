@@ -11,20 +11,39 @@
             --red: #dc3545;
             --bg: #f8f9fa;
             --card-bg: #ffffff;
+            --text: #333;
+            --border: #dee2e6;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: #333; padding: 20px; }
-        h1 { margin-bottom: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        h1 { margin-bottom: 10px; }
+        h2 { margin: 25px 0 15px; }
+
+        /* Statistics Grid */
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
         .stat-card { background: var(--card-bg); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .stat-card .value { font-size: 2em; font-weight: bold; }
         .stat-card .label { color: #666; margin-top: 5px; }
-        .traffic-lights { display: flex; gap: 15px; margin-bottom: 30px; }
-        .light { border-radius: 8px; padding: 15px 25px; color: white; text-align: center; font-weight: bold; }
-        .light.green { background: var(--green); }
-        .light.yellow { background: var(--yellow); color: #333; }
-        .light.red { background: var(--red); }
-        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stat-card .percent { color: #999; font-size: 0.85em; }
+
+        /* Traffic Light Bar */
+        .traffic-bar-container { margin-bottom: 30px; }
+        .traffic-bar { display: flex; height: 30px; border-radius: 8px; overflow: hidden; margin-bottom: 5px; }
+        .traffic-bar .segment { display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; min-width: 40px; }
+        .traffic-bar .segment.green { background: var(--green); }
+        .traffic-bar .segment.yellow { background: var(--yellow); color: #333; }
+        .traffic-bar .segment.red { background: var(--red); }
+        .traffic-bar-legend { display: flex; gap: 20px; font-size: 0.9em; }
+        .traffic-bar-legend span { display: flex; align-items: center; gap: 5px; }
+        .traffic-bar-legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+        /* Filter Bar */
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .filter-bar label { font-weight: 600; }
+        .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9em; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
         th { background: #f1f3f5; font-weight: 600; }
         .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.85em; color: white; }
@@ -32,37 +51,114 @@
         .badge.YELLOW { background: var(--yellow); color: #333; }
         .badge.RED { background: var(--red); }
         .badge.NOT_APPLICABLE { background: #6c757d; }
+
+        /* Action Buttons */
+        .action-btn { padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; margin: 2px; }
+        .action-btn.commit { background: var(--green); color: white; }
+        .action-btn.pr { background: #0366d6; color: white; }
+        .action-btn.issue { background: #6f42c1; color: white; }
+        .action-btn.dsl { background: #17a2b8; color: white; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal-overlay.active { display: flex; align-items: center; justify-content: center; }
+        .modal { background: white; border-radius: 8px; padding: 30px; max-width: 700px; width: 90%; max-height: 80vh; overflow: auto; }
+        .modal h3 { margin-bottom: 15px; }
+        .modal pre { background: #f1f3f5; padding: 15px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
+        .modal .close-btn { float: right; background: none; border: none; font-size: 1.5em; cursor: pointer; }
     </style>
 </head>
 <body>
     <h1>Sandbox Mining Gemini - Dashboard</h1>
 
+    <!-- Statistics Grid -->
     <div class="stats">
         <div class="stat-card">
-            <div class="value">{{totalProcessed}}</div>
+            <div class="value" id="stat-total">{{totalProcessed}}</div>
             <div class="label">Total Processed</div>
         </div>
         <div class="stat-card">
-            <div class="value">{{relevant}}</div>
+            <div class="value" id="stat-relevant">{{relevant}}</div>
             <div class="label">Relevant</div>
+            <div class="percent" id="stat-relevant-pct"></div>
         </div>
         <div class="stat-card">
-            <div class="value">{{irrelevant}}</div>
+            <div class="value" id="stat-irrelevant">{{irrelevant}}</div>
             <div class="label">Irrelevant</div>
+            <div class="percent" id="stat-irrelevant-pct"></div>
         </div>
         <div class="stat-card">
-            <div class="value">{{duplicates}}</div>
+            <div class="value" id="stat-duplicates">{{duplicates}}</div>
             <div class="label">Duplicates</div>
         </div>
     </div>
 
-    <div class="traffic-lights">
-        <div class="light green">🟢 {{green}} Green</div>
-        <div class="light yellow">🟡 {{yellow}} Yellow</div>
-        <div class="light red">🔴 {{red}} Red</div>
+    <!-- Traffic Light Bar with Percentages -->
+    <div class="traffic-bar-container">
+        <div class="traffic-bar" id="traffic-bar">
+            <div class="segment green" id="bar-green" style="width:33%">{{green}}</div>
+            <div class="segment yellow" id="bar-yellow" style="width:33%">{{yellow}}</div>
+            <div class="segment red" id="bar-red" style="width:34%">{{red}}</div>
+        </div>
+        <div class="traffic-bar-legend">
+            <span><span class="dot" style="background:var(--green)"></span> Green: <span id="legend-green">{{green}}</span></span>
+            <span><span class="dot" style="background:var(--yellow)"></span> Yellow: <span id="legend-yellow">{{yellow}}</span></span>
+            <span><span class="dot" style="background:var(--red)"></span> Red: <span id="legend-red">{{red}}</span></span>
+        </div>
     </div>
 
+    <!-- Why Not Usable Table -->
+    <h2>Why Not Usable</h2>
+    <table id="irrelevant-table">
+        <thead>
+            <tr>
+                <th>Reason</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody id="irrelevant-body">
+        </tbody>
+    </table>
+
+    <!-- Per-Repository Table -->
+    <h2>Per Repository</h2>
+    <table id="repo-table">
+        <thead>
+            <tr>
+                <th>Repository</th>
+                <th>Processed</th>
+                <th>Relevant</th>
+                <th>Green</th>
+                <th>Yellow</th>
+                <th>Red</th>
+            </tr>
+        </thead>
+        <tbody id="repo-body">
+        </tbody>
+    </table>
+
+    <!-- Filter Bar -->
     <h2>Evaluations</h2>
+    <div class="filter-bar">
+        <label>Traffic Light:</label>
+        <select id="filter-light">
+            <option value="">All</option>
+            <option value="GREEN">GREEN</option>
+            <option value="YELLOW">YELLOW</option>
+            <option value="RED">RED</option>
+            <option value="NOT_APPLICABLE">N/A</option>
+        </select>
+        <label>Category:</label>
+        <select id="filter-category">
+            <option value="">All</option>
+        </select>
+        <label>Repository:</label>
+        <select id="filter-repo">
+            <option value="">All</option>
+        </select>
+    </div>
+
+    <!-- Evaluations Table with Action Buttons -->
     <table id="evaluations-table">
         <thead>
             <tr>
@@ -71,30 +167,241 @@
                 <th>Traffic Light</th>
                 <th>Category</th>
                 <th>Summary</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody id="evaluations-body">
         </tbody>
     </table>
 
+    <!-- DSL Modal -->
+    <div class="modal-overlay" id="dsl-modal">
+        <div class="modal">
+            <button class="close-btn" id="modal-close">&times;</button>
+            <h3 id="modal-title">DSL Rule</h3>
+            <pre id="modal-content"></pre>
+        </div>
+    </div>
+
     <script>
+        let allEvaluations = [];
+        let statistics = null;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function updatePercentages() {
+            const total = parseInt(document.getElementById('stat-total').textContent) || 0;
+            if (total > 0) {
+                const rel = parseInt(document.getElementById('stat-relevant').textContent) || 0;
+                const irr = parseInt(document.getElementById('stat-irrelevant').textContent) || 0;
+                document.getElementById('stat-relevant-pct').textContent = '(' + ((rel / total) * 100).toFixed(1) + '%)';
+                document.getElementById('stat-irrelevant-pct').textContent = '(' + ((irr / total) * 100).toFixed(1) + '%)';
+            }
+        }
+
+        function updateTrafficBar() {
+            const g = parseInt(document.getElementById('legend-green').textContent) || 0;
+            const y = parseInt(document.getElementById('legend-yellow').textContent) || 0;
+            const r = parseInt(document.getElementById('legend-red').textContent) || 0;
+            const total = g + y + r;
+            if (total > 0) {
+                document.getElementById('bar-green').style.width = ((g / total) * 100) + '%';
+                document.getElementById('bar-green').textContent = g + ' (' + ((g / total) * 100).toFixed(0) + '%)';
+                document.getElementById('bar-yellow').style.width = ((y / total) * 100) + '%';
+                document.getElementById('bar-yellow').textContent = y + ' (' + ((y / total) * 100).toFixed(0) + '%)';
+                document.getElementById('bar-red').style.width = ((r / total) * 100) + '%';
+                document.getElementById('bar-red').textContent = r + ' (' + ((r / total) * 100).toFixed(0) + '%)';
+            }
+        }
+
+        function populateFilters(data) {
+            const categories = new Set();
+            const repos = new Set();
+            data.forEach(function(e) {
+                if (e.category) categories.add(e.category);
+                if (e.repoUrl) repos.add(e.repoUrl);
+            });
+            const catSelect = document.getElementById('filter-category');
+            categories.forEach(function(c) {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                catSelect.appendChild(opt);
+            });
+            const repoSelect = document.getElementById('filter-repo');
+            repos.forEach(function(r) {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                repoSelect.appendChild(opt);
+            });
+        }
+
+        function renderEvaluations(data) {
+            const tbody = document.getElementById('evaluations-body');
+            tbody.innerHTML = '';
+            const lightFilter = document.getElementById('filter-light').value;
+            const catFilter = document.getElementById('filter-category').value;
+            const repoFilter = document.getElementById('filter-repo').value;
+
+            data.filter(function(e) {
+                if (lightFilter && e.trafficLight !== lightFilter) return false;
+                if (catFilter && e.category !== catFilter) return false;
+                if (repoFilter && e.repoUrl !== repoFilter) return false;
+                return true;
+            }).forEach(function(evaluation, index) {
+                var row = document.createElement('tr');
+
+                var tdCommit = document.createElement('td');
+                var code = document.createElement('code');
+                code.textContent = (evaluation.commitHash || '').substring(0, 8);
+                tdCommit.appendChild(code);
+                row.appendChild(tdCommit);
+
+                var tdRepo = document.createElement('td');
+                tdRepo.textContent = evaluation.repoUrl || '';
+                row.appendChild(tdRepo);
+
+                var tdLight = document.createElement('td');
+                var span = document.createElement('span');
+                span.className = 'badge ' + (evaluation.trafficLight || 'NOT_APPLICABLE');
+                span.textContent = evaluation.trafficLight || 'N/A';
+                tdLight.appendChild(span);
+                row.appendChild(tdLight);
+
+                var tdCat = document.createElement('td');
+                tdCat.textContent = evaluation.category || '-';
+                row.appendChild(tdCat);
+
+                var tdSummary = document.createElement('td');
+                tdSummary.textContent = evaluation.summary || '-';
+                row.appendChild(tdSummary);
+
+                var tdActions = document.createElement('td');
+                if (evaluation.trafficLight === 'GREEN' && evaluation.dslRule) {
+                    var commitBtn = document.createElement('button');
+                    commitBtn.className = 'action-btn commit';
+                    commitBtn.textContent = '\u2705 Commit';
+                    commitBtn.addEventListener('click', function() { applyProposal(evaluation, 'direct-commit'); });
+                    tdActions.appendChild(commitBtn);
+                }
+                if (evaluation.dslRule) {
+                    var prBtn = document.createElement('button');
+                    prBtn.className = 'action-btn pr';
+                    prBtn.textContent = '\uD83D\uDD00 PR';
+                    prBtn.addEventListener('click', function() { applyProposal(evaluation, 'pull-request'); });
+                    tdActions.appendChild(prBtn);
+
+                    var dslBtn = document.createElement('button');
+                    dslBtn.className = 'action-btn dsl';
+                    dslBtn.textContent = '\uD83D\uDD27 DSL';
+                    dslBtn.addEventListener('click', function() { showDsl(evaluation); });
+                    tdActions.appendChild(dslBtn);
+                }
+                row.appendChild(tdActions);
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function applyProposal(evaluation, action) {
+            var dslBase64 = btoa(evaluation.dslRule || '');
+            var params = new URLSearchParams({
+                commit_hash: evaluation.commitHash || '',
+                action: action,
+                dsl_rule: dslBase64,
+                target_hint_file: evaluation.targetHintFile || '',
+                category: evaluation.category || '',
+                summary: evaluation.summary || ''
+            });
+            var url = window.location.origin + '/' +
+                (evaluation.repoUrl || '').replace('https://github.com/', '') +
+                '/actions/workflows/apply-mining-proposal.yml?' + params.toString();
+            window.open(url, '_blank');
+        }
+
+        function showDsl(evaluation) {
+            document.getElementById('modal-title').textContent = 'DSL Rule - ' + (evaluation.commitHash || '').substring(0, 8);
+            document.getElementById('modal-content').textContent = evaluation.dslRule || '(no DSL rule)';
+            document.getElementById('dsl-modal').classList.add('active');
+        }
+
+        document.getElementById('modal-close').addEventListener('click', function() {
+            document.getElementById('dsl-modal').classList.remove('active');
+        });
+        document.getElementById('dsl-modal').addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+
+        document.getElementById('filter-light').addEventListener('change', function() { renderEvaluations(allEvaluations); });
+        document.getElementById('filter-category').addEventListener('change', function() { renderEvaluations(allEvaluations); });
+        document.getElementById('filter-repo').addEventListener('change', function() { renderEvaluations(allEvaluations); });
+
+        // Load data
         fetch('evaluations.json')
-            .then(response => response.json())
-            .then(data => {
-                const tbody = document.getElementById('evaluations-body');
-                data.forEach(evaluation => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td><code>${(evaluation.commitHash || '').substring(0, 8)}</code></td>
-                        <td>${evaluation.repoUrl || ''}</td>
-                        <td><span class="badge ${evaluation.trafficLight || 'NOT_APPLICABLE'}">${evaluation.trafficLight || 'N/A'}</span></td>
-                        <td>${evaluation.category || '-'}</td>
-                        <td>${evaluation.summary || '-'}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                allEvaluations = data;
+                populateFilters(data);
+                renderEvaluations(data);
             })
-            .catch(err => console.error('Failed to load evaluations:', err));
+            .catch(function(err) { console.error('Failed to load evaluations:', err); });
+
+        fetch('statistics.json')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                statistics = data;
+                // Populate irrelevant reasons table
+                if (data.irrelevantReasons) {
+                    var tbody = document.getElementById('irrelevant-body');
+                    Object.entries(data.irrelevantReasons).forEach(function(entry) {
+                        var row = document.createElement('tr');
+                        var tdReason = document.createElement('td');
+                        tdReason.textContent = entry[0];
+                        row.appendChild(tdReason);
+                        var tdCount = document.createElement('td');
+                        tdCount.textContent = entry[1];
+                        row.appendChild(tdCount);
+                        tbody.appendChild(row);
+                    });
+                }
+                // Populate per-repository table
+                if (data.perRepository) {
+                    var tbody = document.getElementById('repo-body');
+                    Object.entries(data.perRepository).forEach(function(entry) {
+                        var row = document.createElement('tr');
+                        var repo = entry[1];
+                        var tdUrl = document.createElement('td');
+                        tdUrl.textContent = entry[0];
+                        row.appendChild(tdUrl);
+                        var tdProc = document.createElement('td');
+                        tdProc.textContent = repo.totalProcessed || 0;
+                        row.appendChild(tdProc);
+                        var tdRel = document.createElement('td');
+                        tdRel.textContent = repo.relevant || 0;
+                        row.appendChild(tdRel);
+                        var tdG = document.createElement('td');
+                        tdG.textContent = repo.green || 0;
+                        row.appendChild(tdG);
+                        var tdY = document.createElement('td');
+                        tdY.textContent = repo.yellow || 0;
+                        row.appendChild(tdY);
+                        var tdR = document.createElement('td');
+                        tdR.textContent = repo.red || 0;
+                        row.appendChild(tdR);
+                        tbody.appendChild(row);
+                    });
+                }
+            })
+            .catch(function(err) { console.error('Failed to load statistics:', err); });
+
+        updatePercentages();
+        updateTrafficBar();
     </script>
 </body>
 </html>

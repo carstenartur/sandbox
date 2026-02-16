@@ -90,31 +90,35 @@ public class MiningConfig {
 			return config;
 		}
 
+		// Look for settings in mining.settings first, then fall back to mining directly
+		Map<String, Object> settings = (Map<String, Object>) mining.get("settings");
+		Map<String, Object> source = settings != null ? settings : mining;
+
 		// Parse start-date
-		Object startDateObj = mining.get("start-date");
+		Object startDateObj = source.get("start-date");
 		if (startDateObj != null) {
 			config.startDate = startDateObj.toString();
 		}
 
 		// Parse batch-size
-		Object batchSizeObj = mining.get("batch-size");
+		Object batchSizeObj = source.get("batch-size");
 		if (batchSizeObj instanceof Number n) {
 			config.batchSize = n.intValue();
 		}
 
 		// Parse max-diff-lines-per-commit
-		Object maxDiffObj = mining.get("max-diff-lines-per-commit");
+		Object maxDiffObj = source.get("max-diff-lines-per-commit");
 		if (maxDiffObj instanceof Number n) {
 			config.maxDiffLinesPerCommit = n.intValue();
 		}
 
 		// Parse timeout
-		Object timeoutObj = mining.get("timeout-per-repo-minutes");
+		Object timeoutObj = source.get("timeout-per-repo-minutes");
 		if (timeoutObj instanceof Number n) {
 			config.timeoutPerRepoMinutes = n.intValue();
 		}
 
-		// Parse repositories
+		// Parse repositories (always from mining directly)
 		Object reposObj = mining.get("repositories");
 		if (reposObj instanceof List<?> reposList) {
 			config.repositories = reposList.stream().map(obj -> {
