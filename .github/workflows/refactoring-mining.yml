@@ -53,7 +53,7 @@ jobs:
       # Create PR if matches found
       - name: Create PR
         if: hashFiles('mining-results/report.json') != ''
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           title: "🔍 Refactoring Mining: Eclipse Projects (${{ github.run_number }})"
           body-path: mining-results/report.md
