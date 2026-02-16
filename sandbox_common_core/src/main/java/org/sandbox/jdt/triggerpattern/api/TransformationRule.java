@@ -30,14 +30,15 @@ import java.util.Objects;
  * (warning/inspection without rewrite).</p>
  * 
  * <p>Optionally, a rule may have import directives ({@link ImportDirective}) that
- * specify imports to add or remove when the rule is applied.</p>
+ * specify imports to add or remove when the rule is applied. Import directives
+ * are automatically inferred from fully qualified names (FQNs) in the source
+ * and replacement patterns.</p>
  * 
- * <p>Example DSL syntax:</p>
+ * <p>Example DSL syntax (FQN-based):</p>
  * <pre>
- * new FileReader($path) :: sourceVersionGE(11)
- * =&gt; new FileReader($path, StandardCharsets.UTF_8) :: sourceVersionGE(11)
- * =&gt; new FileReader($path, Charset.defaultCharset()) :: otherwise
- *    addImport java.nio.charset.StandardCharsets
+ * new java.io.FileReader($path) :: sourceVersionGE(11)
+ * =&gt; new java.io.FileReader($path, java.nio.charset.StandardCharsets.UTF_8) :: sourceVersionGE(11)
+ * =&gt; new java.io.FileReader($path, java.nio.charset.Charset.defaultCharset()) :: otherwise
  * ;;
  * </pre>
  * 
