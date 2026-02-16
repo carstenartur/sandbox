@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHintPartitionScanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">SandboxHintPartitionScanner.java</span></div><h1>SandboxHintPartitionScanner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.editor;
+
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.rules.EndOfLineRule;
+import org.eclipse.jface.text.rules.IPredicateRule;
+import org.eclipse.jface.text.rules.IToken;
+import org.eclipse.jface.text.rules.MultiLineRule;
+import org.eclipse.jface.text.rules.RuleBasedPartitionScanner;
+import org.eclipse.jface.text.rules.Token;
+
+/**
+ * Partition scanner for {@code .sandbox-hint} files.
+ *
+ * &lt;p&gt;Defines the document partitions:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link #COMMENT} – single-line ({@code //}) and multi-line ({@code /* ... * /}) comments&lt;/li&gt;
+ *   &lt;li&gt;{@link #METADATA} – metadata directives ({@code &lt;!...&gt;})&lt;/li&gt;
+ *   &lt;li&gt;{@link IDocument#DEFAULT_CONTENT_TYPE} – everything else (code)&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @since 1.3.6
+ */
+public class SandboxHintPartitionScanner extends RuleBasedPartitionScanner {
+
+	/**
+	 * Content type for comment partitions.
+	 */
+	public static final String COMMENT = &quot;__sandbox_hint_comment&quot;; //$NON-NLS-1$
+
+	/**
+	 * Content type for metadata directive partitions.
+	 */
+	public static final String METADATA = &quot;__sandbox_hint_metadata&quot;; //$NON-NLS-1$
+
+	/**
+	 * All partition types produced by this scanner.
+	 */
+<span class="nc" id="L51">	public static final String[] PARTITION_TYPES = {</span>
+<span class="nc" id="L52">		COMMENT,</span>
+<span class="nc" id="L53">		METADATA</span>
+<span class="nc" id="L54">	};</span>
+
+<span class="nc" id="L56">	public SandboxHintPartitionScanner() {</span>
+<span class="nc" id="L57">		IToken commentToken = new Token(COMMENT);</span>
+<span class="nc" id="L58">		IToken metadataToken = new Token(METADATA);</span>
+
+<span class="nc" id="L60">		IPredicateRule[] rules = {</span>
+<span class="nc" id="L61">			new EndOfLineRule(&quot;//&quot;, commentToken), //$NON-NLS-1$</span>
+<span class="nc" id="L62">			new MultiLineRule(&quot;/*&quot;, &quot;*/&quot;, commentToken), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L63">			new MultiLineRule(&quot;&lt;!&quot;, &quot;&gt;&quot;, metadataToken), //$NON-NLS-1$ //$NON-NLS-2$</span>
+		};
+
+<span class="nc" id="L66">		setPredicateRules(rules);</span>
+<span class="nc" id="L67">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

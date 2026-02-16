@@ -303,6 +303,15 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
         protected RewriteRule getRewriteRule() {
 <span class="fc" id="L304">            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(RewriteRule.class);</span>
         }
+        
+        /**
+         * Override to get the CleanupPattern annotation from the outer plugin class
+         * rather than this delegate class.
+         */
+        @Override
+        protected CleanupPattern getCleanupPatternAnnotation() {
+<span class="fc" id="L313">            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(CleanupPattern.class);</span>
+        }
     }
     
     /**
@@ -345,10 +354,10 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
             String removeImport, 
             String addImport) {
         
-<span class="nc" id="L348">        MarkerAnnotation newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, newAnnotationName);</span>
-<span class="nc" id="L349">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
-<span class="nc" id="L350">        importRewriter.removeImport(removeImport);</span>
-<span class="nc" id="L351">        importRewriter.addImport(addImport);</span>
-<span class="nc" id="L352">    }</span>
+<span class="nc" id="L357">        MarkerAnnotation newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, newAnnotationName);</span>
+<span class="nc" id="L358">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
+<span class="nc" id="L359">        importRewriter.removeImport(removeImport);</span>
+<span class="nc" id="L360">        importRewriter.addImport(addImport);</span>
+<span class="nc" id="L361">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

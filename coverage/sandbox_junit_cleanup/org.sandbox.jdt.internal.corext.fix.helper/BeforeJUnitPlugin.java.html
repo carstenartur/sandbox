@@ -58,21 +58,20 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 )
 @RewriteRule(
     replaceWith = &quot;@BeforeEach&quot;,
-    removeImports = {ORG_JUNIT_BEFORE},
     addImports = {ORG_JUNIT_JUPITER_API_BEFORE_EACH}
 )
-<span class="fc" id="L64">public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
+<span class="fc" id="L63">public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="fc bfc" id="L68" title="All 2 branches covered.">		if (afterRefactoring) {</span>
-<span class="fc" id="L69">			return &quot;&quot;&quot;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		if (afterRefactoring) {</span>
+<span class="fc" id="L68">			return &quot;&quot;&quot;</span>
 				@BeforeEach
 				public void setUp() {
 				}
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="fc" id="L75">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L74">		return &quot;&quot;&quot;</span>
 			@Before
 			public void setUp() {
 			}
@@ -81,7 +80,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L84">		return &quot;Before&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L83">		return &quot;Before&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

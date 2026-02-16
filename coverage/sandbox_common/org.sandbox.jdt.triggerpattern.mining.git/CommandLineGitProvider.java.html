@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CommandLineGitProvider.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.mining.git</a> &gt; <span class="el_source">CommandLineGitProvider.java</span></div><h1>CommandLineGitProvider.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.mining.git;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.sandbox.jdt.triggerpattern.mining.analysis.CommitInfo;
+import org.sandbox.jdt.triggerpattern.mining.analysis.DiffHunk;
+import org.sandbox.jdt.triggerpattern.mining.analysis.FileDiff;
+
+/**
+ * {@link GitHistoryProvider} implementation that uses the {@code git}
+ * command-line tool.
+ *
+ * &lt;p&gt;This provider does not require JGit or EGit and works in any environment
+ * where the {@code git} executable is available on the system PATH.&lt;/p&gt;
+ *
+ * &lt;p&gt;The provider only returns diffs for Java source files
+ * ({@code *.java}).&lt;/p&gt;
+ *
+ * @since 1.2.6
+ */
+<span class="fc" id="L43">public class CommandLineGitProvider implements GitHistoryProvider {</span>
+
+	private static final String FIELD_SEP = &quot;\u001f&quot;; //$NON-NLS-1$
+	private static final String RECORD_SEP = &quot;\u001e&quot;; //$NON-NLS-1$
+
+	@Override
+	public List&lt;CommitInfo&gt; getHistory(Path repositoryPath, int maxCommits) {
+		// Format: hash&lt;FS&gt;short&lt;FS&gt;subject&lt;FS&gt;author&lt;FS&gt;unix-timestamp&lt;FS&gt;filecount&lt;RS&gt;
+<span class="nc" id="L51">		String format = &quot;%H&quot; + FIELD_SEP + &quot;%h&quot; + FIELD_SEP + &quot;%s&quot; + FIELD_SEP //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+				+ &quot;%an&quot; + FIELD_SEP + &quot;%ct&quot; + RECORD_SEP; //$NON-NLS-1$ //$NON-NLS-2$
+
+<span class="nc" id="L54">		String output = runGit(repositoryPath,</span>
+<span class="nc" id="L55">				&quot;log&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L56">				&quot;--format=&quot; + format, //$NON-NLS-1$</span>
+<span class="nc" id="L57">				&quot;--shortstat&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L58">				&quot;-n&quot;, String.valueOf(maxCommits)); //$NON-NLS-1$</span>
+
+<span class="nc" id="L60">		return parseHistory(output);</span>
+	}
+
+	@Override
+	public List&lt;FileDiff&gt; getDiffs(Path repositoryPath, String commitId) {
+		// Get list of changed Java files
+<span class="nc" id="L66">		String nameOutput = runGit(repositoryPath,</span>
+<span class="nc" id="L67">				&quot;diff-tree&quot;, &quot;--no-commit-id&quot;, &quot;-r&quot;, &quot;--name-only&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc" id="L68">				&quot;--diff-filter=M&quot;, commitId); //$NON-NLS-1$</span>
+
+<span class="nc" id="L70">		List&lt;FileDiff&gt; diffs = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		for (String filePath : nameOutput.split(&quot;\\n&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L73">			String trimmed = filePath.trim();</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">			if (trimmed.isEmpty() || !trimmed.endsWith(&quot;.java&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L75">				continue;</span>
+			}
+
+<span class="nc" id="L78">			String contentBefore = getFileContent(repositoryPath, commitId + &quot;~1&quot;, trimmed); //$NON-NLS-1$</span>
+<span class="nc" id="L79">			String contentAfter = getFileContent(repositoryPath, commitId, trimmed);</span>
+
+<span class="nc bnc" id="L81" title="All 4 branches missed.">			if (contentBefore == null || contentAfter == null) {</span>
+<span class="nc" id="L82">				continue;</span>
+			}
+
+<span class="nc" id="L85">			List&lt;DiffHunk&gt; hunks = extractHunks(repositoryPath, commitId, trimmed);</span>
+<span class="nc" id="L86">			diffs.add(new FileDiff(trimmed, contentBefore, contentAfter, hunks));</span>
+		}
+
+<span class="nc" id="L89">		return diffs;</span>
+	}
+
+	@Override
+	public String getFileContent(Path repositoryPath, String commitId, String filePath) {
+		try {
+<span class="nc" id="L95">			return runGit(repositoryPath,</span>
+<span class="nc" id="L96">					&quot;show&quot;, commitId + &quot;:&quot; + filePath); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L97">		} catch (GitProviderException e) {</span>
+<span class="nc" id="L98">			return null;</span>
+		}
+	}
+
+	// ---- internal helpers ----
+
+	/**
+	 * Parses the output of {@code git log} into a list of commit info objects.
+	 * &lt;p&gt;Visible for testing.&lt;/p&gt;
+	 *
+	 * @param output the raw git log output
+	 * @return list of parsed commit info objects
+	 */
+	public List&lt;CommitInfo&gt; parseHistory(String output) {
+<span class="fc" id="L112">		List&lt;CommitInfo&gt; commits = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L113" title="All 4 branches covered.">		if (output == null || output.isBlank()) {</span>
+<span class="fc" id="L114">			return commits;</span>
+		}
+
+<span class="fc" id="L117">		String[] records = output.split(RECORD_SEP);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">		for (String record : records) {</span>
+<span class="fc" id="L119">			String trimmed = record.strip();</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">			if (trimmed.isEmpty()) {</span>
+<span class="nc" id="L121">				continue;</span>
+			}
+
+			// The record may contain stat lines after the main fields
+<span class="fc" id="L125">			String[] lines = trimmed.split(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L126">			String headerLine = lines[0].strip();</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">			if (headerLine.isEmpty()) {</span>
+<span class="nc" id="L128">				continue;</span>
+			}
+
+<span class="fc" id="L131">			String[] fields = headerLine.split(FIELD_SEP);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">			if (fields.length &lt; 5) {</span>
+<span class="fc" id="L133">				continue;</span>
+			}
+
+<span class="fc" id="L136">			String id = fields[0].strip();</span>
+<span class="fc" id="L137">			String shortId = fields[1].strip();</span>
+<span class="fc" id="L138">			String message = fields[2].strip();</span>
+<span class="fc" id="L139">			String author = fields[3].strip();</span>
+
+			long epoch;
+			try {
+<span class="fc" id="L143">				epoch = Long.parseLong(fields[4].strip());</span>
+<span class="pc" id="L144">			} catch (NumberFormatException e) {</span>
+<span class="nc" id="L145">				continue;</span>
+			}
+<span class="fc" id="L147">			LocalDateTime timestamp = LocalDateTime.ofInstant(</span>
+<span class="fc" id="L148">					Instant.ofEpochSecond(epoch), ZoneId.systemDefault());</span>
+
+			// Parse file count from shortstat line (e.g. &quot; 3 files changed, ...&quot;)
+<span class="fc" id="L151">			int fileCount = parseFileCount(lines);</span>
+
+<span class="fc" id="L153">			commits.add(new CommitInfo(id, shortId, message, author, timestamp, fileCount));</span>
+		}
+<span class="fc" id="L155">		return commits;</span>
+	}
+
+	private int parseFileCount(String[] lines) {
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		for (int i = 1; i &lt; lines.length; i++) {</span>
+<span class="nc" id="L160">			String line = lines[i].strip();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">			if (line.contains(&quot;file&quot;)) { //$NON-NLS-1$</span>
+				// Pattern: &quot; 3 files changed&quot; or &quot; 1 file changed&quot;
+<span class="nc" id="L163">				String[] parts = line.split(&quot;\\s+&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">				for (int j = 0; j &lt; parts.length - 1; j++) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">					if (parts[j + 1].startsWith(&quot;file&quot;)) { //$NON-NLS-1$</span>
+						try {
+<span class="nc" id="L167">							return Integer.parseInt(parts[j]);</span>
+<span class="nc" id="L168">						} catch (NumberFormatException e) {</span>
+<span class="nc" id="L169">							return 0;</span>
+						}
+					}
+				}
+			}
+		}
+<span class="fc" id="L175">		return 0;</span>
+	}
+
+	private List&lt;DiffHunk&gt; extractHunks(Path repositoryPath, String commitId, String filePath) {
+<span class="nc" id="L179">		String diffOutput = runGit(repositoryPath,</span>
+<span class="nc" id="L180">				&quot;diff&quot;, commitId + &quot;~1&quot;, commitId, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L181">				&quot;--&quot;, filePath); //$NON-NLS-1$</span>
+
+<span class="nc" id="L183">		return parseHunks(diffOutput);</span>
+	}
+
+	/**
+	 * Parses unified diff output into a list of diff hunks.
+	 * &lt;p&gt;Visible for testing.&lt;/p&gt;
+	 *
+	 * @param diffOutput the raw unified diff output
+	 * @return list of parsed diff hunks
+	 */
+	public List&lt;DiffHunk&gt; parseHunks(String diffOutput) {
+<span class="fc" id="L194">		List&lt;DiffHunk&gt; hunks = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L195" title="All 4 branches covered.">		if (diffOutput == null || diffOutput.isEmpty()) {</span>
+<span class="fc" id="L196">			return hunks;</span>
+		}
+
+<span class="fc" id="L199">		String[] lines = diffOutput.split(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L200">		int i = 0;</span>
+
+<span class="fc bfc" id="L202" title="All 2 branches covered.">		while (i &lt; lines.length) {</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">			if (lines[i].startsWith(&quot;@@&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L204">				DiffHunk hunk = parseOneHunk(lines, i);</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">				if (hunk != null) {</span>
+<span class="fc" id="L206">					hunks.add(hunk);</span>
+				}
+				// Advance past this hunk
+<span class="fc" id="L209">				i++;</span>
+<span class="fc bfc" id="L210" title="All 4 branches covered.">				while (i &lt; lines.length &amp;&amp; !lines[i].startsWith(&quot;@@&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L211">					i++;</span>
+				}
+<span class="fc" id="L213">			} else {</span>
+<span class="fc" id="L214">				i++;</span>
+			}
+		}
+<span class="fc" id="L217">		return hunks;</span>
+	}
+
+	private DiffHunk parseOneHunk(String[] lines, int hunkHeaderIndex) {
+		// Parse @@ -startLine,count +startLine,count @@
+<span class="fc" id="L222">		String header = lines[hunkHeaderIndex];</span>
+<span class="fc" id="L223">		int atEnd = header.indexOf(&quot;@@&quot;, 2); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		if (atEnd &lt; 0) {</span>
+<span class="nc" id="L225">			return null;</span>
+		}
+<span class="fc" id="L227">		String range = header.substring(3, atEnd).strip();</span>
+<span class="fc" id="L228">		String[] parts = range.split(&quot;\\s+&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		if (parts.length &lt; 2) {</span>
+<span class="nc" id="L230">			return null;</span>
+		}
+
+<span class="fc" id="L233">		int[] beforeRange = parseRange(parts[0].substring(1)); // strip leading '-'</span>
+<span class="fc" id="L234">		int[] afterRange = parseRange(parts[1].substring(1));  // strip leading '+'</span>
+
+<span class="fc" id="L236">		StringBuilder beforeText = new StringBuilder();</span>
+<span class="fc" id="L237">		StringBuilder afterText = new StringBuilder();</span>
+
+<span class="fc bfc" id="L239" title="All 2 branches covered.">		for (int i = hunkHeaderIndex + 1; i &lt; lines.length; i++) {</span>
+<span class="pc bpc" id="L240" title="1 of 4 branches missed.">			if (lines[i].startsWith(&quot;@@&quot;) || lines[i].startsWith(&quot;diff &quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L241">				break;</span>
+			}
+<span class="fc bfc" id="L243" title="All 2 branches covered.">			if (lines[i].startsWith(&quot;-&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L244">				beforeText.append(lines[i].substring(1)).append('\n');</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">			} else if (lines[i].startsWith(&quot;+&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L246">				afterText.append(lines[i].substring(1)).append('\n');</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">			} else if (lines[i].startsWith(&quot; &quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L248">				beforeText.append(lines[i].substring(1)).append('\n');</span>
+<span class="fc" id="L249">				afterText.append(lines[i].substring(1)).append('\n');</span>
+			}
+		}
+
+<span class="fc" id="L253">		return new DiffHunk(</span>
+<span class="fc" id="L254">				beforeRange[0], beforeRange[1],</span>
+<span class="fc" id="L255">				afterRange[0], afterRange[1],</span>
+<span class="fc" id="L256">				beforeText.toString(), afterText.toString());</span>
+	}
+
+	private int[] parseRange(String rangeStr) {
+<span class="fc" id="L260">		String[] parts = rangeStr.split(&quot;,&quot;); //$NON-NLS-1$</span>
+		int start;
+		int count;
+		try {
+<span class="fc" id="L264">			start = Integer.parseInt(parts[0]);</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">			count = parts.length &gt; 1 ? Integer.parseInt(parts[1]) : 1;</span>
+<span class="pc" id="L266">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L267">			start = 1;</span>
+<span class="nc" id="L268">			count = 0;</span>
+		}
+<span class="fc" id="L270">		return new int[] { start, count };</span>
+	}
+
+	private String runGit(Path workingDir, String... args) {
+<span class="nc" id="L274">		List&lt;String&gt; command = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L275">		command.add(&quot;git&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">		for (String arg : args) {</span>
+<span class="nc" id="L277">			command.add(arg);</span>
+		}
+
+<span class="nc" id="L280">		ProcessBuilder pb = new ProcessBuilder(command);</span>
+<span class="nc" id="L281">		pb.directory(workingDir.toFile());</span>
+<span class="nc" id="L282">		pb.redirectErrorStream(false);</span>
+
+		try {
+<span class="nc" id="L285">			Process process = pb.start();</span>
+			String stdout;
+<span class="nc" id="L287">			try (BufferedReader reader = new BufferedReader(</span>
+<span class="nc" id="L288">					new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {</span>
+<span class="nc" id="L289">				stdout = readFully(reader);</span>
+			}
+
+<span class="nc" id="L292">			int exitCode = process.waitFor();</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">			if (exitCode != 0) {</span>
+				String stderr;
+<span class="nc" id="L295">				try (BufferedReader reader = new BufferedReader(</span>
+<span class="nc" id="L296">						new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {</span>
+<span class="nc" id="L297">					stderr = readFully(reader);</span>
+				}
+<span class="nc" id="L299">				throw new GitProviderException(</span>
+<span class="nc" id="L300">						&quot;git command failed with exit code &quot; + exitCode + &quot;: &quot; + stderr); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+
+<span class="nc" id="L303">			return stdout;</span>
+<span class="nc" id="L304">		} catch (IOException e) {</span>
+<span class="nc" id="L305">			throw new GitProviderException(&quot;Failed to execute git command&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L306">		} catch (InterruptedException e) {</span>
+<span class="nc" id="L307">			Thread.currentThread().interrupt();</span>
+<span class="nc" id="L308">			throw new GitProviderException(&quot;Git command interrupted&quot;, e); //$NON-NLS-1$</span>
+		}
+	}
+
+	private String readFully(BufferedReader reader) throws IOException {
+<span class="nc" id="L313">		StringBuilder sb = new StringBuilder();</span>
+		String line;
+<span class="nc bnc" id="L315" title="All 2 branches missed.">		while ((line = reader.readLine()) != null) {</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">			if (sb.length() &gt; 0) {</span>
+<span class="nc" id="L317">				sb.append('\n');</span>
+			}
+<span class="nc" id="L319">			sb.append(line);</span>
+		}
+<span class="nc" id="L321">		return sb.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -14,6 +14,12 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_CLEANUP;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTIONS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_PERFORMANCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA9;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_ENCODING;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -30,6 +36,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.HintFileFixCore;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /**
  * CleanUp that applies transformation rules from {@code .sandbox-hint} files.
@@ -47,66 +54,102 @@ import org.sandbox.jdt.internal.corext.fix.HintFileFixCore;
 public class HintFileCleanUpCore extends AbstractCleanUp {
 
 	public HintFileCleanUpCore(final Map&lt;String, String&gt; options) {
-<span class="nc" id="L50">		super(options);</span>
-<span class="nc" id="L51">	}</span>
+<span class="nc" id="L57">		super(options);</span>
+<span class="nc" id="L58">	}</span>
 
-<span class="fc" id="L53">	public HintFileCleanUpCore() {</span>
-<span class="fc" id="L54">	}</span>
+<span class="fc" id="L60">	public HintFileCleanUpCore() {</span>
+<span class="fc" id="L61">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="fc" id="L58">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="fc" id="L65">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="fc" id="L62">		return isEnabled(HINTFILE_CLEANUP);</span>
+<span class="fc" id="L69">		return isEnabled(HINTFILE_CLEANUP);</span>
 	}
 
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-<span class="fc" id="L67">		CompilationUnit compilationUnit = context.getAST();</span>
-<span class="fc bfc" id="L68" title="All 2 branches covered.">		if (compilationUnit == null) {</span>
-<span class="fc" id="L69">			return null;</span>
+<span class="fc" id="L74">		CompilationUnit compilationUnit = context.getAST();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (compilationUnit == null) {</span>
+<span class="fc" id="L76">			return null;</span>
 		}
 
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (!isEnabled(HINTFILE_CLEANUP)) {</span>
-<span class="fc" id="L73">			return null;</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (!isEnabled(HINTFILE_CLEANUP)) {</span>
+<span class="fc" id="L80">			return null;</span>
 		}
 
-<span class="nc" id="L76">		Set&lt;CompilationUnitRewriteOperation&gt; operations = new LinkedHashSet&lt;&gt;();</span>
-<span class="nc" id="L77">		HintFileFixCore.findOperations(compilationUnit, operations);</span>
+<span class="nc" id="L83">		Set&lt;CompilationUnitRewriteOperation&gt; operations = new LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L84">		Set&lt;String&gt; enabledBundles = getEnabledBundles();</span>
+<span class="nc" id="L85">		HintFileFixCore.findOperations(compilationUnit, operations, enabledBundles);</span>
 
-<span class="nc bnc" id="L79" title="All 2 branches missed.">		if (operations.isEmpty()) {</span>
-<span class="nc" id="L80">			return null;</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">		if (operations.isEmpty()) {</span>
+<span class="nc" id="L88">			return null;</span>
 		}
 
-<span class="nc" id="L83">		CompilationUnitRewriteOperation[] array = operations.toArray(</span>
-<span class="nc" id="L84">				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);</span>
-<span class="nc" id="L85">		return new CompilationUnitRewriteOperationsFixCore(</span>
-<span class="nc" id="L86">				MultiFixMessages.HintFileCleanUpFix_refactor,</span>
-<span class="nc" id="L87">				compilationUnit,</span>
-<span class="nc" id="L88">				array);</span>
+<span class="nc" id="L91">		CompilationUnitRewriteOperation[] array = operations.toArray(</span>
+<span class="nc" id="L92">				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);</span>
+<span class="nc" id="L93">		return new CompilationUnitRewriteOperationsFixCore(</span>
+<span class="nc" id="L94">				MultiFixMessages.HintFileCleanUpFix_refactor,</span>
+<span class="nc" id="L95">				compilationUnit,</span>
+<span class="nc" id="L96">				array);</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="fc" id="L93">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		if (isEnabled(HINTFILE_CLEANUP)) {</span>
-<span class="nc" id="L95">			result.add(MultiFixMessages.HintFileCleanUp_description);</span>
+<span class="fc" id="L101">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (isEnabled(HINTFILE_CLEANUP)) {</span>
+<span class="nc" id="L103">			result.add(MultiFixMessages.HintFileCleanUp_description);</span>
 		}
-<span class="fc" id="L97">		return result.toArray(new String[0]);</span>
+<span class="fc" id="L105">		return result.toArray(new String[0]);</span>
+	}
+
+	/**
+	 * Returns the set of enabled bundled hint file IDs based on the current options.
+	 * 
+	 * &lt;p&gt;Returns a set of bundle IDs corresponding to the enabled per-bundle
+	 * options. If all bundles are disabled, an empty set is returned, causing
+	 * only project-level hint files to be processed.&lt;/p&gt;
+	 * 
+	 * @return set of enabled bundle IDs (never {@code null})
+	 */
+	private Set&lt;String&gt; getEnabledBundles() {
+<span class="nc" id="L118">		Set&lt;String&gt; enabled = new LinkedHashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_COLLECTIONS)) {</span>
+<span class="nc" id="L120">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTIONS);</span>
+		}
+<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_PERFORMANCE)) {</span>
+<span class="nc" id="L123">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PERFORMANCE);</span>
+		}
+<span class="nc bnc" id="L125" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA9)) {</span>
+<span class="nc" id="L126">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MODERNIZE_JAVA9);</span>
+		}
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA11)) {</span>
+<span class="nc" id="L129">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MODERNIZE_JAVA11);</span>
+		}
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_ENCODING)) {</span>
+<span class="nc" id="L132">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_ENCODING);</span>
+		}
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_JUNIT5)) {</span>
+<span class="nc" id="L135">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_JUNIT5);</span>
+			// assume5 and annotations5 are part of the JUnit 4→5 migration bundle
+<span class="nc" id="L137">			enabled.add(&quot;assume5&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L138">			enabled.add(&quot;annotations5&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L140">		return enabled;</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="nc bnc" id="L102" title="All 2 branches missed.">		if (isEnabled(HINTFILE_CLEANUP)) {</span>
-<span class="nc" id="L103">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">		if (isEnabled(HINTFILE_CLEANUP)) {</span>
+<span class="nc" id="L146">			return &quot;&quot;&quot;</span>
 				// After applying .sandbox-hint rules:
 				String s = String.valueOf(value);
 				boolean empty = list.isEmpty();
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L109">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L152">		return &quot;&quot;&quot;</span>
 			// Before applying .sandbox-hint rules:
 			String s = &quot;&quot; + value;
 			boolean empty = list.size() == 0;

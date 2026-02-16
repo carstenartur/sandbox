@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AstDiffAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.mining.analysis</a> &gt; <span class="el_source">AstDiffAnalyzer.java</span></div><h1>AstDiffAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.mining.analysis;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTMatcher;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
+
+/**
+ * Computes a structural diff between two AST nodes by recursively comparing
+ * their children and classifying each pair as IDENTICAL, MODIFIED, INSERTED, or DELETED.
+ *
+ * &lt;p&gt;The algorithm walks both trees top-down. When the root node types match it
+ * recurses into children (by structural property); when they differ the pair is
+ * marked MODIFIED and no further descent occurs.&lt;/p&gt;
+ *
+ * @since 1.2.6
+ */
+<span class="fc" id="L33">public class AstDiffAnalyzer {</span>
+
+<span class="fc" id="L35">	private static final ASTMatcher SUBTREE_MATCHER = new ASTMatcher(true);</span>
+
+	/**
+	 * Computes the diff between two AST nodes.
+	 *
+	 * @param before the AST node from the original code
+	 * @param after  the AST node from the modified code
+	 * @return the computed {@link AstDiff}
+	 */
+	public AstDiff computeDiff(ASTNode before, ASTNode after) {
+<span class="fc" id="L45">		List&lt;NodeAlignment&gt; alignments = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L46">		boolean compatible = diff(before, after, alignments);</span>
+<span class="fc" id="L47">		return new AstDiff(compatible, alignments);</span>
+	}
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private boolean diff(ASTNode before, ASTNode after, List&lt;NodeAlignment&gt; alignments) {
+<span class="fc bfc" id="L52" title="All 4 branches covered.">		if (before == null &amp;&amp; after == null) {</span>
+<span class="fc" id="L53">			return true;</span>
+		}
+<span class="fc bfc" id="L55" title="All 2 branches covered.">		if (before == null) {</span>
+<span class="fc" id="L56">			alignments.add(new NodeAlignment(null, after, AlignmentKind.INSERTED));</span>
+<span class="fc" id="L57">			return false;</span>
+		}
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		if (after == null) {</span>
+<span class="fc" id="L60">			alignments.add(new NodeAlignment(before, null, AlignmentKind.DELETED));</span>
+<span class="fc" id="L61">			return false;</span>
+		}
+
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (before.subtreeMatch(SUBTREE_MATCHER, after)) {</span>
+<span class="fc" id="L65">			alignments.add(new NodeAlignment(before, after, AlignmentKind.IDENTICAL));</span>
+<span class="fc" id="L66">			return true;</span>
+		}
+
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		if (before.getNodeType() != after.getNodeType()) {</span>
+<span class="fc" id="L70">			alignments.add(new NodeAlignment(before, after, AlignmentKind.MODIFIED));</span>
+<span class="fc" id="L71">			return false;</span>
+		}
+
+		// Same node type but different content – recurse into children
+<span class="fc" id="L75">		boolean allChildrenCompatible = true;</span>
+<span class="fc" id="L76">		boolean hasChildProperties = false;</span>
+<span class="fc" id="L77">		List&lt;StructuralPropertyDescriptor&gt; properties = before.structuralPropertiesForType();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">		for (StructuralPropertyDescriptor prop : properties) {</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">			if (prop.isSimpleProperty()) {</span>
+<span class="fc" id="L80">				Object bVal = before.getStructuralProperty(prop);</span>
+<span class="fc" id="L81">				Object aVal = after.getStructuralProperty(prop);</span>
+<span class="pc bpc" id="L82" title="1 of 4 branches missed.">				if (bVal != null &amp;&amp; !bVal.equals(aVal)) {</span>
+<span class="fc" id="L83">					allChildrenCompatible = false;</span>
+				}
+<span class="fc bfc" id="L85" title="All 2 branches covered.">			} else if (prop.isChildProperty()) {</span>
+<span class="fc" id="L86">				hasChildProperties = true;</span>
+<span class="fc" id="L87">				ASTNode bChild = (ASTNode) before.getStructuralProperty(prop);</span>
+<span class="fc" id="L88">				ASTNode aChild = (ASTNode) after.getStructuralProperty(prop);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">				if (!diff(bChild, aChild, alignments)) {</span>
+<span class="fc" id="L90">					allChildrenCompatible = false;</span>
+				}
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">			} else if (prop.isChildListProperty()) {</span>
+<span class="fc" id="L93">				hasChildProperties = true;</span>
+<span class="fc" id="L94">				List&lt;ASTNode&gt; bChildren = (List&lt;ASTNode&gt;) before.getStructuralProperty(prop);</span>
+<span class="fc" id="L95">				List&lt;ASTNode&gt; aChildren = (List&lt;ASTNode&gt;) after.getStructuralProperty(prop);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">				if (!diffLists(bChildren, aChildren, alignments)) {</span>
+<span class="fc" id="L97">					allChildrenCompatible = false;</span>
+				}
+			}
+		}
+		// If the node has no child/list properties (leaf node) and simple props differ,
+		// register a MODIFIED alignment so the caller can see the change.
+<span class="pc bpc" id="L103" title="1 of 4 branches missed.">		if (!allChildrenCompatible &amp;&amp; !hasChildProperties) {</span>
+<span class="fc" id="L104">			alignments.add(new NodeAlignment(before, after, AlignmentKind.MODIFIED));</span>
+		}
+<span class="fc" id="L106">		return allChildrenCompatible;</span>
+	}
+
+	private boolean diffLists(List&lt;ASTNode&gt; before, List&lt;ASTNode&gt; after,
+			List&lt;NodeAlignment&gt; alignments) {
+<span class="fc" id="L111">		int minSize = Math.min(before.size(), after.size());</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">		boolean allCompatible = before.size() == after.size();</span>
+
+<span class="fc bfc" id="L114" title="All 2 branches covered.">		for (int i = 0; i &lt; minSize; i++) {</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">			if (!diff(before.get(i), after.get(i), alignments)) {</span>
+<span class="fc" id="L116">				allCompatible = false;</span>
+			}
+		}
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		for (int i = minSize; i &lt; before.size(); i++) {</span>
+<span class="nc" id="L120">			alignments.add(new NodeAlignment(before.get(i), null, AlignmentKind.DELETED));</span>
+<span class="nc" id="L121">			allCompatible = false;</span>
+		}
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		for (int i = minSize; i &lt; after.size(); i++) {</span>
+<span class="nc" id="L124">			alignments.add(new NodeAlignment(null, after.get(i), AlignmentKind.INSERTED));</span>
+<span class="nc" id="L125">			allCompatible = false;</span>
+		}
+<span class="fc" id="L127">		return allCompatible;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHintCodeScanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">SandboxHintCodeScanner.java</span></div><h1>SandboxHintCodeScanner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.editor;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jface.text.TextAttribute;
+import org.eclipse.jface.text.rules.IRule;
+import org.eclipse.jface.text.rules.IToken;
+import org.eclipse.jface.text.rules.IWordDetector;
+import org.eclipse.jface.text.rules.RuleBasedScanner;
+import org.eclipse.jface.text.rules.SingleLineRule;
+import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.rules.WordRule;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.widgets.Display;
+
+/**
+ * Scanner for code regions in {@code .sandbox-hint} files.
+ *
+ * &lt;p&gt;Highlights:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code &lt;!...&gt;} metadata directives – teal italic&lt;/li&gt;
+ *   &lt;li&gt;{@code ::} guard separator – purple bold&lt;/li&gt;
+ *   &lt;li&gt;{@code =&gt;} rewrite arrow – purple bold&lt;/li&gt;
+ *   &lt;li&gt;{@code ;;} rule terminator – purple bold&lt;/li&gt;
+ *   &lt;li&gt;{@code $placeholder} – dark red&lt;/li&gt;
+ *   &lt;li&gt;{@code $variadic$} – dark red bold&lt;/li&gt;
+ *   &lt;li&gt;Guard function keywords – dark blue bold&lt;/li&gt;
+ *   &lt;li&gt;Import directive keywords – dark blue bold&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @since 1.3.6
+ */
+public class SandboxHintCodeScanner extends RuleBasedScanner {
+
+	/**
+	 * Guard function keywords known to the built-in registry.
+	 */
+<span class="nc" id="L53">	private static final String[] GUARD_KEYWORDS = {</span>
+<span class="nc" id="L54">		&quot;instanceof&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L55">		&quot;matchesAny&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L56">		&quot;matchesNone&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L57">		&quot;referencedIn&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L58">		&quot;hasNoSideEffect&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L59">		&quot;sourceVersionGE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L60">		&quot;sourceVersionLE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L61">		&quot;sourceVersionBetween&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L62">		&quot;elementKindMatches&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L63">		&quot;isStatic&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L64">		&quot;isFinal&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L65">		&quot;hasAnnotation&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L66">		&quot;isDeprecated&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L67">		&quot;otherwise&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L68">		&quot;contains&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L69">		&quot;notContains&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L70">		&quot;parent&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L71">		&quot;enclosingMethod&quot;, //$NON-NLS-1$</span>
+	};
+
+	/**
+	 * Import directive keywords for the DSL.
+	 * &lt;p&gt;These are now optional when imports can be implicitly derived
+	 * from fully qualified names in source/replacement patterns.&lt;/p&gt;
+	 */
+<span class="nc" id="L79">	private static final String[] IMPORT_KEYWORDS = {</span>
+<span class="nc" id="L80">		&quot;addImport&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L81">		&quot;removeImport&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L82">		&quot;addStaticImport&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L83">		&quot;removeStaticImport&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L84">		&quot;replaceStaticImport&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L85">	};</span>
+
+<span class="nc" id="L87">	public SandboxHintCodeScanner() {</span>
+<span class="nc" id="L88">		Color operatorColor = new Color(Display.getDefault(), 128, 0, 128);</span>
+<span class="nc" id="L89">		IToken operatorToken = new Token(new TextAttribute(operatorColor, null, SWT.BOLD));</span>
+
+<span class="nc" id="L91">		Color placeholderColor = new Color(Display.getDefault(), 128, 0, 0);</span>
+<span class="nc" id="L92">		IToken placeholderToken = new Token(new TextAttribute(placeholderColor));</span>
+<span class="nc" id="L93">		IToken variadicToken = new Token(new TextAttribute(placeholderColor, null, SWT.BOLD));</span>
+
+<span class="nc" id="L95">		Color keywordColor = new Color(Display.getDefault(), 0, 0, 192);</span>
+<span class="nc" id="L96">		IToken keywordToken = new Token(new TextAttribute(keywordColor, null, SWT.BOLD));</span>
+
+<span class="nc" id="L98">		Color stringColor = new Color(Display.getDefault(), 42, 0, 255);</span>
+<span class="nc" id="L99">		IToken stringToken = new Token(new TextAttribute(stringColor));</span>
+
+<span class="nc" id="L101">		Color metadataColor = new Color(Display.getDefault(), 64, 128, 128);</span>
+<span class="nc" id="L102">		IToken metadataToken = new Token(new TextAttribute(metadataColor, null, SWT.ITALIC));</span>
+
+<span class="nc" id="L104">		List&lt;IRule&gt; rules = new ArrayList&lt;&gt;();</span>
+
+		// Metadata directives: &lt;!id: ...&gt;, &lt;!description: ...&gt;, etc.
+<span class="nc" id="L107">		rules.add(new SingleLineRule(&quot;&lt;!&quot;, &quot;&gt;&quot;, metadataToken)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+		// String literals in guard expressions
+<span class="nc" id="L110">		rules.add(new SingleLineRule(&quot;\&quot;&quot;, &quot;\&quot;&quot;, stringToken, '\\')); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+		// Operators: =&gt;, ::, ;;
+<span class="nc" id="L113">		rules.add(new OperatorRule(&quot;=&gt;&quot;, operatorToken)); //$NON-NLS-1$</span>
+<span class="nc" id="L114">		rules.add(new OperatorRule(&quot;::&quot;, operatorToken)); //$NON-NLS-1$</span>
+<span class="nc" id="L115">		rules.add(new OperatorRule(&quot;;;&quot;, operatorToken)); //$NON-NLS-1$</span>
+
+		// Placeholders: $name and $variadic$
+<span class="nc" id="L118">		rules.add(new PlaceholderRule(placeholderToken, variadicToken));</span>
+
+		// Guard function keywords
+<span class="nc" id="L121">		WordRule keywordRule = new WordRule(new IWordDetector() {</span>
+			@Override
+			public boolean isWordStart(char c) {
+<span class="nc" id="L124">				return Character.isLetter(c);</span>
+			}
+
+			@Override
+			public boolean isWordPart(char c) {
+<span class="nc bnc" id="L129" title="All 4 branches missed.">				return Character.isLetterOrDigit(c) || c == '_';</span>
+			}
+<span class="nc" id="L131">		}, Token.UNDEFINED);</span>
+
+<span class="nc bnc" id="L133" title="All 2 branches missed.">		for (String keyword : GUARD_KEYWORDS) {</span>
+<span class="nc" id="L134">			keywordRule.addWord(keyword, keywordToken);</span>
+		}
+<span class="nc bnc" id="L136" title="All 2 branches missed.">		for (String keyword : IMPORT_KEYWORDS) {</span>
+<span class="nc" id="L137">			keywordRule.addWord(keyword, keywordToken);</span>
+		}
+<span class="nc" id="L139">		rules.add(keywordRule);</span>
+
+<span class="nc" id="L141">		setRules(rules.toArray(new IRule[0]));</span>
+<span class="nc" id="L142">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

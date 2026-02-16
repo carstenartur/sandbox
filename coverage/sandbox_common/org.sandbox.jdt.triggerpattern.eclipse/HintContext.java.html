@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintContext.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.eclipse</a> &gt; <span class="el_source">HintContext.java</span></div><h1>HintContext.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.eclipse;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.sandbox.jdt.triggerpattern.api.Match;
+
+/**
+ * Context information provided to hint implementations.
+ * 
+ * &lt;p&gt;This class provides access to the compilation unit, the matched pattern result,
+ * and tools for making code changes (ASTRewrite, ImportRewrite).&lt;/p&gt;
+ * 
+ * @since 1.2.2
+ */
+public final class HintContext {
+	private final CompilationUnit cu;
+	private final ICompilationUnit icu;
+	private final Match match;
+	private final ASTRewrite rewrite;
+	private ImportRewrite importRewrite;
+	private final AtomicBoolean cancel;
+	
+	/**
+	 * Creates a new hint context.
+	 * 
+	 * @param cu the parsed compilation unit
+	 * @param icu the ICompilationUnit (workspace model)
+	 * @param match the pattern match result
+	 * @param rewrite the AST rewrite for making changes
+	 */
+	public HintContext(CompilationUnit cu, ICompilationUnit icu, Match match, ASTRewrite rewrite) {
+<span class="fc" id="L54">		this(cu, icu, match, rewrite, new AtomicBoolean(false));</span>
+<span class="fc" id="L55">	}</span>
+	
+	/**
+	 * Creates a new hint context with cancellation support.
+	 * 
+	 * @param cu the parsed compilation unit
+	 * @param icu the ICompilationUnit (workspace model)
+	 * @param match the pattern match result
+	 * @param rewrite the AST rewrite for making changes
+	 * @param cancel atomic boolean for cancellation signaling
+	 */
+<span class="fc" id="L66">	public HintContext(CompilationUnit cu, ICompilationUnit icu, Match match, ASTRewrite rewrite, AtomicBoolean cancel) {</span>
+<span class="fc" id="L67">		this.cu = cu;</span>
+<span class="fc" id="L68">		this.icu = icu;</span>
+<span class="fc" id="L69">		this.match = match;</span>
+<span class="fc" id="L70">		this.rewrite = rewrite;</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		this.cancel = cancel != null ? cancel : new AtomicBoolean(false);</span>
+<span class="fc" id="L72">	}</span>
+	
+	/**
+	 * Returns the parsed compilation unit.
+	 * 
+	 * @return the compilation unit
+	 */
+	public CompilationUnit getCompilationUnit() {
+<span class="nc" id="L80">		return cu;</span>
+	}
+	
+	/**
+	 * Returns the ICompilationUnit (workspace model).
+	 * 
+	 * @return the ICompilationUnit
+	 */
+	public ICompilationUnit getICompilationUnit() {
+<span class="nc" id="L89">		return icu;</span>
+	}
+	
+	/**
+	 * Returns the pattern match.
+	 * 
+	 * @return the match
+	 */
+	public Match getMatch() {
+<span class="nc" id="L98">		return match;</span>
+	}
+	
+	/**
+	 * Returns the AST rewrite for making code changes.
+	 * 
+	 * @return the AST rewrite
+	 */
+	public ASTRewrite getASTRewrite() {
+<span class="fc" id="L107">		return rewrite;</span>
+	}
+	
+	/**
+	 * Returns the import rewrite for managing imports.
+	 * Creates one lazily if needed.
+	 * 
+	 * @return the import rewrite
+	 */
+	public ImportRewrite getImportRewrite() {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		if (importRewrite == null) {</span>
+			try {
+<span class="nc" id="L119">				importRewrite = ImportRewrite.create(cu, true);</span>
+<span class="nc" id="L120">			} catch (Exception e) {</span>
+				// Return null if creation fails
+<span class="nc" id="L122">				return null;</span>
+			}
+		}
+<span class="nc" id="L125">		return importRewrite;</span>
+	}
+	
+	/**
+	 * Sets the import rewrite.
+	 * 
+	 * @param importRewrite the import rewrite to use
+	 */
+	public void setImportRewrite(ImportRewrite importRewrite) {
+<span class="nc" id="L134">		this.importRewrite = importRewrite;</span>
+<span class="nc" id="L135">	}</span>
+	
+	/**
+	 * Checks if the operation has been canceled.
+	 * 
+	 * @return true if canceled
+	 */
+	public boolean isCanceled() {
+<span class="fc" id="L143">		return cancel.get();</span>
+	}
+	
+	/**
+	 * Returns single-placeholder bindings only.
+	 * 
+	 * &lt;p&gt;Filters out multi-placeholder bindings (those with values that are lists).&lt;/p&gt;
+	 * 
+	 * @return map of placeholder names to their bound AST nodes
+	 */
+	public Map&lt;String, ASTNode&gt; getVariables() {
+<span class="fc" id="L154">		Map&lt;String, ASTNode&gt; result = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		for (Map.Entry&lt;String, Object&gt; entry : match.getBindings().entrySet()) {</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">			if (entry.getValue() instanceof ASTNode) {</span>
+<span class="fc" id="L157">				result.put(entry.getKey(), (ASTNode) entry.getValue());</span>
+			}
+		}
+<span class="fc" id="L160">		return result;</span>
+	}
+	
+	/**
+	 * Returns multi-placeholder bindings only.
+	 * 
+	 * &lt;p&gt;Filters out single-placeholder bindings (those with ASTNode values).&lt;/p&gt;
+	 * 
+	 * @return map of placeholder names to their lists of bound AST nodes
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	public Map&lt;String, List&lt;ASTNode&gt;&gt; getMultiVariables() {
+<span class="nc" id="L172">		Map&lt;String, List&lt;ASTNode&gt;&gt; result = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">		for (Map.Entry&lt;String, Object&gt; entry : match.getBindings().entrySet()) {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">			if (entry.getValue() instanceof List&lt;?&gt;) {</span>
+<span class="nc" id="L175">				result.put(entry.getKey(), (List&lt;ASTNode&gt;) entry.getValue());</span>
+			}
+		}
+<span class="nc" id="L178">		return result;</span>
+	}
+	
+	/**
+	 * Returns a map of placeholder names to their source text representations.
+	 * 
+	 * &lt;p&gt;For single placeholders, returns the toString() of the bound node.
+	 * For multi-placeholders, returns a comma-separated string of all nodes.&lt;/p&gt;
+	 * 
+	 * @return map of placeholder names to source text
+	 */
+	public Map&lt;String, String&gt; getVariableNames() {
+<span class="fc" id="L190">		Map&lt;String, String&gt; result = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">		for (Map.Entry&lt;String, Object&gt; entry : match.getBindings().entrySet()) {</span>
+<span class="fc" id="L192">			String name = entry.getKey();</span>
+<span class="fc" id="L193">			Object value = entry.getValue();</span>
+			
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">			if (value instanceof ASTNode) {</span>
+<span class="fc" id="L196">				result.put(name, value.toString());</span>
+<span class="pc bnc" id="L197" title="All 2 branches missed.">			} else if (value instanceof List&lt;?&gt;) {</span>
+				@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L199">				List&lt;ASTNode&gt; nodes = (List&lt;ASTNode&gt;) value;</span>
+<span class="nc" id="L200">				String text = nodes.stream()</span>
+<span class="nc" id="L201">					.map(Object::toString)</span>
+<span class="nc" id="L202">					.collect(Collectors.joining(&quot;, &quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L203">				result.put(name, text);</span>
+			}
+		}
+<span class="fc" id="L206">		return result;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

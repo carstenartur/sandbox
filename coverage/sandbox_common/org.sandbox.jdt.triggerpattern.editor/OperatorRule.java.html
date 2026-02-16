@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>OperatorRule.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">OperatorRule.java</span></div><h1>OperatorRule.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.editor;
+
+import org.eclipse.jface.text.rules.ICharacterScanner;
+import org.eclipse.jface.text.rules.IRule;
+import org.eclipse.jface.text.rules.IToken;
+import org.eclipse.jface.text.rules.Token;
+
+/**
+ * Rule that matches a specific multi-character operator sequence.
+ *
+ * &lt;p&gt;Used to highlight {@code =&gt;}, {@code ::}, and {@code ;;} operators
+ * in {@code .sandbox-hint} files.&lt;/p&gt;
+ *
+ * @since 1.3.6
+ */
+public class OperatorRule implements IRule {
+
+	private final String operator;
+	private final IToken token;
+
+	/**
+	 * Creates an operator rule.
+	 *
+	 * @param operator the operator string to match (e.g., {@code &quot;=&gt;&quot;})
+	 * @param token the token to return on match
+	 */
+<span class="nc" id="L40">	public OperatorRule(String operator, IToken token) {</span>
+<span class="nc" id="L41">		this.operator = operator;</span>
+<span class="nc" id="L42">		this.token = token;</span>
+<span class="nc" id="L43">	}</span>
+
+	@Override
+	public IToken evaluate(ICharacterScanner scanner) {
+<span class="nc" id="L47">		int c = scanner.read();</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">		if (c == operator.charAt(0)) {</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">			if (operator.length() == 1) {</span>
+<span class="nc" id="L50">				return token;</span>
+			}
+<span class="nc" id="L52">			int c2 = scanner.read();</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">			if (c2 == operator.charAt(1)) {</span>
+<span class="nc" id="L54">				return token;</span>
+			}
+<span class="nc" id="L56">			scanner.unread();</span>
+		}
+<span class="nc" id="L58">		scanner.unread();</span>
+<span class="nc" id="L59">		return Token.UNDEFINED;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

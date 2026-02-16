@@ -83,7 +83,36 @@ import org.sandbox.jdt.internal.ui.fix.ThreadingCleanUp;
 <span class="nc" id="L83">				CleanUpMessages.HintFileTabPage_CheckboxName_HintFile,</span>
 <span class="nc" id="L84">				MYCleanUpConstants.HINTFILE_CLEANUP, FALSE_TRUE);</span>
 <span class="nc" id="L85">		intent(hintFileGroup);</span>
-<span class="nc" id="L86">		registerPreference(hintFile);</span>
-<span class="nc" id="L87">	}</span>
+<span class="nc" id="L86">		final CheckboxPreference bundleCollections = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L87">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollections,</span>
+<span class="nc" id="L88">				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTIONS, FALSE_TRUE);</span>
+<span class="nc" id="L89">		intent(hintFileGroup);</span>
+<span class="nc" id="L90">		final CheckboxPreference bundlePerformance = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L91">				CleanUpMessages.HintFileTabPage_CheckboxName_BundlePerformance,</span>
+<span class="nc" id="L92">				MYCleanUpConstants.HINTFILE_BUNDLE_PERFORMANCE, FALSE_TRUE);</span>
+<span class="nc" id="L93">		intent(hintFileGroup);</span>
+<span class="nc" id="L94">		final CheckboxPreference bundleModernizeJava9 = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L95">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleModernizeJava9,</span>
+<span class="nc" id="L96">				MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA9, FALSE_TRUE);</span>
+<span class="nc" id="L97">		intent(hintFileGroup);</span>
+<span class="nc" id="L98">		final CheckboxPreference bundleModernizeJava11 = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L99">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleModernizeJava11,</span>
+<span class="nc" id="L100">				MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11, FALSE_TRUE);</span>
+<span class="nc" id="L101">		intent(hintFileGroup);</span>
+<span class="nc" id="L102">		final CheckboxPreference bundleEncoding = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L103">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleEncoding,</span>
+<span class="nc" id="L104">				MYCleanUpConstants.HINTFILE_BUNDLE_ENCODING, FALSE_TRUE);</span>
+<span class="nc" id="L105">		intent(hintFileGroup);</span>
+<span class="nc" id="L106">		final CheckboxPreference bundleJunit5 = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L107">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleJunit5,</span>
+<span class="nc" id="L108">				MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5, FALSE_TRUE);</span>
+<span class="nc" id="L109">		intent(hintFileGroup);</span>
+<span class="nc" id="L110">		registerSlavePreference(hintFile, new CheckboxPreference[] {</span>
+<span class="nc" id="L111">				bundleCollections, bundlePerformance,</span>
+<span class="nc" id="L112">				bundleModernizeJava9, bundleModernizeJava11,</span>
+<span class="nc" id="L113">				bundleEncoding, bundleJunit5</span>
+		});
+<span class="nc" id="L115">		registerPreference(hintFile);</span>
+<span class="nc" id="L116">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

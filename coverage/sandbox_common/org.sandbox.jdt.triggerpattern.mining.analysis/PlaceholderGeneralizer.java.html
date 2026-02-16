@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PlaceholderGeneralizer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.mining.analysis</a> &gt; <span class="el_source">PlaceholderGeneralizer.java</span></div><h1>PlaceholderGeneralizer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.mining.analysis;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.sandbox.jdt.triggerpattern.api.ImportDirective;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+
+/**
+ * Derives placeholder patterns from an {@link AstDiff}.
+ *
+ * &lt;p&gt;Algorithm:&lt;/p&gt;
+ * &lt;ol&gt;
+ *   &lt;li&gt;All {@link AlignmentKind#IDENTICAL IDENTICAL} alignments become
+ *       {@code $placeholder} with auto-generated names.&lt;/li&gt;
+ *   &lt;li&gt;All {@link AlignmentKind#MODIFIED MODIFIED} alignments remain literal
+ *       in both source and replacement.&lt;/li&gt;
+ *   &lt;li&gt;The source pattern is assembled from the before-side with placeholders.&lt;/li&gt;
+ *   &lt;li&gt;The replacement pattern is assembled from the after-side with placeholders.&lt;/li&gt;
+ * &lt;/ol&gt;
+ *
+ * @since 1.2.6
+ */
+<span class="fc" id="L40">public class PlaceholderGeneralizer {</span>
+
+<span class="fc" id="L42">	private final PlaceholderNamer namer = new PlaceholderNamer();</span>
+<span class="fc" id="L43">	private final ConfidenceCalculator confidenceCalculator = new ConfidenceCalculator();</span>
+
+	/**
+	 * Generalizes an AST diff into an {@link InferredRule}.
+	 *
+	 * @param diff   the AST diff to generalize
+	 * @param before the original source text
+	 * @param after  the modified source text
+	 * @param kind   the pattern kind
+	 * @return the inferred rule, or {@code null} if the diff cannot be generalized
+	 */
+	public InferredRule generalize(AstDiff diff, String before, String after, PatternKind kind) {
+<span class="fc" id="L55">		return generalize(diff, before, after, kind, null);</span>
+	}
+
+	/**
+	 * Generalizes an AST diff into an {@link InferredRule} with import changes.
+	 *
+	 * @param diff           the AST diff to generalize
+	 * @param before         the original source text
+	 * @param after          the modified source text
+	 * @param kind           the pattern kind
+	 * @param importDirective import changes (may be {@code null})
+	 * @return the inferred rule, or {@code null} if the diff cannot be generalized
+	 */
+	public InferredRule generalize(AstDiff diff, String before, String after,
+			PatternKind kind, ImportDirective importDirective) {
+
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		if (diff.alignments().isEmpty()) {</span>
+<span class="fc" id="L72">			return null;</span>
+		}
+
+<span class="fc" id="L75">		namer.reset();</span>
+
+		// Build a mapping: identical sub-trees → placeholder name
+<span class="fc" id="L78">		Map&lt;String, String&gt; identicalPlaceholders = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L79">		List&lt;String&gt; placeholderNames = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L81">		String sourcePattern = before;</span>
+<span class="fc" id="L82">		String replacementPattern = after;</span>
+
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		for (NodeAlignment alignment : diff.alignments()) {</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">			if (alignment.kind() == AlignmentKind.IDENTICAL</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">					&amp;&amp; alignment.beforeNode() != null</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">					&amp;&amp; alignment.afterNode() != null) {</span>
+
+<span class="fc" id="L89">				String beforeText = alignment.beforeNode().toString().trim();</span>
+<span class="fc" id="L90">				String afterText = alignment.afterNode().toString().trim();</span>
+
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">				if (beforeText.isEmpty()) {</span>
+<span class="nc" id="L93">					continue;</span>
+				}
+
+				// Avoid replacing string literals that are part of the transformation
+				// (they define what is being changed, not what stays the same)
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">				if (isLiteralNode(alignment.beforeNode())) {</span>
+<span class="nc" id="L99">					continue;</span>
+				}
+
+<span class="fc" id="L102">				String placeholder = identicalPlaceholders.get(beforeText);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">				if (placeholder == null) {</span>
+<span class="fc" id="L104">					placeholder = namer.nameFor(alignment.beforeNode());</span>
+<span class="fc" id="L105">					identicalPlaceholders.put(beforeText, placeholder);</span>
+<span class="fc" id="L106">					placeholderNames.add(placeholder);</span>
+				}
+
+				// Note: replaceFirst uses indexOf which may match the wrong occurrence
+				// if the target substring appears multiple times in the source.
+				// TODO: Use AST node positions for precise replacement (issue #727)
+<span class="fc" id="L112">				sourcePattern = replaceFirst(sourcePattern, beforeText, placeholder);</span>
+<span class="fc" id="L113">				replacementPattern = replaceFirst(replacementPattern, afterText, placeholder);</span>
+			}
+		}
+
+<span class="fc" id="L117">		double confidence = confidenceCalculator.calculate(diff);</span>
+
+<span class="fc" id="L119">		return new InferredRule(sourcePattern, replacementPattern, kind,</span>
+<span class="fc" id="L120">				confidence, List.copyOf(placeholderNames), importDirective);</span>
+	}
+
+	private static boolean isLiteralNode(ASTNode node) {
+<span class="fc" id="L124">		int type = node.getNodeType();</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		return type == ASTNode.STRING_LITERAL</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				|| type == ASTNode.NUMBER_LITERAL</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">				|| type == ASTNode.CHARACTER_LITERAL</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">				|| type == ASTNode.BOOLEAN_LITERAL</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">				|| type == ASTNode.NULL_LITERAL;</span>
+	}
+
+	private static String replaceFirst(String text, String target, String replacement) {
+<span class="fc" id="L133">		int idx = text.indexOf(target);</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">		if (idx &lt; 0) {</span>
+<span class="nc" id="L135">			return text;</span>
+		}
+<span class="fc" id="L137">		return text.substring(0, idx) + replacement + text.substring(idx + target.length());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
