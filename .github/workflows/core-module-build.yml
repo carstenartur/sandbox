@@ -5,11 +5,13 @@ on:
     paths:
       - 'sandbox-functional-converter-core/**'
       - 'sandbox_common_core/**'
+      - 'sandbox_mining_cli/**'
       - '.github/workflows/core-module-build.yml'
   pull_request:
     paths:
       - 'sandbox-functional-converter-core/**'
       - 'sandbox_common_core/**'
+      - 'sandbox_mining_cli/**'
       - '.github/workflows/core-module-build.yml'
 
 jobs:
@@ -34,6 +36,11 @@ jobs:
       - name: Build and Test Common Core
         working-directory: sandbox_common_core
         run: mvn clean verify
+
+      - name: Build and Test Mining CLI
+        run: |
+          mvn install -pl sandbox_common_core -DskipTests -q
+          mvn clean verify -pl sandbox_mining_cli
         
       - name: Upload Test Results
         uses: actions/upload-artifact@v6
@@ -43,3 +50,4 @@ jobs:
           path: |
             sandbox-functional-converter-core/target/surefire-reports/
             sandbox_common_core/target/surefire-reports/
+            sandbox_mining_cli/target/surefire-reports/

@@ -1,0 +1,41 @@
+mining:
+  # .sandbox-hint files to use
+  hints:
+    - bundled:collections
+    - bundled:modernize-java11
+    - bundled:performance
+
+  # Eclipse projects to scan
+  repositories:
+    - url: https://github.com/eclipse-jdt/eclipse.jdt.core
+      branch: main
+      paths:
+        - org.eclipse.jdt.core/dom
+        - org.eclipse.jdt.core.manipulation/src
+
+    - url: https://github.com/eclipse-jdt/eclipse.jdt.ui
+      branch: main
+      paths:
+        - org.eclipse.jdt.ui/ui
+
+    - url: https://github.com/eclipse-platform/eclipse.platform.ui
+      branch: main
+      paths:
+        - bundles/org.eclipse.ui.workbench/Eclipse UI
+
+    - url: https://github.com/eclipse-platform/eclipse.platform
+      branch: main
+      paths:
+        - runtime/bundles/org.eclipse.core.runtime
+        - resources/bundles/org.eclipse.core.resources
+
+    - url: https://github.com/eclipse-platform/eclipse.platform.text
+      branch: main
+
+    - url: https://github.com/eclipse-platform/eclipse.platform.debug
+      branch: main
+
+  # Configuration
+  settings:
+    max-files-per-repo: 5000
+    timeout-per-repo-minutes: 10
