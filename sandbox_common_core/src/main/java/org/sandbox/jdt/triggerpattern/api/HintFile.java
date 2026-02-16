@@ -16,6 +16,7 @@ package org.sandbox.jdt.triggerpattern.api;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Represents a parsed {@code .sandbox-hint} file containing transformation rules.
@@ -123,7 +124,7 @@ public final class HintFile {
 			return;
 		}
 		try {
-			this.severity = Severity.valueOf(severity.toUpperCase());
+			this.severity = Severity.valueOf(severity.toUpperCase(Locale.ROOT));
 		} catch (IllegalArgumentException e) {
 			this.severity = Severity.INFO;
 		}
