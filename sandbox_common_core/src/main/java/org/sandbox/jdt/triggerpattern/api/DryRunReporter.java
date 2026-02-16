@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
@@ -103,10 +104,10 @@ public final class DryRunReporter {
 					// Try to find the matching alternative using guards
 					if (compilerOptions != null) {
 						GuardContext guardCtx = GuardContext.fromMatch(match, cu, compilerOptions);
-						RewriteAlternative alt = rule.findMatchingAlternative(guardCtx);
-						if (alt != null) {
+						Optional<RewriteAlternative> alt = rule.findMatchingAlternative(guardCtx);
+						if (alt.isPresent()) {
 							suggestedReplacement = substitutePlaceholders(
-									alt.replacementPattern(), match.getBindings());
+									alt.get().replacementPattern(), match.getBindings());
 						}
 					} else {
 						// Without compiler options, use the first alternative

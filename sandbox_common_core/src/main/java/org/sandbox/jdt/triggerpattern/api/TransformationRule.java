@@ -16,6 +16,7 @@ package org.sandbox.jdt.triggerpattern.api;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a transformation rule consisting of a source pattern, an optional guard,
@@ -158,17 +159,17 @@ public final class TransformationRule {
 	 * to {@code true}, or an unconditional "otherwise" alternative, is returned.</p>
 	 * 
 	 * @param ctx the guard context for evaluation
-	 * @return the matching alternative, or {@code null} if no alternative matches
+	 * @return an {@link Optional} containing the matching alternative, or empty if none matches
 	 */
-	public RewriteAlternative findMatchingAlternative(GuardContext ctx) {
+	public Optional<RewriteAlternative> findMatchingAlternative(GuardContext ctx) {
 		for (RewriteAlternative alt : alternatives) {
 			if (alt.isOtherwise()) {
-				return alt;
+				return Optional.of(alt);
 			}
 			if (alt.condition() != null && alt.condition().evaluate(ctx)) {
-				return alt;
+				return Optional.of(alt);
 			}
 		}
-		return null;
+		return Optional.empty();
 	}
 }

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -140,10 +141,10 @@ public final class BatchTransformationProcessor {
 				}
 
 				// Find matching alternative
-				RewriteAlternative alt = rule.findMatchingAlternative(guardCtx);
+				Optional<RewriteAlternative> alt = rule.findMatchingAlternative(guardCtx);
 				String replacement = null;
-				if (alt != null) {
-					replacement = substituteBindings(alt.replacementPattern(), match);
+				if (alt.isPresent()) {
+					replacement = substituteBindings(alt.get().replacementPattern(), match);
 				}
 
 				// Collect import directives
