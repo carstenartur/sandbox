@@ -42,14 +42,16 @@ jobs:
             --batch-size ${{ github.event.inputs.batch_size || '500' }} \
             --output docs/mining-report/
 
-      - name: Commit State to Main Branch
+      - name: Commit State
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="mining/gemini-state-$(date +%Y-%m-%d)"
+          git checkout -b "$BRANCH"
           git add .github/refactoring-mining/state.json
           git diff --cached --quiet || \
             git commit -m "mining: Update state $(date +%Y-%m-%d)"
-          git push
+          git push origin "$BRANCH"
 
       - name: Deploy Mining Report to gh-pages
         uses: peaceiris/actions-gh-pages@v4
