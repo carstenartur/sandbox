@@ -574,6 +574,75 @@ The following `.sandbox-hint` files are bundled with the engine:
 | `modernize-java11.sandbox-hint` | 7 | Java 11+ API modernization |
 | `performance.sandbox-hint` | 9 | Performance optimization patterns |
 
+### Guard Functions Reference
+
+Guard functions are boolean predicates that can be used in rule conditions to filter matches.
+They are specified using the `::` operator in the DSL syntax.
+
+#### Built-in Guards
+
+| Guard Function | Arguments | Description | Example |
+|----------------|-----------|-------------|---------|
+| `instanceof($placeholder, "TypeName")` | placeholder, type | Checks if placeholder's type matches the given type | `$x.toString() :: instanceof($x, "StringBuilder")` |
+| `sourceVersionGE(version)` | version | Checks if source version >= specified version | `$x.isEmpty() :: sourceVersionGE(6)` |
+| `sourceVersionLE(version)` | version | Checks if source version <= specified version | `$x.length() > 0 :: sourceVersionLE(5)` |
+| `sourceVersionBetween(min, max)` | min, max | Checks if source version is in range [min, max] | `$pattern :: sourceVersionBetween(8, 11)` |
+| `matchesAny($placeholder, ...literals)` | placeholder, literals | Checks if placeholder matches any literal value | `$str.equals($x) :: matchesAny($x, "true", "false")` |
+| `matchesNone($placeholder, ...literals)` | placeholder, literals | Checks if placeholder matches none of the literal values | `$x.toString() :: matchesNone($x, "null")` |
+| `hasNoSideEffect($placeholder)` | placeholder | Checks if expression has no side effects | `$x + 1 :: hasNoSideEffect($x)` |
+| `referencedIn($var, $expr)` | variable, expression | Checks if variable is referenced in expression | `$x.toString() :: referencedIn($x, $condition)` |
+| `isStatic($placeholder)` | placeholder | Checks if binding has static modifier | `$field :: isStatic($field)` |
+| `isFinal($placeholder)` | placeholder | Checks if binding has final modifier | `$var :: isFinal($var)` |
+| `hasAnnotation($placeholder, "AnnotationName")` | placeholder, annotation | Checks if element has specific annotation | `$method :: hasAnnotation($method, "Deprecated")` |
+| `isDeprecated($placeholder)` | placeholder | Checks if element is deprecated | `$method :: isDeprecated($method)` |
+| `contains("text")` | text | Checks if text exists in enclosing method body | `$x.open() :: notContains("close")` |
+| `notContains("text")` | text | Checks if text does NOT exist in enclosing method body | `$x.open() :: notContains("close")` |
+| `elementKindMatches($placeholder, "KIND")` | placeholder, kind | Checks element kind (FIELD, METHOD, LOCAL_VARIABLE, PARAMETER, TYPE) | `$x :: elementKindMatches($x, "PARAMETER")` |
+| `isNullable($placeholder)` | placeholder | Checks if expression is potentially nullable (not provably NON_NULL) | `$x.toString() :: isNullable($x)` |
+| `isNullable($placeholder, minScore)` | placeholder, score | Checks if expression's nullability score >= minScore (0=NON_NULL, 5=UNKNOWN, 7=POTENTIALLY_NULLABLE, 10=NULLABLE) | `$x.toString() :: isNullable($x, 5)` |
+| `isNonNull($placeholder)` | placeholder | Checks if expression is provably non-null | `$x.close() :: isNonNull($x)` |
+
+#### Nullability Guards
+
+The `isNullable` and `isNonNull` guards use the `NullabilityGuard` class to perform 4-stage nullability analysis:
+
+1. **Stage 1 - Type whitelist**: Checks if type is known to be non-null (e.g., StringBuilder, String, primitives)
+2. **Stage 2 - Initialization**: Checks if expression is `new` or a known non-null factory method
+3. **Stage 3 - Null-check analysis**: Detects null-checks in the same method (SpotBugs-style)
+4. **Stage 4 - Annotations**: Checks for `@Nullable`/`@NonNull` annotations
+
+**Nullability Score Mapping:**
+- `NON_NULL` → 0 (definitely safe, no change needed)
+- `UNKNOWN` → 5 (undetermined, no type info available)
+- `POTENTIALLY_NULLABLE` → 7 (there are null-checks nearby)
+- `NULLABLE` → 10 (high risk, SpotBugs-style: null-check found after usage)
+
+**Usage Examples:**
+
+```
+// Only suggest String.valueOf() when null is a realistic possibility
+"Consider using String.valueOf() for null safety":
+$x.toString() :: sourceVersionGE(11) :: isNullable($x, 5)
+=> String.valueOf($x)
+;;
+
+// Exclude StringBuilder (always non-null after initialization)
+"Use explicit null-check":
+$x.toString() :: isNullable($x) :: !isNonNull($x)
+=> ($x != null) ? $x.toString() : "null"
+;;
+
+// Only match high-risk cases (null-check after usage)
+"Potential NPE detected":
+$x.$method() :: isNullable($x, 10)
+;;
+```
+
+**Common Use Cases:**
+- Reduce false positives in null-safety rules by excluding StringBuilder, String, and other always-non-null types
+- Detect potential NPEs when null-checks appear after usage
+- Filter matches based on nullability confidence level
+
 ## Testing
 
 The `sandbox_common_test` module contains comprehensive tests:
