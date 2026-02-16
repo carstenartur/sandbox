@@ -56,16 +56,17 @@ public class GeminiPromptBuilder {
 		sb.append("### Diff\n```\n");
 		sb.append(diff).append("\n```\n\n");
 		sb.append("## Task\n");
-		sb.append("Analyze this commit and determine if the code change can be generalized\n");
-		sb.append("into a reusable TriggerPattern DSL rule. Respond with a JSON object containing:\n\n");
+		sb.append("Analyze this commit and determine whether the code change\n");
+		sb.append("can be generalized into a reusable TriggerPattern DSL rule.\n");
+		sb.append("Respond with a JSON object:\n\n");
 		sb.append("{\n");
 		sb.append("  \"relevant\": true/false,\n");
 		sb.append("  \"irrelevantReason\": \"reason if not relevant\",\n");
 		sb.append("  \"isDuplicate\": true/false,\n");
-		sb.append("  \"duplicateOf\": \"existing rule name if duplicate\",\n");
-		sb.append("  \"reusability\": 1-5,\n");
-		sb.append("  \"codeImprovement\": 1-5,\n");
-		sb.append("  \"implementationEffort\": 1-5,\n");
+		sb.append("  \"duplicateOf\": \"name of existing rule if duplicate\",\n");
+		sb.append("  \"reusability\": 1-10,\n");
+		sb.append("  \"codeImprovement\": 1-10,\n");
+		sb.append("  \"implementationEffort\": 1-10,\n");
 		sb.append("  \"trafficLight\": \"GREEN|YELLOW|RED|NOT_APPLICABLE\",\n");
 		sb.append("  \"category\": \"category name\",\n");
 		sb.append("  \"isNewCategory\": true/false,\n");
@@ -80,7 +81,7 @@ public class GeminiPromptBuilder {
 		sb.append("Traffic light meanings:\n");
 		sb.append("- GREEN: Directly implementable as a DSL rule\n");
 		sb.append("- YELLOW: Implementable with minor DSL extensions\n");
-		sb.append("- RED: Not implementable in current or near-future DSL\n");
+		sb.append("- RED: Not implementable in current or foreseeable DSL\n");
 		sb.append("- NOT_APPLICABLE: Commit is not relevant for DSL mining\n");
 		return sb.toString();
 	}

@@ -26,9 +26,9 @@ import java.time.Instant;
  * @param irrelevantReason      reason if not relevant
  * @param isDuplicate           whether a similar rule already exists
  * @param duplicateOf           existing rule this duplicates
- * @param reusability           reusability score (1-5)
- * @param codeImprovement       code improvement score (1-5)
- * @param implementationEffort  implementation effort score (1-5)
+ * @param reusability           reusability score (1-10)
+ * @param codeImprovement       code improvement score (1-10)
+ * @param implementationEffort  implementation effort score (1-10)
  * @param trafficLight          overall assessment (GREEN, YELLOW, RED, NOT_APPLICABLE)
  * @param category              category of the transformation
  * @param isNewCategory         whether this is a new category

@@ -77,5 +77,6 @@ class GeminiPromptBuilderTest {
 		assertTrue(prompt.contains("\"trafficLight\""));
 		assertTrue(prompt.contains("\"dslRule\""));
 		assertTrue(prompt.contains("\"category\""));
+		assertTrue(prompt.contains("1-10")); // Scale should be 1-10
 	}
 }

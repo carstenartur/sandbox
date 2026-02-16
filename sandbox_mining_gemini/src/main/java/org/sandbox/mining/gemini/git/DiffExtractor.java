@@ -14,6 +14,7 @@
 package org.sandbox.mining.gemini.git;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -33,11 +34,16 @@ import org.eclipse.jgit.treewalk.EmptyTreeIterator;
  *
  * <p>Limits the diff output to a configurable maximum number of lines
  * to avoid sending overly large prompts to the Gemini API.</p>
+ *
+ * <p>Implements {@link Closeable} to ensure the underlying Git and
+ * Repository resources are properly released.</p>
  */
-public class DiffExtractor {
+public class DiffExtractor implements Closeable {
 
+	private final Git git;
 	private final Repository repository;
 	private final int maxDiffLines;
+	private final List<String> pathFilters;
 
 	/**
 	 * Creates a DiffExtractor for the given repository directory.
@@ -47,8 +53,22 @@ public class DiffExtractor {
 	 * @throws IOException if the repository cannot be opened
 	 */
 	public DiffExtractor(Path repoDir, int maxDiffLines) throws IOException {
-		this.repository = Git.open(repoDir.toFile()).getRepository();
+		this(repoDir, maxDiffLines, List.of());
+	}
+
+	/**
+	 * Creates a DiffExtractor for the given repository directory with path filtering.
+	 *
+	 * @param repoDir      the local repository directory
+	 * @param maxDiffLines maximum number of diff lines to include
+	 * @param pathFilters  list of path prefixes to include (empty = all paths)
+	 * @throws IOException if the repository cannot be opened
+	 */
+	public DiffExtractor(Path repoDir, int maxDiffLines, List<String> pathFilters) throws IOException {
+		this.git = Git.open(repoDir.toFile());
+		this.repository = git.getRepository();
 		this.maxDiffLines = maxDiffLines;
+		this.pathFilters = pathFilters != null ? pathFilters : List.of();
 	}
 
 	/**
@@ -70,12 +90,24 @@ public class DiffExtractor {
 
 			List<DiffEntry> diffs = formatter.scan(parentTree, commitTree);
 			for (DiffEntry entry : diffs) {
-				formatter.format(entry);
+				if (matchesPathFilter(entry)) {
+					formatter.format(entry);
+				}
 			}
 		}
 
 		String fullDiff = out.toString(java.nio.charset.StandardCharsets.UTF_8);
 		return truncateToMaxLines(fullDiff);
+	}
+
+	private boolean matchesPathFilter(DiffEntry entry) {
+		if (pathFilters.isEmpty()) {
+			return true;
+		}
+		String path = entry.getChangeType() == DiffEntry.ChangeType.DELETE
+				? entry.getOldPath()
+				: entry.getNewPath();
+		return pathFilters.stream().anyMatch(path::startsWith);
 	}
 
 	private AbstractTreeIterator getParentTree(RevCommit commit) throws IOException {
@@ -106,5 +138,11 @@ public class DiffExtractor {
 		sb.append("\n... (truncated, ").append(lines.length - maxDiffLines)
 				.append(" more lines)");
 		return sb.toString();
+	}
+
+	@Override
+	public void close() {
+		repository.close();
+		git.close();
 	}
 }

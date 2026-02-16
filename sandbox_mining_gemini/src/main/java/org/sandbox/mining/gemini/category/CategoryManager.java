@@ -105,12 +105,12 @@ public class CategoryManager {
 	private static List<String> getDefaultCategories() {
 		return List.of(
 				"Collections",
-				"Java-Modernisierung",
+				"Java-Modernization",
 				"Performance",
 				"Null-Safety",
 				"JUnit5-Migration",
 				"Try-with-Resources",
-				"Lambda-Vereinfachung",
+				"Lambda-Simplification",
 				"Encoding",
 				"String-API");
 	}

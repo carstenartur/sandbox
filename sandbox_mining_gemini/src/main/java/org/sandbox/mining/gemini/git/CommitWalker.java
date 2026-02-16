@@ -56,7 +56,7 @@ public class CommitWalker implements Closeable {
 	 * Returns the next batch of commits after the given commit hash.
 	 *
 	 * @param afterCommitHash the commit hash to start after (null for beginning)
-	 * @param startDate       only include commits after this date (ISO format, may be null)
+	 * @param startDate       only include commits after this date ({@code yyyy-MM-dd} format, may be null)
 	 * @param batchSize       maximum number of commits to return
 	 * @return list of commits in chronological order
 	 * @throws IOException if a Git operation fails
