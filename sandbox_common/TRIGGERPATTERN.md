@@ -577,7 +577,21 @@ The following `.sandbox-hint` files are bundled with the engine:
 ### Guard Functions Reference
 
 Guard functions are boolean predicates that can be used in rule conditions to filter matches.
-They are specified using the `::` operator in the DSL syntax.
+They are specified using the `::` operator to separate the pattern from the guard expression.
+
+**Multiple guards can be combined in two ways:**
+1. **On the same line using logical operators (`&&`, `||`):**
+   ```
+   $x.toString() :: sourceVersionGE(11) && isNullable($x, 5)
+   ```
+
+2. **On separate lines using `::` continuation (automatically combined with AND):**
+   ```
+   $x.toString() :: sourceVersionGE(11)
+   :: isNullable($x, 5)
+   ```
+
+**Note:** Do NOT use multiple `::` on the same line - use `&&` or `||` instead.
 
 #### Built-in Guards
 
@@ -622,13 +636,13 @@ The `isNullable` and `isNonNull` guards use the `NullabilityGuard` class to perf
 ```
 // Only suggest String.valueOf() when null is a realistic possibility
 "Consider using String.valueOf() for null safety":
-$x.toString() :: sourceVersionGE(11) :: isNullable($x, 5)
+$x.toString() :: sourceVersionGE(11) && isNullable($x, 5)
 => String.valueOf($x)
 ;;
 
 // Exclude StringBuilder (always non-null after initialization)
 "Use explicit null-check":
-$x.toString() :: isNullable($x) :: !isNonNull($x)
+$x.toString() :: isNullable($x) && !isNonNull($x)
 => ($x != null) ? $x.toString() : "null"
 ;;
 
