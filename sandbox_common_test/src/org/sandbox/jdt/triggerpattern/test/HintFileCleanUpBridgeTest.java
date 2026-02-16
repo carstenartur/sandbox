@@ -177,12 +177,12 @@ public class HintFileCleanUpBridgeTest {
 
 	@Test
 	public void testRulesWithImportDirectives() throws Exception {
+		// FQN-based inference: imports are automatically derived from FQNs in patterns
 		String hintContent = """
 				<!id: import-test>
 
 				$x.equals($y)
 				=> java.util.Objects.equals($x, $y)
-				   addImport java.util.Objects
 				;;
 				"""; //$NON-NLS-1$
 
@@ -193,7 +193,7 @@ public class HintFileCleanUpBridgeTest {
 		assertFalse(hintFile.getRules().isEmpty());
 
 		TransformationRule rule = hintFile.getRules().get(0);
-		assertTrue(rule.hasImportDirective(), "Rule should have import directives"); //$NON-NLS-1$
+		assertTrue(rule.hasImportDirective(), "Rule should have import directives inferred from FQN"); //$NON-NLS-1$
 		assertTrue(rule.getImportDirective().getAddImports().contains("java.util.Objects")); //$NON-NLS-1$
 	}
 
