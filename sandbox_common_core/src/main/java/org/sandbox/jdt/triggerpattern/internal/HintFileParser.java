@@ -77,6 +77,10 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  */
 public final class HintFileParser {
 	
+	private record GuardSplit(String patternText, String guardText) {
+		boolean hasGuard() { return guardText != null; }
+	}
+	
 	private final GuardExpressionParser guardParser = new GuardExpressionParser();
 	
 	/**
@@ -286,10 +290,10 @@ public final class HintFileParser {
 		}
 		
 		// Parse source pattern line (may have :: guard)
-		String[] sourceAndGuard = splitGuard(firstLine);
-		sourcePatternText = sourceAndGuard[0].trim();
-		if (sourceAndGuard[1] != null) {
-			sourceGuard = guardParser.parse(sourceAndGuard[1].trim());
+		GuardSplit sourceAndGuard = splitGuard(firstLine);
+		sourcePatternText = sourceAndGuard.patternText().trim();
+		if (sourceAndGuard.hasGuard()) {
+			sourceGuard = guardParser.parse(sourceAndGuard.guardText().trim());
 		}
 		ruleLineIdx++;
 		
@@ -322,12 +326,12 @@ public final class HintFileParser {
 			}
 			
 			String altContent = altLine.substring(2).trim();
-			String[] altAndGuard = splitGuard(altContent);
-			String replacementPattern = altAndGuard[0].trim();
+			GuardSplit altAndGuard = splitGuard(altContent);
+			String replacementPattern = altAndGuard.patternText().trim();
 			GuardExpression altGuard = null;
 			
-			if (altAndGuard[1] != null) {
-				String guardText = altAndGuard[1].trim();
+			if (altAndGuard.hasGuard()) {
+				String guardText = altAndGuard.guardText().trim();
 				if ("otherwise".equals(guardText)) { //$NON-NLS-1$
 					altGuard = null; // otherwise = unconditional
 				} else {
@@ -366,9 +370,9 @@ public final class HintFileParser {
 	 * Splits a line into pattern text and guard expression at the {@code ::} separator.
 	 * 
 	 * @param line the line to split
-	 * @return array of [patternText, guardText] where guardText may be null
+	 * @return a {@link GuardSplit} with the pattern text and optional guard text
 	 */
-	private String[] splitGuard(String line) {
+	private GuardSplit splitGuard(String line) {
 		// Find :: that is not inside parentheses or quotes
 		int depth = 0;
 		boolean inQuote = false;
@@ -382,14 +386,13 @@ public final class HintFileParser {
 				} else if (ch == ')') {
 					depth--;
 				} else if (depth == 0 && ch == ':' && line.charAt(c + 1) == ':') {
-					return new String[] {
+					return new GuardSplit(
 							line.substring(0, c),
-							line.substring(c + 2)
-					};
+							line.substring(c + 2));
 				}
 			}
 		}
-		return new String[] { line, null };
+		return new GuardSplit(line, null);
 	}
 	
 	/**

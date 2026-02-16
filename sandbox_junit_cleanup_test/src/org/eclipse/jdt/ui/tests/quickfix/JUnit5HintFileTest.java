@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 
@@ -62,7 +63,7 @@ public class JUnit5HintFileTest {
 	@Test
 	public void testJUnit5Metadata() throws Exception {
 		HintFile hintFile = loadHintFile();
-		assertEquals("warning", hintFile.getSeverity()); //$NON-NLS-1$
+		assertEquals(Severity.WARNING, hintFile.getSeverity());
 		assertTrue(hintFile.getMinJavaVersion() > 0,
 				"junit5 library should have a minimum Java version"); //$NON-NLS-1$
 	}

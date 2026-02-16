@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.api;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +35,23 @@ import org.eclipse.jdt.core.dom.ASTNode;
  * @since 1.2.2
  */
 public final class Match {
+	/**
+	 * Represents a type-safe placeholder binding.
+	 * 
+	 * @since 1.2.6
+	 */
+	public sealed interface Binding {
+		/**
+		 * A binding to a single AST node.
+		 */
+		record SingleNode(ASTNode node) implements Binding {}
+		
+		/**
+		 * A binding to a list of AST nodes (for variadic/multi-placeholders like $args$).
+		 */
+		record NodeList(List<ASTNode> nodes) implements Binding {}
+	}
+
 	private final ASTNode matchedNode;
 	private final Map<String, Object> bindings;  // Changed to Object to support both ASTNode and List<ASTNode>
 	private final int offset;
@@ -101,6 +119,38 @@ public final class Match {
 		return Collections.emptyList();
 	}
 	
+	/**
+	 * Returns the placeholder bindings as type-safe {@link Binding} objects.
+	 * 
+	 * @return an unmodifiable map of placeholder names to their typed bindings
+	 * @since 1.2.6
+	 */
+	public Map<String, Binding> getTypedBindings() {
+		Map<String, Binding> typed = new LinkedHashMap<>();
+		for (Map.Entry<String, Object> entry : bindings.entrySet()) {
+			Object value = entry.getValue();
+			if (value instanceof ASTNode astNode) {
+				typed.put(entry.getKey(), new Binding.SingleNode(astNode));
+			} else if (value instanceof List<?> list) {
+				@SuppressWarnings("unchecked")
+				List<ASTNode> nodeList = (List<ASTNode>) list;
+				typed.put(entry.getKey(), new Binding.NodeList(Collections.unmodifiableList(nodeList)));
+			}
+		}
+		return Collections.unmodifiableMap(typed);
+	}
+
+	/**
+	 * Checks if a binding exists for the given placeholder name.
+	 * 
+	 * @param placeholderName the placeholder name including $ marker
+	 * @return {@code true} if a binding exists
+	 * @since 1.2.6
+	 */
+	public boolean hasBinding(String placeholderName) {
+		return bindings.containsKey(placeholderName);
+	}
+
 	/**
 	 * Returns the character offset of the match in the source.
 	 * 

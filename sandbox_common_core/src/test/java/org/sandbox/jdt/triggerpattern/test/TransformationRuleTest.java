@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
@@ -108,10 +109,10 @@ public class TransformationRuleTest {
 		
 		// Java 17: first alternative should match
 		GuardContext ctx = createContextWithVersion("17"); //$NON-NLS-1$
-		RewriteAlternative matched = rule.findMatchingAlternative(ctx);
+		Optional<RewriteAlternative> matched = rule.findMatchingAlternative(ctx);
 		
-		assertNotNull(matched);
-		assertEquals("new String($bytes, StandardCharsets.UTF_8)", matched.replacementPattern());
+		assertTrue(matched.isPresent());
+		assertEquals("new String($bytes, StandardCharsets.UTF_8)", matched.get().replacementPattern());
 	}
 	
 	@Test
@@ -128,11 +129,11 @@ public class TransformationRuleTest {
 		
 		// Java 8: first doesn't match, otherwise catches
 		GuardContext ctx = createContextWithVersion("1.8"); //$NON-NLS-1$
-		RewriteAlternative matched = rule.findMatchingAlternative(ctx);
+		Optional<RewriteAlternative> matched = rule.findMatchingAlternative(ctx);
 		
-		assertNotNull(matched);
-		assertTrue(matched.isOtherwise());
-		assertEquals("new String($bytes, Charset.forName(\"UTF-8\"))", matched.replacementPattern());
+		assertTrue(matched.isPresent());
+		assertTrue(matched.get().isOtherwise());
+		assertEquals("new String($bytes, Charset.forName(\"UTF-8\"))", matched.get().replacementPattern());
 	}
 	
 	@Test
@@ -148,9 +149,9 @@ public class TransformationRuleTest {
 		
 		// Java 11: neither guard matches
 		GuardContext ctx = createContextWithVersion("11"); //$NON-NLS-1$
-		RewriteAlternative matched = rule.findMatchingAlternative(ctx);
+		Optional<RewriteAlternative> matched = rule.findMatchingAlternative(ctx);
 		
-		assertNull(matched, "No alternative should match for Java 11");
+		assertTrue(matched.isEmpty(), "No alternative should match for Java 11");
 	}
 	
 	@Test
