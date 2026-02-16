@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Sandbox Mining Gemini - Dashboard</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #2c3e50;
+            --secondary: #2ecc71;
+            --light-bg: #f8f9fa;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: var(--light-bg);
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        h1 {
+            color: var(--primary-dark);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 0.5rem;
+        }
+        
+        .status-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+        
+        .status-box h2 {
+            color: #856404;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-box p {
+            color: #856404;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-list {
+            margin: 2rem 0;
+        }
+        
+        .info-list h3 {
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+        }
+        
+        .info-list ul {
+            list-style-position: inside;
+            padding-left: 1rem;
+        }
+        
+        .info-list li {
+            margin-bottom: 0.5rem;
+            line-height: 1.8;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+        
+        .back-link:hover {
+            background: var(--primary-dark);
+        }
+        
+        code {
+            background: var(--light-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Sandbox Mining Gemini - Dashboard</h1>
+        
+        <div class="status-box">
+            <h2>⏳ Mining Has Not Run Yet</h2>
+            <p>The nightly workflow will populate this page with Gemini AI commit analysis results.</p>
+            <p>Check back after the first scheduled run (nightly at 2 AM UTC) or when manually triggered.</p>
+        </div>
+        
+        <div class="info-list">
+            <h3>What is Gemini Mining?</h3>
+            <ul>
+                <li><strong>Automated Commit Analysis:</strong> Uses Google's Gemini AI to analyze commit patterns</li>
+                <li><strong>Refactoring Opportunities:</strong> Identifies potential code improvements and cleanup opportunities</li>
+                <li><strong>DSL Rule Proposals:</strong> Suggests new cleanup rules based on discovered patterns</li>
+                <li><strong>Traffic Light System:</strong> Evaluates proposals with GREEN/YELLOW/RED ratings</li>
+            </ul>
+        </div>
+        
+        <div class="info-list">
+            <h3>How It Works</h3>
+            <ul>
+                <li>The <code>gemini-mining.yml</code> workflow runs nightly</li>
+                <li>Analyzes recent commits from configured repositories</li>
+                <li>Gemini AI evaluates each commit for refactoring patterns</li>
+                <li>Results are compiled into this dashboard</li>
+                <li>Proposals can be applied via <code>apply-mining-proposal.yml</code> workflow</li>
+            </ul>
+        </div>
+        
+        <a href="../" class="back-link">← Back to Main Dashboard</a>
+    </div>
+</body>
+</html>
