@@ -358,7 +358,7 @@ See `org.sandbox.jdt.triggerpattern.examples.ExampleHintProvider` for working ex
 ### Example: JUnit Migration Using New Pattern Kinds
 
 For simple migrations, prefer the declarative `.sandbox-hint` DSL with FQN-based patterns
-(see [`.sandbox-hint` DSL File Format](#sandbox-hint-dsl-file-format) above).
+(see [`.sandbox-hint` DSL File Format](#sandbox-hint-dsl-file-format) below).
 The Java API is only needed for complex transformations that cannot be expressed declaratively.
 
 ```java
@@ -565,7 +565,7 @@ The following `.sandbox-hint` files are bundled with the engine:
 
 | File | Rules | Description |
 |------|-------|-------------|
-| `junit5.sandbox-hint` | 24 | JUnit 4 → 5 assertion migration |
+| `junit5.sandbox-hint` | 24 | JUnit 4 → 5 migration (assertions, annotations, etc.) |
 | `assume5.sandbox-hint` | 4 | JUnit 4 Assume → JUnit 5 Assumptions |
 | `annotations5.sandbox-hint` | 6 | JUnit 4 → 5 annotation migration |
 | `encoding.sandbox-hint` | 7 | String charset → `StandardCharsets` |
