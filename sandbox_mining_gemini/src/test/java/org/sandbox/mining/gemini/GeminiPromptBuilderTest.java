@@ -35,12 +35,12 @@ class GeminiPromptBuilderTest {
 				"Refactor ArrayList to List.of");
 
 		assertNotNull(prompt);
-		assertTrue(prompt.contains("DSL-Erklärung"));
-		assertTrue(prompt.contains("Bestehende DSL-Regeln"));
+		assertTrue(prompt.contains("DSL Explanation"));
+		assertTrue(prompt.contains("Existing DSL Rules"));
 		assertTrue(prompt.contains("existing rule context"));
-		assertTrue(prompt.contains("Bestehende Kategorien"));
+		assertTrue(prompt.contains("Existing Categories"));
 		assertTrue(prompt.contains("Collections"));
-		assertTrue(prompt.contains("Commit-Nachricht"));
+		assertTrue(prompt.contains("Commit Message"));
 		assertTrue(prompt.contains("Refactor ArrayList to List.of"));
 		assertTrue(prompt.contains("Diff"));
 		assertTrue(prompt.contains("-old"));
@@ -53,7 +53,7 @@ class GeminiPromptBuilderTest {
 		String prompt = builder.buildPrompt(null, null, "diff content", "commit msg");
 
 		assertNotNull(prompt);
-		assertTrue(prompt.contains("(keine)"));
+		assertTrue(prompt.contains("(none)"));
 		assertTrue(prompt.contains("diff content"));
 	}
 

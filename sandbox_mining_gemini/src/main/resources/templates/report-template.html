@@ -303,6 +303,13 @@
                     dslBtn.addEventListener('click', function() { showDsl(evaluation); });
                     tdActions.appendChild(dslBtn);
                 }
+                if (evaluation.trafficLight === 'RED' && evaluation.languageChangeNeeded) {
+                    var issueBtn = document.createElement('button');
+                    issueBtn.className = 'action-btn issue';
+                    issueBtn.textContent = '\uD83D\uDCCB Issue';
+                    issueBtn.addEventListener('click', function() { createIssue(evaluation); });
+                    tdActions.appendChild(issueBtn);
+                }
                 row.appendChild(tdActions);
 
                 tbody.appendChild(row);
@@ -329,6 +336,28 @@
             document.getElementById('modal-title').textContent = 'DSL Rule - ' + (evaluation.commitHash || '').substring(0, 8);
             document.getElementById('modal-content').textContent = evaluation.dslRule || '(no DSL rule)';
             document.getElementById('dsl-modal').classList.add('active');
+        }
+
+        function createIssue(evaluation) {
+            var title = 'DSL Extension: ' + (evaluation.summary || evaluation.category || 'Unknown');
+            var body = '## DSL Extension Request\n\n'
+                + '**Source commit:** `' + (evaluation.commitHash || '') + '`\n'
+                + '**Repository:** ' + (evaluation.repoUrl || '') + '\n'
+                + '**Category:** ' + (evaluation.category || '-') + '\n'
+                + '**Traffic Light:** RED\n\n'
+                + '### Summary\n' + (evaluation.summary || '-') + '\n\n'
+                + '### Language Change Needed\n' + (evaluation.languageChangeNeeded || '-') + '\n\n';
+            if (evaluation.dslRuleAfterChange) {
+                body += '### Proposed DSL Rule (after extension)\n```\n' + evaluation.dslRuleAfterChange + '\n```\n\n';
+            }
+            body += '---\n_Auto-generated from Gemini Mining analysis_\n';
+            var params = new URLSearchParams({
+                title: title,
+                body: body,
+                labels: 'dsl-extension,mining'
+            });
+            var url = 'https://github.com/carstenartur/sandbox/issues/new?' + params.toString();
+            window.open(url, '_blank');
         }
 
         document.getElementById('modal-close').addEventListener('click', function() {
