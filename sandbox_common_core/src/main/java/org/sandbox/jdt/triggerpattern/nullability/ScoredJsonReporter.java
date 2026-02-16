@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.nullability;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Generates a JSON report from scored match entries.
@@ -32,6 +33,7 @@ public class ScoredJsonReporter {
 	 * @return the JSON content
 	 */
 	public String generate(List<ScoredMatchEntry> entries) {
+		Objects.requireNonNull(entries, "entries"); //$NON-NLS-1$
 		StringBuilder sb = new StringBuilder();
 		sb.append("[\n"); //$NON-NLS-1$
 

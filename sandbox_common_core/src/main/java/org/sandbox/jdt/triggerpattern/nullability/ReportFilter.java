@@ -44,8 +44,13 @@ public class ReportFilter {
 	 *
 	 * @param minTrivialChange minimum score (0-10)
 	 * @return this filter for chaining
+	 * @throws IllegalArgumentException if {@code minTrivialChange} is not between 0 and 10
 	 */
 	public ReportFilter withMinTrivialChange(int minTrivialChange) {
+		if (minTrivialChange < 0 || minTrivialChange > 10) {
+			throw new IllegalArgumentException(
+					"minTrivialChange must be between 0 and 10: " + minTrivialChange); //$NON-NLS-1$
+		}
 		this.minTrivialChange = minTrivialChange;
 		return this;
 	}
@@ -55,8 +60,15 @@ public class ReportFilter {
 	 *
 	 * @param severities the severity levels to include
 	 * @return this filter for chaining
+	 * @throws IllegalArgumentException if {@code severities} is {@code null} or empty
 	 */
 	public ReportFilter withSeverities(Set<MatchSeverity> severities) {
+		if (severities == null) {
+			throw new IllegalArgumentException("severities must not be null"); //$NON-NLS-1$
+		}
+		if (severities.isEmpty()) {
+			throw new IllegalArgumentException("severities must not be empty"); //$NON-NLS-1$
+		}
 		this.includedSeverities = EnumSet.copyOf(severities);
 		return this;
 	}

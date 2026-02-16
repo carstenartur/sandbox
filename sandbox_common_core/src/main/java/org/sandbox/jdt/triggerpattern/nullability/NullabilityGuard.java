@@ -282,8 +282,8 @@ public class NullabilityGuard {
 			}
 		}
 
-		// Check if it's a Map.get() call → nullable
-		if (isCollectionGetCall(name)) {
+		// Check if initializer is a Map.get() call → nullable
+		if (finder.initializer != null && isCollectionGetCall(finder.initializer)) {
 			return new NullabilityResult(NullStatus.NULLABLE,
 					"variable may be result of Map.get() which can return null", //$NON-NLS-1$
 					List.of());
@@ -292,22 +292,31 @@ public class NullabilityGuard {
 		return NullabilityResult.UNKNOWN;
 	}
 
-	private boolean isCollectionGetCall(SimpleName name) {
-		ASTNode parent = name.getParent();
-		if (parent instanceof MethodInvocation mi && mi.getExpression() == name) {
-			String methodName = mi.getName().getIdentifier();
-			if ("get".equals(methodName)) { //$NON-NLS-1$
-				ITypeBinding receiverType = name.resolveTypeBinding();
-				if (receiverType != null) {
-					String typeName = receiverType.getQualifiedName();
-					return typeName.startsWith("java.util.Map") //$NON-NLS-1$
-							|| typeName.startsWith("java.util.HashMap") //$NON-NLS-1$
-							|| typeName.startsWith("java.util.LinkedHashMap") //$NON-NLS-1$
-							|| typeName.startsWith("java.util.TreeMap"); //$NON-NLS-1$
-				}
-			}
+	private boolean isCollectionGetCall(Expression initializer) {
+		if (!(initializer instanceof MethodInvocation mi)) {
+			return false;
 		}
-		return false;
+
+		String methodName = mi.getName().getIdentifier();
+		if (!"get".equals(methodName)) { //$NON-NLS-1$
+			return false;
+		}
+
+		Expression receiver = mi.getExpression();
+		if (receiver == null) {
+			return false;
+		}
+
+		ITypeBinding receiverType = receiver.resolveTypeBinding();
+		if (receiverType == null) {
+			return false;
+		}
+
+		String typeName = receiverType.getQualifiedName();
+		return typeName.startsWith("java.util.Map") //$NON-NLS-1$
+				|| typeName.startsWith("java.util.HashMap") //$NON-NLS-1$
+				|| typeName.startsWith("java.util.LinkedHashMap") //$NON-NLS-1$
+				|| typeName.startsWith("java.util.TreeMap"); //$NON-NLS-1$
 	}
 
 	// ---- Stage 3: Contextual null-check analysis (SpotBugs-style) ----

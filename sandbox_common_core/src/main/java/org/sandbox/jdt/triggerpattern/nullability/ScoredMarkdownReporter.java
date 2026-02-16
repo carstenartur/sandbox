@@ -20,6 +20,7 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Generates a severity-grouped Markdown report from scored match entries.
@@ -62,6 +63,7 @@ public class ScoredMarkdownReporter {
 	 * @return the Markdown content
 	 */
 	public String generate(List<ScoredMatchEntry> entries) {
+		Objects.requireNonNull(entries, "entries"); //$NON-NLS-1$
 		StringBuilder sb = new StringBuilder();
 		sb.append("# Refactoring Mining Report \u2014 ").append(LocalDate.now()).append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
 

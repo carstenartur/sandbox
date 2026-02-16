@@ -317,6 +317,22 @@ class NullabilityGuardSystemTest {
 			}
 		}
 
+		@Test
+		void testMinTrivialChangeValidation() {
+			assertThrows(IllegalArgumentException.class,
+					() -> new ReportFilter().withMinTrivialChange(-1));
+			assertThrows(IllegalArgumentException.class,
+					() -> new ReportFilter().withMinTrivialChange(11));
+		}
+
+		@Test
+		void testSeveritiesValidation() {
+			assertThrows(IllegalArgumentException.class,
+					() -> new ReportFilter().withSeverities(null));
+			assertThrows(IllegalArgumentException.class,
+					() -> new ReportFilter().withSeverities(java.util.EnumSet.noneOf(MatchSeverity.class)));
+		}
+
 		private List<ScoredMatchEntry> createSampleEntries() {
 			return List.of(
 					new ScoredMatchEntry("repo", "rule1", "File1.java", 10, "sb.toString()", null,
@@ -388,6 +404,12 @@ class NullabilityGuardSystemTest {
 			assertTrue(report.contains("Refactoring Mining Report"));
 			assertTrue(report.contains("Summary"));
 		}
+
+		@Test
+		void testNullEntriesThrows() {
+			ScoredMarkdownReporter reporter = new ScoredMarkdownReporter();
+			assertThrows(NullPointerException.class, () -> reporter.generate(null));
+		}
 	}
 
 	// ---- ScoredJsonReporter tests ----
@@ -432,6 +454,12 @@ class NullabilityGuardSystemTest {
 			ScoredJsonReporter reporter = new ScoredJsonReporter();
 			String json = reporter.generate(List.of());
 			assertEquals("[\n]\n", json);
+		}
+
+		@Test
+		void testNullEntriesThrows() {
+			ScoredJsonReporter reporter = new ScoredJsonReporter();
+			assertThrows(NullPointerException.class, () -> reporter.generate(null));
 		}
 	}
 
