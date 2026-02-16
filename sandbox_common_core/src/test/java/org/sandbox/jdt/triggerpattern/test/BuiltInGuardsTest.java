@@ -381,16 +381,4 @@ public class BuiltInGuardsTest {
 		});
 		return result[0];
 	}
-
-	private ASTNode findMethodInvocationInNode(ASTNode node) {
-		ASTNode[] result = new ASTNode[1];
-		node.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
-			@Override
-			public boolean visit(org.eclipse.jdt.core.dom.MethodInvocation mi) {
-				result[0] = mi;
-				return false;
-			}
-		});
-		return result[0];
-	}
 }

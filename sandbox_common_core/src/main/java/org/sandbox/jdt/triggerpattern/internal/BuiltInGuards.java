@@ -66,6 +66,9 @@ import org.sandbox.jdt.triggerpattern.nullability.NullStatus;
  */
 public final class BuiltInGuards {
 
+	/** Cached NullabilityGuard instance to avoid repeated initialization. */
+	private static final NullabilityGuard NULLABILITY_GUARD = new NullabilityGuard();
+
 	private BuiltInGuards() {
 		// utility class
 	}
@@ -522,8 +525,7 @@ public final class BuiltInGuards {
 		}
 
 		// Analyze nullability
-		NullabilityGuard guard = new NullabilityGuard();
-		NullabilityResult result = guard.analyze(expression);
+		NullabilityResult result = NULLABILITY_GUARD.analyze(expression);
 
 		// Map NullStatus to score
 		int score = mapNullStatusToScore(result.status());
@@ -567,8 +569,7 @@ public final class BuiltInGuards {
 		}
 
 		// Analyze nullability
-		NullabilityGuard guard = new NullabilityGuard();
-		NullabilityResult result = guard.analyze(expression);
+		NullabilityResult result = NULLABILITY_GUARD.analyze(expression);
 
 		return result.status() == NullStatus.NON_NULL;
 	}
