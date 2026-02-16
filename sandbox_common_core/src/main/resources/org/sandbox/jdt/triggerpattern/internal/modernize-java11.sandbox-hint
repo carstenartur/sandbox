@@ -38,7 +38,8 @@ $str.length() == 0 :: sourceVersionGE(6)
 ;;
 
 // $x.toString() → String.valueOf($x) (null-safe alternative)
-// Hint-only: warns about potential NPE
+// Only suggests when null is a realistic possibility
 "Consider using String.valueOf() for null safety":
-$x.toString()
+$x.toString() :: sourceVersionGE(11) && isNullable($x, 5)
+=> String.valueOf($x)
 ;;

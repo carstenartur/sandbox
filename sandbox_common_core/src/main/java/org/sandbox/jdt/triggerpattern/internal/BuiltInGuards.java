@@ -48,6 +48,9 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.nullability.NullabilityGuard;
+import org.sandbox.jdt.triggerpattern.nullability.NullabilityResult;
+import org.sandbox.jdt.triggerpattern.nullability.NullStatus;
 
 /**
  * Built-in guard function implementations for the trigger pattern engine.
@@ -62,6 +65,9 @@ import org.sandbox.jdt.triggerpattern.api.GuardFunction;
  * @since 1.3.2
  */
 public final class BuiltInGuards {
+
+	/** Cached NullabilityGuard instance to avoid repeated initialization. */
+	private static final NullabilityGuard NULLABILITY_GUARD = new NullabilityGuard();
 
 	private BuiltInGuards() {
 		// utility class
@@ -99,6 +105,10 @@ public final class BuiltInGuards {
 		// Negated pattern guards
 		guards.put("contains", BuiltInGuards::evaluateContains); //$NON-NLS-1$
 		guards.put("notContains", BuiltInGuards::evaluateNotContains); //$NON-NLS-1$
+
+		// Nullability guards
+		guards.put("isNullable", BuiltInGuards::evaluateIsNullable); //$NON-NLS-1$
+		guards.put("isNonNull", BuiltInGuards::evaluateIsNonNull); //$NON-NLS-1$
 	}
 
 	/**
@@ -482,6 +492,101 @@ public final class BuiltInGuards {
 	 */
 	private static boolean evaluateNotContains(GuardContext ctx, Object... args) {
 		return !evaluateContains(ctx, args);
+	}
+
+	/**
+	 * Checks if a placeholder's expression is potentially nullable.
+	 *
+	 * <p>With one argument: returns true if the expression is not provably NON_NULL.</p>
+	 * <p>With two arguments: computes a nullability score (0-10) and returns true
+	 * only if score >= minScore. Score mapping:</p>
+	 * <ul>
+	 *   <li>NON_NULL → 0 (definitely safe, no change needed)</li>
+	 *   <li>UNKNOWN → 5 (undetermined)</li>
+	 *   <li>POTENTIALLY_NULLABLE → 7 (there are null-checks nearby)</li>
+	 *   <li>NULLABLE → 10 (high risk, SpotBugs-style: null-check found after usage)</li>
+	 * </ul>
+	 *
+	 * Args: [placeholderName] or [placeholderName, minScore]
+	 */
+	private static boolean evaluateIsNullable(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+
+		// Cast to Expression, return false if not
+		if (!(node instanceof Expression expression)) {
+			return false;
+		}
+
+		// Analyze nullability
+		NullabilityResult result = NULLABILITY_GUARD.analyze(expression);
+
+		// Map NullStatus to score
+		int score = mapNullStatusToScore(result.status());
+
+		// With one argument: return true if NOT NON_NULL
+		if (args.length == 1) {
+			return result.status() != NullStatus.NON_NULL;
+		}
+
+		// With two arguments: compare score with minScore
+		try {
+			int minScore = Integer.parseInt(args[1].toString());
+			return score >= minScore;
+		} catch (NumberFormatException e) {
+			// Invalid minScore, fall back to single-argument behavior
+			return result.status() != NullStatus.NON_NULL;
+		}
+	}
+
+	/**
+	 * Checks if a placeholder's expression is provably non-null.
+	 *
+	 * <p>Returns true if the {@code NullabilityGuard.analyze()} determines
+	 * the expression is {@code NON_NULL}.</p>
+	 *
+	 * Args: [placeholderName]
+	 */
+	private static boolean evaluateIsNonNull(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+
+		// Cast to Expression, return false if not
+		if (!(node instanceof Expression expression)) {
+			return false;
+		}
+
+		// Analyze nullability
+		NullabilityResult result = NULLABILITY_GUARD.analyze(expression);
+
+		return result.status() == NullStatus.NON_NULL;
+	}
+
+	/**
+	 * Maps a NullStatus to a numeric score for comparison.
+	 * 
+	 * @param status the null status
+	 * @return score from 0 (definitely non-null) to 10 (definitely nullable)
+	 */
+	private static int mapNullStatusToScore(NullStatus status) {
+		return switch (status) {
+			case NON_NULL -> 0;
+			case UNKNOWN -> 5;
+			case POTENTIALLY_NULLABLE -> 7;
+			case NULLABLE -> 10;
+		};
 	}
 
 	// ---- Helper methods ----
