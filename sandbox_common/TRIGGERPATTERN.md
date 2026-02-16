@@ -357,33 +357,41 @@ See `org.sandbox.jdt.triggerpattern.examples.ExampleHintProvider` for working ex
 
 ### Example: JUnit Migration Using New Pattern Kinds
 
+For simple migrations, prefer the declarative `.sandbox-hint` DSL with FQN-based patterns
+(see [`.sandbox-hint` DSL File Format](#sandbox-hint-dsl-file-format) above).
+The Java API is only needed for complex transformations that cannot be expressed declaratively.
+
 ```java
 // Migrate @Before annotations to @BeforeEach
-@TriggerPattern(value = "@Before", kind = PatternKind.ANNOTATION)
+// Note: For simple annotation migrations, prefer the DSL:
+//   @org.junit.Before => @org.junit.jupiter.api.BeforeEach ;;
+@TriggerPattern(value = "@org.junit.Before", kind = PatternKind.ANNOTATION)
 @Hint(displayName = "Migrate to JUnit 5 @BeforeEach")
 public static IJavaCompletionProposal migrateBeforeAnnotation(HintContext ctx) {
-    ImportRewrite imports = ctx.getImportRewrite();
-    imports.addImport("org.junit.jupiter.api.BeforeEach");
-    imports.removeImport("org.junit.Before");
-    
     // Replace @Before with @BeforeEach
     AST ast = ctx.getASTRewrite().getAST();
     MarkerAnnotation newAnnotation = ast.newMarkerAnnotation();
     newAnnotation.setTypeName(ast.newName("BeforeEach"));
-    
+
     ctx.getASTRewrite().replace(ctx.getMatch().getMatchedNode(), newAnnotation, null);
+
+    // Import management
+    ImportRewrite imports = ctx.getImportRewrite();
+    imports.addImport("org.junit.jupiter.api.BeforeEach");
+    imports.removeImport("org.junit.Before");
+
     return createProposal(ctx);
 }
 
 // Migrate Assert.assertEquals to Assertions.assertEquals
-@TriggerPattern(value = "Assert.assertEquals($a, $b)", kind = PatternKind.METHOD_CALL)
+// Note: For simple method migrations, prefer the DSL:
+//   org.junit.Assert.assertEquals($a, $b)
+//   => org.junit.jupiter.api.Assertions.assertEquals($a, $b) ;;
+@TriggerPattern(value = "org.junit.Assert.assertEquals($a, $b)", kind = PatternKind.METHOD_CALL)
 @Hint(displayName = "Migrate to JUnit 5 Assertions")
 public static IJavaCompletionProposal migrateAssertEquals(HintContext ctx) {
     Map<String, ASTNode> bindings = ctx.getMatch().getBindings();
-    
-    ImportRewrite imports = ctx.getImportRewrite();
-    imports.addImport("org.junit.jupiter.api.Assertions");
-    
+
     // Create Assertions.assertEquals(a, b)
     AST ast = ctx.getASTRewrite().getAST();
     MethodInvocation newCall = ast.newMethodInvocation();
@@ -391,8 +399,12 @@ public static IJavaCompletionProposal migrateAssertEquals(HintContext ctx) {
     newCall.setName(ast.newSimpleName("assertEquals"));
     newCall.arguments().add(ASTNode.copySubtree(ast, bindings.get("$a")));
     newCall.arguments().add(ASTNode.copySubtree(ast, bindings.get("$b")));
-    
+
     ctx.getASTRewrite().replace(ctx.getMatch().getMatchedNode(), newCall, null);
+
+    ImportRewrite imports = ctx.getImportRewrite();
+    imports.addImport("org.junit.jupiter.api.Assertions");
+
     return createProposal(ctx);
 }
 
@@ -409,14 +421,14 @@ public static IJavaCompletionProposal removeUnusedImport(HintContext ctx) {
 @Hint(displayName = "Migrate to JUnit 5 @TempDir")
 public static IJavaCompletionProposal migrateTempFolder(HintContext ctx) {
     Map<String, ASTNode> bindings = ctx.getMatch().getBindings();
-    
+
     ImportRewrite imports = ctx.getImportRewrite();
     imports.addImport("org.junit.jupiter.api.io.TempDir");
-    
+
     // Create @TempDir Path name
     AST ast = ctx.getASTRewrite().getAST();
     // ... (field transformation logic)
-    
+
     return createProposal(ctx);
 }
 ```
@@ -432,6 +444,135 @@ The TriggerPattern engine consists of:
 5. **TriggerPatternQuickAssistProcessor**: Integrates with Eclipse Quick Assist
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation.
+
+## `.sandbox-hint` DSL File Format
+
+The `.sandbox-hint` file format is a declarative DSL for defining code transformation rules.
+Rules are loaded by the `HintFileParser` and executed by the TriggerPattern engine.
+
+### Basic Syntax
+
+```
+// Line comments start with //
+
+<!id: my-rules>
+<!description: Description of the rule set>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: migration, modernization>
+
+// Simple rule: source pattern => replacement pattern
+source_pattern
+=> replacement_pattern
+;;
+
+// Rule with guard
+source_pattern :: guard_expression
+=> replacement_pattern
+;;
+
+// Multi-rewrite rule (ordered alternatives)
+source_pattern :: guard1
+=> replacement1 :: condition1
+=> replacement2 :: otherwise
+;;
+
+// Hint-only (no rewrite, just a warning)
+"Warning message":
+source_pattern :: guard_expression
+;;
+```
+
+### FQN-Based Import Management
+
+Import directives are **automatically inferred** from fully qualified names (FQNs)
+in source and replacement patterns. Use FQNs directly in the patterns — the engine
+detects which imports to add and which to remove.
+
+**Example — JUnit assertion migration:**
+
+```
+org.junit.Assert.assertEquals($expected, $actual)
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)
+;;
+```
+
+The engine automatically infers:
+- **addImport** `org.junit.jupiter.api.Assertions` (FQN in replacement)
+- **removeImport** `org.junit.Assert` (FQN in source, not in replacement)
+- **replaceStaticImport** `org.junit.Assert` → `org.junit.jupiter.api.Assertions`
+
+**Example — Annotation migration:**
+
+```
+@org.junit.Before
+=> @org.junit.jupiter.api.BeforeEach
+;;
+```
+
+**Example — StandardCharsets migration with guard:**
+
+```
+new String($bytes, "UTF-8") :: sourceVersionGE(7)
+=> new String($bytes, java.nio.charset.StandardCharsets.UTF_8)
+;;
+```
+
+### Removed DSL Keywords
+
+The following explicit import directives were removed from the DSL syntax.
+They are no longer parsed by the engine. Use FQN-based patterns instead.
+
+| Removed keyword | Replacement |
+|-----------------|-------------|
+| `addImport pkg.Type` | Use FQN in replacement pattern: `pkg.Type.method(...)` |
+| `removeImport pkg.Type` | Use FQN in source pattern: `pkg.Type.method(...)` |
+| `addStaticImport pkg.Type` | Use FQN in replacement pattern |
+| `removeStaticImport pkg.Type` | Use FQN in source pattern |
+| `replaceStaticImport old.Type new.Type` | Use FQNs in both source and replacement patterns |
+
+**Before (old syntax, no longer supported):**
+```
+Assert.assertEquals($expected, $actual)
+=> Assertions.assertEquals($expected, $actual)
+addImport org.junit.jupiter.api.Assertions
+removeImport org.junit.Assert
+replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+;;
+```
+
+**After (current FQN syntax):**
+```
+org.junit.Assert.assertEquals($expected, $actual)
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)
+;;
+```
+
+### Metadata Directives
+
+| Directive | Description | Example |
+|-----------|-------------|---------|
+| `<!id: ...>` | Unique identifier for the hint file | `<!id: junit5>` |
+| `<!description: ...>` | Human-readable description | `<!description: JUnit 4 to 5 migration>` |
+| `<!severity: ...>` | Severity level | `<!severity: warning>` |
+| `<!minJavaVersion: ...>` | Minimum Java version required | `<!minJavaVersion: 8>` |
+| `<!tags: ...>` | Comma-separated tags | `<!tags: junit, testing, migration>` |
+| `<!include: ...>` | Include rules from another hint file | `<!include: other.hint.id>` |
+
+### Bundled Pattern Libraries
+
+The following `.sandbox-hint` files are bundled with the engine:
+
+| File | Rules | Description |
+|------|-------|-------------|
+| `junit5.sandbox-hint` | 24 | JUnit 4 → 5 assertion migration |
+| `assume5.sandbox-hint` | 4 | JUnit 4 Assume → JUnit 5 Assumptions |
+| `annotations5.sandbox-hint` | 6 | JUnit 4 → 5 annotation migration |
+| `encoding.sandbox-hint` | 7 | String charset → `StandardCharsets` |
+| `collections.sandbox-hint` | 7 | Collection API modernization (Java 9+) |
+| `modernize-java9.sandbox-hint` | 7 | Java 9+ API modernization |
+| `modernize-java11.sandbox-hint` | 7 | Java 11+ API modernization |
+| `performance.sandbox-hint` | 9 | Performance optimization patterns |
 
 ## Testing
 

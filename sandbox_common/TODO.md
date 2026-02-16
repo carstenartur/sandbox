@@ -230,18 +230,18 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] `ImportDirective` class with `addImport`, `removeImport`, `addStaticImport`, `removeStaticImport`
   - [x] Auto-detection from fully qualified names in replacement patterns
   - [x] Integration into `TransformationRule` and `HintFileParser`
-  - [x] DSL syntax: `addImport`/`removeImport`/`addStaticImport`/`removeStaticImport` directives in rules
+  - [x] ~~DSL syntax: `addImport`/`removeImport`/`addStaticImport`/`removeStaticImport` directives in rules~~ (superseded by FQN-based auto-detection)
 - [x] Phase 6.2: Pattern Libraries
   - [x] `HintFileRegistry` singleton for loading/managing `.sandbox-hint` files
   - [x] Support for classpath resources, strings, and readers
   - [x] Bundled library names defined (encoding, collections, modernize-java9, modernize-java11, performance, junit5)
   - [x] Bundled `.sandbox-hint` pattern library files created:
-    - [x] `encoding.sandbox-hint` — 7 StandardCharsets migration rules with guards and import directives
+    - [x] `encoding.sandbox-hint` — 7 StandardCharsets migration rules with guards and FQN-based import inference
     - [x] `collections.sandbox-hint` — 7 Collection API modernization rules (Java 9+)
     - [x] `modernize-java9.sandbox-hint` — 7 Java 9+ API modernization rules (Collections.unmodifiable, Optional, Stream.toList)
     - [x] `modernize-java11.sandbox-hint` — 7 Java 11+ API modernization rules
     - [x] `performance.sandbox-hint` — 9 performance optimization rules
-    - [x] `junit5.sandbox-hint` — 8 JUnit 4 → 5 migration rules with import directives
+    - [x] `junit5.sandbox-hint` — 24 JUnit 4 → 5 migration rules with FQN-based import inference
   - [x] `loadBundledLibraries()` loads all bundled files from classpath
 - [x] Phase 6.3: Negated Patterns
   - [x] `contains` guard: checks if text pattern occurs in enclosing method body
@@ -355,7 +355,7 @@ The following tracks the implementation status of all 7 phases from
 - [x] 5.5 Tests: `HintFileParserTest`, `PatternCompositionTest`, `WorkspaceHintFileTest`
 
 #### Phase 6: Improvements over NetBeans — ✅ COMPLETE
-- [x] 6.1 Import management: `ImportDirective`, auto-detection, `addImport`/`removeImport`/`addStaticImport`/`removeStaticImport`
+- [x] 6.1 Import management: `ImportDirective`, auto-detection from FQNs (explicit DSL directives removed in favor of FQN-based inference)
 - [x] 6.2 Pattern libraries: 6 bundled `.sandbox-hint` files (encoding, collections, modernize-java9, modernize-java11, performance, junit5)
 - [x] 6.3 Negated patterns: `contains`/`notContains` guards
 - [x] 6.4 Preview generation: `PreviewGenerator` with automatic placeholder substitution
@@ -381,12 +381,12 @@ The following tracks the implementation status of all 7 phases from
 
 ### Recently Implemented (v1.3.7)
 
-- [x] `replaceStaticImport` directive in `ImportDirective`, `HintFileParser`, `HintFileRewriteOperation`
-  - DSL syntax: `replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions`
+- [x] ~~`replaceStaticImport` directive in `ImportDirective`, `HintFileParser`, `HintFileRewriteOperation`~~ (superseded by FQN-based auto-detection)
+  - ~~DSL syntax: `replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions`~~ (removed — use FQN patterns instead)
   - Handles both wildcard (`import static Assert.*`) and specific member imports
 - [x] Per-bundle preference page: `encoding` and `junit5` bundles added to SandboxCodeTabPage
-- [x] `assume5.sandbox-hint`: 4 Assume→Assumptions migration rules (assumeTrue, assumeFalse) with replaceStaticImport; assumeNotNull/assumeNoException excluded (no direct JUnit 5 equivalents)
-- [x] `junit5.sandbox-hint`: All 24 rules updated with `replaceStaticImport` directives
+- [x] `assume5.sandbox-hint`: 4 Assume→Assumptions migration rules (assumeTrue, assumeFalse) with FQN-based patterns; assumeNotNull/assumeNoException excluded (no direct JUnit 5 equivalents)
+- [x] `junit5.sandbox-hint`: All 24 rules use FQN-based patterns for automatic import management
 - [x] Extension-point hint files (`encoding`, `junit5`) now loaded via `loadFromExtensions()` in HintFileFixCore
 - [x] Annotation rewrite support in `HintFileRewriteOperation` — annotations matched by DSL rules can now be replaced (MarkerAnnotation)
 - [x] `annotations5.sandbox-hint`: 6 annotation migration rules (`@Before→@BeforeEach`, `@After→@AfterEach`, `@BeforeClass→@BeforeAll`, `@AfterClass→@AfterAll`, `@Ignore→@Disabled`, `@Test→@Test`)
