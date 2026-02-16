@@ -65,7 +65,13 @@ public final class ImportDirective {
 
 	/**
 	 * Compiled regex for detecting FQN.method patterns (e.g., {@code org.junit.Assert.assertEquals}).
-	 * Group 1 = full match (pkg.Type.method), Group 3 = type part (pkg.Type), last segment = method.
+	 * 
+	 * <p>Capture groups:</p>
+	 * <ul>
+	 *   <li>Group 1: full match including method (e.g., {@code org.junit.Assert.assertEquals})</li>
+	 *   <li>Group 2: type part only (e.g., {@code org.junit.Assert})</li>
+	 *   <li>The method name is the last segment after the type part's last dot</li>
+	 * </ul>
 	 */
 	private static final java.util.regex.Pattern FQN_METHOD_PATTERN = java.util.regex.Pattern.compile(
 			"\\b(([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\.[a-zA-Z][A-Za-z0-9_]*)\\b"); //$NON-NLS-1$
@@ -362,8 +368,13 @@ public final class ImportDirective {
 	
 	/**
 	 * Extracts FQN.method patterns from a pattern string.
-	 * Returns a map of method name → FQN type.
-	 * E.g., for "org.junit.Assert.assertEquals($a, $b)" returns {"assertEquals" → "org.junit.Assert"}.
+	 * 
+	 * <p>Returns a map of method name to FQN type. For example,
+	 * for {@code "org.junit.Assert.assertEquals($a, $b)"} returns
+	 * {@code {"assertEquals" -> "org.junit.Assert"}}.</p>
+	 * 
+	 * @param pattern the pattern string to analyze
+	 * @return map of method name to FQN type
 	 */
 	private static Map<String, String> extractFqnMethods(String pattern) {
 		Map<String, String> result = new LinkedHashMap<>();
@@ -387,6 +398,16 @@ public final class ImportDirective {
 		}
 		return result;
 	}
+	/**
+	 * Extracts fully qualified type names from a pattern string.
+	 * 
+	 * <p>Recognizes patterns like {@code java.util.Objects} or
+	 * {@code java.nio.charset.StandardCharsets} — names that start with
+	 * lowercase package segments and end with an uppercase class name.</p>
+	 * 
+	 * @param pattern the pattern string to analyze
+	 * @return set of fully qualified type names found in the pattern
+	 */
 	private static Set<String> extractFqns(String pattern) {
 		Set<String> fqns = new HashSet<>();
 		if (pattern == null || pattern.isEmpty()) {
