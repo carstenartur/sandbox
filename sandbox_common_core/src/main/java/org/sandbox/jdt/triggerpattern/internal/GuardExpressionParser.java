@@ -47,8 +47,15 @@ import org.sandbox.jdt.triggerpattern.api.GuardExpression;
  */
 public final class GuardExpressionParser {
 	
-	private String input;
-	private int pos;
+	private static final class ParseState {
+		final String input;
+		int pos;
+		
+		ParseState(String input) {
+			this.input = input;
+			this.pos = 0;
+		}
+	}
 	
 	/**
 	 * Parses a guard expression string into a {@link GuardExpression} AST.
@@ -61,14 +68,13 @@ public final class GuardExpressionParser {
 		if (guardText == null || guardText.isBlank()) {
 			throw new IllegalArgumentException("Guard expression cannot be null or blank"); //$NON-NLS-1$
 		}
-		this.input = guardText.trim();
-		this.pos = 0;
+		ParseState state = new ParseState(guardText.trim());
 		
-		GuardExpression expr = parseOrExpr();
-		skipWhitespace();
-		if (pos < input.length()) {
+		GuardExpression expr = parseOrExpr(state);
+		skipWhitespace(state);
+		if (state.pos < state.input.length()) {
 			throw new IllegalArgumentException(
-					"Unexpected character at position " + pos + ": '" + input.charAt(pos) + "'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					"Unexpected character at position " + state.pos + ": '" + state.input.charAt(state.pos) + "'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 		return expr;
 	}
@@ -76,11 +82,11 @@ public final class GuardExpressionParser {
 	/**
 	 * or_expr = and_expr ('||' and_expr)*
 	 */
-	private GuardExpression parseOrExpr() {
-		GuardExpression left = parseAndExpr();
+	private GuardExpression parseOrExpr(ParseState state) {
+		GuardExpression left = parseAndExpr(state);
 		
-		while (matchToken("||")) { //$NON-NLS-1$
-			GuardExpression right = parseAndExpr();
+		while (matchToken(state, "||")) { //$NON-NLS-1$
+			GuardExpression right = parseAndExpr(state);
 			left = new GuardExpression.Or(left, right);
 		}
 		
@@ -90,11 +96,11 @@ public final class GuardExpressionParser {
 	/**
 	 * and_expr = unary_expr ('&&' unary_expr)*
 	 */
-	private GuardExpression parseAndExpr() {
-		GuardExpression left = parseUnaryExpr();
+	private GuardExpression parseAndExpr(ParseState state) {
+		GuardExpression left = parseUnaryExpr(state);
 		
-		while (matchToken("&&")) { //$NON-NLS-1$
-			GuardExpression right = parseUnaryExpr();
+		while (matchToken(state, "&&")) { //$NON-NLS-1$
+			GuardExpression right = parseUnaryExpr(state);
 			left = new GuardExpression.And(left, right);
 		}
 		
@@ -104,54 +110,54 @@ public final class GuardExpressionParser {
 	/**
 	 * unary_expr = '!' unary_expr | primary
 	 */
-	private GuardExpression parseUnaryExpr() {
-		skipWhitespace();
+	private GuardExpression parseUnaryExpr(ParseState state) {
+		skipWhitespace(state);
 		
-		if (pos < input.length() && input.charAt(pos) == '!') {
-			pos++;
-			GuardExpression operand = parseUnaryExpr();
+		if (state.pos < state.input.length() && state.input.charAt(state.pos) == '!') {
+			state.pos++;
+			GuardExpression operand = parseUnaryExpr(state);
 			return new GuardExpression.Not(operand);
 		}
 		
-		return parsePrimary();
+		return parsePrimary(state);
 	}
 	
 	/**
 	 * primary = '(' expr ')' | instanceof_expr | function_call
 	 */
-	private GuardExpression parsePrimary() {
-		skipWhitespace();
+	private GuardExpression parsePrimary(ParseState state) {
+		skipWhitespace(state);
 		
-		if (pos >= input.length()) {
+		if (state.pos >= state.input.length()) {
 			throw new IllegalArgumentException("Unexpected end of expression"); //$NON-NLS-1$
 		}
 		
 		// Parenthesized expression
-		if (input.charAt(pos) == '(') {
-			pos++;
-			GuardExpression expr = parseOrExpr();
-			skipWhitespace();
-			if (pos >= input.length() || input.charAt(pos) != ')') {
-				throw new IllegalArgumentException("Expected ')' at position " + pos); //$NON-NLS-1$
+		if (state.input.charAt(state.pos) == '(') {
+			state.pos++;
+			GuardExpression expr = parseOrExpr(state);
+			skipWhitespace(state);
+			if (state.pos >= state.input.length() || state.input.charAt(state.pos) != ')') {
+				throw new IllegalArgumentException("Expected ')' at position " + state.pos); //$NON-NLS-1$
 			}
-			pos++;
+			state.pos++;
 			return expr;
 		}
 		
 		// Placeholder: might be instanceof expression or matchesAny($x) style
-		if (input.charAt(pos) == '$') {
-			String placeholder = readToken();
-			skipWhitespace();
+		if (state.input.charAt(state.pos) == '$') {
+			String placeholder = readToken(state);
+			skipWhitespace(state);
 			
 			// Check for instanceof
-			if (matchKeyword("instanceof")) { //$NON-NLS-1$
-				skipWhitespace();
-				String typeName = readToken();
+			if (matchKeyword(state, "instanceof")) { //$NON-NLS-1$
+				skipWhitespace(state);
+				String typeName = readToken(state);
 				// Handle array types: Type[]
-				skipWhitespace();
-				if (pos + 1 < input.length() && input.charAt(pos) == '[' && input.charAt(pos + 1) == ']') {
+				skipWhitespace(state);
+				if (state.pos + 1 < state.input.length() && state.input.charAt(state.pos) == '[' && state.input.charAt(state.pos + 1) == ']') {
 					typeName = typeName + "[]"; //$NON-NLS-1$
-					pos += 2;
+					state.pos += 2;
 				}
 				return new GuardExpression.FunctionCall("instanceof", List.of(placeholder, typeName)); //$NON-NLS-1$
 			}
@@ -161,20 +167,20 @@ public final class GuardExpressionParser {
 		}
 		
 		// Function call: IDENTIFIER '(' arg_list ')'
-		String name = readToken();
+		String name = readToken(state);
 		if (name.isEmpty()) {
-			throw new IllegalArgumentException("Expected identifier at position " + pos); //$NON-NLS-1$
+			throw new IllegalArgumentException("Expected identifier at position " + state.pos); //$NON-NLS-1$
 		}
 		
-		skipWhitespace();
-		if (pos < input.length() && input.charAt(pos) == '(') {
-			pos++;
-			List<String> args = parseArgList();
-			skipWhitespace();
-			if (pos >= input.length() || input.charAt(pos) != ')') {
-				throw new IllegalArgumentException("Expected ')' at position " + pos); //$NON-NLS-1$
+		skipWhitespace(state);
+		if (state.pos < state.input.length() && state.input.charAt(state.pos) == '(') {
+			state.pos++;
+			List<String> args = parseArgList(state);
+			skipWhitespace(state);
+			if (state.pos >= state.input.length() || state.input.charAt(state.pos) != ')') {
+				throw new IllegalArgumentException("Expected ')' at position " + state.pos); //$NON-NLS-1$
 			}
-			pos++;
+			state.pos++;
 			return new GuardExpression.FunctionCall(name, args);
 		}
 		
@@ -185,23 +191,23 @@ public final class GuardExpressionParser {
 	/**
 	 * arg_list = (arg (',' arg)*)?
 	 */
-	private List<String> parseArgList() {
+	private List<String> parseArgList(ParseState state) {
 		List<String> args = new ArrayList<>();
-		skipWhitespace();
+		skipWhitespace(state);
 		
-		if (pos < input.length() && input.charAt(pos) == ')') {
+		if (state.pos < state.input.length() && state.input.charAt(state.pos) == ')') {
 			return args;
 		}
 		
-		args.add(readArg());
+		args.add(readArg(state));
 		
-		while (pos < input.length()) {
-			skipWhitespace();
-			if (pos >= input.length() || input.charAt(pos) != ',') {
+		while (state.pos < state.input.length()) {
+			skipWhitespace(state);
+			if (state.pos >= state.input.length() || state.input.charAt(state.pos) != ',') {
 				break;
 			}
-			pos++;
-			args.add(readArg());
+			state.pos++;
+			args.add(readArg(state));
 		}
 		
 		return args;
@@ -210,12 +216,12 @@ public final class GuardExpressionParser {
 	/**
 	 * Reads a single argument (placeholder, identifier, or number).
 	 */
-	private String readArg() {
-		skipWhitespace();
-		if (pos >= input.length()) {
-			throw new IllegalArgumentException("Expected argument at position " + pos); //$NON-NLS-1$
+	private String readArg(ParseState state) {
+		skipWhitespace(state);
+		if (state.pos >= state.input.length()) {
+			throw new IllegalArgumentException("Expected argument at position " + state.pos); //$NON-NLS-1$
 		}
-		return readToken();
+		return readToken(state);
 	}
 	
 	/**
@@ -225,88 +231,88 @@ public final class GuardExpressionParser {
 	 * (e.g., {@code "foo"} is returned as {@code "foo"}). Guard function implementations
 	 * use {@code stripQuotes()} during evaluation to extract the literal value.</p>
 	 */
-	private String readToken() {
-		skipWhitespace();
-		if (pos >= input.length()) {
+	private String readToken(ParseState state) {
+		skipWhitespace(state);
+		if (state.pos >= state.input.length()) {
 			return ""; //$NON-NLS-1$
 		}
 		
-		int start = pos;
-		char c = input.charAt(pos);
+		int start = state.pos;
+		char c = state.input.charAt(state.pos);
 		
 		// Quoted string literal: "..."
 		if (c == '"') {
-			pos++;
+			state.pos++;
 			StringBuilder sb = new StringBuilder();
 			sb.append('"');
-			while (pos < input.length() && input.charAt(pos) != '"') {
-				if (input.charAt(pos) == '\\' && pos + 1 < input.length()) {
-					char escaped = input.charAt(pos + 1);
+			while (state.pos < state.input.length() && state.input.charAt(state.pos) != '"') {
+				if (state.input.charAt(state.pos) == '\\' && state.pos + 1 < state.input.length()) {
+					char escaped = state.input.charAt(state.pos + 1);
 					// Handle escaped quote: \" becomes " in the output
 					if (escaped == '"') {
 						sb.append('"');
-						pos += 2;
+						state.pos += 2;
 						continue;
 					}
 					// Preserve other escape sequences as-is
 					sb.append('\\');
 					sb.append(escaped);
-					pos += 2;
+					state.pos += 2;
 					continue;
 				}
-				sb.append(input.charAt(pos));
-				pos++;
+				sb.append(state.input.charAt(state.pos));
+				state.pos++;
 			}
-			if (pos >= input.length()) {
+			if (state.pos >= state.input.length()) {
 				throw new IllegalArgumentException(
 						"Unterminated string literal starting at position " + start); //$NON-NLS-1$
 			}
 			sb.append('"');
-			pos++; // consume closing quote
+			state.pos++; // consume closing quote
 			return sb.toString();
 		}
 		
 		// Placeholder: $identifier
 		if (c == '$') {
-			pos++;
-			while (pos < input.length() && isIdentifierPart(input.charAt(pos))) {
-				pos++;
+			state.pos++;
+			while (state.pos < state.input.length() && isIdentifierPart(state.input.charAt(state.pos))) {
+				state.pos++;
 			}
 			// Handle multi-placeholder ending with $
-			if (pos < input.length() && input.charAt(pos) == '$') {
-				pos++;
+			if (state.pos < state.input.length() && state.input.charAt(state.pos) == '$') {
+				state.pos++;
 			}
-			return input.substring(start, pos);
+			return state.input.substring(start, state.pos);
 		}
 		
 		// Number
 		if (Character.isDigit(c)) {
-			while (pos < input.length() && (Character.isDigit(input.charAt(pos)) || input.charAt(pos) == '.')) {
-				pos++;
+			while (state.pos < state.input.length() && (Character.isDigit(state.input.charAt(state.pos)) || state.input.charAt(state.pos) == '.')) {
+				state.pos++;
 			}
-			return input.substring(start, pos);
+			return state.input.substring(start, state.pos);
 		}
 		
 		// Identifier (including qualified names like java.lang.String)
 		if (isIdentifierStart(c)) {
-			while (pos < input.length() && (isIdentifierPart(input.charAt(pos)) || input.charAt(pos) == '.')) {
-				pos++;
+			while (state.pos < state.input.length() && (isIdentifierPart(state.input.charAt(state.pos)) || state.input.charAt(state.pos) == '.')) {
+				state.pos++;
 			}
-			return input.substring(start, pos);
+			return state.input.substring(start, state.pos);
 		}
 		
 		throw new IllegalArgumentException(
-				"Unexpected character at position " + pos + ": '" + c + "'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"Unexpected character at position " + state.pos + ": '" + c + "'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 	
 	/**
 	 * Tries to match and consume a two-character token.
 	 */
-	private boolean matchToken(String token) {
-		skipWhitespace();
-		if (pos + token.length() <= input.length()
-				&& input.substring(pos, pos + token.length()).equals(token)) {
-			pos += token.length();
+	private boolean matchToken(ParseState state, String token) {
+		skipWhitespace(state);
+		if (state.pos + token.length() <= state.input.length()
+				&& state.input.substring(state.pos, state.pos + token.length()).equals(token)) {
+			state.pos += token.length();
 			return true;
 		}
 		return false;
@@ -315,23 +321,23 @@ public final class GuardExpressionParser {
 	/**
 	 * Tries to match and consume a keyword (must be followed by non-identifier char).
 	 */
-	private boolean matchKeyword(String keyword) {
-		int savedPos = pos;
-		if (pos + keyword.length() <= input.length()
-				&& input.substring(pos, pos + keyword.length()).equals(keyword)) {
-			int afterKeyword = pos + keyword.length();
-			if (afterKeyword >= input.length() || !isIdentifierPart(input.charAt(afterKeyword))) {
-				pos += keyword.length();
+	private boolean matchKeyword(ParseState state, String keyword) {
+		int savedPos = state.pos;
+		if (state.pos + keyword.length() <= state.input.length()
+				&& state.input.substring(state.pos, state.pos + keyword.length()).equals(keyword)) {
+			int afterKeyword = state.pos + keyword.length();
+			if (afterKeyword >= state.input.length() || !isIdentifierPart(state.input.charAt(afterKeyword))) {
+				state.pos += keyword.length();
 				return true;
 			}
 		}
-		pos = savedPos;
+		state.pos = savedPos;
 		return false;
 	}
 	
-	private void skipWhitespace() {
-		while (pos < input.length() && Character.isWhitespace(input.charAt(pos))) {
-			pos++;
+	private void skipWhitespace(ParseState state) {
+		while (state.pos < state.input.length() && Character.isWhitespace(state.input.charAt(state.pos))) {
+			state.pos++;
 		}
 	}
 	
