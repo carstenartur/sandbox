@@ -36,6 +36,9 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * data model. Supports comments, metadata directives, simple rules, guarded rules,
  * and multi-rewrite rules.</p>
  * 
+ * <p>Import directives are automatically inferred from fully qualified names (FQNs)
+ * in source and replacement patterns. No explicit import directives are needed.</p>
+ * 
  * <h2>File format</h2>
  * <pre>
  * // Line comments
@@ -48,9 +51,9 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * &lt;!tags: performance, modernization&gt;
  * &lt;!include: other.hint.id&gt;
  *
- * // Simple rule
- * source_pattern
- * =&gt; replacement_pattern
+ * // Simple rule with FQN-based imports
+ * org.junit.Assert.assertEquals($expected, $actual)
+ * =&gt; org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)
  * ;;
  *
  * // Rule with guard
@@ -307,41 +310,9 @@ public final class HintFileParser {
 			ruleLineIdx++;
 		}
 		
-		// Parse rewrite alternatives (lines starting with =>) and import directives
-		ImportDirective currentImports = new ImportDirective();
+		// Parse rewrite alternatives (lines starting with =>)
 		while (ruleLineIdx < ruleLines.size()) {
 			String altLine = ruleLines.get(ruleLineIdx);
-			
-			// Import directives
-			if (altLine.startsWith("addImport ")) { //$NON-NLS-1$
-				currentImports.addImport(altLine.substring(10).trim());
-				ruleLineIdx++;
-				continue;
-			}
-			if (altLine.startsWith("removeImport ")) { //$NON-NLS-1$
-				currentImports.removeImport(altLine.substring(13).trim());
-				ruleLineIdx++;
-				continue;
-			}
-			if (altLine.startsWith("addStaticImport ")) { //$NON-NLS-1$
-				currentImports.addStaticImport(altLine.substring(16).trim());
-				ruleLineIdx++;
-				continue;
-			}
-			if (altLine.startsWith("removeStaticImport ")) { //$NON-NLS-1$
-				currentImports.removeStaticImport(altLine.substring(19).trim());
-				ruleLineIdx++;
-				continue;
-			}
-			if (altLine.startsWith("replaceStaticImport ")) { //$NON-NLS-1$
-				String args = altLine.substring(20).trim();
-				String[] parts = args.split("\\s+"); //$NON-NLS-1$
-				if (parts.length == 2) {
-					currentImports.replaceStaticImport(parts[0], parts[1]);
-				}
-				ruleLineIdx++;
-				continue;
-			}
 			
 			if (!altLine.startsWith("=>")) { //$NON-NLS-1$
 				// Might be continuation of source pattern - for now, error
@@ -372,25 +343,15 @@ public final class HintFileParser {
 		PatternKind kind = inferPatternKind(sourcePatternText);
 		Pattern sourcePattern = new Pattern(sourcePatternText, kind);
 		
-		// Auto-detect imports from replacement patterns and merge with explicit imports
-		// Phase 5: Always run auto-detection and merge with explicit directives
+		// FQN-based import inference: automatically derive imports from
+		// fully qualified names in source and replacement patterns
+		ImportDirective currentImports = new ImportDirective();
 		if (!alternatives.isEmpty()) {
-			ImportDirective autoDetected = new ImportDirective();
+			List<String> replacementTexts = new ArrayList<>();
 			for (RewriteAlternative alt : alternatives) {
-				ImportDirective detected = ImportDirective.detectFromPattern(alt.replacementPattern());
-				autoDetected.merge(detected);
+				replacementTexts.add(alt.replacementPattern());
 			}
-			// Note: Phase 2 (auto-detect removeImport from source/replacement FQN diff)
-			// is intentionally disabled. Removing imports based on FQN presence in a
-			// matched snippet is unsafe because the import may still be needed elsewhere
-			// in the compilation unit. Use explicit removeImport directives instead.
-			// Merge: explicit directives take precedence (already in currentImports),
-			// auto-detected ones are added for any import types not explicitly specified
-			if (currentImports.getAddImports().isEmpty()) {
-				for (String imp : autoDetected.getAddImports()) {
-					currentImports.addImport(imp);
-				}
-			}
+			currentImports = ImportDirective.inferFromFqnPatterns(sourcePatternText, replacementTexts);
 		}
 		
 		TransformationRule rule = new TransformationRule(

@@ -204,6 +204,9 @@ public class RuleInferenceEngine {
 	/**
 	 * Converts a list of inferred rules into a {@code .sandbox-hint} file string.
 	 *
+	 * <p>Generates FQN-based patterns. Import directives are not written
+	 * because they are automatically inferred from FQNs in the patterns.</p>
+	 *
 	 * @param rules the inferred rules
 	 * @return the hint-file content
 	 */
@@ -217,14 +220,6 @@ public class RuleInferenceEngine {
 		for (InferredRule rule : rules) {
 			sb.append(rule.sourcePattern()).append('\n');
 			sb.append("=> ").append(rule.replacementPattern()).append('\n'); //$NON-NLS-1$
-			if (rule.importChanges() != null && !rule.importChanges().isEmpty()) {
-				for (String imp : rule.importChanges().getAddImports()) {
-					sb.append("   addImport ").append(imp).append('\n'); //$NON-NLS-1$
-				}
-				for (String imp : rule.importChanges().getRemoveImports()) {
-					sb.append("   removeImport ").append(imp).append('\n'); //$NON-NLS-1$
-				}
-			}
 			sb.append(";;\n\n"); //$NON-NLS-1$
 		}
 		return sb.toString();
