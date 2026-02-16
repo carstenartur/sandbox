@@ -85,6 +85,9 @@ public class ExceptionCleanupHelper {
 	// ------------------------------------------------------------------
 
 	static ASTNode findEnclosingMethodOrTry(ASTNode node) {
+		if (node == null) {
+			return null;
+		}
 		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);
 		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
 		if (tryStmt != null) {

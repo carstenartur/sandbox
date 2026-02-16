@@ -24,7 +24,6 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -104,17 +103,25 @@ public class TypeChangeDetectorTest {
 	}
 
 	@Test
-	@DisplayName("containsCharsetStringLiteral returns true for known charsets")
-	void testContainsCharsetStringLiteralTrue() {
+	@DisplayName("detects UTF-16 charset change via public API")
+	void testDetectsUtf16() {
 		ASTNode node = parseExpression("new String(data, \"UTF-16\")"); //$NON-NLS-1$
-		assertTrue(TypeChangeDetector.containsCharsetStringLiteral(node));
+
+		TypeChangeInfo info = TypeChangeDetector.detectCharsetTypeChange(
+				node, "new String(data, StandardCharsets.UTF_16)"); //$NON-NLS-1$
+
+		assertNotNull(info);
 	}
 
 	@Test
-	@DisplayName("containsCharsetStringLiteral returns false for non-charset strings")
-	void testContainsCharsetStringLiteralFalse() {
+	@DisplayName("no detection for non-charset string via public API")
+	void testNoDetectionForNonCharsetViaPublicApi() {
 		ASTNode node = parseExpression("new String(\"hello world\")"); //$NON-NLS-1$
-		assertFalse(TypeChangeDetector.containsCharsetStringLiteral(node));
+
+		TypeChangeInfo info = TypeChangeDetector.detectCharsetTypeChange(
+				node, "new String(StandardCharsets.UTF_8)"); //$NON-NLS-1$
+
+		assertNull(info);
 	}
 
 	/**
