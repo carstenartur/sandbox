@@ -36,7 +36,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.sandbox.jdt.internal.corext.fix.HintFileFixCore;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ChangeBehavior;
 import org.eclipse.jdt.internal.corext.util.Messages;
@@ -74,15 +73,6 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		ChangeBehavior cb= computeRefactorDeepth();
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
-
-		// Tier 1: Run DSL rules first (only for ENFORCE_UTF8 modes)
-		// DSL rules handle simple argument replacements like "UTF-8" → StandardCharsets.UTF_8
-		if (cb == ChangeBehavior.ENFORCE_UTF8 || cb == ChangeBehavior.ENFORCE_UTF8_AGGREGATE) {
-			HintFileFixCore.findOperationsForBundle(compilationUnit, "encoding", operations, nodesprocessed); //$NON-NLS-1$
-		}
-
-		// Tier 2+3: Run imperative helpers for remaining cases
-		// The nodesprocessed set prevents double-processing of nodes already handled by DSL
 		computeFixSet.forEach(i->i.findOperations(compilationUnit,operations,nodesprocessed,cb));
 		if (operations.isEmpty()) {
 			return null;
