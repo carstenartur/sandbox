@@ -126,7 +126,18 @@ public class HintFileFixCore {
 			Set<ASTNode> nodesprocessed) {
 
 		HintFileRegistry registry = HintFileRegistry.getInstance();
+		// Ensure bundled libraries are loaded
+		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());
+		// Load extension-point contributed hint files (encoding, junit5, etc.)
 		registry.loadFromExtensions();
+
+		// Load project-level .sandbox-hint files if available
+		if (compilationUnit.getJavaElement() != null
+				&& compilationUnit.getJavaElement().getJavaProject() != null) {
+			org.eclipse.core.resources.IProject project = compilationUnit.getJavaElement()
+					.getJavaProject().getProject();
+			registry.loadProjectHintFiles(project);
+		}
 
 		HintFile hintFile = registry.getHintFile(bundleId);
 		if (hintFile == null) {
