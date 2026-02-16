@@ -92,15 +92,7 @@ java.nio.charset.Charset.forName("UTF-8") :: sourceVersionGE(7)
 => java.nio.charset.StandardCharsets.UTF_8
 ;;
 
-Charset.forName("UTF-8") :: sourceVersionGE(7)
-=> java.nio.charset.StandardCharsets.UTF_8
-;;
-
 java.nio.charset.Charset.forName("ISO-8859-1") :: sourceVersionGE(7)
-=> java.nio.charset.StandardCharsets.ISO_8859_1
-;;
-
-Charset.forName("ISO-8859-1") :: sourceVersionGE(7)
 => java.nio.charset.StandardCharsets.ISO_8859_1
 ;;
 
@@ -108,15 +100,7 @@ java.nio.charset.Charset.forName("US-ASCII") :: sourceVersionGE(7)
 => java.nio.charset.StandardCharsets.US_ASCII
 ;;
 
-Charset.forName("US-ASCII") :: sourceVersionGE(7)
-=> java.nio.charset.StandardCharsets.US_ASCII
-;;
-
 java.nio.charset.Charset.forName("UTF-16") :: sourceVersionGE(7)
-=> java.nio.charset.StandardCharsets.UTF_16
-;;
-
-Charset.forName("UTF-16") :: sourceVersionGE(7)
 => java.nio.charset.StandardCharsets.UTF_16
 ;;
 
@@ -124,15 +108,7 @@ java.nio.charset.Charset.forName("UTF-16BE") :: sourceVersionGE(7)
 => java.nio.charset.StandardCharsets.UTF_16BE
 ;;
 
-Charset.forName("UTF-16BE") :: sourceVersionGE(7)
-=> java.nio.charset.StandardCharsets.UTF_16BE
-;;
-
 java.nio.charset.Charset.forName("UTF-16LE") :: sourceVersionGE(7)
-=> java.nio.charset.StandardCharsets.UTF_16LE
-;;
-
-Charset.forName("UTF-16LE") :: sourceVersionGE(7)
 => java.nio.charset.StandardCharsets.UTF_16LE
 ;;
 
@@ -324,48 +300,24 @@ java.net.URLEncoder.encode($s, "UTF-8") :: sourceVersionGE(10)
 => java.net.URLEncoder.encode($s, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-URLEncoder.encode($s, "UTF-8") :: sourceVersionGE(10)
-=> URLEncoder.encode($s, java.nio.charset.StandardCharsets.UTF_8)
-;;
-
 java.net.URLEncoder.encode($s, "ISO-8859-1") :: sourceVersionGE(10)
 => java.net.URLEncoder.encode($s, java.nio.charset.StandardCharsets.ISO_8859_1)
-;;
-
-URLEncoder.encode($s, "ISO-8859-1") :: sourceVersionGE(10)
-=> URLEncoder.encode($s, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
 java.net.URLEncoder.encode($s, "US-ASCII") :: sourceVersionGE(10)
 => java.net.URLEncoder.encode($s, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-URLEncoder.encode($s, "US-ASCII") :: sourceVersionGE(10)
-=> URLEncoder.encode($s, java.nio.charset.StandardCharsets.US_ASCII)
-;;
-
 java.net.URLEncoder.encode($s, "UTF-16") :: sourceVersionGE(10)
 => java.net.URLEncoder.encode($s, java.nio.charset.StandardCharsets.UTF_16)
-;;
-
-URLEncoder.encode($s, "UTF-16") :: sourceVersionGE(10)
-=> URLEncoder.encode($s, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
 java.net.URLEncoder.encode($s, "UTF-16BE") :: sourceVersionGE(10)
 => java.net.URLEncoder.encode($s, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-URLEncoder.encode($s, "UTF-16BE") :: sourceVersionGE(10)
-=> URLEncoder.encode($s, java.nio.charset.StandardCharsets.UTF_16BE)
-;;
-
 java.net.URLEncoder.encode($s, "UTF-16LE") :: sourceVersionGE(10)
 => java.net.URLEncoder.encode($s, java.nio.charset.StandardCharsets.UTF_16LE)
-;;
-
-URLEncoder.encode($s, "UTF-16LE") :: sourceVersionGE(10)
-=> URLEncoder.encode($s, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;
 
 // === URLDecoder.decode(String, String) ===
@@ -374,46 +326,22 @@ java.net.URLDecoder.decode($s, "UTF-8") :: sourceVersionGE(10)
 => java.net.URLDecoder.decode($s, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-URLDecoder.decode($s, "UTF-8") :: sourceVersionGE(10)
-=> URLDecoder.decode($s, java.nio.charset.StandardCharsets.UTF_8)
-;;
-
 java.net.URLDecoder.decode($s, "ISO-8859-1") :: sourceVersionGE(10)
 => java.net.URLDecoder.decode($s, java.nio.charset.StandardCharsets.ISO_8859_1)
-;;
-
-URLDecoder.decode($s, "ISO-8859-1") :: sourceVersionGE(10)
-=> URLDecoder.decode($s, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
 java.net.URLDecoder.decode($s, "US-ASCII") :: sourceVersionGE(10)
 => java.net.URLDecoder.decode($s, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-URLDecoder.decode($s, "US-ASCII") :: sourceVersionGE(10)
-=> URLDecoder.decode($s, java.nio.charset.StandardCharsets.US_ASCII)
-;;
-
 java.net.URLDecoder.decode($s, "UTF-16") :: sourceVersionGE(10)
 => java.net.URLDecoder.decode($s, java.nio.charset.StandardCharsets.UTF_16)
-;;
-
-URLDecoder.decode($s, "UTF-16") :: sourceVersionGE(10)
-=> URLDecoder.decode($s, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
 java.net.URLDecoder.decode($s, "UTF-16BE") :: sourceVersionGE(10)
 => java.net.URLDecoder.decode($s, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-URLDecoder.decode($s, "UTF-16BE") :: sourceVersionGE(10)
-=> URLDecoder.decode($s, java.nio.charset.StandardCharsets.UTF_16BE)
-;;
-
 java.net.URLDecoder.decode($s, "UTF-16LE") :: sourceVersionGE(10)
 => java.net.URLDecoder.decode($s, java.nio.charset.StandardCharsets.UTF_16LE)
-;;
-
-URLDecoder.decode($s, "UTF-16LE") :: sourceVersionGE(10)
-=> URLDecoder.decode($s, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;

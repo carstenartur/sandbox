@@ -209,6 +209,67 @@ public class TriggerPatternEngineTest {
 		assertEquals(1, matches.size(), "Should find one constructor match");
 	}
 	
+	@Test
+	public void testFqnPatternMatchesSimpleNameUsage() {
+		// Source code uses imported simple name "Charset"
+		String code = """
+			import java.nio.charset.Charset;
+			class Test {
+				void method() {
+					Charset cs = Charset.forName("UTF-8");
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		// Pattern uses FQN "java.nio.charset.Charset.forName(...)"
+		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size(), "FQN pattern should match simple-name usage in source");
+	}
+	
+	@Test
+	public void testSimpleNamePatternMatchesFqnUsage() {
+		// Source code uses FQN directly (no import)
+		String code = """
+			class Test {
+				void method() {
+					Object cs = java.nio.charset.Charset.forName("UTF-8");
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		// Pattern uses simple name "Charset.forName(...)"
+		Pattern pattern = new Pattern("Charset.forName($arg)", PatternKind.METHOD_CALL);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size(), "Simple-name pattern should match FQN usage in source");
+	}
+	
+	@Test
+	public void testFqnPatternAlsoMatchesFqnUsage() {
+		// Source code uses FQN directly
+		String code = """
+			class Test {
+				void method() {
+					Object cs = java.nio.charset.Charset.forName("UTF-8");
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		// Pattern uses FQN
+		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(1, matches.size(), "FQN pattern should match FQN usage in source");
+	}
+	
 	private CompilationUnit parse(String code) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(code.toCharArray());

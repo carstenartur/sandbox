@@ -29,8 +29,10 @@ import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
@@ -401,6 +403,49 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	}
 	
 	/**
+	 * Matches receiver expressions with support for FQN-to-SimpleName resolution.
+	 * 
+	 * <p>When a pattern uses a fully-qualified name like {@code java.nio.charset.Charset}
+	 * as the receiver, but the source code uses the imported simple name {@code Charset},
+	 * this method extracts the last segment (simple name) from the qualified name and
+	 * compares it to the source's simple name.</p>
+	 * 
+	 * @param patternExpr the pattern receiver expression (may be QualifiedName for FQN)
+	 * @param sourceExpr the source receiver expression (may be SimpleName for imported usage)
+	 * @return {@code true} if the receivers match
+	 * @since 1.3.8
+	 */
+	private boolean matchReceiverExpressions(Expression patternExpr, Expression sourceExpr) {
+		// Null check: both null or both non-null
+		if (patternExpr == null) {
+			return sourceExpr == null;
+		}
+		if (sourceExpr == null) {
+			return false;
+		}
+		
+		// Try structural match first
+		if (patternExpr.subtreeMatch(this, sourceExpr)) {
+			return true;
+		}
+		
+		// FQN-to-SimpleName: pattern has a QualifiedName, source has a SimpleName
+		// e.g., pattern: java.nio.charset.Charset, source: Charset (with import)
+		if (patternExpr instanceof QualifiedName patternQN && sourceExpr instanceof SimpleName sourceSN) {
+			String patternSimpleName = patternQN.getName().getIdentifier();
+			return patternSimpleName.equals(sourceSN.getIdentifier());
+		}
+		
+		// SimpleName-to-FQN: pattern has a SimpleName, source uses FQN (less common)
+		if (patternExpr instanceof SimpleName patternSN && sourceExpr instanceof QualifiedName sourceQN) {
+			String sourceSimpleName = sourceQN.getName().getIdentifier();
+			return patternSN.getIdentifier().equals(sourceSimpleName);
+		}
+		
+		return false;
+	}
+	
+	/**
 	 * Matches method invocations with support for multi-placeholder arguments.
 	 * 
 	 * @param patternNode the pattern method invocation
@@ -420,8 +465,8 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			return false;
 		}
 		
-		// Match expression (receiver)
-		if (!safeSubtreeMatch(patternNode.getExpression(), otherInvocation.getExpression())) {
+		// Match expression (receiver) with FQN-to-SimpleName support
+		if (!matchReceiverExpressions(patternNode.getExpression(), otherInvocation.getExpression())) {
 			return false;
 		}
 		
