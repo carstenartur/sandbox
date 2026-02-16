@@ -1,0 +1,12 @@
+{
+  "totalProcessed": 0,
+  "relevant": 0,
+  "irrelevant": 0,
+  "duplicates": 0,
+  "green": 0,
+  "yellow": 0,
+  "red": 0,
+  "irrelevantReasons": {},
+  "perRepository": {},
+  "dailyProgress": []
+}
