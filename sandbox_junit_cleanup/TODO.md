@@ -27,7 +27,7 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ **annotations5.sandbox-hint DSL file** - Declarative annotation migration rules (`@Before→@BeforeEach`, `@After→@AfterEach`, `@BeforeClass→@BeforeAll`, `@AfterClass→@AfterAll`, `@Ignore→@Disabled`, `@Test→@Test`)
 - ✅ **Annotation rewrite in HintFileRewriteOperation** - DSL-matched annotations can now be replaced via ASTRewrite; handles MarkerAnnotation, SingleMemberAnnotation (preserves value), and NormalAnnotation (preserves member-value pairs)
 - ✅ **assertThat Hamcrest migration** - `Assert.assertThat→MatcherAssert.assertThat` rules in junit5.sandbox-hint
-- ✅ **DSL integration tests** - `DslHintFileIntegrationTests` in TriggerPatternCleanupFrameworkTest covering annotations5, assume5, junit5 rules (enabled and wired to integration test infrastructure)
+- ✅ **DSL integration tests** - `DslHintFileIntegrationTests` in TriggerPatternCleanupFrameworkTest covering annotations5, assume5, junit5 rules (disabled until end-to-end wiring complete)
 
 ### In Progress
 - None currently
