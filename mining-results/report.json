@@ -1,0 +1,1910 @@
+{
+  "summary": {
+    "totalMatches": 237,
+    "repositories": {
+      "sandbox": {
+        "files": 703,
+        "matches": 237,
+        "rules": 1
+      }
+    }
+  },
+  "matches": [
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/ui/fix/UseFunctionalCallCleanUpCore.java",
+      "line": 120,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/TraditionalForHandler.java",
+      "line": 461,
+      "matchedCode": "pattern.startExpr().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/TraditionalForHandler.java",
+      "line": 462,
+      "matchedCode": "pattern.endExpr().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/IteratorPatternDetector.java",
+      "line": 202,
+      "matchedCode": "typeArg.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/IteratorWhileToEnhancedFor.java",
+      "line": 146,
+      "matchedCode": "pattern.collectionExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
+      "line": 691,
+      "matchedCode": "bodyStr.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
+      "line": 743,
+      "matchedCode": "bodyStr.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/IteratorLoopBodyParser.java",
+      "line": 82,
+      "matchedCode": "varDecl.getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/EnhancedForToIteratorWhile.java",
+      "line": 102,
+      "matchedCode": "forStmt.getParameter().getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/EnhancedForToIteratorWhile.java",
+      "line": 103,
+      "matchedCode": "forStmt.getExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 55,
+      "matchedCode": "iterable.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 56,
+      "matchedCode": "parameter.getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 284,
+      "matchedCode": "stmt.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 315,
+      "matchedCode": "ifStmt.getExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 330,
+      "matchedCode": "ifStmt.getExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 340,
+      "matchedCode": "stmt.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 356,
+      "matchedCode": "init.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 361,
+      "matchedCode": "varDecl.getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 371,
+      "matchedCode": "varDecl.getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 389,
+      "matchedCode": "assign.getRightHandSide().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 414,
+      "matchedCode": "stmt.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 428,
+      "matchedCode": "stmt.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 487,
+      "matchedCode": "statements.get(j).toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 491,
+      "matchedCode": "blockStr.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 567,
+      "matchedCode": "ifStmt.getExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 592,
+      "matchedCode": "prefix.getOperand().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 637,
+      "matchedCode": "target.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 651,
+      "matchedCode": "addedExpr.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 716,
+      "matchedCode": "assign.getLeftHandSide().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 717,
+      "matchedCode": "assign.getRightHandSide().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 751,
+      "matchedCode": "postfix.getOperand().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 759,
+      "matchedCode": "prefix.getOperand().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java",
+      "line": 837,
+      "matchedCode": "infix.getRightOperand().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ExpressionHelper.java",
+      "line": 135,
+      "matchedCode": "svd.getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ExpressionHelper.java",
+      "line": 154,
+      "matchedCode": "stmt.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ExpressionHelper.java",
+      "line": 157,
+      "matchedCode": "body.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ExpressionHelper.java",
+      "line": 172,
+      "matchedCode": "stmt.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ExpressionHelper.java",
+      "line": 239,
+      "matchedCode": "collectionExpr.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/IteratorWhileHandler.java",
+      "line": 203,
+      "matchedCode": "pattern.collectionExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/UseFunctionalCallFixCore.java",
+      "line": 110,
+      "matchedCode": "UseFunctionalCallFixCore.this.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-ast-api-jdt/src/main/java/org/sandbox/ast/api/jdt/JDTConverter.java",
+      "line": 409,
+      "matchedCode": "operator.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_method_reuse/src/org/sandbox/jdt/internal/corext/fix/helper/lib/MethodSignatureAnalyzer.java",
+      "line": 97,
+      "matchedCode": "svd.getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_method_reuse/src/org/sandbox/jdt/internal/corext/fix/helper/lib/CodePatternMatcher.java",
+      "line": 69,
+      "matchedCode": "node.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_method_reuse/src/org/sandbox/jdt/internal/corext/fix/helper/lib/CodePatternMatcher.java",
+      "line": 111,
+      "matchedCode": "node.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_method_reuse/src/org/sandbox/jdt/internal/corext/fix/MethodReuseCleanUpFixCore.java",
+      "line": 85,
+      "matchedCode": "MethodReuseCleanUpFixCore.this.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_method_reuse/src/org/sandbox/jdt/internal/corext/fix/MethodReuseFixCore.java",
+      "line": 72,
+      "matchedCode": "MethodReuseFixCore.this.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-ast-api/src/main/java/org/sandbox/ast/api/info/TypeInfo.java",
+      "line": 246,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-ast-api/src/test/java/org/sandbox/ast/api/info/TypeInfoTest.java",
+      "line": 143,
+      "matchedCode": "type.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-ast-api/src/test/java/org/sandbox/ast/api/info/TypeInfoTest.java",
+      "line": 152,
+      "matchedCode": "listType.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-ast-api/src/test/java/org/sandbox/ast/api/info/TypeInfoTest.java",
+      "line": 158,
+      "matchedCode": "type.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java",
+      "line": 174,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/model/LoopModelVisualizer.java",
+      "line": 152,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/model/LoopModelVisualizer.java",
+      "line": 246,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/model/LoopModelVisualizer.java",
+      "line": 277,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/model/LoopModelVisualizer.java",
+      "line": 343,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-functional-converter-core/src/test/java/org/sandbox/functional/core/model/LoopModelTest.java",
+      "line": 37,
+      "matchedCode": "model.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-functional-converter-core/src/test/java/org/sandbox/functional/core/model/LoopModelPipelineTest.java",
+      "line": 122,
+      "matchedCode": "model.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 121,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 122,
+      "matchedCode": "args[1].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 162,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 180,
+      "matchedCode": "args[i].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 202,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 220,
+      "matchedCode": "args[i].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 237,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 254,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 267,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 280,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 281,
+      "matchedCode": "args[1].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 294,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 311,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 329,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 330,
+      "matchedCode": "args[1].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 361,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 384,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 385,
+      "matchedCode": "args[1].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 398,
+      "matchedCode": "varNode.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 424,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 425,
+      "matchedCode": "args[1].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 454,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 455,
+      "matchedCode": "args[1].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 459,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 472,
+      "matchedCode": "methodBody.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java",
+      "line": 623,
+      "matchedCode": "node.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/GuardExpressionParser.java",
+      "line": 272,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileParser.java",
+      "line": 182,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/DryRunReporter.java",
+      "line": 99,
+      "matchedCode": "match.getMatchedNode().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/DryRunReporter.java",
+      "line": 153,
+      "matchedCode": "value.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/DryRunReporter.java",
+      "line": 161,
+      "matchedCode": "list.get(i).toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/DryRunReporter.java",
+      "line": 163,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/DryRunReporter.java",
+      "line": 206,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/DryRunReporter.java",
+      "line": 233,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/DryRunReporter.java",
+      "line": 274,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ImportDirective.java",
+      "line": 465,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/FixUtilities.java",
+      "line": 193,
+      "matchedCode": "node.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/BatchTransformationProcessor.java",
+      "line": 181,
+      "matchedCode": "astNode.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/BatchTransformationProcessor.java",
+      "line": 190,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/BatchTransformationProcessor.java",
+      "line": 249,
+      "matchedCode": "match.getMatchedNode().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/TransformationReporter.java",
+      "line": 180,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/PreviewGenerator.java",
+      "line": 213,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/internal/common/LambdaASTVisitor.java",
+      "line": 189,
+      "matchedCode": "node.getException().getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/internal/common/LambdaASTVisitor.java",
+      "line": 693,
+      "matchedCode": "typeBinding.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/internal/common/ASTProcessor.java",
+      "line": 327,
+      "matchedCode": "operator.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/internal/common/ASTProcessor.java",
+      "line": 344,
+      "matchedCode": "operator.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/internal/common/ASTProcessor.java",
+      "line": 1122,
+      "matchedCode": "operator.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/internal/common/ASTProcessor.java",
+      "line": 1139,
+      "matchedCode": "operator.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/ui/tests/quickfix/HelperVisitorBuilderTest.java",
+      "line": 495,
+      "matchedCode": "node.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/ui/tests/quickfix/MatcherTest.java",
+      "line": 33,
+      "matchedCode": "result.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/StructuralQualityTest.java",
+      "line": 69,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/TransformationReporterTest.java",
+      "line": 55,
+      "matchedCode": "writer.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/TransformationReporterTest.java",
+      "line": 73,
+      "matchedCode": "writer.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/TransformationReporterTest.java",
+      "line": 88,
+      "matchedCode": "csvWriter.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/TransformationReporterTest.java",
+      "line": 95,
+      "matchedCode": "jsonWriter.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/TransformationReporterTest.java",
+      "line": 109,
+      "matchedCode": "writer.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/TransformationReporterTest.java",
+      "line": 126,
+      "matchedCode": "writer.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/TransformationRuleTest.java",
+      "line": 57,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/TransformationRuleTest.java",
+      "line": 64,
+      "matchedCode": "args[0].toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/internal/common/NodeMatcherTest.java",
+      "line": 146,
+      "matchedCode": "vd.getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/internal/common/NodeMatcherTest.java",
+      "line": 1079,
+      "matchedCode": "rs.getExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/internal/common/StatementContextTest.java",
+      "line": 915,
+      "matchedCode": "vd.getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix_test/src/org/eclipse/jdt/ui/tests/quickfix/EncodingHintFileTest.java",
+      "line": 96,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-maven-plugin/src/main/java/org/sandbox/maven/cleanup/AbstractSandboxMojo.java",
+      "line": 163,
+      "matchedCode": "archivePath.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-maven-plugin/src/main/java/org/sandbox/maven/cleanup/AbstractSandboxMojo.java",
+      "line": 163,
+      "matchedCode": "extractDir.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-maven-plugin/src/main/java/org/sandbox/maven/cleanup/AbstractSandboxMojo.java",
+      "line": 183,
+      "matchedCode": "launcher.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java",
+      "line": 104,
+      "matchedCode": "computeRefactorDeepth().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java",
+      "line": 116,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/corext/fix/helper/AbstractExplicitEncoding.java",
+      "line": 259,
+      "matchedCode": "qualifiedName.getQualifier().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/corext/fix/helper/AbstractExplicitEncoding.java",
+      "line": 274,
+      "matchedCode": "fieldAccess.getExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/corext/fix/helper/AbstractExplicitEncoding.java",
+      "line": 450,
+      "matchedCode": "type.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/corext/fix/UseExplicitEncodingFixCore.java",
+      "line": 90,
+      "matchedCode": "preview.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/corext/fix/UseExplicitEncodingFixCore.java",
+      "line": 96,
+      "matchedCode": "preview.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/corext/fix/UseExplicitEncodingFixCore.java",
+      "line": 114,
+      "matchedCode": "UseExplicitEncodingFixCore.this.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/corext/fix/UseExplicitEncodingFixCore.java",
+      "line": 114,
+      "matchedCode": "cb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/corext/fix/UseExplicitEncodingFixCore.java",
+      "line": 133,
+      "matchedCode": "explicitencoding.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/views/mining/InferredRuleDetailPanel.java",
+      "line": 142,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/views/mining/CommitTableLabelProvider.java",
+      "line": 86,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java",
+      "line": 718,
+      "matchedCode": "builder.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java",
+      "line": 773,
+      "matchedCode": "buf.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/JUnit5HintFileTest.java",
+      "line": 119,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/FunctionalLoopTestHelper.java",
+      "line": 74,
+      "matchedCode": "problem.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/ASTStreamRendererTest.java",
+      "line": 159,
+      "matchedCode": "result.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/ASTStreamRendererTest.java",
+      "line": 246,
+      "matchedCode": "result.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/ASTStreamRendererTest.java",
+      "line": 259,
+      "matchedCode": "result.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ASTProcessorTest.java",
+      "line": 692,
+      "matchedCode": "mi.getName().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java",
+      "line": 279,
+      "matchedCode": "mi.getName().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java",
+      "line": 331,
+      "matchedCode": "holder.get(\"init\").toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java",
+      "line": 332,
+      "matchedCode": "holder.get(\"while\").toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java",
+      "line": 333,
+      "matchedCode": "node.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/BundledLibrariesTest.java",
+      "line": 153,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_jface_cleanup/src/org/sandbox/jdt/internal/ui/fix/JFaceCleanUpCore.java",
+      "line": 100,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_jface_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/JFacePlugin.java",
+      "line": 356,
+      "matchedCode": "type.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_jface_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/ViewerSorterPlugin.java",
+      "line": 166,
+      "matchedCode": "type.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_jface_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/ViewerSorterPlugin.java",
+      "line": 561,
+      "matchedCode": "methodNameToReplace.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationTest.java",
+      "line": 739,
+      "matchedCode": "content.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java",
+      "line": 107,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/ReplaceSpacesWithTabsQuickFix.java",
+      "line": 100,
+      "matchedCode": "result.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/SchemaTransformationUtils.java",
+      "line": 137,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/SchemaTransformationUtils.java",
+      "line": 183,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/action/AutoCommitter.java",
+      "line": 62,
+      "matchedCode": "content.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/action/PullRequestCreator.java",
+      "line": 67,
+      "matchedCode": "content.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/gemini/DslContextCollector.java",
+      "line": 59,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/gemini/DslContextCollector.java",
+      "line": 75,
+      "matchedCode": "fileName.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/gemini/GeminiPromptBuilder.java",
+      "line": 86,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/report/GithubPagesGenerator.java",
+      "line": 46,
+      "matchedCode": "src.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/report/StatisticsCollector.java",
+      "line": 127,
+      "matchedCode": "LocalDate.now().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/config/MiningState.java",
+      "line": 134,
+      "matchedCode": "Instant.now().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/config/MiningConfig.java",
+      "line": 100,
+      "matchedCode": "startDateObj.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/config/MiningConfig.java",
+      "line": 130,
+      "matchedCode": "branchObj.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/main/java/org/sandbox/mining/gemini/git/DiffExtractor.java",
+      "line": 140,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_gemini/src/test/java/org/sandbox/mining/gemini/CommitWalkerTest.java",
+      "line": 45,
+      "matchedCode": "repoDir.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_css_cleanup/src/org/sandbox/jdt/internal/css/ui/CSSCleanupAction.java",
+      "line": 125,
+      "matchedCode": "msg.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_css_cleanup/src/org/sandbox/jdt/internal/css/core/NodeExecutor.java",
+      "line": 151,
+      "matchedCode": "output.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_css_cleanup/src/org/sandbox/jdt/internal/css/core/PrettierRunner.java",
+      "line": 77,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_css_cleanup/src/org/sandbox/jdt/internal/css/core/PrettierRunner.java",
+      "line": 89,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_css_cleanup/src/org/sandbox/jdt/internal/css/core/StylelintRunner.java",
+      "line": 56,
+      "matchedCode": "filePath.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_css_cleanup/src/org/sandbox/jdt/internal/css/core/StylelintRunner.java",
+      "line": 100,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_css_cleanup/src/org/sandbox/jdt/internal/css/core/StylelintRunner.java",
+      "line": 111,
+      "matchedCode": "errorSb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java",
+      "line": 104,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/helper/SwitchIntToEnumHelper.java",
+      "line": 383,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_cli/src/main/java/org/sandbox/mining/report/JsonReporter.java",
+      "line": 85,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_cli/src/main/java/org/sandbox/mining/report/MarkdownReporter.java",
+      "line": 91,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_cli/src/main/java/org/sandbox/mining/config/MiningConfig.java",
+      "line": 95,
+      "matchedCode": "branchObj.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_cli/src/main/java/org/sandbox/mining/MiningCli.java",
+      "line": 210,
+      "matchedCode": "p.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_cli/src/main/java/org/sandbox/mining/scanner/SourceScanner.java",
+      "line": 83,
+      "matchedCode": "file.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_cli/src/main/java/org/sandbox/mining/scanner/SourceScanner.java",
+      "line": 124,
+      "matchedCode": "rootDir.relativize(javaFile).toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_cli/src/test/java/org/sandbox/mining/SourceScannerTest.java",
+      "line": 51,
+      "matchedCode": "p.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_mining_cli/src/test/java/org/sandbox/mining/SourceScannerTest.java",
+      "line": 66,
+      "matchedCode": "javaFiles.get(0).toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-benchmarks/src/main/java/org/sandbox/benchmarks/ASTParsingBenchmark.java",
+      "line": 120,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-benchmarks/src/main/java/org/sandbox/benchmarks/ASTParsingBenchmark.java",
+      "line": 145,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox-benchmarks/src/main/java/org/sandbox/benchmarks/PatternMatchingBenchmark.java",
+      "line": 101,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_triggerpattern_test/src/org/sandbox/jdt/ui/tests/quickfix/EncodingPatternTest.java",
+      "line": 106,
+      "matchedCode": "bytesBinding.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_triggerpattern_test/src/org/sandbox/jdt/ui/tests/quickfix/EncodingPatternTest.java",
+      "line": 262,
+      "matchedCode": "strBinding.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java",
+      "line": 105,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_platform_helper/src/org/sandbox/jdt/internal/corext/fix/helper/MultiStatusSimplifyPlatformStatus.java",
+      "line": 107,
+      "matchedCode": "codeQualifiedName.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_platform_helper/src/org/sandbox/jdt/internal/corext/fix/helper/AbstractSimplifyPlatformStatus.java",
+      "line": 106,
+      "matchedCode": "codeQualifiedName.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_platform_helper/src/org/sandbox/jdt/internal/corext/fix/helper/AbstractSimplifyPlatformStatus.java",
+      "line": 116,
+      "matchedCode": "severityQualifiedName.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_platform_helper/src/org/sandbox/jdt/internal/corext/fix/SimplifyPlatformStatusFixCore.java",
+      "line": 110,
+      "matchedCode": "SimplifyPlatformStatusFixCore.this.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/ui/HintFileQuickAssistProcessor.java",
+      "line": 182,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/HintFileRegistry.java",
+      "line": 334,
+      "matchedCode": "file.getProjectRelativePath().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/git/CommandLineGitProvider.java",
+      "line": 256,
+      "matchedCode": "beforeText.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/git/CommandLineGitProvider.java",
+      "line": 256,
+      "matchedCode": "afterText.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/git/CommandLineGitProvider.java",
+      "line": 321,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/analysis/RuleInferenceEngine.java",
+      "line": 225,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/analysis/DiffHunkRefiner.java",
+      "line": 190,
+      "matchedCode": "node.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/analysis/PlaceholderGeneralizer.java",
+      "line": 89,
+      "matchedCode": "alignment.beforeNode().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/analysis/PlaceholderGeneralizer.java",
+      "line": 90,
+      "matchedCode": "alignment.afterNode().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/eclipse/HintContext.java",
+      "line": 196,
+      "matchedCode": "value.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/internal/corext/util/NamingUtils.java",
+      "line": 88,
+      "matchedCode": "anonymousClass.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/internal/corext/util/NamingUtils.java",
+      "line": 116,
+      "matchedCode": "hexString.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/internal/corext/util/NamingUtils.java",
+      "line": 169,
+      "matchedCode": "fullClassName.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/internal/corext/util/TypeWideningAnalyzer.java",
+      "line": 269,
+      "matchedCode": "signature.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/internal/corext/util/VariableResolver.java",
+      "line": 217,
+      "matchedCode": "((PrimitiveType)type).getPrimitiveTypeCode().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/internal/corext/util/VariableResolver.java",
+      "line": 228,
+      "matchedCode": "type.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_common/src/org/sandbox/jdt/internal/corext/util/ASTNavigationUtils.java",
+      "line": 226,
+      "matchedCode": "qualifiedName.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
+      "line": 102,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithCategoriesJUnitPlugin.java",
+      "line": 181,
+      "matchedCode": "runnerType.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithCategoriesJUnitPlugin.java",
+      "line": 298,
+      "matchedCode": "type.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/TestJUnit3Plugin.java",
+      "line": 145,
+      "matchedCode": "method.getReturnType2().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/TestJUnit3Plugin.java",
+      "line": 157,
+      "matchedCode": "superclass.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/lib/LifecycleMethodAdapter.java",
+      "line": 150,
+      "matchedCode": "((SingleVariableDeclaration)param).getType().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithTheoriesJUnitPlugin.java",
+      "line": 159,
+      "matchedCode": "runnerType.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithTheoriesJUnitPlugin.java",
+      "line": 288,
+      "matchedCode": "fieldType.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithJUnitPlugin.java",
+      "line": 104,
+      "matchedCode": "runnerType.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithEnclosedJUnitPlugin.java",
+      "line": 120,
+      "matchedCode": "runnerType.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RuleTemporayFolderJUnitPlugin.java",
+      "line": 117,
+      "matchedCode": "node.getExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RuleTemporayFolderJUnitPlugin.java",
+      "line": 162,
+      "matchedCode": "node.getExpression().toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/CategoryJUnitPlugin.java",
+      "line": 149,
+      "matchedCode": "type.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RuleExpectedExceptionJUnitPlugin.java",
+      "line": 389,
+      "matchedCode": "type.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RuleExpectedExceptionJUnitPlugin.java",
+      "line": 394,
+      "matchedCode": "arg.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/JUnitCleanUpFixCore.java",
+      "line": 104,
+      "matchedCode": "preview.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/JUnitCleanUpFixCore.java",
+      "line": 110,
+      "matchedCode": "preview.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/JUnitCleanUpFixCore.java",
+      "line": 135,
+      "matchedCode": "JUnitCleanUpFixCore.this.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/JUnitCleanUpFixCore.java",
+      "line": 152,
+      "matchedCode": "junitfound.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java",
+      "line": 99,
+      "matchedCode": "sb.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplication.java",
+      "line": 674,
+      "matchedCode": "this.patchContent.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplication.java",
+      "line": 695,
+      "matchedCode": "startTime.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplication.java",
+      "line": 696,
+      "matchedCode": "endTime.toString()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java11",
+      "rule": "Consider using String.valueOf() for null safety",
+      "file": "sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java",
+      "line": 95,
+      "matchedCode": "sb.toString()"
+    }
+  ]
+}
