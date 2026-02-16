@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -492,115 +491,6 @@ public class RuleChainBuilder {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 
-	/**
-	 * Documents the CURRENT BUGGY behavior of multiple loops adding to same list.
-	 * 
-	 * <p><b>WARNING:</b> This test documents incorrect behavior that should NOT be
-	 * relied upon. The converted code is semantically wrong - it overwrites the list
-	 * instead of accumulating entries from both loops.</p>
-	 * 
-	 * <p><b>Additional Issue - Mutability:</b> Even if the overwrite bug were fixed,
-	 * using {@code Collectors.toList()} followed by {@code Collections.sort()} is risky
-	 * because {@code Collectors.toList()} does not guarantee a mutable list. See
-	 * {@link #testLoopWithSubsequentSort_convertsToStream()} for details.</p>
-	 * 
-	 * <p><b>When this test FAILS:</b> It means the bug has been fixed! Update the
-	 * test above ({@code testMultipleLoopsPopulatingList_streamConcat}) to be enabled
-	 * and delete this test.</p>
-	 */
-	@Disabled("FIXED: Bug has been fixed - multiple loops now use Stream.concat()")
-	@Test
-	@DisplayName("BUGGY BEHAVIOR: Multiple loops overwrite list instead of accumulating")
-	public void testMultipleLoopsPopulatingList_currentBuggyBehavior() throws CoreException {
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-
-		String given = """
-				package test1;
-				import java.util.*;
-				public class RuleChainBuilder {
-					private List<MethodRule> methodRules = new ArrayList<>();
-					private List<TestRule> testRules = new ArrayList<>();
-					private Map<Object, Integer> orderValues = new HashMap<>();
-					private static final Comparator<RuleEntry> ENTRY_COMPARATOR = Comparator.comparingInt(e -> e.order);
-
-					private List<RuleEntry> getSortedEntries() {
-						List<RuleEntry> ruleEntries = new ArrayList<RuleEntry>(
-								methodRules.size() + testRules.size());
-						for (MethodRule rule : methodRules) {
-							ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule)));
-						}
-						for (TestRule rule : testRules) {
-							ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule)));
-						}
-						Collections.sort(ruleEntries, ENTRY_COMPARATOR);
-						return ruleEntries;
-					}
-
-					interface MethodRule {}
-					interface TestRule {}
-
-					static class RuleEntry {
-						static final int TYPE_METHOD_RULE = 1;
-						static final int TYPE_TEST_RULE = 2;
-						Object rule;
-						int type;
-						int order;
-						RuleEntry(Object rule, int type, Integer order) {
-							this.rule = rule;
-							this.type = type;
-							this.order = order != null ? order : 0;
-						}
-					}
-				}
-				""";
-
-		// BUGGY OUTPUT: Each loop OVERWRITES the list instead of adding to it!
-		// This loses all entries from the first loop (methodRules).
-		String buggyExpected = """
-				package test1;
-				import java.util.*;
-				import java.util.stream.Collectors;
-				public class RuleChainBuilder {
-					private List<MethodRule> methodRules = new ArrayList<>();
-					private List<TestRule> testRules = new ArrayList<>();
-					private Map<Object, Integer> orderValues = new HashMap<>();
-					private static final Comparator<RuleEntry> ENTRY_COMPARATOR = Comparator.comparingInt(e -> e.order);
-
-					private List<RuleEntry> getSortedEntries() {
-						List<RuleEntry> ruleEntries = new ArrayList<RuleEntry>(
-								methodRules.size() + testRules.size());
-						ruleEntries = methodRules.stream()
-								.map(rule -> new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule)))
-								.collect(Collectors.toList());
-						ruleEntries = testRules.stream()
-								.map(rule -> new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule)))
-								.collect(Collectors.toList());
-						Collections.sort(ruleEntries, ENTRY_COMPARATOR);
-						return ruleEntries;
-					}
-
-					interface MethodRule {}
-					interface TestRule {}
-
-					static class RuleEntry {
-						static final int TYPE_METHOD_RULE = 1;
-						static final int TYPE_TEST_RULE = 2;
-						Object rule;
-						int type;
-						int order;
-						RuleEntry(Object rule, int type, Integer order) {
-							this.rule = rule;
-							this.type = type;
-							this.order = order != null ? order : 0;
-						}
-					}
-				}
-				""";
-
-		ICompilationUnit cu = pack.createCompilationUnit("RuleChainBuilder.java", given, false, null);
-		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { buggyExpected }, null);
-	}
 
 	/**
 	 * Tests single for-each loop adding to list followed by sort.
