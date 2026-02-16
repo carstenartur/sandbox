@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
+import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
@@ -133,7 +134,7 @@ public class HintFileParserTest {
 		
 		assertEquals("encoding.utf8", hintFile.getId());
 		assertEquals("Replace String encoding literals", hintFile.getDescription());
-		assertEquals("warning", hintFile.getSeverity());
+		assertEquals(Severity.WARNING, hintFile.getSeverity());
 		assertEquals(11, hintFile.getMinJavaVersion());
 		assertEquals(List.of("encoding", "modernization"), hintFile.getTags());
 		assertEquals(1, hintFile.getRules().size());
@@ -295,7 +296,7 @@ public class HintFileParserTest {
 		
 		HintFile hintFile = parser.parse(content);
 		
-		assertEquals("info", hintFile.getSeverity(), "Default severity should be 'info'");
+		assertEquals(Severity.INFO, hintFile.getSeverity(), "Default severity should be 'info'");
 	}
 	
 	@Test
@@ -326,7 +327,7 @@ public class HintFileParserTest {
 		HintFile hintFile = parser.parse(content);
 		
 		assertEquals("test.complete", hintFile.getId());
-		assertEquals("warning", hintFile.getSeverity());
+		assertEquals(Severity.WARNING, hintFile.getSeverity());
 		assertEquals(11, hintFile.getMinJavaVersion());
 		assertEquals(3, hintFile.getRules().size());
 		

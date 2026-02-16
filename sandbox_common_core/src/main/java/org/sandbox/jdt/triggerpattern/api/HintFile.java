@@ -41,7 +41,7 @@ public final class HintFile {
 	
 	private String id;
 	private String description;
-	private String severity;
+	private Severity severity;
 	private int minJavaVersion;
 	private List<String> tags;
 	private final List<TransformationRule> rules;
@@ -54,7 +54,7 @@ public final class HintFile {
 		this.tags = new ArrayList<>();
 		this.rules = new ArrayList<>();
 		this.includes = new ArrayList<>();
-		this.severity = "info"; //$NON-NLS-1$
+		this.severity = Severity.INFO;
 	}
 	
 	/**
@@ -96,18 +96,45 @@ public final class HintFile {
 	/**
 	 * Returns the severity level.
 	 * 
-	 * @return the severity ({@code "info"}, {@code "warning"}, or {@code "error"})
+	 * @return the severity enum value
 	 */
-	public String getSeverity() {
+	public Severity getSeverity() {
 		return severity;
+	}
+	
+	/**
+	 * Returns the severity level as a lowercase string.
+	 * 
+	 * @return the severity name in lowercase (e.g. {@code "info"}, {@code "warning"})
+	 */
+	public String getSeverityAsString() {
+		return severity.name().toLowerCase();
+	}
+	
+	/**
+	 * Sets the severity level from a string value.
+	 * Parsing is case-insensitive; unrecognized values fall back to {@link Severity#INFO}.
+	 * 
+	 * @param severity the severity string ({@code "info"}, {@code "warning"}, {@code "error"}, or {@code "hint"})
+	 */
+	public void setSeverity(String severity) {
+		if (severity == null) {
+			this.severity = Severity.INFO;
+			return;
+		}
+		try {
+			this.severity = Severity.valueOf(severity.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			this.severity = Severity.INFO;
+		}
 	}
 	
 	/**
 	 * Sets the severity level.
 	 * 
-	 * @param severity the severity ({@code "info"}, {@code "warning"}, or {@code "error"})
+	 * @param severity the severity enum value
 	 */
-	public void setSeverity(String severity) {
+	public void setSeverity(Severity severity) {
 		this.severity = severity;
 	}
 	
