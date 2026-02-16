@@ -46,11 +46,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH="mining/gemini-state-$(date +%Y-%m-%d)"
-          git checkout -b "$BRANCH"
           git add .github/refactoring-mining/state.json
-          git diff --cached --quiet || \
-            git commit -m "mining: Update state $(date +%Y-%m-%d)"
+          if git diff --cached --quiet; then
+            echo "No state changes to commit; skipping branch creation and push."
+            exit 0
+          fi
+          BRANCH="mining/gemini-state-$(date +%Y-%m-%d)-${{ github.run_number }}"
+          git checkout -b "$BRANCH"
+          git commit -m "mining: Update state $(date +%Y-%m-%d)"
           git push origin "$BRANCH"
 
       - name: Deploy Mining Report to gh-pages
