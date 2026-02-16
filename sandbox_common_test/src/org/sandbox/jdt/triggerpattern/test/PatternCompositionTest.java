@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
@@ -273,7 +274,7 @@ public class PatternCompositionTest {
 		
 		assertEquals("full-metadata", hintFile.getId()); //$NON-NLS-1$
 		assertEquals("Complete file with includes", hintFile.getDescription()); //$NON-NLS-1$
-		assertEquals("warning", hintFile.getSeverity()); //$NON-NLS-1$
+		assertEquals(Severity.WARNING, hintFile.getSeverity());
 		assertEquals(11, hintFile.getMinJavaVersion());
 		assertFalse(hintFile.getTags().isEmpty());
 		assertEquals(1, hintFile.getIncludes().size());
