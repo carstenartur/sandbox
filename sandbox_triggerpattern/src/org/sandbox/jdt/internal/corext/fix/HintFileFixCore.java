@@ -106,6 +106,49 @@ public class HintFileFixCore {
 	}
 
 	/**
+	 * Finds hint-file-based cleanup operations for a specific bundle,
+	 * tracking processed nodes to avoid duplicate processing with imperative helpers.
+	 *
+	 * <p>This method loads a single hint file bundle by ID from the
+	 * {@link HintFileRegistry} and creates rewrite operations for matches.
+	 * Matched nodes are added to {@code nodesprocessed} so that imperative
+	 * helpers can skip them.</p>
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param bundleId the hint file bundle ID to load (e.g., {@code "encoding"})
+	 * @param operations the set to add found operations to
+	 * @param nodesprocessed set of already-processed AST nodes; matched nodes
+	 *        are added to this set to prevent double-processing
+	 * @since 1.3.7
+	 */
+	public static void findOperationsForBundle(CompilationUnit compilationUnit,
+			String bundleId, Set<CompilationUnitRewriteOperation> operations,
+			Set<ASTNode> nodesprocessed) {
+
+		HintFileRegistry registry = HintFileRegistry.getInstance();
+		registry.loadFromExtensions();
+
+		HintFile hintFile = registry.getHintFile(bundleId);
+		if (hintFile == null) {
+			return;
+		}
+
+		List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
+		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
+		List<TransformationResult> results = processor.process(compilationUnit);
+
+		for (TransformationResult result : results) {
+			if (result.hasReplacement()) {
+				ASTNode matchedNode = result.match().getMatchedNode();
+				if (matchedNode != null) {
+					nodesprocessed.add(matchedNode);
+				}
+				operations.add(new HintFileRewriteOperation(result));
+			}
+		}
+	}
+
+	/**
 	 * Loads a hint file from a string and finds operations.
 	 *
 	 * @param compilationUnit the compilation unit to search
