@@ -10,7 +10,7 @@ A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugin
 
 ## 🔗 CI Status & Resources
 
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)
 [![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
 [![Coverage](https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml)
 [![Tests](https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml)
