@@ -25,7 +25,7 @@
 		<junit.version>6.0.2</junit.version>
 		<jacoco-version>0.8.14</jacoco-version>
 		<jgit.version>7.2.1.202505142326-r</jgit.version>
-		<snakeyaml.version>2.3</snakeyaml.version>
+		<snakeyaml.version>2.5</snakeyaml.version>
 	</properties>
 	
 	<dependencies>
