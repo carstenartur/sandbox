@@ -19,7 +19,6 @@
 		<maven.compiler.target>21</maven.compiler.target>
 		<maven.compiler.release>21</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<junit.version>6.0.3</junit.version>
 	</properties>
 	
 	<dependencies>
@@ -27,21 +26,18 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_common_core</artifactId>
-			<version>${project.version}</version>
 		</dependency>
 		
 		<!-- Dependency on sandbox_common (Tycho-built, but can be used as regular JAR) -->
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_common</artifactId>
-			<version>${project.version}</version>
 		</dependency>
 		
 		<!-- JUnit 5 for testing -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter</artifactId>
-			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		

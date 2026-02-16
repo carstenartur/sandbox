@@ -491,7 +491,7 @@ public class ASTProcessorTest {
 	@Test
 	public void testCatchClauseByExceptionType() {
 		// Create test code with IOException catch clause (standard Java class always in classpath)
-		ASTParser parser= ASTParser.newParser(AST.JLS_Latest);
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		CompilationUnit cu = createunit(parser,"""
 			package test;
 			import java.io.*;

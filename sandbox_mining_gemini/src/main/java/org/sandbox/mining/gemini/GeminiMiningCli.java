@@ -163,9 +163,9 @@ public class GeminiMiningCli {
 			cloner.cloneRepo(repo.getUrl(), repo.getBranch(), repoDir);
 
 			String lastCommit = state.getLastProcessedCommit(repo.getUrl());
-			CommitWalker walker = new CommitWalker(repoDir);
-			try (DiffExtractor diffExtractor = new DiffExtractor(repoDir, config.getMaxDiffLinesPerCommit(),
-					repo.getPaths())) {
+			try (CommitWalker walker = new CommitWalker(repoDir);
+					DiffExtractor diffExtractor = new DiffExtractor(repoDir, config.getMaxDiffLinesPerCommit(),
+							repo.getPaths())) {
 				List<RevCommit> batch = walker.nextBatch(lastCommit, config.getStartDate(), batchSize);
 				while (!batch.isEmpty()) {
 					for (RevCommit commit : batch) {
@@ -180,7 +180,6 @@ public class GeminiMiningCli {
 				}
 			}
 
-			walker.close();
 			System.out.println("  Completed: " + repo.getUrl());
 		}
 	}

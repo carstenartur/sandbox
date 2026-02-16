@@ -15,7 +15,6 @@
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox-functional-converter-core</artifactId>
-			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
 	<build>

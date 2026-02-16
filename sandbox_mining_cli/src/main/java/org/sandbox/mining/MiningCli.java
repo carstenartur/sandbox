@@ -323,13 +323,15 @@ public class MiningCli {
 	private static void deleteDirectory(Path dir) {
 		try {
 			if (Files.exists(dir)) {
-				Files.walk(dir).sorted(java.util.Comparator.reverseOrder()).forEach(p -> {
-					try {
-						Files.delete(p);
-					} catch (IOException e) {
-						// Ignore cleanup errors
-					}
-				});
+				try (var stream = Files.walk(dir)) {
+					stream.sorted(java.util.Comparator.reverseOrder()).forEach(p -> {
+						try {
+							Files.delete(p);
+						} catch (IOException e) {
+							// Ignore cleanup errors
+						}
+					});
+				}
 			}
 		} catch (IOException e) {
 			// Ignore cleanup errors

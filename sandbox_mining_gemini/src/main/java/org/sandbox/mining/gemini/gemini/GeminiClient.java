@@ -37,7 +37,7 @@ import com.google.gson.JsonParser;
  * {@link CommitEvaluation} objects. Includes rate limiting (4s delay)
  * and exponential backoff on HTTP 429 responses.</p>
  */
-public class GeminiClient {
+public class GeminiClient implements AutoCloseable {
 
 	private static final String API_URL_TEMPLATE =
 			"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=%s";
@@ -292,5 +292,10 @@ public class GeminiClient {
 			}
 		}
 		lastRequestTime = System.currentTimeMillis();
+	}
+
+	@Override
+	public void close() {
+		httpClient.close();
 	}
 }

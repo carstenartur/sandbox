@@ -44,8 +44,9 @@ class CommitWalkerTest {
 
 		ProcessBuilder pb = new ProcessBuilder("git", "init", repoDir.toString());
 		pb.redirectErrorStream(true);
-		Process p = pb.start();
-		assertEquals(0, p.waitFor());
+		Process initProcess = pb.start();
+		initProcess.getInputStream().readAllBytes();
+		assertEquals(0, initProcess.waitFor());
 
 		// Create an initial commit
 		Path testFile = repoDir.resolve("README.md");
@@ -54,11 +55,11 @@ class CommitWalkerTest {
 		exec(repoDir, "git", "-c", "user.name=Test", "-c", "user.email=test@test.com",
 				"commit", "-m", "Initial commit");
 
-		CommitWalker walker = new CommitWalker(repoDir);
-		List<?> batch = walker.nextBatch(null, null, 10);
-		assertNotNull(batch);
-		assertTrue(batch.size() >= 1);
-		walker.close();
+		try (CommitWalker walker = new CommitWalker(repoDir)) {
+			List<?> batch = walker.nextBatch(null, null, 10);
+			assertNotNull(batch);
+			assertTrue(batch.size() >= 1);
+		}
 	}
 
 	@Test
@@ -81,12 +82,12 @@ class CommitWalkerTest {
 		p.getInputStream().readAllBytes();
 		assertEquals(0, p.waitFor());
 
-		CommitWalker walker = new CommitWalker(repoDir);
-		// Date after the commit should return nothing
-		List<?> batch = walker.nextBatch(null, "2021-01-01", 10);
-		assertNotNull(batch);
-		assertEquals(0, batch.size());
-		walker.close();
+		try (CommitWalker walker = new CommitWalker(repoDir)) {
+			// Date after the commit should return nothing
+			List<?> batch = walker.nextBatch(null, "2021-01-01", 10);
+			assertNotNull(batch);
+			assertEquals(0, batch.size());
+		}
 	}
 
 	@Test
@@ -104,11 +105,11 @@ class CommitWalkerTest {
 					"commit", "-m", "Commit " + i);
 		}
 
-		CommitWalker walker = new CommitWalker(repoDir);
-		List<?> batch = walker.nextBatch(null, null, 3);
-		assertNotNull(batch);
-		assertEquals(3, batch.size());
-		walker.close();
+		try (CommitWalker walker = new CommitWalker(repoDir)) {
+			List<?> batch = walker.nextBatch(null, null, 3);
+			assertNotNull(batch);
+			assertEquals(3, batch.size());
+		}
 	}
 
 	private static void exec(Path workDir, String... cmd) throws IOException, InterruptedException {

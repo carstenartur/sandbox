@@ -361,6 +361,16 @@ See README.md for more information.
     </dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox-ast-api</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox-ast-api-jdt</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox-functional-converter-core</artifactId>
 				<version>${project.version}</version>
 			</dependency>

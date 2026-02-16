@@ -319,8 +319,7 @@ public class StructuralQualityTest {
 					"!(sourceVersionGE(8) || sourceVersionGE(17))"
 			};
 
-			ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-			try {
+			try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
 				for (int i = 0; i < threadCount; i++) {
 					final String expr = expressions[i % expressions.length];
 					executor.submit(() -> {
@@ -348,8 +347,6 @@ public class StructuralQualityTest {
 				for (GuardExpression expr : results) {
 					assertNotNull(expr, "Each parsed expression should be non-null");
 				}
-			} finally {
-				executor.shutdownNow();
 			}
 		}
 	}
