@@ -37,6 +37,9 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.Transform
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
+import org.sandbox.jdt.triggerpattern.cleanup.TypeChangeDetector;
+import org.sandbox.jdt.triggerpattern.cleanup.TypeChangeInfo;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 
@@ -229,6 +232,18 @@ public class HintFileFixCore {
 				if (newNode instanceof Expression) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
 					rewrite.replace(matchedNode, copy, group);
+
+					// Auto-detect: did we change a String charset argument to a Charset type?
+					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(
+							matchedNode, replacement);
+					if (typeChange != null) {
+						ImportRewrite importRewrite = cuRewrite.getImportRewrite();
+						ExceptionCleanupHelper.removeCheckedException(
+								matchedNode,
+								typeChange.exceptionFQN(),
+								typeChange.exceptionSimpleName(),
+								group, rewrite, importRewrite);
+					}
 				}
 			} else if (matchedNode instanceof Annotation) {
 				// Handle annotation replacement (e.g., @Before → @BeforeEach)

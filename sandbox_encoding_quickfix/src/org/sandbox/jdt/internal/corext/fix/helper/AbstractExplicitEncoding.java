@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
@@ -32,17 +31,12 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.StringLiteral;
-import org.eclipse.jdt.core.dom.TryStatement;
-import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.UnionType;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -50,6 +44,7 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.sandbox.jdt.internal.corext.util.ImportUtils;
+import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 
 
 /**
@@ -421,144 +416,13 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	public abstract String getPreview(boolean afterRefactoring, ChangeBehavior cb);
 
 	/**
-	 * Finds the enclosing MethodDeclaration or TryStatement for exception handling removal.
-	 *
-	 * @param node the starting node for the search
-	 * @return the enclosing MethodDeclaration or TryStatement, or null if not found
-	 */
-	private static ASTNode findEnclosingMethodOrTry(ASTNode node) {
-		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);
-		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
-		
-		// Return the closest ancestor. In Java, try statements are always inside method bodies,
-		// so if a TryStatement exists, it is guaranteed to be closer than any MethodDeclaration.
-		// getFirstAncestorOrNull returns the nearest ancestor of each type, so we just need to
-		// prefer the more specific (nested) one.
-		if (tryStmt != null) {
-			return tryStmt;
-		}
-		return methodDecl;
-	}
-
-	/**
-	 * Checks if a type represents UnsupportedEncodingException.
-	 *
-	 * @param type the type to check
-	 * @return true if the type is UnsupportedEncodingException
-	 */
-	private static boolean isUnsupportedEncodingException(Type type) {
-		return type.toString().equals(UNSUPPORTED_ENCODING_EXCEPTION);
-	}
-
-	/**
-	 * Removes UnsupportedEncodingException from method's throws clause.
-	 *
-	 * @param method the method declaration to modify
-	 * @param rewrite the AST rewrite to use
-	 * @param group the text edit group
-	 * @param importRewriter the import rewrite to use
-	 */
-	private static void removeExceptionFromMethodThrows(MethodDeclaration method, ASTRewrite rewrite, TextEditGroup group, ImportRewrite importRewriter) {
-		ListRewrite throwsRewrite = rewrite.getListRewrite(method, MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);
-		List<Type> thrownExceptions = method.thrownExceptionTypes();
-		for (Type exceptionType : thrownExceptions) {
-			if (isUnsupportedEncodingException(exceptionType)) {
-				throwsRewrite.remove(exceptionType, group);
-				importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
-			}
-		}
-	}
-
-	/**
-	 * Handles UnsupportedEncodingException removal from a union type in a catch clause.
-	 *
-	 * @param unionType the union type to modify
-	 * @param catchClause the catch clause containing the union type
-	 * @param rewrite the AST rewrite to use
-	 * @param group the text edit group
-	 */
-	private static void removeExceptionFromUnionType(UnionType unionType, CatchClause catchClause, ASTRewrite rewrite, TextEditGroup group) {
-		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);
-		List<Type> types = unionType.types();
-
-		// Collect types to remove first to avoid modification during iteration
-		List<Type> typesToRemove = types.stream()
-				.filter(AbstractExplicitEncoding::isUnsupportedEncodingException)
-				.toList();
-
-		typesToRemove.forEach(type -> unionRewrite.remove(type, group));
-
-		// Calculate remaining count after scheduled removals
-		int remainingCount = types.size() - typesToRemove.size();
-		if (remainingCount == 1) {
-			// Find the remaining type (not in removal list)
-			Type remainingType = types.stream()
-					.filter(type -> !typesToRemove.contains(type))
-					.findFirst()
-					.orElse(null);
-			if (remainingType != null) {
-				rewrite.replace(unionType, remainingType, group);
-			}
-		} else if (remainingCount == 0) {
-			rewrite.remove(catchClause, group);
-		}
-	}
-
-	/**
-	 * Removes UnsupportedEncodingException from catch clauses in a try statement.
-	 *
-	 * @param tryStatement the try statement to process
-	 * @param rewrite the AST rewrite to use
-	 * @param group the text edit group
-	 * @param importRewriter the import rewrite to use
-	 */
-	private static void removeExceptionFromTryCatch(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group, ImportRewrite importRewriter) {
-		List<CatchClause> catchClauses = tryStatement.catchClauses();
-		for (CatchClause catchClause : catchClauses) {
-			SingleVariableDeclaration exception = catchClause.getException();
-			Type exceptionType = exception.getType();
-
-			if (exceptionType instanceof UnionType) {
-				removeExceptionFromUnionType((UnionType) exceptionType, catchClause, rewrite, group);
-			} else if (isUnsupportedEncodingException(exceptionType)) {
-				rewrite.remove(catchClause, group);
-				importRewriter.removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
-			}
-		}
-	}
-
-	/**
-	 * Simplifies a try statement that has become empty after removing catch clauses.
-	 *
-	 * @param tryStatement the try statement to check and simplify
-	 * @param rewrite the AST rewrite to use
-	 * @param group the text edit group
-	 */
-	private static void simplifyEmptyTryStatement(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group) {
-		if (!tryStatement.catchClauses().isEmpty() || tryStatement.getFinally() != null) {
-			return;
-		}
-
-		Block tryBlock = tryStatement.getBody();
-		boolean hasResources = !tryStatement.resources().isEmpty();
-		boolean hasStatements = !tryBlock.statements().isEmpty();
-
-		if (!hasResources && !hasStatements) {
-			rewrite.remove(tryStatement, group);
-		} else if (!hasResources) {
-			rewrite.replace(tryStatement, tryBlock, group);
-		}
-	}
-
-	/**
 	 * Removes UnsupportedEncodingException from the enclosing method's throws clause
 	 * or from catch clauses in a try statement. This is called after converting string-based
 	 * encoding to StandardCharsets, since StandardCharsets methods don't throw
 	 * UnsupportedEncodingException.
 	 *
-	 * <p>For method declarations, removes UnsupportedEncodingException from the throws clause.
-	 * For try statements, removes catch clauses that only catch UnsupportedEncodingException,
-	 * or removes the exception type from union types in multi-catch clauses.
+	 * <p>Delegates to {@link ExceptionCleanupHelper#removeCheckedException} for the
+	 * actual work.
 	 *
 	 * @param visited the AST node that was modified, must not be null
 	 * @param group the text edit group for tracking changes, must not be null
@@ -566,18 +430,11 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * @param importRewriter the import rewrite for removing unused imports, must not be null
 	 */
 	protected void removeUnsupportedEncodingException(final ASTNode visited, TextEditGroup group, ASTRewrite rewrite, ImportRewrite importRewriter) {
-		ASTNode parent = findEnclosingMethodOrTry(visited);
-		if (parent == null) {
-			return;
-		}
-
-		if (parent instanceof MethodDeclaration) {
-			removeExceptionFromMethodThrows((MethodDeclaration) parent, rewrite, group, importRewriter);
-		} else if (parent instanceof TryStatement) {
-			TryStatement tryStatement = (TryStatement) parent;
-			removeExceptionFromTryCatch(tryStatement, rewrite, group, importRewriter);
-			simplifyEmptyTryStatement(tryStatement, rewrite, group);
-		}
+		ExceptionCleanupHelper.removeCheckedException(
+				visited,
+				JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION,
+				UNSUPPORTED_ENCODING_EXCEPTION,
+				group, rewrite, importRewriter);
 	}
 
 }

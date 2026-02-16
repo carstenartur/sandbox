@@ -24,4 +24,5 @@ Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Eclipse-BuddyPolicy: global
 Import-Package: org.sandbox.jdt.internal.common,
  org.sandbox.jdt.internal.corext.fix2,
- org.sandbox.jdt.internal.corext.util
+ org.sandbox.jdt.internal.corext.util,
+ org.sandbox.jdt.triggerpattern.cleanup
