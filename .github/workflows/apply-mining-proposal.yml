@@ -1,0 +1,92 @@
+name: Apply Mining Proposal
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_hash:
+        description: 'Source commit hash'
+        required: true
+      action:
+        description: 'Action'
+        required: true
+        type: choice
+        options:
+          - direct-commit
+          - pull-request
+      dsl_rule:
+        description: 'DSL rule (Base64-encoded)'
+        required: true
+      target_hint_file:
+        description: 'Target .sandbox-hint file'
+        required: true
+      category:
+        description: 'Category'
+        required: true
+      summary:
+        description: 'Summary'
+        required: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Decode & Append Rule
+        run: |
+          echo "${{ inputs.dsl_rule }}" | base64 -d > /tmp/new-rule.txt
+          echo "" >> "${{ inputs.target_hint_file }}"
+          echo "// Mined from commit ${{ inputs.commit_hash }}" >> "${{ inputs.target_hint_file }}"
+          echo "// Category: ${{ inputs.category }}" >> "${{ inputs.target_hint_file }}"
+          cat /tmp/new-rule.txt >> "${{ inputs.target_hint_file }}"
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Validate Hint File
+        run: |
+          mvn install -N -q
+          mvn install -pl sandbox_common_core -DskipTests -q
+          mvn package -pl sandbox_mining_gemini -DskipTests -q
+          java -cp sandbox_mining_gemini/target/sandbox-mining-gemini.jar \
+            org.sandbox.mining.gemini.dsl.DslValidator \
+            "${{ inputs.target_hint_file }}"
+
+      # Option A: Direct Commit
+      - name: Direct Commit
+        if: inputs.action == 'direct-commit'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${{ inputs.target_hint_file }}"
+          git commit -m "mining: DSL rule from ${{ inputs.commit_hash }} [${{ inputs.category }}]
+
+          ${{ inputs.summary }}"
+          git push
+
+      # Option B: Pull Request
+      - name: Create PR
+        if: inputs.action == 'pull-request'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          title: "🔧 Mining: ${{ inputs.summary }}"
+          body: |
+            ## Gemini Mining Proposal
+
+            **Source commit:** `${{ inputs.commit_hash }}`
+            **Category:** ${{ inputs.category }}
+            **Target file:** `${{ inputs.target_hint_file }}`
+
+            ### New DSL Rule
+            ```
+            $(echo "${{ inputs.dsl_rule }}" | base64 -d)
+            ```
+          branch: "mining/proposal-${{ inputs.commit_hash }}"
+          commit-message: "mining: DSL rule from ${{ inputs.commit_hash }}"
