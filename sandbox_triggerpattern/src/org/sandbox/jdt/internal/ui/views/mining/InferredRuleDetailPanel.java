@@ -133,20 +133,12 @@ public class InferredRuleDetailPanel extends Composite {
 		checkbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		ruleCheckboxes.add(checkbox);
 
-		// Pattern display
+		// Pattern display (compact FQN representation — imports are inferred)
 		StyledText patternText = new StyledText(ruleComposite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
 		patternText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 		StringBuilder sb = new StringBuilder();
 		sb.append(rule.sourcePattern()).append('\n');
 		sb.append("=> ").append(rule.replacementPattern()); //$NON-NLS-1$
-		if (rule.importChanges() != null && !rule.importChanges().isEmpty()) {
-			for (String imp : rule.importChanges().getAddImports()) {
-				sb.append("\n   addImport ").append(imp); //$NON-NLS-1$
-			}
-			for (String imp : rule.importChanges().getRemoveImports()) {
-				sb.append("\n   removeImport ").append(imp); //$NON-NLS-1$
-			}
-		}
 		patternText.setText(sb.toString());
 		patternText.setEditable(false);
 	}

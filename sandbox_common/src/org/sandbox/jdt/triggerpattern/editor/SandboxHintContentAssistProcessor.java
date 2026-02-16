@@ -60,19 +60,6 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 		{ "notContains", "notContains($x, \"text\") – enclosing method does not contain the text" }, //$NON-NLS-1$ //$NON-NLS-2$
 	};
 
-	/**
-	 * Import directive entries with name and description.
-	 * <p>These directives are optional when imports can be implicitly derived
-	 * from fully qualified names in source/replacement patterns.</p>
-	 */
-	private static final String[][] IMPORT_PROPOSALS = {
-		{ "addImport ", "pkg.ClassName – add a regular import" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "removeImport ", "pkg.ClassName – remove a regular import" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "addStaticImport ", "pkg.Class.member – add a static import" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "removeStaticImport ", "pkg.Class.member – remove a static import" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "replaceStaticImport ", "old.Type new.Type – replace static import source type" }, //$NON-NLS-1$ //$NON-NLS-2$
-	};
-
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
 		IDocument document = viewer.getDocument();
@@ -81,10 +68,7 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 		// Check if we are after a :: guard separator
 		boolean afterGuard = isAfterGuardSeparator(document, offset - prefix.length());
 
-		// Check if we are at the beginning of a line (for import directives)
-		boolean atLineStart = isAtLineStart(document, offset - prefix.length());
-
-		if (!afterGuard && !atLineStart && prefix.isEmpty()) {
+		if (!afterGuard && prefix.isEmpty()) {
 			return new ICompletionProposal[0];
 		}
 
@@ -126,23 +110,6 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 							replacement, replacementOffset, replacementLength,
 							cursorPosition, null, guardName,
 							null, "Custom guard function")); //$NON-NLS-1$
-				}
-			}
-		}
-
-		// Propose import directives at the beginning of a line
-		if (atLineStart) {
-			for (String[] entry : IMPORT_PROPOSALS) {
-				String name = entry[0];
-				String description = entry[1];
-				if (name.toLowerCase().startsWith(lowerPrefix)) {
-					int replacementOffset = offset - prefix.length();
-					int replacementLength = prefix.length();
-					int cursorPosition = name.length();
-					proposals.add(new CompletionProposal(
-							name, replacementOffset, replacementLength,
-							cursorPosition, null, name.trim() + " – " + description, //$NON-NLS-1$
-							null, description));
 				}
 			}
 		}
@@ -215,20 +182,5 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 			// ignore
 		}
 		return false;
-	}
-
-	/**
-	 * Checks if the position is at the beginning of a line
-	 * (only whitespace before the position on the current line).
-	 */
-	private boolean isAtLineStart(IDocument document, int offset) {
-		try {
-			int lineNum = document.getLineOfOffset(offset);
-			int lineStart = document.getLineOffset(lineNum);
-			String beforeCursor = document.get(lineStart, offset - lineStart);
-			return beforeCursor.isBlank();
-		} catch (BadLocationException e) {
-			return false;
-		}
 	}
 }

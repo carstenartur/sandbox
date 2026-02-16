@@ -343,13 +343,12 @@ public class HintFileParserTest {
 	}
 
 	@Test
-	public void testParseReplaceStaticImportDirective() throws HintParseException {
+	public void testParseReplaceStaticImportInferred() throws HintParseException {
+		// FQN-based inference: replaceStaticImport is automatically derived
+		// from matching method names with different FQN types
 		String content = """
-			Assert.assertEquals($expected, $actual)
-			=> Assertions.assertEquals($expected, $actual)
-			addImport org.junit.jupiter.api.Assertions
-			removeImport org.junit.Assert
-			replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+			org.junit.Assert.assertEquals($expected, $actual)
+			=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)
 			;;
 			""";
 
@@ -359,19 +358,17 @@ public class HintFileParserTest {
 		TransformationRule rule = hintFile.getRules().get(0);
 		assertNotNull(rule.getImportDirective(), "Rule should have import directives");
 		assertFalse(rule.getImportDirective().getReplaceStaticImports().isEmpty(),
-				"Rule should have replaceStaticImport directives");
+				"Rule should have replaceStaticImport directives inferred from FQNs");
 		assertEquals("org.junit.jupiter.api.Assertions",
 				rule.getImportDirective().getReplaceStaticImports().get("org.junit.Assert"));
 	}
 
 	@Test
-	public void testParseMultipleReplaceStaticImportDirectives() throws HintParseException {
+	public void testParseMultipleReplaceStaticImportInferred() throws HintParseException {
+		// FQN-based inference for Assume → Assumptions
 		String content = """
-			Assume.assumeTrue($cond)
-			=> Assumptions.assumeTrue($cond)
-			addImport org.junit.jupiter.api.Assumptions
-			removeImport org.junit.Assume
-			replaceStaticImport org.junit.Assume org.junit.jupiter.api.Assumptions
+			org.junit.Assume.assumeTrue($cond)
+			=> org.junit.jupiter.api.Assumptions.assumeTrue($cond)
 			;;
 			""";
 
@@ -387,12 +384,11 @@ public class HintFileParserTest {
 	}
 
 	@Test
-	public void testParseAnnotationRuleWithImports() throws HintParseException {
+	public void testParseAnnotationRuleWithFqnInference() throws HintParseException {
+		// FQN-based inference for annotation rules
 		String content = """
 			@org.junit.Before
-			=> @BeforeEach
-			addImport org.junit.jupiter.api.BeforeEach
-			removeImport org.junit.Before
+			=> @org.junit.jupiter.api.BeforeEach
 			;;
 			""";
 
@@ -404,14 +400,18 @@ public class HintFileParserTest {
 		assertEquals("@org.junit.Before", rule.sourcePattern().getValue());
 		assertFalse(rule.isHintOnly());
 		assertEquals(1, rule.alternatives().size());
-		assertEquals("@BeforeEach", rule.alternatives().get(0).replacementPattern());
+		assertEquals("@org.junit.jupiter.api.BeforeEach", rule.alternatives().get(0).replacementPattern());
+		// FQN inference detects the annotation FQN types
+		// Note: annotation FQNs start with @ which is outside the FQN regex,
+		// but the type part after @ is detected
 		assertNotNull(rule.getImportDirective());
 		assertTrue(rule.getImportDirective().getAddImports().contains("org.junit.jupiter.api.BeforeEach"));
 		assertTrue(rule.getImportDirective().getRemoveImports().contains("org.junit.Before"));
 	}
 
 	@Test
-	public void testParseAnnotations5File() throws HintParseException {
+	public void testParseAnnotations5FqnFile() throws HintParseException {
+		// FQN-based annotations5 file format
 		String content = """
 			<!id: annotations5>
 			<!description: JUnit 4 to JUnit 5 annotation migration>
@@ -420,21 +420,15 @@ public class HintFileParserTest {
 			<!tags: junit, testing, migration>
 
 			@org.junit.Before
-			=> @BeforeEach
-			addImport org.junit.jupiter.api.BeforeEach
-			removeImport org.junit.Before
+			=> @org.junit.jupiter.api.BeforeEach
 			;;
 
 			@org.junit.After
-			=> @AfterEach
-			addImport org.junit.jupiter.api.AfterEach
-			removeImport org.junit.After
+			=> @org.junit.jupiter.api.AfterEach
 			;;
 
 			@org.junit.Ignore
-			=> @Disabled
-			addImport org.junit.jupiter.api.Disabled
-			removeImport org.junit.Ignore
+			=> @org.junit.jupiter.api.Disabled
 			;;
 			""";
 
@@ -452,22 +446,21 @@ public class HintFileParserTest {
 
 		// Check specific rules
 		assertEquals("@org.junit.Before", hintFile.getRules().get(0).sourcePattern().getValue());
-		assertEquals("@BeforeEach", hintFile.getRules().get(0).alternatives().get(0).replacementPattern());
+		assertEquals("@org.junit.jupiter.api.BeforeEach", hintFile.getRules().get(0).alternatives().get(0).replacementPattern());
 
 		assertEquals("@org.junit.After", hintFile.getRules().get(1).sourcePattern().getValue());
-		assertEquals("@AfterEach", hintFile.getRules().get(1).alternatives().get(0).replacementPattern());
+		assertEquals("@org.junit.jupiter.api.AfterEach", hintFile.getRules().get(1).alternatives().get(0).replacementPattern());
 
 		assertEquals("@org.junit.Ignore", hintFile.getRules().get(2).sourcePattern().getValue());
-		assertEquals("@Disabled", hintFile.getRules().get(2).alternatives().get(0).replacementPattern());
+		assertEquals("@org.junit.jupiter.api.Disabled", hintFile.getRules().get(2).alternatives().get(0).replacementPattern());
 	}
 
 	@Test
-	public void testParseAssertThatHamcrestRule() throws HintParseException {
+	public void testParseAssertThatHamcrestFqnRule() throws HintParseException {
+		// FQN-based Hamcrest rule
 		String content = """
-			Assert.assertThat($actual, $matcher)
-			=> MatcherAssert.assertThat($actual, $matcher)
-			addImport org.hamcrest.MatcherAssert
-			removeImport org.junit.Assert
+			org.junit.Assert.assertThat($actual, $matcher)
+			=> org.hamcrest.MatcherAssert.assertThat($actual, $matcher)
 			;;
 			""";
 
@@ -476,7 +469,7 @@ public class HintFileParserTest {
 		assertEquals(1, hintFile.getRules().size());
 		TransformationRule rule = hintFile.getRules().get(0);
 		assertEquals(PatternKind.METHOD_CALL, rule.sourcePattern().getKind());
-		assertEquals("MatcherAssert.assertThat($actual, $matcher)",
+		assertEquals("org.hamcrest.MatcherAssert.assertThat($actual, $matcher)",
 				rule.alternatives().get(0).replacementPattern());
 		assertTrue(rule.getImportDirective().getAddImports().contains("org.hamcrest.MatcherAssert"));
 		assertTrue(rule.getImportDirective().getRemoveImports().contains("org.junit.Assert"));
@@ -498,31 +491,8 @@ public class HintFileParserTest {
 	}
 	
 	@Test
-	public void testAutoDetectMergesWithExplicitImports() throws HintParseException {
-		// Phase 5: Explicit removeImport + auto-detected addImport from FQN should merge
-		String content = """
-			new FileReader($path)
-			=> new FileReader($path, java.nio.charset.StandardCharsets.UTF_8)
-			removeImport java.io.FileReader
-			;;
-			""";
-		
-		HintFile hintFile = parser.parse(content);
-		TransformationRule rule = hintFile.getRules().get(0);
-		assertTrue(rule.hasImportDirective(), "Import directive should exist");
-		// Explicit removeImport should be present
-		assertTrue(rule.getImportDirective().getRemoveImports().contains("java.io.FileReader"),
-				"Explicit removeImport should be preserved");
-		// Auto-detected addImport from FQN in replacement should also be present
-		assertTrue(rule.getImportDirective().getAddImports().contains("java.nio.charset.StandardCharsets"),
-				"addImport should be auto-detected from FQN even when explicit removeImport is given");
-	}
-	
-	@Test
-	public void testAutoDetectRemoveImportFromSourceReplacementDiff() throws HintParseException {
-		// Phase 2 auto-detection of removeImport from source/replacement FQN diff
-		// is intentionally disabled because it's unsafe (import may be used elsewhere
-		// in the compilation unit). Only addImport auto-detection is active.
+	public void testFqnInferenceRemoveImportFromSourceDiff() throws HintParseException {
+		// FQN-based inference: types in source but not in replacement become removeImport
 		String content = """
 			java.io.FileReader.create($path)
 			=> java.nio.charset.StandardCharsets.UTF_8
@@ -531,33 +501,31 @@ public class HintFileParserTest {
 		
 		HintFile hintFile = parser.parse(content);
 		TransformationRule rule = hintFile.getRules().get(0);
-		assertTrue(rule.hasImportDirective(), "Import directive should be auto-detected");
-		// java.io.FileReader is in source but not in replacement — NOT auto-removed (unsafe)
-		assertFalse(rule.getImportDirective().getRemoveImports().contains("java.io.FileReader"),
-				"removeImport should NOT be auto-detected from source FQN diff (unsafe)");
+		assertTrue(rule.hasImportDirective(), "Import directive should be inferred");
+		// java.io.FileReader is in source but not in replacement → removeImport
+		assertTrue(rule.getImportDirective().getRemoveImports().contains("java.io.FileReader"),
+				"FQN in source but not in replacement should be inferred as removeImport");
 		// java.nio.charset.StandardCharsets is in replacement but not in source → addImport
 		assertTrue(rule.getImportDirective().getAddImports().contains("java.nio.charset.StandardCharsets"),
-				"FQN in replacement but not in source should be auto-detected as addImport");
+				"FQN in replacement but not in source should be inferred as addImport");
 	}
 	
 	@Test
-	public void testExplicitAddImportsPrecludeAutoDetection() throws HintParseException {
-		// When explicit addImports are given, auto-detection should not add more
+	public void testFqnInferenceNoImportForSharedTypes() throws HintParseException {
+		// Types that appear in both source and replacement should not be added or removed
 		String content = """
-			$x.getBytes("UTF-8")
-			=> $x.getBytes(java.nio.charset.StandardCharsets.UTF_8)
-			addImport com.example.CustomCharset
+			java.util.Objects.equals($x, $y)
+			=> java.util.Objects.hash($x, $y)
 			;;
 			""";
 		
 		HintFile hintFile = parser.parse(content);
 		TransformationRule rule = hintFile.getRules().get(0);
-		assertTrue(rule.hasImportDirective(), "Import directive should exist");
-		// Explicit addImport should be present
-		assertTrue(rule.getImportDirective().getAddImports().contains("com.example.CustomCharset"),
-				"Explicit addImport should be preserved");
-		// Auto-detected addImport should NOT be added since explicit addImport was given
-		assertFalse(rule.getImportDirective().getAddImports().contains("java.nio.charset.StandardCharsets"),
-				"Auto-detected addImport should not be added when explicit addImports are specified");
+		assertTrue(rule.hasImportDirective(), "Import directive should be inferred");
+		// java.util.Objects is in both → addImport but not removeImport
+		assertTrue(rule.getImportDirective().getAddImports().contains("java.util.Objects"),
+				"FQN in replacement should be addImport");
+		assertFalse(rule.getImportDirective().getRemoveImports().contains("java.util.Objects"),
+				"FQN in both source and replacement should not be removeImport");
 	}
 }

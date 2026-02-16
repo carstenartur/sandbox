@@ -271,11 +271,10 @@ public class Phase6FeaturesTest {
 	// --- HintFileParser import directive tests ---
 	
 	@Test
-	public void testParseRuleWithImportDirectives() throws HintParseException {
+	public void testParseRuleWithFqnInference() throws HintParseException {
+		// FQN-based inference: imports are derived from FQNs in patterns
 		String content = "new String($bytes, \"UTF-8\")\n" //$NON-NLS-1$
-				+ "=> new String($bytes, StandardCharsets.UTF_8)\n" //$NON-NLS-1$
-				+ "addImport java.nio.charset.StandardCharsets\n" //$NON-NLS-1$
-				+ "removeImport java.io.UnsupportedEncodingException\n" //$NON-NLS-1$
+				+ "=> new String($bytes, java.nio.charset.StandardCharsets.UTF_8)\n" //$NON-NLS-1$
 				+ ";;\n"; //$NON-NLS-1$
 		
 		HintFileParser parser = new HintFileParser();
@@ -284,19 +283,18 @@ public class Phase6FeaturesTest {
 		assertEquals(1, hintFile.getRules().size());
 		TransformationRule rule = hintFile.getRules().get(0);
 		
-		assertTrue(rule.hasImportDirective(), "Rule should have import directives");
+		assertTrue(rule.hasImportDirective(), "Rule should have import directives inferred from FQNs");
 		ImportDirective importDir = rule.getImportDirective();
 		assertNotNull(importDir);
 		assertTrue(importDir.getAddImports().contains("java.nio.charset.StandardCharsets")); //$NON-NLS-1$
-		assertTrue(importDir.getRemoveImports().contains("java.io.UnsupportedEncodingException")); //$NON-NLS-1$
 	}
 	
 	@Test
-	public void testParseRuleWithStaticImportDirectives() throws HintParseException {
-		String content = "Assert.assertEquals($expected, $actual)\n" //$NON-NLS-1$
-				+ "=> assertEquals($expected, $actual)\n" //$NON-NLS-1$
-				+ "addStaticImport org.junit.jupiter.api.Assertions.assertEquals\n" //$NON-NLS-1$
-				+ "removeStaticImport org.junit.Assert.assertEquals\n" //$NON-NLS-1$
+	public void testParseRuleWithFqnBasedStaticImportInference() throws HintParseException {
+		// FQN-based inference: static import replacement is inferred from matching
+		// method names with different FQN types
+		String content = "org.junit.Assert.assertEquals($expected, $actual)\n" //$NON-NLS-1$
+				+ "=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)\n" //$NON-NLS-1$
 				+ ";;\n"; //$NON-NLS-1$
 		
 		HintFileParser parser = new HintFileParser();
@@ -307,8 +305,14 @@ public class Phase6FeaturesTest {
 		
 		assertTrue(rule.hasImportDirective());
 		ImportDirective importDir = rule.getImportDirective();
-		assertTrue(importDir.getAddStaticImports().contains("org.junit.jupiter.api.Assertions.assertEquals")); //$NON-NLS-1$
-		assertTrue(importDir.getRemoveStaticImports().contains("org.junit.Assert.assertEquals")); //$NON-NLS-1$
+		// FQN inference derives replaceStaticImport from matching method names
+		assertFalse(importDir.getReplaceStaticImports().isEmpty(),
+				"replaceStaticImport should be inferred from FQN patterns"); //$NON-NLS-1$
+		assertEquals("org.junit.jupiter.api.Assertions", //$NON-NLS-1$
+				importDir.getReplaceStaticImports().get("org.junit.Assert")); //$NON-NLS-1$
+		// addImport and removeImport should also be inferred
+		assertTrue(importDir.getAddImports().contains("org.junit.jupiter.api.Assertions")); //$NON-NLS-1$
+		assertTrue(importDir.getRemoveImports().contains("org.junit.Assert")); //$NON-NLS-1$
 	}
 	
 	@Test

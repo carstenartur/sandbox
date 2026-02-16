@@ -26,23 +26,31 @@ import java.util.regex.Matcher;
  * Represents import directives for a rewrite alternative.
  * 
  * <p>Import directives specify which imports should be added or removed
- * when a rewrite alternative is applied. They also support automatic import
- * detection from fully qualified type references in replacement patterns.</p>
+ * when a rewrite alternative is applied. Import information is automatically
+ * inferred from fully qualified names (FQNs) in source and replacement patterns.</p>
  * 
- * <h2>DSL Syntax</h2>
+ * <h2>FQN-based inference</h2>
+ * <p>The preferred way to specify imports is by using FQNs directly in the
+ * source and replacement patterns. The engine automatically infers:</p>
+ * <ul>
+ *   <li>{@code addImport}: FQN types that appear in the replacement pattern</li>
+ *   <li>{@code removeImport}: FQN types that appear in the source but not in the replacement</li>
+ *   <li>{@code replaceStaticImport}: When both source and replacement contain
+ *       {@code pkg.Type.method()} patterns with different types</li>
+ * </ul>
+ * 
+ * <h2>Example (FQN-based)</h2>
  * <pre>
- * =&gt; replacement_pattern
- *    addImport java.util.Objects
- *    addImport java.nio.charset.StandardCharsets
- *    removeImport java.io.UnsupportedEncodingException
- *    addStaticImport java.util.Objects.requireNonNull
- *    replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+ * org.junit.Assert.assertEquals($expected, $actual)
+ * =&gt; org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)
+ * ;;
  * </pre>
- * 
- * <h2>Auto-detection</h2>
- * <p>When a replacement pattern contains a fully qualified name like
- * {@code java.util.Objects.equals($x, $y)}, the import for {@code java.util.Objects}
- * is automatically detected.</p>
+ * <p>This automatically infers:</p>
+ * <ul>
+ *   <li>{@code addImport org.junit.jupiter.api.Assertions}</li>
+ *   <li>{@code removeImport org.junit.Assert}</li>
+ *   <li>{@code replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions}</li>
+ * </ul>
  * 
  * @since 1.3.2
  */
@@ -54,6 +62,19 @@ public final class ImportDirective {
 	 */
 	private static final java.util.regex.Pattern FQN_PATTERN = java.util.regex.Pattern.compile(
 			"\\b([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\b"); //$NON-NLS-1$
+
+	/**
+	 * Compiled regex for detecting FQN.method patterns (e.g., {@code org.junit.Assert.assertEquals}).
+	 * 
+	 * <p>Capture groups:</p>
+	 * <ul>
+	 *   <li>Group 1: full match including method (e.g., {@code org.junit.Assert.assertEquals})</li>
+	 *   <li>Group 2: type part only (e.g., {@code org.junit.Assert})</li>
+	 *   <li>The method name is the last segment after the type part's last dot</li>
+	 * </ul>
+	 */
+	private static final java.util.regex.Pattern FQN_METHOD_PATTERN = java.util.regex.Pattern.compile(
+			"\\b(([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.[A-Z][A-Za-z0-9_]*))\\.[a-zA-Z][A-Za-z0-9_]*)\\b"); //$NON-NLS-1$
 
 	private final List<String> addImports;
 	private final List<String> removeImports;
@@ -284,7 +305,108 @@ public final class ImportDirective {
 	}
 	
 	/**
+	 * Infers all import directives from FQN patterns in source and replacement.
+	 * 
+	 * <p>This is the primary method for the FQN-based import inference.
+	 * It extracts FQN types from both patterns and automatically derives:</p>
+	 * <ul>
+	 *   <li>{@code addImport}: FQN types in replacement that are not in source</li>
+	 *   <li>{@code removeImport}: FQN types in source that are not in replacement</li>
+	 *   <li>{@code replaceStaticImport}: When source and replacement have FQN.method()
+	 *       patterns with the same method name but different types</li>
+	 * </ul>
+	 * 
+	 * @param sourcePattern the source pattern text
+	 * @param replacementPatterns the replacement pattern texts
+	 * @return an {@link ImportDirective} with all inferred import directives
+	 */
+	public static ImportDirective inferFromFqnPatterns(String sourcePattern, List<String> replacementPatterns) {
+		ImportDirective directive = new ImportDirective();
+		if (replacementPatterns == null || replacementPatterns.isEmpty()) {
+			return directive;
+		}
+		
+		Set<String> sourceFqns = extractFqns(sourcePattern);
+		Map<String, String> sourceFqnMethods = extractFqnMethods(sourcePattern);
+		
+		Set<String> replacementFqns = new HashSet<>();
+		Map<String, String> replacementFqnMethods = new LinkedHashMap<>();
+		for (String replacement : replacementPatterns) {
+			replacementFqns.addAll(extractFqns(replacement));
+			replacementFqnMethods.putAll(extractFqnMethods(replacement));
+		}
+		
+		// addImport: FQN types in replacement (regardless of source)
+		for (String fqn : replacementFqns) {
+			directive.addImport(fqn);
+		}
+		
+		// removeImport: FQN types in source but not in replacement
+		for (String fqn : sourceFqns) {
+			if (!replacementFqns.contains(fqn)) {
+				directive.removeImport(fqn);
+			}
+		}
+		
+		// replaceStaticImport: Detect when source and replacement have FQN.method()
+		// patterns with the same method name but different types
+		// e.g., org.junit.Assert.assertEquals → org.junit.jupiter.api.Assertions.assertEquals
+		for (Map.Entry<String, String> sourceEntry : sourceFqnMethods.entrySet()) {
+			String sourceMethod = sourceEntry.getKey(); // e.g., "assertEquals"
+			String sourceType = sourceEntry.getValue(); // e.g., "org.junit.Assert"
+			for (Map.Entry<String, String> replEntry : replacementFqnMethods.entrySet()) {
+				String replMethod = replEntry.getKey();
+				String replType = replEntry.getValue();
+				if (sourceMethod.equals(replMethod) && !sourceType.equals(replType)) {
+					directive.replaceStaticImport(sourceType, replType);
+				}
+			}
+		}
+		
+		return directive;
+	}
+	
+	/**
+	 * Extracts FQN.method patterns from a pattern string.
+	 * 
+	 * <p>Returns a map of method name to FQN type. For example,
+	 * for {@code "org.junit.Assert.assertEquals($a, $b)"} returns
+	 * {@code {"assertEquals" -> "org.junit.Assert"}}.</p>
+	 * 
+	 * @param pattern the pattern string to analyze
+	 * @return map of method name to FQN type
+	 */
+	private static Map<String, String> extractFqnMethods(String pattern) {
+		Map<String, String> result = new LinkedHashMap<>();
+		if (pattern == null || pattern.isEmpty()) {
+			return result;
+		}
+		Matcher matcher = FQN_METHOD_PATTERN.matcher(pattern);
+		while (matcher.find()) {
+			String fullMatch = matcher.group(1); // e.g., "org.junit.Assert.assertEquals"
+			if (fullMatch.contains("$")) { //$NON-NLS-1$
+				continue;
+			}
+			String typePart = matcher.group(2); // e.g., "org.junit.Assert"
+			int lastDot = fullMatch.lastIndexOf('.');
+			String methodPart = fullMatch.substring(lastDot + 1); // e.g., "assertEquals"
+			// Only include if the type part is a real FQN (last segment starts with uppercase)
+			int typeLastDot = typePart.lastIndexOf('.');
+			if (typeLastDot > 0 && Character.isUpperCase(typePart.substring(typeLastDot + 1).charAt(0))) {
+				result.put(methodPart, typePart);
+			}
+		}
+		return result;
+	}
+	/**
 	 * Extracts fully qualified type names from a pattern string.
+	 * 
+	 * <p>Recognizes patterns like {@code java.util.Objects} or
+	 * {@code java.nio.charset.StandardCharsets} — names that start with
+	 * lowercase package segments and end with an uppercase class name.</p>
+	 * 
+	 * @param pattern the pattern string to analyze
+	 * @return set of fully qualified type names found in the pattern
 	 */
 	private static Set<String> extractFqns(String pattern) {
 		Set<String> fqns = new HashSet<>();

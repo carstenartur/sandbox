@@ -71,16 +71,16 @@ public class JUnit5HintFileTest {
 	public void testJUnit5CoversMajorAssertionMethods() throws Exception {
 		HintFile hintFile = loadHintFile();
 		String[] expectedMethods = {
-				"Assert.assertEquals", //$NON-NLS-1$
-				"Assert.assertNotEquals", //$NON-NLS-1$
-				"Assert.assertTrue", //$NON-NLS-1$
-				"Assert.assertFalse", //$NON-NLS-1$
-				"Assert.assertNull", //$NON-NLS-1$
-				"Assert.assertNotNull", //$NON-NLS-1$
-				"Assert.assertSame", //$NON-NLS-1$
-				"Assert.assertNotSame", //$NON-NLS-1$
-				"Assert.assertArrayEquals", //$NON-NLS-1$
-				"Assert.fail" //$NON-NLS-1$
+				"org.junit.Assert.assertEquals", //$NON-NLS-1$
+				"org.junit.Assert.assertNotEquals", //$NON-NLS-1$
+				"org.junit.Assert.assertTrue", //$NON-NLS-1$
+				"org.junit.Assert.assertFalse", //$NON-NLS-1$
+				"org.junit.Assert.assertNull", //$NON-NLS-1$
+				"org.junit.Assert.assertNotNull", //$NON-NLS-1$
+				"org.junit.Assert.assertSame", //$NON-NLS-1$
+				"org.junit.Assert.assertNotSame", //$NON-NLS-1$
+				"org.junit.Assert.assertArrayEquals", //$NON-NLS-1$
+				"org.junit.Assert.fail" //$NON-NLS-1$
 		};
 		for (String method : expectedMethods) {
 			boolean found = hintFile.getRules().stream()
