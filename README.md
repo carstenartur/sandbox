@@ -10,11 +10,15 @@ A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugin
 
 ## 🔗 CI Status & Resources
 
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)
 [![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+[![Coverage](https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml)
+[![Tests](https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml)
+[![Benchmarks](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml)
+[![Snapshot Deploy](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg)](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml)
 [![Eclipse Marketplace](https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue)](https://marketplace.eclipse.org/content/sandbox)
 
-📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
+🏠 **[Project Dashboard](https://carstenartur.github.io/sandbox/)** | 📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
 
 ---
 
