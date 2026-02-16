@@ -34,7 +34,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,6 +142,8 @@ public class CodeCleanupApplication implements IApplication {
 
 	private final List<String> changedFiles = new ArrayList<>();
 
+	private final StringBuilder patchContent = new StringBuilder();
+
 	private int filesProcessed = 0;
 
 
@@ -212,11 +213,12 @@ public class CodeCleanupApplication implements IApplication {
 
 			Change change = refactoring.createChange(new NullProgressMonitor());
 			if (change != null) {
-				change.perform(new NullProgressMonitor());
-				cu.save(new NullProgressMonitor(), true);
-				iFile.refreshLocal(1, new NullProgressMonitor());
-
 				if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {
+					// Perform the change, then compare and restore
+					change.perform(new NullProgressMonitor());
+					cu.save(new NullProgressMonitor(), true);
+					iFile.refreshLocal(1, new NullProgressMonitor());
+
 					byte[] newContent = Files.readAllBytes(file.toPath());
 					boolean changed = !MessageDigest.isEqual(
 							computeHash(originalContent), computeHash(newContent));
@@ -224,19 +226,33 @@ public class CodeCleanupApplication implements IApplication {
 					if (changed) {
 						this.changedFiles.add(file.getAbsolutePath());
 
+						String origStr = new String(originalContent, StandardCharsets.UTF_8);
+						String newStr = new String(newContent, StandardCharsets.UTF_8);
+
 						if (this.cleanupMode == CleanupMode.DIFF && !this.quiet) {
-							printUnifiedDiff(file.getAbsolutePath(),
-									new String(originalContent, StandardCharsets.UTF_8),
-									new String(newContent, StandardCharsets.UTF_8));
+							printUnifiedDiff(file.getAbsolutePath(), origStr, newStr);
 						}
 
-						// Restore original content (dry-run)
-						Files.write(file.toPath(), originalContent);
-						iFile.refreshLocal(1, new NullProgressMonitor());
+						// Capture diff for patch file
+						if (this.patchFile != null) {
+							appendUnifiedDiff(file.getAbsolutePath(), origStr, newStr);
+						}
 					}
+
+					// Restore original content (dry-run)
+					Files.write(file.toPath(), originalContent);
+					iFile.refreshLocal(1, new NullProgressMonitor());
 				} else {
-					// APPLY mode – track changed file
-					this.changedFiles.add(file.getAbsolutePath());
+					// APPLY mode – snapshot before, apply, compare
+					byte[] beforeContent = Files.readAllBytes(file.toPath());
+					change.perform(new NullProgressMonitor());
+					cu.save(new NullProgressMonitor(), true);
+					iFile.refreshLocal(1, new NullProgressMonitor());
+
+					byte[] afterContent = Files.readAllBytes(file.toPath());
+					if (!MessageDigest.isEqual(computeHash(beforeContent), computeHash(afterContent))) {
+						this.changedFiles.add(file.getAbsolutePath());
+					}
 				}
 			}
 
@@ -549,8 +565,8 @@ public class CodeCleanupApplication implements IApplication {
 		if (this.cleanupScope == CleanupScope.MAIN) {
 			return !"test".equals(name) && !"tests".equals(name); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		// TEST scope: only process test directories
-		return "test".equals(name) || "tests".equals(name) || "src".equals(name); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		// TEST scope: only process test directories and their parents
+		return "test".equals(name) || "tests".equals(name); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	/**
@@ -606,15 +622,56 @@ public class CodeCleanupApplication implements IApplication {
 	}
 
 	/**
-	 * Write a unified diff patch file for all changed files.
+	 * Append unified diff content to the patchContent buffer.
+	 */
+	private void appendUnifiedDiff(String filePath, String original, String modified) {
+		this.patchContent.append("--- a/").append(filePath).append('\n'); //$NON-NLS-1$
+		this.patchContent.append("+++ b/").append(filePath).append('\n'); //$NON-NLS-1$
+		String[] origLines = original.split("\n", -1); //$NON-NLS-1$
+		String[] newLines = modified.split("\n", -1); //$NON-NLS-1$
+		int maxLen = Math.max(origLines.length, newLines.length);
+		int hunkStart = -1;
+		List<String> hunkLines = new ArrayList<>();
+		for (int i = 0; i < maxLen; i++) {
+			String origLine = i < origLines.length ? origLines[i] : ""; //$NON-NLS-1$
+			String newLine = i < newLines.length ? newLines[i] : ""; //$NON-NLS-1$
+			if (!origLine.equals(newLine)) {
+				if (hunkStart == -1) {
+					hunkStart = i + 1;
+				}
+				if (i < origLines.length) {
+					hunkLines.add("-" + origLine); //$NON-NLS-1$
+				}
+				if (i < newLines.length) {
+					hunkLines.add("+" + newLine); //$NON-NLS-1$
+				}
+			} else {
+				if (!hunkLines.isEmpty()) {
+					this.patchContent.append("@@ -").append(hunkStart).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
+					for (String line : hunkLines) {
+						this.patchContent.append(line).append('\n');
+					}
+					hunkLines.clear();
+					hunkStart = -1;
+				}
+			}
+		}
+		if (!hunkLines.isEmpty()) {
+			this.patchContent.append("@@ -").append(hunkStart).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			for (String line : hunkLines) {
+				this.patchContent.append(line).append('\n');
+			}
+		}
+	}
+
+	/**
+	 * Write unified diff patch file for all changed files.
 	 */
 	private void writePatchFile(final File[] sourceRoots) {
 		try (PrintWriter writer = new PrintWriter(
 				new OutputStreamWriter(Files.newOutputStream(new File(this.patchFile).toPath()),
 						StandardCharsets.UTF_8))) {
-			for (String changedFile : this.changedFiles) {
-				writer.println("# Changed: " + changedFile); //$NON-NLS-1$
-			}
+			writer.print(this.patchContent.toString());
 			if (this.verbose) {
 				System.out.println(Messages.bind(Messages.CommandLinePatchWritten, this.patchFile));
 			}

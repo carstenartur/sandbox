@@ -158,12 +158,14 @@ public abstract class AbstractSandboxMojo extends AbstractMojo {
 			Path extractDir = cacheDir.toPath().resolve("sandbox-cleanup-cli-" + toolVersion);
 			if (!Files.isDirectory(extractDir)) {
 				Files.createDirectories(extractDir);
+				// Note: Requires tar command (Unix/Mac/WSL). Windows users should set toolSource to a local directory.
 				ProcessBuilder pb = new ProcessBuilder("tar", "-xzf",
 						archivePath.toString(), "-C", extractDir.toString(), "--strip-components=1");
 				pb.inheritIO();
 				int rc = pb.start().waitFor();
 				if (rc != 0) {
-					throw new MojoExecutionException("Failed to extract tool archive, exit code: " + rc);
+					throw new MojoExecutionException("Failed to extract tool archive, exit code: " + rc
+							+ ". On Windows, use -Dsandbox.toolSource=<local-directory> instead.");
 				}
 			}
 			return extractDir;
