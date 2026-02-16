@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 https://maven.apache.org/xsd/assembly-2.2.0.xsd">
+
+	<id>dist</id>
+	<formats>
+		<format>tar.gz</format>
+		<format>zip</format>
+	</formats>
+
+	<includeBaseDirectory>true</includeBaseDirectory>
+	<baseDirectory>sandbox-cleanup-cli-${project.version}</baseDirectory>
+
+	<fileSets>
+		<!-- Launcher scripts -->
+		<fileSet>
+			<directory>${project.basedir}/bin</directory>
+			<outputDirectory>bin</outputDirectory>
+			<includes>
+				<include>sandbox-cleanup</include>
+				<include>sandbox-cleanup.bat</include>
+			</includes>
+			<fileMode>0755</fileMode>
+		</fileSet>
+
+		<!-- VERSION file -->
+		<fileSet>
+			<directory>${project.basedir}</directory>
+			<outputDirectory>/</outputDirectory>
+			<includes>
+				<include>VERSION</include>
+				<include>README.md</include>
+			</includes>
+		</fileSet>
+
+		<!-- Eclipse product contents (plugins + configuration) -->
+		<!-- Assembled from the product build output -->
+		<fileSet>
+			<directory>${project.basedir}/../sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64/client</directory>
+			<outputDirectory>/</outputDirectory>
+			<includes>
+				<include>plugins/**</include>
+				<include>configuration/**</include>
+				<include>artifacts.xml</include>
+			</includes>
+		</fileSet>
+	</fileSets>
+
+</assembly>

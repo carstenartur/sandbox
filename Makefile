@@ -1,4 +1,4 @@
-.PHONY: dev dev-notests product repo release test clean help
+.PHONY: dev dev-notests product repo release test clean help cli-dist
 
 help:
 	@echo "Available targets:"
@@ -8,6 +8,7 @@ help:
 	@echo "  repo        - Build with P2 update site"
 	@echo "  release     - Full release build (product + repo + coverage)"
 	@echo "  test        - Run tests with coverage (requires xvfb)"
+	@echo "  cli-dist    - Build CLI distribution (requires product)"
 	@echo "  clean       - Clean all build artifacts"
 
 dev:
@@ -24,6 +25,9 @@ repo:
 
 release:
 	mvn -Pproduct,repo -Pjacoco -T 1C verify
+
+cli-dist:
+	mvn -Pcli-dist -T 1C verify
 
 test:
 	xvfb-run --auto-servernum mvn -Pjacoco -T 1C verify

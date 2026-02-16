@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -294,6 +292,270 @@ public class CodeCleanupApplicationTest {
 		assertTrue(result[0].isDirectory(), "Result should be a directory");
 	}
 
+	// ========================= New CLI contract tests =========================
+
+	/**
+	 * Test --help flag (double hyphen) also works
+	 */
+	@Test
+	public void testDoubleHyphenHelpFlag() throws Exception {
+		String[] args = { "--help" };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(0, result.length);
+
+		String output = outContent.toString(StandardCharsets.UTF_8);
+		assertTrue(output.contains("Usage:"), "Help output should contain usage information");
+	}
+
+	/**
+	 * Test --mode apply argument parsing
+	 */
+	@Test
+	public void testModeApply() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--mode", "apply", javaFile.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(1, result.length);
+		assertEquals(CodeCleanupApplication.CleanupMode.APPLY, app.cleanupMode);
+	}
+
+	/**
+	 * Test --mode check argument parsing
+	 */
+	@Test
+	public void testModeCheck() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--mode", "check", javaFile.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(1, result.length);
+		assertEquals(CodeCleanupApplication.CleanupMode.CHECK, app.cleanupMode);
+	}
+
+	/**
+	 * Test --mode diff argument parsing
+	 */
+	@Test
+	public void testModeDiff() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--mode", "diff", javaFile.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(1, result.length);
+		assertEquals(CodeCleanupApplication.CleanupMode.DIFF, app.cleanupMode);
+	}
+
+	/**
+	 * Test --mode with invalid value produces error
+	 */
+	@Test
+	public void testModeInvalid() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--mode", "invalid", javaFile.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(0, result.length);
+
+		String errorOutput = errContent.toString(StandardCharsets.UTF_8);
+		assertTrue(errorOutput.contains("Invalid mode"), "Should report invalid mode error");
+	}
+
+	/**
+	 * Test --source argument parsing
+	 */
+	@Test
+	public void testSourceArgument() throws Exception {
+		File configFile = createTempConfigFile();
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--source", tempDir.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(1, result.length);
+		assertEquals(tempDir.getAbsolutePath(), result[0].getAbsolutePath());
+	}
+
+	/**
+	 * Test --scope main argument parsing
+	 */
+	@Test
+	public void testScopeMain() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--scope", "main", javaFile.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(CodeCleanupApplication.CleanupScope.MAIN, app.cleanupScope);
+	}
+
+	/**
+	 * Test --scope test argument parsing
+	 */
+	@Test
+	public void testScopeTest() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--scope", "test", javaFile.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(CodeCleanupApplication.CleanupScope.TEST, app.cleanupScope);
+	}
+
+	/**
+	 * Test --scope with invalid value produces error
+	 */
+	@Test
+	public void testScopeInvalid() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--scope", "invalid", javaFile.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(0, result.length);
+
+		String errorOutput = errContent.toString(StandardCharsets.UTF_8);
+		assertTrue(errorOutput.contains("Invalid scope"), "Should report invalid scope error");
+	}
+
+	/**
+	 * Test --patch argument parsing
+	 */
+	@Test
+	public void testPatchArgument() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+		File patchFile = new File(tempDir, "changes.patch");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--patch", patchFile.getAbsolutePath(), javaFile.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(1, result.length);
+		assertEquals(patchFile.getAbsolutePath(), app.patchFile);
+	}
+
+	/**
+	 * Test --report argument parsing
+	 */
+	@Test
+	public void testReportArgument() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+		File reportFile = new File(tempDir, "report.json");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), "--report", reportFile.getAbsolutePath(), javaFile.getAbsolutePath() };
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(1, result.length);
+		assertEquals(reportFile.getAbsolutePath(), app.reportFile);
+	}
+
+	/**
+	 * Test default mode is APPLY
+	 */
+	@Test
+	public void testDefaultModeIsApply() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), javaFile.getAbsolutePath() };
+		processCommandLine(args);
+
+		assertEquals(CodeCleanupApplication.CleanupMode.APPLY, app.cleanupMode);
+	}
+
+	/**
+	 * Test default scope is BOTH
+	 */
+	@Test
+	public void testDefaultScopeIsBoth() throws Exception {
+		File configFile = createTempConfigFile();
+		File javaFile = createTempJavaFile("Test.java");
+
+		String[] args = { "-config", configFile.getAbsolutePath(), javaFile.getAbsolutePath() };
+		processCommandLine(args);
+
+		assertEquals(CodeCleanupApplication.CleanupScope.BOTH, app.cleanupScope);
+	}
+
+	/**
+	 * Test combined new CLI arguments
+	 */
+	@Test
+	public void testCombinedNewArguments() throws Exception {
+		File configFile = createTempConfigFile();
+		File patchFile = new File(tempDir, "out.patch");
+		File reportFile = new File(tempDir, "report.json");
+
+		String[] args = {
+			"-config", configFile.getAbsolutePath(),
+			"--mode", "check",
+			"--scope", "main",
+			"--patch", patchFile.getAbsolutePath(),
+			"--report", reportFile.getAbsolutePath(),
+			"--source", tempDir.getAbsolutePath()
+		};
+		File[] result = processCommandLine(args);
+
+		assertNotNull(result);
+		assertEquals(1, result.length);
+		assertEquals(CodeCleanupApplication.CleanupMode.CHECK, app.cleanupMode);
+		assertEquals(CodeCleanupApplication.CleanupScope.MAIN, app.cleanupScope);
+		assertEquals(patchFile.getAbsolutePath(), app.patchFile);
+		assertEquals(reportFile.getAbsolutePath(), app.reportFile);
+	}
+
+	/**
+	 * Test that help text includes new arguments
+	 */
+	@Test
+	public void testHelpContainsNewArguments() throws Exception {
+		String[] args = { "-help" };
+		processCommandLine(args);
+
+		String output = outContent.toString(StandardCharsets.UTF_8);
+		assertTrue(output.contains("--mode"), "Help should mention --mode");
+		assertTrue(output.contains("--source"), "Help should mention --source");
+		assertTrue(output.contains("--scope"), "Help should mention --scope");
+		assertTrue(output.contains("--patch"), "Help should mention --patch");
+		assertTrue(output.contains("--report"), "Help should mention --report");
+		assertTrue(output.contains("EXIT CODES"), "Help should document exit codes");
+	}
+
+	/**
+	 * Test exit code constants
+	 */
+	@Test
+	public void testExitCodeConstants() {
+		assertEquals(0, CodeCleanupApplication.EXIT_OK);
+		assertEquals(1, CodeCleanupApplication.EXIT_ERROR);
+		assertEquals(2, CodeCleanupApplication.EXIT_CHANGES);
+	}
+
+	// ========================= Integration tests =========================
+
 	/**
 	 * Integration test: Verify verbose mode produces output
 	 */
@@ -378,18 +640,7 @@ public class CodeCleanupApplicationTest {
 	// Helper methods using reflection to access private methods and fields
 
 	private File[] processCommandLine(String[] args) throws Exception {
-		Method method = CodeCleanupApplication.class.getDeclaredMethod("processCommandLine", String[].class);
-		method.setAccessible(true);
-		try {
-			return (File[]) method.invoke(app, (Object) args);
-		} catch (InvocationTargetException e) {
-			// Unwrap and rethrow the actual exception
-			Throwable cause = e.getCause();
-			if (cause instanceof Exception) {
-				throw (Exception) cause;
-			}
-			throw e;
-		}
+		return app.processCommandLine(args);
 	}
 
 	@SuppressWarnings("unchecked")
