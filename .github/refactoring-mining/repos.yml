@@ -42,3 +42,7 @@ mining:
   settings:
     max-files-per-repo: 5000
     timeout-per-repo-minutes: 10
+    # Gemini mining settings
+    start-date: "2015-01-01"
+    batch-size: 500
+    max-diff-lines-per-commit: 500

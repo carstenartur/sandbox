@@ -6,12 +6,14 @@ on:
       - 'sandbox-functional-converter-core/**'
       - 'sandbox_common_core/**'
       - 'sandbox_mining_cli/**'
+      - 'sandbox_mining_gemini/**'
       - '.github/workflows/core-module-build.yml'
   pull_request:
     paths:
       - 'sandbox-functional-converter-core/**'
       - 'sandbox_common_core/**'
       - 'sandbox_mining_cli/**'
+      - 'sandbox_mining_gemini/**'
       - '.github/workflows/core-module-build.yml'
 
 jobs:
@@ -42,6 +44,12 @@ jobs:
           mvn install -N -q
           mvn install -pl sandbox_common_core -DskipTests -q
           mvn clean verify -pl sandbox_mining_cli
+
+      - name: Build and Test Mining Gemini
+        run: |
+          mvn install -N -q
+          mvn install -pl sandbox_common_core -DskipTests -q
+          mvn clean verify -pl sandbox_mining_gemini
         
       - name: Upload Test Results
         uses: actions/upload-artifact@v6
@@ -52,3 +60,4 @@ jobs:
             sandbox-functional-converter-core/target/surefire-reports/
             sandbox_common_core/target/surefire-reports/
             sandbox_mining_cli/target/surefire-reports/
+            sandbox_mining_gemini/target/surefire-reports/
