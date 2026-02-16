@@ -39,6 +39,7 @@ jobs:
 
       - name: Build and Test Mining CLI
         run: |
+          mvn install -N -q
           mvn install -pl sandbox_common_core -DskipTests -q
           mvn clean verify -pl sandbox_mining_cli
         

@@ -29,6 +29,7 @@ jobs:
       # Build only core + CLI (< 60s, no Tycho)
       - name: Build Mining CLI
         run: |
+          mvn install -N -q
           mvn install -pl sandbox_common_core -DskipTests -q
           mvn package -pl sandbox_mining_cli -DskipTests -q
 
