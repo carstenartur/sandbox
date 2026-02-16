@@ -14,6 +14,20 @@ inputs:
     description: 'Directory containing Java source files to clean (relative to repository root)'
     required: false
     default: '.'
+  mode:
+    description: 'Execution mode: apply, check, diff (default: apply)'
+    required: false
+    default: 'apply'
+  scope:
+    description: 'Scope filter: main, test, both (default: both)'
+    required: false
+    default: 'both'
+  patch-file:
+    description: 'Path to write unified diff patch file (optional)'
+    required: false
+  report-file:
+    description: 'Path to write JSON report file (optional)'
+    required: false
   verbose:
     description: 'Enable verbose output'
     required: false
@@ -97,6 +111,10 @@ runs:
       env:
         INPUT_CONFIG_FILE: ${{ inputs.config-file }}
         INPUT_SOURCE_DIR: ${{ inputs.source-dir }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_SCOPE: ${{ inputs.scope }}
+        INPUT_PATCH_FILE: ${{ inputs.patch-file }}
+        INPUT_REPORT_FILE: ${{ inputs.report-file }}
         INPUT_VERBOSE: ${{ inputs.verbose }}
         INPUT_QUIET: ${{ inputs.quiet }}
       run: |
@@ -143,7 +161,29 @@ runs:
             ;;
         esac
         
-        CLEANUP_ARGS=("-data" "${WORKSPACE_DIR}" "-config" "${CONFIG_PATH}")
+        CLEANUP_ARGS=("-data" "${WORKSPACE_DIR}" "--config" "${CONFIG_PATH}")
+        
+        # Add mode
+        if [ -n "${INPUT_MODE}" ] && [ "${INPUT_MODE}" != "apply" ]; then
+          CLEANUP_ARGS+=("--mode" "${INPUT_MODE}")
+        fi
+        
+        # Add scope
+        if [ -n "${INPUT_SCOPE}" ] && [ "${INPUT_SCOPE}" != "both" ]; then
+          CLEANUP_ARGS+=("--scope" "${INPUT_SCOPE}")
+        fi
+        
+        # Add patch file
+        if [ -n "${INPUT_PATCH_FILE}" ]; then
+          PATCH_PATH=$(realpath -m "${GITHUB_WORKSPACE}/${INPUT_PATCH_FILE}")
+          CLEANUP_ARGS+=("--patch" "${PATCH_PATH}")
+        fi
+        
+        # Add report file
+        if [ -n "${INPUT_REPORT_FILE}" ]; then
+          REPORT_PATH=$(realpath -m "${GITHUB_WORKSPACE}/${INPUT_REPORT_FILE}")
+          CLEANUP_ARGS+=("--report" "${REPORT_PATH}")
+        fi
         
         if [ "${INPUT_VERBOSE}" == "true" ]; then
           CLEANUP_ARGS+=("-verbose")
@@ -151,9 +191,15 @@ runs:
           CLEANUP_ARGS+=("-quiet")
         fi
         
-        CLEANUP_ARGS+=("${SOURCE_PATH}")
+        CLEANUP_ARGS+=("--source" "${SOURCE_PATH}")
         
         # Use java to run the Equinox launcher JAR since includeLaunchers="false"
         java -jar "$LAUNCHER_JAR" -nosplash \
           -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
-          "${CLEANUP_ARGS[@]}" || echo "::warning::Cleanup completed with warnings"
+          "${CLEANUP_ARGS[@]}"
+        
+        EXIT_CODE=$?
+        if [ "$EXIT_CODE" -eq 2 ] && [ "${INPUT_MODE}" == "check" -o "${INPUT_MODE}" == "diff" ]; then
+          echo "::warning::Cleanup detected changes that need to be applied (exit code 2)"
+        fi
+        exit $EXIT_CODE

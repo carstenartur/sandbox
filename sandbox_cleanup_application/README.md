@@ -40,10 +40,15 @@ eclipse -nosplash -application sandbox_cleanup_application.org.sandbox.jdt.core.
 
 | Option | Description |
 |--------|-------------|
-| `-config <file>` | Path to properties file containing cleanup configuration |
+| `-config <file>` / `--config <file>` | Path to properties file containing cleanup configuration |
+| `--mode <mode>` | Execution mode: `apply` (default), `check`, `diff` |
+| `--source <path>` | Source directory (alias for positional path argument) |
+| `--scope <scope>` | Scope filter: `main`, `test`, `both` (default: `both`) |
+| `--patch <file>` | Write unified diff patch to file |
+| `--report <file>` | Write JSON report to file |
 | `-quiet` | Only print error messages (suppresses progress information) |
 | `-verbose` | Print detailed progress information for each file processed |
-| `-help` | Display usage information and exit |
+| `-help` / `--help` | Display usage information and exit |
 
 ### Constraints
 
@@ -179,12 +184,19 @@ eclipse -nosplash \
 
 ## Exit Behavior
 
-The application returns standard exit codes:
+The application returns defined exit codes:
 
 | Exit Code | Meaning |
 |-----------|---------|
-| `0` (`IApplication.EXIT_OK`) | Success - all files processed successfully, or help displayed |
-| `1` or non-zero | Error occurred (missing config, invalid arguments, workspace error) |
+| `0` | Success: no changes needed (check mode), or applied (apply mode), or help displayed |
+| `1` | Error: parsing, IO, config invalid, workspace error |
+| `2` | Changes detected/needed (check/diff mode) |
+
+### Modes
+
+- **`apply`** (default): Applies cleanup transformations and writes changes to disk
+- **`check`**: Dry-run mode. Detects changes without modifying files. Returns exit code 2 if changes are needed.
+- **`diff`**: Like check, but also prints unified diff output to stdout.
 
 ### Exit Conditions
 

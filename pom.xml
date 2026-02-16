@@ -669,6 +669,18 @@ See README.md for more information.
 			</modules>
 		</profile>
 		
+		<!-- CLI distribution profile: Build CLI distribution from product -->
+		<profile>
+			<id>cli-dist</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<modules>
+				<module>sandbox_product</module>
+				<module>sandbox_cleanup_cli_dist</module>
+			</modules>
+		</profile>
+		
 		<!-- Repository profile: Build p2 update site repository -->
 		<profile>
 			<id>repo</id>
@@ -761,6 +773,17 @@ See README.md for more information.
 			</activation>
 			<modules>
 				<module>sandbox-benchmarks</module>
+			</modules>
+		</profile>
+		
+		<!-- Maven plugin profile: Build the sandbox-maven-plugin -->
+		<profile>
+			<id>maven-plugin</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<modules>
+				<module>sandbox-maven-plugin</module>
 			</modules>
 		</profile>
 		
