@@ -42,14 +42,26 @@ jobs:
             --batch-size ${{ github.event.inputs.batch_size || '500' }} \
             --output docs/mining-report/
 
-      - name: Commit & Push Results
+      - name: Commit State to Main Branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/mining-report/ .github/refactoring-mining/state.json
+          git add .github/refactoring-mining/state.json
           git diff --cached --quiet || \
-            git commit -m "mining: Gemini evaluation $(date +%Y-%m-%d)"
+            git commit -m "mining: Update state $(date +%Y-%m-%d)"
           git push
+
+      - name: Deploy Mining Report to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/mining-report
+          publish_branch: gh-pages
+          destination_dir: mining-report
+          keep_files: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'mining: Gemini evaluation run ${{ github.run_number }}'
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v6
