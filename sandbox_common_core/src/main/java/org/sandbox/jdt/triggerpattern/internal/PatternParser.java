@@ -138,13 +138,27 @@ public class PatternParser {
 	 * @return the parsed Statement node, or {@code null} if parsing fails
 	 */
 	private Statement parseStatement(String statementSnippet) {
-		// Wrap the statement in a minimal method context
-		String source = "class _Pattern { void _method() { " + statementSnippet + " } }"; //$NON-NLS-1$ //$NON-NLS-2$
+		// Extract placeholder names and declare them as Object variables
+		// so the parser doesn't drop them as undeclared references.
+		StringBuilder declarations = new StringBuilder();
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\$[a-zA-Z_][a-zA-Z0-9_]*\\$?").matcher(statementSnippet); //$NON-NLS-1$
+		java.util.Set<String> declared = new java.util.HashSet<>();
+		while (m.find()) {
+			String placeholder = m.group();
+			if (!declared.contains(placeholder)) {
+				declarations.append("Object ").append(placeholder).append("; "); //$NON-NLS-1$ //$NON-NLS-2$
+				declared.add(placeholder);
+			}
+		}
+		
+		// Wrap the statement in a minimal method context with placeholder declarations as fields
+		String source = "class _Pattern { " + declarations + "void _method() { " + statementSnippet + " } }"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(source.toCharArray());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setCompilerOptions(JavaCore.getOptions());
+		parser.setStatementsRecovery(true);
 		
 		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 		
