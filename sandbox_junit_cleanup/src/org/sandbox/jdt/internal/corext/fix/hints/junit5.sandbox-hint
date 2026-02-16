@@ -1,5 +1,6 @@
 // junit5.sandbox-hint — JUnit 4 → JUnit 5 migration patterns
 // Helps migrate test annotations and assertions from JUnit 4 to JUnit 5
+// Import directives are automatically inferred from FQNs in patterns
 
 <!id: junit5>
 <!description: JUnit 4 to JUnit 5 migration patterns>
@@ -10,231 +11,155 @@
 // --- assertEquals ---
 
 // Assert.assertEquals(expected, actual) → Assertions.assertEquals(expected, actual)
-Assert.assertEquals($expected, $actual)
-=> Assertions.assertEquals($expected, $actual)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertEquals($expected, $actual)
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)
 ;;
 
 // Assert.assertEquals(message, expected, actual) → Assertions.assertEquals(expected, actual, message)
 // Note: JUnit 5 swaps message to last position
 // Type guard: first argument must be a String (message) to disambiguate from delta form
-Assert.assertEquals($msg, $expected, $actual)
+org.junit.Assert.assertEquals($msg, $expected, $actual)
   :: $msg instanceof java.lang.String
-=> Assertions.assertEquals($expected, $actual, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual, $msg)
 ;;
 
 // Assert.assertEquals(message, expected, actual, delta) → Assertions.assertEquals(expected, actual, delta, message)
-Assert.assertEquals($msg, $expected, $actual, $delta)
-=> Assertions.assertEquals($expected, $actual, $delta, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertEquals($msg, $expected, $actual, $delta)
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual, $delta, $msg)
 ;;
 
 // Assert.assertEquals(expected, actual, delta) → Assertions.assertEquals(expected, actual, delta)
 // Type guard: third argument must be a double (delta) to disambiguate from message form
-Assert.assertEquals($expected, $actual, $delta)
+org.junit.Assert.assertEquals($expected, $actual, $delta)
   :: $delta instanceof double
-=> Assertions.assertEquals($expected, $actual, $delta)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual, $delta)
 ;;
 
 // --- assertNotEquals ---
 
 // Assert.assertNotEquals(unexpected, actual) → Assertions.assertNotEquals(unexpected, actual)
-Assert.assertNotEquals($unexpected, $actual)
-=> Assertions.assertNotEquals($unexpected, $actual)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertNotEquals($unexpected, $actual)
+=> org.junit.jupiter.api.Assertions.assertNotEquals($unexpected, $actual)
 ;;
 
 // Assert.assertNotEquals(message, unexpected, actual) → Assertions.assertNotEquals(unexpected, actual, message)
 // Type guard: first argument must be a String (message) to disambiguate from delta form
-Assert.assertNotEquals($msg, $unexpected, $actual)
+org.junit.Assert.assertNotEquals($msg, $unexpected, $actual)
   :: $msg instanceof java.lang.String
-=> Assertions.assertNotEquals($unexpected, $actual, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+=> org.junit.jupiter.api.Assertions.assertNotEquals($unexpected, $actual, $msg)
 ;;
 
 // Assert.assertNotEquals(message, unexpected, actual, delta) → Assertions.assertNotEquals(unexpected, actual, delta, message)
-Assert.assertNotEquals($msg, $unexpected, $actual, $delta)
-=> Assertions.assertNotEquals($unexpected, $actual, $delta, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertNotEquals($msg, $unexpected, $actual, $delta)
+=> org.junit.jupiter.api.Assertions.assertNotEquals($unexpected, $actual, $delta, $msg)
 ;;
 
 // Assert.assertNotEquals(unexpected, actual, delta) → Assertions.assertNotEquals(unexpected, actual, delta)
 // Type guard: third argument must be a double (delta) to disambiguate from message form
-Assert.assertNotEquals($unexpected, $actual, $delta)
+org.junit.Assert.assertNotEquals($unexpected, $actual, $delta)
   :: $delta instanceof double
-=> Assertions.assertNotEquals($unexpected, $actual, $delta)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+=> org.junit.jupiter.api.Assertions.assertNotEquals($unexpected, $actual, $delta)
 ;;
 
 // --- assertArrayEquals ---
 
 // Assert.assertArrayEquals(expected, actual) → Assertions.assertArrayEquals(expected, actual)
-Assert.assertArrayEquals($expected, $actual)
-=> Assertions.assertArrayEquals($expected, $actual)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertArrayEquals($expected, $actual)
+=> org.junit.jupiter.api.Assertions.assertArrayEquals($expected, $actual)
 ;;
 
 // Assert.assertArrayEquals(message, expected, actual) → Assertions.assertArrayEquals(expected, actual, message)
-Assert.assertArrayEquals($msg, $expected, $actual)
-=> Assertions.assertArrayEquals($expected, $actual, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertArrayEquals($msg, $expected, $actual)
+=> org.junit.jupiter.api.Assertions.assertArrayEquals($expected, $actual, $msg)
 ;;
 
 // --- assertTrue / assertFalse ---
 
 // Assert.assertTrue(condition) → Assertions.assertTrue(condition)
-Assert.assertTrue($cond)
-=> Assertions.assertTrue($cond)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertTrue($cond)
+=> org.junit.jupiter.api.Assertions.assertTrue($cond)
 ;;
 
 // Assert.assertTrue(message, condition) → Assertions.assertTrue(condition, message)
-Assert.assertTrue($msg, $cond)
-=> Assertions.assertTrue($cond, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertTrue($msg, $cond)
+=> org.junit.jupiter.api.Assertions.assertTrue($cond, $msg)
 ;;
 
 // Assert.assertFalse(condition) → Assertions.assertFalse(condition)
-Assert.assertFalse($cond)
-=> Assertions.assertFalse($cond)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertFalse($cond)
+=> org.junit.jupiter.api.Assertions.assertFalse($cond)
 ;;
 
 // Assert.assertFalse(message, condition) → Assertions.assertFalse(condition, message)
-Assert.assertFalse($msg, $cond)
-=> Assertions.assertFalse($cond, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertFalse($msg, $cond)
+=> org.junit.jupiter.api.Assertions.assertFalse($cond, $msg)
 ;;
 
 // --- assertNull / assertNotNull ---
 
 // Assert.assertNull(obj) → Assertions.assertNull(obj)
-Assert.assertNull($obj)
-=> Assertions.assertNull($obj)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertNull($obj)
+=> org.junit.jupiter.api.Assertions.assertNull($obj)
 ;;
 
 // Assert.assertNull(message, obj) → Assertions.assertNull(obj, message)
-Assert.assertNull($msg, $obj)
-=> Assertions.assertNull($obj, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertNull($msg, $obj)
+=> org.junit.jupiter.api.Assertions.assertNull($obj, $msg)
 ;;
 
 // Assert.assertNotNull(obj) → Assertions.assertNotNull(obj)
-Assert.assertNotNull($obj)
-=> Assertions.assertNotNull($obj)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertNotNull($obj)
+=> org.junit.jupiter.api.Assertions.assertNotNull($obj)
 ;;
 
 // Assert.assertNotNull(message, obj) → Assertions.assertNotNull(obj, message)
-Assert.assertNotNull($msg, $obj)
-=> Assertions.assertNotNull($obj, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertNotNull($msg, $obj)
+=> org.junit.jupiter.api.Assertions.assertNotNull($obj, $msg)
 ;;
 
 // --- assertSame / assertNotSame ---
 
 // Assert.assertSame(expected, actual) → Assertions.assertSame(expected, actual)
-Assert.assertSame($expected, $actual)
-=> Assertions.assertSame($expected, $actual)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertSame($expected, $actual)
+=> org.junit.jupiter.api.Assertions.assertSame($expected, $actual)
 ;;
 
 // Assert.assertSame(message, expected, actual) → Assertions.assertSame(expected, actual, message)
-Assert.assertSame($msg, $expected, $actual)
-=> Assertions.assertSame($expected, $actual, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertSame($msg, $expected, $actual)
+=> org.junit.jupiter.api.Assertions.assertSame($expected, $actual, $msg)
 ;;
 
 // Assert.assertNotSame(unexpected, actual) → Assertions.assertNotSame(unexpected, actual)
-Assert.assertNotSame($unexpected, $actual)
-=> Assertions.assertNotSame($unexpected, $actual)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertNotSame($unexpected, $actual)
+=> org.junit.jupiter.api.Assertions.assertNotSame($unexpected, $actual)
 ;;
 
 // Assert.assertNotSame(message, unexpected, actual) → Assertions.assertNotSame(unexpected, actual, message)
-Assert.assertNotSame($msg, $unexpected, $actual)
-=> Assertions.assertNotSame($unexpected, $actual, $msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.assertNotSame($msg, $unexpected, $actual)
+=> org.junit.jupiter.api.Assertions.assertNotSame($unexpected, $actual, $msg)
 ;;
 
 // --- fail ---
 
 // Assert.fail() → Assertions.fail()
-Assert.fail()
-=> Assertions.fail()
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.fail()
+=> org.junit.jupiter.api.Assertions.fail()
 ;;
 
 // Assert.fail(message) → Assertions.fail(message)
-Assert.fail($msg)
-=> Assertions.fail($msg)
-addImport org.junit.jupiter.api.Assertions
-removeImport org.junit.Assert
-replaceStaticImport org.junit.Assert org.junit.jupiter.api.Assertions
+org.junit.Assert.fail($msg)
+=> org.junit.jupiter.api.Assertions.fail($msg)
 ;;
 
 // --- assertThat (Hamcrest special case) ---
 
 // Assert.assertThat(actual, matcher) → MatcherAssert.assertThat(actual, matcher)
 // Note: JUnit 5 does not have assertThat - uses Hamcrest's MatcherAssert instead
-Assert.assertThat($actual, $matcher)
-=> MatcherAssert.assertThat($actual, $matcher)
-addImport org.hamcrest.MatcherAssert
-removeImport org.junit.Assert
+org.junit.Assert.assertThat($actual, $matcher)
+=> org.hamcrest.MatcherAssert.assertThat($actual, $matcher)
 ;;
 
 // Assert.assertThat(message, actual, matcher) → MatcherAssert.assertThat(message, actual, matcher)
-Assert.assertThat($msg, $actual, $matcher)
-=> MatcherAssert.assertThat($msg, $actual, $matcher)
-addImport org.hamcrest.MatcherAssert
-removeImport org.junit.Assert
+org.junit.Assert.assertThat($msg, $actual, $matcher)
+=> org.hamcrest.MatcherAssert.assertThat($msg, $actual, $matcher)
 ;;

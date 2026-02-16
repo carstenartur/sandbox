@@ -24,7 +24,7 @@ import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
 
 /**
- * Tests for {@link ImportDirective}, especially the new auto-detection methods.
+ * Tests for {@link ImportDirective}, especially the FQN-based inference methods.
  */
 public class ImportDirectiveTest {
 
@@ -114,5 +114,78 @@ public class ImportDirectiveTest {
 		ImportDirective directive = ImportDirective.detectRemovedTypes(
 				"java.io.File", List.of()); //$NON-NLS-1$
 		assertTrue(directive.isEmpty());
+	}
+	
+	// --- inferFromFqnPatterns tests ---
+	
+	@Test
+	public void testInferFromFqnPatternsAddAndRemove() {
+		ImportDirective directive = ImportDirective.inferFromFqnPatterns(
+				"org.junit.Assert.assertEquals($expected, $actual)", //$NON-NLS-1$
+				List.of("org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)")); //$NON-NLS-1$
+		assertFalse(directive.isEmpty());
+		assertTrue(directive.getAddImports().contains("org.junit.jupiter.api.Assertions"), //$NON-NLS-1$
+				"Replacement FQN should be addImport"); //$NON-NLS-1$
+		assertTrue(directive.getRemoveImports().contains("org.junit.Assert"), //$NON-NLS-1$
+				"Source FQN not in replacement should be removeImport"); //$NON-NLS-1$
+	}
+	
+	@Test
+	public void testInferFromFqnPatternsReplaceStaticImport() {
+		ImportDirective directive = ImportDirective.inferFromFqnPatterns(
+				"org.junit.Assert.assertEquals($expected, $actual)", //$NON-NLS-1$
+				List.of("org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)")); //$NON-NLS-1$
+		assertFalse(directive.getReplaceStaticImports().isEmpty(),
+				"Should infer replaceStaticImport from matching method names"); //$NON-NLS-1$
+		assertEquals("org.junit.jupiter.api.Assertions", //$NON-NLS-1$
+				directive.getReplaceStaticImports().get("org.junit.Assert")); //$NON-NLS-1$
+	}
+	
+	@Test
+	public void testInferFromFqnPatternsNoFqns() {
+		ImportDirective directive = ImportDirective.inferFromFqnPatterns(
+				"Assert.assertEquals($a, $b)", //$NON-NLS-1$
+				List.of("Assertions.assertEquals($a, $b)")); //$NON-NLS-1$
+		assertTrue(directive.isEmpty(),
+				"Short names should not produce any import directives"); //$NON-NLS-1$
+	}
+	
+	@Test
+	public void testInferFromFqnPatternsOnlyReplacement() {
+		ImportDirective directive = ImportDirective.inferFromFqnPatterns(
+				"$x.equals($y)", //$NON-NLS-1$
+				List.of("java.util.Objects.equals($x, $y)")); //$NON-NLS-1$
+		assertFalse(directive.isEmpty());
+		assertTrue(directive.getAddImports().contains("java.util.Objects"), //$NON-NLS-1$
+				"FQN in replacement should be addImport"); //$NON-NLS-1$
+		assertTrue(directive.getRemoveImports().isEmpty(),
+				"No FQN in source means no removeImport"); //$NON-NLS-1$
+	}
+	
+	@Test
+	public void testInferFromFqnPatternsNullReplacements() {
+		ImportDirective directive = ImportDirective.inferFromFqnPatterns(
+				"org.junit.Assert.fail()", null); //$NON-NLS-1$
+		assertTrue(directive.isEmpty());
+	}
+	
+	@Test
+	public void testInferFromFqnPatternsEmptyReplacements() {
+		ImportDirective directive = ImportDirective.inferFromFqnPatterns(
+				"org.junit.Assert.fail()", List.of()); //$NON-NLS-1$
+		assertTrue(directive.isEmpty());
+	}
+	
+	@Test
+	public void testInferFromFqnPatternsAnnotationStyle() {
+		// Annotation patterns: FQNs after @ sign
+		ImportDirective directive = ImportDirective.inferFromFqnPatterns(
+				"@org.junit.Before", //$NON-NLS-1$
+				List.of("@org.junit.jupiter.api.BeforeEach")); //$NON-NLS-1$
+		assertFalse(directive.isEmpty());
+		assertTrue(directive.getAddImports().contains("org.junit.jupiter.api.BeforeEach"), //$NON-NLS-1$
+				"Annotation FQN in replacement should be addImport"); //$NON-NLS-1$
+		assertTrue(directive.getRemoveImports().contains("org.junit.Before"), //$NON-NLS-1$
+				"Annotation FQN only in source should be removeImport"); //$NON-NLS-1$
 	}
 }
