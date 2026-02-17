@@ -24,7 +24,9 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -403,12 +405,16 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	}
 	
 	/**
-	 * Matches receiver expressions with support for FQN-to-SimpleName resolution.
+	 * Matches receiver expressions with support for FQN-to-SimpleName resolution using binding resolution.
 	 * 
 	 * <p>When a pattern uses a fully-qualified name like {@code java.nio.charset.Charset}
 	 * as the receiver, but the source code uses the imported simple name {@code Charset},
-	 * this method extracts the last segment (simple name) from the qualified name and
-	 * compares it to the source's simple name.</p>
+	 * this method uses {@link ITypeBinding} resolution to verify that the SimpleName actually
+	 * refers to the expected fully-qualified type, preventing false positives from homonymous
+	 * classes in different packages.</p>
+	 * 
+	 * <p>Falls back to syntactic comparison when bindings are unavailable (e.g., in test
+	 * environments without classpath resolution).</p>
 	 * 
 	 * @param patternExpr the pattern receiver expression (may be QualifiedName for FQN)
 	 * @param sourceExpr the source receiver expression (may be SimpleName for imported usage)
@@ -432,12 +438,29 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		// FQN-to-SimpleName: pattern has a QualifiedName, source has a SimpleName
 		// e.g., pattern: java.nio.charset.Charset, source: Charset (with import)
 		if (patternExpr instanceof QualifiedName patternQN && sourceExpr instanceof SimpleName sourceSN) {
+			// Try binding-based resolution first (reliable when bindings are available)
+			IBinding binding = sourceSN.resolveBinding();
+			if (binding instanceof ITypeBinding typeBinding) {
+				String resolvedFQN = typeBinding.getQualifiedName();
+				String patternFQN = patternQN.getFullyQualifiedName();
+				return resolvedFQN.equals(patternFQN);
+			}
+			// Fallback to simple-name comparison when bindings are not available
+			// (e.g., in test environments without classpath)
 			String patternSimpleName = patternQN.getName().getIdentifier();
 			return patternSimpleName.equals(sourceSN.getIdentifier());
 		}
 		
 		// SimpleName-to-FQN: pattern has a SimpleName, source uses FQN (less common)
 		if (patternExpr instanceof SimpleName patternSN && sourceExpr instanceof QualifiedName sourceQN) {
+			// Try binding-based resolution first (reliable when bindings are available)
+			IBinding binding = patternSN.resolveBinding();
+			if (binding instanceof ITypeBinding typeBinding) {
+				String resolvedFQN = typeBinding.getQualifiedName();
+				String sourceFQN = sourceQN.getFullyQualifiedName();
+				return resolvedFQN.equals(sourceFQN);
+			}
+			// Fallback to simple-name comparison when bindings are not available
 			String sourceSimpleName = sourceQN.getName().getIdentifier();
 			return patternSN.getIdentifier().equals(sourceSimpleName);
 		}
