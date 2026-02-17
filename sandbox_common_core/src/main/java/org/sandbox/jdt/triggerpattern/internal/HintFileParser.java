@@ -274,7 +274,7 @@ public final class HintFileParser {
 		}
 		
 		Map<String, String> mappings = new LinkedHashMap<>();
-		String[] entries = value.split("\\s*,\\s*"); //$NON-NLS-1$
+		List<String> entries = splitForeachEntries(value);
 		for (String entry : entries) {
 			entry = entry.trim();
 			if (entry.isEmpty()) {
@@ -299,6 +299,34 @@ public final class HintFileParser {
 		}
 		
 		foreachVariables.put(varName, mappings);
+	}
+	
+	/**
+	 * Splits foreach entries at commas, respecting quoted strings.
+	 * Commas inside double quotes are not treated as entry separators.
+	 * 
+	 * @param value the foreach value string (e.g., {@code "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1})
+	 * @return list of entry strings
+	 */
+	private List<String> splitForeachEntries(String value) {
+		List<String> entries = new ArrayList<>();
+		boolean inQuotes = false;
+		int start = 0;
+		for (int c = 0; c < value.length(); c++) {
+			char ch = value.charAt(c);
+			if (ch == '"') {
+				inQuotes = !inQuotes;
+			} else if (ch == ',' && !inQuotes) {
+				entries.add(value.substring(start, c).trim());
+				start = c + 1;
+			}
+		}
+		// Add last entry
+		String last = value.substring(start).trim();
+		if (!last.isEmpty()) {
+			entries.add(last);
+		}
+		return entries;
 	}
 	
 	/**
