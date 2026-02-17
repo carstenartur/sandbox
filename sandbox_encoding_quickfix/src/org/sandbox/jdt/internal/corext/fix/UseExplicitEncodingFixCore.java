@@ -54,34 +54,52 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 
 public enum UseExplicitEncodingFixCore {
 
-	CHARSET(new CharsetForNameExplicitEncoding()),
-	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding()),
-	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding()),
-	STRING_GETBYTES(new StringGetBytesExplicitEncoding()),
-	STRING(new StringExplicitEncoding()),
-	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding()),
-	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding()),
-	FILEREADER(new FileReaderExplicitEncoding()),
-	FILEWRITER(new FileWriterExplicitEncoding()),
-	PRINTWRITER(new PrintWriterExplicitEncoding()),
-	PRINTSTREAM(new PrintStreamExplicitEncoding()),
-	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding()),
-	FORMATTER(new FormatterExplicitEncoding()),
-	URLDECODER(new URLDecoderDecodeExplicitEncoding()),
-	URLENCODER(new URLEncoderEncodeExplicitEncoding()),
-	SCANNER(new ScannerExplicitEncoding()),
-	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding()),
-	FILES_NEWBUFFEREDREADER(new FilesNewBufferedReaderExplicitEncoding()),
-	FILES_NEWBUFFEREDWRITER(new FilesNewBufferedWriterExplicitEncoding()),
-	FILES_READALLLINES(new FilesReadAllLinesExplicitEncoding()),
-	FILES_READSTRING(new FilesReadStringExplicitEncoding()),
-	FILES_WRITESTRING(new FilesWriteStringExplicitEncoding());
+	CHARSET(new CharsetForNameExplicitEncoding(), true),
+	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding(), false),
+	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding(), false),
+	STRING_GETBYTES(new StringGetBytesExplicitEncoding(), true),
+	STRING(new StringExplicitEncoding(), true),
+	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding(), true),
+	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding(), true),
+	FILEREADER(new FileReaderExplicitEncoding(), false),
+	FILEWRITER(new FileWriterExplicitEncoding(), false),
+	PRINTWRITER(new PrintWriterExplicitEncoding(), false),
+	PRINTSTREAM(new PrintStreamExplicitEncoding(), true),
+	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding(), false),
+	FORMATTER(new FormatterExplicitEncoding(), true),
+	URLDECODER(new URLDecoderDecodeExplicitEncoding(), true),
+	URLENCODER(new URLEncoderEncodeExplicitEncoding(), true),
+	SCANNER(new ScannerExplicitEncoding(), true),
+	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding(), false),
+	FILES_NEWBUFFEREDREADER(new FilesNewBufferedReaderExplicitEncoding(), false),
+	FILES_NEWBUFFEREDWRITER(new FilesNewBufferedWriterExplicitEncoding(), false),
+	FILES_READALLLINES(new FilesReadAllLinesExplicitEncoding(), false),
+	FILES_READSTRING(new FilesReadStringExplicitEncoding(), false),
+	FILES_WRITESTRING(new FilesWriteStringExplicitEncoding(), false);
 
 	AbstractExplicitEncoding<ASTNode> explicitencoding;
+	private final boolean dslHandled;
 
 	@SuppressWarnings("unchecked")
-	UseExplicitEncodingFixCore(AbstractExplicitEncoding<? extends ASTNode> explicitencoding) {
+	UseExplicitEncodingFixCore(AbstractExplicitEncoding<? extends ASTNode> explicitencoding, boolean dslHandled) {
 		this.explicitencoding=(AbstractExplicitEncoding<ASTNode>) explicitencoding;
+		this.dslHandled=dslHandled;
+	}
+
+	/**
+	 * Returns whether this fix is handled by DSL rules in the encoding
+	 * {@code .sandbox-hint} file (Tier 1).
+	 *
+	 * <p>DSL-handled fixes perform simple argument replacement (e.g.,
+	 * {@code "UTF-8"} → {@code StandardCharsets.UTF_8}) and are processed
+	 * first by the DSL engine. The imperative helpers for these cases still
+	 * run as a fallback for {@code KEEP_BEHAVIOR} mode where DSL rules are
+	 * not applied.</p>
+	 *
+	 * @return {@code true} if this fix is covered by DSL rules
+	 */
+	public boolean isDslHandled() {
+		return dslHandled;
 	}
 
 	public String getPreview(boolean i, ChangeBehavior cb) {

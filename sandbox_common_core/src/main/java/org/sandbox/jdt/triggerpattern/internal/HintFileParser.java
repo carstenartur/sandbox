@@ -19,7 +19,10 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
@@ -34,7 +37,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * 
  * <p>Reads a text file containing transformation rules and produces a {@link HintFile}
  * data model. Supports comments, metadata directives, simple rules, guarded rules,
- * and multi-rewrite rules.</p>
+ * multi-rewrite rules, and foreach expansion.</p>
  * 
  * <p>Import directives are automatically inferred from fully qualified names (FQNs)
  * in source and replacement patterns. No explicit import directives are needed.</p>
@@ -50,6 +53,14 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * &lt;!minJavaVersion: 11&gt;
  * &lt;!tags: performance, modernization&gt;
  * &lt;!include: other.hint.id&gt;
+ *
+ * // Foreach expansion: define a variable with key-value pairs
+ * // Rules using ${VAR} and ${VAR_CONSTANT} are expanded for each entry
+ * &lt;!foreach CHARSET: "UTF-8" -&gt; UTF_8, "ISO-8859-1" -&gt; ISO_8859_1&gt;
+ *
+ * $s.getBytes("${CHARSET}") :: sourceVersionGE(7)
+ * =&gt; $s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+ * ;;
  *
  * // Simple rule with FQN-based imports
  * org.junit.Assert.assertEquals($expected, $actual)
@@ -84,6 +95,13 @@ public final class HintFileParser {
 	private final GuardExpressionParser guardParser = new GuardExpressionParser();
 	
 	/**
+	 * Foreach variable definitions: variable name → ordered map of key→value pairs.
+	 * <p>Example: {@code <!foreach CHARSET: "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1>}
+	 * creates a mapping {@code CHARSET → {"UTF-8" → "UTF_8", "ISO-8859-1" → "ISO_8859_1"}}.</p>
+	 */
+	private final Map<String, Map<String, String>> foreachVariables = new HashMap<>();
+	
+	/**
 	 * Parses a {@code .sandbox-hint} file from a string.
 	 * 
 	 * @param content the file content
@@ -111,6 +129,7 @@ public final class HintFileParser {
 	 */
 	public HintFile parse(Reader reader) throws HintParseException, IOException {
 		HintFile hintFile = new HintFile();
+		foreachVariables.clear();
 		List<String> lines = readAndStripComments(reader);
 		
 		int i = 0;
@@ -228,9 +247,86 @@ public final class HintFileParser {
 				hintFile.addInclude(value);
 				break;
 			default:
+				// Check for foreach directive: <!foreach VARNAME: key1 -> val1, key2 -> val2>
+				if (key.startsWith("foreach ")) { //$NON-NLS-1$
+					parseForeachDirective(key, value, lineNumber);
+				}
 				// Unknown metadata key is ignored for forward compatibility
 				break;
 		}
+	}
+	
+	/**
+	 * Parses a {@code <!foreach>} directive and stores the variable mapping.
+	 * 
+	 * <p>Syntax: {@code <!foreach VARNAME: "key1" -> val1, "key2" -> val2, ...>}</p>
+	 * <p>The variable can then be used in rules as {@code ${VARNAME}} (expands to the key)
+	 * and {@code ${VARNAME_CONSTANT}} (expands to the value).</p>
+	 * 
+	 * @param key the directive key (e.g., "foreach CHARSET")
+	 * @param value the directive value (e.g., {@code "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1})
+	 * @param lineNumber the line number for error reporting
+	 */
+	private void parseForeachDirective(String key, String value, int lineNumber) throws HintParseException {
+		String varName = key.substring("foreach ".length()).trim(); //$NON-NLS-1$
+		if (varName.isEmpty()) {
+			throw new HintParseException("foreach directive requires a variable name", lineNumber); //$NON-NLS-1$
+		}
+		
+		Map<String, String> mappings = new LinkedHashMap<>();
+		List<String> entries = splitForeachEntries(value);
+		for (String entry : entries) {
+			entry = entry.trim();
+			if (entry.isEmpty()) {
+				continue;
+			}
+			int arrowIdx = entry.indexOf("->"); //$NON-NLS-1$
+			if (arrowIdx < 0) {
+				throw new HintParseException(
+						"foreach entry must use 'key -> value' syntax: " + entry, lineNumber); //$NON-NLS-1$
+			}
+			String entryKey = entry.substring(0, arrowIdx).trim();
+			String entryValue = entry.substring(arrowIdx + 2).trim();
+			// Strip quotes from key if present
+			if (entryKey.startsWith("\"") && entryKey.endsWith("\"")) { //$NON-NLS-1$ //$NON-NLS-2$
+				entryKey = entryKey.substring(1, entryKey.length() - 1);
+			}
+			mappings.put(entryKey, entryValue);
+		}
+		
+		if (mappings.isEmpty()) {
+			throw new HintParseException("foreach directive has no entries", lineNumber); //$NON-NLS-1$
+		}
+		
+		foreachVariables.put(varName, mappings);
+	}
+	
+	/**
+	 * Splits foreach entries at commas, respecting quoted strings.
+	 * Commas inside double quotes are not treated as entry separators.
+	 * 
+	 * @param value the foreach value string (e.g., {@code "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1})
+	 * @return list of entry strings
+	 */
+	private List<String> splitForeachEntries(String value) {
+		List<String> entries = new ArrayList<>();
+		boolean inQuotes = false;
+		int start = 0;
+		for (int c = 0; c < value.length(); c++) {
+			char ch = value.charAt(c);
+			if (ch == '"') {
+				inQuotes = !inQuotes;
+			} else if (ch == ',' && !inQuotes) {
+				entries.add(value.substring(start, c).trim());
+				start = c + 1;
+			}
+		}
+		// Add last entry
+		String last = value.substring(start).trim();
+		if (!last.isEmpty()) {
+			entries.add(last);
+		}
+		return entries;
 	}
 	
 	/**
@@ -270,6 +366,60 @@ public final class HintFileParser {
 					startIndex + 1);
 		}
 		
+		// Check if the rule uses foreach variables — expand if so
+		String foreachVar = findForeachVariable(ruleLines);
+		if (foreachVar != null) {
+			expandForeachRule(hintFile, ruleLines, foreachVar, startIndex);
+		} else {
+			buildRule(hintFile, ruleLines, startIndex);
+		}
+		
+		return i;
+	}
+	
+	/**
+	 * Checks if any rule line contains a {@code ${VAR}} reference to a defined foreach variable.
+	 * 
+	 * @return the variable name if found, or {@code null}
+	 */
+	private String findForeachVariable(List<String> ruleLines) {
+		for (String line : ruleLines) {
+			for (String varName : foreachVariables.keySet()) {
+				if (line.contains("${" + varName + "}") || line.contains("${" + varName + "_CONSTANT}")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					return varName;
+				}
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Expands a rule template for each entry in the foreach variable's mapping.
+	 * 
+	 * <p>{@code ${VAR}} is replaced with the key (e.g., {@code "UTF-8"})
+	 * and {@code ${VAR_CONSTANT}} is replaced with the value (e.g., {@code UTF_8}).</p>
+	 */
+	private void expandForeachRule(HintFile hintFile, List<String> ruleLines, 
+			String varName, int startIndex) throws HintParseException {
+		Map<String, String> mappings = foreachVariables.get(varName);
+		String keyPlaceholder = "${" + varName + "}"; //$NON-NLS-1$ //$NON-NLS-2$
+		String valuePlaceholder = "${" + varName + "_CONSTANT}"; //$NON-NLS-1$ //$NON-NLS-2$
+		
+		for (Map.Entry<String, String> entry : mappings.entrySet()) {
+			List<String> expandedLines = new ArrayList<>();
+			for (String line : ruleLines) {
+				String expanded = line.replace(keyPlaceholder, entry.getKey())
+						.replace(valuePlaceholder, entry.getValue());
+				expandedLines.add(expanded);
+			}
+			buildRule(hintFile, expandedLines, startIndex);
+		}
+	}
+	
+	/**
+	 * Builds a single transformation rule from the given rule lines and adds it to the hint file.
+	 */
+	private void buildRule(HintFile hintFile, List<String> ruleLines, int startIndex) throws HintParseException {
 		// Parse the rule lines
 		String description = null;
 		String sourcePatternText;
@@ -362,8 +512,6 @@ public final class HintFileParser {
 				description, sourcePattern, sourceGuard, alternatives, 
 				currentImports.isEmpty() ? null : currentImports);
 		hintFile.addRule(rule);
-		
-		return i;
 	}
 	
 	/**

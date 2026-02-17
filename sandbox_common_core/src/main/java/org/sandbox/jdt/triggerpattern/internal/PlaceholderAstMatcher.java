@@ -21,21 +21,28 @@ import java.util.Map;
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 
 /**
@@ -401,6 +408,209 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	}
 	
 	/**
+	 * Matches receiver expressions with import-aware FQN-to-SimpleName resolution.
+	 * 
+	 * <p>When a pattern uses a fully-qualified name like {@code java.nio.charset.Charset}
+	 * as the receiver, but the source code uses the imported simple name {@code Charset},
+	 * this method resolves the simple name via the source CompilationUnit's import
+	 * declarations and compares the full FQN.</p>
+	 * 
+	 * <p>Patterns must always use fully-qualified names. A SimpleName pattern will
+	 * not match a FQN source expression because patterns should express the complete
+	 * type identity, not just the presentation form.</p>
+	 * 
+	 * @param patternExpr the pattern receiver expression (should be QualifiedName for FQN)
+	 * @param sourceExpr the source receiver expression (may be SimpleName for imported usage)
+	 * @return {@code true} if the receivers match
+	 * @since 1.3.8
+	 */
+	private boolean matchReceiverExpressions(Expression patternExpr, Expression sourceExpr) {
+		// Null check: both null or both non-null
+		if (patternExpr == null) {
+			return sourceExpr == null;
+		}
+		if (sourceExpr == null) {
+			return false;
+		}
+		
+		// Try structural match first
+		if (patternExpr.subtreeMatch(this, sourceExpr)) {
+			return true;
+		}
+		
+		// FQN-to-SimpleName: pattern has a QualifiedName, source has a SimpleName
+		// Resolve the SimpleName via import declarations to verify the full FQN matches
+		if (patternExpr instanceof QualifiedName patternQN && sourceExpr instanceof SimpleName sourceSN) {
+			String patternFqn = patternQN.getFullyQualifiedName();
+			String resolvedFqn = resolveSimpleNameViaImports(sourceSN);
+			return patternFqn.equals(resolvedFqn);
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Resolves a SimpleName to its fully-qualified name using the import declarations
+	 * of the enclosing CompilationUnit.
+	 * 
+	 * <p>Walks up the AST from the given node to find the CompilationUnit, then
+	 * searches the import declarations for one whose last segment matches the
+	 * SimpleName's identifier.</p>
+	 * 
+	 * @param simpleName the SimpleName node to resolve
+	 * @return the fully-qualified name if an import matches, or {@code null} if
+	 *         no matching import is found
+	 * @since 1.3.8
+	 */
+	private String resolveSimpleNameViaImports(SimpleName simpleName) {
+		CompilationUnit cu = findCompilationUnit(simpleName);
+		if (cu == null) {
+			return null;
+		}
+		
+		String identifier = simpleName.getIdentifier();
+		
+		@SuppressWarnings("unchecked")
+		List<ImportDeclaration> imports = cu.imports();
+		for (ImportDeclaration importDecl : imports) {
+			if (importDecl.isStatic() || importDecl.isOnDemand()) {
+				continue;
+			}
+			String importFqn = importDecl.getName().getFullyQualifiedName();
+			// Check if the import's simple name matches
+			int lastDot = importFqn.lastIndexOf('.');
+			String importSimpleName = (lastDot >= 0) ? importFqn.substring(lastDot + 1) : importFqn;
+			if (identifier.equals(importSimpleName)) {
+				return importFqn;
+			}
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Finds the enclosing CompilationUnit for the given AST node.
+	 * 
+	 * @param node the AST node
+	 * @return the CompilationUnit, or {@code null} if not found
+	 */
+	private CompilationUnit findCompilationUnit(ASTNode node) {
+		ASTNode current = node;
+		while (current != null) {
+			if (current instanceof CompilationUnit cu) {
+				return cu;
+			}
+			current = current.getParent();
+		}
+		return null;
+	}
+	
+	/**
+	 * Matches constructor types with import-aware FQN resolution.
+	 * 
+	 * <p>When a pattern uses a FQN type like {@code new java.io.InputStreamReader(...)},
+	 * but the source code uses the imported simple name {@code new InputStreamReader(...)},
+	 * this method resolves the simple name via import declarations to verify
+	 * the full FQN matches.</p>
+	 * 
+	 * <p>Also handles {@code java.lang.*} types (e.g., {@code String}) which
+	 * are implicitly imported and don't require an explicit import declaration.</p>
+	 * 
+	 * @param patternType the pattern constructor type
+	 * @param sourceType the source constructor type
+	 * @param sourceNode the source AST node (used to find the CompilationUnit for imports)
+	 * @return {@code true} if the types match
+	 * @since 1.3.8
+	 */
+	private boolean matchConstructorTypes(Type patternType, Type sourceType, ASTNode sourceNode) {
+		// Try structural match first
+		if (patternType.subtreeMatch(this, sourceType)) {
+			return true;
+		}
+		
+		// Both must be SimpleType for FQN resolution
+		if (!(patternType instanceof SimpleType patternST) || !(sourceType instanceof SimpleType sourceST)) {
+			return false;
+		}
+		
+		Name patternName = patternST.getName();
+		Name sourceName = sourceST.getName();
+		
+		// FQN-to-SimpleName: pattern has QualifiedName, source has SimpleName
+		if (patternName instanceof QualifiedName patternQN && sourceName instanceof SimpleName sourceSN) {
+			String patternFqn = patternQN.getFullyQualifiedName();
+			
+			// Check java.lang.* types (implicitly imported)
+			if (patternFqn.startsWith("java.lang.")) { //$NON-NLS-1$
+				String patternSimple = patternQN.getName().getIdentifier();
+				if (patternSimple.equals(sourceSN.getIdentifier())) {
+					return true;
+				}
+			}
+			
+			// Resolve via explicit imports
+			String resolvedFqn = resolveSimpleNameViaImports(sourceSN);
+			return patternFqn.equals(resolvedFqn);
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Matches class instance creation (constructor) nodes with import-aware
+	 * type resolution and multi-placeholder argument support.
+	 * 
+	 * <p>When a pattern uses a FQN constructor like {@code new java.io.InputStreamReader(...)},
+	 * this method resolves the source type via import declarations to verify
+	 * the constructor types match even when the source uses imported simple names.</p>
+	 * 
+	 * @param patternNode the pattern constructor
+	 * @param other the candidate node
+	 * @return {@code true} if the constructors match
+	 * @since 1.3.8
+	 */
+	@Override
+	public boolean match(ClassInstanceCreation patternNode, Object other) {
+		if (!(other instanceof ClassInstanceCreation otherCreation)) {
+			return false;
+		}
+		
+		// Match constructor type with FQN-to-SimpleName support
+		if (!matchConstructorTypes(patternNode.getType(), otherCreation.getType(), otherCreation)) {
+			return false;
+		}
+		
+		// Match type arguments if present
+		@SuppressWarnings("unchecked")
+		List<Type> patternTypeArgs = patternNode.typeArguments();
+		@SuppressWarnings("unchecked")
+		List<Type> otherTypeArgs = otherCreation.typeArguments();
+		
+		if (patternTypeArgs.size() != otherTypeArgs.size()) {
+			return false;
+		}
+		
+		for (int i = 0; i < patternTypeArgs.size(); i++) {
+			if (!safeSubtreeMatch(patternTypeArgs.get(i), otherTypeArgs.get(i))) {
+				return false;
+			}
+		}
+		
+		// Match expression (receiver for inner class constructors)
+		if (!safeSubtreeMatch(patternNode.getExpression(), otherCreation.getExpression())) {
+			return false;
+		}
+		
+		// Match arguments with multi-placeholder support
+		@SuppressWarnings("unchecked")
+		List<Expression> patternArgs = patternNode.arguments();
+		@SuppressWarnings("unchecked")
+		List<Expression> otherArgs = otherCreation.arguments();
+		
+		return matchArgumentsWithMultiPlaceholders(patternArgs, otherArgs);
+	}
+	
+	/**
 	 * Matches method invocations with support for multi-placeholder arguments.
 	 * 
 	 * @param patternNode the pattern method invocation
@@ -420,8 +630,8 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 			return false;
 		}
 		
-		// Match expression (receiver)
-		if (!safeSubtreeMatch(patternNode.getExpression(), otherInvocation.getExpression())) {
+		// Match expression (receiver) with FQN-to-SimpleName support
+		if (!matchReceiverExpressions(patternNode.getExpression(), otherInvocation.getExpression())) {
 			return false;
 		}
 		
