@@ -231,7 +231,7 @@ public class TriggerPatternEngineTest {
 	}
 	
 	@Test
-	public void testSimpleNamePatternMatchesFqnUsage() {
+	public void testSimpleNamePatternDoesNotMatchFqnUsage() {
 		// Source code uses FQN directly (no import)
 		String code = """
 			class Test {
@@ -242,12 +242,12 @@ public class TriggerPatternEngineTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		// Pattern uses simple name "Charset.forName(...)"
+		// Pattern uses simple name "Charset.forName(...)" — patterns should use FQN
 		Pattern pattern = new Pattern("Charset.forName($arg)", PatternKind.METHOD_CALL);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
-		assertEquals(1, matches.size(), "Simple-name pattern should match FQN usage in source");
+		assertEquals(0, matches.size(), "Simple-name pattern should NOT match FQN usage in source — patterns must use FQN");
 	}
 	
 	@Test
@@ -268,6 +268,47 @@ public class TriggerPatternEngineTest {
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
 		assertEquals(1, matches.size(), "FQN pattern should match FQN usage in source");
+	}
+	
+	@Test
+	public void testFqnPatternDoesNotMatchSimpleNameWithWrongImport() {
+		// Source code imports a different "Charset" class
+		String code = """
+			import com.example.Charset;
+			class Test {
+				void method() {
+					Object cs = Charset.forName("UTF-8");
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		// Pattern uses java.nio.charset.Charset FQN — different from the import
+		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(0, matches.size(), "FQN pattern should NOT match SimpleName with a different import");
+	}
+	
+	@Test
+	public void testFqnPatternDoesNotMatchSimpleNameWithoutImport() {
+		// Source code uses SimpleName without any import
+		String code = """
+			class Test {
+				void method() {
+					Object cs = Charset.forName("UTF-8");
+				}
+			}
+			""";
+		
+		CompilationUnit cu = parse(code);
+		// Pattern uses FQN
+		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL);
+		
+		List<Match> matches = engine.findMatches(cu, pattern);
+		
+		assertEquals(0, matches.size(), "FQN pattern should NOT match SimpleName without a matching import");
 	}
 	
 	private CompilationUnit parse(String code) {

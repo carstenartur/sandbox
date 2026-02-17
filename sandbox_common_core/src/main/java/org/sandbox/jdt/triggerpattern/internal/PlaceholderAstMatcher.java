@@ -21,10 +21,12 @@ import java.util.Map;
 import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -403,14 +405,18 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	}
 	
 	/**
-	 * Matches receiver expressions with support for FQN-to-SimpleName resolution.
+	 * Matches receiver expressions with import-aware FQN-to-SimpleName resolution.
 	 * 
 	 * <p>When a pattern uses a fully-qualified name like {@code java.nio.charset.Charset}
 	 * as the receiver, but the source code uses the imported simple name {@code Charset},
-	 * this method extracts the last segment (simple name) from the qualified name and
-	 * compares it to the source's simple name.</p>
+	 * this method resolves the simple name via the source CompilationUnit's import
+	 * declarations and compares the full FQN.</p>
 	 * 
-	 * @param patternExpr the pattern receiver expression (may be QualifiedName for FQN)
+	 * <p>Patterns must always use fully-qualified names. A SimpleName pattern will
+	 * not match a FQN source expression because patterns should express the complete
+	 * type identity, not just the presentation form.</p>
+	 * 
+	 * @param patternExpr the pattern receiver expression (should be QualifiedName for FQN)
 	 * @param sourceExpr the source receiver expression (may be SimpleName for imported usage)
 	 * @return {@code true} if the receivers match
 	 * @since 1.3.8
@@ -430,19 +436,70 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		}
 		
 		// FQN-to-SimpleName: pattern has a QualifiedName, source has a SimpleName
-		// e.g., pattern: java.nio.charset.Charset, source: Charset (with import)
+		// Resolve the SimpleName via import declarations to verify the full FQN matches
 		if (patternExpr instanceof QualifiedName patternQN && sourceExpr instanceof SimpleName sourceSN) {
-			String patternSimpleName = patternQN.getName().getIdentifier();
-			return patternSimpleName.equals(sourceSN.getIdentifier());
-		}
-		
-		// SimpleName-to-FQN: pattern has a SimpleName, source uses FQN (less common)
-		if (patternExpr instanceof SimpleName patternSN && sourceExpr instanceof QualifiedName sourceQN) {
-			String sourceSimpleName = sourceQN.getName().getIdentifier();
-			return patternSN.getIdentifier().equals(sourceSimpleName);
+			String patternFqn = patternQN.getFullyQualifiedName();
+			String resolvedFqn = resolveSimpleNameViaImports(sourceSN);
+			return patternFqn.equals(resolvedFqn);
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Resolves a SimpleName to its fully-qualified name using the import declarations
+	 * of the enclosing CompilationUnit.
+	 * 
+	 * <p>Walks up the AST from the given node to find the CompilationUnit, then
+	 * searches the import declarations for one whose last segment matches the
+	 * SimpleName's identifier.</p>
+	 * 
+	 * @param simpleName the SimpleName node to resolve
+	 * @return the fully-qualified name if an import matches, or {@code null} if
+	 *         no matching import is found
+	 * @since 1.3.8
+	 */
+	private String resolveSimpleNameViaImports(SimpleName simpleName) {
+		CompilationUnit cu = findCompilationUnit(simpleName);
+		if (cu == null) {
+			return null;
+		}
+		
+		String identifier = simpleName.getIdentifier();
+		
+		@SuppressWarnings("unchecked")
+		List<ImportDeclaration> imports = cu.imports();
+		for (ImportDeclaration importDecl : imports) {
+			if (importDecl.isStatic() || importDecl.isOnDemand()) {
+				continue;
+			}
+			String importFqn = importDecl.getName().getFullyQualifiedName();
+			// Check if the import's simple name matches
+			int lastDot = importFqn.lastIndexOf('.');
+			String importSimpleName = (lastDot >= 0) ? importFqn.substring(lastDot + 1) : importFqn;
+			if (identifier.equals(importSimpleName)) {
+				return importFqn;
+			}
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Finds the enclosing CompilationUnit for the given AST node.
+	 * 
+	 * @param node the AST node
+	 * @return the CompilationUnit, or {@code null} if not found
+	 */
+	private CompilationUnit findCompilationUnit(ASTNode node) {
+		ASTNode current = node;
+		while (current != null) {
+			if (current instanceof CompilationUnit cu) {
+				return cu;
+			}
+			current = current.getParent();
+		}
+		return null;
 	}
 	
 	/**
