@@ -529,4 +529,138 @@ public class HintFileParserTest {
 		assertFalse(rule.getImportDirective().getRemoveImports().contains("java.util.Objects"),
 				"FQN in both source and replacement should not be removeImport");
 	}
+	
+	@Test
+	public void testForeachExpandsRules() throws HintParseException {
+		String content = """
+			<!foreach CHARSET: "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1>
+			
+			$s.getBytes("${CHARSET}") :: sourceVersionGE(7)
+			=> $s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(2, hintFile.getRules().size(), "foreach should expand to 2 rules");
+		
+		TransformationRule rule1 = hintFile.getRules().get(0);
+		assertEquals("$s.getBytes(\"UTF-8\")", rule1.sourcePattern().getValue());
+		assertEquals("$s.getBytes(java.nio.charset.StandardCharsets.UTF_8)",
+				rule1.alternatives().get(0).replacementPattern());
+		
+		TransformationRule rule2 = hintFile.getRules().get(1);
+		assertEquals("$s.getBytes(\"ISO-8859-1\")", rule2.sourcePattern().getValue());
+		assertEquals("$s.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1)",
+				rule2.alternatives().get(0).replacementPattern());
+	}
+	
+	@Test
+	public void testForeachWithAllSixCharsets() throws HintParseException {
+		String content = """
+			<!foreach CHARSET: "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1, "US-ASCII" -> US_ASCII, "UTF-16" -> UTF_16, "UTF-16BE" -> UTF_16BE, "UTF-16LE" -> UTF_16LE>
+			
+			java.nio.charset.Charset.forName("${CHARSET}") :: sourceVersionGE(7)
+			=> java.nio.charset.StandardCharsets.${CHARSET_CONSTANT}
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(6, hintFile.getRules().size(), "foreach should expand to 6 rules");
+		
+		// Verify first and last
+		assertEquals("java.nio.charset.Charset.forName(\"UTF-8\")",
+				hintFile.getRules().get(0).sourcePattern().getValue());
+		assertEquals("java.nio.charset.Charset.forName(\"UTF-16LE\")",
+				hintFile.getRules().get(5).sourcePattern().getValue());
+	}
+	
+	@Test
+	public void testForeachWithConstructor() throws HintParseException {
+		String content = """
+			<!foreach CHARSET: "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1>
+			
+			new java.io.InputStreamReader($in, "${CHARSET}") :: sourceVersionGE(7)
+			=> new java.io.InputStreamReader($in, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(2, hintFile.getRules().size());
+		
+		TransformationRule rule1 = hintFile.getRules().get(0);
+		assertEquals(PatternKind.CONSTRUCTOR, rule1.sourcePattern().getKind());
+		assertEquals("new java.io.InputStreamReader($in, \"UTF-8\")", rule1.sourcePattern().getValue());
+	}
+	
+	@Test
+	public void testForeachWithMultipleTemplates() throws HintParseException {
+		String content = """
+			<!foreach CHARSET: "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1>
+			
+			$s.getBytes("${CHARSET}") :: sourceVersionGE(7)
+			=> $s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+			;;
+			
+			new java.lang.String($b, "${CHARSET}") :: sourceVersionGE(7)
+			=> new java.lang.String($b, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(4, hintFile.getRules().size(), "2 templates × 2 charsets = 4 rules");
+	}
+	
+	@Test
+	public void testForeachMixedWithNonForeachRules() throws HintParseException {
+		String content = """
+			<!foreach CHARSET: "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1>
+			
+			// Non-foreach rule (no ${CHARSET} variable)
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			
+			// Foreach rule
+			$s.getBytes("${CHARSET}") :: sourceVersionGE(7)
+			=> $s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(3, hintFile.getRules().size(), "1 non-foreach + 2 foreach = 3 rules");
+		
+		// First rule is the non-foreach one
+		assertEquals("$x.equals($y)", hintFile.getRules().get(0).sourcePattern().getValue());
+	}
+	
+	@Test
+	public void testForeachErrorEmptyEntries() {
+		String content = """
+			<!foreach CHARSET: >
+			
+			$s.getBytes("${CHARSET}")
+			=> $s.getBytes(StandardCharsets.${CHARSET_CONSTANT})
+			;;
+			""";
+		
+		assertThrows(HintParseException.class, () -> parser.parse(content));
+	}
+	
+	@Test
+	public void testForeachErrorMissingArrow() {
+		String content = """
+			<!foreach CHARSET: "UTF-8" UTF_8>
+			
+			$s.getBytes("${CHARSET}")
+			=> $s.getBytes(StandardCharsets.${CHARSET_CONSTANT})
+			;;
+			""";
+		
+		assertThrows(HintParseException.class, () -> parser.parse(content));
+	}
 }
