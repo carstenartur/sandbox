@@ -10,54 +10,54 @@
 
 // === String(byte[], String) constructor ===
 
-new String($bytes, "UTF-8") :: sourceVersionGE(7)
-=> new String($bytes, java.nio.charset.StandardCharsets.UTF_8)
+new java.lang.String($bytes, "UTF-8") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new String($bytes, "ISO-8859-1") :: sourceVersionGE(7)
-=> new String($bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+new java.lang.String($bytes, "ISO-8859-1") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
-new String($bytes, "US-ASCII") :: sourceVersionGE(7)
-=> new String($bytes, java.nio.charset.StandardCharsets.US_ASCII)
+new java.lang.String($bytes, "US-ASCII") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-new String($bytes, "UTF-16") :: sourceVersionGE(7)
-=> new String($bytes, java.nio.charset.StandardCharsets.UTF_16)
+new java.lang.String($bytes, "UTF-16") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
-new String($bytes, "UTF-16BE") :: sourceVersionGE(7)
-=> new String($bytes, java.nio.charset.StandardCharsets.UTF_16BE)
+new java.lang.String($bytes, "UTF-16BE") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-new String($bytes, "UTF-16LE") :: sourceVersionGE(7)
-=> new String($bytes, java.nio.charset.StandardCharsets.UTF_16LE)
+new java.lang.String($bytes, "UTF-16LE") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;
 
 // === String(byte[], int, int, String) — 4-arg form ===
 
-new String($bytes, $off, $len, "UTF-8") :: sourceVersionGE(7)
-=> new String($bytes, $off, $len, java.nio.charset.StandardCharsets.UTF_8)
+new java.lang.String($bytes, $off, $len, "UTF-8") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, $off, $len, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new String($bytes, $off, $len, "ISO-8859-1") :: sourceVersionGE(7)
-=> new String($bytes, $off, $len, java.nio.charset.StandardCharsets.ISO_8859_1)
+new java.lang.String($bytes, $off, $len, "ISO-8859-1") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, $off, $len, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
-new String($bytes, $off, $len, "US-ASCII") :: sourceVersionGE(7)
-=> new String($bytes, $off, $len, java.nio.charset.StandardCharsets.US_ASCII)
+new java.lang.String($bytes, $off, $len, "US-ASCII") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, $off, $len, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-new String($bytes, $off, $len, "UTF-16") :: sourceVersionGE(7)
-=> new String($bytes, $off, $len, java.nio.charset.StandardCharsets.UTF_16)
+new java.lang.String($bytes, $off, $len, "UTF-16") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, $off, $len, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
-new String($bytes, $off, $len, "UTF-16BE") :: sourceVersionGE(7)
-=> new String($bytes, $off, $len, java.nio.charset.StandardCharsets.UTF_16BE)
+new java.lang.String($bytes, $off, $len, "UTF-16BE") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, $off, $len, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-new String($bytes, $off, $len, "UTF-16LE") :: sourceVersionGE(7)
-=> new String($bytes, $off, $len, java.nio.charset.StandardCharsets.UTF_16LE)
+new java.lang.String($bytes, $off, $len, "UTF-16LE") :: sourceVersionGE(7)
+=> new java.lang.String($bytes, $off, $len, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;
 
 // === String.getBytes(String) ===
@@ -114,184 +114,184 @@ java.nio.charset.Charset.forName("UTF-16LE") :: sourceVersionGE(7)
 
 // === InputStreamReader(InputStream, String) ===
 
-new InputStreamReader($in, "UTF-8") :: sourceVersionGE(7)
-=> new InputStreamReader($in, java.nio.charset.StandardCharsets.UTF_8)
+new java.io.InputStreamReader($in, "UTF-8") :: sourceVersionGE(7)
+=> new java.io.InputStreamReader($in, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new InputStreamReader($in, "ISO-8859-1") :: sourceVersionGE(7)
-=> new InputStreamReader($in, java.nio.charset.StandardCharsets.ISO_8859_1)
+new java.io.InputStreamReader($in, "ISO-8859-1") :: sourceVersionGE(7)
+=> new java.io.InputStreamReader($in, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
-new InputStreamReader($in, "US-ASCII") :: sourceVersionGE(7)
-=> new InputStreamReader($in, java.nio.charset.StandardCharsets.US_ASCII)
+new java.io.InputStreamReader($in, "US-ASCII") :: sourceVersionGE(7)
+=> new java.io.InputStreamReader($in, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-new InputStreamReader($in, "UTF-16") :: sourceVersionGE(7)
-=> new InputStreamReader($in, java.nio.charset.StandardCharsets.UTF_16)
+new java.io.InputStreamReader($in, "UTF-16") :: sourceVersionGE(7)
+=> new java.io.InputStreamReader($in, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
-new InputStreamReader($in, "UTF-16BE") :: sourceVersionGE(7)
-=> new InputStreamReader($in, java.nio.charset.StandardCharsets.UTF_16BE)
+new java.io.InputStreamReader($in, "UTF-16BE") :: sourceVersionGE(7)
+=> new java.io.InputStreamReader($in, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-new InputStreamReader($in, "UTF-16LE") :: sourceVersionGE(7)
-=> new InputStreamReader($in, java.nio.charset.StandardCharsets.UTF_16LE)
+new java.io.InputStreamReader($in, "UTF-16LE") :: sourceVersionGE(7)
+=> new java.io.InputStreamReader($in, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;
 
 // === OutputStreamWriter(OutputStream, String) ===
 
-new OutputStreamWriter($out, "UTF-8") :: sourceVersionGE(7)
-=> new OutputStreamWriter($out, java.nio.charset.StandardCharsets.UTF_8)
+new java.io.OutputStreamWriter($out, "UTF-8") :: sourceVersionGE(7)
+=> new java.io.OutputStreamWriter($out, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new OutputStreamWriter($out, "ISO-8859-1") :: sourceVersionGE(7)
-=> new OutputStreamWriter($out, java.nio.charset.StandardCharsets.ISO_8859_1)
+new java.io.OutputStreamWriter($out, "ISO-8859-1") :: sourceVersionGE(7)
+=> new java.io.OutputStreamWriter($out, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
-new OutputStreamWriter($out, "US-ASCII") :: sourceVersionGE(7)
-=> new OutputStreamWriter($out, java.nio.charset.StandardCharsets.US_ASCII)
+new java.io.OutputStreamWriter($out, "US-ASCII") :: sourceVersionGE(7)
+=> new java.io.OutputStreamWriter($out, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-new OutputStreamWriter($out, "UTF-16") :: sourceVersionGE(7)
-=> new OutputStreamWriter($out, java.nio.charset.StandardCharsets.UTF_16)
+new java.io.OutputStreamWriter($out, "UTF-16") :: sourceVersionGE(7)
+=> new java.io.OutputStreamWriter($out, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
-new OutputStreamWriter($out, "UTF-16BE") :: sourceVersionGE(7)
-=> new OutputStreamWriter($out, java.nio.charset.StandardCharsets.UTF_16BE)
+new java.io.OutputStreamWriter($out, "UTF-16BE") :: sourceVersionGE(7)
+=> new java.io.OutputStreamWriter($out, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-new OutputStreamWriter($out, "UTF-16LE") :: sourceVersionGE(7)
-=> new OutputStreamWriter($out, java.nio.charset.StandardCharsets.UTF_16LE)
+new java.io.OutputStreamWriter($out, "UTF-16LE") :: sourceVersionGE(7)
+=> new java.io.OutputStreamWriter($out, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;
 
 // === Scanner(source, String) ===
 
-new Scanner($src, "UTF-8") :: sourceVersionGE(10)
-=> new Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
+new java.util.Scanner($src, "UTF-8") :: sourceVersionGE(10)
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new Scanner($src, "ISO-8859-1") :: sourceVersionGE(10)
-=> new Scanner($src, java.nio.charset.StandardCharsets.ISO_8859_1)
+new java.util.Scanner($src, "ISO-8859-1") :: sourceVersionGE(10)
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
-new Scanner($src, "US-ASCII") :: sourceVersionGE(10)
-=> new Scanner($src, java.nio.charset.StandardCharsets.US_ASCII)
+new java.util.Scanner($src, "US-ASCII") :: sourceVersionGE(10)
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-new Scanner($src, "UTF-16") :: sourceVersionGE(10)
-=> new Scanner($src, java.nio.charset.StandardCharsets.UTF_16)
+new java.util.Scanner($src, "UTF-16") :: sourceVersionGE(10)
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
-new Scanner($src, "UTF-16BE") :: sourceVersionGE(10)
-=> new Scanner($src, java.nio.charset.StandardCharsets.UTF_16BE)
+new java.util.Scanner($src, "UTF-16BE") :: sourceVersionGE(10)
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-new Scanner($src, "UTF-16LE") :: sourceVersionGE(10)
-=> new Scanner($src, java.nio.charset.StandardCharsets.UTF_16LE)
+new java.util.Scanner($src, "UTF-16LE") :: sourceVersionGE(10)
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;
 
 // === Formatter(file, String) ===
 
-new Formatter($f, "UTF-8") :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.UTF_8)
+new java.util.Formatter($f, "UTF-8") :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new Formatter($f, "ISO-8859-1") :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.ISO_8859_1)
+new java.util.Formatter($f, "ISO-8859-1") :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
-new Formatter($f, "US-ASCII") :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.US_ASCII)
+new java.util.Formatter($f, "US-ASCII") :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-new Formatter($f, "UTF-16") :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.UTF_16)
+new java.util.Formatter($f, "UTF-16") :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
-new Formatter($f, "UTF-16BE") :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.UTF_16BE)
+new java.util.Formatter($f, "UTF-16BE") :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-new Formatter($f, "UTF-16LE") :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.UTF_16LE)
+new java.util.Formatter($f, "UTF-16LE") :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;
 
 // === Formatter(file, String, Locale) — 3-arg form ===
 
-new Formatter($f, "UTF-8", $locale) :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.UTF_8, $locale)
+new java.util.Formatter($f, "UTF-8", $locale) :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_8, $locale)
 ;;
 
-new Formatter($f, "ISO-8859-1", $locale) :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.ISO_8859_1, $locale)
+new java.util.Formatter($f, "ISO-8859-1", $locale) :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.ISO_8859_1, $locale)
 ;;
 
-new Formatter($f, "US-ASCII", $locale) :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.US_ASCII, $locale)
+new java.util.Formatter($f, "US-ASCII", $locale) :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.US_ASCII, $locale)
 ;;
 
-new Formatter($f, "UTF-16", $locale) :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.UTF_16, $locale)
+new java.util.Formatter($f, "UTF-16", $locale) :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_16, $locale)
 ;;
 
-new Formatter($f, "UTF-16BE", $locale) :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.UTF_16BE, $locale)
+new java.util.Formatter($f, "UTF-16BE", $locale) :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_16BE, $locale)
 ;;
 
-new Formatter($f, "UTF-16LE", $locale) :: sourceVersionGE(10)
-=> new Formatter($f, java.nio.charset.StandardCharsets.UTF_16LE, $locale)
+new java.util.Formatter($f, "UTF-16LE", $locale) :: sourceVersionGE(10)
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_16LE, $locale)
 ;;
 
 // === PrintStream(file, String) ===
 
-new PrintStream($f, "UTF-8") :: sourceVersionGE(10)
-=> new PrintStream($f, java.nio.charset.StandardCharsets.UTF_8)
+new java.io.PrintStream($f, "UTF-8") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new PrintStream($f, "ISO-8859-1") :: sourceVersionGE(10)
-=> new PrintStream($f, java.nio.charset.StandardCharsets.ISO_8859_1)
+new java.io.PrintStream($f, "ISO-8859-1") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
-new PrintStream($f, "US-ASCII") :: sourceVersionGE(10)
-=> new PrintStream($f, java.nio.charset.StandardCharsets.US_ASCII)
+new java.io.PrintStream($f, "US-ASCII") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-new PrintStream($f, "UTF-16") :: sourceVersionGE(10)
-=> new PrintStream($f, java.nio.charset.StandardCharsets.UTF_16)
+new java.io.PrintStream($f, "UTF-16") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
-new PrintStream($f, "UTF-16BE") :: sourceVersionGE(10)
-=> new PrintStream($f, java.nio.charset.StandardCharsets.UTF_16BE)
+new java.io.PrintStream($f, "UTF-16BE") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-new PrintStream($f, "UTF-16LE") :: sourceVersionGE(10)
-=> new PrintStream($f, java.nio.charset.StandardCharsets.UTF_16LE)
+new java.io.PrintStream($f, "UTF-16LE") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;
 
 // === PrintStream(OutputStream, boolean, String) — 3-arg form ===
 
-new PrintStream($f, $autoFlush, "UTF-8") :: sourceVersionGE(10)
-=> new PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.UTF_8)
+new java.io.PrintStream($f, $autoFlush, "UTF-8") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new PrintStream($f, $autoFlush, "ISO-8859-1") :: sourceVersionGE(10)
-=> new PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.ISO_8859_1)
+new java.io.PrintStream($f, $autoFlush, "ISO-8859-1") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.ISO_8859_1)
 ;;
 
-new PrintStream($f, $autoFlush, "US-ASCII") :: sourceVersionGE(10)
-=> new PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.US_ASCII)
+new java.io.PrintStream($f, $autoFlush, "US-ASCII") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.US_ASCII)
 ;;
 
-new PrintStream($f, $autoFlush, "UTF-16") :: sourceVersionGE(10)
-=> new PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.UTF_16)
+new java.io.PrintStream($f, $autoFlush, "UTF-16") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.UTF_16)
 ;;
 
-new PrintStream($f, $autoFlush, "UTF-16BE") :: sourceVersionGE(10)
-=> new PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.UTF_16BE)
+new java.io.PrintStream($f, $autoFlush, "UTF-16BE") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.UTF_16BE)
 ;;
 
-new PrintStream($f, $autoFlush, "UTF-16LE") :: sourceVersionGE(10)
-=> new PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.UTF_16LE)
+new java.io.PrintStream($f, $autoFlush, "UTF-16LE") :: sourceVersionGE(10)
+=> new java.io.PrintStream($f, $autoFlush, java.nio.charset.StandardCharsets.UTF_16LE)
 ;;
 
 // === URLEncoder.encode(String, String) ===
