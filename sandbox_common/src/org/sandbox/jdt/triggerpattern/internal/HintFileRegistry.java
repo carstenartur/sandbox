@@ -87,9 +87,14 @@ public final class HintFileRegistry {
 	private final java.util.Set<String> loadedProjects = ConcurrentHashMap.newKeySet();
 
 	/**
-	 * File extension for hint files (including the dot).
+	 * File extension for sandbox hint files (including the dot).
 	 */
 	private static final String HINT_FILE_EXTENSION = ".sandbox-hint"; //$NON-NLS-1$
+
+	/**
+	 * File extension for NetBeans-compatible hint files (including the dot).
+	 */
+	private static final String NETBEANS_HINT_FILE_EXTENSION = ".hint"; //$NON-NLS-1$
 
 	private HintFileRegistry() {
 		// Singleton
@@ -329,7 +334,7 @@ public final class HintFileRegistry {
 				@Override
 				public boolean visit(IResource resource) throws CoreException {
 					if (resource instanceof IFile file
-							&& file.getName().endsWith(HINT_FILE_EXTENSION)) {
+							&& isHintFile(file.getName())) {
 						String id = "project:" + projectKey + ":" //$NON-NLS-1$ //$NON-NLS-2$
 								+ file.getProjectRelativePath().toString();
 						try (InputStream is = file.getContents();
@@ -374,6 +379,17 @@ public final class HintFileRegistry {
 		if (project != null) {
 			loadedProjects.remove(project.getName());
 		}
+	}
+
+	/**
+	 * Checks if a file name has a recognized hint file extension.
+	 *
+	 * @param fileName the file name to check
+	 * @return {@code true} if the file has a {@code .sandbox-hint} or {@code .hint} extension
+	 * @since 1.3.8
+	 */
+	private static boolean isHintFile(String fileName) {
+		return fileName.endsWith(HINT_FILE_EXTENSION) || fileName.endsWith(NETBEANS_HINT_FILE_EXTENSION);
 	}
 
 	/**

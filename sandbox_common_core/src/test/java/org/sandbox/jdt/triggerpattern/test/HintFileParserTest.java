@@ -663,4 +663,161 @@ public class HintFileParserTest {
 		
 		assertThrows(HintParseException.class, () -> parser.parse(content));
 	}
+
+	// ---- NetBeans compatibility tests ----
+
+	@Test
+	public void testSkipCustomCodeBlockSingleLine() throws HintParseException {
+		String content = """
+			<? import java.util.Arrays; ?>
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		assertEquals("$x.equals($y)", hintFile.getRules().get(0).sourcePattern().getValue());
+	}
+
+	@Test
+	public void testSkipCustomCodeBlockMultiLine() throws HintParseException {
+		String content = """
+			<?
+			import java.util.Arrays;
+			import java.util.List;
+			
+			public boolean isLiteral(Variable v) {
+			    return v.getKind() == Kind.LITERAL;
+			}
+			?>
+			
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		assertEquals("$x.equals($y)", hintFile.getRules().get(0).sourcePattern().getValue());
+	}
+
+	@Test
+	public void testSkipMultipleCustomCodeBlocks() throws HintParseException {
+		String content = """
+			<? import java.util.Arrays; ?>
+			<? import java.util.List; ?>
+			
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+	}
+
+	@Test
+	public void testNetBeansDescriptionEqualsFormat() throws HintParseException {
+		String content = """
+			<!description="Replace with Objects.equals">
+			
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals("Replace with Objects.equals", hintFile.getDescription());
+		assertEquals(1, hintFile.getRules().size());
+	}
+
+	@Test
+	public void testNetBeansMetadataEqualsFormatWithoutQuotes() throws HintParseException {
+		String content = """
+			<!description=Simple description>
+			<!severity=warning>
+			
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals("Simple description", hintFile.getDescription());
+		assertEquals(Severity.WARNING, hintFile.getSeverity());
+	}
+
+	@Test
+	public void testNetBeansMixedFormatMetadata() throws HintParseException {
+		// Mix of sandbox format (key: value) and NetBeans format (key="value")
+		String content = """
+			<!id: my.rule.id>
+			<!description="NetBeans style description">
+			<!severity: warning>
+			
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals("my.rule.id", hintFile.getId());
+		assertEquals("NetBeans style description", hintFile.getDescription());
+		assertEquals(Severity.WARNING, hintFile.getSeverity());
+	}
+
+	@Test
+	public void testOtherwiseAsGuardKeyword() throws HintParseException {
+		String content = """
+			$x.method() :: sourceVersionGE(11)
+			=> $x.newMethod1() :: sourceVersionGE(17)
+			=> $x.newMethod2() :: otherwise
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(2, rule.alternatives().size());
+		assertNotNull(rule.alternatives().get(0).condition());
+		assertTrue(rule.alternatives().get(1).isOtherwise());
+	}
+
+	@Test
+	public void testCustomCodeBlockWithRulesAfter() throws HintParseException {
+		// Realistic NetBeans hint file with custom code block then rules
+		String content = """
+			<?
+			import org.netbeans.spi.java.hints.ConstraintVariableType;
+			import org.netbeans.spi.java.hints.TriggerTreeKind;
+			
+			public boolean isLiteral(Variable v) {
+			    return true;
+			}
+			?>
+			
+			<!description="Use StandardCharsets constant">
+			
+			java.nio.charset.Charset.forName("UTF-8") :: sourceVersionGE(7)
+			=> java.nio.charset.StandardCharsets.UTF_8
+			;;
+			
+			java.nio.charset.Charset.forName("ISO-8859-1") :: sourceVersionGE(7)
+			=> java.nio.charset.StandardCharsets.ISO_8859_1
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals("Use StandardCharsets constant", hintFile.getDescription());
+		assertEquals(2, hintFile.getRules().size());
+	}
 }
