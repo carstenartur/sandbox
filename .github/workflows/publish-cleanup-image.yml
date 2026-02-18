@@ -1,0 +1,192 @@
+# Publish Sandbox Cleanup Docker Image to GHCR
+# This workflow builds the Eclipse product and packages it into a Docker image for use in PR cleanup workflows
+
+name: Publish Cleanup Docker Image
+
+on:
+  # Trigger on push to main when relevant files change
+  push:
+    branches: [main]
+    paths:
+      - 'sandbox_*/**'
+      - 'pom.xml'
+      - 'sandbox_cleanup_docker/**'
+      - '.github/workflows/publish-cleanup-image.yml'
+  # Manual trigger
+  workflow_dispatch:
+  # Optionally trigger after coverage build completes (which already builds the product)
+  # workflow_run:
+  #   workflows: ["Code Coverage Report"]
+  #   types: [completed]
+  #   branches: [main]
+
+permissions:
+  contents: read
+  packages: write  # Required to push to GHCR
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      DISPLAY: :99
+      MAVEN_OPTS: -Djava.awt.headless=true
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'maven'
+
+    - name: Install Xvfb and dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb xauth \
+          libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
+          libasound2t64 libnss3 libgbm1
+
+    - name: Set up Maven
+      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+      with:
+        maven-version: 3.9.9
+
+    - name: Build Eclipse product
+      run: |
+        xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode \
+          -Dtycho.localArtifacts=ignore \
+          -Pproduct clean verify -DskipTests
+
+    - name: Extract product and prepare Docker context
+      run: |
+        set -e
+        
+        # Find the product archive
+        PRODUCT_DIR="${GITHUB_WORKSPACE}/sandbox_product/target/products"
+        PRODUCT_ARCHIVE=$(find "$PRODUCT_DIR" -maxdepth 1 \( -name "*.tar.gz" -o -name "*.zip" \) | head -1)
+        
+        if [ -z "$PRODUCT_ARCHIVE" ]; then
+          echo "Error: No product archive found in $PRODUCT_DIR"
+          ls -la "$PRODUCT_DIR"
+          exit 1
+        fi
+        
+        echo "Found product archive: $PRODUCT_ARCHIVE"
+        
+        # Create Docker build context directory
+        DOCKER_CONTEXT="${GITHUB_WORKSPACE}/docker-context"
+        mkdir -p "$DOCKER_CONTEXT/dist"
+        
+        # Extract product to temporary location
+        TEMP_EXTRACT="/tmp/product-extract"
+        mkdir -p "$TEMP_EXTRACT"
+        
+        case "$PRODUCT_ARCHIVE" in
+          *.zip)
+            unzip -q "$PRODUCT_ARCHIVE" -d "$TEMP_EXTRACT"
+            ;;
+          *.tar.gz)
+            tar -xzf "$PRODUCT_ARCHIVE" -C "$TEMP_EXTRACT"
+            ;;
+          *)
+            echo "Error: Unsupported archive format: $PRODUCT_ARCHIVE"
+            exit 1
+            ;;
+        esac
+        
+        # The product extracts with rootFolder="client", so we have client/ subdirectory
+        if [ ! -d "$TEMP_EXTRACT/client" ]; then
+          echo "Error: Expected client/ directory not found in extracted product"
+          ls -la "$TEMP_EXTRACT"
+          exit 1
+        fi
+        
+        # Copy plugins and configuration to dist/
+        cp -r "$TEMP_EXTRACT/client/plugins" "$DOCKER_CONTEXT/dist/"
+        cp -r "$TEMP_EXTRACT/client/configuration" "$DOCKER_CONTEXT/dist/"
+        
+        # Find the Equinox launcher JAR
+        LAUNCHER_JAR=$(find "$TEMP_EXTRACT/client/plugins" -name "org.eclipse.equinox.launcher_*.jar" | head -1)
+        if [ -z "$LAUNCHER_JAR" ]; then
+          echo "Error: Equinox launcher JAR not found"
+          exit 1
+        fi
+        echo "Found launcher JAR: $LAUNCHER_JAR"
+        
+        # Create bin directory and launcher script
+        mkdir -p "$DOCKER_CONTEXT/dist/bin"
+        cat > "$DOCKER_CONTEXT/dist/bin/sandbox-cleanup" << 'EOF'
+#!/bin/sh
+set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+INSTALL_DIR="$(dirname "$SCRIPT_DIR")"
+LAUNCHER_JAR=$(find "$INSTALL_DIR/plugins" -name "org.eclipse.equinox.launcher_*.jar" | head -1)
+if [ -z "$LAUNCHER_JAR" ]; then
+    echo "Error: Equinox launcher JAR not found" >&2
+    exit 1
+fi
+WORKSPACE_DIR="${SANDBOX_CLEANUP_WORKSPACE:-/tmp/cleanup-workspace}"
+mkdir -p "$WORKSPACE_DIR"
+exec java -jar "$LAUNCHER_JAR" -nosplash \
+    -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+    -data "$WORKSPACE_DIR" \
+    "$@"
+EOF
+        chmod +x "$DOCKER_CONTEXT/dist/bin/sandbox-cleanup"
+        
+        # Copy Dockerfile and entrypoint
+        cp "$GITHUB_WORKSPACE/sandbox_cleanup_docker/Dockerfile" "$DOCKER_CONTEXT/"
+        cp "$GITHUB_WORKSPACE/sandbox_cleanup_docker/entrypoint.sh" "$DOCKER_CONTEXT/"
+        chmod +x "$DOCKER_CONTEXT/entrypoint.sh"
+        
+        echo "Docker context prepared successfully"
+        echo "Context structure:"
+        find "$DOCKER_CONTEXT" -type f | head -20
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/carstenartur/sandbox-cleanup
+        tags: |
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=sha,prefix={{branch}}-
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: ./docker-context
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Image published
+      run: |
+        echo "### 🐳 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Registry:** GitHub Container Registry (GHCR)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Usage in workflows:**" >> $GITHUB_STEP_SUMMARY
+        echo '```yaml' >> $GITHUB_STEP_SUMMARY
+        echo "docker pull ghcr.io/carstenartur/sandbox-cleanup:latest" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY

@@ -1,6 +1,6 @@
 # Automatic PR Code Cleanup using Sandbox Cleanup Application
 # This workflow automatically applies Eclipse JDT cleanup transformations to pull requests
-# Uses the composite action that wraps the sandbox cleanup application
+# Uses a pre-built Docker image from GHCR to avoid building the Eclipse product on each PR
 #
 # LIMITATIONS:
 # - This workflow has limited support for pull requests from forked repositories.
@@ -8,25 +8,16 @@
 # - For PRs from the main repository: Full functionality (cleanup PR created automatically)
 # - For PRs from forked repositories: Fallback mode (review comments + diff in PR comment)
 #   The workflow will post review comments and provide a full diff for manual review.
-#
-# TEMPORARILY DISABLED:
-# - The automatic PR trigger is disabled because the cleanup action requires the Eclipse product
-#   to be built, which conflicts with the build acceleration profiles (product is skipped in PR builds).
-# - See: https://github.com/carstenartur/sandbox/issues/XXX for tracking
-# - Use workflow_dispatch for manual cleanup until a solution is found (e.g., pre-built Docker image
-#   or cached Eclipse product artifact).
 
 name: Auto PR Cleanup
 
 on:
-  # TEMPORARILY DISABLED - cleanup action requires Eclipse product which is not built in PR builds
-  # Uncomment when a solution is implemented (pre-built image, cached artifact, etc.)
-  # pull_request:
-  #   types: [opened, synchronize]
-  #   branches: [main]
-  #   paths:
-  #     - '**.java'
-  workflow_dispatch:  # Manual triggering still works
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+    paths:
+      - '**.java'
+  workflow_dispatch:  # Manual triggering also available
 
 permissions:
   contents: write
@@ -46,11 +37,16 @@ jobs:
         fetch-depth: 0
         
     - name: Run Sandbox Cleanup
-      uses: ./.github/actions/cleanup-action
-      with:
-        config-file: '.github/cleanup-profiles/standard.properties'
-        source-dir: '.'
-        verbose: 'true'
+      run: |
+        docker pull ghcr.io/carstenartur/sandbox-cleanup:latest
+        docker run --rm \
+          -v ${{ github.workspace }}:/workspace \
+          ghcr.io/carstenartur/sandbox-cleanup:latest \
+          --config /workspace/.github/cleanup-profiles/standard.properties \
+          --mode apply \
+          --source /workspace \
+          -verbose
+      continue-on-error: true
         
     - name: Check for changes
       id: check_changes
