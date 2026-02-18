@@ -8,15 +8,23 @@
 # - For PRs from the main repository: Full functionality (cleanup PR created automatically)
 # - For PRs from forked repositories: Fallback mode (review comments + diff in PR comment)
 #   The workflow will post review comments and provide a full diff for manual review.
+#
+# TEMPORARILY DISABLED FOR THIS PR:
+# - The pull_request trigger is disabled for this PR because the Docker image doesn't exist yet
+# - The image will be published when this PR is merged to main (via publish-cleanup-image.yml)
+# - After merge, uncomment the pull_request trigger below to enable automatic cleanup on PRs
 
 name: Auto PR Cleanup
 
 on:
-  pull_request:
-    types: [opened, synchronize]
-    branches: [main]
-    paths:
-      - '**.java'
+  # TEMPORARILY DISABLED - will be enabled after Docker image is published to GHCR
+  # Uncomment after this PR is merged and the publish-cleanup-image workflow completes
+  # pull_request:
+  #   types: [opened, synchronize]
+  #   branches: [main]
+  #   paths:
+  #     - '**.java'
+  workflow_dispatch:  # Keep manual trigger for testing after image is published
 
 permissions:
   contents: write
@@ -30,15 +38,19 @@ jobs:
     - name: Checkout PR branch
       uses: actions/checkout@v6
       with:
-        ref: ${{ github.event.pull_request.head.ref }}
-        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
     
     - name: Check if PR is from fork
       id: fork_check
       run: |
-        if [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+        PR_REPO="${{ github.event.pull_request.head.repo.full_name }}"
+        if [ -z "$PR_REPO" ]; then
+          # Not a PR event (workflow_dispatch), treat as same repo
+          echo "is_fork=false" >> $GITHUB_OUTPUT
+        elif [ "$PR_REPO" != "${{ github.repository }}" ]; then
           echo "is_fork=true" >> $GITHUB_OUTPUT
         else
           echo "is_fork=false" >> $GITHUB_OUTPUT
