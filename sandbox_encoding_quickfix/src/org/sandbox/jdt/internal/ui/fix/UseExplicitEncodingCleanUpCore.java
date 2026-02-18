@@ -38,6 +38,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ChangeBehavior;
+import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -73,7 +74,16 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		ChangeBehavior cb= computeRefactorDeepth();
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
-		computeFixSet.forEach(i->i.findOperations(compilationUnit,operations,nodesprocessed,cb));
+
+		// Tier 1: Run DSL rules first for ENFORCE_UTF8 modes
+		if (cb == ChangeBehavior.ENFORCE_UTF8 || cb == ChangeBehavior.ENFORCE_UTF8_AGGREGATE) {
+			HintFileFixCore.findOperationsForBundle(compilationUnit, "encoding", operations, nodesprocessed); //$NON-NLS-1$
+		}
+
+		// Tier 2+3: Run imperative helpers, skipping DSL-handled ones in ENFORCE modes
+		computeFixSet.stream()
+			.filter(i -> cb == ChangeBehavior.KEEP_BEHAVIOR || !i.isDslHandled())
+			.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
 		if (operations.isEmpty()) {
 			return null;
 		}
