@@ -427,9 +427,9 @@ public class BuiltInGuardsTest {
 	}
 
 	@Test
-	public void testIsCharsetStringWithNonCharset() {
+	public void testIsCharsetStringWithNonStandardCharset() {
 		GuardFunction isCharsetString = guards.get("isCharsetString"); //$NON-NLS-1$
-		String code = "class Test { void m() { String s = \"WINDOWS-1252\"; } }"; //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"NOT-A-CHARSET\"; } }"; //$NON-NLS-1$
 		CompilationUnit cu = parseCodeWithBindings(code);
 		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
 		MethodDeclaration method = typeDecl.getMethods()[0];
@@ -442,7 +442,7 @@ public class BuiltInGuardsTest {
 		Match match = new Match(stringLit, bindings, 0, 0);
 		GuardContext ctx = GuardContext.fromMatch(match, cu);
 
-		assertFalse(isCharsetString.evaluate(ctx, "$x"), "WINDOWS-1252 should not be a charset string"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(isCharsetString.evaluate(ctx, "$x"), "NOT-A-CHARSET should not be a standard charset string"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@Test
@@ -554,6 +554,74 @@ public class BuiltInGuardsTest {
 		assertTrue(hasModifier.evaluate(ctx, "$m", "PUBLIC"), "Should detect PUBLIC modifier"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		assertTrue(hasModifier.evaluate(ctx, "$m", "STATIC"), "Should detect STATIC modifier"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		assertFalse(hasModifier.evaluate(ctx, "$m", "PRIVATE"), "Should not detect PRIVATE modifier"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testIsInTryWithResourceBlockNegative() {
+		GuardFunction isInTryWithResourceBlock = guards.get("isInTryWithResourceBlock"); //$NON-NLS-1$
+		String code = "class Test { void m() { int x = 0; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", varDeclStmt); //$NON-NLS-1$
+		Match match = new Match(varDeclStmt, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isInTryWithResourceBlock.evaluate(ctx, "$x"), "Variable not in try-with-resources should be false"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testContainsAnnotationGuard() {
+		GuardFunction containsAnnotation = guards.get("containsAnnotation"); //$NON-NLS-1$
+		String code = "class Test { @Deprecated void m() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$m", method); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(containsAnnotation.evaluate(ctx, "$m", "\"Deprecated\""), "Should detect @Deprecated annotation"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertFalse(containsAnnotation.evaluate(ctx, "$m", "\"Override\""), "Should not detect missing @Override annotation"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testParentMatchesGuard() {
+		GuardFunction parentMatches = guards.get("parentMatches"); //$NON-NLS-1$
+		String code = "class Test { void m() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode methodName = method.getName();
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$n", methodName); //$NON-NLS-1$
+		Match match = new Match(methodName, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(parentMatches.evaluate(ctx, "$n", "\"void m\""), "Parent should contain 'void m'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertFalse(parentMatches.evaluate(ctx, "$n", "\"nonexistent\""), "Parent should not contain 'nonexistent'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testInClassGuard() {
+		GuardFunction inClass = guards.get("inClass"); //$NON-NLS-1$
+		String code = "class Test { void m() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(inClass.evaluate(ctx, "\"Test\""), "Should match enclosing class Test"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(inClass.evaluate(ctx, "\"Other\""), "Should not match different class name"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	// --- Helper methods ---

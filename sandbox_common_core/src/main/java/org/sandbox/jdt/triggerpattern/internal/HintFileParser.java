@@ -35,7 +35,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 
 /**
- * Parser for {@code .sandbox-hint} files.
+ * Parser for {@code .sandbox-hint} and NetBeans {@code .hint} files.
  * 
  * <p>Reads a text file containing transformation rules and produces a {@link HintFile}
  * data model. Supports comments, metadata directives, simple rules, guarded rules,
@@ -44,13 +44,26 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * <p>Import directives are automatically inferred from fully qualified names (FQNs)
  * in source and replacement patterns. No explicit import directives are needed.</p>
  * 
+ * <h2>NetBeans compatibility</h2>
+ * <ul>
+ *   <li>{@code <? ?>} custom Java code blocks are gracefully skipped (with
+ *       {@code FINE}-level logging). These blocks contain NetBeans-specific code
+ *       that cannot be executed in the Eclipse JDT environment.</li>
+ *   <li>Metadata directives support both {@code <!key: value>} (sandbox format)
+ *       and {@code <!key="value">} (NetBeans format).</li>
+ * </ul>
+ * 
  * <h2>File format</h2>
  * <pre>
  * // Line comments
  * /* Block comments * /
  *
+ * // NetBeans custom code blocks (skipped)
+ * &lt;? import java.util.*; ?&gt;
+ *
  * &lt;!id: my.rule.id&gt;
  * &lt;!description: Descriptive text&gt;
+ * &lt;!description="NetBeans style metadata"&gt;
  * &lt;!severity: warning&gt;
  * &lt;!minJavaVersion: 11&gt;
  * &lt;!tags: performance, modernization&gt;
@@ -186,19 +199,24 @@ public final class HintFileParser {
 					}
 				}
 				
-				// Check for start of <? ?> block
-				if (!inBlockComment && rawLine.contains("<?")) { //$NON-NLS-1$
+				// Check for start of <? ?> block(s) on this line
+				while (!inBlockComment) {
 					int startIdx = rawLine.indexOf("<?"); //$NON-NLS-1$
+					if (startIdx < 0) {
+						break;
+					}
 					int endIdx = rawLine.indexOf("?>", startIdx + 2); //$NON-NLS-1$
 					if (endIdx >= 0) {
 						// Single-line <? ?> block
 						LOGGER.log(Level.FINE, "Skipping custom code block (single line)"); //$NON-NLS-1$
 						rawLine = rawLine.substring(0, startIdx) + rawLine.substring(endIdx + 2);
+						// Continue loop to check for further blocks on the same line
 					} else {
 						// Multi-line <? ?> block
 						LOGGER.log(Level.FINE, "Skipping custom code block (multi-line)"); //$NON-NLS-1$
 						inCustomCodeBlock = true;
 						rawLine = rawLine.substring(0, startIdx);
+						break;
 					}
 				}
 				
@@ -256,14 +274,18 @@ public final class HintFileParser {
 		
 		String inner = line.substring(2, line.length() - 1).trim();
 		
-		// Try NetBeans format first: key="value"
-		int equalsIdx = inner.indexOf('=');
+		// Prefer colon format for backward compatibility; fall back to equals format
 		int colonIdx = inner.indexOf(':');
+		int equalsIdx = inner.indexOf('=');
 		
 		String key;
 		String value;
 		
-		if (equalsIdx > 0 && (colonIdx < 0 || equalsIdx < colonIdx)) {
+		if (colonIdx >= 0 && !inner.substring(0, colonIdx).contains("=")) { //$NON-NLS-1$
+			// Sandbox format: key: value (preferred for backward compatibility)
+			key = inner.substring(0, colonIdx).trim();
+			value = inner.substring(colonIdx + 1).trim();
+		} else if (equalsIdx > 0) {
 			// NetBeans format: key="value" or key=value
 			key = inner.substring(0, equalsIdx).trim();
 			value = inner.substring(equalsIdx + 1).trim();
@@ -271,10 +293,6 @@ public final class HintFileParser {
 			if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) { //$NON-NLS-1$ //$NON-NLS-2$
 				value = value.substring(1, value.length() - 1);
 			}
-		} else if (colonIdx >= 0) {
-			// Sandbox format: key: value
-			key = inner.substring(0, colonIdx).trim();
-			value = inner.substring(colonIdx + 1).trim();
 		} else {
 			throw new HintParseException("Invalid metadata directive (missing ':' or '='): " + line, lineNumber); //$NON-NLS-1$
 		}

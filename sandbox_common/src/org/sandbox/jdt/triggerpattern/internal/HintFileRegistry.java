@@ -307,14 +307,15 @@ public final class HintFileRegistry {
 	}
 
 	/**
-	 * Discovers and loads {@code .sandbox-hint} files from a workspace project.
+	 * Discovers and loads {@code .sandbox-hint} and {@code .hint} files from a workspace project.
 	 *
-	 * <p>Scans the project root for files with the {@code .sandbox-hint} extension
-	 * and registers them. Each project is scanned at most once; subsequent calls
-	 * with the same project are no-ops.</p>
+	 * <p>Scans the project root for files with the {@code .sandbox-hint} or
+	 * {@code .hint} extension and registers them. Each project is scanned at
+	 * most once; subsequent calls with the same project are no-ops.</p>
 	 *
 	 * <p>This enables users to define custom transformation rules per project
-	 * by placing {@code .sandbox-hint} files in the project directory.</p>
+	 * by placing hint files in the project directory. NetBeans {@code .hint}
+	 * files are also supported for interoperability.</p>
 	 *
 	 * @param project the Eclipse project to scan
 	 * @return list of successfully loaded hint file IDs from this project

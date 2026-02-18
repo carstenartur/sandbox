@@ -630,7 +630,7 @@ public final class BuiltInGuards {
 	/**
 	 * Characters that indicate a regex pattern (not a plain literal).
 	 */
-	private static final String REGEX_META_CHARS = "\\+*^$?|[]"; //$NON-NLS-1$
+	private static final String REGEX_META_CHARS = ".\\+*^$?|[](){}-"; //$NON-NLS-1$
 
 	/**
 	 * Checks if the bound node is any literal AST node type.
@@ -835,6 +835,13 @@ public final class BuiltInGuards {
 
 	/**
 	 * Checks if the parent of the matched node matches a given expression pattern string.
+	 * 
+	 * <p><b>Limitations:</b> This performs a simple string-contains check on the
+	 * parent's {@code toString()} representation. It may produce false positives
+	 * for partial name matches. The {@code $_} placeholder in the pattern is
+	 * stripped before matching. For more precise matching, consider using
+	 * the pattern matching engine directly.</p>
+	 * 
 	 * Args: [pattern] or [placeholderName, pattern]
 	 */
 	private static boolean evaluateParentMatches(GuardContext ctx, Object... args) {
@@ -1170,19 +1177,28 @@ public final class BuiltInGuards {
 
 	/**
 	 * Checks if a type binding implements {@code java.io.Serializable} (directly or transitively).
+	 * Uses a visited set to prevent infinite recursion in case of cycles in the type hierarchy.
 	 */
 	private static boolean implementsSerializable(ITypeBinding typeBinding) {
+		return implementsSerializable(typeBinding, new java.util.HashSet<>());
+	}
+
+	private static boolean implementsSerializable(ITypeBinding typeBinding, java.util.Set<String> visited) {
+		String qualifiedName = typeBinding.getQualifiedName();
+		if (!visited.add(qualifiedName)) {
+			return false; // Already visited — break potential cycle
+		}
 		for (ITypeBinding iface : typeBinding.getInterfaces()) {
 			if ("java.io.Serializable".equals(iface.getQualifiedName())) { //$NON-NLS-1$
 				return true;
 			}
-			if (implementsSerializable(iface)) {
+			if (implementsSerializable(iface, visited)) {
 				return true;
 			}
 		}
 		ITypeBinding superclass = typeBinding.getSuperclass();
 		if (superclass != null) {
-			return implementsSerializable(superclass);
+			return implementsSerializable(superclass, visited);
 		}
 		return false;
 	}

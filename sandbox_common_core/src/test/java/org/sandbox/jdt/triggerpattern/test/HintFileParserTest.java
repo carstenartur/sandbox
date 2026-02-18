@@ -820,4 +820,54 @@ public class HintFileParserTest {
 		assertEquals("Use StandardCharsets constant", hintFile.getDescription());
 		assertEquals(2, hintFile.getRules().size());
 	}
+
+	@Test
+	public void testMultipleCustomCodeBlocksOnSingleLine() throws HintParseException {
+		String content = """
+			<? int a = 1; ?><? int b = 2; ?>
+			
+			$x == $y
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertNotNull(hintFile);
+		assertEquals(1, hintFile.getRules().size());
+	}
+
+	@Test
+	public void testUnclosedCustomCodeBlock() throws HintParseException {
+		String content = """
+			<?
+			int x = 1;
+			
+			$x == $y
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		// Unclosed <? block causes all remaining lines to be treated as
+		// custom code, resulting in no rules parsed (empty hint file)
+		HintFile hintFile = parser.parse(content);
+		assertTrue(hintFile.getRules().isEmpty(), "Unclosed custom code block should result in no rules");
+	}
+
+	@Test
+	public void testMetadataColonFormatPreferredOverEquals() throws HintParseException {
+		// Colon format should be preferred for backward compatibility
+		// even when the value contains an equals sign
+		String content = """
+			<!description: equation is x=y>
+			
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals("equation is x=y", hintFile.getDescription());
+	}
 }
