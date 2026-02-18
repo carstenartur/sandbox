@@ -1,6 +1,6 @@
 # Automatic PR Code Cleanup using Sandbox Cleanup Application
 # This workflow automatically applies Eclipse JDT cleanup transformations to pull requests
-# Uses the composite action that wraps the sandbox cleanup application
+# Uses a pre-built Docker image from GHCR to avoid building the Eclipse product on each PR
 #
 # LIMITATIONS:
 # - This workflow has limited support for pull requests from forked repositories.
@@ -9,24 +9,22 @@
 # - For PRs from forked repositories: Fallback mode (review comments + diff in PR comment)
 #   The workflow will post review comments and provide a full diff for manual review.
 #
-# TEMPORARILY DISABLED:
-# - The automatic PR trigger is disabled because the cleanup action requires the Eclipse product
-#   to be built, which conflicts with the build acceleration profiles (product is skipped in PR builds).
-# - See: https://github.com/carstenartur/sandbox/issues/XXX for tracking
-# - Use workflow_dispatch for manual cleanup until a solution is found (e.g., pre-built Docker image
-#   or cached Eclipse product artifact).
+# TEMPORARILY DISABLED FOR THIS PR:
+# - The pull_request trigger is disabled for this PR because the Docker image doesn't exist yet
+# - The image will be published when this PR is merged to main (via publish-cleanup-image.yml)
+# - After merge, uncomment the pull_request trigger below to enable automatic cleanup on PRs
 
 name: Auto PR Cleanup
 
 on:
-  # TEMPORARILY DISABLED - cleanup action requires Eclipse product which is not built in PR builds
-  # Uncomment when a solution is implemented (pre-built image, cached artifact, etc.)
+  # TEMPORARILY DISABLED - will be enabled after Docker image is published to GHCR
+  # Uncomment after this PR is merged and the publish-cleanup-image workflow completes
   # pull_request:
   #   types: [opened, synchronize]
   #   branches: [main]
   #   paths:
   #     - '**.java'
-  workflow_dispatch:  # Manual triggering still works
+  workflow_dispatch:  # Keep manual trigger for testing after image is published
 
 permissions:
   contents: write
@@ -40,17 +38,35 @@ jobs:
     - name: Checkout PR branch
       uses: actions/checkout@v6
       with:
-        ref: ${{ github.event.pull_request.head.ref }}
-        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
+    
+    - name: Check if PR is from fork
+      id: fork_check
+      run: |
+        PR_REPO="${{ github.event.pull_request.head.repo.full_name }}"
+        if [ -z "$PR_REPO" ]; then
+          # Not a PR event (workflow_dispatch), treat as same repo
+          echo "is_fork=false" >> $GITHUB_OUTPUT
+        elif [ "$PR_REPO" != "${{ github.repository }}" ]; then
+          echo "is_fork=true" >> $GITHUB_OUTPUT
+        else
+          echo "is_fork=false" >> $GITHUB_OUTPUT
+        fi
         
     - name: Run Sandbox Cleanup
-      uses: ./.github/actions/cleanup-action
-      with:
-        config-file: '.github/cleanup-profiles/standard.properties'
-        source-dir: '.'
-        verbose: 'true'
+      run: |
+        docker pull ghcr.io/carstenartur/sandbox-cleanup:latest
+        docker run --rm \
+          --user $(id -u):$(id -g) \
+          -v ${{ github.workspace }}:/workspace \
+          ghcr.io/carstenartur/sandbox-cleanup:latest \
+          --config /workspace/.github/cleanup-profiles/standard.properties \
+          --mode apply \
+          --source /workspace \
+          -verbose
         
     - name: Check for changes
       id: check_changes
@@ -91,14 +107,14 @@ jobs:
         
     - name: Create cleanup branch and commit changes
       id: create_branch
-      if: steps.check_changes.outputs.has_changes == 'true'
+      if: steps.check_changes.outputs.has_changes == 'true' && steps.fork_check.outputs.is_fork == 'false'
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
         # Create a unique cleanup branch name, sanitizing slashes in the base branch
         BASE_BRANCH="${{ github.event.pull_request.head.ref }}"
-        SANITIZED_BASE_BRANCH="${BASE_BRANCH//\/-}"
+        SANITIZED_BASE_BRANCH="${BASE_BRANCH//\//-}"
         CLEANUP_BRANCH="cleanup/${SANITIZED_BASE_BRANCH}-${{ github.run_number }}"
         echo "cleanup_branch=$CLEANUP_BRANCH" >> $GITHUB_OUTPUT
         
@@ -116,7 +132,7 @@ jobs:
         
     - name: Create cleanup PR
       id: create_pr
-      if: steps.check_changes.outputs.has_changes == 'true'
+      if: steps.check_changes.outputs.has_changes == 'true' && steps.fork_check.outputs.is_fork == 'false'
       uses: actions/github-script@v8
       with:
         script: |
@@ -129,9 +145,7 @@ jobs:
           
           const changedFiles = changedList.split('\n')
             .filter(f => f.trim())
-            .map(f => `- \
-            \
-            `)
+            .map(f => `- ${f}`)
             .join('\n');
           
           // Create PR
@@ -186,7 +200,7 @@ jobs:
         
     - name: Create review comments for fork fallback
       id: create_review
-      if: steps.check_changes.outputs.has_changes == 'true' && steps.create_pr.outputs.pr_created != 'true'
+      if: steps.check_changes.outputs.has_changes == 'true' && steps.fork_check.outputs.is_fork == 'true'
       uses: actions/github-script@v8
       with:
         script: |
@@ -300,9 +314,7 @@ jobs:
             // Failure case: PR creation failed (likely due to fork permissions)
             const changedFiles = changedList.split('\n')
               .filter(f => f.trim())
-              .map(f => `- \
-              \
-              `)
+              .map(f => `- ${f}`)
               .join('\n');
             
             commentBody = `## 🧹 Cleanup suggestions available\n\n` +
@@ -325,9 +337,9 @@ jobs:
                           `### Diff preview\n` +
                           `<details>\n` +
                           `<summary>Click to show diff</summary>\n\n` +
-                          `\\` + `diff\n` +
+                          `\`\`\`diff\n` +
                           diffPreview + `\n` +
-                          `\\` + `\n` +
+                          `\`\`\`\n` +
                           `</details>\n\n` +
                           `### Manual review options:\n` +
                           `1. **Review the diff above** and manually apply changes you want\n` +

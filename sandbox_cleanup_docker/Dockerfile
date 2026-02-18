@@ -17,6 +17,7 @@ LABEL org.opencontainers.image.title="Sandbox Cleanup CLI" \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         xvfb \
+        x11-utils \
         libgtk-3-0 \
         libxext6 \
         libxrender1 \
