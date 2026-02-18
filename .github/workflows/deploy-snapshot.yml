@@ -316,24 +316,44 @@ jobs:
                         <div class="card">
                             <h3>🧪 Test Results</h3>
                             <p>JUnit test reports for all modules with detailed pass/fail statistics.</p>
+                            <p style="margin: 10px 0;">
+                                <a href="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml">
+                                    <img src="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg" alt="Test Report Status" style="height: 20px;">
+                                </a>
+                            </p>
                             <a href="tests/">View Test Reports →</a>
                         </div>
                         
                         <div class="card">
                             <h3>📈 Code Coverage</h3>
                             <p>JaCoCo coverage reports showing test coverage across the entire codebase.</p>
+                            <p style="margin: 10px 0;">
+                                <a href="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml">
+                                    <img src="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml/badge.svg" alt="Coverage Status" style="height: 20px;">
+                                </a>
+                            </p>
                             <a href="coverage/">View Coverage Report →</a>
                         </div>
                         
                         <div class="card">
                             <h3>⚡ Performance Benchmarks</h3>
                             <p>JMH benchmark results tracking performance over time.</p>
+                            <p style="margin: 10px 0;">
+                                <a href="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml">
+                                    <img src="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg" alt="Benchmark Status" style="height: 20px;">
+                                </a>
+                            </p>
                             <a href="dev/bench/">View Performance Charts →</a>
                         </div>
                         
                         <div class="card">
                             <h3>🔍 Refactoring Mining</h3>
                             <p>Gemini AI commit analysis with DSL rule proposals</p>
+                            <p style="margin: 10px 0;">
+                                <a href="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml">
+                                    <img src="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml/badge.svg" alt="Gemini Mining Status" style="height: 20px;">
+                                </a>
+                            </p>
                             <a href="mining-report/">View Mining Results →</a>
                         </div>
                     </div>
@@ -534,6 +554,17 @@ jobs:
             <div class="container">
                 <h1>🔍 Sandbox Mining Gemini - Dashboard</h1>
                 
+                <!-- Workflow Status and Links -->
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary);">
+                    <p style="margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <a href="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml">
+                            <img src="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml/badge.svg" alt="Nightly Gemini Commit Mining">
+                        </a>
+                        | <a href="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
+                        | <a href="../" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
+                    </p>
+                </div>
+                
                 <div class="status-box">
                     <h2>⏳ Mining Has Not Run Yet</h2>
                     <p>The nightly workflow will populate this page with Gemini AI commit analysis results.</p>
@@ -577,3 +608,12 @@ jobs:
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
         commit_message: 'Deploy snapshot update site'
+
+    - name: Report Deployed URLs
+      if: always()
+      run: |
+        echo "### 🔗 Deployed Resources" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📊 [View Dashboard](https://carstenartur.github.io/sandbox/)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📦 [Latest Snapshot Update Site](https://carstenartur.github.io/sandbox/snapshots/latest/)" >> $GITHUB_STEP_SUMMARY

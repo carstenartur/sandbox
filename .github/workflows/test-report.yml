@@ -44,6 +44,12 @@ jobs:
       run: |
         echo "## Test Report Summary" >> $GITHUB_STEP_SUMMARY
         cat test-report.md >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "---" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Deployed Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📊 [View Test Reports](https://carstenartur.github.io/sandbox/tests/)" >> $GITHUB_STEP_SUMMARY
         
     - name: Comment PR with test report (on pull request)
       if: github.event_name == 'pull_request'

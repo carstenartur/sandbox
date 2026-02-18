@@ -180,3 +180,12 @@ jobs:
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
         commit_message: 'Deploy JaCoCo coverage report'
+
+    - name: Report Deployed URLs
+      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
+      run: |
+        echo "### 🔗 Deployed Reports" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📊 [View Coverage Report](https://carstenartur.github.io/sandbox/coverage/)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🧪 [View Test Reports](https://carstenartur.github.io/sandbox/tests/)" >> $GITHUB_STEP_SUMMARY
