@@ -95,7 +95,8 @@ public class MarkdownReporter {
 			sb.append("\n## Errors\n");
 			sb.append("The following repositories encountered errors during scanning:\n\n");
 			for (Map.Entry<String, String> error : report.getErrors().entrySet()) {
-				sb.append("- **").append(error.getKey()).append("**: ").append(error.getValue()).append("\n");
+				sb.append("- **").append(error.getKey()).append("**: `").append(truncate(error.getValue(), 200))
+						.append("`\n");
 			}
 		}
 
