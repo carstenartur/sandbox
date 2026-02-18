@@ -17,6 +17,7 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -25,6 +26,8 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.CharacterLiteral;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -37,12 +40,15 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
@@ -109,6 +115,30 @@ public final class BuiltInGuards {
 		// Nullability guards
 		guards.put("isNullable", BuiltInGuards::evaluateIsNullable); //$NON-NLS-1$
 		guards.put("isNonNull", BuiltInGuards::evaluateIsNonNull); //$NON-NLS-1$
+
+		// NetBeans compatibility: otherwise guard (always true)
+		guards.put("otherwise", (ctx, args) -> true); //$NON-NLS-1$
+
+		// Literal and type guards
+		guards.put("isLiteral", BuiltInGuards::evaluateIsLiteral); //$NON-NLS-1$
+		guards.put("isNullLiteral", BuiltInGuards::evaluateIsNullLiteral); //$NON-NLS-1$
+		guards.put("isCharsetString", BuiltInGuards::evaluateIsCharsetString); //$NON-NLS-1$
+		guards.put("isSingleCharacter", BuiltInGuards::evaluateIsSingleCharacter); //$NON-NLS-1$
+		guards.put("isRegexp", BuiltInGuards::evaluateIsRegexp); //$NON-NLS-1$
+
+		// Context guards
+		guards.put("isInTryWithResourceBlock", BuiltInGuards::evaluateIsInTryWithResourceBlock); //$NON-NLS-1$
+		guards.put("isPassedToMethod", BuiltInGuards::evaluateIsPassedToMethod); //$NON-NLS-1$
+		guards.put("inSerializableClass", BuiltInGuards::evaluateInSerializableClass); //$NON-NLS-1$
+		guards.put("containsAnnotation", BuiltInGuards::evaluateContainsAnnotation); //$NON-NLS-1$
+		guards.put("parentMatches", BuiltInGuards::evaluateParentMatches); //$NON-NLS-1$
+
+		// Scope guards
+		guards.put("inClass", BuiltInGuards::evaluateInClass); //$NON-NLS-1$
+		guards.put("inPackage", BuiltInGuards::evaluateInPackage); //$NON-NLS-1$
+
+		// Modifier guard
+		guards.put("hasModifier", BuiltInGuards::evaluateHasModifier); //$NON-NLS-1$
 	}
 
 	/**
@@ -589,6 +619,324 @@ public final class BuiltInGuards {
 		};
 	}
 
+	// ---- New NetBeans-compatible guard implementations ----
+
+	/**
+	 * Standard charsets supported by {@link java.nio.charset.StandardCharsets}.
+	 */
+	private static final Set<String> STANDARD_CHARSETS = Set.of(
+			"UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE", "ISO-8859-1", "US-ASCII"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+
+	/**
+	 * Characters that indicate a regex pattern (not a plain literal).
+	 */
+	private static final String REGEX_META_CHARS = ".\\+*^$?|[](){}-"; //$NON-NLS-1$
+
+	/**
+	 * Checks if the bound node is any literal AST node type.
+	 * Args: [placeholderName]
+	 */
+	private static boolean evaluateIsLiteral(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		ASTNode node = ctx.getBinding(args[0].toString());
+		if (node == null) {
+			return false;
+		}
+		return node instanceof StringLiteral
+				|| node instanceof NumberLiteral
+				|| node instanceof CharacterLiteral
+				|| node instanceof BooleanLiteral
+				|| node instanceof NullLiteral;
+	}
+
+	/**
+	 * Checks if the bound node is a {@link NullLiteral}.
+	 * Args: [placeholderName]
+	 */
+	private static boolean evaluateIsNullLiteral(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		ASTNode node = ctx.getBinding(args[0].toString());
+		return node instanceof NullLiteral;
+	}
+
+	/**
+	 * Checks if the bound node is a {@link StringLiteral} whose value is a
+	 * standard charset name (UTF-8, UTF-16, UTF-16BE, UTF-16LE, ISO-8859-1, US-ASCII).
+	 * Args: [placeholderName]
+	 */
+	private static boolean evaluateIsCharsetString(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		ASTNode node = ctx.getBinding(args[0].toString());
+		if (!(node instanceof StringLiteral stringLiteral)) {
+			return false;
+		}
+		return STANDARD_CHARSETS.contains(stringLiteral.getLiteralValue());
+	}
+
+	/**
+	 * Checks if the bound node is a {@link StringLiteral} with exactly one character.
+	 * Args: [placeholderName]
+	 */
+	private static boolean evaluateIsSingleCharacter(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		ASTNode node = ctx.getBinding(args[0].toString());
+		if (!(node instanceof StringLiteral stringLiteral)) {
+			return false;
+		}
+		return stringLiteral.getLiteralValue().length() == 1;
+	}
+
+	/**
+	 * Checks if the bound node is a {@link StringLiteral} containing regex metacharacters.
+	 * Args: [placeholderName]
+	 */
+	private static boolean evaluateIsRegexp(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		ASTNode node = ctx.getBinding(args[0].toString());
+		if (!(node instanceof StringLiteral stringLiteral)) {
+			return false;
+		}
+		String value = stringLiteral.getLiteralValue();
+		for (int i = 0; i < value.length(); i++) {
+			if (REGEX_META_CHARS.indexOf(value.charAt(i)) >= 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the matched node is inside a try-with-resources block.
+	 * Args: [] or [placeholderName]
+	 */
+	@SuppressWarnings("unchecked")
+	private static boolean evaluateIsInTryWithResourceBlock(GuardContext ctx, Object... args) {
+		ASTNode node;
+		if (args.length >= 1) {
+			node = ctx.getBinding(args[0].toString());
+		} else {
+			node = ctx.getMatchedNode();
+		}
+		if (node == null) {
+			return false;
+		}
+		ASTNode current = node.getParent();
+		while (current != null) {
+			if (current instanceof TryStatement tryStmt) {
+				List<Expression> resources = tryStmt.resources();
+				for (Expression resource : resources) {
+					if (isAncestorOrSelf(resource, node)) {
+						return true;
+					}
+				}
+			}
+			current = current.getParent();
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the matched node is passed as an argument to a method invocation
+	 * or constructor call.
+	 * Args: [] or [placeholderName]
+	 */
+	@SuppressWarnings("unchecked")
+	private static boolean evaluateIsPassedToMethod(GuardContext ctx, Object... args) {
+		ASTNode node;
+		if (args.length >= 1) {
+			node = ctx.getBinding(args[0].toString());
+		} else {
+			node = ctx.getMatchedNode();
+		}
+		if (node == null) {
+			return false;
+		}
+		ASTNode parent = node.getParent();
+		if (parent instanceof MethodInvocation mi) {
+			return mi.arguments().contains(node);
+		}
+		if (parent instanceof ClassInstanceCreation cic) {
+			return cic.arguments().contains(node);
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the matched node is inside a class that implements {@code java.io.Serializable}.
+	 * Args: [] or [placeholderName]
+	 */
+	private static boolean evaluateInSerializableClass(GuardContext ctx, Object... args) {
+		ASTNode node;
+		if (args.length >= 1) {
+			node = ctx.getBinding(args[0].toString());
+		} else {
+			node = ctx.getMatchedNode();
+		}
+		if (node == null) {
+			return false;
+		}
+		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);
+		if (typeDecl == null) {
+			return false;
+		}
+		ITypeBinding typeBinding = typeDecl.resolveBinding();
+		if (typeBinding == null) {
+			return false;
+		}
+		return implementsSerializable(typeBinding);
+	}
+
+	/**
+	 * Checks if a modifiers list or body declaration contains a specific annotation.
+	 * Args: [placeholderName, annotationFqn]
+	 */
+	@SuppressWarnings("unchecked")
+	private static boolean evaluateContainsAnnotation(GuardContext ctx, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		String annotationName = stripQuotes(args[1].toString());
+
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+
+		// If the node is a BodyDeclaration, check its modifiers
+		BodyDeclaration bodyDecl;
+		if (node instanceof BodyDeclaration bd) {
+			bodyDecl = bd;
+		} else {
+			bodyDecl = findEnclosingBodyDeclaration(node);
+		}
+		if (bodyDecl != null) {
+			for (Object modifier : bodyDecl.modifiers()) {
+				if (modifier instanceof Annotation annotation) {
+					String name = getAnnotationName(annotation);
+					if (annotationName.equals(name)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the parent of the matched node matches a given expression pattern string.
+	 * 
+	 * <p><b>Limitations:</b> This performs a simple string-contains check on the
+	 * parent's {@code toString()} representation. It may produce false positives
+	 * for partial name matches. The {@code $_} placeholder in the pattern is
+	 * stripped before matching. For more precise matching, consider using
+	 * the pattern matching engine directly.</p>
+	 * 
+	 * Args: [pattern] or [placeholderName, pattern]
+	 */
+	private static boolean evaluateParentMatches(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		ASTNode node;
+		String pattern;
+		if (args.length >= 2) {
+			node = ctx.getBinding(args[0].toString());
+			pattern = stripQuotes(args[1].toString());
+		} else {
+			node = ctx.getMatchedNode();
+			pattern = stripQuotes(args[0].toString());
+		}
+		if (node == null) {
+			return false;
+		}
+		ASTNode parent = node.getParent();
+		if (parent == null) {
+			return false;
+		}
+		// Simple string-contains check on the parent's source representation
+		// Replace $_ with .* for wildcard matching concept
+		String parentText = parent.toString().trim();
+		String simplePattern = pattern.replace("$_", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		return parentText.contains(simplePattern);
+	}
+
+	/**
+	 * Checks if the matched node is inside a class with the given fully qualified name.
+	 * Args: [fqn]
+	 */
+	private static boolean evaluateInClass(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String classFqn = stripQuotes(args[0].toString());
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);
+		if (typeDecl == null) {
+			return false;
+		}
+		ITypeBinding typeBinding = typeDecl.resolveBinding();
+		if (typeBinding != null) {
+			return classFqn.equals(typeBinding.getQualifiedName());
+		}
+		// Fallback: compare simple name
+		return classFqn.equals(typeDecl.getName().getIdentifier())
+				|| classFqn.endsWith("." + typeDecl.getName().getIdentifier()); //$NON-NLS-1$
+	}
+
+	/**
+	 * Checks if the matched node is inside a package with the given name.
+	 * Args: [packageName]
+	 */
+	private static boolean evaluateInPackage(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String packageName = stripQuotes(args[0].toString());
+		CompilationUnit cu = ctx.getCompilationUnit();
+		if (cu == null) {
+			return false;
+		}
+		PackageDeclaration packageDecl = cu.getPackage();
+		if (packageDecl == null) {
+			return packageName.isEmpty();
+		}
+		return packageName.equals(packageDecl.getName().getFullyQualifiedName());
+	}
+
+	/**
+	 * Checks if a binding has a specific modifier.
+	 * Supports: PUBLIC, PRIVATE, PROTECTED, ABSTRACT, STATIC, FINAL, SYNCHRONIZED, VOLATILE, TRANSIENT, NATIVE, STRICTFP.
+	 * Args: [placeholderName, modifierName]
+	 */
+	private static boolean evaluateHasModifier(GuardContext ctx, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		String modifierName = args[1].toString().toUpperCase(Locale.ROOT);
+
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		int modifiers = resolveModifiers(node);
+		return matchesModifierName(modifiers, modifierName);
+	}
+
 	// ---- Helper methods ----
 
 	/**
@@ -809,6 +1157,82 @@ public final class BuiltInGuards {
 			case "TYPE" -> node instanceof TypeDeclaration //$NON-NLS-1$
 					|| node instanceof EnumDeclaration
 					|| node instanceof RecordDeclaration;
+			default -> false;
+		};
+	}
+
+	/**
+	 * Finds the nearest enclosing TypeDeclaration for an AST node.
+	 */
+	private static TypeDeclaration findEnclosingTypeDeclaration(ASTNode node) {
+		ASTNode current = node;
+		while (current != null) {
+			if (current instanceof TypeDeclaration typeDecl) {
+				return typeDecl;
+			}
+			current = current.getParent();
+		}
+		return null;
+	}
+
+	/**
+	 * Checks if a type binding implements {@code java.io.Serializable} (directly or transitively).
+	 * Uses a visited set to prevent infinite recursion in case of cycles in the type hierarchy.
+	 */
+	private static boolean implementsSerializable(ITypeBinding typeBinding) {
+		return implementsSerializable(typeBinding, new java.util.HashSet<>());
+	}
+
+	private static boolean implementsSerializable(ITypeBinding typeBinding, java.util.Set<String> visited) {
+		String qualifiedName = typeBinding.getQualifiedName();
+		if (!visited.add(qualifiedName)) {
+			return false; // Already visited — break potential cycle
+		}
+		for (ITypeBinding iface : typeBinding.getInterfaces()) {
+			if ("java.io.Serializable".equals(iface.getQualifiedName())) { //$NON-NLS-1$
+				return true;
+			}
+			if (implementsSerializable(iface, visited)) {
+				return true;
+			}
+		}
+		ITypeBinding superclass = typeBinding.getSuperclass();
+		if (superclass != null) {
+			return implementsSerializable(superclass, visited);
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if {@code ancestor} is an ancestor of {@code node} (or the same node).
+	 */
+	private static boolean isAncestorOrSelf(ASTNode ancestor, ASTNode node) {
+		ASTNode current = node;
+		while (current != null) {
+			if (current == ancestor) {
+				return true;
+			}
+			current = current.getParent();
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the given modifier flags contain the named modifier.
+	 */
+	private static boolean matchesModifierName(int modifiers, String modifierName) {
+		return switch (modifierName) {
+			case "PUBLIC" -> Modifier.isPublic(modifiers); //$NON-NLS-1$
+			case "PRIVATE" -> Modifier.isPrivate(modifiers); //$NON-NLS-1$
+			case "PROTECTED" -> Modifier.isProtected(modifiers); //$NON-NLS-1$
+			case "ABSTRACT" -> Modifier.isAbstract(modifiers); //$NON-NLS-1$
+			case "STATIC" -> Modifier.isStatic(modifiers); //$NON-NLS-1$
+			case "FINAL" -> Modifier.isFinal(modifiers); //$NON-NLS-1$
+			case "SYNCHRONIZED" -> Modifier.isSynchronized(modifiers); //$NON-NLS-1$
+			case "VOLATILE" -> Modifier.isVolatile(modifiers); //$NON-NLS-1$
+			case "TRANSIENT" -> Modifier.isTransient(modifiers); //$NON-NLS-1$
+			case "NATIVE" -> Modifier.isNative(modifiers); //$NON-NLS-1$
+			case "STRICTFP" -> Modifier.isStrict(modifiers); //$NON-NLS-1$
 			default -> false;
 		};
 	}

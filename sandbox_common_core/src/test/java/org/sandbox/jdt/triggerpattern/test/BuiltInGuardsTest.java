@@ -320,6 +320,310 @@ public class BuiltInGuardsTest {
 		assertFalse(isNonNull.evaluate(ctx, "$x")); //$NON-NLS-1$
 	}
 
+	// ---- New NetBeans-compatible guard tests ----
+
+	@Test
+	public void testOtherwiseGuardAlwaysTrue() {
+		GuardFunction otherwise = guards.get("otherwise"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertTrue(otherwise.evaluate(ctx), "otherwise guard should always return true"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testNewGuardsRegistered() {
+		// Verify all new guards are registered
+		assertTrue(guards.containsKey("otherwise")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isLiteral")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isNullLiteral")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isCharsetString")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isSingleCharacter")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isRegexp")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isInTryWithResourceBlock")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isPassedToMethod")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("inSerializableClass")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("containsAnnotation")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("parentMatches")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("inClass")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("inPackage")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("hasModifier")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsLiteralWithStringLiteral() {
+		GuardFunction isLiteral = guards.get("isLiteral"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"hello\"; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		// Find the StringLiteral "hello"
+		ASTNode stringLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.StringLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", stringLit); //$NON-NLS-1$
+		Match match = new Match(stringLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isLiteral.evaluate(ctx, "$x"), "StringLiteral should be a literal"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsLiteralWithNonLiteral() {
+		GuardFunction isLiteral = guards.get("isLiteral"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"hello\"; s.toString(); } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode callStmt = (ASTNode) method.getBody().statements().get(1);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", callStmt); //$NON-NLS-1$
+		Match match = new Match(callStmt, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isLiteral.evaluate(ctx, "$x"), "MethodInvocation should not be a literal"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsNullLiteralWithNullExpression() {
+		GuardFunction isNullLiteral = guards.get("isNullLiteral"); //$NON-NLS-1$
+		String code = "class Test { void m() { Object o = null; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		ASTNode nullLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.NullLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", nullLit); //$NON-NLS-1$
+		Match match = new Match(nullLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isNullLiteral.evaluate(ctx, "$x"), "NullLiteral should match isNullLiteral"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsCharsetStringWithUTF8() {
+		GuardFunction isCharsetString = guards.get("isCharsetString"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"UTF-8\"; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		ASTNode stringLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.StringLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", stringLit); //$NON-NLS-1$
+		Match match = new Match(stringLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isCharsetString.evaluate(ctx, "$x"), "UTF-8 should be a charset string"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsCharsetStringWithNonStandardCharset() {
+		GuardFunction isCharsetString = guards.get("isCharsetString"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"NOT-A-CHARSET\"; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		ASTNode stringLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.StringLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", stringLit); //$NON-NLS-1$
+		Match match = new Match(stringLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isCharsetString.evaluate(ctx, "$x"), "NOT-A-CHARSET should not be a standard charset string"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsSingleCharacterWithOneChar() {
+		GuardFunction isSingleChar = guards.get("isSingleCharacter"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"x\"; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		ASTNode stringLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.StringLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", stringLit); //$NON-NLS-1$
+		Match match = new Match(stringLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isSingleChar.evaluate(ctx, "$x"), "Single char string should match"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsSingleCharacterWithMultipleChars() {
+		GuardFunction isSingleChar = guards.get("isSingleCharacter"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"hello\"; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		ASTNode stringLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.StringLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", stringLit); //$NON-NLS-1$
+		Match match = new Match(stringLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isSingleChar.evaluate(ctx, "$x"), "Multi-char string should not match"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsRegexpWithRegexPattern() {
+		GuardFunction isRegexp = guards.get("isRegexp"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"a.*b\"; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		ASTNode stringLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.StringLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", stringLit); //$NON-NLS-1$
+		Match match = new Match(stringLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isRegexp.evaluate(ctx, "$x"), "String with regex metacharacters should be regex"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsRegexpWithPlainString() {
+		GuardFunction isRegexp = guards.get("isRegexp"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"hello world\"; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		ASTNode stringLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.StringLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", stringLit); //$NON-NLS-1$
+		Match match = new Match(stringLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isRegexp.evaluate(ctx, "$x"), "Plain string should not be regex"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testInPackageGuard() {
+		GuardFunction inPackage = guards.get("inPackage"); //$NON-NLS-1$
+		String code = "package com.example; class Test { void m() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(inPackage.evaluate(ctx, "\"com.example\""), "Should match correct package"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(inPackage.evaluate(ctx, "\"com.other\""), "Should not match wrong package"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testHasModifierGuard() {
+		GuardFunction hasModifier = guards.get("hasModifier"); //$NON-NLS-1$
+		String code = "class Test { public static void m() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode methodName = method.getName();
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$m", methodName); //$NON-NLS-1$
+		Match match = new Match(methodName, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(hasModifier.evaluate(ctx, "$m", "PUBLIC"), "Should detect PUBLIC modifier"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertTrue(hasModifier.evaluate(ctx, "$m", "STATIC"), "Should detect STATIC modifier"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertFalse(hasModifier.evaluate(ctx, "$m", "PRIVATE"), "Should not detect PRIVATE modifier"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testIsInTryWithResourceBlockNegative() {
+		GuardFunction isInTryWithResourceBlock = guards.get("isInTryWithResourceBlock"); //$NON-NLS-1$
+		String code = "class Test { void m() { int x = 0; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", varDeclStmt); //$NON-NLS-1$
+		Match match = new Match(varDeclStmt, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isInTryWithResourceBlock.evaluate(ctx, "$x"), "Variable not in try-with-resources should be false"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testContainsAnnotationGuard() {
+		GuardFunction containsAnnotation = guards.get("containsAnnotation"); //$NON-NLS-1$
+		String code = "class Test { @Deprecated void m() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$m", method); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(containsAnnotation.evaluate(ctx, "$m", "\"Deprecated\""), "Should detect @Deprecated annotation"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertFalse(containsAnnotation.evaluate(ctx, "$m", "\"Override\""), "Should not detect missing @Override annotation"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testParentMatchesGuard() {
+		GuardFunction parentMatches = guards.get("parentMatches"); //$NON-NLS-1$
+		String code = "class Test { void m() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode methodName = method.getName();
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$n", methodName); //$NON-NLS-1$
+		Match match = new Match(methodName, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(parentMatches.evaluate(ctx, "$n", "\"void m\""), "Parent should contain 'void m'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertFalse(parentMatches.evaluate(ctx, "$n", "\"nonexistent\""), "Parent should not contain 'nonexistent'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testInClassGuard() {
+		GuardFunction inClass = guards.get("inClass"); //$NON-NLS-1$
+		String code = "class Test { void m() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(inClass.evaluate(ctx, "\"Test\""), "Should match enclosing class Test"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(inClass.evaluate(ctx, "\"Other\""), "Should not match different class name"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
 	// --- Helper methods ---
 
 	private ASTNode createDummyNode() {
@@ -377,6 +681,19 @@ public class BuiltInGuardsTest {
 			public boolean visit(org.eclipse.jdt.core.dom.ClassInstanceCreation cic) {
 				result[0] = cic;
 				return false;
+			}
+		});
+		return result[0];
+	}
+
+	private ASTNode findNodeOfType(ASTNode root, Class<? extends ASTNode> nodeType) {
+		ASTNode[] result = new ASTNode[1];
+		root.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
+			@Override
+			public void preVisit(ASTNode node) {
+				if (result[0] == null && nodeType.isInstance(node)) {
+					result[0] = node;
+				}
 			}
 		});
 		return result[0];

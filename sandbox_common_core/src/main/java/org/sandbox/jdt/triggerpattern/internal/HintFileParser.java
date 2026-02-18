@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
@@ -33,7 +35,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 
 /**
- * Parser for {@code .sandbox-hint} files.
+ * Parser for {@code .sandbox-hint} and NetBeans {@code .hint} files.
  * 
  * <p>Reads a text file containing transformation rules and produces a {@link HintFile}
  * data model. Supports comments, metadata directives, simple rules, guarded rules,
@@ -42,13 +44,26 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * <p>Import directives are automatically inferred from fully qualified names (FQNs)
  * in source and replacement patterns. No explicit import directives are needed.</p>
  * 
+ * <h2>NetBeans compatibility</h2>
+ * <ul>
+ *   <li>{@code <? ?>} custom Java code blocks are gracefully skipped (with
+ *       {@code FINE}-level logging). These blocks contain NetBeans-specific code
+ *       that cannot be executed in the Eclipse JDT environment.</li>
+ *   <li>Metadata directives support both {@code <!key: value>} (sandbox format)
+ *       and {@code <!key="value">} (NetBeans format).</li>
+ * </ul>
+ * 
  * <h2>File format</h2>
  * <pre>
  * // Line comments
  * /* Block comments * /
  *
+ * // NetBeans custom code blocks (skipped)
+ * &lt;? import java.util.*; ?&gt;
+ *
  * &lt;!id: my.rule.id&gt;
  * &lt;!description: Descriptive text&gt;
+ * &lt;!description="NetBeans style metadata"&gt;
  * &lt;!severity: warning&gt;
  * &lt;!minJavaVersion: 11&gt;
  * &lt;!tags: performance, modernization&gt;
@@ -87,6 +102,8 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * @since 1.3.2
  */
 public final class HintFileParser {
+	
+	private static final Logger LOGGER = Logger.getLogger(HintFileParser.class.getName());
 	
 	private record GuardSplit(String patternText, String guardText) {
 		boolean hasGuard() { return guardText != null; }
@@ -156,15 +173,53 @@ public final class HintFileParser {
 	}
 	
 	/**
-	 * Reads all lines from a reader, stripping comments.
+	 * Reads all lines from a reader, stripping comments and {@code <? ?>} blocks.
+	 * 
+	 * <p>{@code <? ?>} blocks contain custom Java code used by NetBeans hint files.
+	 * These blocks are skipped with a warning log, as the custom code cannot be
+	 * executed in the Eclipse JDT environment.</p>
 	 */
 	private List<String> readAndStripComments(Reader reader) throws IOException {
 		List<String> result = new ArrayList<>();
 		boolean inBlockComment = false;
+		boolean inCustomCodeBlock = false;
 		
 		try (BufferedReader br = new BufferedReader(reader)) {
 			String rawLine;
 			while ((rawLine = br.readLine()) != null) {
+				// Handle <? ?> custom code blocks
+				if (inCustomCodeBlock) {
+					if (rawLine.contains("?>")) { //$NON-NLS-1$
+						inCustomCodeBlock = false;
+						int endIdx = rawLine.indexOf("?>"); //$NON-NLS-1$
+						rawLine = rawLine.substring(endIdx + 2);
+					} else {
+						result.add(""); //$NON-NLS-1$
+						continue;
+					}
+				}
+				
+				// Check for start of <? ?> block(s) on this line
+				while (!inBlockComment) {
+					int startIdx = rawLine.indexOf("<?"); //$NON-NLS-1$
+					if (startIdx < 0) {
+						break;
+					}
+					int endIdx = rawLine.indexOf("?>", startIdx + 2); //$NON-NLS-1$
+					if (endIdx >= 0) {
+						// Single-line <? ?> block
+						LOGGER.log(Level.FINE, "Skipping custom code block (single line)"); //$NON-NLS-1$
+						rawLine = rawLine.substring(0, startIdx) + rawLine.substring(endIdx + 2);
+						// Continue loop to check for further blocks on the same line
+					} else {
+						// Multi-line <? ?> block
+						LOGGER.log(Level.FINE, "Skipping custom code block (multi-line)"); //$NON-NLS-1$
+						inCustomCodeBlock = true;
+						rawLine = rawLine.substring(0, startIdx);
+						break;
+					}
+				}
+				
 				if (inBlockComment) {
 					int endIdx = rawLine.indexOf("*/"); //$NON-NLS-1$
 					if (endIdx >= 0) {
@@ -207,21 +262,40 @@ public final class HintFileParser {
 	
 	/**
 	 * Parses a metadata directive line.
+	 * 
+	 * <p>Supports both {@code <!key: value>} (sandbox format) and 
+	 * {@code <!key="value">} (NetBeans format) syntaxes.</p>
 	 */
 	private void parseMetadata(HintFile hintFile, String line, int lineNumber) throws HintParseException {
-		// <!key: value>
+		// <!key: value> or <!key="value">
 		if (!line.endsWith(">")) { //$NON-NLS-1$
 			throw new HintParseException("Invalid metadata directive (missing '>'): " + line, lineNumber); //$NON-NLS-1$
 		}
 		
 		String inner = line.substring(2, line.length() - 1).trim();
-		int colonIdx = inner.indexOf(':');
-		if (colonIdx < 0) {
-			throw new HintParseException("Invalid metadata directive (missing ':'): " + line, lineNumber); //$NON-NLS-1$
-		}
 		
-		String key = inner.substring(0, colonIdx).trim();
-		String value = inner.substring(colonIdx + 1).trim();
+		// Prefer colon format for backward compatibility; fall back to equals format
+		int colonIdx = inner.indexOf(':');
+		int equalsIdx = inner.indexOf('=');
+		
+		String key;
+		String value;
+		
+		if (colonIdx >= 0 && !inner.substring(0, colonIdx).contains("=")) { //$NON-NLS-1$
+			// Sandbox format: key: value (preferred for backward compatibility)
+			key = inner.substring(0, colonIdx).trim();
+			value = inner.substring(colonIdx + 1).trim();
+		} else if (equalsIdx > 0) {
+			// NetBeans format: key="value" or key=value
+			key = inner.substring(0, equalsIdx).trim();
+			value = inner.substring(equalsIdx + 1).trim();
+			// Strip surrounding quotes if present
+			if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) { //$NON-NLS-1$ //$NON-NLS-2$
+				value = value.substring(1, value.length() - 1);
+			}
+		} else {
+			throw new HintParseException("Invalid metadata directive (missing ':' or '='): " + line, lineNumber); //$NON-NLS-1$
+		}
 		
 		switch (key) {
 			case "id": //$NON-NLS-1$
