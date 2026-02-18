@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix;
+package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.List;
 import java.util.Map;
