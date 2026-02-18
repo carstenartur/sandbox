@@ -17,6 +17,7 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.EXPLICITEN
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.EXPLICITENCODING_CLEANUP;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_ID_ENCODING;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingCleanUp_description;
 
@@ -77,7 +78,7 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 
 		// Tier 1: Run DSL rules first for ENFORCE_UTF8 modes
 		if (cb == ChangeBehavior.ENFORCE_UTF8 || cb == ChangeBehavior.ENFORCE_UTF8_AGGREGATE) {
-			HintFileFixCore.findOperationsForBundle(compilationUnit, "encoding", operations, nodesprocessed); //$NON-NLS-1$
+			HintFileFixCore.findOperationsForBundle(compilationUnit, HINTFILE_BUNDLE_ID_ENCODING, operations, nodesprocessed);
 		}
 
 		// Tier 2+3: Run imperative helpers, skipping DSL-handled ones in ENFORCE modes
