@@ -18,10 +18,10 @@ mining:
     #       paths:
     #         - org.eclipse.jdt.ui/ui
 
-    #     - url: https://github.com/eclipse-platform/eclipse.platform.ui
-    #       branch: main
-    #       paths:
-    #         - bundles/org.eclipse.ui.workbench/Eclipse UI
+         - url: https://github.com/eclipse-platform/eclipse.platform.ui
+           branch: main
+           paths:
+             - bundles/org.eclipse.ui.workbench/Eclipse UI
 
     #     - url: https://github.com/eclipse-platform/eclipse.platform
     #       branch: main
