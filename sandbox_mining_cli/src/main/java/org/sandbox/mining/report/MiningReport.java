@@ -32,6 +32,7 @@ public class MiningReport {
 
 	private final List<MatchEntry> matches = new ArrayList<>();
 	private final Map<String, Integer> fileCounts = new LinkedHashMap<>();
+	private final Map<String, String> errors = new LinkedHashMap<>();
 
 	/**
 	 * Adds a match entry to the report.
@@ -49,11 +50,19 @@ public class MiningReport {
 	}
 
 	/**
+	 * Records an error that occurred while processing a repository.
+	 */
+	public void addError(String repoName, String errorMessage) {
+		errors.put(repoName, errorMessage);
+	}
+
+	/**
 	 * Merges another report into this one.
 	 */
 	public void merge(MiningReport other) {
 		matches.addAll(other.matches);
 		other.fileCounts.forEach((k, v) -> fileCounts.merge(k, v, Integer::sum));
+		other.errors.forEach(errors::putIfAbsent);
 	}
 
 	public List<MatchEntry> getMatches() {
@@ -62,6 +71,20 @@ public class MiningReport {
 
 	public Map<String, Integer> getFileCounts() {
 		return fileCounts;
+	}
+
+	/**
+	 * Returns errors recorded during scanning.
+	 */
+	public Map<String, String> getErrors() {
+		return errors;
+	}
+
+	/**
+	 * Returns true if any errors were recorded.
+	 */
+	public boolean hasErrors() {
+		return !errors.isEmpty();
 	}
 
 	/**
