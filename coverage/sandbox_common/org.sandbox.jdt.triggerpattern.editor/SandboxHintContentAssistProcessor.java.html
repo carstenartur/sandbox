@@ -58,121 +58,88 @@ import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 <span class="nc" id="L58">		{ &quot;parent&quot;, &quot;parent($x, Type) – parent node is of the given type&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="nc" id="L59">		{ &quot;contains&quot;, &quot;contains($x, \&quot;text\&quot;) – enclosing method contains the text&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="nc" id="L60">		{ &quot;notContains&quot;, &quot;notContains($x, \&quot;text\&quot;) – enclosing method does not contain the text&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-	};
-
-	/**
-	 * Import directive entries with name and description.
-	 * &lt;p&gt;These directives are optional when imports can be implicitly derived
-	 * from fully qualified names in source/replacement patterns.&lt;/p&gt;
-	 */
-<span class="nc" id="L68">	private static final String[][] IMPORT_PROPOSALS = {</span>
-<span class="nc" id="L69">		{ &quot;addImport &quot;, &quot;pkg.ClassName – add a regular import&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L70">		{ &quot;removeImport &quot;, &quot;pkg.ClassName – remove a regular import&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L71">		{ &quot;addStaticImport &quot;, &quot;pkg.Class.member – add a static import&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L72">		{ &quot;removeStaticImport &quot;, &quot;pkg.Class.member – remove a static import&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L73">		{ &quot;replaceStaticImport &quot;, &quot;old.Type new.Type – replace static import source type&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L74">	};</span>
+<span class="nc" id="L61">	};</span>
 
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
-<span class="nc" id="L78">		IDocument document = viewer.getDocument();</span>
-<span class="nc" id="L79">		String prefix = extractPrefix(document, offset);</span>
+<span class="nc" id="L65">		IDocument document = viewer.getDocument();</span>
+<span class="nc" id="L66">		String prefix = extractPrefix(document, offset);</span>
 
 		// Check if we are after a :: guard separator
-<span class="nc" id="L82">		boolean afterGuard = isAfterGuardSeparator(document, offset - prefix.length());</span>
+<span class="nc" id="L69">		boolean afterGuard = isAfterGuardSeparator(document, offset - prefix.length());</span>
 
-		// Check if we are at the beginning of a line (for import directives)
-<span class="nc" id="L85">		boolean atLineStart = isAtLineStart(document, offset - prefix.length());</span>
-
-<span class="nc bnc" id="L87" title="All 6 branches missed.">		if (!afterGuard &amp;&amp; !atLineStart &amp;&amp; prefix.isEmpty()) {</span>
-<span class="nc" id="L88">			return new ICompletionProposal[0];</span>
+<span class="nc bnc" id="L71" title="All 4 branches missed.">		if (!afterGuard &amp;&amp; prefix.isEmpty()) {</span>
+<span class="nc" id="L72">			return new ICompletionProposal[0];</span>
 		}
 
-<span class="nc" id="L91">		List&lt;ICompletionProposal&gt; proposals = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L92">		String lowerPrefix = prefix.toLowerCase();</span>
+<span class="nc" id="L75">		List&lt;ICompletionProposal&gt; proposals = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L76">		String lowerPrefix = prefix.toLowerCase();</span>
 
-<span class="nc bnc" id="L94" title="All 2 branches missed.">		for (String[] entry : GUARD_PROPOSALS) {</span>
-<span class="nc" id="L95">			String name = entry[0];</span>
-<span class="nc" id="L96">			String description = entry[1];</span>
-<span class="nc bnc" id="L97" title="All 2 branches missed.">			if (name.toLowerCase().startsWith(lowerPrefix)) {</span>
-<span class="nc" id="L98">				String replacement = name;</span>
-<span class="nc" id="L99">				int replacementOffset = offset - prefix.length();</span>
-<span class="nc" id="L100">				int replacementLength = prefix.length();</span>
-<span class="nc" id="L101">				int cursorPosition = replacement.length();</span>
-<span class="nc" id="L102">				proposals.add(new CompletionProposal(</span>
-<span class="nc" id="L103">						replacement, replacementOffset, replacementLength,</span>
-<span class="nc" id="L104">						cursorPosition, null, name + &quot; – &quot; + description, //$NON-NLS-1$</span>
-<span class="nc" id="L105">						null, description));</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">		for (String[] entry : GUARD_PROPOSALS) {</span>
+<span class="nc" id="L79">			String name = entry[0];</span>
+<span class="nc" id="L80">			String description = entry[1];</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">			if (name.toLowerCase().startsWith(lowerPrefix)) {</span>
+<span class="nc" id="L82">				String replacement = name;</span>
+<span class="nc" id="L83">				int replacementOffset = offset - prefix.length();</span>
+<span class="nc" id="L84">				int replacementLength = prefix.length();</span>
+<span class="nc" id="L85">				int cursorPosition = replacement.length();</span>
+<span class="nc" id="L86">				proposals.add(new CompletionProposal(</span>
+<span class="nc" id="L87">						replacement, replacementOffset, replacementLength,</span>
+<span class="nc" id="L88">						cursorPosition, null, name + &quot; – &quot; + description, //$NON-NLS-1$</span>
+<span class="nc" id="L89">						null, description));</span>
 			}
 		}
 
 		// Also propose guard functions from the registry
-<span class="nc" id="L110">		GuardRegistry registry = GuardRegistry.getInstance();</span>
-<span class="nc bnc" id="L111" title="All 2 branches missed.">		for (String guardName : registry.getRegisteredNames()) {</span>
-<span class="nc bnc" id="L112" title="All 2 branches missed.">			if (guardName.toLowerCase().startsWith(lowerPrefix)) {</span>
-<span class="nc" id="L113">				boolean alreadyProposed = false;</span>
-<span class="nc bnc" id="L114" title="All 2 branches missed.">				for (String[] entry : GUARD_PROPOSALS) {</span>
-<span class="nc bnc" id="L115" title="All 2 branches missed.">					if (entry[0].equals(guardName)) {</span>
-<span class="nc" id="L116">						alreadyProposed = true;</span>
-<span class="nc" id="L117">						break;</span>
+<span class="nc" id="L94">		GuardRegistry registry = GuardRegistry.getInstance();</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">		for (String guardName : registry.getRegisteredNames()) {</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">			if (guardName.toLowerCase().startsWith(lowerPrefix)) {</span>
+<span class="nc" id="L97">				boolean alreadyProposed = false;</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">				for (String[] entry : GUARD_PROPOSALS) {</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">					if (entry[0].equals(guardName)) {</span>
+<span class="nc" id="L100">						alreadyProposed = true;</span>
+<span class="nc" id="L101">						break;</span>
 					}
 				}
-<span class="nc bnc" id="L120" title="All 2 branches missed.">				if (!alreadyProposed) {</span>
-<span class="nc" id="L121">					String replacement = guardName;</span>
-<span class="nc" id="L122">					int replacementOffset = offset - prefix.length();</span>
-<span class="nc" id="L123">					int replacementLength = prefix.length();</span>
-<span class="nc" id="L124">					int cursorPosition = replacement.length();</span>
-<span class="nc" id="L125">					proposals.add(new CompletionProposal(</span>
-<span class="nc" id="L126">							replacement, replacementOffset, replacementLength,</span>
-<span class="nc" id="L127">							cursorPosition, null, guardName,</span>
-<span class="nc" id="L128">							null, &quot;Custom guard function&quot;)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">				if (!alreadyProposed) {</span>
+<span class="nc" id="L105">					String replacement = guardName;</span>
+<span class="nc" id="L106">					int replacementOffset = offset - prefix.length();</span>
+<span class="nc" id="L107">					int replacementLength = prefix.length();</span>
+<span class="nc" id="L108">					int cursorPosition = replacement.length();</span>
+<span class="nc" id="L109">					proposals.add(new CompletionProposal(</span>
+<span class="nc" id="L110">							replacement, replacementOffset, replacementLength,</span>
+<span class="nc" id="L111">							cursorPosition, null, guardName,</span>
+<span class="nc" id="L112">							null, &quot;Custom guard function&quot;)); //$NON-NLS-1$</span>
 				}
 			}
 		}
 
-		// Propose import directives at the beginning of a line
-<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (atLineStart) {</span>
-<span class="nc bnc" id="L135" title="All 2 branches missed.">			for (String[] entry : IMPORT_PROPOSALS) {</span>
-<span class="nc" id="L136">				String name = entry[0];</span>
-<span class="nc" id="L137">				String description = entry[1];</span>
-<span class="nc bnc" id="L138" title="All 2 branches missed.">				if (name.toLowerCase().startsWith(lowerPrefix)) {</span>
-<span class="nc" id="L139">					int replacementOffset = offset - prefix.length();</span>
-<span class="nc" id="L140">					int replacementLength = prefix.length();</span>
-<span class="nc" id="L141">					int cursorPosition = name.length();</span>
-<span class="nc" id="L142">					proposals.add(new CompletionProposal(</span>
-<span class="nc" id="L143">							name, replacementOffset, replacementLength,</span>
-<span class="nc" id="L144">							cursorPosition, null, name.trim() + &quot; – &quot; + description, //$NON-NLS-1$</span>
-<span class="nc" id="L145">							null, description));</span>
-				}
-			}
-		}
-
-<span class="nc" id="L150">		return proposals.toArray(new ICompletionProposal[0]);</span>
+<span class="nc" id="L117">		return proposals.toArray(new ICompletionProposal[0]);</span>
 	}
 
 	@Override
 	public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset) {
-<span class="nc" id="L155">		return new IContextInformation[0];</span>
+<span class="nc" id="L122">		return new IContextInformation[0];</span>
 	}
 
 	@Override
 	public char[] getCompletionProposalAutoActivationCharacters() {
-<span class="nc" id="L160">		return new char[] { ':' };</span>
+<span class="nc" id="L127">		return new char[] { ':' };</span>
 	}
 
 	@Override
 	public char[] getContextInformationAutoActivationCharacters() {
-<span class="nc" id="L165">		return null;</span>
+<span class="nc" id="L132">		return null;</span>
 	}
 
 	@Override
 	public String getErrorMessage() {
-<span class="nc" id="L170">		return null;</span>
+<span class="nc" id="L137">		return null;</span>
 	}
 
 	@Override
 	public IContextInformationValidator getContextInformationValidator() {
-<span class="nc" id="L175">		return null;</span>
+<span class="nc" id="L142">		return null;</span>
 	}
 
 	/**
@@ -180,17 +147,17 @@ import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 	 */
 	private String extractPrefix(IDocument document, int offset) {
 		try {
-<span class="nc" id="L183">			int start = offset;</span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">			while (start &gt; 0) {</span>
-<span class="nc" id="L185">				char c = document.getChar(start - 1);</span>
-<span class="nc bnc" id="L186" title="All 4 branches missed.">				if (!Character.isLetterOrDigit(c) &amp;&amp; c != '_') {</span>
-<span class="nc" id="L187">					break;</span>
+<span class="nc" id="L150">			int start = offset;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">			while (start &gt; 0) {</span>
+<span class="nc" id="L152">				char c = document.getChar(start - 1);</span>
+<span class="nc bnc" id="L153" title="All 4 branches missed.">				if (!Character.isLetterOrDigit(c) &amp;&amp; c != '_') {</span>
+<span class="nc" id="L154">					break;</span>
 				}
-<span class="nc" id="L189">				start--;</span>
+<span class="nc" id="L156">				start--;</span>
 			}
-<span class="nc" id="L191">			return document.get(start, offset - start);</span>
-<span class="nc" id="L192">		} catch (BadLocationException e) {</span>
-<span class="nc" id="L193">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L158">			return document.get(start, offset - start);</span>
+<span class="nc" id="L159">		} catch (BadLocationException e) {</span>
+<span class="nc" id="L160">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
 	}
 
@@ -200,36 +167,21 @@ import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 	 */
 	private boolean isAfterGuardSeparator(IDocument document, int offset) {
 		try {
-<span class="nc" id="L203">			int pos = offset - 1;</span>
+<span class="nc" id="L170">			int pos = offset - 1;</span>
 			// Skip whitespace
-<span class="nc bnc" id="L205" title="All 4 branches missed.">			while (pos &gt;= 0 &amp;&amp; Character.isWhitespace(document.getChar(pos))) {</span>
-<span class="nc" id="L206">				pos--;</span>
+<span class="nc bnc" id="L172" title="All 4 branches missed.">			while (pos &gt;= 0 &amp;&amp; Character.isWhitespace(document.getChar(pos))) {</span>
+<span class="nc" id="L173">				pos--;</span>
 			}
 			// Check for '::'
-<span class="nc bnc" id="L209" title="All 2 branches missed.">			if (pos &gt;= 1</span>
-<span class="nc bnc" id="L210" title="All 2 branches missed.">					&amp;&amp; document.getChar(pos) == ':'</span>
-<span class="nc bnc" id="L211" title="All 2 branches missed.">					&amp;&amp; document.getChar(pos - 1) == ':') {</span>
-<span class="nc" id="L212">				return true;</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">			if (pos &gt;= 1</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">					&amp;&amp; document.getChar(pos) == ':'</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">					&amp;&amp; document.getChar(pos - 1) == ':') {</span>
+<span class="nc" id="L179">				return true;</span>
 			}
-<span class="nc" id="L214">		} catch (BadLocationException e) {</span>
+<span class="nc" id="L181">		} catch (BadLocationException e) {</span>
 			// ignore
 		}
-<span class="nc" id="L217">		return false;</span>
-	}
-
-	/**
-	 * Checks if the position is at the beginning of a line
-	 * (only whitespace before the position on the current line).
-	 */
-	private boolean isAtLineStart(IDocument document, int offset) {
-		try {
-<span class="nc" id="L226">			int lineNum = document.getLineOfOffset(offset);</span>
-<span class="nc" id="L227">			int lineStart = document.getLineOffset(lineNum);</span>
-<span class="nc" id="L228">			String beforeCursor = document.get(lineStart, offset - lineStart);</span>
-<span class="nc" id="L229">			return beforeCursor.isBlank();</span>
-<span class="nc" id="L230">		} catch (BadLocationException e) {</span>
-<span class="nc" id="L231">			return false;</span>
-		}
+<span class="nc" id="L184">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

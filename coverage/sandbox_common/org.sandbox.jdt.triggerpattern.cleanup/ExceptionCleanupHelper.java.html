@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExceptionCleanupHelper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.cleanup</a> &gt; <span class="el_source">ExceptionCleanupHelper.java</span></div><h1>ExceptionCleanupHelper.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.cleanup;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.UnionType;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.text.edits.TextEditGroup;
+
+/**
+ * Reusable utility for removing checked exceptions from method throws clauses,
+ * catch clauses, and simplifying empty try statements after exception removal.
+ *
+ * &lt;p&gt;This class was extracted from {@code AbstractExplicitEncoding} to be
+ * accessible to both the encoding plugin and the trigger-pattern DSL engine.
+ * It is generic enough to work with &lt;b&gt;any&lt;/b&gt; checked exception, not just
+ * {@code UnsupportedEncodingException}.&lt;/p&gt;
+ *
+ * @since 1.3.5
+ */
+public class ExceptionCleanupHelper {
+
+	private ExceptionCleanupHelper() {
+		// utility class – not instantiable
+	}
+
+	/**
+	 * Removes the specified checked exception from the enclosing method's throws
+	 * clause or from catch clauses in a try statement.
+	 *
+	 * @param visited         the AST node that was modified, must not be null
+	 * @param exceptionFQN    fully qualified name of the exception to remove
+	 *                        (e.g. {@code &quot;java.io.UnsupportedEncodingException&quot;})
+	 * @param exceptionSimple simple name of the exception
+	 *                        (e.g. {@code &quot;UnsupportedEncodingException&quot;})
+	 * @param group           the text edit group for tracking changes
+	 * @param rewrite         the AST rewrite context
+	 * @param importRewriter  the import rewrite for removing unused imports
+	 */
+	public static void removeCheckedException(
+			ASTNode visited,
+			String exceptionFQN,
+			String exceptionSimple,
+			TextEditGroup group,
+			ASTRewrite rewrite,
+			ImportRewrite importRewriter) {
+
+<span class="fc" id="L70">		ASTNode parent = findEnclosingMethodOrTry(visited);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		if (parent == null) {</span>
+<span class="fc" id="L72">			return;</span>
+		}
+
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (parent instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L76">			removeExceptionFromMethodThrows(method, exceptionFQN, exceptionSimple, rewrite, group, importRewriter);</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		} else if (parent instanceof TryStatement tryStatement) {</span>
+<span class="fc" id="L78">			removeExceptionFromTryCatch(tryStatement, exceptionFQN, exceptionSimple, rewrite, group, importRewriter);</span>
+<span class="fc" id="L79">			simplifyEmptyTryStatement(tryStatement, rewrite, group);</span>
+		}
+<span class="fc" id="L81">	}</span>
+
+	// ------------------------------------------------------------------
+	// package-private helpers (visible for testing inside the same package)
+	// ------------------------------------------------------------------
+
+	static ASTNode findEnclosingMethodOrTry(ASTNode node) {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		if (node == null) {</span>
+<span class="fc" id="L89">			return null;</span>
+		}
+<span class="fc" id="L91">		ASTNode tryStmt = ASTNodes.getFirstAncestorOrNull(node, TryStatement.class);</span>
+<span class="fc" id="L92">		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		if (tryStmt != null) {</span>
+<span class="fc" id="L94">			return tryStmt;</span>
+		}
+<span class="fc" id="L96">		return methodDecl;</span>
+	}
+
+	static boolean isTargetException(Type type, String exceptionSimple) {
+<span class="fc" id="L100">		return type.toString().equals(exceptionSimple);</span>
+	}
+
+	static void removeExceptionFromMethodThrows(
+			MethodDeclaration method,
+			String exceptionFQN,
+			String exceptionSimple,
+			ASTRewrite rewrite,
+			TextEditGroup group,
+			ImportRewrite importRewriter) {
+
+<span class="fc" id="L111">		ListRewrite throwsRewrite = rewrite.getListRewrite(method,</span>
+<span class="fc" id="L112">				MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);</span>
+<span class="fc" id="L113">		List&lt;Type&gt; thrownExceptions = method.thrownExceptionTypes();</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">		for (Type exceptionType : thrownExceptions) {</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">			if (isTargetException(exceptionType, exceptionSimple)) {</span>
+<span class="fc" id="L116">				throwsRewrite.remove(exceptionType, group);</span>
+<span class="fc" id="L117">				importRewriter.removeImport(exceptionFQN);</span>
+			}
+		}
+<span class="fc" id="L120">	}</span>
+
+	static void removeExceptionFromUnionType(
+			UnionType unionType,
+			CatchClause catchClause,
+			String exceptionSimple,
+			ASTRewrite rewrite,
+			TextEditGroup group) {
+
+<span class="fc" id="L129">		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);</span>
+<span class="fc" id="L130">		List&lt;Type&gt; types = unionType.types();</span>
+
+<span class="fc" id="L132">		List&lt;Type&gt; typesToRemove = types.stream()</span>
+<span class="fc" id="L133">				.filter(t -&gt; isTargetException(t, exceptionSimple))</span>
+<span class="fc" id="L134">				.toList();</span>
+
+<span class="fc" id="L136">		typesToRemove.forEach(type -&gt; unionRewrite.remove(type, group));</span>
+
+<span class="fc" id="L138">		int remainingCount = types.size() - typesToRemove.size();</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		if (remainingCount == 1) {</span>
+<span class="fc" id="L140">			Type remainingType = types.stream()</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">					.filter(type -&gt; !typesToRemove.contains(type))</span>
+<span class="fc" id="L142">					.findFirst()</span>
+<span class="fc" id="L143">					.orElse(null);</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">			if (remainingType != null) {</span>
+<span class="fc" id="L145">				rewrite.replace(unionType, remainingType, group);</span>
+			}
+<span class="pc bnc" id="L147" title="All 2 branches missed.">		} else if (remainingCount == 0) {</span>
+<span class="nc" id="L148">			rewrite.remove(catchClause, group);</span>
+		}
+<span class="fc" id="L150">	}</span>
+
+	static void removeExceptionFromTryCatch(
+			TryStatement tryStatement,
+			String exceptionFQN,
+			String exceptionSimple,
+			ASTRewrite rewrite,
+			TextEditGroup group,
+			ImportRewrite importRewriter) {
+
+<span class="fc" id="L160">		List&lt;CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">		for (CatchClause catchClause : catchClauses) {</span>
+<span class="fc" id="L162">			SingleVariableDeclaration exception = catchClause.getException();</span>
+<span class="fc" id="L163">			Type exceptionType = exception.getType();</span>
+
+<span class="fc bfc" id="L165" title="All 2 branches covered.">			if (exceptionType instanceof UnionType unionType) {</span>
+<span class="fc" id="L166">				removeExceptionFromUnionType(unionType, catchClause, exceptionSimple, rewrite, group);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">			} else if (isTargetException(exceptionType, exceptionSimple)) {</span>
+<span class="fc" id="L168">				rewrite.remove(catchClause, group);</span>
+<span class="fc" id="L169">				importRewriter.removeImport(exceptionFQN);</span>
+			}
+		}
+<span class="fc" id="L172">	}</span>
+
+	static void simplifyEmptyTryStatement(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group) {
+<span class="pc bpc" id="L175" title="1 of 4 branches missed.">		if (!tryStatement.catchClauses().isEmpty() || tryStatement.getFinally() != null) {</span>
+<span class="fc" id="L176">			return;</span>
+		}
+
+<span class="fc" id="L179">		Block tryBlock = tryStatement.getBody();</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		boolean hasResources = !tryStatement.resources().isEmpty();</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		boolean hasStatements = !tryBlock.statements().isEmpty();</span>
+
+<span class="pc bpc" id="L183" title="3 of 4 branches missed.">		if (!hasResources &amp;&amp; !hasStatements) {</span>
+<span class="nc" id="L184">			rewrite.remove(tryStatement, group);</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">		} else if (!hasResources) {</span>
+<span class="nc" id="L186">			rewrite.replace(tryStatement, tryBlock, group);</span>
+		}
+<span class="fc" id="L188">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

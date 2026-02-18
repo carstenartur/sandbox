@@ -38,7 +38,23 @@ import org.eclipse.osgi.util.NLS;
 
 	public static String CommandLineStart;
 
+	public static String CommandLineMode;
+
 	public static String CommandLineDone;
+
+	public static String CommandLineChangedFiles;
+
+	public static String CommandLinePatchWritten;
+
+	public static String CommandLinePatchError;
+
+	public static String CommandLineReportWritten;
+
+	public static String CommandLineReportError;
+
+	public static String CommandLineErrorInvalidMode;
+
+	public static String CommandLineErrorInvalidScope;
 
 	public static String FileOutsideWorkspace;
 
@@ -46,8 +62,8 @@ import org.eclipse.osgi.util.NLS;
 
 	public static String CommandLineUsage;
 	static {
-<span class="fc" id="L49">		NLS.initializeMessages(BUNDLE_NAME, Messages.class);</span>
-<span class="fc" id="L50">	}</span>
+<span class="fc" id="L65">		NLS.initializeMessages(BUNDLE_NAME, Messages.class);</span>
+<span class="fc" id="L66">	}</span>
 
 	/**
 	 * Bind the given message's substitution locations with the given string values.
@@ -57,7 +73,7 @@ import org.eclipse.osgi.util.NLS;
 	 * @return the manipulated String
 	 */
 	public static String bind(final String message) {
-<span class="fc" id="L60">		return bind(message, (Object[]) null);</span>
+<span class="fc" id="L76">		return bind(message, (Object[]) null);</span>
 	}
 
 	/**
@@ -70,7 +86,7 @@ import org.eclipse.osgi.util.NLS;
 	 * @return the manipulated String
 	 */
 	public static String bind(final String message, final Object binding) {
-<span class="fc" id="L73">		return bind(message, new Object[] { binding });</span>
+<span class="fc" id="L89">		return bind(message, new Object[] { binding });</span>
 	}
 
 	/**
@@ -85,7 +101,7 @@ import org.eclipse.osgi.util.NLS;
 	 * @return the manipulated String
 	 */
 	public static String bind(final String message, final Object binding1, final Object binding2) {
-<span class="nc" id="L88">		return bind(message, new Object[] { binding1, binding2 });</span>
+<span class="nc" id="L104">		return bind(message, new Object[] { binding1, binding2 });</span>
 	}
 
 	/**
@@ -98,7 +114,7 @@ import org.eclipse.osgi.util.NLS;
 	 * @return the manipulated String
 	 */
 	public static String bind(final String message, final Object[] bindings) {
-<span class="fc" id="L101">		return MessageFormat.format(message, bindings);</span>
+<span class="fc" id="L117">		return MessageFormat.format(message, bindings);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

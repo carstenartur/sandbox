@@ -69,76 +69,60 @@ public class SandboxHintCodeScanner extends RuleBasedScanner {
 <span class="nc" id="L69">		&quot;notContains&quot;, //$NON-NLS-1$</span>
 <span class="nc" id="L70">		&quot;parent&quot;, //$NON-NLS-1$</span>
 <span class="nc" id="L71">		&quot;enclosingMethod&quot;, //$NON-NLS-1$</span>
-	};
+<span class="nc" id="L72">	};</span>
 
-	/**
-	 * Import directive keywords for the DSL.
-	 * &lt;p&gt;These are now optional when imports can be implicitly derived
-	 * from fully qualified names in source/replacement patterns.&lt;/p&gt;
-	 */
-<span class="nc" id="L79">	private static final String[] IMPORT_KEYWORDS = {</span>
-<span class="nc" id="L80">		&quot;addImport&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L81">		&quot;removeImport&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L82">		&quot;addStaticImport&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L83">		&quot;removeStaticImport&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L84">		&quot;replaceStaticImport&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L85">	};</span>
+<span class="nc" id="L74">	public SandboxHintCodeScanner() {</span>
+<span class="nc" id="L75">		Color operatorColor = new Color(Display.getDefault(), 128, 0, 128);</span>
+<span class="nc" id="L76">		IToken operatorToken = new Token(new TextAttribute(operatorColor, null, SWT.BOLD));</span>
 
-<span class="nc" id="L87">	public SandboxHintCodeScanner() {</span>
-<span class="nc" id="L88">		Color operatorColor = new Color(Display.getDefault(), 128, 0, 128);</span>
-<span class="nc" id="L89">		IToken operatorToken = new Token(new TextAttribute(operatorColor, null, SWT.BOLD));</span>
+<span class="nc" id="L78">		Color placeholderColor = new Color(Display.getDefault(), 128, 0, 0);</span>
+<span class="nc" id="L79">		IToken placeholderToken = new Token(new TextAttribute(placeholderColor));</span>
+<span class="nc" id="L80">		IToken variadicToken = new Token(new TextAttribute(placeholderColor, null, SWT.BOLD));</span>
 
-<span class="nc" id="L91">		Color placeholderColor = new Color(Display.getDefault(), 128, 0, 0);</span>
-<span class="nc" id="L92">		IToken placeholderToken = new Token(new TextAttribute(placeholderColor));</span>
-<span class="nc" id="L93">		IToken variadicToken = new Token(new TextAttribute(placeholderColor, null, SWT.BOLD));</span>
+<span class="nc" id="L82">		Color keywordColor = new Color(Display.getDefault(), 0, 0, 192);</span>
+<span class="nc" id="L83">		IToken keywordToken = new Token(new TextAttribute(keywordColor, null, SWT.BOLD));</span>
 
-<span class="nc" id="L95">		Color keywordColor = new Color(Display.getDefault(), 0, 0, 192);</span>
-<span class="nc" id="L96">		IToken keywordToken = new Token(new TextAttribute(keywordColor, null, SWT.BOLD));</span>
+<span class="nc" id="L85">		Color stringColor = new Color(Display.getDefault(), 42, 0, 255);</span>
+<span class="nc" id="L86">		IToken stringToken = new Token(new TextAttribute(stringColor));</span>
 
-<span class="nc" id="L98">		Color stringColor = new Color(Display.getDefault(), 42, 0, 255);</span>
-<span class="nc" id="L99">		IToken stringToken = new Token(new TextAttribute(stringColor));</span>
+<span class="nc" id="L88">		Color metadataColor = new Color(Display.getDefault(), 64, 128, 128);</span>
+<span class="nc" id="L89">		IToken metadataToken = new Token(new TextAttribute(metadataColor, null, SWT.ITALIC));</span>
 
-<span class="nc" id="L101">		Color metadataColor = new Color(Display.getDefault(), 64, 128, 128);</span>
-<span class="nc" id="L102">		IToken metadataToken = new Token(new TextAttribute(metadataColor, null, SWT.ITALIC));</span>
-
-<span class="nc" id="L104">		List&lt;IRule&gt; rules = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L91">		List&lt;IRule&gt; rules = new ArrayList&lt;&gt;();</span>
 
 		// Metadata directives: &lt;!id: ...&gt;, &lt;!description: ...&gt;, etc.
-<span class="nc" id="L107">		rules.add(new SingleLineRule(&quot;&lt;!&quot;, &quot;&gt;&quot;, metadataToken)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L94">		rules.add(new SingleLineRule(&quot;&lt;!&quot;, &quot;&gt;&quot;, metadataToken)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
 		// String literals in guard expressions
-<span class="nc" id="L110">		rules.add(new SingleLineRule(&quot;\&quot;&quot;, &quot;\&quot;&quot;, stringToken, '\\')); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L97">		rules.add(new SingleLineRule(&quot;\&quot;&quot;, &quot;\&quot;&quot;, stringToken, '\\')); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
 		// Operators: =&gt;, ::, ;;
-<span class="nc" id="L113">		rules.add(new OperatorRule(&quot;=&gt;&quot;, operatorToken)); //$NON-NLS-1$</span>
-<span class="nc" id="L114">		rules.add(new OperatorRule(&quot;::&quot;, operatorToken)); //$NON-NLS-1$</span>
-<span class="nc" id="L115">		rules.add(new OperatorRule(&quot;;;&quot;, operatorToken)); //$NON-NLS-1$</span>
+<span class="nc" id="L100">		rules.add(new OperatorRule(&quot;=&gt;&quot;, operatorToken)); //$NON-NLS-1$</span>
+<span class="nc" id="L101">		rules.add(new OperatorRule(&quot;::&quot;, operatorToken)); //$NON-NLS-1$</span>
+<span class="nc" id="L102">		rules.add(new OperatorRule(&quot;;;&quot;, operatorToken)); //$NON-NLS-1$</span>
 
 		// Placeholders: $name and $variadic$
-<span class="nc" id="L118">		rules.add(new PlaceholderRule(placeholderToken, variadicToken));</span>
+<span class="nc" id="L105">		rules.add(new PlaceholderRule(placeholderToken, variadicToken));</span>
 
 		// Guard function keywords
-<span class="nc" id="L121">		WordRule keywordRule = new WordRule(new IWordDetector() {</span>
+<span class="nc" id="L108">		WordRule keywordRule = new WordRule(new IWordDetector() {</span>
 			@Override
 			public boolean isWordStart(char c) {
-<span class="nc" id="L124">				return Character.isLetter(c);</span>
+<span class="nc" id="L111">				return Character.isLetter(c);</span>
 			}
 
 			@Override
 			public boolean isWordPart(char c) {
-<span class="nc bnc" id="L129" title="All 4 branches missed.">				return Character.isLetterOrDigit(c) || c == '_';</span>
+<span class="nc bnc" id="L116" title="All 4 branches missed.">				return Character.isLetterOrDigit(c) || c == '_';</span>
 			}
-<span class="nc" id="L131">		}, Token.UNDEFINED);</span>
+<span class="nc" id="L118">		}, Token.UNDEFINED);</span>
 
-<span class="nc bnc" id="L133" title="All 2 branches missed.">		for (String keyword : GUARD_KEYWORDS) {</span>
-<span class="nc" id="L134">			keywordRule.addWord(keyword, keywordToken);</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">		for (String keyword : GUARD_KEYWORDS) {</span>
+<span class="nc" id="L121">			keywordRule.addWord(keyword, keywordToken);</span>
 		}
-<span class="nc bnc" id="L136" title="All 2 branches missed.">		for (String keyword : IMPORT_KEYWORDS) {</span>
-<span class="nc" id="L137">			keywordRule.addWord(keyword, keywordToken);</span>
-		}
-<span class="nc" id="L139">		rules.add(keywordRule);</span>
+<span class="nc" id="L123">		rules.add(keywordRule);</span>
 
-<span class="nc" id="L141">		setRules(rules.toArray(new IRule[0]));</span>
-<span class="nc" id="L142">	}</span>
+<span class="nc" id="L125">		setRules(rules.toArray(new IRule[0]));</span>
+<span class="nc" id="L126">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
