@@ -80,3 +80,10 @@ jobs:
           path: |
             sandbox-benchmarks/target/jmh-result.json
             sandbox-benchmarks/target/jmh-result.txt
+
+      - name: Report Deployed URL
+        if: always()
+        run: |
+          echo "### 🔗 Deployed Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 [View Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)" >> $GITHUB_STEP_SUMMARY
