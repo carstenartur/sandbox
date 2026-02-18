@@ -64,11 +64,14 @@ pattern_expression :: guard_condition
 ;;
 ```
 
-### Variables
+### Variables and Naming
 
 - `$identifier`: Matches any expression (e.g., variable, method call).
 - `$type`: Matches a type reference.
-- Fully qualified names (e.g., `java.util.List`) are **automatically imported** and shortened.
+- **Patterns MUST use fully qualified names (FQNs)** for types and methods (e.g., `java.nio.charset.Charset.forName()`).
+  - Simple name patterns (e.g., `Charset.forName()`) will **NOT** match and should not be used.
+  - FQN patterns can match both FQN usage and imported simple names in source code.
+  - When the replacement is applied, imports are automatically managed (added/removed as needed).
 
 ### Available Guards
 
@@ -109,6 +112,28 @@ You can use these functions in `:: guard` expressions:
 | `hasModifier($var, "modifier")` | True if the element has the specified modifier (e.g., "public", "private") |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
+### Common Mistakes
+
+**❌ Using simple names in patterns:**
+```
+// WRONG - will not match!
+Charset.forName("UTF-8")
+=> StandardCharsets.UTF_8
+;;
+```
+
+**✅ Always use fully qualified names:**
+```
+// CORRECT - matches both FQN and imported usage
+java.nio.charset.Charset.forName("UTF-8")
+=> java.nio.charset.StandardCharsets.UTF_8
+;;
+```
+
+This FQN pattern will match both:
+- `java.nio.charset.Charset.forName("UTF-8")` (FQN in source)
+- `Charset.forName("UTF-8")` (with `import java.nio.charset.Charset;`)
+
 ### Examples
 
 **Simple replacement:**
@@ -125,9 +150,9 @@ java.nio.charset.StandardCharsets.UTF_8
 
 **Guarded rule with version check:**
 ```
-new FileReader($path) :: sourceVersionGE(11)
+new java.io.FileReader($path) :: sourceVersionGE(11)
 =>
-new FileReader($path, StandardCharsets.UTF_8)
+new java.io.FileReader($path, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 ```
 
@@ -143,9 +168,9 @@ $obj.init()
 
 **Multi-rewrite (Conditional replacement):**
 ```
-Arrays.asList($args)
-=> List.of($args) :: sourceVersionGE(9)
-=> Collections.unmodifiableList(Arrays.asList($args)) :: otherwise
+java.util.Arrays.asList($args)
+=> java.util.List.of($args) :: sourceVersionGE(9)
+=> java.util.Collections.unmodifiableList(java.util.Arrays.asList($args)) :: otherwise
 ;;
 ```
 
