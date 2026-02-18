@@ -118,23 +118,23 @@ jobs:
         
         # Create bin directory and launcher script
         mkdir -p "$DOCKER_CONTEXT/dist/bin"
-        cat > "$DOCKER_CONTEXT/dist/bin/sandbox-cleanup" << 'EOF'
-#!/bin/sh
-set -e
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-INSTALL_DIR="$(dirname "$SCRIPT_DIR")"
-LAUNCHER_JAR=$(find "$INSTALL_DIR/plugins" -name "org.eclipse.equinox.launcher_*.jar" | head -1)
-if [ -z "$LAUNCHER_JAR" ]; then
-    echo "Error: Equinox launcher JAR not found" >&2
-    exit 1
-fi
-WORKSPACE_DIR="${SANDBOX_CLEANUP_WORKSPACE:-/tmp/cleanup-workspace}"
-mkdir -p "$WORKSPACE_DIR"
-exec java -jar "$LAUNCHER_JAR" -nosplash \
-    -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
-    -data "$WORKSPACE_DIR" \
-    "$@"
-EOF
+        {
+          echo '#!/bin/sh'
+          echo 'set -e'
+          echo 'SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"'
+          echo 'INSTALL_DIR="$(dirname "$SCRIPT_DIR")"'
+          echo 'LAUNCHER_JAR=$(find "$INSTALL_DIR/plugins" -name "org.eclipse.equinox.launcher_*.jar" | head -1)'
+          echo 'if [ -z "$LAUNCHER_JAR" ]; then'
+          echo '    echo "Error: Equinox launcher JAR not found" >&2'
+          echo '    exit 1'
+          echo 'fi'
+          echo 'WORKSPACE_DIR="${SANDBOX_CLEANUP_WORKSPACE:-/tmp/cleanup-workspace}"'
+          echo 'mkdir -p "$WORKSPACE_DIR"'
+          echo 'exec java -jar "$LAUNCHER_JAR" -nosplash \'
+          echo '    -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \'
+          echo '    -data "$WORKSPACE_DIR" \'
+          echo '    "$@"'
+        } > "$DOCKER_CONTEXT/dist/bin/sandbox-cleanup"
         chmod +x "$DOCKER_CONTEXT/dist/bin/sandbox-cleanup"
         
         # Copy Dockerfile and entrypoint
