@@ -17,7 +17,6 @@ on:
     branches: [main]
     paths:
       - '**.java'
-  workflow_dispatch:  # Manual triggering also available
 
 permissions:
   contents: write
@@ -35,18 +34,27 @@ jobs:
         repository: ${{ github.event.pull_request.head.repo.full_name }}
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
+    
+    - name: Check if PR is from fork
+      id: fork_check
+      run: |
+        if [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+          echo "is_fork=true" >> $GITHUB_OUTPUT
+        else
+          echo "is_fork=false" >> $GITHUB_OUTPUT
+        fi
         
     - name: Run Sandbox Cleanup
       run: |
         docker pull ghcr.io/carstenartur/sandbox-cleanup:latest
         docker run --rm \
+          --user $(id -u):$(id -g) \
           -v ${{ github.workspace }}:/workspace \
           ghcr.io/carstenartur/sandbox-cleanup:latest \
           --config /workspace/.github/cleanup-profiles/standard.properties \
           --mode apply \
           --source /workspace \
           -verbose
-      continue-on-error: true
         
     - name: Check for changes
       id: check_changes
@@ -87,14 +95,14 @@ jobs:
         
     - name: Create cleanup branch and commit changes
       id: create_branch
-      if: steps.check_changes.outputs.has_changes == 'true'
+      if: steps.check_changes.outputs.has_changes == 'true' && steps.fork_check.outputs.is_fork == 'false'
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
         # Create a unique cleanup branch name, sanitizing slashes in the base branch
         BASE_BRANCH="${{ github.event.pull_request.head.ref }}"
-        SANITIZED_BASE_BRANCH="${BASE_BRANCH//\/-}"
+        SANITIZED_BASE_BRANCH="${BASE_BRANCH//\//-}"
         CLEANUP_BRANCH="cleanup/${SANITIZED_BASE_BRANCH}-${{ github.run_number }}"
         echo "cleanup_branch=$CLEANUP_BRANCH" >> $GITHUB_OUTPUT
         
@@ -112,7 +120,7 @@ jobs:
         
     - name: Create cleanup PR
       id: create_pr
-      if: steps.check_changes.outputs.has_changes == 'true'
+      if: steps.check_changes.outputs.has_changes == 'true' && steps.fork_check.outputs.is_fork == 'false'
       uses: actions/github-script@v8
       with:
         script: |
@@ -125,9 +133,7 @@ jobs:
           
           const changedFiles = changedList.split('\n')
             .filter(f => f.trim())
-            .map(f => `- \
-            \
-            `)
+            .map(f => `- ${f}`)
             .join('\n');
           
           // Create PR
@@ -182,7 +188,7 @@ jobs:
         
     - name: Create review comments for fork fallback
       id: create_review
-      if: steps.check_changes.outputs.has_changes == 'true' && steps.create_pr.outputs.pr_created != 'true'
+      if: steps.check_changes.outputs.has_changes == 'true' && steps.fork_check.outputs.is_fork == 'true'
       uses: actions/github-script@v8
       with:
         script: |
@@ -296,9 +302,7 @@ jobs:
             // Failure case: PR creation failed (likely due to fork permissions)
             const changedFiles = changedList.split('\n')
               .filter(f => f.trim())
-              .map(f => `- \
-              \
-              `)
+              .map(f => `- ${f}`)
               .join('\n');
             
             commentBody = `## 🧹 Cleanup suggestions available\n\n` +
@@ -321,9 +325,9 @@ jobs:
                           `### Diff preview\n` +
                           `<details>\n` +
                           `<summary>Click to show diff</summary>\n\n` +
-                          `\\` + `diff\n` +
+                          `\`\`\`diff\n` +
                           diffPreview + `\n` +
-                          `\\` + `\n` +
+                          `\`\`\`\n` +
                           `</details>\n\n` +
                           `### Manual review options:\n` +
                           `1. **Review the diff above** and manually apply changes you want\n` +

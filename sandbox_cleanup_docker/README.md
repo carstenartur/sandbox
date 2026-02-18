@@ -13,21 +13,25 @@ This image is automatically built and published by the [publish-cleanup-image.ym
 # Pull the latest image
 docker pull ghcr.io/carstenartur/sandbox-cleanup:latest
 
-# Run check mode
+# Run check mode (read-only)
 docker run --rm -v /path/to/project:/workspace \
     ghcr.io/carstenartur/sandbox-cleanup:latest \
     --config /workspace/cleanup.properties --mode check --source /workspace
 
-# Run apply mode
-docker run --rm -v /path/to/project:/workspace \
+# Run apply mode (requires write permissions)
+# The container runs as user 'sandbox' (non-root), so match host UID/GID for write access
+docker run --rm --user $(id -u):$(id -g) \
+    -v /path/to/project:/workspace \
     ghcr.io/carstenartur/sandbox-cleanup:latest \
     --config /workspace/cleanup.properties --mode apply --source /workspace
 
-# Run diff mode
+# Run diff mode (read-only)
 docker run --rm -v /path/to/project:/workspace \
     ghcr.io/carstenartur/sandbox-cleanup:latest \
     --config /workspace/cleanup.properties --mode diff --source /workspace
 ```
+
+**Important:** For `apply` mode, use `--user $(id -u):$(id -g)` to match the host user's UID/GID, ensuring the container can modify files in the mounted workspace.
 
 ## GitHub Actions Usage
 
@@ -38,6 +42,7 @@ The image is used by the [pr-auto-cleanup.yml](../.github/workflows/pr-auto-clea
   run: |
     docker pull ghcr.io/carstenartur/sandbox-cleanup:latest
     docker run --rm \
+      --user $(id -u):$(id -g) \
       -v ${{ github.workspace }}:/workspace \
       ghcr.io/carstenartur/sandbox-cleanup:latest \
       --config /workspace/.github/cleanup-profiles/standard.properties \
@@ -56,10 +61,37 @@ If you need to build the image locally for testing:
    ```
 
 2. Prepare the Docker context:
+   
+   The workflow in [publish-cleanup-image.yml](../.github/workflows/publish-cleanup-image.yml) handles this automatically. For manual builds, you'll need to replicate those steps:
+   
    ```bash
-   # Extract product and prepare context (see publish-cleanup-image.yml for full script)
-   ./scripts/prepare-docker-context.sh
+   # Create a fresh Docker build context directory
+   rm -rf docker-context
+   mkdir -p docker-context/dist
+   
+   # Extract the Linux product archive
+   PRODUCT_DIR="sandbox_product/target/products"
+   PRODUCT_ARCHIVE=$(find "$PRODUCT_DIR" -maxdepth 1 -type f -name "*linux*.tar.gz" | head -1)
+   
+   TEMP_EXTRACT="/tmp/product-extract"
+   mkdir -p "$TEMP_EXTRACT"
+   tar -xzf "$PRODUCT_ARCHIVE" -C "$TEMP_EXTRACT"
+   
+   # Copy product components to Docker context
+   cp -r "$TEMP_EXTRACT/client/plugins" "docker-context/dist/"
+   cp -r "$TEMP_EXTRACT/client/configuration" "docker-context/dist/"
+   
+   # Create launcher script (see workflow for full script content)
+   mkdir -p "docker-context/dist/bin"
+   # ... (copy launcher script creation from publish-cleanup-image.yml)
+   
+   # Copy Dockerfile and entrypoint
+   cp sandbox_cleanup_docker/Dockerfile docker-context/
+   cp sandbox_cleanup_docker/entrypoint.sh docker-context/
+   chmod +x docker-context/entrypoint.sh
    ```
+   
+   For the complete and up-to-date procedure, refer to the "Extract product and prepare Docker context" step in [publish-cleanup-image.yml](../.github/workflows/publish-cleanup-image.yml).
 
 3. Build the Docker image:
    ```bash

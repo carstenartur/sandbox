@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - 'sandbox_*/**'
+      - 'sandbox-*/**'
       - 'pom.xml'
       - 'sandbox_cleanup_docker/**'
       - '.github/workflows/publish-cleanup-image.yml'
@@ -64,12 +65,12 @@ jobs:
       run: |
         set -e
         
-        # Find the product archive
+        # Find the Linux product archive (Tycho produces multiple OS-specific archives)
         PRODUCT_DIR="${GITHUB_WORKSPACE}/sandbox_product/target/products"
-        PRODUCT_ARCHIVE=$(find "$PRODUCT_DIR" -maxdepth 1 \( -name "*.tar.gz" -o -name "*.zip" \) | head -1)
+        PRODUCT_ARCHIVE=$(find "$PRODUCT_DIR" -maxdepth 1 -type f -name "*linux*.tar.gz" | head -1)
         
         if [ -z "$PRODUCT_ARCHIVE" ]; then
-          echo "Error: No product archive found in $PRODUCT_DIR"
+          echo "Error: No Linux product archive (*linux*.tar.gz) found in $PRODUCT_DIR"
           ls -la "$PRODUCT_DIR"
           exit 1
         fi
