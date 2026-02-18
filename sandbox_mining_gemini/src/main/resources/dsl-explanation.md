@@ -88,6 +88,7 @@ You can use these functions in `:: guard` expressions:
 | `hasAnnotation($var, "Type")`| True if the element has the specified annotation |
 | `isDeprecated($var)` | True if the element is marked as deprecated |
 | `hasNoSideEffect($var)` | True if the expression has no side effects |
+| `referencedIn($var, "context")` | True if the variable is referenced in the specified context |
 | `isLiteral($var)` | True if the expression is a literal value |
 | `isNullLiteral($var)` | True if the expression is `null` |
 | `isNullable($var)` | True if the expression may be null |
@@ -97,9 +98,15 @@ You can use these functions in `:: guard` expressions:
 | `isCharsetString($var)` | True if `$var` is a charset name string |
 | `isSingleCharacter($var)` | True if `$var` is a single-character string |
 | `isRegexp($var)` | True if `$var` is a regular expression pattern |
+| `elementKindMatches($var, "kind")` | True if the element kind matches (e.g., "METHOD", "FIELD") |
+| `isInTryWithResourceBlock($var)` | True if the code is inside a try-with-resources block |
+| `isPassedToMethod($var, "methodName")` | True if the variable is passed to the specified method |
+| `inSerializableClass()` | True if the code is in a serializable class |
+| `containsAnnotation("Type")` | True if the enclosing element contains the annotation |
+| `parentMatches("pattern")` | True if the parent AST node matches the pattern |
 | `inClass("ClassName")` | True if the code is inside the specified class |
 | `inPackage("package.name")` | True if the code is inside the specified package |
-| `hasModifier($var, "modifier")` | True if the element has the specified modifier |
+| `hasModifier($var, "modifier")` | True if the element has the specified modifier (e.g., "public", "private") |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Examples
