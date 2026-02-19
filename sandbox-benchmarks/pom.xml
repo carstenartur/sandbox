@@ -24,6 +24,8 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jmh.version>1.37</jmh.version>
 		<uberjar.name>benchmarks</uberjar.name>
+		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
+		<tycho.mode>maven</tycho.mode>
 	</properties>
 	
 	<dependencies>

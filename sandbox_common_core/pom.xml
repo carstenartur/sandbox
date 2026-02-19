@@ -24,6 +24,8 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>6.0.3</junit.version>
 		<jacoco-version>0.8.14</jacoco-version>
+		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
+		<tycho.mode>maven</tycho.mode>
 	</properties>
 	
 	<dependencies>
@@ -39,7 +41,6 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter</artifactId>
-			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -99,7 +100,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.5.0</version>
+				<!-- Use 3.3.0: versions 3.4.0+ use maven-archiver with session-scoped injection
+				     that conflicts with Tycho extensions in M2E, causing
+				     "Cannot access session scope outside of a scoping block" -->
+				<version>3.3.0</version>
 				<configuration>
 					<archive>
 						<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
