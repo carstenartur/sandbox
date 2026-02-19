@@ -9,6 +9,12 @@
 <!tags: encoding, modernization>
 <!foreach CHARSET: "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1, "US-ASCII" -> US_ASCII, "UTF-16" -> UTF_16, "UTF-16BE" -> UTF_16BE, "UTF-16LE" -> UTF_16LE>
 
+// ============================================================================
+// Section 1: String-based charset argument replacement (mode-independent)
+// These rules replace string charset arguments like "UTF-8" with
+// StandardCharsets.UTF_8, regardless of the cleanup mode.
+// ============================================================================
+
 // === String(byte[], String) constructor ===
 
 new java.lang.String($bytes, "${CHARSET}") :: sourceVersionGE(7)
@@ -85,4 +91,52 @@ java.net.URLEncoder.encode($s, "${CHARSET}") :: sourceVersionGE(10)
 
 java.net.URLDecoder.decode($s, "${CHARSET}") :: sourceVersionGE(10)
 => java.net.URLDecoder.decode($s, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+;;
+
+// ============================================================================
+// Section 2: Zero-argument / missing-encoding patterns (mode-dependent)
+// These rules add an explicit encoding argument to calls that currently
+// use the platform default. The replacement depends on the cleanup mode:
+//   ENFORCE_UTF8:   -> StandardCharsets.UTF_8
+//   KEEP_BEHAVIOR:  -> Charset.defaultCharset()
+// ============================================================================
+
+// === String.getBytes() — no argument ===
+
+$s.getBytes() :: sourceVersionGE(7), mode(ENFORCE_UTF8)
+=> $s.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+$s.getBytes() :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
+=> $s.getBytes(java.nio.charset.Charset.defaultCharset())
+;;
+
+// === new String(byte[]) — 1-arg constructor ===
+
+new java.lang.String($bytes) :: sourceVersionGE(7), mode(ENFORCE_UTF8)
+=> new java.lang.String($bytes, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+new java.lang.String($bytes) :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
+=> new java.lang.String($bytes, java.nio.charset.Charset.defaultCharset())
+;;
+
+// === new InputStreamReader(InputStream) — 1-arg constructor ===
+
+new java.io.InputStreamReader($in) :: sourceVersionGE(7), mode(ENFORCE_UTF8)
+=> new java.io.InputStreamReader($in, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+new java.io.InputStreamReader($in) :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
+=> new java.io.InputStreamReader($in, java.nio.charset.Charset.defaultCharset())
+;;
+
+// === new OutputStreamWriter(OutputStream) — 1-arg constructor ===
+
+new java.io.OutputStreamWriter($out) :: sourceVersionGE(7), mode(ENFORCE_UTF8)
+=> new java.io.OutputStreamWriter($out, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+new java.io.OutputStreamWriter($out) :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
+=> new java.io.OutputStreamWriter($out, java.nio.charset.Charset.defaultCharset())
 ;;
