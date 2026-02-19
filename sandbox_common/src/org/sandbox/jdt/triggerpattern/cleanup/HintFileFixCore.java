@@ -302,10 +302,13 @@ public class HintFileFixCore {
 
 			// Parse replacement as an expression and replace the matched node
 			if (matchedNode instanceof Expression) {
+				// Shorten FQNs to simple names (imports are already added above)
+				String shortenedReplacement = shortenFqns(replacement, result);
+
 				// Try to parse the replacement as an expression
 				org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
 				parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_EXPRESSION);
-				parser.setSource(replacement.toCharArray());
+				parser.setSource(shortenedReplacement.toCharArray());
 				ASTNode newNode = parser.createAST(null);
 				if (newNode instanceof Expression) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
@@ -366,6 +369,43 @@ public class HintFileFixCore {
 				}
 				rewrite.replace(matchedNode, newAnnotation, group);
 			}
+		}
+
+		/**
+		 * Shortens fully qualified names in the replacement text to simple names.
+		 *
+		 * <p>Uses the already-inferred {@link ImportDirective#getAddImports()} to know
+		 * which FQNs to shorten. For example, {@code java.nio.charset.StandardCharsets.UTF_8}
+		 * becomes {@code StandardCharsets.UTF_8} since the import for
+		 * {@code java.nio.charset.StandardCharsets} is already being added.</p>
+		 *
+		 * <p>FQNs are processed longest-first to avoid partial-match issues.</p>
+		 *
+		 * @param replacement the raw replacement text containing FQNs
+		 * @param result the transformation result with import directives
+		 * @return the replacement text with FQNs shortened to simple names
+		 */
+		private static String shortenFqns(String replacement, TransformationResult result) {
+			if (!result.hasImportDirective()) {
+				return replacement;
+			}
+			List<String> addImports = result.importDirective().getAddImports();
+			if (addImports.isEmpty()) {
+				return replacement;
+			}
+			// Sort by length (longest first) to avoid partial replacement issues
+			List<String> sorted = new java.util.ArrayList<>(addImports);
+			sorted.sort((a, b) -> Integer.compare(b.length(), a.length()));
+
+			String shortened = replacement;
+			for (String fqn : sorted) {
+				int lastDot = fqn.lastIndexOf('.');
+				if (lastDot > 0) {
+					String simpleName = fqn.substring(lastDot + 1);
+					shortened = shortened.replace(fqn, simpleName);
+				}
+			}
+			return shortened;
 		}
 	}
 }
