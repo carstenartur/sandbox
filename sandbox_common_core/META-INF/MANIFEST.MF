@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Sandbox Common Core
+Bundle-SymbolicName: sandbox_common_core
+Bundle-Vendor: Carsten Hammer
+Bundle-Version: 1.2.6.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Export-Package: org.sandbox.jdt.internal.common,
+ org.sandbox.jdt.triggerpattern.api,
+ org.sandbox.jdt.triggerpattern.internal,
+ org.sandbox.jdt.triggerpattern.nullability
+Import-Package: org.eclipse.core.runtime,
+ org.eclipse.jdt.core,
+ org.eclipse.jdt.core.dom,
+ org.eclipse.jdt.core.dom.rewrite,
+ org.eclipse.text.edits
+Automatic-Module-Name: sandbox.common.core
