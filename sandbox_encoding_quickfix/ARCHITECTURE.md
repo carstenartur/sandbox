@@ -249,7 +249,7 @@ The encoding cleanup uses a **three-tier architecture** that combines DSL rules 
 
 ### Tier Classification
 
-Each `UseExplicitEncodingFixCore` enum value is classified as either **DSL-handled** (`isDslHandled() == true`) or **imperative-only**:
+Each `UseExplicitEncodingFixCore` enum value is classified as either **DSL-handled** (`isDslHandled() == true`) or **imperative-only** (see `UseExplicitEncodingFixCore` for the authoritative classification):
 
 - **Tier 1 (DSL)**: `CHARSET`, `STRING`, `STRING_GETBYTES`, `INPUTSTREAMREADER`, `OUTPUTSTREAMWRITER`, `SCANNER`, `FORMATTER`, `PRINTSTREAM`, `URLDECODER`, `URLENCODER`
 - **Tier 2+3 (Imperative)**: `FILEREADER`, `FILEWRITER`, `PRINTWRITER`, `BYTEARRAYOUTPUTSTREAM`, `CHANNELSNEWREADER`, `CHANNELSNEWWRITER`, `PROPERTIES_STORETOXML`, `FILES_NEWBUFFEREDREADER`, `FILES_NEWBUFFEREDWRITER`, `FILES_READALLLINES`, `FILES_READSTRING`, `FILES_WRITESTRING`
