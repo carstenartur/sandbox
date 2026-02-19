@@ -66,12 +66,23 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	
 	private final Map<String, Object> bindings = new HashMap<>();  // Object can be ASTNode or List<ASTNode>
 	private final ASTMatcher reusableMatcher = new ASTMatcher();
+	private boolean caseInsensitive;
 	
 	/**
 	 * Creates a new placeholder matcher.
 	 */
 	public PlaceholderAstMatcher() {
 		super();
+	}
+
+	/**
+	 * Sets whether string literal matching should be case-insensitive.
+	 *
+	 * @param caseInsensitive {@code true} to enable case-insensitive matching
+	 * @since 1.3.8
+	 */
+	public void setCaseInsensitive(boolean caseInsensitive) {
+		this.caseInsensitive = caseInsensitive;
 	}
 	
 	/**
@@ -98,6 +109,23 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 */
 	public void mergeBindings(PlaceholderAstMatcher other) {
 		other.bindings.forEach(bindings::putIfAbsent);
+	}
+
+	/**
+	 * Overrides StringLiteral matching to support case-insensitive comparison
+	 * when the {@code caseInsensitive} flag is set.
+	 *
+	 * <p>When case-insensitive matching is enabled, patterns like {@code "UTF-8"}
+	 * will also match {@code "utf-8"}, {@code "Utf-8"}, etc.</p>
+	 *
+	 * @since 1.3.8
+	 */
+	@Override
+	public boolean match(StringLiteral node, Object other) {
+		if (caseInsensitive && other instanceof StringLiteral otherLiteral) {
+			return node.getLiteralValue().equalsIgnoreCase(otherLiteral.getLiteralValue());
+		}
+		return super.match(node, other);
 	}
 	
 	/**

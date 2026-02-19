@@ -35,7 +35,7 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
-import org.sandbox.jdt.internal.corext.fix.HintFileFixCore;
+import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /**

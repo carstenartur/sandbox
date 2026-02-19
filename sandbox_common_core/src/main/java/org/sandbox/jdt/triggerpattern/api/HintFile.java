@@ -47,6 +47,7 @@ public final class HintFile {
 	private List<String> tags;
 	private final List<TransformationRule> rules;
 	private final List<String> includes;
+	private boolean caseInsensitive;
 	
 	/**
 	 * Creates a new empty hint file.
@@ -216,5 +217,28 @@ public final class HintFile {
 		if (hintFileId != null && !hintFileId.isBlank()) {
 			includes.add(hintFileId.trim());
 		}
+	}
+
+	/**
+	 * Returns whether string literal matching should be case-insensitive.
+	 *
+	 * <p>When enabled, pattern strings like {@code "UTF-8"} will also match
+	 * {@code "utf-8"}, {@code "Utf-8"}, etc.</p>
+	 *
+	 * @return {@code true} if case-insensitive matching is enabled
+	 * @since 1.3.8
+	 */
+	public boolean isCaseInsensitive() {
+		return caseInsensitive;
+	}
+
+	/**
+	 * Sets whether string literal matching should be case-insensitive.
+	 *
+	 * @param caseInsensitive {@code true} to enable case-insensitive matching
+	 * @since 1.3.8
+	 */
+	public void setCaseInsensitive(boolean caseInsensitive) {
+		this.caseInsensitive = caseInsensitive;
 	}
 }

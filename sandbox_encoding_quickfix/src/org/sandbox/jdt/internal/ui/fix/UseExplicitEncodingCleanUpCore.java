@@ -73,7 +73,9 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		ChangeBehavior cb= computeRefactorDeepth();
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
-		computeFixSet.forEach(i->i.findOperations(compilationUnit,operations,nodesprocessed,cb));
+
+		// Run all imperative helpers (they produce import-aware output)
+		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
 		if (operations.isEmpty()) {
 			return null;
 		}

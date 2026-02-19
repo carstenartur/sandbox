@@ -139,6 +139,9 @@ public final class BuiltInGuards {
 
 		// Modifier guard
 		guards.put("hasModifier", BuiltInGuards::evaluateHasModifier); //$NON-NLS-1$
+
+		// Cleanup mode guard — checks sandbox.cleanup.mode compiler option
+		guards.put("mode", BuiltInGuards::evaluateMode); //$NON-NLS-1$
 	}
 
 	/**
@@ -1235,5 +1238,33 @@ public final class BuiltInGuards {
 			case "STRICTFP" -> Modifier.isStrict(modifiers); //$NON-NLS-1$
 			default -> false;
 		};
+	}
+
+	/**
+	 * Checks if the cleanup mode matches a given mode name.
+	 * The mode is passed via the {@code sandbox.cleanup.mode} compiler option.
+	 *
+	 * <p>This guard enables mode-dependent DSL rules, e.g.:</p>
+	 * <pre>
+	 * $s.getBytes("${CHARSET}") :: sourceVersionGE(7), mode(ENFORCE_UTF8)
+	 * =&gt; $s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+	 * ;;
+	 * </pre>
+	 *
+	 * <p>Supported modes: {@code KEEP_BEHAVIOR}, {@code ENFORCE_UTF8},
+	 * {@code ENFORCE_UTF8_AGGREGATE}.</p>
+	 *
+	 * Args: [modeName]
+	 */
+	private static boolean evaluateMode(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String requiredMode = args[0].toString().trim();
+		String currentMode = ctx.getCompilerOptions().get("sandbox.cleanup.mode"); //$NON-NLS-1$
+		if (currentMode == null) {
+			return false;
+		}
+		return requiredMode.equalsIgnoreCase(currentMode.trim());
 	}
 }

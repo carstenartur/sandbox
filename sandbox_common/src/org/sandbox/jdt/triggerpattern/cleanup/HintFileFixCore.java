@@ -11,11 +11,13 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix;
+package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -26,8 +28,10 @@ import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -37,9 +41,6 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.Transform
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
-import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
-import org.sandbox.jdt.triggerpattern.cleanup.TypeChangeDetector;
-import org.sandbox.jdt.triggerpattern.cleanup.TypeChangeInfo;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 
@@ -127,6 +128,29 @@ public class HintFileFixCore {
 	public static void findOperationsForBundle(CompilationUnit compilationUnit,
 			String bundleId, Set<CompilationUnitRewriteOperation> operations,
 			Set<ASTNode> nodesprocessed) {
+		findOperationsForBundle(compilationUnit, bundleId, operations, nodesprocessed, null);
+	}
+
+	/**
+	 * Finds hint-file-based cleanup operations for a specific bundle,
+	 * tracking processed nodes and passing compiler options for guard evaluation.
+	 *
+	 * <p>This overload accepts compiler options that are passed to guard
+	 * evaluation. This enables mode-dependent DSL rules via the
+	 * {@code sandbox.cleanup.mode} option.</p>
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param bundleId the hint file bundle ID to load (e.g., {@code "encoding"})
+	 * @param operations the set to add found operations to
+	 * @param nodesprocessed set of already-processed AST nodes; matched nodes
+	 *        are added to this set to prevent double-processing
+	 * @param compilerOptions compiler options for guard context; may contain
+	 *        {@code sandbox.cleanup.mode} for mode-dependent rules (may be {@code null})
+	 * @since 1.3.8
+	 */
+	public static void findOperationsForBundle(CompilationUnit compilationUnit,
+			String bundleId, Set<CompilationUnitRewriteOperation> operations,
+			Set<ASTNode> nodesprocessed, Map<String, String> compilerOptions) {
 
 		HintFileRegistry registry = HintFileRegistry.getInstance();
 		// Ensure bundled libraries are loaded
@@ -149,7 +173,7 @@ public class HintFileFixCore {
 
 		List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
-		List<TransformationResult> results = processor.process(compilationUnit);
+		List<TransformationResult> results = processor.process(compilationUnit, compilerOptions);
 
 		for (TransformationResult result : results) {
 			if (result.hasReplacement()) {
@@ -278,14 +302,27 @@ public class HintFileFixCore {
 
 			// Parse replacement as an expression and replace the matched node
 			if (matchedNode instanceof Expression) {
+				// Shorten FQNs to simple names (imports are already added above)
+				String shortenedReplacement = shortenFqns(replacement, result);
+
 				// Try to parse the replacement as an expression
 				org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
 				parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_EXPRESSION);
-				parser.setSource(replacement.toCharArray());
+				parser.setSource(shortenedReplacement.toCharArray());
 				ASTNode newNode = parser.createAST(null);
 				if (newNode instanceof Expression) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
-					rewrite.replace(matchedNode, copy, group);
+					// Use replaceAndRemoveNLS for StringLiteral nodes to clean up //$NON-NLS-n$ comments
+					if (matchedNode instanceof StringLiteral) {
+						try {
+							ASTNodes.replaceAndRemoveNLS(rewrite, matchedNode, copy, group, cuRewrite);
+						} catch (CoreException e) {
+							// Fall back to plain replace if NLS removal fails
+							rewrite.replace(matchedNode, copy, group);
+						}
+					} else {
+						rewrite.replace(matchedNode, copy, group);
+					}
 
 					// Auto-detect: did we change a String charset argument to a Charset type?
 					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(
@@ -332,6 +369,43 @@ public class HintFileFixCore {
 				}
 				rewrite.replace(matchedNode, newAnnotation, group);
 			}
+		}
+
+		/**
+		 * Shortens fully qualified names in the replacement text to simple names.
+		 *
+		 * <p>Uses the already-inferred {@link ImportDirective#getAddImports()} to know
+		 * which FQNs to shorten. For example, {@code java.nio.charset.StandardCharsets.UTF_8}
+		 * becomes {@code StandardCharsets.UTF_8} since the import for
+		 * {@code java.nio.charset.StandardCharsets} is already being added.</p>
+		 *
+		 * <p>FQNs are processed longest-first to avoid partial-match issues.</p>
+		 *
+		 * @param replacement the raw replacement text containing FQNs
+		 * @param result the transformation result with import directives
+		 * @return the replacement text with FQNs shortened to simple names
+		 */
+		private static String shortenFqns(String replacement, TransformationResult result) {
+			if (!result.hasImportDirective()) {
+				return replacement;
+			}
+			List<String> addImports = result.importDirective().getAddImports();
+			if (addImports.isEmpty()) {
+				return replacement;
+			}
+			// Sort by length (longest first) to avoid partial replacement issues
+			List<String> sorted = new java.util.ArrayList<>(addImports);
+			sorted.sort((a, b) -> Integer.compare(b.length(), a.length()));
+
+			String shortened = replacement;
+			for (String fqn : sorted) {
+				int lastDot = fqn.lastIndexOf('.');
+				if (lastDot > 0) {
+					String simpleName = fqn.substring(lastDot + 1);
+					shortened = shortened.replace(fqn, simpleName);
+				}
+			}
+			return shortened;
 		}
 	}
 }

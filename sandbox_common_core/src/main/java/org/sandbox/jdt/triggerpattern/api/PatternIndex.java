@@ -55,6 +55,7 @@ public final class PatternIndex {
 
 	private final Map<PatternKind, List<IndexEntry>> rulesByKind;
 	private final PatternParser parser;
+	private boolean caseInsensitive;
 
 	/**
 	 * Creates a new pattern index from a list of transformation rules.
@@ -67,6 +68,16 @@ public final class PatternIndex {
 	public PatternIndex(List<TransformationRule> rules) {
 		this.parser = new PatternParser();
 		this.rulesByKind = buildIndex(rules);
+	}
+
+	/**
+	 * Sets whether string literal matching should be case-insensitive.
+	 *
+	 * @param caseInsensitive {@code true} to enable case-insensitive matching
+	 * @since 1.3.8
+	 */
+	public void setCaseInsensitive(boolean caseInsensitive) {
+		this.caseInsensitive = caseInsensitive;
 	}
 
 	private Map<PatternKind, List<IndexEntry>> buildIndex(List<TransformationRule> rules) {
@@ -190,6 +201,7 @@ public final class PatternIndex {
 
 		for (IndexEntry entry : entries) {
 			PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+			matcher.setCaseInsensitive(caseInsensitive);
 			if (entry.patternNode().subtreeMatch(matcher, node)) {
 				Match match = new Match(node, matcher.getBindings(),
 						node.getStartPosition(), node.getLength());
@@ -227,8 +239,10 @@ public final class PatternIndex {
 			for (int i = 0; i <= statements.size() - patternSize; i++) {
 				boolean allMatch = true;
 				PlaceholderAstMatcher combinedMatcher = new PlaceholderAstMatcher();
+				combinedMatcher.setCaseInsensitive(caseInsensitive);
 				for (int j = 0; j < patternSize; j++) {
 					PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+					matcher.setCaseInsensitive(caseInsensitive);
 					if (!patternStatements.get(j).subtreeMatch(matcher, statements.get(i + j))) {
 						allMatch = false;
 						break;

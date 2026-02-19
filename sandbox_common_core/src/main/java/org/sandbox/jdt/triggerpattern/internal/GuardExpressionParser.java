@@ -94,17 +94,35 @@ public final class GuardExpressionParser {
 	}
 	
 	/**
-	 * and_expr = unary_expr ('&&' unary_expr)*
+	 * and_expr = unary_expr (('&&' | ',') unary_expr)*
+	 * 
+	 * <p>Both {@code &&} and {@code ,} are accepted as AND operators.
+	 * The comma form is used in hint file guard lists, e.g.
+	 * {@code sourceVersionGE(7), mode(ENFORCE_UTF8)}.</p>
 	 */
 	private GuardExpression parseAndExpr(ParseState state) {
 		GuardExpression left = parseUnaryExpr(state);
 		
-		while (matchToken(state, "&&")) { //$NON-NLS-1$
+		while (matchToken(state, "&&") || matchCommaAnd(state)) { //$NON-NLS-1$
 			GuardExpression right = parseUnaryExpr(state);
 			left = new GuardExpression.And(left, right);
 		}
 		
 		return left;
+	}
+
+	/**
+	 * Tries to match a comma used as an AND operator between guard expressions.
+	 * Only matches when the comma is NOT inside a function argument list
+	 * (those commas are consumed by {@link #parseArgList}).
+	 */
+	private boolean matchCommaAnd(ParseState state) {
+		skipWhitespace(state);
+		if (state.pos < state.input.length() && state.input.charAt(state.pos) == ',') {
+			state.pos++;
+			return true;
+		}
+		return false;
 	}
 	
 	/**
