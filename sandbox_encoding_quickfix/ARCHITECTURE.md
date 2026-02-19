@@ -273,6 +273,6 @@ The hint file contains rules for replacing string-based charset specifications w
 - `$str.getBytes("UTF-8")` → `$str.getBytes(StandardCharsets.UTF_8)`
 - `new InputStreamReader(in, "UTF-8")` → `new InputStreamReader(in, StandardCharsets.UTF_8)`
 
-Each rule includes `sourceVersionGE(7)` guards and `addImport java.nio.charset.StandardCharsets` directives. A `<!foreach CHARSET:...>` macro expands rules across all six standard charsets.
+Each rule includes `sourceVersionGE()` guards matching the imperative handler requirements (e.g., `sourceVersionGE(10)` for `String` constructors, `sourceVersionGE(8)` for `Charset.forName`) and `addImport java.nio.charset.StandardCharsets` directives. A `<!foreach CHARSET:...>` macro expands rules across all six standard charsets.
 
 This file was moved from `sandbox_common` to this plugin to prevent duplication of functionality with the imperative cleanup implementation, keeping domain-specific rules together with their domain-specific plugin.
