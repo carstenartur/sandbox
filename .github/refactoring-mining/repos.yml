@@ -19,7 +19,7 @@ mining:
     #     - org.eclipse.jdt.ui/ui
 
     - url: https://github.com/eclipse-platform/eclipse.platform.ui
-      branch: main
+      branch: master
       paths:
         - bundles/org.eclipse.ui.workbench/Eclipse UI
 
