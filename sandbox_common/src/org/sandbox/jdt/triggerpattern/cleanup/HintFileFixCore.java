@@ -41,6 +41,7 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.Transform
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 
@@ -72,6 +73,9 @@ public class HintFileFixCore {
 	public static void findOperations(CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations,
 			Set<String> enabledBundles) {
+
+		// Ensure built-in guard functions (sourceVersionGE, etc.) are registered
+		GuardRegistry.getInstance();
 
 		HintFileRegistry registry = HintFileRegistry.getInstance();
 		// Ensure bundled libraries are loaded
@@ -152,6 +156,9 @@ public class HintFileFixCore {
 			String bundleId, Set<CompilationUnitRewriteOperation> operations,
 			Set<ASTNode> nodesprocessed, Map<String, String> compilerOptions) {
 
+		// Ensure built-in guard functions (sourceVersionGE, etc.) are registered
+		GuardRegistry.getInstance();
+
 		HintFileRegistry registry = HintFileRegistry.getInstance();
 		// Ensure bundled libraries are loaded
 		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());
@@ -195,6 +202,8 @@ public class HintFileFixCore {
 	 */
 	public static void findOperationsFromContent(CompilationUnit compilationUnit,
 			String hintFileContent, Set<CompilationUnitRewriteOperation> operations) {
+		// Ensure built-in guard functions (sourceVersionGE, etc.) are registered
+		GuardRegistry.getInstance();
 		try {
 			HintFileParser parser = new HintFileParser();
 			HintFile hintFile = parser.parse(hintFileContent);
