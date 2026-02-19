@@ -79,7 +79,21 @@ public class JsonReporter {
 			}
 			sb.append("\n");
 		}
-		sb.append("  ]\n");
+		sb.append("  ],\n");
+
+		// Errors
+		sb.append("  \"errors\": {\n");
+		var errors = report.getErrors();
+		int errorIndex = 0;
+		for (var errorEntry : errors.entrySet()) {
+			sb.append("    ").append(jsonString(errorEntry.getKey())).append(": ")
+					.append(jsonString(errorEntry.getValue()));
+			if (++errorIndex < errors.size()) {
+				sb.append(",");
+			}
+			sb.append("\n");
+		}
+		sb.append("  }\n");
 		sb.append("}\n");
 
 		return sb.toString();

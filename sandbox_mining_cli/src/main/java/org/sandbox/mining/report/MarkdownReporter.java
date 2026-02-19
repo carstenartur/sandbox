@@ -45,13 +45,15 @@ public class MarkdownReporter {
 
 		Map<String, Integer> fileCounts = report.getFileCounts();
 		Map<String, List<MatchEntry>> byRepo = report.getMatchesByRepo();
+		Map<String, String> errors = report.getErrors();
 
 		for (Map.Entry<String, Integer> entry : fileCounts.entrySet()) {
 			String repoName = entry.getKey();
 			int files = entry.getValue();
 			List<MatchEntry> repoMatches = byRepo.getOrDefault(repoName, List.of());
 			long rules = report.getDistinctRuleCount(repoName);
-			sb.append("| ").append(repoName).append(" | ").append(files).append(" | ").append(repoMatches.size())
+			String marker = errors.containsKey(repoName) ? " ⚠️" : "";
+			sb.append("| ").append(repoName).append(marker).append(" | ").append(files).append(" | ").append(repoMatches.size())
 					.append(" | ").append(rules).append(" |\n");
 		}
 
@@ -86,6 +88,16 @@ public class MarkdownReporter {
 
 		if (!report.hasMatches()) {
 			sb.append("No matches found.\n");
+		}
+
+		// Errors section
+		if (report.hasErrors()) {
+			sb.append("\n## Errors\n");
+			sb.append("The following repositories encountered errors during scanning:\n\n");
+			for (Map.Entry<String, String> error : report.getErrors().entrySet()) {
+				sb.append("- **").append(error.getKey()).append("**: `").append(truncate(error.getValue(), 200))
+						.append("`\n");
+			}
 		}
 
 		return sb.toString();

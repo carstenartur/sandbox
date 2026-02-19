@@ -176,6 +176,8 @@ public class MiningCli {
 				System.out.println("  Found " + matchCount + " match(es) in " + repoReport.getFileCounts().getOrDefault(repoName, 0) + " file(s).");
 			} catch (Exception e) {
 				System.err.println("  Error scanning " + repoName + ": " + e.getMessage());
+				totalReport.addError(repoName, e.getMessage());
+				totalReport.addFileCount(repoName, 0);
 			} finally {
 				deleteDirectory(tempDir);
 			}
