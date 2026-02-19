@@ -226,6 +226,44 @@ The corresponding feature module `sandbox_encoding_quickfix_feature` MUST mainta
 
 These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.
 
+## Hybrid Tier Architecture
+
+The encoding cleanup uses a **three-tier architecture** that combines DSL rules with imperative Java helpers within a single cleanup run:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    UseExplicitEncodingCleanUpCore                    │
+│                        .createFix()                                 │
+├──────────────┬──────────────────────┬───────────────────────────────┤
+│ Tier 1: DSL  │  Tier 2: Annotated   │  Tier 3: Imperative Java     │
+│ .sandbox-hint│  @CleanupPattern +   │  AbstractExplicitEncoding     │
+│              │  @RewriteRule        │                               │
+├──────────────┼──────────────────────┼───────────────────────────────┤
+│ Simple arg   │ Patterns needing     │ Complex structural rewrites   │
+│ replacement  │ Java version guards  │ (FileWriter→OutputStreamWriter│
+│ "UTF-8" →    │ or extra validation  │  wrapping, exception removal, │
+│ StandardChar │ but still 1:1 rewrite│  ChangeBehavior strategies)   │
+│ sets.UTF_8   │                      │                               │
+└──────────────┴──────────────────────┴───────────────────────────────┘
+```
+
+### Tier Classification
+
+Each `UseExplicitEncodingFixCore` enum value is classified as either **DSL-handled** (`isDslHandled() == true`) or **imperative-only**:
+
+- **Tier 1 (DSL)**: `CHARSET`, `STRING`, `STRING_GETBYTES`, `INPUTSTREAMREADER`, `OUTPUTSTREAMWRITER`, `SCANNER`, `FORMATTER`, `PRINTSTREAM`, `URLDECODER`, `URLENCODER`
+- **Tier 2+3 (Imperative)**: `FILEREADER`, `FILEWRITER`, `PRINTWRITER`, `BYTEARRAYOUTPUTSTREAM`, `CHANNELSNEWREADER`, `CHANNELSNEWWRITER`, `PROPERTIES_STORETOXML`, `FILES_NEWBUFFEREDREADER`, `FILES_NEWBUFFEREDWRITER`, `FILES_READALLLINES`, `FILES_READSTRING`, `FILES_WRITESTRING`
+
+### Execution Flow
+
+1. **DSL phase**: `HintFileFixCore.findOperationsForBundle("encoding", ...)` runs the `encoding.sandbox-hint` rules. Matched nodes are added to `nodesprocessed`.
+2. **Imperative phase**: Only non-DSL-handled enum values run their `findOperations()`. The `.excluding(nodesprocessed)` call in each helper's visitor skips already-processed nodes.
+3. **AGGREGATE mode exception**: When `ENFORCE_UTF8_AGGREGATE` is selected, DSL is bypassed entirely because static field creation cannot be expressed declaratively.
+
+### Mode Mapping
+
+The `ChangeBehavior` enum name is passed as the `sandbox.cleanup.mode` compiler option to the DSL engine, enabling mode-dependent rules via `mode(ENFORCE_UTF8)` / `mode(KEEP_BEHAVIOR)` guards.
+
 ## DSL Pattern Library
 
 The encoding plugin provides a declarative `.sandbox-hint` file (`encoding.sandbox-hint`) that defines encoding transformation rules using the TriggerPattern DSL. This file is located at `src/org/sandbox/jdt/internal/corext/fix/hints/encoding.sandbox-hint` and is registered via the `org.sandbox.jdt.triggerpattern.hints` extension point in `plugin.xml`.
@@ -235,6 +273,6 @@ The hint file contains rules for replacing string-based charset specifications w
 - `$str.getBytes("UTF-8")` → `$str.getBytes(StandardCharsets.UTF_8)`
 - `new InputStreamReader(in, "UTF-8")` → `new InputStreamReader(in, StandardCharsets.UTF_8)`
 
-Each rule includes `sourceVersionGE(7)` guards and `addImport java.nio.charset.StandardCharsets` directives.
+Each rule includes `sourceVersionGE(7)` guards and `addImport java.nio.charset.StandardCharsets` directives. A `<!foreach CHARSET:...>` macro expands rules across all six standard charsets.
 
 This file was moved from `sandbox_common` to this plugin to prevent duplication of functionality with the imperative cleanup implementation, keeping domain-specific rules together with their domain-specific plugin.

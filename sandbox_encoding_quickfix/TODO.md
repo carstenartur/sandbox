@@ -175,13 +175,20 @@ None currently identified.
 ## Future Enhancements
 
 ### DSL-Based Cleanup Integration
-**Priority**: Medium  
-**Effort**: 6-8 hours
+**Priority**: ~~Medium~~ — **Phase 1 COMPLETED**
+**Effort**: ~~6-8 hours~~ DONE
 
-The plugin now bundles `encoding.sandbox-hint`, a declarative DSL file containing encoding transformation rules. Currently this file coexists with the imperative cleanup implementation. A future enhancement would be to:
-- Use the hint file rules directly via `BatchTransformationProcessor` for simple cases
-- Keep the imperative implementation for complex cases (version-aware transformations, three cleanup modes)
-- Provide a unified preference page combining both approaches
+The plugin now bridges `encoding.sandbox-hint` DSL rules into the imperative cleanup pipeline:
+- ✅ `UseExplicitEncodingCleanUpCore.createFix()` calls `HintFileFixCore.findOperationsForBundle()` before imperative helpers
+- ✅ DSL-handled enum values are skipped during imperative pass (via `isDslHandled()` flag)
+- ✅ `ChangeBehavior` mode is passed as `sandbox.cleanup.mode` compiler option for mode-dependent DSL rules
+- ✅ AGGREGATE mode falls back to pure imperative processing (DSL cannot express static field creation)
+- ✅ `nodesprocessed` set prevents double-processing between DSL and imperative helpers
+
+**Remaining phases** (see issue #774):
+- [ ] Phase 2: Move Tier 2 patterns (Files API, Channels, Properties) to annotated Java or DSL with guards
+- [ ] Phase 3: Remove superseded imperative helpers once DSL coverage is validated
+- [ ] Phase 4: DSL enhancements for structural rewrites, exception removal, and value mapping
 
 ### Smart Encoding Detection
 **Priority**: Low  

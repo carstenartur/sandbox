@@ -43,6 +43,7 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
 
 public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 	public UseExplicitEncodingCleanUpCore(final Map<String, String> options) {
@@ -74,8 +75,25 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 
-		// Run all imperative helpers (they produce import-aware output)
-		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
+		// Tier 1: Run DSL rules first from encoding.sandbox-hint
+		// DSL handles simple argument replacement (e.g., "UTF-8" -> StandardCharsets.UTF_8).
+		// AGGREGATE mode is excluded because it needs static field creation that DSL cannot express.
+		boolean dslActive= cb != ChangeBehavior.ENFORCE_UTF8_AGGREGATE;
+		if (dslActive) {
+			Map<String, String> compilerOptions= Map.of("sandbox.cleanup.mode", cb.name()); //$NON-NLS-1$
+			HintFileFixCore.findOperationsForBundle(
+					compilationUnit, "encoding", operations, nodesprocessed, compilerOptions); //$NON-NLS-1$
+		}
+
+		// Tier 2+3: Run imperative helpers for remaining cases.
+		// When DSL is active, skip DSL-handled enum values to avoid double-processing.
+		// The nodesprocessed set also prevents duplicates at the AST node level.
+		computeFixSet.forEach(i -> {
+			if (!dslActive || !i.isDslHandled()) {
+				i.findOperations(compilationUnit, operations, nodesprocessed, cb);
+			}
+		});
+
 		if (operations.isEmpty()) {
 			return null;
 		}
