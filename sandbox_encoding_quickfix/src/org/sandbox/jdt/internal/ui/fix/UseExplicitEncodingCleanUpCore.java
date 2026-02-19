@@ -23,6 +23,7 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingC
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -76,15 +77,20 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 
-		// Tier 1: Run DSL rules first for ENFORCE_UTF8 modes
-		if (cb == ChangeBehavior.ENFORCE_UTF8 || cb == ChangeBehavior.ENFORCE_UTF8_AGGREGATE) {
-			HintFileFixCore.findOperationsForBundle(compilationUnit, HINTFILE_BUNDLE_ID_ENCODING, operations, nodesprocessed);
-		}
+		if (cb != ChangeBehavior.ENFORCE_UTF8_AGGREGATE) {
+			// Tier 1: Run DSL rules first with mode context
+			Map<String, String> compilerOptions = new HashMap<>();
+			compilerOptions.put("sandbox.cleanup.mode", cb.name()); //$NON-NLS-1$
+			HintFileFixCore.findOperationsForBundle(compilationUnit, HINTFILE_BUNDLE_ID_ENCODING, operations, nodesprocessed, compilerOptions);
 
-		// Tier 2+3: Run imperative helpers, skipping DSL-handled ones in ENFORCE modes
-		computeFixSet.stream()
-			.filter(i -> cb == ChangeBehavior.KEEP_BEHAVIOR || !i.isDslHandled())
-			.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
+			// Tier 2+3: Run imperative helpers for non-DSL-handled patterns
+			computeFixSet.stream()
+				.filter(i -> !i.isDslHandled())
+				.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
+		} else {
+			// Aggregate mode: all imperative (DSL can't create extracted fields)
+			computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
+		}
 		if (operations.isEmpty()) {
 			return null;
 		}
