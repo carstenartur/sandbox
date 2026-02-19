@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -26,8 +28,10 @@ import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -282,7 +286,17 @@ public class HintFileFixCore {
 				ASTNode newNode = parser.createAST(null);
 				if (newNode instanceof Expression) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
-					rewrite.replace(matchedNode, copy, group);
+					// Use replaceAndRemoveNLS for StringLiteral nodes to clean up //$NON-NLS-n$ comments
+					if (matchedNode instanceof StringLiteral) {
+						try {
+							ASTNodes.replaceAndRemoveNLS(rewrite, matchedNode, copy, group, cuRewrite);
+						} catch (CoreException e) {
+							// Fall back to plain replace if NLS removal fails
+							rewrite.replace(matchedNode, copy, group);
+						}
+					} else {
+						rewrite.replace(matchedNode, copy, group);
+					}
 
 					// Auto-detect: did we change a String charset argument to a Charset type?
 					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(
