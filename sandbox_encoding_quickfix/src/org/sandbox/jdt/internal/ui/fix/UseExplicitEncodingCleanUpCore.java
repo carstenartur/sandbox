@@ -17,13 +17,11 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.EXPLICITEN
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.EXPLICITENCODING_CLEANUP;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR;
-import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_ID_ENCODING;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingCleanUp_description;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -40,7 +38,6 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ChangeBehavior;
-import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -77,20 +74,8 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 
-		if (cb != ChangeBehavior.ENFORCE_UTF8_AGGREGATE) {
-			// Tier 1: Run DSL rules first with mode context
-			Map<String, String> compilerOptions = new HashMap<>();
-			compilerOptions.put("sandbox.cleanup.mode", cb.name()); //$NON-NLS-1$
-			HintFileFixCore.findOperationsForBundle(compilationUnit, HINTFILE_BUNDLE_ID_ENCODING, operations, nodesprocessed, compilerOptions);
-
-			// Tier 2+3: Run imperative helpers for non-DSL-handled patterns
-			computeFixSet.stream()
-				.filter(i -> !i.isDslHandled())
-				.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
-		} else {
-			// Aggregate mode: all imperative (DSL can't create extracted fields)
-			computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
-		}
+		// Run all imperative helpers (they produce import-aware output)
+		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
 		if (operations.isEmpty()) {
 			return null;
 		}
