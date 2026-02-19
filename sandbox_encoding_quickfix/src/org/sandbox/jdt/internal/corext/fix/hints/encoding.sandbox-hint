@@ -7,6 +7,7 @@
 <!severity: warning>
 <!minJavaVersion: 7>
 <!tags: encoding, modernization>
+<!caseInsensitive>
 <!foreach CHARSET: "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1, "US-ASCII" -> US_ASCII, "UTF-16" -> UTF_16, "UTF-16BE" -> UTF_16BE, "UTF-16LE" -> UTF_16LE>
 
 // ============================================================================

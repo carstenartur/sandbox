@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -104,6 +105,11 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 public final class HintFileParser {
 	
 	private static final Logger LOGGER = Logger.getLogger(HintFileParser.class.getName());
+
+	/**
+	 * Set of recognized value-less directive names (directives without ':' or '=').
+	 */
+	private static final Set<String> VALUELESS_DIRECTIVES = Set.of("caseInsensitive"); //$NON-NLS-1$
 	
 	private record GuardSplit(String patternText, String guardText) {
 		boolean hasGuard() { return guardText != null; }
@@ -294,7 +300,13 @@ public final class HintFileParser {
 				value = value.substring(1, value.length() - 1);
 			}
 		} else {
-			throw new HintParseException("Invalid metadata directive (missing ':' or '='): " + line, lineNumber); //$NON-NLS-1$
+			// Check for known value-less directives (e.g., <!caseInsensitive>)
+			if (VALUELESS_DIRECTIVES.contains(inner.trim())) {
+				key = inner.trim();
+				value = ""; //$NON-NLS-1$
+			} else {
+				throw new HintParseException("Invalid metadata directive (missing ':' or '='): " + line, lineNumber); //$NON-NLS-1$
+			}
 		}
 		
 		switch (key) {
@@ -319,6 +331,9 @@ public final class HintFileParser {
 				break;
 			case "include": //$NON-NLS-1$
 				hintFile.addInclude(value);
+				break;
+			case "caseInsensitive": //$NON-NLS-1$
+				hintFile.setCaseInsensitive(true);
 				break;
 			default:
 				// Check for foreach directive: <!foreach VARNAME: key1 -> val1, key2 -> val2>

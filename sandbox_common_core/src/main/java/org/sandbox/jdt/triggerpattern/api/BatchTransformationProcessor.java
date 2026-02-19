@@ -55,6 +55,7 @@ public final class BatchTransformationProcessor {
 	public BatchTransformationProcessor(HintFile hintFile) {
 		this.hintFile = hintFile;
 		this.patternIndex = new PatternIndex(hintFile.getRules());
+		this.patternIndex.setCaseInsensitive(hintFile.isCaseInsensitive());
 	}
 
 	/**
@@ -69,6 +70,7 @@ public final class BatchTransformationProcessor {
 	public BatchTransformationProcessor(HintFile hintFile, List<TransformationRule> resolvedRules) {
 		this.hintFile = hintFile;
 		this.patternIndex = new PatternIndex(resolvedRules);
+		this.patternIndex.setCaseInsensitive(hintFile.isCaseInsensitive());
 	}
 
 	/**
