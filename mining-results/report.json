@@ -1,0 +1,22 @@
+{
+  "summary": {
+    "totalMatches": 0,
+    "repositories": {
+      "eclipse.platform.ui": {
+        "files": 0,
+        "matches": 0,
+        "rules": 0
+      },
+      "sandbox": {
+        "files": 722,
+        "matches": 0,
+        "rules": 0
+      }
+    }
+  },
+  "matches": [
+  ],
+  "errors": {
+    "eclipse.platform.ui": "Remote branch 'main' not found in upstream origin"
+  }
+}
