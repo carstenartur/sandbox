@@ -21,7 +21,8 @@ mining:
     - url: https://github.com/eclipse-platform/eclipse.platform.ui
       branch: master
       paths:
-        - bundles/org.eclipse.ui.workbench/Eclipse UI
+        - bundles/org.eclipse.ui.workbench/eclipseui
+        - bundles/org.eclipse.ui.workbench/eclipseuieditorsupport
 
     # - url: https://github.com/eclipse-platform/eclipse.platform
     #   branch: main
