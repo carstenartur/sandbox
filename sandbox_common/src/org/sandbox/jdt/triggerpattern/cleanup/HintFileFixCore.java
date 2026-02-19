@@ -128,6 +128,29 @@ public class HintFileFixCore {
 	public static void findOperationsForBundle(CompilationUnit compilationUnit,
 			String bundleId, Set<CompilationUnitRewriteOperation> operations,
 			Set<ASTNode> nodesprocessed) {
+		findOperationsForBundle(compilationUnit, bundleId, operations, nodesprocessed, null);
+	}
+
+	/**
+	 * Finds hint-file-based cleanup operations for a specific bundle,
+	 * tracking processed nodes and passing compiler options for guard evaluation.
+	 *
+	 * <p>This overload accepts compiler options that are passed to guard
+	 * evaluation. This enables mode-dependent DSL rules via the
+	 * {@code sandbox.cleanup.mode} option.</p>
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param bundleId the hint file bundle ID to load (e.g., {@code "encoding"})
+	 * @param operations the set to add found operations to
+	 * @param nodesprocessed set of already-processed AST nodes; matched nodes
+	 *        are added to this set to prevent double-processing
+	 * @param compilerOptions compiler options for guard context; may contain
+	 *        {@code sandbox.cleanup.mode} for mode-dependent rules (may be {@code null})
+	 * @since 1.3.8
+	 */
+	public static void findOperationsForBundle(CompilationUnit compilationUnit,
+			String bundleId, Set<CompilationUnitRewriteOperation> operations,
+			Set<ASTNode> nodesprocessed, Map<String, String> compilerOptions) {
 
 		HintFileRegistry registry = HintFileRegistry.getInstance();
 		// Ensure bundled libraries are loaded
@@ -150,7 +173,7 @@ public class HintFileFixCore {
 
 		List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
-		List<TransformationResult> results = processor.process(compilationUnit);
+		List<TransformationResult> results = processor.process(compilationUnit, compilerOptions);
 
 		for (TransformationResult result : results) {
 			if (result.hasReplacement()) {
