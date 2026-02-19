@@ -1,1 +1,0 @@
-awk '{print "public BiConsumer<? extends ASTNode,E> add" $0 "(BiConsumer<" $0 ",E> bc) {\n		return consumermap.put(Visitor." $0 ", bc);\n	}" "\n"}' <input.txt >output.txt
