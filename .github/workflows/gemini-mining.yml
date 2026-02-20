@@ -34,6 +34,7 @@ jobs:
       - name: Run Gemini Mining
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-2.5-flash
         run: |
           java -jar sandbox_mining_gemini/target/sandbox-mining-gemini.jar \
             --config .github/refactoring-mining/repos.yml \

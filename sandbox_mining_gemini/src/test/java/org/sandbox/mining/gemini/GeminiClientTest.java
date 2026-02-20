@@ -18,6 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 import org.sandbox.mining.gemini.gemini.CommitEvaluation;
 import org.sandbox.mining.gemini.gemini.CommitEvaluation.TrafficLight;
@@ -115,5 +118,23 @@ class GeminiClientTest {
 		GeminiClient client = new GeminiClient(null);
 		CommitEvaluation result = client.evaluate("prompt", "hash", "msg", "url");
 		assertNull(result);
+	}
+
+	@Test
+	void testExplicitModelIsUsed() {
+		HttpClient httpClient = HttpClient.newBuilder()
+				.connectTimeout(Duration.ofSeconds(30))
+				.build();
+		GeminiClient client = new GeminiClient("test-key", httpClient, "gemini-1.5-pro");
+		assertEquals("gemini-1.5-pro", client.getModel());
+	}
+
+	@Test
+	void testDefaultModelFallback() {
+		HttpClient httpClient = HttpClient.newBuilder()
+				.connectTimeout(Duration.ofSeconds(30))
+				.build();
+		GeminiClient client = new GeminiClient("test-key", httpClient, "gemini-2.5-flash");
+		assertEquals("gemini-2.5-flash", client.getModel());
 	}
 }

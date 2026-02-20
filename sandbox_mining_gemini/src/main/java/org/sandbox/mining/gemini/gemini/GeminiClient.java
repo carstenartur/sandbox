@@ -39,14 +39,16 @@ import com.google.gson.JsonParser;
  */
 public class GeminiClient implements AutoCloseable {
 
+	private static final String DEFAULT_MODEL = "gemini-2.5-flash";
 	private static final String API_URL_TEMPLATE =
-			"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=%s";
+			"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
 	private static final int RATE_LIMIT_DELAY_MS = 4000;
 	private static final int MAX_RETRIES = 3;
 	private static final int INITIAL_BACKOFF_MS = 5000;
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
 
 	private final String apiKey;
+	private final String model;
 	private final HttpClient httpClient;
 	private final Gson gson;
 	private long lastRequestTime;
@@ -76,9 +78,42 @@ public class GeminiClient implements AutoCloseable {
 	 * @param httpClient the HTTP client to use
 	 */
 	public GeminiClient(String apiKey, HttpClient httpClient) {
+		this(apiKey, httpClient, resolveModel());
+	}
+
+	/**
+	 * Creates a client with the given API key, HTTP client, and model (for testing).
+	 *
+	 * @param apiKey     the Gemini API key
+	 * @param httpClient the HTTP client to use
+	 * @param model      the Gemini model name to use
+	 */
+	public GeminiClient(String apiKey, HttpClient httpClient, String model) {
 		this.apiKey = apiKey;
+		this.model = model;
 		this.httpClient = httpClient;
 		this.gson = new GsonBuilder().create();
+		String debug = System.getenv("GEMINI_DEBUG");
+		if ("true".equalsIgnoreCase(debug)) {
+			System.out.println("Gemini model: " + this.model);
+		}
+	}
+
+	private static String resolveModel() {
+		String envModel = System.getenv("GEMINI_MODEL");
+		if (envModel != null) {
+			envModel = envModel.trim();
+		}
+		return (envModel != null && !envModel.isBlank()) ? envModel : DEFAULT_MODEL;
+	}
+
+	/**
+	 * Returns the Gemini model name being used.
+	 *
+	 * @return the model name
+	 */
+	public String getModel() {
+		return model;
 	}
 
 	/**
@@ -139,7 +174,7 @@ public class GeminiClient implements AutoCloseable {
 		for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
 			try {
 				HttpRequest request = HttpRequest.newBuilder()
-						.uri(URI.create(String.format(API_URL_TEMPLATE, apiKey)))
+						.uri(URI.create(String.format(API_URL_TEMPLATE, model, apiKey)))
 						.header("Content-Type", "application/json")
 						.timeout(REQUEST_TIMEOUT)
 						.POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
