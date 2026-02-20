@@ -228,7 +228,7 @@ These files enable Eclipse's built-in localization mechanism and provide user-fa
 
 ## Hybrid Tier Architecture
 
-The encoding cleanup uses a **three-tier architecture** that combines DSL rules with imperative Java helpers within a single cleanup run:
+The encoding cleanup uses a **DSL-first architecture** where declarative `.sandbox-hint` rules are the preferred implementation, with imperative Java helpers as fallback. In the long run, DSL rules should replace the Java-based transformations where possible because they are much shorter and declarative.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -237,7 +237,7 @@ The encoding cleanup uses a **three-tier architecture** that combines DSL rules 
 ├──────────────┬──────────────────────┬───────────────────────────────┤
 │ Tier 1: DSL  │  Tier 2: Annotated   │  Tier 3: Imperative Java     │
 │ .sandbox-hint│  @CleanupPattern +   │  AbstractExplicitEncoding     │
-│              │  @RewriteRule        │                               │
+│ (preferred)  │  @RewriteRule        │  (fallback / complex cases)   │
 ├──────────────┼──────────────────────┼───────────────────────────────┤
 │ Simple arg   │ Patterns needing     │ Complex structural rewrites   │
 │ replacement  │ Java version guards  │ (FileWriter→OutputStreamWriter│
@@ -251,14 +251,28 @@ The encoding cleanup uses a **three-tier architecture** that combines DSL rules 
 
 Each `UseExplicitEncodingFixCore` enum value is classified as either **DSL-handled** (`isDslHandled() == true`) or **imperative-only** (see `UseExplicitEncodingFixCore` for the authoritative classification):
 
-- **Tier 1 (DSL)**: `CHARSET`, `STRING`, `STRING_GETBYTES`, `INPUTSTREAMREADER`, `OUTPUTSTREAMWRITER`, `SCANNER`, `FORMATTER`, `PRINTSTREAM`, `URLDECODER`, `URLENCODER`
-- **Tier 2+3 (Imperative)**: `FILEREADER`, `FILEWRITER`, `PRINTWRITER`, `BYTEARRAYOUTPUTSTREAM`, `CHANNELSNEWREADER`, `CHANNELSNEWWRITER`, `PROPERTIES_STORETOXML`, `FILES_NEWBUFFEREDREADER`, `FILES_NEWBUFFEREDWRITER`, `FILES_READALLLINES`, `FILES_READSTRING`, `FILES_WRITESTRING`
+- **DSL-handled** (have DSL rules, imperative is fallback): `CHARSET`, `STRING`, `STRING_GETBYTES`, `INPUTSTREAMREADER`, `OUTPUTSTREAMWRITER`, `SCANNER`, `FORMATTER`, `PRINTSTREAM`, `URLDECODER`, `URLENCODER`
+- **Imperative-only** (no DSL rules yet): `FILEREADER`, `FILEWRITER`, `PRINTWRITER`, `BYTEARRAYOUTPUTSTREAM`, `CHANNELSNEWREADER`, `CHANNELSNEWWRITER`, `PROPERTIES_STORETOXML`, `FILES_NEWBUFFEREDREADER`, `FILES_NEWBUFFEREDWRITER`, `FILES_READALLLINES`, `FILES_READSTRING`, `FILES_WRITESTRING`
 
 ### Execution Flow
 
 1. **DSL phase**: `HintFileFixCore.findOperationsForBundle("encoding", ...)` runs the `encoding.sandbox-hint` rules. Matched nodes are added to `nodesprocessed`.
 2. **Imperative phase**: All imperative helpers run their `findOperations()`. The `.excluding(nodesprocessed)` call in each helper's visitor skips already-processed nodes, preventing double-processing when DSL already handled them. This provides automatic fallback: if DSL rules don't match (e.g., due to missing patterns or guard failures), the imperative helpers seamlessly handle those cases.
 3. **AGGREGATE mode exception**: When `ENFORCE_UTF8_AGGREGATE` is selected, DSL is bypassed entirely because static field creation cannot be expressed declaratively.
+
+### DSL Migration Strategy
+
+The `isDslHandled()` flag on each enum value tracks which patterns have DSL coverage. As the DSL matures:
+
+1. **Current state**: DSL rules run first; imperative helpers run as fallback for all patterns. The `nodesprocessed` set prevents double-processing.
+2. **Next phase**: Validate that DSL output exactly matches imperative output for all DSL-handled patterns. Once validated, imperative helpers for those patterns become dead code.
+3. **Long-term**: Remove imperative helpers for fully DSL-covered patterns. Move more patterns from imperative-only to DSL as the DSL gains capabilities (e.g., structural rewrites, exception cleanup).
+
+The DSL approach is preferred because:
+- DSL rules are **shorter** (1–3 lines vs. 50+ lines of Java)
+- DSL rules are **declarative** — pattern + replacement, no visitor boilerplate
+- DSL rules are **composable** — `<!foreach CHARSET:...>` handles all 6 charsets in one macro
+- DSL rules are **portable** — compatible with NetBeans hint file format
 
 ### Mode Mapping
 

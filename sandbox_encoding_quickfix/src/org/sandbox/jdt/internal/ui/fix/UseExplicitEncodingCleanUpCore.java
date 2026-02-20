@@ -75,20 +75,23 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 
-		// Tier 1: Run DSL rules first from encoding.sandbox-hint
-		// DSL handles simple argument replacement (e.g., "UTF-8" -> StandardCharsets.UTF_8).
-		// AGGREGATE mode is excluded because it needs static field creation that DSL cannot express.
-		boolean dslActive= cb != ChangeBehavior.ENFORCE_UTF8_AGGREGATE;
-		if (dslActive) {
+		// DSL-first architecture: DSL rules run first from encoding.sandbox-hint.
+		// Long-term goal: DSL should progressively replace imperative Java helpers
+		// for all patterns it can express, because DSL rules are shorter and
+		// declarative. Patterns marked isDslHandled() have DSL coverage.
+		// AGGREGATE mode is excluded because it needs static field creation
+		// that DSL cannot express.
+		if (cb != ChangeBehavior.ENFORCE_UTF8_AGGREGATE) {
 			Map<String, String> compilerOptions= Map.of("sandbox.cleanup.mode", cb.name()); //$NON-NLS-1$
 			HintFileFixCore.findOperationsForBundle(
 					compilationUnit, "encoding", operations, nodesprocessed, compilerOptions); //$NON-NLS-1$
 		}
 
-		// Tier 2+3: Run imperative helpers for remaining cases.
-		// Non-DSL patterns always run. DSL-handled patterns are skipped when DSL produced
-		// operations (nodesprocessed prevents double-processing at AST node level).
-		// If DSL produced nothing, imperative helpers run as fallback for all patterns.
+		// Imperative helpers run for all patterns. For DSL-handled patterns,
+		// the shared nodesprocessed set (populated by DSL above) prevents
+		// double-processing via .excluding(nodesprocessed) in each helper's
+		// visitor. As DSL matures, imperative helpers for DSL-handled patterns
+		// will do less work and can eventually be removed entirely.
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
 
 		if (operations.isEmpty()) {
