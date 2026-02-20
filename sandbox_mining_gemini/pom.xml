@@ -26,6 +26,7 @@
 		<jgit.version>7.5.0.202512021534-r</jgit.version>
 		<snakeyaml.version>2.5</snakeyaml.version>
 		<gson.version>2.12.1</gson.version>
+		<slf4j.version>2.0.16</slf4j.version>
 		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
 		<tycho.mode>maven</tycho.mode>
 	</properties>
@@ -69,7 +70,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-nop</artifactId>
-			<version>2.0.16</version>
+			<version>${slf4j.version}</version>
 		</dependency>
 	</dependencies>
 	

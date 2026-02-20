@@ -78,12 +78,42 @@ public class GeminiClient implements AutoCloseable {
 	 * @param httpClient the HTTP client to use
 	 */
 	public GeminiClient(String apiKey, HttpClient httpClient) {
+		this(apiKey, httpClient, resolveModel());
+	}
+
+	/**
+	 * Creates a client with the given API key, HTTP client, and model (for testing).
+	 *
+	 * @param apiKey     the Gemini API key
+	 * @param httpClient the HTTP client to use
+	 * @param model      the Gemini model name to use
+	 */
+	public GeminiClient(String apiKey, HttpClient httpClient, String model) {
 		this.apiKey = apiKey;
-		String envModel = System.getenv("GEMINI_MODEL");
-		this.model = (envModel != null && !envModel.isBlank()) ? envModel : DEFAULT_MODEL;
+		this.model = model;
 		this.httpClient = httpClient;
 		this.gson = new GsonBuilder().create();
-		System.out.println("Gemini model: " + this.model);
+		String debug = System.getenv("GEMINI_DEBUG");
+		if ("true".equalsIgnoreCase(debug)) {
+			System.out.println("Gemini model: " + this.model);
+		}
+	}
+
+	private static String resolveModel() {
+		String envModel = System.getenv("GEMINI_MODEL");
+		if (envModel != null) {
+			envModel = envModel.trim();
+		}
+		return (envModel != null && !envModel.isBlank()) ? envModel : DEFAULT_MODEL;
+	}
+
+	/**
+	 * Returns the Gemini model name being used.
+	 *
+	 * @return the model name
+	 */
+	public String getModel() {
+		return model;
 	}
 
 	/**
