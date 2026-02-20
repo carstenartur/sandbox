@@ -256,15 +256,15 @@ Each `UseExplicitEncodingFixCore` enum value is classified as either **DSL-handl
 
 ### Execution Flow
 
-1. **DSL phase**: `HintFileFixCore.findOperationsForBundle("encoding", ...)` runs the `encoding.sandbox-hint` rules. Matched nodes are added to `nodesprocessed`.
-2. **Imperative phase**: All imperative helpers run their `findOperations()`. The `.excluding(nodesprocessed)` call in each helper's visitor skips already-processed nodes, preventing double-processing when DSL already handled them. This provides automatic fallback: if DSL rules don't match (e.g., due to missing patterns or guard failures), the imperative helpers seamlessly handle those cases.
-3. **AGGREGATE mode exception**: When `ENFORCE_UTF8_AGGREGATE` is selected, DSL is bypassed entirely because static field creation cannot be expressed declaratively.
+1. **DSL phase**: `HintFileFixCore.findOperationsForBundle("encoding", ...)` runs the `encoding.sandbox-hint` rules with the project's compiler options (source version and cleanup mode). Matched nodes are added to `nodesprocessed`.
+2. **Imperative phase**: Only non-DSL-handled patterns run their imperative `findOperations()`. DSL-handled patterns are skipped (the `isDslHandled()` flag gates them). The `nodesprocessed` set provides additional node-level dedup as a safety net.
+3. **AGGREGATE mode exception**: When `ENFORCE_UTF8_AGGREGATE` is selected, DSL is bypassed entirely and all imperative helpers run, because static field creation cannot be expressed declaratively.
 
 ### DSL Migration Strategy
 
-The `isDslHandled()` flag on each enum value tracks which patterns have DSL coverage. As the DSL matures:
+The `isDslHandled()` flag on each enum value tracks which patterns have DSL coverage. When `isDslHandled()` is `true`, the imperative helper is skipped and the DSL handles the pattern. As the DSL matures:
 
-1. **Current state**: DSL rules run first; imperative helpers run as fallback for all patterns. The `nodesprocessed` set prevents double-processing.
+1. **Current state**: DSL rules run first for DSL-handled patterns; imperative helpers are skipped for those patterns. Non-DSL patterns still use imperative helpers.
 2. **Next phase**: Validate that DSL output exactly matches imperative output for all DSL-handled patterns. Once validated, imperative helpers for those patterns become dead code.
 3. **Long-term**: Remove imperative helpers for fully DSL-covered patterns. Move more patterns from imperative-only to DSL as the DSL gains capabilities (e.g., structural rewrites, exception cleanup).
 
@@ -274,9 +274,11 @@ The DSL approach is preferred because:
 - DSL rules are **composable** — `<!foreach CHARSET:...>` handles all 6 charsets in one macro
 - DSL rules are **portable** — compatible with NetBeans hint file format
 
-### Mode Mapping
+### Compiler Options
 
-The `ChangeBehavior` enum name is passed as the `sandbox.cleanup.mode` compiler option to the DSL engine, enabling mode-dependent rules via `mode(ENFORCE_UTF8)` / `mode(KEEP_BEHAVIOR)` guards.
+The `createFix()` method passes both the cleanup mode and the project's Java source version to the DSL engine:
+- `sandbox.cleanup.mode` → enables mode-dependent rules via `mode(ENFORCE_UTF8)` / `mode(KEEP_BEHAVIOR)` guards
+- `org.eclipse.jdt.core.compiler.source` → enables version-dependent rules via `sourceVersionGE(10)` guards
 
 ## DSL Pattern Library
 
