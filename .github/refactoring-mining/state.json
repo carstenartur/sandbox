@@ -1,4 +1,17 @@
 {
-  "repositories": {},
-  "globalTotalProcessed": 0
+  "repositories": {
+    "https://github.com/eclipse-platform/eclipse.platform.ui": {
+      "lastProcessedCommit": "89a19bf9c20a55490d281e0a97cd0a43bf505085",
+      "lastProcessedDate": "2026-02-20T04:13:49.648960784Z",
+      "totalProcessed": 10294,
+      "status": "CATCHING_UP"
+    },
+    "https://github.com/carstenartur/sandbox": {
+      "lastProcessedCommit": "d0e6ccf7f9cb02633470bf71fd497d4dfc329323",
+      "lastProcessedDate": "2026-02-20T04:14:18.042557262Z",
+      "totalProcessed": 1059,
+      "status": "CATCHING_UP"
+    }
+  },
+  "globalTotalProcessed": 11353
 }
