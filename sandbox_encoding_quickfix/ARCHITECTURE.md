@@ -249,24 +249,24 @@ The encoding cleanup uses a **DSL-first architecture** where declarative `.sandb
 
 ### Tier Classification
 
-Each `UseExplicitEncodingFixCore` enum value is classified as either **DSL-handled** (`isDslHandled() == true`) or **imperative-only** (see `UseExplicitEncodingFixCore` for the authoritative classification):
+Each `UseExplicitEncodingFixCore` enum value has an `isDslHandled()` flag indicating whether the DSL fully handles the pattern. Currently **all flags are `false`** because the DSL cannot yet fully replace the imperative helpers (NLS comment cleanup, exception removal, variable encoding detection, complex constructor rewrites). The DSL rules still run first via `HintFileFixCore.findOperationsForBundle()`, and `nodesprocessed` prevents double-processing when DSL matches. As the DSL matures, individual flags can be flipped to `true`.
 
-- **DSL-handled** (have DSL rules, imperative is fallback): `CHARSET`, `STRING`, `STRING_GETBYTES`, `INPUTSTREAMREADER`, `OUTPUTSTREAMWRITER`, `SCANNER`, `FORMATTER`, `PRINTSTREAM`, `URLDECODER`, `URLENCODER`
-- **Imperative-only** (no DSL rules yet): `FILEREADER`, `FILEWRITER`, `PRINTWRITER`, `BYTEARRAYOUTPUTSTREAM`, `CHANNELSNEWREADER`, `CHANNELSNEWWRITER`, `PROPERTIES_STORETOXML`, `FILES_NEWBUFFEREDREADER`, `FILES_NEWBUFFEREDWRITER`, `FILES_READALLLINES`, `FILES_READSTRING`, `FILES_WRITESTRING`
+- **Have DSL rules** (but imperative still runs): `CHARSET`, `STRING`, `STRING_GETBYTES`, `INPUTSTREAMREADER`, `OUTPUTSTREAMWRITER`, `SCANNER`, `FORMATTER`, `PRINTSTREAM`, `URLDECODER`, `URLENCODER`
+- **Imperative-only** (no DSL rules): `FILEREADER`, `FILEWRITER`, `PRINTWRITER`, `BYTEARRAYOUTPUTSTREAM`, `CHANNELSNEWREADER`, `CHANNELSNEWWRITER`, `PROPERTIES_STORETOXML`, `FILES_NEWBUFFEREDREADER`, `FILES_NEWBUFFEREDWRITER`, `FILES_READALLLINES`, `FILES_READSTRING`, `FILES_WRITESTRING`
 
 ### Execution Flow
 
 1. **DSL phase**: `HintFileFixCore.findOperationsForBundle("encoding", ...)` runs the `encoding.sandbox-hint` rules with the project's compiler options (source version and cleanup mode). Matched nodes are added to `nodesprocessed`.
-2. **Imperative phase**: Only non-DSL-handled patterns run their imperative `findOperations()`. DSL-handled patterns are skipped (the `isDslHandled()` flag gates them). The `nodesprocessed` set provides additional node-level dedup as a safety net.
+2. **Imperative phase**: All imperative helpers run their `findOperations()`. The `nodesprocessed` set and `.excluding(nodesprocessed)` in each helper's visitor prevent double-processing for nodes already handled by DSL. When `isDslHandled()` is `true` for a pattern, the imperative helper is skipped entirely.
 3. **AGGREGATE mode exception**: When `ENFORCE_UTF8_AGGREGATE` is selected, DSL is bypassed entirely and all imperative helpers run, because static field creation cannot be expressed declaratively.
 
 ### DSL Migration Strategy
 
-The `isDslHandled()` flag on each enum value tracks which patterns have DSL coverage. When `isDslHandled()` is `true`, the imperative helper is skipped and the DSL handles the pattern. As the DSL matures:
+The `isDslHandled()` flag on each enum value tracks which patterns are fully handled by DSL. When `isDslHandled()` is `true`, the imperative helper is skipped. As the DSL matures:
 
-1. **Current state**: DSL rules run first for DSL-handled patterns; imperative helpers are skipped for those patterns. Non-DSL patterns still use imperative helpers.
-2. **Next phase**: Validate that DSL output exactly matches imperative output for all DSL-handled patterns. Once validated, imperative helpers for those patterns become dead code.
-3. **Long-term**: Remove imperative helpers for fully DSL-covered patterns. Move more patterns from imperative-only to DSL as the DSL gains capabilities (e.g., structural rewrites, exception cleanup).
+1. **Current state**: All flags are `false` — DSL rules run first, imperative helpers also run for all patterns. The `nodesprocessed` set prevents double-processing.
+2. **Next phase**: Validate that DSL output exactly matches imperative output for individual patterns. Once validated per-pattern, flip `isDslHandled()` to `true` to skip the imperative helper.
+3. **Long-term**: Remove imperative helpers for fully DSL-covered patterns. Move more patterns to DSL as the DSL gains capabilities (structural rewrites, exception cleanup).
 
 The DSL approach is preferred because:
 - DSL rules are **shorter** (1–3 lines vs. 50+ lines of Java)

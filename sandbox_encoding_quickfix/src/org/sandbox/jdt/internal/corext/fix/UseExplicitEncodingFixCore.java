@@ -54,22 +54,22 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 
 public enum UseExplicitEncodingFixCore {
 
-	CHARSET(new CharsetForNameExplicitEncoding(), true),
+	CHARSET(new CharsetForNameExplicitEncoding(), false),
 	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding(), false),
 	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding(), false),
-	STRING_GETBYTES(new StringGetBytesExplicitEncoding(), true),
-	STRING(new StringExplicitEncoding(), true),
-	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding(), true),
-	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding(), true),
+	STRING_GETBYTES(new StringGetBytesExplicitEncoding(), false),
+	STRING(new StringExplicitEncoding(), false),
+	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding(), false),
+	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding(), false),
 	FILEREADER(new FileReaderExplicitEncoding(), false),
 	FILEWRITER(new FileWriterExplicitEncoding(), false),
 	PRINTWRITER(new PrintWriterExplicitEncoding(), false),
-	PRINTSTREAM(new PrintStreamExplicitEncoding(), true),
+	PRINTSTREAM(new PrintStreamExplicitEncoding(), false),
 	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding(), false),
-	FORMATTER(new FormatterExplicitEncoding(), true),
-	URLDECODER(new URLDecoderDecodeExplicitEncoding(), true),
-	URLENCODER(new URLEncoderEncodeExplicitEncoding(), true),
-	SCANNER(new ScannerExplicitEncoding(), true),
+	FORMATTER(new FormatterExplicitEncoding(), false),
+	URLDECODER(new URLDecoderDecodeExplicitEncoding(), false),
+	URLENCODER(new URLEncoderEncodeExplicitEncoding(), false),
+	SCANNER(new ScannerExplicitEncoding(), false),
 	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding(), false),
 	FILES_NEWBUFFEREDREADER(new FilesNewBufferedReaderExplicitEncoding(), false),
 	FILES_NEWBUFFEREDWRITER(new FilesNewBufferedWriterExplicitEncoding(), false),
@@ -87,16 +87,17 @@ public enum UseExplicitEncodingFixCore {
 	}
 
 	/**
-	 * Returns whether this fix has corresponding DSL rules in the encoding
+	 * Returns whether this fix is fully handled by DSL rules in the encoding
 	 * {@code .sandbox-hint} file.
 	 *
-	 * <p>DSL-handled patterns are processed first by the DSL engine. The
-	 * imperative Java helpers still run as fallback, but nodes already
-	 * processed by DSL are skipped via {@code nodesprocessed}. As the DSL
-	 * matures, imperative helpers for DSL-handled patterns can eventually
-	 * be removed entirely — DSL rules are shorter and declarative.</p>
+	 * <p>When {@code true}, the imperative Java helper is skipped and only the
+	 * DSL engine processes this pattern. Currently all flags are {@code false}
+	 * because the DSL cannot yet fully replace the imperative helpers (NLS
+	 * comment cleanup, exception removal, variable encoding detection, complex
+	 * constructor rewrites). As the DSL matures, individual flags can be
+	 * flipped to {@code true}.</p>
 	 *
-	 * @return {@code true} if this fix has DSL coverage
+	 * @return {@code true} if this fix is fully covered by DSL rules
 	 */
 	public boolean isDslHandled() {
 		return dslHandled;

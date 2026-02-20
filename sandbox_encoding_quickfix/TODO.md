@@ -180,16 +180,18 @@ None currently identified.
 
 The plugin now bridges `encoding.sandbox-hint` DSL rules into the imperative cleanup pipeline:
 - ✅ `UseExplicitEncodingCleanUpCore.createFix()` calls `HintFileFixCore.findOperationsForBundle()` before imperative helpers
-- ✅ `isDslHandled()` flag tracks which patterns have DSL coverage
+- ✅ `isDslHandled()` flag infrastructure ready (currently all `false` — DSL not yet mature enough)
 - ✅ `ChangeBehavior` mode is passed as `sandbox.cleanup.mode` compiler option for mode-dependent DSL rules
+- ✅ Project source version passed as `org.eclipse.jdt.core.compiler.source` for `sourceVersionGE()` guards
 - ✅ AGGREGATE mode falls back to pure imperative processing (DSL cannot express static field creation)
 - ✅ `nodesprocessed` set prevents double-processing between DSL and imperative helpers
+- ✅ `Charset.forName` DSL rule correctly gated on `sourceVersionGE(18)` matching imperative handler
 
 **DSL replacement roadmap** (see issue #774):
-- [ ] Phase 2: Validate DSL output matches imperative output for all 10 DSL-handled patterns across all test modes
-- [ ] Phase 3: Once validated, remove imperative helpers for fully DSL-covered patterns (isDslHandled=true)
+- [ ] Phase 2: Validate DSL output matches imperative output for individual patterns (NLS cleanup, exception removal)
+- [ ] Phase 3: Flip `isDslHandled()` to `true` per-pattern once validated, removing imperative fallback
 - [ ] Phase 4: Move more patterns to DSL as DSL gains capabilities (structural rewrites, exception cleanup)
-- [ ] Phase 5: DSL enhancements for Tier 2+3 patterns (FileReader wrapping, catch removal, value mapping)
+- [ ] Phase 5: DSL enhancements for complex patterns (FileReader wrapping, catch removal, value mapping)
 
 ### Smart Encoding Detection
 **Priority**: Low  
