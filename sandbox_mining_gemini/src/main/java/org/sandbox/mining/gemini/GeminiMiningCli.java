@@ -207,6 +207,7 @@ public class GeminiMiningCli {
 				if (!validation.valid()) {
 					System.out.println("  Invalid DSL rule for " + commit.getName()
 							+ ": " + validation.message());
+					System.out.println("  DSL rule text: " + evaluation.dslRule());
 				}
 			}
 
