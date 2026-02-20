@@ -113,9 +113,18 @@ public class GithubPagesGenerator {
 				  | <a href="https://carstenartur.github.io/sandbox/">← Back to Dashboard</a>
 				</p>
 				<p>Total: {{totalProcessed}}, Relevant: {{relevant}}, Green: {{green}}, Yellow: {{yellow}}, Red: {{red}}</p>
+				<h2>Discovered DSL Sequences</h2>
+				<div id="dsl-body"></div>
 				<script>
 				fetch('evaluations.json').then(r=>r.json()).then(data=>{
-				  console.log('Loaded', data.length, 'evaluations');
+				  var dsl=data.filter(e=>e.dslRule&&e.relevant);
+				  var el=document.getElementById('dsl-body');
+				  if(dsl.length===0){el.textContent='No DSL sequences discovered yet.';return;}
+				  dsl.forEach(e=>{
+				    var p=document.createElement('p');
+				    p.innerHTML='<strong>'+e.trafficLight+'</strong> ['+e.category+'] '+e.summary+'<pre>'+e.dslRule+'</pre>';
+				    el.appendChild(p);
+				  });
 				});
 				</script>
 				</body>
