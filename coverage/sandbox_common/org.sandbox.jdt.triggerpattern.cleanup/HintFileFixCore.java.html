@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintFileFixCore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.cleanup</a> &gt; <span class="el_source">HintFileFixCore.java</span></div><h1>HintFileFixCore.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.cleanup;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.ImportDirective;
+import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
+
+/**
+ * Fix core that creates rewrite operations from {@code .sandbox-hint} files.
+ *
+ * &lt;p&gt;This bridges the gap between the {@code .sandbox-hint} DSL and the Eclipse
+ * CleanUp framework by using {@link BatchTransformationProcessor} to find matches
+ * and creating {@link CompilationUnitRewriteOperation} instances for each match
+ * that has a replacement.&lt;/p&gt;
+ *
+ * @since 1.3.5
+ */
+<span class="nc" id="L57">public class HintFileFixCore {</span>
+
+	/**
+	 * Finds all hint-file-based cleanup operations for the given compilation unit.
+	 *
+	 * &lt;p&gt;Loads all registered {@code .sandbox-hint} files from the
+	 * {@link HintFileRegistry}, processes them with {@link BatchTransformationProcessor},
+	 * and creates rewrite operations for each match with a replacement.&lt;/p&gt;
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param operations the set to add found operations to
+	 * @param enabledBundles set of enabled bundled hint file IDs; project-level
+	 *        hint files (with {@code &quot;project:&quot;} prefix) are always included
+	 *        regardless of this parameter
+	 */
+	public static void findOperations(CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations,
+			Set&lt;String&gt; enabledBundles) {
+
+<span class="nc" id="L76">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
+		// Ensure bundled libraries are loaded
+<span class="nc" id="L78">		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());</span>
+		// Load extension-point contributed hint files (encoding, junit5, etc.)
+<span class="nc" id="L80">		registry.loadFromExtensions();</span>
+
+		// Load project-level .sandbox-hint files if available
+<span class="nc bnc" id="L83" title="All 2 branches missed.">		if (compilationUnit.getJavaElement() != null</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">				&amp;&amp; compilationUnit.getJavaElement().getJavaProject() != null) {</span>
+<span class="nc" id="L85">			org.eclipse.core.resources.IProject project = compilationUnit.getJavaElement()</span>
+<span class="nc" id="L86">					.getJavaProject().getProject();</span>
+<span class="nc" id="L87">			registry.loadProjectHintFiles(project);</span>
+		}
+
+<span class="nc bnc" id="L90" title="All 2 branches missed.">		for (Map.Entry&lt;String, HintFile&gt; entry : registry.getAllHintFiles().entrySet()) {</span>
+<span class="nc" id="L91">			String hintFileId = entry.getKey();</span>
+<span class="nc" id="L92">			HintFile hintFile = entry.getValue();</span>
+
+			// Filter by enabled bundles (project-level files are always included)
+<span class="nc bnc" id="L95" title="All 4 branches missed.">			if (enabledBundles != null &amp;&amp; !hintFileId.startsWith(&quot;project:&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">					&amp;&amp; !enabledBundles.contains(hintFileId)) {</span>
+<span class="nc" id="L97">				continue;</span>
+			}
+
+<span class="nc" id="L100">			List&lt;TransformationRule&gt; resolvedRules = registry.resolveIncludes(hintFile);</span>
+<span class="nc" id="L101">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);</span>
+<span class="nc" id="L102">			List&lt;TransformationResult&gt; results = processor.process(compilationUnit);</span>
+
+<span class="nc bnc" id="L104" title="All 2 branches missed.">			for (TransformationResult result : results) {</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">				if (result.hasReplacement()) {</span>
+<span class="nc" id="L106">					operations.add(new HintFileRewriteOperation(result));</span>
+				}
+			}
+		}
+<span class="nc" id="L110">	}</span>
+
+	/**
+	 * Finds hint-file-based cleanup operations for a specific bundle,
+	 * tracking processed nodes to avoid duplicate processing with imperative helpers.
+	 *
+	 * &lt;p&gt;This method loads a single hint file bundle by ID from the
+	 * {@link HintFileRegistry} and creates rewrite operations for matches.
+	 * Matched nodes are added to {@code nodesprocessed} so that imperative
+	 * helpers can skip them.&lt;/p&gt;
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param bundleId the hint file bundle ID to load (e.g., {@code &quot;encoding&quot;})
+	 * @param operations the set to add found operations to
+	 * @param nodesprocessed set of already-processed AST nodes; matched nodes
+	 *        are added to this set to prevent double-processing
+	 * @since 1.3.7
+	 */
+	public static void findOperationsForBundle(CompilationUnit compilationUnit,
+			String bundleId, Set&lt;CompilationUnitRewriteOperation&gt; operations,
+			Set&lt;ASTNode&gt; nodesprocessed) {
+<span class="nc" id="L131">		findOperationsForBundle(compilationUnit, bundleId, operations, nodesprocessed, null);</span>
+<span class="nc" id="L132">	}</span>
+
+	/**
+	 * Finds hint-file-based cleanup operations for a specific bundle,
+	 * tracking processed nodes and passing compiler options for guard evaluation.
+	 *
+	 * &lt;p&gt;This overload accepts compiler options that are passed to guard
+	 * evaluation. This enables mode-dependent DSL rules via the
+	 * {@code sandbox.cleanup.mode} option.&lt;/p&gt;
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param bundleId the hint file bundle ID to load (e.g., {@code &quot;encoding&quot;})
+	 * @param operations the set to add found operations to
+	 * @param nodesprocessed set of already-processed AST nodes; matched nodes
+	 *        are added to this set to prevent double-processing
+	 * @param compilerOptions compiler options for guard context; may contain
+	 *        {@code sandbox.cleanup.mode} for mode-dependent rules (may be {@code null})
+	 * @since 1.3.8
+	 */
+	public static void findOperationsForBundle(CompilationUnit compilationUnit,
+			String bundleId, Set&lt;CompilationUnitRewriteOperation&gt; operations,
+			Set&lt;ASTNode&gt; nodesprocessed, Map&lt;String, String&gt; compilerOptions) {
+
+<span class="nc" id="L155">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
+		// Ensure bundled libraries are loaded
+<span class="nc" id="L157">		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());</span>
+		// Load extension-point contributed hint files (encoding, junit5, etc.)
+<span class="nc" id="L159">		registry.loadFromExtensions();</span>
+
+		// Load project-level .sandbox-hint files if available
+<span class="nc bnc" id="L162" title="All 2 branches missed.">		if (compilationUnit.getJavaElement() != null</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">				&amp;&amp; compilationUnit.getJavaElement().getJavaProject() != null) {</span>
+<span class="nc" id="L164">			org.eclipse.core.resources.IProject project = compilationUnit.getJavaElement()</span>
+<span class="nc" id="L165">					.getJavaProject().getProject();</span>
+<span class="nc" id="L166">			registry.loadProjectHintFiles(project);</span>
+		}
+
+<span class="nc" id="L169">		HintFile hintFile = registry.getHintFile(bundleId);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">		if (hintFile == null) {</span>
+<span class="nc" id="L171">			return;</span>
+		}
+
+<span class="nc" id="L174">		List&lt;TransformationRule&gt; resolvedRules = registry.resolveIncludes(hintFile);</span>
+<span class="nc" id="L175">		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);</span>
+<span class="nc" id="L176">		List&lt;TransformationResult&gt; results = processor.process(compilationUnit, compilerOptions);</span>
+
+<span class="nc bnc" id="L178" title="All 2 branches missed.">		for (TransformationResult result : results) {</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">			if (result.hasReplacement()) {</span>
+<span class="nc" id="L180">				ASTNode matchedNode = result.match().getMatchedNode();</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">				if (matchedNode != null) {</span>
+<span class="nc" id="L182">					nodesprocessed.add(matchedNode);</span>
+				}
+<span class="nc" id="L184">				operations.add(new HintFileRewriteOperation(result));</span>
+			}
+		}
+<span class="nc" id="L187">	}</span>
+
+	/**
+	 * Loads a hint file from a string and finds operations.
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param hintFileContent the hint file content
+	 * @param operations the set to add found operations to
+	 */
+	public static void findOperationsFromContent(CompilationUnit compilationUnit,
+			String hintFileContent, Set&lt;CompilationUnitRewriteOperation&gt; operations) {
+		try {
+<span class="nc" id="L199">			HintFileParser parser = new HintFileParser();</span>
+<span class="nc" id="L200">			HintFile hintFile = parser.parse(hintFileContent);</span>
+<span class="nc" id="L201">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
+<span class="nc" id="L202">			List&lt;TransformationResult&gt; results = processor.process(compilationUnit);</span>
+
+<span class="nc bnc" id="L204" title="All 2 branches missed.">			for (TransformationResult result : results) {</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">				if (result.hasReplacement()) {</span>
+<span class="nc" id="L206">					operations.add(new HintFileRewriteOperation(result));</span>
+				}
+			}
+<span class="nc" id="L209">		} catch (HintFileParser.HintParseException e) {</span>
+			// Skip invalid hint files
+		}
+<span class="nc" id="L212">	}</span>
+
+	/**
+	 * Generic rewrite operation that replaces matched AST nodes with the
+	 * replacement text from a {@code .sandbox-hint} rule.
+	 *
+	 * &lt;p&gt;This operation handles text-based replacement by parsing the replacement
+	 * text as an expression and replacing the matched AST node. It also handles
+	 * import management via {@link ImportDirective}.&lt;/p&gt;
+	 */
+	private static class HintFileRewriteOperation extends CompilationUnitRewriteOperation {
+
+		private final TransformationResult result;
+
+<span class="nc" id="L226">		public HintFileRewriteOperation(TransformationResult result) {</span>
+<span class="nc" id="L227">			this.result = result;</span>
+<span class="nc" id="L228">		}</span>
+
+		@Override
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+<span class="nc" id="L232">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="nc" id="L233">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">			String description = result.description() != null</span>
+<span class="nc" id="L235">					? result.description()</span>
+<span class="nc" id="L236">					: &quot;Apply hint file rule&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L237">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+
+<span class="nc" id="L239">			ASTNode matchedNode = result.match().getMatchedNode();</span>
+<span class="nc" id="L240">			String replacement = result.replacement();</span>
+
+<span class="nc bnc" id="L242" title="All 4 branches missed.">			if (matchedNode == null || replacement == null) {</span>
+<span class="nc" id="L243">				return;</span>
+			}
+
+			// Handle import directives
+<span class="nc bnc" id="L247" title="All 2 branches missed.">			if (result.hasImportDirective()) {</span>
+<span class="nc" id="L248">				ImportDirective imports = result.importDirective();</span>
+<span class="nc" id="L249">				ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
+
+<span class="nc bnc" id="L251" title="All 2 branches missed.">				for (String addImport : imports.getAddImports()) {</span>
+<span class="nc" id="L252">					importRewrite.addImport(addImport);</span>
+				}
+<span class="nc bnc" id="L254" title="All 2 branches missed.">				for (String removeImport : imports.getRemoveImports()) {</span>
+<span class="nc" id="L255">					importRewrite.removeImport(removeImport);</span>
+				}
+<span class="nc bnc" id="L257" title="All 2 branches missed.">				for (String addStatic : imports.getAddStaticImports()) {</span>
+<span class="nc" id="L258">					int lastDot = addStatic.lastIndexOf('.');</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">					if (lastDot &gt; 0) {</span>
+<span class="nc" id="L260">						String type = addStatic.substring(0, lastDot);</span>
+<span class="nc" id="L261">						String member = addStatic.substring(lastDot + 1);</span>
+<span class="nc" id="L262">						importRewrite.addStaticImport(type, member, false);</span>
+					}
+				}
+<span class="nc bnc" id="L265" title="All 2 branches missed.">				for (String removeStatic : imports.getRemoveStaticImports()) {</span>
+<span class="nc" id="L266">					int lastDot = removeStatic.lastIndexOf('.');</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">					if (lastDot &gt; 0) {</span>
+<span class="nc" id="L268">						String type = removeStatic.substring(0, lastDot);</span>
+<span class="nc" id="L269">						String member = removeStatic.substring(lastDot + 1);</span>
+<span class="nc" id="L270">						importRewrite.removeStaticImport(type + &quot;.&quot; + member); //$NON-NLS-1$</span>
+					}
+				}
+
+				// Handle replaceStaticImport directives
+				// Note: This may execute multiple times for the same imports when multiple
+				// rules match in the same file. ImportRewrite handles duplicate add/remove
+				// operations gracefully, so this is an acceptable tradeoff for simplicity.
+<span class="nc bnc" id="L278" title="All 2 branches missed.">				for (Map.Entry&lt;String, String&gt; entry : imports.getReplaceStaticImports().entrySet()) {</span>
+<span class="nc" id="L279">					String oldType = entry.getKey();</span>
+<span class="nc" id="L280">					String newType = entry.getValue();</span>
+					// Find existing static imports from oldType and replace with newType
+<span class="nc" id="L282">					CompilationUnit cu = cuRewrite.getRoot();</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">					for (Object importObj : cu.imports()) {</span>
+<span class="nc" id="L284">						org.eclipse.jdt.core.dom.ImportDeclaration importDecl =</span>
+<span class="nc" id="L285">								(org.eclipse.jdt.core.dom.ImportDeclaration) importObj;</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">						if (importDecl.isStatic()) {</span>
+<span class="nc" id="L287">							String importName = importDecl.getName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L288" title="All 4 branches missed.">							if (importDecl.isOnDemand() &amp;&amp; importName.equals(oldType)) {</span>
+								// Wildcard: import static org.junit.Assert.* → import static org.junit.jupiter.api.Assertions.*
+<span class="nc" id="L290">								importRewrite.removeStaticImport(oldType + &quot;.*&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L291">								importRewrite.addStaticImport(newType, &quot;*&quot;, false); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">							} else if (importName.startsWith(oldType + &quot;.&quot;)) { //$NON-NLS-1$</span>
+								// Specific: import static org.junit.Assert.assertEquals → ...Assertions.assertEquals
+<span class="nc" id="L294">								String member = importName.substring(oldType.length() + 1);</span>
+<span class="nc" id="L295">								importRewrite.removeStaticImport(importName);</span>
+<span class="nc" id="L296">								importRewrite.addStaticImport(newType, member, false);</span>
+							}
+						}
+					}
+				}
+			}
+
+			// Parse replacement as an expression and replace the matched node
+<span class="nc bnc" id="L304" title="All 2 branches missed.">			if (matchedNode instanceof Expression) {</span>
+				// Shorten FQNs to simple names (imports are already added above)
+<span class="nc" id="L306">				String shortenedReplacement = shortenFqns(replacement, result);</span>
+
+				// Try to parse the replacement as an expression
+<span class="nc" id="L309">				org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L310">				parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_EXPRESSION);</span>
+<span class="nc" id="L311">				parser.setSource(shortenedReplacement.toCharArray());</span>
+<span class="nc" id="L312">				ASTNode newNode = parser.createAST(null);</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">				if (newNode instanceof Expression) {</span>
+<span class="nc" id="L314">					ASTNode copy = ASTNode.copySubtree(ast, newNode);</span>
+					// Use replaceAndRemoveNLS for StringLiteral nodes to clean up //$NON-NLS-n$ comments
+<span class="nc bnc" id="L316" title="All 2 branches missed.">					if (matchedNode instanceof StringLiteral) {</span>
+						try {
+<span class="nc" id="L318">							ASTNodes.replaceAndRemoveNLS(rewrite, matchedNode, copy, group, cuRewrite);</span>
+<span class="nc" id="L319">						} catch (CoreException e) {</span>
+							// Fall back to plain replace if NLS removal fails
+<span class="nc" id="L321">							rewrite.replace(matchedNode, copy, group);</span>
+						}
+<span class="nc" id="L323">					} else {</span>
+<span class="nc" id="L324">						rewrite.replace(matchedNode, copy, group);</span>
+					}
+
+					// Auto-detect: did we change a String charset argument to a Charset type?
+<span class="nc" id="L328">					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(</span>
+<span class="nc" id="L329">							matchedNode, replacement);</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">					if (typeChange != null) {</span>
+<span class="nc" id="L331">						ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
+<span class="nc" id="L332">						ExceptionCleanupHelper.removeCheckedException(</span>
+<span class="nc" id="L333">								matchedNode,</span>
+<span class="nc" id="L334">								typeChange.exceptionFQN(),</span>
+<span class="nc" id="L335">								typeChange.exceptionSimpleName(),</span>
+<span class="nc" id="L336">								group, rewrite, importRewrite);</span>
+					}
+				}
+<span class="nc bnc" id="L339" title="All 2 branches missed.">			} else if (matchedNode instanceof Annotation) {</span>
+				// Handle annotation replacement (e.g., @Before → @BeforeEach)
+<span class="nc" id="L341">				String annotationName = replacement.trim();</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">				if (annotationName.startsWith(&quot;@&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L343">					annotationName = annotationName.substring(1);</span>
+				}
+				Annotation newAnnotation;
+<span class="nc bnc" id="L346" title="All 2 branches missed.">				if (matchedNode instanceof SingleMemberAnnotation oldSingleMember) {</span>
+					// Preserve the value: @Ignore(&quot;reason&quot;) → @Disabled(&quot;reason&quot;)
+<span class="nc" id="L348">					SingleMemberAnnotation newSingleMember = ast.newSingleMemberAnnotation();</span>
+<span class="nc" id="L349">					newSingleMember.setTypeName(ast.newName(annotationName));</span>
+<span class="nc" id="L350">					newSingleMember.setValue((Expression) ASTNode.copySubtree(ast, oldSingleMember.getValue()));</span>
+<span class="nc" id="L351">					newAnnotation = newSingleMember;</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">				} else if (matchedNode instanceof NormalAnnotation oldNormal) {</span>
+					// Preserve member-value pairs: @Test(expected=X.class) → @Test(expected=X.class)
+<span class="nc" id="L354">					NormalAnnotation newNormal = ast.newNormalAnnotation();</span>
+<span class="nc" id="L355">					newNormal.setTypeName(ast.newName(annotationName));</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">					for (Object obj : oldNormal.values()) {</span>
+<span class="nc" id="L357">						MemberValuePair oldPair = (MemberValuePair) obj;</span>
+<span class="nc" id="L358">						MemberValuePair newPair = ast.newMemberValuePair();</span>
+<span class="nc" id="L359">						newPair.setName(ast.newSimpleName(oldPair.getName().getIdentifier()));</span>
+<span class="nc" id="L360">						newPair.setValue((Expression) ASTNode.copySubtree(ast, oldPair.getValue()));</span>
+<span class="nc" id="L361">						newNormal.values().add(newPair);</span>
+					}
+<span class="nc" id="L363">					newAnnotation = newNormal;</span>
+<span class="nc" id="L364">				} else {</span>
+					// MarkerAnnotation: @Before → @BeforeEach
+<span class="nc" id="L366">					MarkerAnnotation newMarker = ast.newMarkerAnnotation();</span>
+<span class="nc" id="L367">					newMarker.setTypeName(ast.newName(annotationName));</span>
+<span class="nc" id="L368">					newAnnotation = newMarker;</span>
+				}
+<span class="nc" id="L370">				rewrite.replace(matchedNode, newAnnotation, group);</span>
+			}
+<span class="nc" id="L372">		}</span>
+
+		/**
+		 * Shortens fully qualified names in the replacement text to simple names.
+		 *
+		 * &lt;p&gt;Uses the already-inferred {@link ImportDirective#getAddImports()} to know
+		 * which FQNs to shorten. For example, {@code java.nio.charset.StandardCharsets.UTF_8}
+		 * becomes {@code StandardCharsets.UTF_8} since the import for
+		 * {@code java.nio.charset.StandardCharsets} is already being added.&lt;/p&gt;
+		 *
+		 * &lt;p&gt;FQNs are processed longest-first to avoid partial-match issues.&lt;/p&gt;
+		 *
+		 * @param replacement the raw replacement text containing FQNs
+		 * @param result the transformation result with import directives
+		 * @return the replacement text with FQNs shortened to simple names
+		 */
+		private static String shortenFqns(String replacement, TransformationResult result) {
+<span class="nc bnc" id="L389" title="All 2 branches missed.">			if (!result.hasImportDirective()) {</span>
+<span class="nc" id="L390">				return replacement;</span>
+			}
+<span class="nc" id="L392">			List&lt;String&gt; addImports = result.importDirective().getAddImports();</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">			if (addImports.isEmpty()) {</span>
+<span class="nc" id="L394">				return replacement;</span>
+			}
+			// Sort by length (longest first) to avoid partial replacement issues
+<span class="nc" id="L397">			List&lt;String&gt; sorted = new java.util.ArrayList&lt;&gt;(addImports);</span>
+<span class="nc" id="L398">			sorted.sort((a, b) -&gt; Integer.compare(b.length(), a.length()));</span>
+
+<span class="nc" id="L400">			String shortened = replacement;</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">			for (String fqn : sorted) {</span>
+<span class="nc" id="L402">				int lastDot = fqn.lastIndexOf('.');</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">				if (lastDot &gt; 0) {</span>
+<span class="nc" id="L404">					String simpleName = fqn.substring(lastDot + 1);</span>
+<span class="nc" id="L405">					shortened = shortened.replace(fqn, simpleName);</span>
+				}
+			}
+<span class="nc" id="L408">			return shortened;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
