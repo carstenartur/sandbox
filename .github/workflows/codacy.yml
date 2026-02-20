@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, 2022-12, 2022-09, 2022-06 ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   codacy-java-tools:
     name: Codacy Java Tools
