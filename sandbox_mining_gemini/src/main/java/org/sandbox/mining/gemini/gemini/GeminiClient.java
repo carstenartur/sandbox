@@ -34,7 +34,7 @@ import com.google.gson.JsonParser;
  * REST client for the Google Gemini API.
  *
  * <p>Sends prompts to the Gemini API and parses the response into
- * {@link CommitEvaluation} objects. Includes rate limiting (4s delay)
+ * {@link CommitEvaluation} objects. Includes rate limiting (6s delay)
  * and exponential backoff on HTTP 429 responses.</p>
  */
 public class GeminiClient implements AutoCloseable {
@@ -42,9 +42,10 @@ public class GeminiClient implements AutoCloseable {
 	private static final String DEFAULT_MODEL = "gemini-2.5-flash";
 	private static final String API_URL_TEMPLATE =
 			"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
-	private static final int RATE_LIMIT_DELAY_MS = 4000;
-	private static final int MAX_RETRIES = 3;
+	private static final int RATE_LIMIT_DELAY_MS = 6000;
+	private static final int MAX_RETRIES = 5;
 	private static final int INITIAL_BACKOFF_MS = 5000;
+	private static final int POST_FAILURE_COOLDOWN_MS = 60000;
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
 
 	private final String apiKey;
@@ -171,7 +172,7 @@ public class GeminiClient implements AutoCloseable {
 	private String sendWithRetry(String requestBody) throws IOException {
 		int backoffMs = INITIAL_BACKOFF_MS;
 
-		for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+		for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
 			try {
 				HttpRequest request = HttpRequest.newBuilder()
 						.uri(URI.create(String.format(API_URL_TEMPLATE, model, apiKey)))
@@ -188,7 +189,8 @@ public class GeminiClient implements AutoCloseable {
 				}
 
 				if (response.statusCode() == 429) {
-					System.err.println("Rate limited (429), backing off " + backoffMs + "ms");
+					System.err.println("Rate limited (429), attempt " + (attempt + 1) + "/" + MAX_RETRIES
+							+ ", backing off " + backoffMs + "ms");
 					Thread.sleep(backoffMs);
 					backoffMs *= 2;
 					continue;
@@ -204,7 +206,13 @@ public class GeminiClient implements AutoCloseable {
 			}
 		}
 
-		System.err.println("Max retries exceeded for Gemini API call");
+		System.err.println("Max retries exceeded for Gemini API call, entering post-failure cooldown of "
+				+ POST_FAILURE_COOLDOWN_MS + "ms");
+		try {
+			Thread.sleep(POST_FAILURE_COOLDOWN_MS);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 		return null;
 	}
 
@@ -261,6 +269,10 @@ public class GeminiClient implements AutoCloseable {
 					getStringOrNull(eval, "summary"));
 		} catch (Exception e) {
 			System.err.println("Failed to parse Gemini response: " + e.getMessage());
+			if (responseBody != null && Boolean.parseBoolean(System.getenv("GEMINI_DEBUG"))) {
+				System.err.println("Raw response (first 500 chars): "
+						+ responseBody.substring(0, Math.min(500, responseBody.length())));
+			}
 			return null;
 		}
 	}

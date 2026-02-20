@@ -17,6 +17,10 @@ A hint file has optional metadata directives followed by transformation rules.
 <!tags: tag1, tag2, tag3>
 ```
 
+**IMPORTANT**: Every metadata directive MUST be enclosed with angle brackets and have a closing `>`:
+- ✅ Correct: `<!description: Replace deprecated API calls>`
+- ❌ Wrong: `<!description: Replace deprecated API calls` (missing closing `>`)
+
 ### Transformation Rules
 
 Each rule consists of a **pattern** (what to match) and a **rewrite** (what to replace it with).
@@ -27,6 +31,22 @@ Each rule consists of a **pattern** (what to match) and a **rewrite** (what to r
 pattern_expression
 =>
 replacement_expression
+;;
+```
+
+**CRITICAL SYNTAX RULES**:
+1. The `=>` arrow is MANDATORY between the pattern and replacement. Never omit it.
+2. Every rule MUST end with `;;` on its own line.
+3. Each rule has exactly this structure — pattern, then `=>`, then replacement, then `;;`.
+4. Do NOT place the pattern and replacement on the same line without `=>`.
+5. Complex expressions (method chains, constructors) are valid as patterns — just ensure `=>` separates pattern from replacement.
+
+Example of a valid complex rule:
+
+```
+new java.io.File($path).toString()
+=>
+java.nio.file.Path.of($path).toString()
 ;;
 ```
 
@@ -180,3 +200,7 @@ java.util.Arrays.asList($args)
 $in.read($buf) :: sourceVersionGE(9) && notContains("transferTo")
 ;;
 ```
+
+## JSON Output Rules
+
+When including DSL rules in JSON fields like `dslRule` or `dslRuleAfterChange`, ensure all newlines are properly escaped as `\n` within the JSON string. Do NOT use literal line breaks inside JSON string values.
