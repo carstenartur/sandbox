@@ -257,7 +257,7 @@ Each `UseExplicitEncodingFixCore` enum value is classified as either **DSL-handl
 ### Execution Flow
 
 1. **DSL phase**: `HintFileFixCore.findOperationsForBundle("encoding", ...)` runs the `encoding.sandbox-hint` rules. Matched nodes are added to `nodesprocessed`.
-2. **Imperative phase**: Only non-DSL-handled enum values run their `findOperations()`. The `.excluding(nodesprocessed)` call in each helper's visitor skips already-processed nodes.
+2. **Imperative phase**: All imperative helpers run their `findOperations()`. The `.excluding(nodesprocessed)` call in each helper's visitor skips already-processed nodes, preventing double-processing when DSL already handled them. This provides automatic fallback: if DSL rules don't match (e.g., due to missing patterns or guard failures), the imperative helpers seamlessly handle those cases.
 3. **AGGREGATE mode exception**: When `ENFORCE_UTF8_AGGREGATE` is selected, DSL is bypassed entirely because static field creation cannot be expressed declaratively.
 
 ### Mode Mapping

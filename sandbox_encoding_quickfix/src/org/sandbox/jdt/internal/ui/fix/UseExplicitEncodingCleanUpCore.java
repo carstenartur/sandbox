@@ -86,13 +86,10 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		}
 
 		// Tier 2+3: Run imperative helpers for remaining cases.
-		// When DSL is active, skip DSL-handled enum values to avoid double-processing.
-		// The nodesprocessed set also prevents duplicates at the AST node level.
-		computeFixSet.forEach(i -> {
-			if (!dslActive || !i.isDslHandled()) {
-				i.findOperations(compilationUnit, operations, nodesprocessed, cb);
-			}
-		});
+		// Non-DSL patterns always run. DSL-handled patterns are skipped when DSL produced
+		// operations (nodesprocessed prevents double-processing at AST node level).
+		// If DSL produced nothing, imperative helpers run as fallback for all patterns.
+		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
 
 		if (operations.isEmpty()) {
 			return null;
