@@ -620,26 +620,26 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.Charset;
 
 public class E1 {
-    private static final String ENCODING_UTF8 = "UTF-8"; // Konstante für Encoding
+	private static final String ENCODING_UTF8 = "UTF-8"; // Konstante für Encoding
 
-    void method(WritableByteChannel ch, Charset charset) {
-        // Fälle für StandardCharsets-Konstanten
-        Writer w1 = Channels.newWriter(ch, "UTF-8");        // soll StandardCharsets.UTF_8 werden
-        Writer w2 = Channels.newWriter(ch, "ISO-8859-1");   // soll StandardCharsets.ISO_8859_1 werden
-        Writer w3 = Channels.newWriter(ch, "US-ASCII");     // soll StandardCharsets.US_ASCII werden
-        Writer w4 = Channels.newWriter(ch, "UTF-16");       // soll StandardCharsets.UTF_16 werden
+	void method(WritableByteChannel ch, Charset charset) {
+		// Fälle für StandardCharsets-Konstanten
+		Writer w1 = Channels.newWriter(ch, "UTF-8");        // soll StandardCharsets.UTF_8 werden
+		Writer w2 = Channels.newWriter(ch, "ISO-8859-1");   // soll StandardCharsets.ISO_8859_1 werden
+		Writer w3 = Channels.newWriter(ch, "US-ASCII");     // soll StandardCharsets.US_ASCII werden
+		Writer w4 = Channels.newWriter(ch, "UTF-16");       // soll StandardCharsets.UTF_16 werden
 
-        // Aufruf mit einer String-Konstanten (soll unverändert bleiben)
-        Writer w5 = Channels.newWriter(ch, ENCODING_UTF8);  // bleibt unverändert
+		// Aufruf mit einer String-Konstanten (soll unverändert bleiben)
+		Writer w5 = Channels.newWriter(ch, ENCODING_UTF8);  // bleibt unverändert
 
-        // Fälle ohne Entsprechung in StandardCharsets (sollen unverändert bleiben)
-        Writer w6 = Channels.newWriter(ch, "windows-1252"); // bleibt unverändert
-        Writer w7 = Channels.newWriter(ch, "Shift_JIS");    // bleibt unverändert
+		// Fälle ohne Entsprechung in StandardCharsets (sollen unverändert bleiben)
+		Writer w6 = Channels.newWriter(ch, "windows-1252"); // bleibt unverändert
+		Writer w7 = Channels.newWriter(ch, "Shift_JIS");    // bleibt unverändert
 
-        // Aufrufe, die bereits `StandardCharsets` verwenden (bleiben unverändert)
-        Writer w8 = Channels.newWriter(ch, StandardCharsets.UTF_8);
-        Writer w9 = Channels.newWriter(ch, charset); // unverändert, da `Charset` Instanz verwendet
-    }
+		// Aufrufe, die bereits `StandardCharsets` verwenden (bleiben unverändert)
+		Writer w8 = Channels.newWriter(ch, StandardCharsets.UTF_8);
+		Writer w9 = Channels.newWriter(ch, charset); // unverändert, da `Charset` Instanz verwendet
+	}
 }
 """,
 
@@ -653,30 +653,30 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.Charset;
 
 public class E1 {
-    private static final Charset UTF_16 = StandardCharsets.UTF_16;
+	private static final Charset UTF_16 = StandardCharsets.UTF_16;
 	private static final Charset US_ASCII = StandardCharsets.US_ASCII;
 	private static final Charset ISO_8859_1 = StandardCharsets.ISO_8859_1;
 	private static final Charset UTF_8 = StandardCharsets.UTF_8;
 	private static final String ENCODING_UTF8 = "UTF-8"; // Konstante für Encoding
 
-    void method(WritableByteChannel ch, Charset charset) {
-        // Fälle für StandardCharsets-Konstanten
-        Writer w1 = Channels.newWriter(ch, E1.UTF_8);        // soll StandardCharsets.UTF_8 werden
-        Writer w2 = Channels.newWriter(ch, E1.ISO_8859_1);   // soll StandardCharsets.ISO_8859_1 werden
-        Writer w3 = Channels.newWriter(ch, E1.US_ASCII);     // soll StandardCharsets.US_ASCII werden
-        Writer w4 = Channels.newWriter(ch, E1.UTF_16);       // soll StandardCharsets.UTF_16 werden
+	void method(WritableByteChannel ch, Charset charset) {
+		// Fälle für StandardCharsets-Konstanten
+		Writer w1 = Channels.newWriter(ch, E1.UTF_8);        // soll StandardCharsets.UTF_8 werden
+		Writer w2 = Channels.newWriter(ch, E1.ISO_8859_1);   // soll StandardCharsets.ISO_8859_1 werden
+		Writer w3 = Channels.newWriter(ch, E1.US_ASCII);     // soll StandardCharsets.US_ASCII werden
+		Writer w4 = Channels.newWriter(ch, E1.UTF_16);       // soll StandardCharsets.UTF_16 werden
 
-        // Aufruf mit einer String-Konstanten (soll unverändert bleiben)
-        Writer w5 = Channels.newWriter(ch, ENCODING_UTF8);  // bleibt unverändert
+		// Aufruf mit einer String-Konstanten (soll unverändert bleiben)
+		Writer w5 = Channels.newWriter(ch, ENCODING_UTF8);  // bleibt unverändert
 
-        // Fälle ohne Entsprechung in StandardCharsets (sollen unverändert bleiben)
-        Writer w6 = Channels.newWriter(ch, "windows-1252"); // bleibt unverändert
-        Writer w7 = Channels.newWriter(ch, "Shift_JIS");    // bleibt unverändert
+		// Fälle ohne Entsprechung in StandardCharsets (sollen unverändert bleiben)
+		Writer w6 = Channels.newWriter(ch, "windows-1252"); // bleibt unverändert
+		Writer w7 = Channels.newWriter(ch, "Shift_JIS");    // bleibt unverändert
 
-        // Aufrufe, die bereits `StandardCharsets` verwenden (bleiben unverändert)
-        Writer w8 = Channels.newWriter(ch, StandardCharsets.UTF_8);
-        Writer w9 = Channels.newWriter(ch, charset); // unverändert, da `Charset` Instanz verwendet
-    }
+		// Aufrufe, die bereits `StandardCharsets` verwenden (bleiben unverändert)
+		Writer w8 = Channels.newWriter(ch, StandardCharsets.UTF_8);
+		Writer w9 = Channels.newWriter(ch, charset); // unverändert, da `Charset` Instanz verwendet
+	}
 }
 """),
 		PRINTWRITER("""
@@ -2036,7 +2036,6 @@ public class E1 {
     }
 }
 """);
-
 		String given;
 		String expected;
 		boolean skipCompileCheck;

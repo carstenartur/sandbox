@@ -33,6 +33,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -260,8 +261,15 @@ public class HintFileFixCore {
 				for (String addImport : imports.getAddImports()) {
 					importRewrite.addImport(addImport);
 				}
-				for (String removeImport : imports.getRemoveImports()) {
-					importRewrite.removeImport(removeImport);
+				// Use ImportRemover instead of directly calling importRewrite.removeImport().
+				// Direct removal is unsafe because the same type may still be referenced
+				// by other nodes in the compilation unit that are NOT being transformed.
+				// ImportRemover scans the AST and only removes the import when ALL
+				// references to the type are gone (see eclipse-jdt/eclipse.jdt.ui#121).
+				if (!imports.getRemoveImports().isEmpty()) {
+					ImportRemover remover = cuRewrite.getImportRemover();
+					remover.registerRemovedNode(matchedNode);
+					remover.applyRemoves(importRewrite);
 				}
 				for (String addStatic : imports.getAddStaticImports()) {
 					int lastDot = addStatic.lastIndexOf('.');
@@ -321,8 +329,18 @@ public class HintFileFixCore {
 				ASTNode newNode = parser.createAST(null);
 				if (newNode instanceof Expression) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
-					// Use replaceAndRemoveNLS for StringLiteral nodes to clean up //$NON-NLS-n$ comments
-					if (matchedNode instanceof StringLiteral) {
+					// Use replaceAndRemoveNLS only when the number of string literals
+					// DECREASES between the matched node and the replacement. This means
+					// a string literal (e.g., "UTF-8") was replaced by a non-string
+					// expression (e.g., StandardCharsets.UTF_8), so its //$NON-NLS-n$
+					// comment must be removed. We must NOT call replaceAndRemoveNLS when
+					// string count stays the same or increases (e.g., zero-arg expansion
+					// like new InputStreamReader(in) → new InputStreamReader(in, Charset.defaultCharset()))
+					// because that would wrongly remove NLS comments for unrelated string
+					// literals like "file1.txt".
+					int oldCount = countStringLiterals(matchedNode);
+					int newCount = countStringLiterals(copy);
+					if (oldCount > newCount) {
 						try {
 							ASTNodes.replaceAndRemoveNLS(rewrite, matchedNode, copy, group, cuRewrite);
 						} catch (CoreException e) {
@@ -415,6 +433,32 @@ public class HintFileFixCore {
 				}
 			}
 			return shortened;
+		}
+
+		/**
+		 * Counts the number of {@link StringLiteral} nodes in the given AST subtree.
+		 *
+		 * <p>This is used to determine whether {@code replaceAndRemoveNLS} should be
+		 * used instead of a plain {@code rewrite.replace()}. When a DSL rule replaces
+		 * a string literal with a non-string expression (e.g., {@code "UTF-8"} →
+		 * {@code StandardCharsets.UTF_8}), the count decreases and the associated
+		 * {@code //$NON-NLS-n$} comment must be removed. When the count stays the
+		 * same or increases (e.g., zero-arg expansion adding a new argument),
+		 * existing NLS comments must be preserved.</p>
+		 *
+		 * @param node the AST node to inspect
+		 * @return the number of {@code StringLiteral} nodes found
+		 */
+		private static int countStringLiterals(ASTNode node) {
+			int[] count = { 0 };
+			node.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
+				@Override
+				public boolean visit(StringLiteral literal) {
+					count[0]++;
+					return false;
+				}
+			});
+			return count[0];
 		}
 	}
 }

@@ -586,26 +586,26 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.Charset;
 
 public class E1 {
-    private static final String ENCODING_UTF8 = "UTF-8"; // Konstante für Encoding
+	private static final String ENCODING_UTF8 = "UTF-8"; // Konstante für Encoding
 
-    void method(WritableByteChannel ch, Charset charset) {
-        // Fälle für StandardCharsets-Konstanten
-        Writer w1 = Channels.newWriter(ch, "UTF-8");        // soll StandardCharsets.UTF_8 werden
-        Writer w2 = Channels.newWriter(ch, "ISO-8859-1");   // soll StandardCharsets.ISO_8859_1 werden
-        Writer w3 = Channels.newWriter(ch, "US-ASCII");     // soll StandardCharsets.US_ASCII werden
-        Writer w4 = Channels.newWriter(ch, "UTF-16");       // soll StandardCharsets.UTF_16 werden
+	void method(WritableByteChannel ch, Charset charset) {
+		// Fälle für StandardCharsets-Konstanten
+		Writer w1 = Channels.newWriter(ch, "UTF-8");        // soll StandardCharsets.UTF_8 werden
+		Writer w2 = Channels.newWriter(ch, "ISO-8859-1");   // soll StandardCharsets.ISO_8859_1 werden
+		Writer w3 = Channels.newWriter(ch, "US-ASCII");     // soll StandardCharsets.US_ASCII werden
+		Writer w4 = Channels.newWriter(ch, "UTF-16");       // soll StandardCharsets.UTF_16 werden
 
-        // Aufruf mit einer String-Konstanten (soll unverändert bleiben)
-        Writer w5 = Channels.newWriter(ch, ENCODING_UTF8);  // bleibt unverändert
+		// Aufruf mit einer String-Konstanten (soll unverändert bleiben)
+		Writer w5 = Channels.newWriter(ch, ENCODING_UTF8);  // bleibt unverändert
 
-        // Fälle ohne Entsprechung in StandardCharsets (sollen unverändert bleiben)
-        Writer w6 = Channels.newWriter(ch, "windows-1252"); // bleibt unverändert
-        Writer w7 = Channels.newWriter(ch, "Shift_JIS");    // bleibt unverändert
+		// Fälle ohne Entsprechung in StandardCharsets (sollen unverändert bleiben)
+		Writer w6 = Channels.newWriter(ch, "windows-1252"); // bleibt unverändert
+		Writer w7 = Channels.newWriter(ch, "Shift_JIS");    // bleibt unverändert
 
-        // Aufrufe, die bereits `StandardCharsets` verwenden (bleiben unverändert)
-        Writer w8 = Channels.newWriter(ch, StandardCharsets.UTF_8);
-        Writer w9 = Channels.newWriter(ch, charset); // unverändert, da `Charset` Instanz verwendet
-    }
+		// Aufrufe, die bereits `StandardCharsets` verwenden (bleiben unverändert)
+		Writer w8 = Channels.newWriter(ch, StandardCharsets.UTF_8);
+		Writer w9 = Channels.newWriter(ch, charset); // unverändert, da `Charset` Instanz verwendet
+	}
 }
 """,
 
@@ -619,26 +619,26 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.Charset;
 
 public class E1 {
-    private static final String ENCODING_UTF8 = "UTF-8"; // Konstante für Encoding
+	private static final String ENCODING_UTF8 = "UTF-8"; // Konstante für Encoding
 
-    void method(WritableByteChannel ch, Charset charset) {
-        // Fälle für StandardCharsets-Konstanten
-        Writer w1 = Channels.newWriter(ch, StandardCharsets.UTF_8);        // soll StandardCharsets.UTF_8 werden
-        Writer w2 = Channels.newWriter(ch, StandardCharsets.ISO_8859_1);   // soll StandardCharsets.ISO_8859_1 werden
-        Writer w3 = Channels.newWriter(ch, StandardCharsets.US_ASCII);     // soll StandardCharsets.US_ASCII werden
-        Writer w4 = Channels.newWriter(ch, StandardCharsets.UTF_16);       // soll StandardCharsets.UTF_16 werden
+	void method(WritableByteChannel ch, Charset charset) {
+		// Fälle für StandardCharsets-Konstanten
+		Writer w1 = Channels.newWriter(ch, StandardCharsets.UTF_8);        // soll StandardCharsets.UTF_8 werden
+		Writer w2 = Channels.newWriter(ch, StandardCharsets.ISO_8859_1);   // soll StandardCharsets.ISO_8859_1 werden
+		Writer w3 = Channels.newWriter(ch, StandardCharsets.US_ASCII);     // soll StandardCharsets.US_ASCII werden
+		Writer w4 = Channels.newWriter(ch, StandardCharsets.UTF_16);       // soll StandardCharsets.UTF_16 werden
 
-        // Aufruf mit einer String-Konstanten (soll unverändert bleiben)
-        Writer w5 = Channels.newWriter(ch, ENCODING_UTF8);  // bleibt unverändert
+		// Aufruf mit einer String-Konstanten (soll unverändert bleiben)
+		Writer w5 = Channels.newWriter(ch, ENCODING_UTF8);  // bleibt unverändert
 
-        // Fälle ohne Entsprechung in StandardCharsets (sollen unverändert bleiben)
-        Writer w6 = Channels.newWriter(ch, "windows-1252"); // bleibt unverändert
-        Writer w7 = Channels.newWriter(ch, "Shift_JIS");    // bleibt unverändert
+		// Fälle ohne Entsprechung in StandardCharsets (sollen unverändert bleiben)
+		Writer w6 = Channels.newWriter(ch, "windows-1252"); // bleibt unverändert
+		Writer w7 = Channels.newWriter(ch, "Shift_JIS");    // bleibt unverändert
 
-        // Aufrufe, die bereits `StandardCharsets` verwenden (bleiben unverändert)
-        Writer w8 = Channels.newWriter(ch, StandardCharsets.UTF_8);
-        Writer w9 = Channels.newWriter(ch, charset); // unverändert, da `Charset` Instanz verwendet
-    }
+		// Aufrufe, die bereits `StandardCharsets` verwenden (bleiben unverändert)
+		Writer w8 = Channels.newWriter(ch, StandardCharsets.UTF_8);
+		Writer w9 = Channels.newWriter(ch, charset); // unverändert, da `Charset` Instanz verwendet
+	}
 }
 """),
 		PRINTWRITER("""
@@ -848,89 +848,89 @@ import java.nio.charset.StandardCharsets;
 
 public class E1 {
 
-    static void bla(String filename) throws FileNotFoundException, UnsupportedEncodingException {
-        byte[] b = {(byte) 59};
+	static void bla(String filename) throws FileNotFoundException, UnsupportedEncodingException {
+		byte[] b = {(byte) 59};
 
-        // Fälle mit String Encoding als "UTF-8" (soll durch StandardCharsets.UTF_8 ersetzt werden)
-        String s1 = new String(b, "UTF-8"); // "UTF-8" als String-Literal
-        String s2 = new String(b, 0, 1, "UTF-8"); // "UTF-8" als String-Literal
+		// Fälle mit String Encoding als "UTF-8" (soll durch StandardCharsets.UTF_8 ersetzt werden)
+		String s1 = new String(b, "UTF-8"); // "UTF-8" als String-Literal
+		String s2 = new String(b, 0, 1, "UTF-8"); // "UTF-8" als String-Literal
 
-        // Fall mit ISO-8859-1 Encoding (soll durch StandardCharsets.ISO_8859_1 ersetzt werden)
-        String s3 = new String(b, "ISO-8859-1"); // "ISO-8859-1" als String-Literal
-        String s4 = new String(b, 0, 1, "ISO-8859-1"); // "ISO-8859-1" als String-Literal
+		// Fall mit ISO-8859-1 Encoding (soll durch StandardCharsets.ISO_8859_1 ersetzt werden)
+		String s3 = new String(b, "ISO-8859-1"); // "ISO-8859-1" als String-Literal
+		String s4 = new String(b, 0, 1, "ISO-8859-1"); // "ISO-8859-1" als String-Literal
 
-        // Fall mit US-ASCII Encoding (soll durch StandardCharsets.US_ASCII ersetzt werden)
-        String s5 = new String(b, "US-ASCII"); // "US-ASCII" als String-Literal
-        String s6 = new String(b, 0, 1, "US-ASCII"); // "US-ASCII" als String-Literal
+		// Fall mit US-ASCII Encoding (soll durch StandardCharsets.US_ASCII ersetzt werden)
+		String s5 = new String(b, "US-ASCII"); // "US-ASCII" als String-Literal
+		String s6 = new String(b, 0, 1, "US-ASCII"); // "US-ASCII" als String-Literal
 
-        // Fall mit UTF-16 Encoding (soll durch StandardCharsets.UTF_16 ersetzt werden)
-        String s7 = new String(b, "UTF-16"); // "UTF-16" als String-Literal
-        String s8 = new String(b, 0, 1, "UTF-16"); // "UTF-16" als String-Literal
+		// Fall mit UTF-16 Encoding (soll durch StandardCharsets.UTF_16 ersetzt werden)
+		String s7 = new String(b, "UTF-16"); // "UTF-16" als String-Literal
+		String s8 = new String(b, 0, 1, "UTF-16"); // "UTF-16" als String-Literal
 
-        // Fall mit einer benutzerdefinierten Konstante für Encoding, bleibt unverändert
-        String s9 = new String(b, "UTF-8"); // bleibt unverändert
-        String s10 = new String(b, 0, 1, "UTF-8"); // bleibt unverändert
+		// Fall mit einer benutzerdefinierten Konstante für Encoding, bleibt unverändert
+		String s9 = new String(b, "UTF-8"); // bleibt unverändert
+		String s10 = new String(b, 0, 1, "UTF-8"); // bleibt unverändert
 
-        // Fälle ohne Entsprechung in StandardCharsets, bleiben unverändert
-        String s11 = new String(b, "windows-1252"); // bleibt unverändert
-        String s12 = new String(b, 0, 1, "windows-1252"); // bleibt unverändert
-        String s13 = new String(b, "Shift_JIS"); // bleibt unverändert
-        String s14 = new String(b, 0, 1, "Shift_JIS"); // bleibt unverändert
+		// Fälle ohne Entsprechung in StandardCharsets, bleiben unverändert
+		String s11 = new String(b, "windows-1252"); // bleibt unverändert
+		String s12 = new String(b, 0, 1, "windows-1252"); // bleibt unverändert
+		String s13 = new String(b, "Shift_JIS"); // bleibt unverändert
+		String s14 = new String(b, 0, 1, "Shift_JIS"); // bleibt unverändert
 
-        // Fall mit Charset.forName() (wird unverändert bleiben, keine Ersetzung möglich)
-        Charset charset = Charset.forName("UTF-16");
-        String s15 = new String(b, charset); // bleibt unverändert
-        String s16 = new String(b, 0, 1, charset); // bleibt unverändert
+		// Fall mit Charset.forName() (wird unverändert bleiben, keine Ersetzung möglich)
+		Charset charset = Charset.forName("UTF-16");
+		String s15 = new String(b, charset); // bleibt unverändert
+		String s16 = new String(b, 0, 1, charset); // bleibt unverändert
 
-        // Fälle, die eine UnsupportedEncodingException werfen (werden im Cleanup angepasst)
-        try {
-            String s17 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-        } catch (UnsupportedEncodingException e) {
-            // UnsupportedEncodingException wird geworfen und abgefangen
-            e.printStackTrace();
-        }
+		// Fälle, die eine UnsupportedEncodingException werfen (werden im Cleanup angepasst)
+		try {
+			String s17 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+		} catch (UnsupportedEncodingException e) {
+			// UnsupportedEncodingException wird geworfen und abgefangen
+			e.printStackTrace();
+		}
 
-        try {
-            String s18 = new String(b, 0, 1, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-        } catch (UnsupportedEncodingException e) {
-            // UnsupportedEncodingException wird geworfen und abgefangen
-            e.printStackTrace();
-        }
-    }
+		try {
+			String s18 = new String(b, 0, 1, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+		} catch (UnsupportedEncodingException e) {
+			// UnsupportedEncodingException wird geworfen und abgefangen
+			e.printStackTrace();
+		}
+	}
 
-    // Methodendeklaration mit throws für UnsupportedEncodingException (wird im Cleanup angepasst)
-    static void methodWithThrows(String filename) throws UnsupportedEncodingException {
-        byte[] b = {(byte) 59};
-        String s1 = new String(b, "non-existing-encoding"); // wirft UnsupportedEncodingException
-    }
+	// Methodendeklaration mit throws für UnsupportedEncodingException (wird im Cleanup angepasst)
+	static void methodWithThrows(String filename) throws UnsupportedEncodingException {
+		byte[] b = {(byte) 59};
+		String s1 = new String(b, "non-existing-encoding"); // wirft UnsupportedEncodingException
+	}
 
-    // Nach dem Cleanup sollte dies keine UnsupportedEncodingException mehr werfen
-    static void methodWithThrowsChange(String filename) throws FileNotFoundException {
-        byte[] b = {(byte) 59};
-        String s1 = new String(b, "UTF-8"); // wirft keine UnsupportedEncodingException mehr
-    }
+	// Nach dem Cleanup sollte dies keine UnsupportedEncodingException mehr werfen
+	static void methodWithThrowsChange(String filename) throws FileNotFoundException {
+		byte[] b = {(byte) 59};
+		String s1 = new String(b, "UTF-8"); // wirft keine UnsupportedEncodingException mehr
+	}
 
-    // Methodendeklaration mit try-catch für UnsupportedEncodingException (wird im Cleanup angepasst)
-    static void methodWithCatch(String filename) {
-        byte[] b = {(byte) 59};
-        try {
-            String s1 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-        } catch (UnsupportedEncodingException e) {
-            // UnsupportedEncodingException wird geworfen und abgefangen
-            e.printStackTrace();
-        }
-    }
+	// Methodendeklaration mit try-catch für UnsupportedEncodingException (wird im Cleanup angepasst)
+	static void methodWithCatch(String filename) {
+		byte[] b = {(byte) 59};
+		try {
+			String s1 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+		} catch (UnsupportedEncodingException e) {
+			// UnsupportedEncodingException wird geworfen und abgefangen
+			e.printStackTrace();
+		}
+	}
 
-    // Nach dem Cleanup wird keine UnsupportedEncodingException mehr abgefangen
-    static void methodWithCatchChange(String filename) {
-        byte[] b = {(byte) 59};
-        try {
-            String s1 = new String(b, "UTF-8"); // keine UnsupportedEncodingException
-        } catch (UnsupportedEncodingException e) {
-            // Dieser Block wird nicht mehr erreicht, da keine UnsupportedEncodingException mehr geworfen wird
-            e.printStackTrace();
-        }
-    }
+	// Nach dem Cleanup wird keine UnsupportedEncodingException mehr abgefangen
+	static void methodWithCatchChange(String filename) {
+		byte[] b = {(byte) 59};
+		try {
+			String s1 = new String(b, "UTF-8"); // keine UnsupportedEncodingException
+		} catch (UnsupportedEncodingException e) {
+			// Dieser Block wird nicht mehr erreicht, da keine UnsupportedEncodingException mehr geworfen wird
+			e.printStackTrace();
+		}
+	}
 }
 """,
 
@@ -943,86 +943,86 @@ import java.nio.charset.StandardCharsets;
 
 public class E1 {
 
-    static void bla(String filename) throws FileNotFoundException {
-        byte[] b = {(byte) 59};
+	static void bla(String filename) throws FileNotFoundException {
+		byte[] b = {(byte) 59};
 
-        // Fälle mit String Encoding als StandardCharsets.UTF_8 (soll durch StandardCharsets.UTF_8 ersetzt werden)
-		String s1 = new String(b, StandardCharsets.UTF_8); // StandardCharsets.UTF_8 als String-Literal
-        String s2 = new String(b, 0, 1, StandardCharsets.UTF_8); // StandardCharsets.UTF_8 als String-Literal
+		// Fälle mit String Encoding als "UTF-8" (soll durch StandardCharsets.UTF_8 ersetzt werden)
+		String s1 = new String(b, StandardCharsets.UTF_8); // "UTF-8" als String-Literal
+		String s2 = new String(b, 0, 1, StandardCharsets.UTF_8); // "UTF-8" als String-Literal
 
-        // Fall mit ISO-8859-1 Encoding (soll durch StandardCharsets.ISO_8859_1 ersetzt werden)
-		String s3 = new String(b, StandardCharsets.ISO_8859_1); // StandardCharsets.ISO_8859_1 als String-Literal
-        String s4 = new String(b, 0, 1, StandardCharsets.ISO_8859_1); // StandardCharsets.ISO_8859_1 als String-Literal
+		// Fall mit ISO-8859-1 Encoding (soll durch StandardCharsets.ISO_8859_1 ersetzt werden)
+		String s3 = new String(b, StandardCharsets.ISO_8859_1); // "ISO-8859-1" als String-Literal
+		String s4 = new String(b, 0, 1, StandardCharsets.ISO_8859_1); // "ISO-8859-1" als String-Literal
 
-        // Fall mit US-ASCII Encoding (soll durch StandardCharsets.US_ASCII ersetzt werden)
-		String s5 = new String(b, StandardCharsets.US_ASCII); // StandardCharsets.US_ASCII als String-Literal
-        String s6 = new String(b, 0, 1, StandardCharsets.US_ASCII); // StandardCharsets.US_ASCII als String-Literal
+		// Fall mit US-ASCII Encoding (soll durch StandardCharsets.US_ASCII ersetzt werden)
+		String s5 = new String(b, StandardCharsets.US_ASCII); // "US-ASCII" als String-Literal
+		String s6 = new String(b, 0, 1, StandardCharsets.US_ASCII); // "US-ASCII" als String-Literal
 
-        // Fall mit UTF-16 Encoding (soll durch StandardCharsets.UTF_16 ersetzt werden)
-		String s7 = new String(b, StandardCharsets.UTF_16); // StandardCharsets.UTF_16 als String-Literal
-        String s8 = new String(b, 0, 1, StandardCharsets.UTF_16); // StandardCharsets.UTF_16 als String-Literal
+		// Fall mit UTF-16 Encoding (soll durch StandardCharsets.UTF_16 ersetzt werden)
+		String s7 = new String(b, StandardCharsets.UTF_16); // "UTF-16" als String-Literal
+		String s8 = new String(b, 0, 1, StandardCharsets.UTF_16); // "UTF-16" als String-Literal
 
-        // Fall mit einer benutzerdefinierten Konstante für Encoding, bleibt unverändert
+		// Fall mit einer benutzerdefinierten Konstante für Encoding, bleibt unverändert
 		String s9 = new String(b, StandardCharsets.UTF_8); // bleibt unverändert
-        String s10 = new String(b, 0, 1, StandardCharsets.UTF_8); // bleibt unverändert
+		String s10 = new String(b, 0, 1, StandardCharsets.UTF_8); // bleibt unverändert
 
-        // Fälle ohne Entsprechung in StandardCharsets, bleiben unverändert
-        String s11 = new String(b, "windows-1252"); // bleibt unverändert
-        String s12 = new String(b, 0, 1, "windows-1252"); // bleibt unverändert
-        String s13 = new String(b, "Shift_JIS"); // bleibt unverändert
-        String s14 = new String(b, 0, 1, "Shift_JIS"); // bleibt unverändert
+		// Fälle ohne Entsprechung in StandardCharsets, bleiben unverändert
+		String s11 = new String(b, "windows-1252"); // bleibt unverändert
+		String s12 = new String(b, 0, 1, "windows-1252"); // bleibt unverändert
+		String s13 = new String(b, "Shift_JIS"); // bleibt unverändert
+		String s14 = new String(b, 0, 1, "Shift_JIS"); // bleibt unverändert
 
-        // Fall mit Charset.forName() (wird unverändert bleiben, keine Ersetzung möglich)
-        Charset charset = Charset.forName("UTF-16");
-        String s15 = new String(b, charset); // bleibt unverändert
-        String s16 = new String(b, 0, 1, charset); // bleibt unverändert
+		// Fall mit Charset.forName() (wird unverändert bleiben, keine Ersetzung möglich)
+		Charset charset = Charset.forName("UTF-16");
+		String s15 = new String(b, charset); // bleibt unverändert
+		String s16 = new String(b, 0, 1, charset); // bleibt unverändert
 
-        // Fälle, die eine UnsupportedEncodingException werfen (werden im Cleanup angepasst)
-        try {
-            String s17 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-        } catch (UnsupportedEncodingException e) {
-            // UnsupportedEncodingException wird geworfen und abgefangen
-            e.printStackTrace();
-        }
+		// Fälle, die eine UnsupportedEncodingException werfen (werden im Cleanup angepasst)
+		try {
+			String s17 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+		} catch (UnsupportedEncodingException e) {
+			// UnsupportedEncodingException wird geworfen und abgefangen
+			e.printStackTrace();
+		}
 
-        try {
-            String s18 = new String(b, 0, 1, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-        } catch (UnsupportedEncodingException e) {
-            // UnsupportedEncodingException wird geworfen und abgefangen
-            e.printStackTrace();
-        }
-    }
+		try {
+			String s18 = new String(b, 0, 1, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+		} catch (UnsupportedEncodingException e) {
+			// UnsupportedEncodingException wird geworfen und abgefangen
+			e.printStackTrace();
+		}
+	}
 
-    // Methodendeklaration mit throws für UnsupportedEncodingException (wird im Cleanup angepasst)
-    static void methodWithThrows(String filename) throws UnsupportedEncodingException {
-        byte[] b = {(byte) 59};
-        String s1 = new String(b, "non-existing-encoding"); // wirft UnsupportedEncodingException
-    }
+	// Methodendeklaration mit throws für UnsupportedEncodingException (wird im Cleanup angepasst)
+	static void methodWithThrows(String filename) throws UnsupportedEncodingException {
+		byte[] b = {(byte) 59};
+		String s1 = new String(b, "non-existing-encoding"); // wirft UnsupportedEncodingException
+	}
 
-    // Nach dem Cleanup sollte dies keine UnsupportedEncodingException mehr werfen
-    static void methodWithThrowsChange(String filename) throws FileNotFoundException {
-        byte[] b = {(byte) 59};
-        String s1 = new String(b, StandardCharsets.UTF_8); // wirft keine UnsupportedEncodingException mehr
-    }
+	// Nach dem Cleanup sollte dies keine UnsupportedEncodingException mehr werfen
+	static void methodWithThrowsChange(String filename) throws FileNotFoundException {
+		byte[] b = {(byte) 59};
+		String s1 = new String(b, StandardCharsets.UTF_8); // wirft keine UnsupportedEncodingException mehr
+	}
 
-    // Methodendeklaration mit try-catch für UnsupportedEncodingException (wird im Cleanup angepasst)
-    static void methodWithCatch(String filename) {
-        byte[] b = {(byte) 59};
-        try {
-            String s1 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-        } catch (UnsupportedEncodingException e) {
-            // UnsupportedEncodingException wird geworfen und abgefangen
-            e.printStackTrace();
-        }
-    }
+	// Methodendeklaration mit try-catch für UnsupportedEncodingException (wird im Cleanup angepasst)
+	static void methodWithCatch(String filename) {
+		byte[] b = {(byte) 59};
+		try {
+			String s1 = new String(b, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+		} catch (UnsupportedEncodingException e) {
+			// UnsupportedEncodingException wird geworfen und abgefangen
+			e.printStackTrace();
+		}
+	}
 
-    // Nach dem Cleanup wird keine UnsupportedEncodingException mehr abgefangen
-    static void methodWithCatchChange(String filename) {
-        byte[] b = {(byte) 59};
-        try {
-            String s1 = new String(b, StandardCharsets.UTF_8); // keine UnsupportedEncodingException
-        }
-    }
+	// Nach dem Cleanup wird keine UnsupportedEncodingException mehr abgefangen
+	static void methodWithCatchChange(String filename) {
+		byte[] b = {(byte) 59};
+		try {
+			String s1 = new String(b, StandardCharsets.UTF_8); // keine UnsupportedEncodingException
+		}
+	}
 }
 """),
 		PROPERTIESSTORETOXML(
@@ -1430,70 +1430,70 @@ import java.util.Scanner;
 
 public class E1 {
 
-    // Methode mit File und explizitem "UTF-8" (wird durch StandardCharsets.UTF_8 ersetzt)
-    static void bla3(File file) throws FileNotFoundException {
-        // Konstruktor mit String-Encoding, sollte durch StandardCharsets.UTF_8 ersetzt werden
-        Scanner s = new Scanner(file, "UTF-8");
-    }
+	// Methode mit File und explizitem "UTF-8" (wird durch StandardCharsets.UTF_8 ersetzt)
+	static void bla3(File file) throws FileNotFoundException {
+		// Konstruktor mit String-Encoding, sollte durch StandardCharsets.UTF_8 ersetzt werden
+		Scanner s = new Scanner(file, "UTF-8");
+	}
 
-    // Methode mit InputStream und explizitem "UTF-8" (wird durch StandardCharsets.UTF_8 ersetzt)
-    static void bla4(InputStream is) throws FileNotFoundException {
-        Scanner s2 = new Scanner(is, "UTF-8");
-    }
+	// Methode mit InputStream und explizitem "UTF-8" (wird durch StandardCharsets.UTF_8 ersetzt)
+	static void bla4(InputStream is) throws FileNotFoundException {
+		Scanner s2 = new Scanner(is, "UTF-8");
+	}
 
-    // Methode mit Scanner, aber ohne explizites Encoding, bleibt unverändert
-    static void bla5() {
-        Scanner s3 = new Scanner("asdf");
-    }
+	// Methode mit Scanner, aber ohne explizites Encoding, bleibt unverändert
+	static void bla5() {
+		Scanner s3 = new Scanner("asdf");
+	}
 
-    // Methode, die eine benutzerdefinierte Konstante für die Kodierung verwendet (bleibt unverändert)
-    private static final String ENCODING_UTF8 = "UTF-8";
-    static void bla6(File file) throws FileNotFoundException {
-        Scanner s = new Scanner(file, ENCODING_UTF8);
-    }
+	// Methode, die eine benutzerdefinierte Konstante für die Kodierung verwendet (bleibt unverändert)
+	private static final String ENCODING_UTF8 = "UTF-8";
+	static void bla6(File file) throws FileNotFoundException {
+		Scanner s = new Scanner(file, ENCODING_UTF8);
+	}
 
-    // Methode mit einer ungültigen Kodierung (muss UnsupportedEncodingException werfen)
-    static void bla7(File file) throws FileNotFoundException {
-        try {
-            Scanner s = new Scanner(file, "non-existing-encoding"); // wirft UnsupportedEncodingException
-        } catch (Exception e) {
-            e.printStackTrace(); // Catch block für UnsupportedEncodingException
-        }
-    }
+	// Methode mit einer ungültigen Kodierung (muss UnsupportedEncodingException werfen)
+	static void bla7(File file) throws FileNotFoundException {
+		try {
+			Scanner s = new Scanner(file, "non-existing-encoding"); // wirft UnsupportedEncodingException
+		} catch (Exception e) {
+			e.printStackTrace(); // Catch block für UnsupportedEncodingException
+		}
+	}
 
-    // Methode mit Scanner und ungültiger Kodierung, die `throws UnsupportedEncodingException` wirft
-    static void bla8(InputStream is) throws FileNotFoundException, UnsupportedEncodingException {
-        Scanner s = new Scanner(is, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-    }
+	// Methode mit Scanner und ungültiger Kodierung, die `throws UnsupportedEncodingException` wirft
+	static void bla8(InputStream is) throws FileNotFoundException, UnsupportedEncodingException {
+		Scanner s = new Scanner(is, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+	}
 
-    // Methode, die eine ungültige Kodierung und ein try-catch verwendet (für FileNotFoundException)
-    static void bla9(File file) {
-        try {
-            Scanner s = new Scanner(file, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-        } catch (FileNotFoundException e) {
-            // Datei nicht gefunden, hier wird FileNotFoundException behandelt
-            e.printStackTrace();
-        } catch (Exception e) {
-            // UnsupportedEncodingException wird hier abgefangen
-            e.printStackTrace();
-        }
-    }
+	// Methode, die eine ungültige Kodierung und ein try-catch verwendet (für FileNotFoundException)
+	static void bla9(File file) {
+		try {
+			Scanner s = new Scanner(file, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+		} catch (FileNotFoundException e) {
+			// Datei nicht gefunden, hier wird FileNotFoundException behandelt
+			e.printStackTrace();
+		} catch (Exception e) {
+			// UnsupportedEncodingException wird hier abgefangen
+			e.printStackTrace();
+		}
+	}
 
-    // Beispiel mit StandardCharsets-Konstanten, die keine Änderung brauchen
-    static void bla10(File file) {
-        Scanner s = new Scanner(file, StandardCharsets.UTF_8);
-    }
+	// Beispiel mit StandardCharsets-Konstanten, die keine Änderung brauchen
+	static void bla10(File file) {
+		Scanner s = new Scanner(file, StandardCharsets.UTF_8);
+	}
 
-    // Beispiel mit Scanner und InputStream, ohne explizite Kodierung (bleibt unverändert)
-    static void bla11(InputStream is) {
-        Scanner s = new Scanner(is);
-    }
+	// Beispiel mit Scanner und InputStream, ohne explizite Kodierung (bleibt unverändert)
+	static void bla11(InputStream is) {
+		Scanner s = new Scanner(is);
+	}
 
-    // Methode mit Scanner und einer benutzerdefinierten Kodierung als Variable (bleibt unverändert)
-    private String encodingVar = "ISO-8859-1";
-    static void bla12(InputStream is) throws FileNotFoundException {
-        Scanner s = new Scanner(is, "ISO-8859-1");
-    }
+	// Methode mit Scanner und einer benutzerdefinierten Kodierung als Variable (bleibt unverändert)
+	private String encodingVar = "ISO-8859-1";
+	static void bla12(InputStream is) throws FileNotFoundException {
+		Scanner s = new Scanner(is, "ISO-8859-1");
+	}
 }
 """,
 """
@@ -1508,70 +1508,70 @@ import java.util.Scanner;
 
 public class E1 {
 
-    // Methode mit File und explizitem "UTF-8" (wird durch StandardCharsets.UTF_8 ersetzt)
-    static void bla3(File file) throws FileNotFoundException {
-        // Konstruktor mit String-Encoding, sollte durch StandardCharsets.UTF_8 ersetzt werden
-        Scanner s = new Scanner(file, StandardCharsets.UTF_8);
-    }
+	// Methode mit File und explizitem "UTF-8" (wird durch StandardCharsets.UTF_8 ersetzt)
+	static void bla3(File file) throws FileNotFoundException {
+		// Konstruktor mit String-Encoding, sollte durch StandardCharsets.UTF_8 ersetzt werden
+		Scanner s = new Scanner(file, StandardCharsets.UTF_8);
+	}
 
-    // Methode mit InputStream und explizitem "UTF-8" (wird durch StandardCharsets.UTF_8 ersetzt)
-    static void bla4(InputStream is) throws FileNotFoundException {
-        Scanner s2 = new Scanner(is, StandardCharsets.UTF_8);
-    }
+	// Methode mit InputStream und explizitem "UTF-8" (wird durch StandardCharsets.UTF_8 ersetzt)
+	static void bla4(InputStream is) throws FileNotFoundException {
+		Scanner s2 = new Scanner(is, StandardCharsets.UTF_8);
+	}
 
-    // Methode mit Scanner, aber ohne explizites Encoding, bleibt unverändert
-    static void bla5() {
-        Scanner s3 = new Scanner("asdf", Charset.defaultCharset());
-    }
+	// Methode mit Scanner, aber ohne explizites Encoding, bleibt unverändert
+	static void bla5() {
+		Scanner s3 = new Scanner("asdf", Charset.defaultCharset());
+	}
 
-    // Methode, die eine benutzerdefinierte Konstante für die Kodierung verwendet (bleibt unverändert)
-    private static final String ENCODING_UTF8 = "UTF-8";
-    static void bla6(File file) throws FileNotFoundException {
-        Scanner s = new Scanner(file, ENCODING_UTF8);
-    }
+	// Methode, die eine benutzerdefinierte Konstante für die Kodierung verwendet (bleibt unverändert)
+	private static final String ENCODING_UTF8 = "UTF-8";
+	static void bla6(File file) throws FileNotFoundException {
+		Scanner s = new Scanner(file, ENCODING_UTF8);
+	}
 
-    // Methode mit einer ungültigen Kodierung (muss UnsupportedEncodingException werfen)
-    static void bla7(File file) throws FileNotFoundException {
-        try {
-            Scanner s = new Scanner(file, "non-existing-encoding"); // wirft UnsupportedEncodingException
-        } catch (Exception e) {
-            e.printStackTrace(); // Catch block für UnsupportedEncodingException
-        }
-    }
+	// Methode mit einer ungültigen Kodierung (muss UnsupportedEncodingException werfen)
+	static void bla7(File file) throws FileNotFoundException {
+		try {
+			Scanner s = new Scanner(file, "non-existing-encoding"); // wirft UnsupportedEncodingException
+		} catch (Exception e) {
+			e.printStackTrace(); // Catch block für UnsupportedEncodingException
+		}
+	}
 
-    // Methode mit Scanner und ungültiger Kodierung, die `throws UnsupportedEncodingException` wirft
-    static void bla8(InputStream is) throws FileNotFoundException, UnsupportedEncodingException {
-        Scanner s = new Scanner(is, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-    }
+	// Methode mit Scanner und ungültiger Kodierung, die `throws UnsupportedEncodingException` wirft
+	static void bla8(InputStream is) throws FileNotFoundException, UnsupportedEncodingException {
+		Scanner s = new Scanner(is, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+	}
 
-    // Methode, die eine ungültige Kodierung und ein try-catch verwendet (für FileNotFoundException)
-    static void bla9(File file) {
-        try {
-            Scanner s = new Scanner(file, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
-        } catch (FileNotFoundException e) {
-            // Datei nicht gefunden, hier wird FileNotFoundException behandelt
-            e.printStackTrace();
-        } catch (Exception e) {
-            // UnsupportedEncodingException wird hier abgefangen
-            e.printStackTrace();
-        }
-    }
+	// Methode, die eine ungültige Kodierung und ein try-catch verwendet (für FileNotFoundException)
+	static void bla9(File file) {
+		try {
+			Scanner s = new Scanner(file, "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
+		} catch (FileNotFoundException e) {
+			// Datei nicht gefunden, hier wird FileNotFoundException behandelt
+			e.printStackTrace();
+		} catch (Exception e) {
+			// UnsupportedEncodingException wird hier abgefangen
+			e.printStackTrace();
+		}
+	}
 
-    // Beispiel mit StandardCharsets-Konstanten, die keine Änderung brauchen
-    static void bla10(File file) {
-        Scanner s = new Scanner(file, StandardCharsets.UTF_8);
-    }
+	// Beispiel mit StandardCharsets-Konstanten, die keine Änderung brauchen
+	static void bla10(File file) {
+		Scanner s = new Scanner(file, StandardCharsets.UTF_8);
+	}
 
-    // Beispiel mit Scanner und InputStream, ohne explizite Kodierung (bleibt unverändert)
-    static void bla11(InputStream is) {
-        Scanner s = new Scanner(is, Charset.defaultCharset());
-    }
+	// Beispiel mit Scanner und InputStream, ohne explizite Kodierung (bleibt unverändert)
+	static void bla11(InputStream is) {
+		Scanner s = new Scanner(is, Charset.defaultCharset());
+	}
 
-    // Methode mit Scanner und einer benutzerdefinierten Kodierung als Variable (bleibt unverändert)
-    private String encodingVar = "ISO-8859-1";
-    static void bla12(InputStream is) throws FileNotFoundException {
-        Scanner s = new Scanner(is, StandardCharsets.ISO_8859_1);
-    }
+	// Methode mit Scanner und einer benutzerdefinierten Kodierung als Variable (bleibt unverändert)
+	private String encodingVar = "ISO-8859-1";
+	static void bla12(InputStream is) throws FileNotFoundException {
+		Scanner s = new Scanner(is, StandardCharsets.ISO_8859_1);
+	}
 }
 """),
 		FORMATTER(
@@ -1863,7 +1863,7 @@ public class E1 {
     }
 }
 """),
-	FILES_NEWBUFFEREDREADER("""
+		FILES_NEWBUFFEREDREADER("""
 package test1;
 
 import java.nio.file.Files;
@@ -1962,7 +1962,6 @@ public class E1 {
     }
 }
 """);
-
 		String given;
 		String expected;
 		boolean skipCompileCheck;

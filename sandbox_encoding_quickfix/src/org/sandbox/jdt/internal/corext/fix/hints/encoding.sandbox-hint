@@ -146,3 +146,33 @@ new java.io.OutputStreamWriter($out) :: sourceVersionGE(7), mode(ENFORCE_UTF8)
 new java.io.OutputStreamWriter($out) :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
 => new java.io.OutputStreamWriter($out, java.nio.charset.Charset.defaultCharset())
 ;;
+
+// === URLDecoder.decode(String) — 1-arg method call ===
+
+java.net.URLDecoder.decode($s) :: sourceVersionGE(10), mode(ENFORCE_UTF8)
+=> java.net.URLDecoder.decode($s, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+java.net.URLDecoder.decode($s) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR)
+=> java.net.URLDecoder.decode($s, java.nio.charset.Charset.defaultCharset())
+;;
+
+// === URLEncoder.encode(String) — 1-arg method call ===
+
+java.net.URLEncoder.encode($s) :: sourceVersionGE(10), mode(ENFORCE_UTF8)
+=> java.net.URLEncoder.encode($s, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+java.net.URLEncoder.encode($s) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR)
+=> java.net.URLEncoder.encode($s, java.nio.charset.Charset.defaultCharset())
+;;
+
+// === new Scanner(source) — 1-arg constructor ===
+
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8)
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR)
+=> new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
+;;

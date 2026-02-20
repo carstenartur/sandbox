@@ -54,22 +54,22 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 
 public enum UseExplicitEncodingFixCore {
 
-	CHARSET(new CharsetForNameExplicitEncoding(), false),
+	CHARSET(new CharsetForNameExplicitEncoding(), true),
 	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding(), false),
 	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding(), false),
-	STRING_GETBYTES(new StringGetBytesExplicitEncoding(), false),
-	STRING(new StringExplicitEncoding(), false),
-	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding(), false),
+	STRING_GETBYTES(new StringGetBytesExplicitEncoding(), true),
+	STRING(new StringExplicitEncoding(), true),
+	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding(), true),
 	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding(), false),
 	FILEREADER(new FileReaderExplicitEncoding(), false),
 	FILEWRITER(new FileWriterExplicitEncoding(), false),
 	PRINTWRITER(new PrintWriterExplicitEncoding(), false),
-	PRINTSTREAM(new PrintStreamExplicitEncoding(), false),
+	PRINTSTREAM(new PrintStreamExplicitEncoding(), true),
 	BYTEARRAYOUTPUTSTREAM(new ByteArrayOutputStreamExplicitEncoding(), false),
-	FORMATTER(new FormatterExplicitEncoding(), false),
-	URLDECODER(new URLDecoderDecodeExplicitEncoding(), false),
-	URLENCODER(new URLEncoderEncodeExplicitEncoding(), false),
-	SCANNER(new ScannerExplicitEncoding(), false),
+	FORMATTER(new FormatterExplicitEncoding(), true),
+	URLDECODER(new URLDecoderDecodeExplicitEncoding(), true),
+	URLENCODER(new URLEncoderEncodeExplicitEncoding(), true),
+	SCANNER(new ScannerExplicitEncoding(), true),
 	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding(), false),
 	FILES_NEWBUFFEREDREADER(new FilesNewBufferedReaderExplicitEncoding(), false),
 	FILES_NEWBUFFEREDWRITER(new FilesNewBufferedWriterExplicitEncoding(), false),
@@ -90,12 +90,13 @@ public enum UseExplicitEncodingFixCore {
 	 * Returns whether this fix is fully handled by DSL rules in the encoding
 	 * {@code .sandbox-hint} file.
 	 *
-	 * <p>When {@code true}, the imperative Java helper is skipped and only the
-	 * DSL engine processes this pattern. Currently all flags are {@code false}
-	 * because the DSL cannot yet fully replace the imperative helpers (NLS
-	 * comment cleanup, exception removal, variable encoding detection, complex
-	 * constructor rewrites). As the DSL matures, individual flags can be
-	 * flipped to {@code true}.</p>
+	 * <p>When {@code true}, the pattern has corresponding DSL rules in
+	 * {@code encoding.sandbox-hint} that cover string-based charset argument
+	 * replacement and zero-argument/missing-encoding patterns.
+	 * Tier 2/3 patterns (structural rewrites like FileReader→InputStreamReader,
+	 * FileWriter→OutputStreamWriter, PrintWriter→BufferedWriter, etc.) remain
+	 * imperative-only ({@code false}) because they require complex AST
+	 * restructuring that the DSL cannot express.</p>
 	 *
 	 * @return {@code true} if this fix is fully covered by DSL rules
 	 */

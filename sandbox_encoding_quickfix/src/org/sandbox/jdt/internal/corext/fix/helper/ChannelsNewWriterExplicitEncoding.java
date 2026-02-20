@@ -34,6 +34,8 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
@@ -103,12 +105,11 @@ public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
 		if (nodedata.replace()) {
-//			try {
-//				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
-//			} catch (CoreException e) {
-//				JavaManipulationPlugin.log(e); // should never happen
-//			}
-			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
+			try {
+				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
+			} catch (CoreException e) {
+				JavaManipulationPlugin.log(e); // should never happen
+			}
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}

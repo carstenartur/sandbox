@@ -355,7 +355,7 @@ public class E1 {
 						public class E1 {
 						    void method(String filename) {
 						            ReadableByteChannel ch;
-						            Reader r=Channels.newReader(ch,StandardCharsets.UTF_8);
+						            Reader r=Channels.newReader(ch, StandardCharsets.UTF_8);
 						       }
 						    }
 						}
@@ -399,7 +399,7 @@ public class E1 {
 						public class E1 {
 						    void method(String filename) {
 						            WritableByteChannel ch;
-						            Writer w=Channels.newWriter(ch,StandardCharsets.UTF_8); //$NON-NLS-1$
+						            Writer w=Channels.newWriter(ch, StandardCharsets.UTF_8);
 						       }
 						    }
 						}
@@ -602,7 +602,7 @@ public class E1 {
 				public class E2 {
 
 					static void bla() {
-						String url=URLDecoder.decode("asdf",StandardCharsets.UTF_8);
+						String url=URLDecoder.decode("asdf", StandardCharsets.UTF_8);
 						String url2=URLDecoder.decode("asdf", Charset.defaultCharset());
 					}
 				}
@@ -628,7 +628,7 @@ public class E1 {
 				public class E2 {
 
 					static void bla() {
-						String url=URLEncoder.encode("asdf",StandardCharsets.UTF_8);
+						String url=URLEncoder.encode("asdf", StandardCharsets.UTF_8);
 						String url4=URLEncoder.encode("asdf", Charset.defaultCharset());
 					}
 				}
@@ -659,8 +659,8 @@ import java.util.Scanner;
 public class E3 {
 
 	static void bla3(InputStream is) throws FileNotFoundException {
-		Scanner s=new Scanner(new File("asdf"),StandardCharsets.UTF_8);
-		Scanner s2=new Scanner(is,StandardCharsets.UTF_8);
+		Scanner s=new Scanner(new File("asdf"), StandardCharsets.UTF_8);
+		Scanner s2=new Scanner(is, StandardCharsets.UTF_8);
 		Scanner s3=new Scanner("asdf", Charset.defaultCharset());
 	}
 }
@@ -698,12 +698,12 @@ import java.util.Formatter;
 public class E4 {
 
 	static void bla() throws FileNotFoundException {
-		Formatter s=new Formatter(new File("asdf"),StandardCharsets.UTF_8);
+		Formatter s=new Formatter(new File("asdf"), StandardCharsets.UTF_8);
 	}
 
 	static void bli() throws FileNotFoundException {
 		try {
-			Formatter s=new Formatter(new File("asdf"),StandardCharsets.UTF_8);
+			Formatter s=new Formatter(new File("asdf"), StandardCharsets.UTF_8);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

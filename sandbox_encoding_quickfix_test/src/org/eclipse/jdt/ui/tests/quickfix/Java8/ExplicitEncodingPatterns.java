@@ -607,7 +607,7 @@ import java.util.Formatter;
 public class E4 {
 
 	static void bla() throws FileNotFoundException {
-		Formatter s=new Formatter(new File("asdf"),StandardCharsets.UTF_8);
+		Formatter s=new Formatter(new File("asdf"), StandardCharsets.UTF_8);
 	}
 }
 """),
