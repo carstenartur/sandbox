@@ -26,7 +26,7 @@
 		<module>sandbox-functional-converter-core</module>
 		<module>sandbox_common_core</module>
 		<module>sandbox_mining_cli</module>
-		<module>sandbox_mining_gemini</module>
+		<module>sandbox_mining_core</module>
 		<module>sandbox-ast-api</module>
 		<module>sandbox-ast-api-jdt</module>
 		<module>sandbox_target</module>

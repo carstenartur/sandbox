@@ -54,9 +54,9 @@ jobs:
         run: |
           mvn install -N -q
           mvn install -pl sandbox_common_core -DskipTests -q
-          mvn package -pl sandbox_mining_gemini -DskipTests -q
-          java -cp sandbox_mining_gemini/target/sandbox-mining-gemini.jar \
-            org.sandbox.mining.gemini.dsl.DslValidator \
+          mvn package -pl sandbox_mining_core -DskipTests -q
+          java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
+            org.sandbox.mining.core.dsl.DslValidator \
             "${{ inputs.target_hint_file }}"
 
       # Option A: Direct Commit
@@ -77,7 +77,7 @@ jobs:
         run: |
           DSL_DECODED=$(echo "${{ inputs.dsl_rule }}" | base64 -d)
           cat > /tmp/pr-body.md << 'HEREDOC_END'
-          ## Gemini Mining Proposal
+          ## Mining Proposal
 
           **Source commit:** `${{ inputs.commit_hash }}`
           **Category:** ${{ inputs.category }}
