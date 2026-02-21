@@ -23,7 +23,8 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 
 /**
  * Manages persistent state for the mining process.
@@ -36,7 +37,11 @@ public class MiningState {
 	private Map<String, RepoState> repositories = new LinkedHashMap<>();
 	private int globalTotalProcessed;
 
-	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	private static final Gson GSON = new GsonBuilder()
+			.setPrettyPrinting()
+			.registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) ->
+					new JsonPrimitive(src.toString()))
+			.create();
 
 	/**
 	 * Per-repository state tracking.

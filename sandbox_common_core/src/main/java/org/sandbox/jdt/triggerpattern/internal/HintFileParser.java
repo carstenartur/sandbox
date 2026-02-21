@@ -164,9 +164,15 @@ public final class HintFileParser {
 				continue;
 			}
 			
-			// Metadata directive: <!key: value>
+			// Metadata directive: <!key: value> (may span multiple lines)
 			if (line.startsWith("<!")) { //$NON-NLS-1$
-				parseMetadata(hintFile, line, i + 1);
+				StringBuilder metaBuilder = new StringBuilder(line);
+				int metaStart = i;
+				while (!metaBuilder.toString().trim().endsWith(">") && i + 1 < lines.size()) { //$NON-NLS-1$
+					i++;
+					metaBuilder.append(' ').append(lines.get(i).trim());
+				}
+				parseMetadata(hintFile, metaBuilder.toString().trim(), metaStart + 1);
 				i++;
 				continue;
 			}
@@ -565,6 +571,13 @@ public final class HintFileParser {
 			}
 			
 			String altContent = altLine.substring(2).trim();
+			
+			// Handle => on its own line: read replacement from the next line
+			if (altContent.isEmpty() && ruleLineIdx + 1 < ruleLines.size()) {
+				ruleLineIdx++;
+				altContent = ruleLines.get(ruleLineIdx).trim();
+			}
+			
 			GuardSplit altAndGuard = splitGuard(altContent);
 			String replacementPattern = altAndGuard.patternText().trim();
 			GuardExpression altGuard = null;

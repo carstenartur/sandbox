@@ -420,6 +420,8 @@ public class GeminiClient implements AutoCloseable {
 			if (contentEnd > contentStart) {
 				return text.substring(contentStart, contentEnd).trim();
 			}
+			// Truncated code block (no closing ```): take rest of text
+			return repairTruncatedJson(text.substring(contentStart).trim());
 		}
 
 		// Try plain code blocks
@@ -430,10 +432,80 @@ public class GeminiClient implements AutoCloseable {
 			if (contentEnd > contentStart) {
 				return text.substring(contentStart, contentEnd).trim();
 			}
+			// Truncated code block (no closing ```): take rest of text
+			return repairTruncatedJson(text.substring(contentStart).trim());
 		}
 
 		// Assume the text itself is JSON
 		return text.trim();
+	}
+
+	/**
+	 * Attempts to repair truncated JSON by closing unclosed brackets, braces,
+	 * and strings. This handles the common case where Gemini's response is
+	 * cut off mid-JSON due to token limits.
+	 *
+	 * @param json the potentially truncated JSON string
+	 * @return the repaired JSON string
+	 */
+	static String repairTruncatedJson(String json) {
+		if (json == null || json.isEmpty()) {
+			return json;
+		}
+		// Try parsing first; if it works, no repair needed
+		try {
+			JsonParser.parseString(json);
+			return json;
+		} catch (Exception e) {
+			// Fall through to repair
+		}
+
+		StringBuilder sb = new StringBuilder(json);
+		// Remove trailing comma if present (common in truncated arrays/objects)
+		String trimmed = sb.toString().trim();
+		if (trimmed.endsWith(",")) { //$NON-NLS-1$
+			sb = new StringBuilder(trimmed.substring(0, trimmed.length() - 1));
+		}
+
+		// Close unclosed strings, objects, and arrays
+		boolean inString = false;
+		int openBraces = 0;
+		int openBrackets = 0;
+		for (int i = 0; i < sb.length(); i++) {
+			char ch = sb.charAt(i);
+			if (ch == '\\' && inString && i + 1 < sb.length()) {
+				i++; // skip escaped character
+				continue;
+			}
+			if (ch == '"') {
+				inString = !inString;
+			} else if (!inString) {
+				if (ch == '{') {
+					openBraces++;
+				} else if (ch == '}') {
+					openBraces--;
+				} else if (ch == '[') {
+					openBrackets++;
+				} else if (ch == ']') {
+					openBrackets--;
+				}
+			}
+		}
+		if (inString) {
+			sb.append('"');
+		}
+		// Remove trailing comma after closing string
+		trimmed = sb.toString().trim();
+		if (trimmed.endsWith(",")) { //$NON-NLS-1$
+			sb = new StringBuilder(trimmed.substring(0, trimmed.length() - 1));
+		}
+		for (int i = 0; i < openBraces; i++) {
+			sb.append('}');
+		}
+		for (int i = 0; i < openBrackets; i++) {
+			sb.append(']');
+		}
+		return sb.toString();
 	}
 
 	private static CommitEvaluation.TrafficLight parseTrafficLight(String value) {

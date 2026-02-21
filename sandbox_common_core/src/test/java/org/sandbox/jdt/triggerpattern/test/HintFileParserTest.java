@@ -870,4 +870,96 @@ public class HintFileParserTest {
 		
 		assertEquals("equation is x=y", hintFile.getDescription());
 	}
+
+	// ---- Multi-line metadata tests ----
+
+	@Test
+	public void testMultiLineDescriptionMetadata() throws HintParseException {
+		String content = """
+			<!description: Add guard for unhandled or disabled Eclipse commands after declaration.
+			Prevents showing key bindings for commands that are not handled or enabled.>
+			
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertTrue(hintFile.getDescription().contains("Add guard for unhandled"));
+		assertTrue(hintFile.getDescription().contains("not handled or enabled."));
+		assertEquals(1, hintFile.getRules().size());
+	}
+
+	@Test
+	public void testMultiLineDescriptionThreeLines() throws HintParseException {
+		String content = """
+			<!description: First line of description.
+			Second line of description.
+			Third line with closing bracket.>
+			
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertTrue(hintFile.getDescription().contains("First line"));
+		assertTrue(hintFile.getDescription().contains("Third line"));
+		assertEquals(1, hintFile.getRules().size());
+	}
+
+	// ---- Arrow on own line tests ----
+
+	@Test
+	public void testArrowOnOwnLineWithReplacementOnNextLine() throws HintParseException {
+		String content = """
+			@java.lang.Deprecated :: sourceVersionGE(9)
+			=>
+			@java.lang.Deprecated(forRemoval = true)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(PatternKind.ANNOTATION, rule.sourcePattern().getKind());
+		assertEquals("@java.lang.Deprecated(forRemoval = true)",
+				rule.alternatives().get(0).replacementPattern());
+	}
+
+	@Test
+	public void testArrowOnOwnLineSimpleRule() throws HintParseException {
+		String content = """
+			org.junit.Assert.assertEquals($expected, $actual)
+			=>
+			org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals("org.junit.jupiter.api.Assertions.assertEquals($expected, $actual)",
+				rule.alternatives().get(0).replacementPattern());
+	}
+
+	@Test
+	public void testArrowOnSameLineStillWorks() throws HintParseException {
+		// Ensure backward compatibility: => replacement on same line
+		String content = """
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		assertEquals("java.util.Objects.equals($x, $y)",
+				hintFile.getRules().get(0).alternatives().get(0).replacementPattern());
+	}
 }
