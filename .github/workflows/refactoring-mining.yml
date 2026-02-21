@@ -14,8 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write       # Required: commit mining results
+      pull-requests: write  # Required: create PR with mining report
 
     steps:
       - uses: actions/checkout@v6

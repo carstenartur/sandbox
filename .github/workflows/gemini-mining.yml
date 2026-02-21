@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
-      contents: write
+      contents: write  # Required: commit state.json and deploy report to gh-pages
 
     steps:
       - uses: actions/checkout@v6

@@ -24,9 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     
     permissions:
-      contents: write
-      deployments: write
-      pull-requests: write
+      contents: write       # Required: auto-push benchmark results to gh-pages
+      deployments: write    # Required: create deployment status for benchmark
+      pull-requests: write  # Required: post alert comments on PRs
     
     steps:
       - name: Checkout

@@ -30,8 +30,8 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write       # Required: commit DSL rules directly or via branch
+      pull-requests: write  # Required: create PR with mining proposal
 
     steps:
       - uses: actions/checkout@v6
