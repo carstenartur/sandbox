@@ -22,6 +22,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -34,7 +36,7 @@ import com.google.gson.JsonParser;
  * REST client for the Google Gemini API.
  *
  * <p>Sends prompts to the Gemini API and parses the response into
- * {@link CommitEvaluation} objects. Includes rate limiting (6s delay)
+ * {@link CommitEvaluation} objects. Includes rate limiting (15s delay)
  * and exponential backoff on HTTP 429 responses.</p>
  */
 public class GeminiClient implements AutoCloseable {
@@ -42,7 +44,9 @@ public class GeminiClient implements AutoCloseable {
 	private static final String DEFAULT_MODEL = "gemini-2.5-flash";
 	private static final String API_URL_TEMPLATE =
 			"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
-	private static final int RATE_LIMIT_DELAY_MS = 6000;
+	private static final int RATE_LIMIT_DELAY_MS = 15000;
+	/** Maximum number of API requests allowed per day (leaves buffer from 20 RPD limit). */
+	public static final int MAX_DAILY_REQUESTS = 18;
 	private static final int MAX_RETRIES = 5;
 	private static final int INITIAL_BACKOFF_MS = 5000;
 	private static final int POST_FAILURE_COOLDOWN_MS = 60000;
@@ -53,6 +57,7 @@ public class GeminiClient implements AutoCloseable {
 	private final HttpClient httpClient;
 	private final Gson gson;
 	private long lastRequestTime;
+	private int dailyRequestCount;
 
 	/**
 	 * Creates a client reading the API key from the GEMINI_API_KEY environment variable.
@@ -118,6 +123,24 @@ public class GeminiClient implements AutoCloseable {
 	}
 
 	/**
+	 * Returns the number of API requests used in this session.
+	 *
+	 * @return the daily request count
+	 */
+	public int getDailyRequestCount() {
+		return dailyRequestCount;
+	}
+
+	/**
+	 * Returns true if the daily API quota has not yet been exhausted.
+	 *
+	 * @return true if more requests can be made today
+	 */
+	public boolean hasRemainingQuota() {
+		return dailyRequestCount < MAX_DAILY_REQUESTS;
+	}
+
+	/**
 	 * Evaluates a commit by sending a prompt to the Gemini API.
 	 *
 	 * @param prompt        the constructed prompt
@@ -143,7 +166,118 @@ public class GeminiClient implements AutoCloseable {
 			return null;
 		}
 
+		dailyRequestCount++;
 		return parseResponse(responseBody, commitHash, commitMessage, repoUrl);
+	}
+
+	/**
+	 * Evaluates a batch of commits in a single API call.
+	 *
+	 * @param prompt         the batch prompt
+	 * @param commitHashes   the commit hashes (in order)
+	 * @param commitMessages the commit messages (in order)
+	 * @param repoUrl        the repository URL
+	 * @return list of evaluations (one per commit, in order), never null
+	 * @throws IOException if an I/O error occurs
+	 */
+	public List<CommitEvaluation> evaluateBatch(String prompt, List<String> commitHashes,
+			List<String> commitMessages, String repoUrl) throws IOException {
+		List<CommitEvaluation> results = new ArrayList<>();
+		if (apiKey == null || apiKey.isBlank()) {
+			System.err.println("GEMINI_API_KEY not set, skipping batch evaluation");
+			return results;
+		}
+
+		rateLimit();
+
+		String requestBody = buildRequestBody(prompt);
+		String responseBody = sendWithRetry(requestBody);
+
+		if (responseBody == null) {
+			return results;
+		}
+
+		dailyRequestCount++;
+		return parseBatchResponse(responseBody, commitHashes, commitMessages, repoUrl);
+	}
+
+	/**
+	 * Parses a batch response JSON array into a list of CommitEvaluations.
+	 * Each element in the array is matched by position to the corresponding commit.
+	 *
+	 * @param responseBody   the raw API response
+	 * @param commitHashes   the commit hashes (in order)
+	 * @param commitMessages the commit messages (in order)
+	 * @param repoUrl        the repository URL
+	 * @return list of evaluations (one per commit, in order)
+	 */
+	public List<CommitEvaluation> parseBatchResponse(String responseBody, List<String> commitHashes,
+			List<String> commitMessages, String repoUrl) {
+		List<CommitEvaluation> results = new ArrayList<>();
+		try {
+			JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();
+			JsonArray candidates = root.getAsJsonArray("candidates");
+			if (candidates == null || candidates.isEmpty()) {
+				return results;
+			}
+			JsonObject firstCandidate = candidates.get(0).getAsJsonObject();
+			JsonObject content = firstCandidate.getAsJsonObject("content");
+			if (content == null) {
+				return results;
+			}
+			JsonArray parts = content.getAsJsonArray("parts");
+			if (parts == null || parts.isEmpty()) {
+				return results;
+			}
+			String text = parts.get(0).getAsJsonObject().get("text").getAsString();
+			String json = extractJson(text);
+			JsonArray evalArray = JsonParser.parseString(json).getAsJsonArray();
+			int evalCount = evalArray.size();
+			int commitCount = Math.min(commitHashes.size(), commitMessages.size());
+			if (evalCount != commitCount) {
+				System.err.println("Warning: Gemini batch response count (" + evalCount //$NON-NLS-1$
+						+ ") does not match commit count (" + commitCount + "). Processing min of both."); //$NON-NLS-1$
+			}
+			int limit = Math.min(evalCount, commitCount);
+			for (int i = 0; i < limit; i++) {
+				String commitHash = commitHashes.get(i);
+				String commitMessage = commitMessages.get(i);
+				try {
+					JsonObject eval = evalArray.get(i).getAsJsonObject();
+					results.add(new CommitEvaluation(
+							commitHash,
+							commitMessage,
+							repoUrl,
+							Instant.now(),
+							getBooleanOrDefault(eval, "relevant", false), //$NON-NLS-1$
+							getStringOrNull(eval, "irrelevantReason"), //$NON-NLS-1$
+							getBooleanOrDefault(eval, "isDuplicate", false), //$NON-NLS-1$
+							getStringOrNull(eval, "duplicateOf"), //$NON-NLS-1$
+							getIntOrDefault(eval, "reusability", 0), //$NON-NLS-1$
+							getIntOrDefault(eval, "codeImprovement", 0), //$NON-NLS-1$
+							getIntOrDefault(eval, "implementationEffort", 0), //$NON-NLS-1$
+							parseTrafficLight(getStringOrNull(eval, "trafficLight")), //$NON-NLS-1$
+							getStringOrNull(eval, "category"), //$NON-NLS-1$
+							getBooleanOrDefault(eval, "isNewCategory", false), //$NON-NLS-1$
+							getStringOrNull(eval, "categoryReason"), //$NON-NLS-1$
+							getBooleanOrDefault(eval, "canImplementInCurrentDsl", false), //$NON-NLS-1$
+							getStringOrNull(eval, "dslRule"), //$NON-NLS-1$
+							getStringOrNull(eval, "targetHintFile"), //$NON-NLS-1$
+							getStringOrNull(eval, "languageChangeNeeded"), //$NON-NLS-1$
+							getStringOrNull(eval, "dslRuleAfterChange"), //$NON-NLS-1$
+							getStringOrNull(eval, "summary"))); //$NON-NLS-1$
+				} catch (Exception e) {
+					System.err.println("Failed to parse batch evaluation at index " + i + ": " + e.getMessage());
+				}
+			}
+		} catch (Exception e) {
+			System.err.println("Failed to parse batch Gemini response: " + e.getMessage());
+			if (responseBody != null && Boolean.parseBoolean(System.getenv("GEMINI_DEBUG"))) { //$NON-NLS-1$
+				System.err.println("Raw response (first 500 chars): "
+						+ responseBody.substring(0, Math.min(500, responseBody.length())));
+			}
+		}
+		return results;
 	}
 
 	/**

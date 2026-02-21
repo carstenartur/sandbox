@@ -17,8 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.sandbox.mining.gemini.gemini.GeminiPromptBuilder;
+import org.sandbox.mining.gemini.gemini.GeminiPromptBuilder.CommitData;
 
 /**
  * Tests for {@link GeminiPromptBuilder}.
@@ -78,5 +81,59 @@ class GeminiPromptBuilderTest {
 		assertTrue(prompt.contains("\"dslRule\""));
 		assertTrue(prompt.contains("\"category\""));
 		assertTrue(prompt.contains("1-10")); // Scale should be 1-10
+	}
+
+	@Test
+	void testBuildBatchPromptContainsAllCommits() {
+		GeminiPromptBuilder builder = new GeminiPromptBuilder();
+		List<CommitData> commits = List.of(
+				new CommitData("abc123", "First commit", "diff1"),
+				new CommitData("def456", "Second commit", "diff2"));
+		String prompt = builder.buildBatchPrompt("rule ctx", "[\"Collections\"]", commits);
+
+		assertNotNull(prompt);
+		assertTrue(prompt.contains("abc123"));
+		assertTrue(prompt.contains("def456"));
+		assertTrue(prompt.contains("First commit"));
+		assertTrue(prompt.contains("Second commit"));
+		assertTrue(prompt.contains("diff1"));
+		assertTrue(prompt.contains("diff2"));
+	}
+
+	@Test
+	void testBuildBatchPromptRequestsArrayOfExactlyN() {
+		GeminiPromptBuilder builder = new GeminiPromptBuilder();
+		List<CommitData> commits = List.of(
+				new CommitData("aaa", "msg1", "d1"),
+				new CommitData("bbb", "msg2", "d2"),
+				new CommitData("ccc", "msg3", "d3"));
+		String prompt = builder.buildBatchPrompt("ctx", "[]", commits);
+
+		assertTrue(prompt.contains("exactly 3"));
+	}
+
+	@Test
+	void testBuildBatchPromptLabelsCommitsByIndex() {
+		GeminiPromptBuilder builder = new GeminiPromptBuilder();
+		List<CommitData> commits = List.of(
+				new CommitData("hash0", "msg0", "d0"),
+				new CommitData("hash1", "msg1", "d1"));
+		String prompt = builder.buildBatchPrompt("ctx", "[]", commits);
+
+		assertTrue(prompt.contains("Commit 0"));
+		assertTrue(prompt.contains("Commit 1"));
+		assertTrue(prompt.contains("hash0"));
+		assertTrue(prompt.contains("hash1"));
+	}
+
+	@Test
+	void testBuildBatchPromptContainsJsonArraySchema() {
+		GeminiPromptBuilder builder = new GeminiPromptBuilder();
+		List<CommitData> commits = List.of(new CommitData("x", "y", "z"));
+		String prompt = builder.buildBatchPrompt("ctx", "[]", commits);
+
+		assertTrue(prompt.contains("\"relevant\""));
+		assertTrue(prompt.contains("\"trafficLight\""));
+		assertTrue(prompt.contains("\"dslRule\""));
 	}
 }

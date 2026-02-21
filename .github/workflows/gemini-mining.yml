@@ -41,7 +41,8 @@ jobs:
             --config .github/refactoring-mining/repos.yml \
             --state .github/refactoring-mining/state.json \
             --sandbox-root . \
-            --batch-size ${{ github.event.inputs.batch_size || '500' }} \
+            --batch-size ${{ github.event.inputs.batch_size || '72' }} \
+            --commits-per-request 4 \
             --output docs/mining-report/
 
       - name: Commit State
