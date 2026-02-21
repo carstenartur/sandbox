@@ -292,6 +292,10 @@ public class GeminiMiningCli {
 				System.out.println("  Incomplete batch evaluation for repository " + repo.getUrl() //$NON-NLS-1$
 						+ " [" + repo.getBranch() + "]" //$NON-NLS-1$ //$NON-NLS-2$
 						+ "; will retry non-evaluated commits in a future run."); //$NON-NLS-1$
+				System.out.println("  Batch contained commits:"); //$NON-NLS-1$
+				for (RevCommit c : commits) {
+					System.out.println("    - " + formatCommitInfo(c, repo)); //$NON-NLS-1$
+				}
 				if (geminiClient.isApiUnavailable()) {
 					logApiUnavailable(geminiClient);
 				}
@@ -310,6 +314,10 @@ public class GeminiMiningCli {
 
 		// Process all commits in original order so state always advances
 		// monotonically and no commit is permanently skipped on failure.
+		if (evaluations != null) {
+			System.out.println("  Evaluated batch of " + commitDataList.size() + " commits for " //$NON-NLS-1$ //$NON-NLS-2$
+					+ repo.getUrl() + " [" + repo.getBranch() + "]:"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
 		int evalIdx = 0;
 		for (int i = 0; i < commits.size(); i++) {
 			RevCommit commit = commits.get(i);
@@ -322,6 +330,7 @@ public class GeminiMiningCli {
 							+ "; stopping batch to retry remaining commits later."); //$NON-NLS-1$
 					break;
 				}
+				System.out.println("    - " + formatCommitInfo(commit, repo) + " -> " + evaluation.trafficLight()); //$NON-NLS-1$ //$NON-NLS-2$
 				handleEvaluation(evaluation, commit, repo, validator, categoryManager, stats, aggregator);
 				state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
 			}
