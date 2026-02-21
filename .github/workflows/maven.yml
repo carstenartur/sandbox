@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     permissions:
-      contents: read
+      contents: write
       checks: write        # Required for mikepenz/action-junit-report to create check annotations
       pull-requests: write # Required for PR test report comments
     runs-on: ubuntu-latest
