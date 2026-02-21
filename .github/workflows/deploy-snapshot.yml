@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # Required to push to gh-pages branch
+  contents: write  # Required: push to gh-pages branch for snapshot deployment
 
 jobs:
   build-and-deploy:

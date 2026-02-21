@@ -26,13 +26,12 @@ on:
   #     - '**.java'
   workflow_dispatch:  # Keep manual trigger for testing after image is published
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write       # Required: push cleanup commits to PR branch
+      pull-requests: write  # Required: create cleanup PR and post comments
     
     steps:
     - name: Checkout PR branch

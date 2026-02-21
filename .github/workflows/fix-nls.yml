@@ -13,8 +13,8 @@ jobs:
     if: github.actor == 'copilot[bot]' || contains(github.event.pull_request.labels.*.name, 'auto-fix-nls')
     
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write       # Required: push NLS comment fixes to PR branch
+      pull-requests: write  # Required: access PR branch information
     
     steps:
       - name: Checkout PR branch

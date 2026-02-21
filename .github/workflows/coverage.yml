@@ -15,7 +15,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write  # Required: deploy coverage report to gh-pages
     env:
       DISPLAY: :0
       MAVEN_OPTS: -Djava.awt.headless=true
