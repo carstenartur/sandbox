@@ -254,4 +254,66 @@ class GeminiClientTest {
 		assertTrue(client.hasRemainingQuota());
 		assertEquals(0, client.getDailyRequestCount());
 	}
+
+	// ---- repairTruncatedJson tests ----
+
+	@Test
+	void testRepairTruncatedJsonValidJson() {
+		String valid = "{\"key\": \"value\"}";
+		assertEquals(valid, GeminiClient.repairTruncatedJson(valid));
+	}
+
+	@Test
+	void testRepairTruncatedJsonUnclosedBrace() {
+		String truncated = "{\"key\": \"value\"";
+		String repaired = GeminiClient.repairTruncatedJson(truncated);
+		assertTrue(repaired.endsWith("}"));
+		assertTrue(repaired.contains("\"key\""));
+	}
+
+	@Test
+	void testRepairTruncatedJsonUnclosedBracket() {
+		String truncated = "[{\"key\": \"value\"}";
+		String repaired = GeminiClient.repairTruncatedJson(truncated);
+		assertTrue(repaired.endsWith("]"));
+	}
+
+	@Test
+	void testRepairTruncatedJsonUnclosedString() {
+		String truncated = "{\"key\": \"val";
+		String repaired = GeminiClient.repairTruncatedJson(truncated);
+		assertTrue(repaired.endsWith("}"));
+		assertTrue(repaired.contains("\"val\""));
+	}
+
+	@Test
+	void testRepairTruncatedJsonTrailingComma() {
+		String truncated = "[{\"key\": \"value\"},";
+		String repaired = GeminiClient.repairTruncatedJson(truncated);
+		assertTrue(repaired.endsWith("]"));
+		assertNotNull(repaired);
+	}
+
+	@Test
+	void testRepairTruncatedJsonNullAndEmpty() {
+		assertNull(GeminiClient.repairTruncatedJson(null));
+		assertEquals("", GeminiClient.repairTruncatedJson(""));
+	}
+
+	@Test
+	void testExtractJsonFromTruncatedCodeBlock() {
+		// Truncated markdown code block (no closing ```)
+		String text = "```json\n{\"key\": \"value\"";
+		String json = GeminiClient.extractJson(text);
+		assertTrue(json.contains("\"key\""));
+		assertTrue(json.endsWith("}"));
+	}
+
+	@Test
+	void testExtractJsonPlainTruncated() {
+		// Plain truncated JSON (no code fences)
+		String text = "{\"key\": \"value\"";
+		String json = GeminiClient.extractJson(text);
+		assertTrue(json.endsWith("}"));
+	}
 }

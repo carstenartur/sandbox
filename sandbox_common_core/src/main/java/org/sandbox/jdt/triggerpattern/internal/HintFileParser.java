@@ -164,9 +164,20 @@ public final class HintFileParser {
 				continue;
 			}
 			
-			// Metadata directive: <!key: value>
+			// Metadata directive: <!key: value> (may span multiple lines)
 			if (line.startsWith("<!")) { //$NON-NLS-1$
-				parseMetadata(hintFile, line, i + 1);
+				StringBuilder metaBuilder = new StringBuilder(line);
+				int metaStart = i;
+				boolean foundClosingBracket = line.endsWith(">"); //$NON-NLS-1$
+				while (!foundClosingBracket && i + 1 < lines.size()) {
+					i++;
+					String nextLine = lines.get(i).trim();
+					metaBuilder.append(' ').append(nextLine);
+					if (nextLine.endsWith(">")) { //$NON-NLS-1$
+						foundClosingBracket = true;
+					}
+				}
+				parseMetadata(hintFile, metaBuilder.toString().trim(), metaStart + 1);
 				i++;
 				continue;
 			}
@@ -565,6 +576,19 @@ public final class HintFileParser {
 			}
 			
 			String altContent = altLine.substring(2).trim();
+			
+			// Handle => on its own line: read replacement from the next line
+			if (altContent.isEmpty() && ruleLineIdx + 1 < ruleLines.size()) {
+				ruleLineIdx++;
+				altContent = ruleLines.get(ruleLineIdx).trim();
+			}
+			
+			if (altContent.isEmpty()) {
+				throw new HintParseException(
+						"Missing replacement after '=>'", //$NON-NLS-1$
+						startIndex + ruleLineIdx + 1);
+			}
+			
 			GuardSplit altAndGuard = splitGuard(altContent);
 			String replacementPattern = altAndGuard.patternText().trim();
 			GuardExpression altGuard = null;

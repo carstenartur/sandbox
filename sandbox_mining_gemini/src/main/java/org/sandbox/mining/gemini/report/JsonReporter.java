@@ -19,8 +19,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import java.time.Instant;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 
 import org.sandbox.mining.gemini.gemini.CommitEvaluation;
 
@@ -33,7 +37,11 @@ public class JsonReporter {
 	private final Gson gson;
 
 	public JsonReporter() {
-		this.gson = new GsonBuilder().setPrettyPrinting().create();
+		this.gson = new GsonBuilder()
+				.setPrettyPrinting()
+				.registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) ->
+						new JsonPrimitive(src.toString()))
+				.create();
 	}
 
 	/**

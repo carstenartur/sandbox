@@ -21,6 +21,12 @@ A hint file has optional metadata directives followed by transformation rules.
 - ✅ Correct: `<!description: Replace deprecated API calls>`
 - ❌ Wrong: `<!description: Replace deprecated API calls` (missing closing `>`)
 
+**Multi-line metadata**: Long descriptions may span multiple lines. The parser accumulates lines
+starting from `<!` until a closing `>` is found:
+```
+<!description: Add guard for unhandled or disabled Eclipse commands after declaration.
+Prevents showing key bindings for commands that are not handled or enabled.>
+```
 ### Transformation Rules
 
 Each rule consists of a **pattern** (what to match) and a **rewrite** (what to replace it with).
@@ -178,11 +184,9 @@ new java.io.FileReader($path, java.nio.charset.StandardCharsets.UTF_8)
 
 **Guard with negation (`notContains`):**
 ```
-// Only warn if init() is NOT called
+// Only warn if init() is NOT called — hint-only rule (no replacement)
+"Call init() after construction":
 $obj = new MyClass() :: notContains("$obj.init()")
-=>
-$obj = new MyClass();
-$obj.init()
 ;;
 ```
 
@@ -200,6 +204,61 @@ java.util.Arrays.asList($args)
 $in.read($buf) :: sourceVersionGE(9) && notContains("transferTo")
 ;;
 ```
+
+### Annotation Rules
+
+Annotation patterns start with `@` and can include fully qualified names and attributes.
+
+**Simple annotation replacement:**
+```
+@org.junit.Before
+=> @org.junit.jupiter.api.BeforeEach
+;;
+```
+
+**Annotation with attributes:**
+```
+@java.lang.Deprecated :: sourceVersionGE(9)
+=> @java.lang.Deprecated(forRemoval = true)
+;;
+```
+
+**Note:** Annotation replacement is a single expression — the `@annotation(attributes)` on one line.
+Multi-statement transformations (adding `if` blocks, `return` statements) are NOT supported.
+
+### Unsupported Features / Limitations
+
+The following are **NOT supported** by the DSL. If a transformation requires any of these,
+mark it as `RED` / not implementable:
+
+1. **Multi-line statement blocks in replacements**: Replacements must be single expressions or single statements.
+   Do NOT use `if`/`else` blocks, `return` statements, or `{}` blocks as replacements.
+   ```
+   // ❌ NOT SUPPORTED — multi-line replacement block
+   $pattern
+   =>
+   if (!($cmd.isHandled())) {
+       return;
+   }
+   ;;
+   ```
+
+2. **Bitwise/shift operators in patterns or replacements**: Bitwise operators like `|`, `&`, `^`, `~`, `>>`, `<<`
+   in patterns or replacements are NOT supported. (Arithmetic operators like `+` and `-` are supported.)
+   ```
+   // ❌ NOT SUPPORTED — bitwise OR in replacement
+   $mgr.handle($status, StatusManager.SHOW)
+   => $mgr.handle($status, StatusManager.SHOW | StatusManager.LOG)
+   ;;
+   ```
+
+3. **Inserting new statements or control flow**: The DSL performs **pattern matching and replacement**,
+   not arbitrary code insertion. Adding guard clauses, new method calls after a statement, or
+   wrapping code in try/catch blocks is not supported.
+
+4. **Complex expression composition in replacements**: Wrapping a matched variable in a new
+   expression (e.g., `$x` → `List.of($x)`) has limited support. Simple wrapping works, but
+   combining it with arity changes may not.
 
 ## JSON Output Rules
 
