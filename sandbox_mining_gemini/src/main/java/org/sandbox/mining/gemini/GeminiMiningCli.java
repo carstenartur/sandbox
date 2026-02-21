@@ -16,6 +16,7 @@ package org.sandbox.mining.gemini;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -29,6 +30,7 @@ import org.sandbox.mining.gemini.gemini.CommitEvaluation;
 import org.sandbox.mining.gemini.gemini.DslContextCollector;
 import org.sandbox.mining.gemini.gemini.GeminiClient;
 import org.sandbox.mining.gemini.gemini.GeminiPromptBuilder;
+import org.sandbox.mining.gemini.gemini.GeminiPromptBuilder.CommitData;
 import org.sandbox.mining.gemini.git.CommitWalker;
 import org.sandbox.mining.gemini.git.DiffExtractor;
 import org.sandbox.mining.gemini.git.RepoCloner;
@@ -47,13 +49,15 @@ import org.sandbox.mining.gemini.report.StatisticsCollector;
  */
 public class GeminiMiningCli {
 
-	private static final String OPT_CONFIG = "--config";
-	private static final String OPT_STATE = "--state";
-	private static final String OPT_SANDBOX_ROOT = "--sandbox-root";
-	private static final String OPT_BATCH_SIZE = "--batch-size";
-	private static final String OPT_OUTPUT = "--output";
+	private static final String OPT_CONFIG = "--config"; //$NON-NLS-1$
+	private static final String OPT_STATE = "--state"; //$NON-NLS-1$
+	private static final String OPT_SANDBOX_ROOT = "--sandbox-root"; //$NON-NLS-1$
+	private static final String OPT_BATCH_SIZE = "--batch-size"; //$NON-NLS-1$
+	private static final String OPT_OUTPUT = "--output"; //$NON-NLS-1$
+	private static final String OPT_COMMITS_PER_REQUEST = "--commits-per-request"; //$NON-NLS-1$
 
 	private static final int DEFAULT_BATCH_SIZE = 500;
+	private static final int DEFAULT_COMMITS_PER_REQUEST = 4;
 
 	public static void main(String[] args) {
 		try {
@@ -75,9 +79,10 @@ public class GeminiMiningCli {
 	public void run(String[] args) throws IOException, GitAPIException {
 		Path configPath = null;
 		Path statePath = null;
-		Path sandboxRoot = Path.of(".");
+		Path sandboxRoot = Path.of("."); //$NON-NLS-1$
 		int batchSize = DEFAULT_BATCH_SIZE;
-		Path outputDir = Path.of("output");
+		int commitsPerRequest = DEFAULT_COMMITS_PER_REQUEST;
+		Path outputDir = Path.of("output"); //$NON-NLS-1$
 
 		for (int i = 0; i < args.length; i++) {
 			switch (args[i]) {
@@ -93,27 +98,30 @@ public class GeminiMiningCli {
 			case OPT_BATCH_SIZE:
 				batchSize = Integer.parseInt(requireArg(args, ++i, OPT_BATCH_SIZE));
 				break;
+			case OPT_COMMITS_PER_REQUEST:
+				commitsPerRequest = Integer.parseInt(requireArg(args, ++i, OPT_COMMITS_PER_REQUEST));
+				break;
 			case OPT_OUTPUT:
 				outputDir = Path.of(requireArg(args, ++i, OPT_OUTPUT));
 				break;
 			default:
-				System.err.println("Unknown option: " + args[i]);
+				System.err.println("Unknown option: " + args[i]); //$NON-NLS-1$
 				printUsage();
 				return;
 			}
 		}
 
 		if (configPath == null) {
-			configPath = sandboxRoot.resolve(".github/refactoring-mining/repos.yml");
+			configPath = sandboxRoot.resolve(".github/refactoring-mining/repos.yml"); //$NON-NLS-1$
 		}
 		if (statePath == null) {
-			statePath = sandboxRoot.resolve(".github/refactoring-mining/state.json");
+			statePath = sandboxRoot.resolve(".github/refactoring-mining/state.json"); //$NON-NLS-1$
 		}
 
-		System.out.println("=== Sandbox Mining Gemini ===");
-		System.out.println("Config: " + configPath);
-		System.out.println("State:  " + statePath);
-		System.out.println("Output: " + outputDir);
+		System.out.println("=== Sandbox Mining Gemini ==="); //$NON-NLS-1$
+		System.out.println("Config: " + configPath); //$NON-NLS-1$
+		System.out.println("State:  " + statePath); //$NON-NLS-1$
+		System.out.println("Output: " + outputDir); //$NON-NLS-1$
 
 		MiningConfig config = MiningConfig.parse(configPath);
 		MiningState state = MiningState.load(statePath);
@@ -126,10 +134,10 @@ public class GeminiMiningCli {
 		StatisticsCollector stats = new StatisticsCollector();
 		ReportAggregator aggregator = new ReportAggregator();
 
-		Path workDir = Files.createTempDirectory("gemini-mining-");
+		Path workDir = Files.createTempDirectory("gemini-mining-"); //$NON-NLS-1$
 		try {
-			processRepositories(config, state, workDir, batchSize, geminiClient,
-					promptBuilder, dslContext, categoryManager, validator, stats, aggregator);
+			processRepositories(config, state, statePath, workDir, batchSize, commitsPerRequest,
+					geminiClient, promptBuilder, dslContext, categoryManager, validator, stats, aggregator);
 		} finally {
 			deleteDirectory(workDir);
 		}
@@ -151,81 +159,121 @@ public class GeminiMiningCli {
 		System.out.println("Output:    " + outputDir.toAbsolutePath());
 	}
 
-	private void processRepositories(MiningConfig config, MiningState state, Path workDir,
-			int batchSize, GeminiClient geminiClient, GeminiPromptBuilder promptBuilder,
+	private void processRepositories(MiningConfig config, MiningState state, Path statePath,
+			Path workDir, int batchSize, int commitsPerRequest,
+			GeminiClient geminiClient, GeminiPromptBuilder promptBuilder,
 			String dslContext, CategoryManager categoryManager, DslValidator validator,
 			StatisticsCollector stats, ReportAggregator aggregator) throws IOException, GitAPIException {
 		RepoCloner cloner = new RepoCloner();
 
 		for (RepoEntry repo : config.getRepositories()) {
-			System.out.println("Processing: " + repo.getUrl());
+			if (!geminiClient.hasRemainingQuota()) {
+				System.out.println("Daily API quota exhausted (" + GeminiClient.MAX_DAILY_REQUESTS //$NON-NLS-1$
+						+ "/" + GeminiClient.MAX_DAILY_REQUESTS //$NON-NLS-1$
+						+ " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
+				return;
+			}
+			System.out.println("Processing: " + repo.getUrl()); //$NON-NLS-1$
 			Path repoDir = workDir.resolve(repoDirectoryName(repo.getUrl()));
 			cloner.cloneRepo(repo.getUrl(), repo.getBranch(), repoDir);
 
 			String lastCommit = state.getLastProcessedCommit(repo.getUrl());
 			try (CommitWalker walker = new CommitWalker(repoDir);
-					DiffExtractor diffExtractor = new DiffExtractor(repoDir, config.getMaxDiffLinesPerCommit(),
-							repo.getPaths())) {
+					DiffExtractor diffExtractor = new DiffExtractor(repoDir,
+							config.getMaxDiffLinesPerCommit(), repo.getPaths())) {
 				List<RevCommit> batch = walker.nextBatch(lastCommit, config.getStartDate(), batchSize);
 				while (!batch.isEmpty()) {
-					for (RevCommit commit : batch) {
-						boolean success = processCommit(commit, repo, diffExtractor, geminiClient,
-								promptBuilder, dslContext, categoryManager, validator, stats, aggregator);
-						if (success) {
-							state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
+					// Group commits into sub-batches for API calls
+					for (int i = 0; i < batch.size(); i += commitsPerRequest) {
+						if (!geminiClient.hasRemainingQuota()) {
+							System.out.println("Daily API quota exhausted (" //$NON-NLS-1$
+									+ GeminiClient.MAX_DAILY_REQUESTS
+									+ "/" + GeminiClient.MAX_DAILY_REQUESTS //$NON-NLS-1$
+									+ " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
+							return;
 						}
+						int end = Math.min(i + commitsPerRequest, batch.size());
+						List<RevCommit> subBatch = batch.subList(i, end);
+						processBatch(subBatch, repo, diffExtractor, state, statePath,
+								geminiClient, promptBuilder, dslContext, categoryManager,
+								validator, stats, aggregator);
 					}
 					batch = walker.nextBatch(batch.get(batch.size() - 1).getName(),
 							config.getStartDate(), batchSize);
 				}
 			}
 
-			System.out.println("  Completed: " + repo.getUrl());
+			System.out.println("  Completed: " + repo.getUrl()); //$NON-NLS-1$
 		}
 	}
 
-	private boolean processCommit(RevCommit commit, RepoEntry repo, DiffExtractor diffExtractor,
-			GeminiClient geminiClient, GeminiPromptBuilder promptBuilder, String dslContext,
-			CategoryManager categoryManager, DslValidator validator,
-			StatisticsCollector stats, ReportAggregator aggregator) {
-		try {
+	private void processBatch(List<RevCommit> commits, RepoEntry repo,
+			DiffExtractor diffExtractor, MiningState state, Path statePath,
+			GeminiClient geminiClient, GeminiPromptBuilder promptBuilder,
+			String dslContext, CategoryManager categoryManager, DslValidator validator,
+			StatisticsCollector stats, ReportAggregator aggregator) throws IOException {
+		// Collect commit data, skipping blank diffs
+		List<CommitData> commitDataList = new ArrayList<>();
+		List<RevCommit> includedCommits = new ArrayList<>();
+		List<RevCommit> blankDiffCommits = new ArrayList<>();
+
+		for (RevCommit commit : commits) {
 			String diff = diffExtractor.extractDiff(commit);
 			if (diff.isBlank()) {
-				return true;
+				blankDiffCommits.add(commit);
+			} else {
+				commitDataList.add(new CommitData(commit.getName(), commit.getFullMessage(), diff));
+				includedCommits.add(commit);
 			}
-			String prompt = promptBuilder.buildPrompt(dslContext, categoryManager.getCategoriesJson(), diff,
-					commit.getFullMessage());
-			CommitEvaluation evaluation = geminiClient.evaluate(prompt, commit.getName(),
-					commit.getFullMessage(), repo.getUrl());
-			if (evaluation == null) {
-				return true;
-			}
+		}
 
-			// Validate DSL rule if present
-			if (evaluation.dslRule() != null && !evaluation.dslRule().isBlank()) {
-				var validation = validator.validate(evaluation.dslRule());
-				if (!validation.valid()) {
-					System.out.println("  Invalid DSL rule for " + commit.getName()
-							+ ": " + validation.message());
-					if (Boolean.parseBoolean(System.getenv("GEMINI_DEBUG"))) {
-						System.out.println("  --- DSL rule begin ---");
-						System.out.println(evaluation.dslRule());
-						System.out.println("  --- DSL rule end ---");
-					}
+		// Update state for blank-diff commits immediately
+		for (RevCommit commit : blankDiffCommits) {
+			state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
+		}
+
+		if (!commitDataList.isEmpty()) {
+			List<String> hashes = commitDataList.stream().map(CommitData::commitHash).toList();
+			List<String> messages = commitDataList.stream().map(CommitData::commitMessage).toList();
+			String prompt = promptBuilder.buildBatchPrompt(dslContext,
+					categoryManager.getCategoriesJson(), commitDataList);
+			List<CommitEvaluation> evaluations = geminiClient.evaluateBatch(prompt, hashes,
+					messages, repo.getUrl());
+
+			for (int j = 0; j < includedCommits.size(); j++) {
+				RevCommit commit = includedCommits.get(j);
+				CommitEvaluation evaluation = j < evaluations.size() ? evaluations.get(j) : null;
+				if (evaluation != null) {
+					handleEvaluation(evaluation, commit, validator, categoryManager, stats, aggregator);
+				}
+				state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
+			}
+		}
+
+		// Save state after each batch for resume safety
+		state.save(statePath);
+	}
+
+	private void handleEvaluation(CommitEvaluation evaluation, RevCommit commit,
+			DslValidator validator, CategoryManager categoryManager,
+			StatisticsCollector stats, ReportAggregator aggregator) {
+		if (evaluation.dslRule() != null && !evaluation.dslRule().isBlank()) {
+			var validation = validator.validate(evaluation.dslRule());
+			if (!validation.valid()) {
+				System.out.println("  Invalid DSL rule for " + commit.getName() //$NON-NLS-1$
+						+ ": " + validation.message()); //$NON-NLS-1$
+				if (Boolean.parseBoolean(System.getenv("GEMINI_DEBUG"))) { //$NON-NLS-1$
+					System.out.println("  --- DSL rule begin ---"); //$NON-NLS-1$
+					System.out.println(evaluation.dslRule());
+					System.out.println("  --- DSL rule end ---"); //$NON-NLS-1$
 				}
 			}
-
-			if (evaluation.isNewCategory() && evaluation.category() != null) {
-				categoryManager.addCategory(evaluation.category());
-			}
-
-			stats.record(evaluation);
-			aggregator.add(evaluation);
-			return true;
-		} catch (IOException e) {
-			System.err.println("  Error processing commit " + commit.getName() + ": " + e.getMessage());
-			return false;
 		}
+		if (evaluation.isNewCategory() && evaluation.category() != null) {
+			categoryManager.addCategory(evaluation.category());
+		}
+		stats.record(evaluation);
+		aggregator.add(evaluation);
 	}
 
 	static String repoDirectoryName(String url) {
@@ -241,13 +289,14 @@ public class GeminiMiningCli {
 	}
 
 	private static void printUsage() {
-		System.out.println("Usage: java -jar sandbox-mining-gemini.jar [options]");
-		System.out.println("Options:");
-		System.out.println("  --config <path>        Path to repos.yml config file");
-		System.out.println("  --state <path>         Path to state.json file");
-		System.out.println("  --sandbox-root <path>  Root of sandbox repository");
-		System.out.println("  --batch-size <n>       Number of commits per batch (default: 500)");
-		System.out.println("  --output <path>        Output directory (default: output)");
+		System.out.println("Usage: java -jar sandbox-mining-gemini.jar [options]"); //$NON-NLS-1$
+		System.out.println("Options:"); //$NON-NLS-1$
+		System.out.println("  --config <path>              Path to repos.yml config file"); //$NON-NLS-1$
+		System.out.println("  --state <path>               Path to state.json file"); //$NON-NLS-1$
+		System.out.println("  --sandbox-root <path>        Root of sandbox repository"); //$NON-NLS-1$
+		System.out.println("  --batch-size <n>             Number of commits per batch (default: 500)"); //$NON-NLS-1$
+		System.out.println("  --commits-per-request <n>    Commits grouped into one API call (default: 4)"); //$NON-NLS-1$
+		System.out.println("  --output <path>              Output directory (default: output)"); //$NON-NLS-1$
 	}
 
 	private static String requireArg(String[] args, int index, String option) {
