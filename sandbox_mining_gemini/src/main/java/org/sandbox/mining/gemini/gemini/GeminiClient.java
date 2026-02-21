@@ -36,7 +36,7 @@ import com.google.gson.JsonParser;
  * REST client for the Google Gemini API.
  *
  * <p>Sends prompts to the Gemini API and parses the response into
- * {@link CommitEvaluation} objects. Includes rate limiting (6s delay)
+ * {@link CommitEvaluation} objects. Includes rate limiting (15s delay)
  * and exponential backoff on HTTP 429 responses.</p>
  */
 public class GeminiClient implements AutoCloseable {
@@ -120,6 +120,15 @@ public class GeminiClient implements AutoCloseable {
 	 */
 	public String getModel() {
 		return model;
+	}
+
+	/**
+	 * Returns the number of API requests used in this session.
+	 *
+	 * @return the daily request count
+	 */
+	public int getDailyRequestCount() {
+		return dailyRequestCount;
 	}
 
 	/**
@@ -223,9 +232,16 @@ public class GeminiClient implements AutoCloseable {
 			String text = parts.get(0).getAsJsonObject().get("text").getAsString();
 			String json = extractJson(text);
 			JsonArray evalArray = JsonParser.parseString(json).getAsJsonArray();
-			for (int i = 0; i < evalArray.size(); i++) {
-				String commitHash = i < commitHashes.size() ? commitHashes.get(i) : ""; //$NON-NLS-1$
-				String commitMessage = i < commitMessages.size() ? commitMessages.get(i) : ""; //$NON-NLS-1$
+			int evalCount = evalArray.size();
+			int commitCount = Math.min(commitHashes.size(), commitMessages.size());
+			if (evalCount != commitCount) {
+				System.err.println("Warning: Gemini batch response count (" + evalCount //$NON-NLS-1$
+						+ ") does not match commit count (" + commitCount + "). Processing min of both."); //$NON-NLS-1$
+			}
+			int limit = Math.min(evalCount, commitCount);
+			for (int i = 0; i < limit; i++) {
+				String commitHash = commitHashes.get(i);
+				String commitMessage = commitMessages.get(i);
 				try {
 					JsonObject eval = evalArray.get(i).getAsJsonObject();
 					results.add(new CommitEvaluation(

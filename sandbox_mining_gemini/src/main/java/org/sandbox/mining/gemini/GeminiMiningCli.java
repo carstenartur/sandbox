@@ -100,6 +100,10 @@ public class GeminiMiningCli {
 				break;
 			case OPT_COMMITS_PER_REQUEST:
 				commitsPerRequest = Integer.parseInt(requireArg(args, ++i, OPT_COMMITS_PER_REQUEST));
+				if (commitsPerRequest < 1) {
+					throw new IllegalArgumentException(
+							"--commits-per-request must be >= 1 but was " + commitsPerRequest); //$NON-NLS-1$
+				}
 				break;
 			case OPT_OUTPUT:
 				outputDir = Path.of(requireArg(args, ++i, OPT_OUTPUT));
@@ -168,7 +172,7 @@ public class GeminiMiningCli {
 
 		for (RepoEntry repo : config.getRepositories()) {
 			if (!geminiClient.hasRemainingQuota()) {
-				System.out.println("Daily API quota exhausted (" + GeminiClient.MAX_DAILY_REQUESTS //$NON-NLS-1$
+				System.out.println("Daily API quota exhausted (" + geminiClient.getDailyRequestCount() //$NON-NLS-1$
 						+ "/" + GeminiClient.MAX_DAILY_REQUESTS //$NON-NLS-1$
 						+ " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
 				return;
@@ -187,7 +191,7 @@ public class GeminiMiningCli {
 					for (int i = 0; i < batch.size(); i += commitsPerRequest) {
 						if (!geminiClient.hasRemainingQuota()) {
 							System.out.println("Daily API quota exhausted (" //$NON-NLS-1$
-									+ GeminiClient.MAX_DAILY_REQUESTS
+									+ geminiClient.getDailyRequestCount()
 									+ "/" + GeminiClient.MAX_DAILY_REQUESTS //$NON-NLS-1$
 									+ " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
 							return;
@@ -240,12 +244,25 @@ public class GeminiMiningCli {
 			List<CommitEvaluation> evaluations = geminiClient.evaluateBatch(prompt, hashes,
 					messages, repo.getUrl());
 
+			// If we did not get one evaluation per included commit, treat this batch
+			// as failed for non-blank-diff commits so they can be retried later.
+			if (evaluations == null || evaluations.size() != includedCommits.size()) {
+				System.out.println("  Incomplete batch evaluation for repository " + repo.getUrl() //$NON-NLS-1$
+						+ "; will retry non-evaluated commits in a future run."); //$NON-NLS-1$
+				// Note: blank-diff commits were already advanced in state above.
+				state.save(statePath);
+				return;
+			}
+
 			for (int j = 0; j < includedCommits.size(); j++) {
 				RevCommit commit = includedCommits.get(j);
-				CommitEvaluation evaluation = j < evaluations.size() ? evaluations.get(j) : null;
-				if (evaluation != null) {
-					handleEvaluation(evaluation, commit, validator, categoryManager, stats, aggregator);
+				CommitEvaluation evaluation = evaluations.get(j);
+				if (evaluation == null) {
+					System.out.println("  Missing evaluation for commit " + commit.getName() //$NON-NLS-1$
+							+ "; stopping batch to retry remaining commits later."); //$NON-NLS-1$
+					break;
 				}
+				handleEvaluation(evaluation, commit, validator, categoryManager, stats, aggregator);
 				state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
 			}
 		}

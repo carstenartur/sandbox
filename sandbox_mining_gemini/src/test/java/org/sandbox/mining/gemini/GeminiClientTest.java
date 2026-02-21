@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.sandbox.mining.gemini.gemini.CommitEvaluation;
@@ -136,5 +137,121 @@ class GeminiClientTest {
 				.build();
 		GeminiClient client = new GeminiClient("test-key", httpClient, "gemini-2.5-flash");
 		assertEquals("gemini-2.5-flash", client.getModel());
+	}
+
+	@Test
+	void testParseBatchResponseValidArray() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = """
+				{
+				  "candidates": [{
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n[{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"First commit\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n},\\n{\\n  \\"relevant\\": false,\\n  \\"trafficLight\\": \\"NOT_APPLICABLE\\",\\n  \\"summary\\": \\"Second commit\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false\\n}]\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		List<String> hashes = List.of("hash1", "hash2");
+		List<String> messages = List.of("msg1", "msg2");
+
+		List<CommitEvaluation> evals = client.parseBatchResponse(response, hashes, messages,
+				"https://github.com/test/repo");
+
+		assertEquals(2, evals.size());
+		assertEquals("hash1", evals.get(0).commitHash());
+		assertTrue(evals.get(0).relevant());
+		assertEquals(TrafficLight.GREEN, evals.get(0).trafficLight());
+		assertEquals("hash2", evals.get(1).commitHash());
+		assertNotNull(evals.get(1));
+	}
+
+	@Test
+	void testParseBatchResponseFewerElementsThanCommits() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = """
+				{
+				  "candidates": [{
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n[{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Only one\\",\\n  \\"reusability\\": 5,\\n  \\"codeImprovement\\": 5,\\n  \\"implementationEffort\\": 5,\\n  \\"canImplementInCurrentDsl\\": true\\n}]\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		List<String> hashes = List.of("hash1", "hash2", "hash3");
+		List<String> messages = List.of("msg1", "msg2", "msg3");
+
+		List<CommitEvaluation> evals = client.parseBatchResponse(response, hashes, messages,
+				"https://github.com/test/repo");
+
+		// Should return only what the response contained (1), not 3
+		assertEquals(1, evals.size());
+		assertEquals("hash1", evals.get(0).commitHash());
+	}
+
+	@Test
+	void testParseBatchResponseMoreElementsThanCommits() {
+		GeminiClient client = new GeminiClient("test-key");
+		// Response with 3 elements, but only 2 commits expected
+		String response = """
+				{
+				  "candidates": [{
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n[{\\n  \\"relevant\\": true,\\n  \\"summary\\": \\"A\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false,\\n  \\"trafficLight\\": \\"RED\\"\\n},{\\n  \\"relevant\\": false,\\n  \\"summary\\": \\"B\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false,\\n  \\"trafficLight\\": \\"RED\\"\\n},{\\n  \\"relevant\\": false,\\n  \\"summary\\": \\"C\\",\\n  \\"reusability\\": 1,\\n  \\"codeImprovement\\": 1,\\n  \\"implementationEffort\\": 1,\\n  \\"canImplementInCurrentDsl\\": false,\\n  \\"trafficLight\\": \\"RED\\"\\n}]\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		List<String> hashes = List.of("hash1", "hash2");
+		List<String> messages = List.of("msg1", "msg2");
+
+		List<CommitEvaluation> evals = client.parseBatchResponse(response, hashes, messages,
+				"https://github.com/test/repo");
+
+		// Should be capped at 2 (the number of commits)
+		assertEquals(2, evals.size());
+	}
+
+	@Test
+	void testParseBatchResponseInvalidJson() {
+		GeminiClient client = new GeminiClient("test-key");
+		List<String> hashes = List.of("hash1");
+		List<String> messages = List.of("msg1");
+
+		List<CommitEvaluation> evals = client.parseBatchResponse("not json", hashes, messages, "url");
+
+		assertTrue(evals.isEmpty());
+	}
+
+	@Test
+	void testParseBatchResponseEmptyCandidates() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = "{\"candidates\": []}";
+		List<String> hashes = List.of("hash1");
+		List<String> messages = List.of("msg1");
+
+		List<CommitEvaluation> evals = client.parseBatchResponse(response, hashes, messages, "url");
+
+		assertTrue(evals.isEmpty());
+	}
+
+	@Test
+	void testEvaluateBatchWithoutApiKey() throws Exception {
+		GeminiClient client = new GeminiClient(null);
+		List<CommitEvaluation> result = client.evaluateBatch("prompt",
+				List.of("hash1"), List.of("msg1"), "url");
+		assertTrue(result.isEmpty());
+	}
+
+	@Test
+	void testHasRemainingQuotaInitially() {
+		GeminiClient client = new GeminiClient("test-key");
+		assertTrue(client.hasRemainingQuota());
+		assertEquals(0, client.getDailyRequestCount());
 	}
 }
