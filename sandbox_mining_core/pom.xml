@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<modelVersion>4.0.0</modelVersion>
+
+<parent>
+<groupId>org.sandbox</groupId>
+<artifactId>central</artifactId>
+<version>1.2.6-SNAPSHOT</version>
+<relativePath>../pom.xml</relativePath>
+</parent>
+
+<artifactId>sandbox-mining-core</artifactId>
+<packaging>jar</packaging>
+
+<name>Sandbox Mining Core</name>
+<description>AI-powered commit analysis for TriggerPattern DSL mining</description>
+
+<properties>
+<maven.compiler.source>21</maven.compiler.source>
+<maven.compiler.target>21</maven.compiler.target>
+<maven.compiler.release>21</maven.compiler.release>
+<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+<jacoco-version>0.8.14</jacoco-version>
+<jgit.version>7.5.0.202512021534-r</jgit.version>
+<snakeyaml.version>2.5</snakeyaml.version>
+<gson.version>2.12.1</gson.version>
+<slf4j.version>2.0.16</slf4j.version>
+<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
+<tycho.mode>maven</tycho.mode>
+</properties>
+
+<dependencies>
+<!-- Sandbox Common Core (HintFileParser) -->
+<dependency>
+<groupId>org.sandbox</groupId>
+<artifactId>sandbox_common_core</artifactId>
+</dependency>
+
+<!-- JGit for Git operations -->
+<dependency>
+<groupId>org.eclipse.jgit</groupId>
+<artifactId>org.eclipse.jgit</artifactId>
+<version>${jgit.version}</version>
+</dependency>
+
+<!-- Gson for JSON serialization -->
+<dependency>
+<groupId>com.google.code.gson</groupId>
+<artifactId>gson</artifactId>
+<version>${gson.version}</version>
+</dependency>
+
+<!-- SnakeYAML for configuration parsing -->
+<dependency>
+<groupId>org.yaml</groupId>
+<artifactId>snakeyaml</artifactId>
+<version>${snakeyaml.version}</version>
+</dependency>
+
+<!-- JUnit 5 for testing -->
+<dependency>
+<groupId>org.junit.jupiter</groupId>
+<artifactId>junit-jupiter</artifactId>
+<scope>test</scope>
+</dependency>
+
+<!-- SLF4J NOP provider to suppress JGit logging warnings -->
+<dependency>
+<groupId>org.slf4j</groupId>
+<artifactId>slf4j-nop</artifactId>
+<version>${slf4j.version}</version>
+</dependency>
+</dependencies>
+
+<build>
+<plugins>
+<plugin>
+<groupId>org.apache.maven.plugins</groupId>
+<artifactId>maven-compiler-plugin</artifactId>
+<version>3.15.0</version>
+<configuration>
+<release>21</release>
+</configuration>
+</plugin>
+
+<plugin>
+<groupId>org.apache.maven.plugins</groupId>
+<artifactId>maven-surefire-plugin</artifactId>
+<version>3.5.4</version>
+</plugin>
+
+<!-- JaCoCo for code coverage -->
+<plugin>
+<groupId>org.jacoco</groupId>
+<artifactId>jacoco-maven-plugin</artifactId>
+<version>${jacoco-version}</version>
+<executions>
+<execution>
+<goals>
+<goal>prepare-agent</goal>
+</goals>
+</execution>
+<execution>
+<id>report</id>
+<phase>verify</phase>
+<goals>
+<goal>report</goal>
+</goals>
+</execution>
+</executions>
+</plugin>
+
+<!-- Fat JAR with dependencies -->
+<plugin>
+<groupId>org.apache.maven.plugins</groupId>
+<artifactId>maven-shade-plugin</artifactId>
+<version>3.6.1</version>
+<executions>
+<execution>
+<phase>package</phase>
+<goals>
+<goal>shade</goal>
+</goals>
+<configuration>
+<filters>
+<filter>
+<artifact>*:*</artifact>
+<excludes>
+<exclude>META-INF/*.SF</exclude>
+<exclude>META-INF/*.DSA</exclude>
+<exclude>META-INF/*.RSA</exclude>
+</excludes>
+</filter>
+</filters>
+<transformers>
+<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+<mainClass>org.sandbox.mining.core.MiningCli</mainClass>
+</transformer>
+</transformers>
+<finalName>sandbox-mining-core</finalName>
+</configuration>
+</execution>
+</executions>
+</plugin>
+</plugins>
+</build>
+</project>
