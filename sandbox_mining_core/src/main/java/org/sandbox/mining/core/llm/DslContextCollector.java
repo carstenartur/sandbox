@@ -25,7 +25,7 @@ import java.util.List;
 
 /**
  * Walks a directory tree and collects all {@code .sandbox-hint} files,
- * returning their content formatted as context for the Gemini prompt.
+ * returning their content formatted as context for an LLM prompt.
  */
 public class DslContextCollector {
 

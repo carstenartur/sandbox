@@ -280,8 +280,8 @@ class GeminiClientTest {
 	@Test
 	void testIsApiUnavailableAfterTimeoutElapsed() throws InterruptedException {
 		GeminiClient client = new GeminiClient("test-key");
-		client.setMaxFailureDuration(Duration.ofMillis(10));
-		Thread.sleep(20);
+		client.setMaxFailureDuration(Duration.ofMillis(1));
+		Thread.sleep(100);
 		assertTrue(client.isApiUnavailable());
 	}
 

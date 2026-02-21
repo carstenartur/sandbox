@@ -101,15 +101,15 @@ public class GithubPagesGenerator {
 				<html lang="en">
 				<head>
 				<meta charset="UTF-8">
-				<title>Sandbox Mining Gemini - Report</title>
+				<title>Sandbox Mining Core - Report</title>
 				</head>
 				<body>
 				<h1>Mining Report</h1>
 				<p style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-				  <a href="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml">
-				    <img src="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml/badge.svg" alt="Workflow Status">
+				  <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">
+				    <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg" alt="Workflow Status">
 				  </a>
-				  | <a href="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml">View Workflow Runs</a>
+				  | <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">View Workflow Runs</a>
 				  | <a href="https://carstenartur.github.io/sandbox/">← Back to Dashboard</a>
 				</p>
 				<p>Total: {{totalProcessed}}, Relevant: {{relevant}}, Green: {{green}}, Yellow: {{yellow}}, Red: {{red}}</p>

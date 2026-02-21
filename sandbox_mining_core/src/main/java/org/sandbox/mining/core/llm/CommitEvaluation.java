@@ -16,7 +16,7 @@ package org.sandbox.mining.core.llm;
 import java.time.Instant;
 
 /**
- * Holds the evaluation result for a single commit from the Gemini API.
+ * Holds the evaluation result for a single commit from the selected LLM provider.
  *
  * @param commitHash            the commit hash
  * @param commitMessage         the commit message

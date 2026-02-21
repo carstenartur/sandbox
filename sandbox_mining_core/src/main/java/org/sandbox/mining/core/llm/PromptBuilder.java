@@ -43,7 +43,7 @@ public class PromptBuilder {
 	}
 
 	/**
-	 * Builds a complete prompt for Gemini evaluation.
+	 * Builds a complete prompt for LLM evaluation.
 	 *
 	 * @param dslContext       existing DSL rules context
 	 * @param categoriesJson   existing categories as JSON
@@ -54,46 +54,46 @@ public class PromptBuilder {
 	public String buildPrompt(String dslContext, String categoriesJson,
 			String diff, String commitMessage) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("You are an expert in Eclipse JDT code transformations and the TriggerPattern DSL.\n\n");
-		sb.append("## DSL Explanation\n");
-		sb.append(dslExplanation).append("\n\n");
-		sb.append("## Existing DSL Rules\n");
-		sb.append(dslContext != null ? dslContext : "(none)").append("\n\n");
-		sb.append("## Existing Categories\n");
-		sb.append(categoriesJson != null ? categoriesJson : "[]").append("\n\n");
-		sb.append("## Commit to Analyze\n\n");
-		sb.append("### Commit Message\n");
-		sb.append(commitMessage).append("\n\n");
-		sb.append("### Diff\n```\n");
-		sb.append(diff).append("\n```\n\n");
-		sb.append("## Task\n");
-		sb.append("Analyze this commit and determine whether the code change\n");
-		sb.append("can be generalized into a reusable TriggerPattern DSL rule.\n");
-		sb.append("Respond with a JSON object:\n\n");
-		sb.append("{\n");
-		sb.append("  \"relevant\": true/false,\n");
-		sb.append("  \"irrelevantReason\": \"reason if not relevant\",\n");
-		sb.append("  \"isDuplicate\": true/false,\n");
-		sb.append("  \"duplicateOf\": \"name of existing rule if duplicate\",\n");
-		sb.append("  \"reusability\": 1-10,\n");
-		sb.append("  \"codeImprovement\": 1-10,\n");
-		sb.append("  \"implementationEffort\": 1-10,\n");
-		sb.append("  \"trafficLight\": \"GREEN|YELLOW|RED|NOT_APPLICABLE\",\n");
-		sb.append("  \"category\": \"category name\",\n");
-		sb.append("  \"isNewCategory\": true/false,\n");
-		sb.append("  \"categoryReason\": \"why this category\",\n");
-		sb.append("  \"canImplementInCurrentDsl\": true/false,\n");
-		sb.append("  \"dslRule\": \"the DSL rule if applicable\",\n");
-		sb.append("  \"targetHintFile\": \"suggested .sandbox-hint filename\",\n");
-		sb.append("  \"languageChangeNeeded\": \"what DSL change would be needed\",\n");
-		sb.append("  \"dslRuleAfterChange\": \"DSL rule after language extension\",\n");
-		sb.append("  \"summary\": \"brief summary of the analysis\"\n");
-		sb.append("}\n\n");
-		sb.append("Traffic light meanings:\n");
-		sb.append("- GREEN: Directly implementable as a DSL rule\n");
-		sb.append("- YELLOW: Implementable with minor DSL extensions\n");
-		sb.append("- RED: Not implementable in current or foreseeable DSL\n");
-		sb.append("- NOT_APPLICABLE: Commit is not relevant for DSL mining\n");
+		sb.append("You are an expert in Eclipse JDT code transformations and the TriggerPattern DSL.\n\n"); //$NON-NLS-1$
+		sb.append("## DSL Explanation\n"); //$NON-NLS-1$
+		sb.append(dslExplanation).append("\n\n"); //$NON-NLS-1$
+		sb.append("## Existing DSL Rules\n"); //$NON-NLS-1$
+		sb.append(dslContext != null ? dslContext : "(none)").append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
+		sb.append("## Existing Categories\n"); //$NON-NLS-1$
+		sb.append(categoriesJson != null ? categoriesJson : "[]").append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
+		sb.append("## Commit to Analyze\n\n"); //$NON-NLS-1$
+		sb.append("### Commit Message\n"); //$NON-NLS-1$
+		sb.append(commitMessage).append("\n\n"); //$NON-NLS-1$
+		sb.append("### Diff\n```\n"); //$NON-NLS-1$
+		sb.append(diff).append("\n```\n\n"); //$NON-NLS-1$
+		sb.append("## Task\n"); //$NON-NLS-1$
+		sb.append("Analyze this commit and determine whether the code change\n"); //$NON-NLS-1$
+		sb.append("can be generalized into a reusable TriggerPattern DSL rule.\n"); //$NON-NLS-1$
+		sb.append("Respond with a JSON object:\n\n"); //$NON-NLS-1$
+		sb.append("{\n"); //$NON-NLS-1$
+		sb.append("  \"relevant\": true/false,\n"); //$NON-NLS-1$
+		sb.append("  \"irrelevantReason\": \"reason if not relevant\",\n"); //$NON-NLS-1$
+		sb.append("  \"isDuplicate\": true/false,\n"); //$NON-NLS-1$
+		sb.append("  \"duplicateOf\": \"name of existing rule if duplicate\",\n"); //$NON-NLS-1$
+		sb.append("  \"reusability\": 1-10,\n"); //$NON-NLS-1$
+		sb.append("  \"codeImprovement\": 1-10,\n"); //$NON-NLS-1$
+		sb.append("  \"implementationEffort\": 1-10,\n"); //$NON-NLS-1$
+		sb.append("  \"trafficLight\": \"GREEN|YELLOW|RED|NOT_APPLICABLE\",\n"); //$NON-NLS-1$
+		sb.append("  \"category\": \"category name\",\n"); //$NON-NLS-1$
+		sb.append("  \"isNewCategory\": true/false,\n"); //$NON-NLS-1$
+		sb.append("  \"categoryReason\": \"why this category\",\n"); //$NON-NLS-1$
+		sb.append("  \"canImplementInCurrentDsl\": true/false,\n"); //$NON-NLS-1$
+		sb.append("  \"dslRule\": \"the DSL rule if applicable\",\n"); //$NON-NLS-1$
+		sb.append("  \"targetHintFile\": \"suggested .sandbox-hint filename\",\n"); //$NON-NLS-1$
+		sb.append("  \"languageChangeNeeded\": \"what DSL change would be needed\",\n"); //$NON-NLS-1$
+		sb.append("  \"dslRuleAfterChange\": \"DSL rule after language extension\",\n"); //$NON-NLS-1$
+		sb.append("  \"summary\": \"brief summary of the analysis\"\n"); //$NON-NLS-1$
+		sb.append("}\n\n"); //$NON-NLS-1$
+		sb.append("Traffic light meanings:\n"); //$NON-NLS-1$
+		sb.append("- GREEN: Directly implementable as a DSL rule\n"); //$NON-NLS-1$
+		sb.append("- YELLOW: Implementable with minor DSL extensions\n"); //$NON-NLS-1$
+		sb.append("- RED: Not implementable in current or foreseeable DSL\n"); //$NON-NLS-1$
+		sb.append("- NOT_APPLICABLE: Commit is not relevant for DSL mining\n"); //$NON-NLS-1$
 		return sb.toString();
 	}
 

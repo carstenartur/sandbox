@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sandbox Mining Gemini - Dashboard</title>
+    <title>Sandbox Mining Core - Dashboard</title>
     <style>
         :root {
             --green: #28a745;
@@ -69,15 +69,15 @@
     </style>
 </head>
 <body>
-    <h1>Sandbox Mining Gemini - Dashboard</h1>
+    <h1>Sandbox Mining Core - Dashboard</h1>
     
     <!-- Workflow Status and Links -->
     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary, #3498db);">
         <p style="margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <a href="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml/badge.svg" alt="Nightly Gemini Commit Mining">
+            <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">
+                <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg" alt="Nightly Commit Mining">
             </a>
-            | <a href="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
+            | <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
             | <a href="https://carstenartur.github.io/sandbox/" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
         </p>
     </div>
@@ -187,7 +187,7 @@
 
     <!-- Discovered DSL Sequences Section -->
     <h2>🔧 Discovered DSL Sequences</h2>
-    <p style="color:#666; margin-bottom:15px;">New DSL rules discovered by Gemini analysis, ready for integration into <code>.sandbox-hint</code> files.</p>
+    <p style="color:#666; margin-bottom:15px;">New DSL rules discovered by LLM analysis, ready for integration into <code>.sandbox-hint</code> files.</p>
     <table id="dsl-table">
         <thead>
             <tr>
@@ -401,7 +401,7 @@
             if (evaluation.dslRuleAfterChange) {
                 body += '### Proposed DSL Rule (after extension)\n```\n' + evaluation.dslRuleAfterChange + '\n```\n\n';
             }
-            body += '---\n_Auto-generated from Gemini Mining analysis_\n';
+            body += '---\n_Auto-generated from LLM Mining analysis_\n';
             var params = new URLSearchParams({
                 title: title,
                 body: body,
@@ -419,7 +419,7 @@
                 var row = document.createElement('tr');
                 var td = document.createElement('td');
                 td.colSpan = 5;
-                td.textContent = 'No DSL sequences discovered yet. Run the Gemini mining workflow to analyze commits.';
+                td.textContent = 'No DSL sequences discovered yet. Run the mining workflow to analyze commits.';
                 td.style.textAlign = 'center';
                 td.style.color = '#666';
                 td.style.padding = '30px';
