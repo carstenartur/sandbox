@@ -32,6 +32,7 @@ jobs:
           mvn package -pl sandbox_mining_gemini -DskipTests -q
 
       - name: Run Gemini Mining
+        continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-2.5-flash
