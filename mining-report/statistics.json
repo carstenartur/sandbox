@@ -1,49 +1,26 @@
 {
-  "totalProcessed": 7,
-  "relevant": 5,
-  "irrelevant": 1,
-  "duplicates": 1,
-  "green": 3,
-  "yellow": 1,
+  "totalProcessed": 1,
+  "relevant": 1,
+  "irrelevant": 0,
+  "duplicates": 0,
+  "green": 0,
+  "yellow": 0,
   "red": 1,
-  "irrelevantReasons": {
-    "Bug-Fix": 1
-  },
+  "irrelevantReasons": {},
   "perRepository": {
-    "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 2,
-      "relevant": 1,
-      "green": 1,
-      "yellow": 0,
-      "red": 0
-    },
-    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 2,
-      "relevant": 2,
-      "green": 1,
-      "yellow": 1,
-      "red": 0
-    },
-    "https://github.com/eclipse-platform/eclipse.platform": {
-      "totalProcessed": 2,
-      "relevant": 2,
-      "green": 1,
-      "yellow": 0,
-      "red": 1
-    },
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
       "totalProcessed": 1,
       "relevant": 1,
       "green": 0,
       "yellow": 0,
-      "red": 0
+      "red": 1
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-02-16",
-      "processed": 7,
-      "relevant": 5
+      "date": "2026-02-21",
+      "processed": 1,
+      "relevant": 1
     }
   ]
 }
