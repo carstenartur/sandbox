@@ -16,6 +16,9 @@ package org.sandbox.mining.gemini;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,9 +58,14 @@ public class GeminiMiningCli {
 	private static final String OPT_BATCH_SIZE = "--batch-size"; //$NON-NLS-1$
 	private static final String OPT_OUTPUT = "--output"; //$NON-NLS-1$
 	private static final String OPT_COMMITS_PER_REQUEST = "--commits-per-request"; //$NON-NLS-1$
+	private static final String OPT_MAX_FAILURE_DURATION = "--max-failure-duration"; //$NON-NLS-1$
 
 	private static final int DEFAULT_BATCH_SIZE = 500;
 	private static final int DEFAULT_COMMITS_PER_REQUEST = 4;
+	private static final int DEFAULT_MAX_FAILURE_DURATION_SECONDS = GeminiClient.DEFAULT_MAX_FAILURE_DURATION_SECONDS;
+
+	private static final DateTimeFormatter COMMIT_DATE_FORMAT =
+			DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC); //$NON-NLS-1$
 
 	/**
 	 * Upper bound for useful commits by diff size.
@@ -91,6 +99,7 @@ public class GeminiMiningCli {
 		Path sandboxRoot = Path.of("."); //$NON-NLS-1$
 		int batchSize = DEFAULT_BATCH_SIZE;
 		int commitsPerRequest = DEFAULT_COMMITS_PER_REQUEST;
+		int maxFailureDurationSeconds = DEFAULT_MAX_FAILURE_DURATION_SECONDS;
 		Path outputDir = Path.of("output"); //$NON-NLS-1$
 
 		for (int i = 0; i < args.length; i++) {
@@ -117,6 +126,14 @@ public class GeminiMiningCli {
 			case OPT_OUTPUT:
 				outputDir = Path.of(requireArg(args, ++i, OPT_OUTPUT));
 				break;
+			case OPT_MAX_FAILURE_DURATION:
+				maxFailureDurationSeconds = Integer.parseInt(requireArg(args, ++i, OPT_MAX_FAILURE_DURATION));
+				if (maxFailureDurationSeconds < 10) {
+					throw new IllegalArgumentException(
+							"--max-failure-duration must be at least 10 seconds but was " //$NON-NLS-1$
+									+ maxFailureDurationSeconds);
+				}
+				break;
 			default:
 				System.err.println("Unknown option: " + args[i]); //$NON-NLS-1$
 				printUsage();
@@ -142,6 +159,7 @@ public class GeminiMiningCli {
 		DslContextCollector dslCollector = new DslContextCollector();
 		String dslContext = dslCollector.collectContext(sandboxRoot);
 		GeminiClient geminiClient = new GeminiClient();
+		geminiClient.setMaxFailureDuration(Duration.ofSeconds(maxFailureDurationSeconds));
 		GeminiPromptBuilder promptBuilder = new GeminiPromptBuilder();
 		DslValidator validator = new DslValidator();
 		StatisticsCollector stats = new StatisticsCollector();
@@ -186,6 +204,10 @@ public class GeminiMiningCli {
 						+ " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
 				return;
 			}
+			if (geminiClient.isApiUnavailable()) {
+				logApiUnavailable(geminiClient);
+				return;
+			}
 			System.out.println("Processing: " + repo.getUrl()); //$NON-NLS-1$
 			Path repoDir = workDir.resolve(repoDirectoryName(repo.getUrl()));
 			cloner.cloneRepo(repo.getUrl(), repo.getBranch(), repoDir);
@@ -206,11 +228,19 @@ public class GeminiMiningCli {
 									+ " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
 							return;
 						}
+						if (geminiClient.isApiUnavailable()) {
+							logApiUnavailable(geminiClient);
+							return;
+						}
 						int end = Math.min(i + commitsPerRequest, batch.size());
 						List<RevCommit> subBatch = batch.subList(i, end);
 						processBatch(subBatch, repo, diffExtractor, state, statePath,
 								geminiClient, promptBuilder, dslContext, categoryManager,
 								validator, stats, aggregator, config.getMinDiffLinesPerCommit());
+						if (geminiClient.isApiUnavailable()) {
+							logApiUnavailable(geminiClient);
+							return;
+						}
 					}
 					batch = walker.nextBatch(batch.get(batch.size() - 1).getName(),
 							config.getStartDate(), batchSize);
@@ -237,11 +267,11 @@ public class GeminiMiningCli {
 			if (diff.isBlank()) {
 				isSkipped.add(Boolean.TRUE);
 			} else if (lineCount < minDiffLines) {
-				System.out.println("  Skipping commit " + commit.getName().substring(0, 7) //$NON-NLS-1$
+				System.out.println("  Skipping commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 						+ " (diff too small: " + lineCount + " lines)"); //$NON-NLS-1$ //$NON-NLS-2$
 				isSkipped.add(Boolean.TRUE);
 			} else if (lineCount > MAX_USEFUL_DIFF_LINES) {
-				System.out.println("  Skipping commit " + commit.getName().substring(0, 7) //$NON-NLS-1$
+				System.out.println("  Skipping commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 						+ " (diff too large: " + lineCount + " lines)"); //$NON-NLS-1$ //$NON-NLS-2$
 				isSkipped.add(Boolean.TRUE);
 			} else {
@@ -260,7 +290,11 @@ public class GeminiMiningCli {
 
 			if (evaluations == null || evaluations.size() != commitDataList.size()) {
 				System.out.println("  Incomplete batch evaluation for repository " + repo.getUrl() //$NON-NLS-1$
+						+ " [" + repo.getBranch() + "]" //$NON-NLS-1$ //$NON-NLS-2$
 						+ "; will retry non-evaluated commits in a future run."); //$NON-NLS-1$
+				if (geminiClient.isApiUnavailable()) {
+					logApiUnavailable(geminiClient);
+				}
 				// Advance state only through the leading prefix of skipped commits so
 				// that included commits in this batch are not permanently lost.
 				for (int i = 0; i < commits.size(); i++) {
@@ -284,11 +318,11 @@ public class GeminiMiningCli {
 			} else {
 				CommitEvaluation evaluation = evaluations != null ? evaluations.get(evalIdx++) : null;
 				if (evaluation == null) {
-					System.out.println("  Missing evaluation for commit " + commit.getName() //$NON-NLS-1$
+					System.out.println("  Missing evaluation for commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 							+ "; stopping batch to retry remaining commits later."); //$NON-NLS-1$
 					break;
 				}
-				handleEvaluation(evaluation, commit, validator, categoryManager, stats, aggregator);
+				handleEvaluation(evaluation, commit, repo, validator, categoryManager, stats, aggregator);
 				state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
 			}
 		}
@@ -297,13 +331,13 @@ public class GeminiMiningCli {
 		state.save(statePath);
 	}
 
-	private void handleEvaluation(CommitEvaluation evaluation, RevCommit commit,
+	private void handleEvaluation(CommitEvaluation evaluation, RevCommit commit, RepoEntry repo,
 			DslValidator validator, CategoryManager categoryManager,
 			StatisticsCollector stats, ReportAggregator aggregator) {
 		if (evaluation.dslRule() != null && !evaluation.dslRule().isBlank()) {
 			var validation = validator.validate(evaluation.dslRule());
 			if (!validation.valid()) {
-				System.out.println("  Invalid DSL rule for " + commit.getName() //$NON-NLS-1$
+				System.out.println("  Invalid DSL rule for " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 						+ ": " + validation.message()); //$NON-NLS-1$
 				if (Boolean.parseBoolean(System.getenv("GEMINI_DEBUG"))) { //$NON-NLS-1$
 					System.out.println("  --- DSL rule begin ---"); //$NON-NLS-1$
@@ -331,6 +365,19 @@ public class GeminiMiningCli {
 		return name;
 	}
 
+	static String formatCommitInfo(RevCommit commit, RepoEntry repo) {
+		String datetime = COMMIT_DATE_FORMAT.format(commit.getAuthorIdent().getWhen().toInstant());
+		String title = commit.getShortMessage().replace("\"", "\\\""); //$NON-NLS-1$ //$NON-NLS-2$
+		return commit.getName().substring(0, 7) + " on " + repo.getBranch() //$NON-NLS-1$
+				+ " (" + datetime + ") \"" + title + "\""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	private static void logApiUnavailable(GeminiClient geminiClient) {
+		System.out.println("Gemini API has been unreachable for over " //$NON-NLS-1$
+				+ geminiClient.getMaxFailureDuration().toMinutes()
+				+ " minutes. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
+	}
+
 	private static void printUsage() {
 		System.out.println("Usage: java -jar sandbox-mining-gemini.jar [options]"); //$NON-NLS-1$
 		System.out.println("Options:"); //$NON-NLS-1$
@@ -340,6 +387,7 @@ public class GeminiMiningCli {
 		System.out.println("  --batch-size <n>             Number of commits per batch (default: 500)"); //$NON-NLS-1$
 		System.out.println("  --commits-per-request <n>    Commits grouped into one API call (default: 4)"); //$NON-NLS-1$
 		System.out.println("  --output <path>              Output directory (default: output)"); //$NON-NLS-1$
+		System.out.println("  --max-failure-duration <s>   Seconds without a successful API call before aborting (default: 300)"); //$NON-NLS-1$
 	}
 
 	private static String requireArg(String[] args, int index, String option) {

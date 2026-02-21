@@ -51,6 +51,8 @@ public class GeminiClient implements AutoCloseable {
 	private static final int INITIAL_BACKOFF_MS = 5000;
 	private static final int POST_FAILURE_COOLDOWN_MS = 60000;
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
+	/** Default maximum duration (in seconds) with no successful API call before aborting. */
+	public static final int DEFAULT_MAX_FAILURE_DURATION_SECONDS = 300;
 
 	private final String apiKey;
 	private final String model;
@@ -58,6 +60,8 @@ public class GeminiClient implements AutoCloseable {
 	private final Gson gson;
 	private long lastRequestTime;
 	private int dailyRequestCount;
+	private Instant lastSuccessfulCall;
+	private Duration maxFailureDuration;
 
 	/**
 	 * Creates a client reading the API key from the GEMINI_API_KEY environment variable.
@@ -99,6 +103,8 @@ public class GeminiClient implements AutoCloseable {
 		this.model = model;
 		this.httpClient = httpClient;
 		this.gson = new GsonBuilder().create();
+		this.lastSuccessfulCall = Instant.now();
+		this.maxFailureDuration = Duration.ofSeconds(DEFAULT_MAX_FAILURE_DURATION_SECONDS);
 		String debug = System.getenv("GEMINI_DEBUG");
 		if ("true".equalsIgnoreCase(debug)) {
 			System.out.println("Gemini model: " + this.model);
@@ -138,6 +144,35 @@ public class GeminiClient implements AutoCloseable {
 	 */
 	public boolean hasRemainingQuota() {
 		return dailyRequestCount < MAX_DAILY_REQUESTS;
+	}
+
+	/**
+	 * Returns true if no successful API call has been made for longer than
+	 * the configured maximum failure duration.
+	 *
+	 * @return true if the API should be considered unavailable
+	 */
+	public boolean isApiUnavailable() {
+		return Duration.between(lastSuccessfulCall, Instant.now()).compareTo(maxFailureDuration) > 0;
+	}
+
+	/**
+	 * Sets the maximum duration without a successful API call before the client
+	 * is considered unavailable.
+	 *
+	 * @param maxFailureDuration the maximum failure duration
+	 */
+	public void setMaxFailureDuration(Duration maxFailureDuration) {
+		this.maxFailureDuration = maxFailureDuration;
+	}
+
+	/**
+	 * Returns the configured maximum failure duration.
+	 *
+	 * @return the maximum failure duration
+	 */
+	public Duration getMaxFailureDuration() {
+		return maxFailureDuration;
 	}
 
 	/**
@@ -319,6 +354,7 @@ public class GeminiClient implements AutoCloseable {
 						HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
 				if (response.statusCode() == 200) {
+					lastSuccessfulCall = Instant.now();
 					return response.body();
 				}
 
