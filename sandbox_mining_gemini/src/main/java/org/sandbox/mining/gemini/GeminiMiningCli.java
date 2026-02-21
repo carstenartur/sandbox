@@ -59,6 +59,12 @@ public class GeminiMiningCli {
 	private static final int DEFAULT_BATCH_SIZE = 500;
 	private static final int DEFAULT_COMMITS_PER_REQUEST = 4;
 
+	/**
+	 * Commits with fewer diff lines than this are typically trivial (typo fixes,
+	 * import-only changes) and are skipped to avoid wasting API quota.
+	 */
+	private static final int MAX_USEFUL_DIFF_LINES = 300;
+
 	public static void main(String[] args) {
 		try {
 			new GeminiMiningCli().run(args);
@@ -184,7 +190,8 @@ public class GeminiMiningCli {
 			String lastCommit = state.getLastProcessedCommit(repo.getUrl());
 			try (CommitWalker walker = new CommitWalker(repoDir);
 					DiffExtractor diffExtractor = new DiffExtractor(repoDir,
-							config.getMaxDiffLinesPerCommit(), repo.getPaths())) {
+							config.getMaxDiffLinesPerCommit(), repo.getPaths(),
+							config.getMaxFilesPerCommit())) {
 				List<RevCommit> batch = walker.nextBatch(lastCommit, config.getStartDate(), batchSize);
 				while (!batch.isEmpty()) {
 					// Group commits into sub-batches for API calls
@@ -200,7 +207,7 @@ public class GeminiMiningCli {
 						List<RevCommit> subBatch = batch.subList(i, end);
 						processBatch(subBatch, repo, diffExtractor, state, statePath,
 								geminiClient, promptBuilder, dslContext, categoryManager,
-								validator, stats, aggregator);
+								validator, stats, aggregator, config.getMinDiffLinesPerCommit());
 					}
 					batch = walker.nextBatch(batch.get(batch.size() - 1).getName(),
 							config.getStartDate(), batchSize);
@@ -215,24 +222,34 @@ public class GeminiMiningCli {
 			DiffExtractor diffExtractor, MiningState state, Path statePath,
 			GeminiClient geminiClient, GeminiPromptBuilder promptBuilder,
 			String dslContext, CategoryManager categoryManager, DslValidator validator,
-			StatisticsCollector stats, ReportAggregator aggregator) throws IOException {
-		// Collect commit data, skipping blank diffs
+			StatisticsCollector stats, ReportAggregator aggregator,
+			int minDiffLines) throws IOException {
+		// Collect commit data, skipping blank diffs and size-filtered commits
 		List<CommitData> commitDataList = new ArrayList<>();
 		List<RevCommit> includedCommits = new ArrayList<>();
-		List<RevCommit> blankDiffCommits = new ArrayList<>();
+		List<RevCommit> skippedCommits = new ArrayList<>();
 
 		for (RevCommit commit : commits) {
 			String diff = diffExtractor.extractDiff(commit);
+			int lineCount = diff.split("\n", -1).length; //$NON-NLS-1$
 			if (diff.isBlank()) {
-				blankDiffCommits.add(commit);
+				skippedCommits.add(commit);
+			} else if (lineCount < minDiffLines) {
+				System.out.println("  Skipping commit " + commit.getName().substring(0, 7) //$NON-NLS-1$
+						+ " (diff too small: " + lineCount + " lines)"); //$NON-NLS-1$ //$NON-NLS-2$
+				skippedCommits.add(commit);
+			} else if (lineCount > MAX_USEFUL_DIFF_LINES) {
+				System.out.println("  Skipping commit " + commit.getName().substring(0, 7) //$NON-NLS-1$
+						+ " (diff too large: " + lineCount + " lines)"); //$NON-NLS-1$ //$NON-NLS-2$
+				skippedCommits.add(commit);
 			} else {
 				commitDataList.add(new CommitData(commit.getName(), commit.getFullMessage(), diff));
 				includedCommits.add(commit);
 			}
 		}
 
-		// Update state for blank-diff commits immediately
-		for (RevCommit commit : blankDiffCommits) {
+		// Update state for skipped commits immediately
+		for (RevCommit commit : skippedCommits) {
 			state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
 		}
 
@@ -245,11 +262,11 @@ public class GeminiMiningCli {
 					messages, repo.getUrl());
 
 			// If we did not get one evaluation per included commit, treat this batch
-			// as failed for non-blank-diff commits so they can be retried later.
+			// as failed for non-skipped commits so they can be retried later.
 			if (evaluations == null || evaluations.size() != includedCommits.size()) {
 				System.out.println("  Incomplete batch evaluation for repository " + repo.getUrl() //$NON-NLS-1$
 						+ "; will retry non-evaluated commits in a future run."); //$NON-NLS-1$
-				// Note: blank-diff commits were already advanced in state above.
+				// Note: skipped commits were already advanced in state above.
 				state.save(statePath);
 				return;
 			}

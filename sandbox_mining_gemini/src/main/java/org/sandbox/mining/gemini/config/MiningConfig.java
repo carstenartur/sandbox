@@ -32,6 +32,8 @@ import org.yaml.snakeyaml.Yaml;
  *   start-date: "2024-01-01"
  *   batch-size: 50
  *   max-diff-lines-per-commit: 500
+ *   min-diff-lines-per-commit: 10
+ *   max-files-per-commit: 20
  *   timeout-per-repo-minutes: 10
  *   repositories:
  *     - url: https://github.com/example/repo.git
@@ -46,6 +48,8 @@ public class MiningConfig {
 	private String startDate;
 	private int batchSize = 50;
 	private int maxDiffLinesPerCommit = 500;
+	private int minDiffLinesPerCommit = 10;
+	private int maxFilesPerCommit = 20;
 	private int timeoutPerRepoMinutes = 10;
 
 	public MiningConfig() {
@@ -112,6 +116,18 @@ public class MiningConfig {
 			config.maxDiffLinesPerCommit = n.intValue();
 		}
 
+		// Parse min-diff-lines-per-commit
+		Object minDiffObj = source.get("min-diff-lines-per-commit");
+		if (minDiffObj instanceof Number n) {
+			config.minDiffLinesPerCommit = n.intValue();
+		}
+
+		// Parse max-files-per-commit
+		Object maxFilesObj = source.get("max-files-per-commit");
+		if (maxFilesObj instanceof Number n) {
+			config.maxFilesPerCommit = n.intValue();
+		}
+
 		// Parse timeout
 		Object timeoutObj = source.get("timeout-per-repo-minutes");
 		if (timeoutObj instanceof Number n) {
@@ -172,6 +188,22 @@ public class MiningConfig {
 
 	public void setMaxDiffLinesPerCommit(int maxDiffLinesPerCommit) {
 		this.maxDiffLinesPerCommit = maxDiffLinesPerCommit;
+	}
+
+	public int getMinDiffLinesPerCommit() {
+		return minDiffLinesPerCommit;
+	}
+
+	public void setMinDiffLinesPerCommit(int minDiffLinesPerCommit) {
+		this.minDiffLinesPerCommit = minDiffLinesPerCommit;
+	}
+
+	public int getMaxFilesPerCommit() {
+		return maxFilesPerCommit;
+	}
+
+	public void setMaxFilesPerCommit(int maxFilesPerCommit) {
+		this.maxFilesPerCommit = maxFilesPerCommit;
 	}
 
 	public int getTimeoutPerRepoMinutes() {
