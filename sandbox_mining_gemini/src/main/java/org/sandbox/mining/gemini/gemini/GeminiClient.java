@@ -436,8 +436,8 @@ public class GeminiClient implements AutoCloseable {
 			return repairTruncatedJson(text.substring(contentStart).trim());
 		}
 
-		// Assume the text itself is JSON
-		return text.trim();
+		// Assume the text itself is JSON; attempt repair if truncated
+		return repairTruncatedJson(text.trim());
 	}
 
 	/**
@@ -448,7 +448,7 @@ public class GeminiClient implements AutoCloseable {
 	 * @param json the potentially truncated JSON string
 	 * @return the repaired JSON string
 	 */
-	static String repairTruncatedJson(String json) {
+	public static String repairTruncatedJson(String json) {
 		if (json == null || json.isEmpty()) {
 			return json;
 		}

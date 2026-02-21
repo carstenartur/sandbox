@@ -184,11 +184,9 @@ new java.io.FileReader($path, java.nio.charset.StandardCharsets.UTF_8)
 
 **Guard with negation (`notContains`):**
 ```
-// Only warn if init() is NOT called
+// Only warn if init() is NOT called — hint-only rule (no replacement)
+"Call init() after construction":
 $obj = new MyClass() :: notContains("$obj.init()")
-=>
-$obj = new MyClass();
-$obj.init()
 ;;
 ```
 
@@ -245,8 +243,8 @@ mark it as `RED` / not implementable:
    ;;
    ```
 
-2. **Binary operators in patterns or replacements**: Operators like `|`, `&`, `+`, `-`, `>>` in
-   patterns or replacements are NOT supported.
+2. **Bitwise/shift operators in patterns or replacements**: Bitwise operators like `|`, `&`, `^`, `~`, `>>`, `<<`
+   in patterns or replacements are NOT supported. (Arithmetic operators like `+` and `-` are supported.)
    ```
    // ❌ NOT SUPPORTED — bitwise OR in replacement
    $mgr.handle($status, StatusManager.SHOW)

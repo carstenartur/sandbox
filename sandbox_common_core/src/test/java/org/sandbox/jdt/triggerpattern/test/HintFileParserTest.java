@@ -962,4 +962,16 @@ public class HintFileParserTest {
 		assertEquals("java.util.Objects.equals($x, $y)",
 				hintFile.getRules().get(0).alternatives().get(0).replacementPattern());
 	}
+
+	@Test
+	public void testBareArrowWithNoReplacementThrowsError() {
+		// => on its own line with no replacement before ;; should be a parse error
+		String content = """
+			$x.equals($y)
+			=>
+			;;
+			""";
+		
+		assertThrows(HintParseException.class, () -> parser.parse(content));
+	}
 }
