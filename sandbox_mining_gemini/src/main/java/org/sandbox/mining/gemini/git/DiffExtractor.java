@@ -35,6 +35,10 @@ import org.eclipse.jgit.treewalk.EmptyTreeIterator;
  * <p>Limits the diff output to a configurable maximum number of lines
  * to avoid sending overly large prompts to the Gemini API.</p>
  *
+ * <p>If the commit touches more files than {@code maxFilesPerCommit}, an empty
+ * string is returned so that the caller treats the commit as skipped (mass-change
+ * commits such as auto-formatting or renames are not useful for DSL mining).</p>
+ *
  * <p>Implements {@link Closeable} to ensure the underlying Git and
  * Repository resources are properly released.</p>
  */
@@ -44,6 +48,7 @@ public class DiffExtractor implements Closeable {
 	private final Repository repository;
 	private final int maxDiffLines;
 	private final List<String> pathFilters;
+	private final int maxFilesPerCommit;
 
 	/**
 	 * Creates a DiffExtractor for the given repository directory.
@@ -53,7 +58,7 @@ public class DiffExtractor implements Closeable {
 	 * @throws IOException if the repository cannot be opened
 	 */
 	public DiffExtractor(Path repoDir, int maxDiffLines) throws IOException {
-		this(repoDir, maxDiffLines, List.of());
+		this(repoDir, maxDiffLines, List.of(), Integer.MAX_VALUE);
 	}
 
 	/**
@@ -65,17 +70,39 @@ public class DiffExtractor implements Closeable {
 	 * @throws IOException if the repository cannot be opened
 	 */
 	public DiffExtractor(Path repoDir, int maxDiffLines, List<String> pathFilters) throws IOException {
+		this(repoDir, maxDiffLines, pathFilters, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Creates a DiffExtractor for the given repository directory with path filtering
+	 * and a maximum file count per commit.
+	 *
+	 * @param repoDir           the local repository directory
+	 * @param maxDiffLines      maximum number of diff lines to include
+	 * @param pathFilters       list of path prefixes to include (empty = all paths)
+	 * @param maxFilesPerCommit maximum number of changed files before the commit is
+	 *                          skipped (returns empty string)
+	 * @throws IOException if the repository cannot be opened
+	 */
+	public DiffExtractor(Path repoDir, int maxDiffLines, List<String> pathFilters,
+			int maxFilesPerCommit) throws IOException {
 		this.git = Git.open(repoDir.toFile());
 		this.repository = git.getRepository();
 		this.maxDiffLines = maxDiffLines;
 		this.pathFilters = pathFilters != null ? pathFilters : List.of();
+		this.maxFilesPerCommit = maxFilesPerCommit;
 	}
 
 	/**
 	 * Extracts the diff of a commit as a string.
 	 *
+	 * <p>Returns an empty string if the commit touches more files (after path
+	 * filtering) than {@code maxFilesPerCommit}, so that the caller can treat it as
+	 * a skipped commit (mass-change commits are not useful for DSL mining).</p>
+	 *
 	 * @param commit the commit to extract the diff from
-	 * @return the diff as a string, truncated to maxDiffLines
+	 * @return the diff as a string truncated to maxDiffLines, or an empty string if
+	 *         too many files are changed
 	 * @throws IOException if a Git operation fails
 	 */
 	public String extractDiff(RevCommit commit) throws IOException {
@@ -89,6 +116,13 @@ public class DiffExtractor implements Closeable {
 			AbstractTreeIterator commitTree = getTree(commit);
 
 			List<DiffEntry> diffs = formatter.scan(parentTree, commitTree);
+
+			// Skip commits that touch too many files (mass-changes are not useful for mining)
+			long matchingFiles = diffs.stream().filter(this::matchesPathFilter).count();
+			if (matchingFiles > maxFilesPerCommit) {
+				return ""; //$NON-NLS-1$
+			}
+
 			for (DiffEntry entry : diffs) {
 				if (matchesPathFilter(entry)) {
 					formatter.format(entry);
