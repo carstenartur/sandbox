@@ -128,6 +128,11 @@ public class GeminiMiningCli {
 				break;
 			case OPT_MAX_FAILURE_DURATION:
 				maxFailureDurationSeconds = Integer.parseInt(requireArg(args, ++i, OPT_MAX_FAILURE_DURATION));
+				if (maxFailureDurationSeconds < 10) {
+					throw new IllegalArgumentException(
+							"--max-failure-duration must be at least 10 seconds but was " //$NON-NLS-1$
+									+ maxFailureDurationSeconds);
+				}
 				break;
 			default:
 				System.err.println("Unknown option: " + args[i]); //$NON-NLS-1$
@@ -200,9 +205,7 @@ public class GeminiMiningCli {
 				return;
 			}
 			if (geminiClient.isApiUnavailable()) {
-				System.out.println("Gemini API has been unreachable for over " //$NON-NLS-1$
-						+ geminiClient.getMaxFailureDuration().toMinutes()
-						+ " minutes. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
+				logApiUnavailable(geminiClient);
 				return;
 			}
 			System.out.println("Processing: " + repo.getUrl()); //$NON-NLS-1$
@@ -226,9 +229,7 @@ public class GeminiMiningCli {
 							return;
 						}
 						if (geminiClient.isApiUnavailable()) {
-							System.out.println("Gemini API has been unreachable for over " //$NON-NLS-1$
-									+ geminiClient.getMaxFailureDuration().toMinutes()
-									+ " minutes. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
+							logApiUnavailable(geminiClient);
 							return;
 						}
 						int end = Math.min(i + commitsPerRequest, batch.size());
@@ -237,9 +238,7 @@ public class GeminiMiningCli {
 								geminiClient, promptBuilder, dslContext, categoryManager,
 								validator, stats, aggregator, config.getMinDiffLinesPerCommit());
 						if (geminiClient.isApiUnavailable()) {
-							System.out.println("Gemini API has been unreachable for over " //$NON-NLS-1$
-									+ geminiClient.getMaxFailureDuration().toMinutes()
-									+ " minutes. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
+							logApiUnavailable(geminiClient);
 							return;
 						}
 					}
@@ -294,9 +293,7 @@ public class GeminiMiningCli {
 						+ " [" + repo.getBranch() + "]" //$NON-NLS-1$ //$NON-NLS-2$
 						+ "; will retry non-evaluated commits in a future run."); //$NON-NLS-1$
 				if (geminiClient.isApiUnavailable()) {
-					System.out.println("Gemini API has been unreachable for over " //$NON-NLS-1$
-							+ geminiClient.getMaxFailureDuration().toMinutes()
-							+ " minutes. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
+					logApiUnavailable(geminiClient);
 				}
 				// Advance state only through the leading prefix of skipped commits so
 				// that included commits in this batch are not permanently lost.
@@ -368,11 +365,17 @@ public class GeminiMiningCli {
 		return name;
 	}
 
-	private static String formatCommitInfo(RevCommit commit, RepoEntry repo) {
+	static String formatCommitInfo(RevCommit commit, RepoEntry repo) {
 		String datetime = COMMIT_DATE_FORMAT.format(commit.getAuthorIdent().getWhen().toInstant());
-		String title = commit.getShortMessage();
+		String title = commit.getShortMessage().replace("\"", "\\\""); //$NON-NLS-1$ //$NON-NLS-2$
 		return commit.getName().substring(0, 7) + " on " + repo.getBranch() //$NON-NLS-1$
 				+ " (" + datetime + ") \"" + title + "\""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	private static void logApiUnavailable(GeminiClient geminiClient) {
+		System.out.println("Gemini API has been unreachable for over " //$NON-NLS-1$
+				+ geminiClient.getMaxFailureDuration().toMinutes()
+				+ " minutes. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
 	}
 
 	private static void printUsage() {

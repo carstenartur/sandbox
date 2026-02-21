@@ -14,6 +14,7 @@
 package org.sandbox.mining.gemini;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -253,6 +254,35 @@ class GeminiClientTest {
 		GeminiClient client = new GeminiClient("test-key");
 		assertTrue(client.hasRemainingQuota());
 		assertEquals(0, client.getDailyRequestCount());
+	}
+
+	@Test
+	void testIsApiUnavailableInitiallyFalse() {
+		GeminiClient client = new GeminiClient("test-key");
+		assertFalse(client.isApiUnavailable());
+	}
+
+	@Test
+	void testSetAndGetMaxFailureDuration() {
+		GeminiClient client = new GeminiClient("test-key");
+		Duration custom = Duration.ofSeconds(120);
+		client.setMaxFailureDuration(custom);
+		assertEquals(custom, client.getMaxFailureDuration());
+	}
+
+	@Test
+	void testDefaultMaxFailureDuration() {
+		GeminiClient client = new GeminiClient("test-key");
+		assertEquals(Duration.ofSeconds(GeminiClient.DEFAULT_MAX_FAILURE_DURATION_SECONDS),
+				client.getMaxFailureDuration());
+	}
+
+	@Test
+	void testIsApiUnavailableAfterTimeoutElapsed() throws InterruptedException {
+		GeminiClient client = new GeminiClient("test-key");
+		client.setMaxFailureDuration(Duration.ofMillis(10));
+		Thread.sleep(20);
+		assertTrue(client.isApiUnavailable());
 	}
 
 	// ---- repairTruncatedJson tests ----
