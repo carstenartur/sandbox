@@ -62,7 +62,6 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -146,14 +145,14 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		// Find expect() and expectMessage() calls
 		ExpectedExceptionInfo info = findExpectedExceptionCalls(statements, fieldName);
 
-		if (info.expectCall == null) {
+		if (info.getExpectCall() == null) {
 			// This method doesn't use the ExpectedException field
 			return;
 		}
 
 		// Generate a unique variable name for the exception if we need to check the message or cause
 		String exceptionVarName = null;
-		if (info.expectMessageCall != null || info.expectCauseCall != null) {
+		if (info.getExpectMessageCall() != null || info.getExpectCauseCall() != null) {
 			Collection<String> usedNames = getUsedVariableNames(method);
 			exceptionVarName = generateUniqueVariableName("exception", usedNames);
 		}
@@ -164,7 +163,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 
 		// Add exception class as first argument
 		Expression exceptionClass = (Expression) ASTNode.copySubtree(ast,
-				(Expression) info.expectCall.arguments().get(0));
+				(Expression) info.getExpectCall().arguments().get(0));
 		assertThrowsCall.arguments().add(exceptionClass);
 
 		// Create lambda with remaining statements
@@ -174,7 +173,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		Block lambdaBody = ast.newBlock();
 
 		// Copy all statements after the expect/expectMessage calls
-		int startIndex = info.lastExpectStatementIndex + 1;
+		int startIndex = info.getLastExpectStatementIndex() + 1;
 		if (startIndex >= statements.size()) {
 			// Edge case: expect() is the last statement, no code to throw exception
 			// This would create an empty lambda that never throws, causing test to fail
@@ -201,7 +200,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 
 			VariableDeclarationStatement varDecl = ast.newVariableDeclarationStatement(fragment);
 			// Extract the exception type from the class literal (use the Type directly to preserve simple name)
-			Type exceptionType = extractExceptionType(info.expectCall);
+			Type exceptionType = extractExceptionType(info.getExpectCall());
 			varDecl.setType((Type) ASTNode.copySubtree(ast, exceptionType));
 
 			newStatement = varDecl;
@@ -211,7 +210,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		}
 
 		// Remove old expect/expectMessage calls and statements after them
-		for (int i = statements.size() - 1; i >= info.firstExpectStatementIndex; i--) {
+		for (int i = statements.size() - 1; i >= info.getFirstExpectStatementIndex(); i--) {
 			rewriter.remove(statements.get(i), group);
 		}
 
@@ -219,8 +218,8 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(newStatement, group);
 
 		// If there's a message expectation, add the assertion
-		if (info.expectMessageCall != null && exceptionVarName != null) {
-			Expression messageArg = (Expression) info.expectMessageCall.arguments().get(0);
+		if (info.getExpectMessageCall() != null && exceptionVarName != null) {
+			Expression messageArg = (Expression) info.getExpectMessageCall().arguments().get(0);
 			
 			// Create: assertEquals("message", exception.getMessage());
 			MethodInvocation getMessageCall = ast.newMethodInvocation();
@@ -240,10 +239,10 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		}
 		
 		// If there's a cause expectation, add the assertion
-		if (info.expectCauseCall != null && exceptionVarName != null) {
+		if (info.getExpectCauseCall() != null && exceptionVarName != null) {
 			// Check if expectCauseCall has arguments before accessing
-			if (!info.expectCauseCall.arguments().isEmpty()) {
-				Expression causeArg = (Expression) info.expectCauseCall.arguments().get(0);
+			if (!info.getExpectCauseCall().arguments().isEmpty()) {
+				Expression causeArg = (Expression) info.getExpectCauseCall().arguments().get(0);
 				Expression causeClass = extractCauseClass(causeArg);
 				
 				if (causeClass != null) {
@@ -263,12 +262,8 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 
 					// Add assertInstanceOf import
 					importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertInstanceOf", false);
-				} else {
-					// Unsupported matcher - log warning
-					System.err.println("WARNING: RuleExpectedExceptionJUnitPlugin - Unsupported expectCause matcher in method '"
-							+ method.getName().getIdentifier()
-							+ "'. Only Hamcrest instanceOf() and isA() matchers are supported. Manual migration of the cause expectation may be required.");
 				}
+				// Unsupported matchers are silently skipped - manual migration required
 			}
 		}
 	}
@@ -289,34 +284,24 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 
 			MethodInvocation invocation = (MethodInvocation) expr;
 			Expression expression = invocation.getExpression();
-			if (expression == null || !(expression instanceof SimpleName)) {
+			if (!(expression instanceof SimpleName receiver)) {
 				continue;
 			}
 
-			SimpleName receiver = (SimpleName) expression;
 			if (!fieldName.equals(receiver.getIdentifier())) {
 				continue;
 			}
 
 			String methodName = invocation.getName().getIdentifier();
 			if ("expect".equals(methodName)) {
-				info.expectCall = invocation;
-				if (info.firstExpectStatementIndex == -1) {
-					info.firstExpectStatementIndex = i;
-				}
-				info.lastExpectStatementIndex = i;
+				info.setExpectCall(invocation);
+				info.updateStatementIndices(i);
 			} else if ("expectMessage".equals(methodName)) {
-				info.expectMessageCall = invocation;
-				if (info.firstExpectStatementIndex == -1) {
-					info.firstExpectStatementIndex = i;
-				}
-				info.lastExpectStatementIndex = i;
+				info.setExpectMessageCall(invocation);
+				info.updateStatementIndices(i);
 			} else if ("expectCause".equals(methodName)) {
-				info.expectCauseCall = invocation;
-				if (info.firstExpectStatementIndex == -1) {
-					info.firstExpectStatementIndex = i;
-				}
-				info.lastExpectStatementIndex = i;
+				info.setExpectCauseCall(invocation);
+				info.updateStatementIndices(i);
 			}
 		}
 
@@ -361,42 +346,6 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			}
 		}
 		return null;
-	}
-
-	@SuppressWarnings("unused") // Helper method kept for potential future use (alternative to extractExceptionType)
-	private String extractExceptionTypeName(MethodInvocation expectCall) {
-		// The argument is typically a TypeLiteral like IllegalArgumentException.class
-		if (!expectCall.arguments().isEmpty()) {
-			Expression arg = (Expression) expectCall.arguments().get(0);
-			
-			// Use TypeLiteral API for robust type extraction
-			if (arg instanceof TypeLiteral typeLiteral) {
-				Type type = typeLiteral.getType();
-				if (type != null) {
-					ITypeBinding typeBinding = type.resolveBinding();
-					if (typeBinding != null) {
-						// Try qualified name first, fall back to simple name
-						String qualifiedName = typeBinding.getQualifiedName();
-						if (qualifiedName != null && !qualifiedName.isEmpty()) {
-							return qualifiedName;
-						}
-						String name = typeBinding.getName();
-						if (name != null && !name.isEmpty()) {
-							return name;
-						}
-					}
-					// Fallback: use the type's string representation
-					return type.toString();
-				}
-			}
-			
-			// Fallback for non-TypeLiteral expressions
-			String argStr = arg.toString();
-			if (argStr.endsWith(".class")) {
-				return argStr.substring(0, argStr.length() - ".class".length());
-			}
-		}
-		return "Exception";
 	}
 
 	private String generateUniqueVariableName(String baseName, Collection<String> usedNames) {
@@ -457,10 +406,57 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	}
 
 	private static class ExpectedExceptionInfo {
-		MethodInvocation expectCall;
-		MethodInvocation expectMessageCall;
-		MethodInvocation expectCauseCall;
-		int firstExpectStatementIndex = -1;
-		int lastExpectStatementIndex = -1;
+		private MethodInvocation expectCall;
+		private MethodInvocation expectMessageCall;
+		private MethodInvocation expectCauseCall;
+		private int firstExpectStatementIndex = -1;
+		private int lastExpectStatementIndex = -1;
+
+		MethodInvocation getExpectCall() {
+			return expectCall;
+		}
+
+		void setExpectCall(MethodInvocation expectCall) {
+			this.expectCall = expectCall;
+		}
+
+		MethodInvocation getExpectMessageCall() {
+			return expectMessageCall;
+		}
+
+		void setExpectMessageCall(MethodInvocation expectMessageCall) {
+			this.expectMessageCall = expectMessageCall;
+		}
+
+		MethodInvocation getExpectCauseCall() {
+			return expectCauseCall;
+		}
+
+		void setExpectCauseCall(MethodInvocation expectCauseCall) {
+			this.expectCauseCall = expectCauseCall;
+		}
+
+		int getFirstExpectStatementIndex() {
+			return firstExpectStatementIndex;
+		}
+
+		void setFirstExpectStatementIndex(int index) {
+			this.firstExpectStatementIndex = index;
+		}
+
+		int getLastExpectStatementIndex() {
+			return lastExpectStatementIndex;
+		}
+
+		void setLastExpectStatementIndex(int index) {
+			this.lastExpectStatementIndex = index;
+		}
+
+		void updateStatementIndices(int index) {
+			if (firstExpectStatementIndex == -1) {
+				firstExpectStatementIndex = index;
+			}
+			lastExpectStatementIndex = index;
+		}
 	}
 }

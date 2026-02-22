@@ -54,7 +54,6 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -84,6 +83,9 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		JunitHolder mh= new JunitHolder();
 		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
+		if (fragment.resolveBinding() == null) {
+			return true;
+		}
 		ITypeBinding binding= fragment.resolveBinding().getType();
 		if (binding != null && ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
 			mh.setMinv(node);
@@ -105,34 +107,9 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 		VariableDeclarationFragment originalFragment= (VariableDeclarationFragment) field.fragments().get(0);
 		String originalName= originalFragment.getName().getIdentifier();
 
-		// Check which methods are being called to determine if Files import is needed
-		final boolean[] needsFilesImport = {false};
-		for (MethodDeclaration method : parentClass.getMethods()) {
-			method.accept(new ASTVisitor() {
-				@Override
-				public boolean visit(MethodInvocation node) {
-					if (node.getExpression() == null) {
-						return super.visit(node);
-					}
-					String expressionName = node.getExpression().toString();
-					if (!originalName.equals(expressionName)) {
-						return super.visit(node);
-					}
-					String methodName = node.getName().getIdentifier();
-					if ("newFile".equals(methodName) || "newFolder".equals(methodName)) {
-						needsFilesImport[0] = true;
-					}
-					return super.visit(node);
-				}
-			});
-		}
-
 		// Add JUnit 5 imports and remove JUnit 4 imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_IO_TEMP_DIR);
 		importRewriter.addImport("java.nio.file.Path");
-		if (needsFilesImport[0]) {
-			importRewriter.addImport("java.nio.file.Files");
-		}
 		importRewriter.removeImport(ORG_JUNIT_RULE);
 		importRewriter.removeImport(ORG_JUNIT_RULES_TEMPORARY_FOLDER);
 
@@ -150,7 +127,8 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 		rewriter.getListRewrite(parentClass, TypeDeclaration.BODY_DECLARATIONS_PROPERTY).insertFirst(tempDirField,
 				group);
 
-		// Transform method invocations
+		// Transform method invocations in a single pass (also determines if Files import is needed)
+		final boolean[] needsFilesImport = {false};
 		for (MethodDeclaration method : parentClass.getMethods()) {
 			method.accept(new ASTVisitor() {
 				@Override
@@ -168,6 +146,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 					
 					// Handle newFile() and newFile(String)
 					if ("newFile".equals(methodName)) {
+						needsFilesImport[0] = true;
 						if (node.arguments().isEmpty()) {
 							// newFile() with no args -> Files.createTempFile(tempDir, "", null).toFile()
 							MethodInvocation createTempFileInvocation= ast.newMethodInvocation();
@@ -207,6 +186,7 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 					}
 					// Handle newFolder() and newFolder(String...)
 					else if ("newFolder".equals(methodName)) {
+						needsFilesImport[0] = true;
 						if (node.arguments().isEmpty()) {
 							// newFolder() with no args -> Files.createTempDirectory(tempDir, "").toFile()
 							MethodInvocation createTempDirInvocation= ast.newMethodInvocation();
@@ -268,6 +248,11 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 					return super.visit(node);
 				}
 			});
+		}
+		
+		// Add Files import only if needed (determined during transformation)
+		if (needsFilesImport[0]) {
+			importRewriter.addImport("java.nio.file.Files");
 		}
 	}
 
