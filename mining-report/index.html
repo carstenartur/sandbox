@@ -3,763 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sandbox Mining Core - Dashboard</title>
+    <title>🔍 Sandbox Mining Core - Dashboard</title>
     <style>
         :root {
-            --green: #28a745;
-            --yellow: #ffc107;
-            --red: #dc3545;
-            --bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text: #333;
-            --border: #dee2e6;
+            --primary: #3498db;
+            --primary-dark: #2c3e50;
+            --secondary: #2ecc71;
+            --light-bg: #f8f9fa;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-        h1 { margin-bottom: 10px; }
-        h2 { margin: 25px 0 15px; }
-
-        /* Statistics Grid */
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: var(--card-bg); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .stat-card .value { font-size: 2em; font-weight: bold; }
-        .stat-card .label { color: #666; margin-top: 5px; }
-        .stat-card .percent { color: #999; font-size: 0.85em; }
-
-        /* Traffic Light Bar */
-        .traffic-bar-container { margin-bottom: 30px; }
-        .traffic-bar { display: flex; height: 30px; border-radius: 8px; overflow: hidden; margin-bottom: 5px; }
-        .traffic-bar .segment { display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; min-width: 40px; }
-        .traffic-bar .segment.green { background: var(--green); }
-        .traffic-bar .segment.yellow { background: var(--yellow); color: #333; }
-        .traffic-bar .segment.red { background: var(--red); }
-        .traffic-bar-legend { display: flex; gap: 20px; font-size: 0.9em; }
-        .traffic-bar-legend span { display: flex; align-items: center; gap: 5px; }
-        .traffic-bar-legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-
-        /* Filter Bar */
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-        .filter-bar label { font-weight: 600; }
-        .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9em; }
-
-        /* Tables */
-        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: #f1f3f5; font-weight: 600; }
-        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.85em; color: white; }
-        .badge.GREEN { background: var(--green); }
-        .badge.YELLOW { background: var(--yellow); color: #333; }
-        .badge.RED { background: var(--red); }
-        .badge.NOT_APPLICABLE { background: #6c757d; }
-
-        /* Action Buttons */
-        .action-btn { padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; margin: 2px; }
-        .action-btn.commit { background: var(--green); color: white; }
-        .action-btn.pr { background: #0366d6; color: white; }
-        .action-btn.issue { background: #6f42c1; color: white; }
-        .action-btn.dsl { background: #17a2b8; color: white; }
-
-        /* Modal */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
-        .modal-overlay.active { display: flex; align-items: center; justify-content: center; }
-        .modal { background: white; border-radius: 8px; padding: 30px; max-width: 700px; width: 90%; max-height: 80vh; overflow: auto; }
-        .modal h3 { margin-bottom: 15px; }
-        .modal pre { background: #f1f3f5; padding: 15px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
-        .modal .close-btn { float: right; background: none; border: none; font-size: 1.5em; cursor: pointer; }
-
-        /* Run Status Panel */
-        .run-status { background: var(--card-bg); border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px 30px; align-items: center; font-size: 0.9em; }
-        .run-status .info-item { display: flex; align-items: center; gap: 6px; }
-        .run-status .info-item .icon { font-size: 1.1em; }
-        .run-status .info-item .label { color: #666; }
-        .run-status .info-item .val { font-weight: 600; }
-
-        /* Daily Progress */
-        .daily-progress { margin-bottom: 30px; }
-        .daily-bar-chart { display: flex; gap: 4px; align-items: flex-end; height: 80px; padding: 10px 0; }
-        .daily-bar-group { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 30px; }
-        .daily-bar-group .bars { display: flex; gap: 2px; align-items: flex-end; width: 100%; justify-content: center; }
-        .daily-bar-group .bar { width: 12px; border-radius: 2px 2px 0 0; min-height: 2px; }
-        .daily-bar-group .bar.processed { background: #adb5bd; }
-        .daily-bar-group .bar.relevant { background: var(--green); }
-        .daily-bar-group .date-label { font-size: 0.7em; color: #888; margin-top: 4px; white-space: nowrap; }
-
-        /* Outcome Summary */
-        .outcome-summary { font-size: 0.85em; color: #666; margin-bottom: 10px; }
-
-        /* Commit Title Ellipsis */
-        .commit-title { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
-
-        /* DSL Validation Indicator */
-        .dsl-valid { color: var(--green); cursor: default; }
-        .dsl-invalid { color: var(--yellow); cursor: help; }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: var(--light-bg);
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        h1 {
+            color: var(--primary-dark);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 0.5rem;
+        }
+        
+        .status-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+        
+        .status-box h2 {
+            color: #856404;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-box p {
+            color: #856404;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-list {
+            margin: 2rem 0;
+        }
+        
+        .info-list h3 {
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+        }
+        
+        .info-list ul {
+            list-style-position: inside;
+            padding-left: 1rem;
+        }
+        
+        .info-list li {
+            margin-bottom: 0.5rem;
+            line-height: 1.8;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+        
+        .back-link:hover {
+            background: var(--primary-dark);
+        }
+        
+        code {
+            background: var(--light-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
     </style>
 </head>
 <body>
-    <h1>Sandbox Mining Core - Dashboard</h1>
-    
-    <!-- Workflow Status and Links -->
-    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary, #3498db);">
-        <p style="margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg" alt="Nightly Commit Mining">
-            </a>
-            | <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
-            | <a href="https://carstenartur.github.io/sandbox/" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
-            | <a href="evaluations.json" style="color: #0366d6; text-decoration: none;">📄 evaluations.json</a>
-            | <a href="statistics.json" style="color: #0366d6; text-decoration: none;">📊 statistics.json</a>
-            | <a href="https://github.com/carstenartur/sandbox/tree/master/sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/" style="color: #0366d6; text-decoration: none;">📁 .sandbox-hint Sources</a>
-        </p>
+    <div class="container">
+        <h1>🔍 Sandbox Mining Core - Dashboard</h1>
+        
+        <!-- Workflow Status and Links -->
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary);">
+            <p style="margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">
+                    <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg" alt="Nightly Commit Mining">
+                </a>
+                | <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
+                | <a href="../" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
+            </p>
+        </div>
+        
+        <div class="status-box">
+            <h2>⏳ Mining Has Not Run Yet</h2>
+            <p>The nightly workflow will populate this page with LLM commit analysis results.</p>
+            <p>Check back after the first scheduled run (nightly at 2 AM UTC) or when manually triggered.</p>
+        </div>
+        
+        <div class="info-list">
+            <h3>What is Commit Mining?</h3>
+            <ul>
+                <li><strong>Automated Commit Analysis:</strong> Uses LLM AI to analyze commit patterns</li>
+                <li><strong>Refactoring Opportunities:</strong> Identifies potential code improvements and cleanup opportunities</li>
+                <li><strong>DSL Rule Proposals:</strong> Suggests new cleanup rules based on discovered patterns</li>
+                <li><strong>Traffic Light System:</strong> Evaluates proposals with GREEN/YELLOW/RED ratings</li>
+            </ul>
+        </div>
+        
+        <div class="info-list">
+            <h3>How It Works</h3>
+            <ul>
+                <li>The <code>mining-core.yml</code> workflow runs nightly</li>
+                <li>Analyzes recent commits from configured repositories</li>
+                <li>The LLM evaluates each commit for refactoring patterns</li>
+                <li>Results are compiled into this dashboard</li>
+                <li>Proposals can be applied via <code>apply-mining-proposal.yml</code> workflow</li>
+            </ul>
+        </div>
+        
+        <a href="../" class="back-link">← Back to Main Dashboard</a>
     </div>
-
-    <!-- Run Status Panel -->
-    <div class="run-status" id="run-status">
-        <div class="info-item"><span class="icon">🕐</span><span class="label">Last Run:</span><span class="val" id="rs-completed">–</span></div>
-        <div class="info-item"><span class="icon">⏱</span><span class="label">Duration:</span><span class="val" id="rs-duration">–</span></div>
-        <div class="info-item"><span class="icon">📅</span><span class="label">Analysis Window:</span><span class="val" id="rs-window">–</span></div>
-        <div class="info-item"><span class="icon">🤖</span><span class="label">Model:</span><span class="val" id="rs-model">–</span></div>
-        <div class="info-item"><span class="icon">📊</span><span class="label">API Calls:</span><span class="val" id="rs-api-calls">–</span></div>
-        <div class="info-item"><span class="icon">📦</span><span class="label">Batch Config:</span><span class="val" id="rs-batch">–</span></div>
-        <div class="info-item"><span class="icon">⏸</span><span class="label">Deferred:</span><span class="val" id="rs-deferred">–</span></div>
-        <div class="info-item"><span class="icon">🚫</span><span class="label">Skipped:</span><span class="val" id="rs-skipped">–</span></div>
-    </div>
-
-    <!-- Outcome Summary -->
-    <div class="outcome-summary" id="outcome-summary"></div>
-
-    <!-- Statistics Grid -->
-    <div class="stats">
-        <div class="stat-card">
-            <div class="value" id="stat-total">1</div>
-            <div class="label">Total Processed</div>
-        </div>
-        <div class="stat-card">
-            <div class="value" id="stat-relevant">1</div>
-            <div class="label">Relevant</div>
-            <div class="percent" id="stat-relevant-pct"></div>
-        </div>
-        <div class="stat-card">
-            <div class="value" id="stat-irrelevant">0</div>
-            <div class="label">Irrelevant</div>
-            <div class="percent" id="stat-irrelevant-pct"></div>
-        </div>
-        <div class="stat-card">
-            <div class="value" id="stat-duplicates">0</div>
-            <div class="label">Duplicates</div>
-        </div>
-    </div>
-
-    <!-- Traffic Light Bar with Percentages -->
-    <div class="traffic-bar-container">
-        <div class="traffic-bar" id="traffic-bar">
-            <div class="segment green" id="bar-green" style="width:33%">0</div>
-            <div class="segment yellow" id="bar-yellow" style="width:33%">0</div>
-            <div class="segment red" id="bar-red" style="width:34%">1</div>
-        </div>
-        <div class="traffic-bar-legend">
-            <span><span class="dot" style="background:var(--green)"></span> Green: <span id="legend-green">0</span></span>
-            <span><span class="dot" style="background:var(--yellow)"></span> Yellow: <span id="legend-yellow">0</span></span>
-            <span><span class="dot" style="background:var(--red)"></span> Red: <span id="legend-red">1</span></span>
-        </div>
-    </div>
-
-    <!-- Daily Progress -->
-    <div class="daily-progress">
-        <h2>📈 Daily Progress</h2>
-        <div class="daily-bar-chart" id="daily-chart"></div>
-        <div style="font-size:0.8em;color:#888;display:flex;gap:15px;">
-            <span><span style="display:inline-block;width:12px;height:12px;background:#adb5bd;border-radius:2px;vertical-align:middle;"></span> Processed</span>
-            <span><span style="display:inline-block;width:12px;height:12px;background:var(--green);border-radius:2px;vertical-align:middle;"></span> Relevant</span>
-        </div>
-    </div>
-
-    <!-- Why Not Usable Table -->
-    <h2>Why Not Usable</h2>
-    <table id="irrelevant-table">
-        <thead>
-            <tr>
-                <th>Reason</th>
-                <th>Count</th>
-            </tr>
-        </thead>
-        <tbody id="irrelevant-body">
-        </tbody>
-    </table>
-
-    <!-- Per-Repository Table -->
-    <h2>Per Repository</h2>
-    <table id="repo-table">
-        <thead>
-            <tr>
-                <th>Repository</th>
-                <th>Processed</th>
-                <th>Relevant</th>
-                <th>Green</th>
-                <th>Yellow</th>
-                <th>Red</th>
-            </tr>
-        </thead>
-        <tbody id="repo-body">
-        </tbody>
-    </table>
-
-    <!-- Filter Bar -->
-    <h2>Evaluations</h2>
-    <div class="filter-bar">
-        <label>Traffic Light:</label>
-        <select id="filter-light">
-            <option value="">All</option>
-            <option value="GREEN">GREEN</option>
-            <option value="YELLOW">YELLOW</option>
-            <option value="RED">RED</option>
-            <option value="NOT_APPLICABLE">N/A</option>
-        </select>
-        <label>Category:</label>
-        <select id="filter-category">
-            <option value="">All</option>
-        </select>
-        <label>Repository:</label>
-        <select id="filter-repo">
-            <option value="">All</option>
-        </select>
-    </div>
-
-    <!-- Evaluations Table with Action Buttons -->
-    <table id="evaluations-table">
-        <thead>
-            <tr>
-                <th>Commit</th>
-                <th>Date/Time</th>
-                <th>Commit Title</th>
-                <th>Repository</th>
-                <th>Traffic Light</th>
-                <th>Category</th>
-                <th>Summary</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="evaluations-body">
-        </tbody>
-    </table>
-
-    <!-- Discovered DSL Sequences Section -->
-    <h2>🔧 Discovered DSL Sequences</h2>
-    <p style="color:#666; margin-bottom:15px;">New DSL rules discovered by LLM analysis, ready for integration into <code>.sandbox-hint</code> files.</p>
-    <table id="dsl-table">
-        <thead>
-            <tr>
-                <th>Status</th>
-                <th>Category</th>
-                <th>Target File</th>
-                <th>Summary</th>
-                <th>Valid?</th>
-                <th>DSL Rule</th>
-            </tr>
-        </thead>
-        <tbody id="dsl-body">
-        </tbody>
-    </table>
-
-    <!-- DSL Modal -->
-    <div class="modal-overlay" id="dsl-modal">
-        <div class="modal">
-            <button class="close-btn" id="modal-close">&times;</button>
-            <h3 id="modal-title">DSL Rule</h3>
-            <p><strong>Target File:</strong> <code id="modal-target-file"></code></p>
-            <p><strong>Category:</strong> <span id="modal-category"></span></p>
-            <p><strong>Scores:</strong> Reusability: <span id="modal-reusability"></span>/10 | Improvement: <span id="modal-improvement"></span>/10 | Effort: <span id="modal-effort"></span>/10</p>
-            <h4>DSL Rule:</h4>
-            <pre id="modal-content"></pre>
-            <div id="modal-extension" style="display:none;">
-                <h4>⚠️ Required DSL Extension:</h4>
-                <p id="modal-language-change"></p>
-                <h4>Rule after extension:</h4>
-                <pre id="modal-rule-after-change"></pre>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let allEvaluations = [];
-        let statistics = null;
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            const div = document.createElement('div');
-            div.appendChild(document.createTextNode(str));
-            return div.innerHTML;
-        }
-
-        function updatePercentages() {
-            const total = parseInt(document.getElementById('stat-total').textContent) || 0;
-            if (total > 0) {
-                const rel = parseInt(document.getElementById('stat-relevant').textContent) || 0;
-                const irr = parseInt(document.getElementById('stat-irrelevant').textContent) || 0;
-                document.getElementById('stat-relevant-pct').textContent = '(' + ((rel / total) * 100).toFixed(1) + '%)';
-                document.getElementById('stat-irrelevant-pct').textContent = '(' + ((irr / total) * 100).toFixed(1) + '%)';
-            }
-        }
-
-        function updateTrafficBar() {
-            const g = parseInt(document.getElementById('legend-green').textContent) || 0;
-            const y = parseInt(document.getElementById('legend-yellow').textContent) || 0;
-            const r = parseInt(document.getElementById('legend-red').textContent) || 0;
-            const total = g + y + r;
-            if (total > 0) {
-                document.getElementById('bar-green').style.width = ((g / total) * 100) + '%';
-                document.getElementById('bar-green').textContent = g + ' (' + ((g / total) * 100).toFixed(0) + '%)';
-                document.getElementById('bar-yellow').style.width = ((y / total) * 100) + '%';
-                document.getElementById('bar-yellow').textContent = y + ' (' + ((y / total) * 100).toFixed(0) + '%)';
-                document.getElementById('bar-red').style.width = ((r / total) * 100) + '%';
-                document.getElementById('bar-red').textContent = r + ' (' + ((r / total) * 100).toFixed(0) + '%)';
-            }
-        }
-
-        function populateFilters(data) {
-            const categories = new Set();
-            const repos = new Set();
-            data.forEach(function(e) {
-                if (e.category) categories.add(e.category);
-                if (e.repoUrl) repos.add(e.repoUrl);
-            });
-            const catSelect = document.getElementById('filter-category');
-            categories.forEach(function(c) {
-                const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                catSelect.appendChild(opt);
-            });
-            const repoSelect = document.getElementById('filter-repo');
-            repos.forEach(function(r) {
-                const opt = document.createElement('option');
-                opt.value = r;
-                opt.textContent = r;
-                repoSelect.appendChild(opt);
-            });
-        }
-
-        function renderEvaluations(data) {
-            const tbody = document.getElementById('evaluations-body');
-            tbody.innerHTML = '';
-            const lightFilter = document.getElementById('filter-light').value;
-            const catFilter = document.getElementById('filter-category').value;
-            const repoFilter = document.getElementById('filter-repo').value;
-            var outcomes = loadOutcomes();
-
-            data.filter(function(e) {
-                if (lightFilter && e.trafficLight !== lightFilter) return false;
-                if (catFilter && e.category !== catFilter) return false;
-                if (repoFilter && e.repoUrl !== repoFilter) return false;
-                return true;
-            }).forEach(function(evaluation, index) {
-                var row = document.createElement('tr');
-
-                var tdCommit = document.createElement('td');
-                var code = document.createElement('code');
-                code.textContent = (evaluation.commitHash || '').substring(0, 8);
-                tdCommit.appendChild(code);
-                var outcomeForCommit = outcomes.filter(function(o) { return o.commitHash === evaluation.commitHash; });
-                if (outcomeForCommit.length > 0) {
-                    var badge = document.createElement('span');
-                    badge.style.cssText = 'margin-left:5px;font-size:0.8em;color:#666;';
-                    badge.textContent = outcomeForCommit.map(function(o) { return o.action; }).join(', ');
-                    tdCommit.appendChild(badge);
-                }
-                row.appendChild(tdCommit);
-
-                var tdDate = document.createElement('td');
-                tdDate.style.fontSize = '0.85em';
-                tdDate.style.whiteSpace = 'nowrap';
-                if (evaluation.evaluatedAt) {
-                    try { tdDate.textContent = new Date(evaluation.evaluatedAt).toLocaleString(); }
-                    catch(e) { tdDate.textContent = evaluation.evaluatedAt; }
-                } else { tdDate.textContent = '-'; }
-                row.appendChild(tdDate);
-
-                var tdTitle = document.createElement('td');
-                var titleSpan = document.createElement('span');
-                titleSpan.className = 'commit-title';
-                titleSpan.textContent = evaluation.commitMessage || '-';
-                titleSpan.title = evaluation.commitMessage || '';
-                tdTitle.appendChild(titleSpan);
-                row.appendChild(tdTitle);
-
-                var tdRepo = document.createElement('td');
-                tdRepo.textContent = evaluation.repoUrl || '';
-                row.appendChild(tdRepo);
-
-                var tdLight = document.createElement('td');
-                var span = document.createElement('span');
-                span.className = 'badge ' + (evaluation.trafficLight || 'NOT_APPLICABLE');
-                span.textContent = evaluation.trafficLight || 'N/A';
-                tdLight.appendChild(span);
-                row.appendChild(tdLight);
-
-                var tdCat = document.createElement('td');
-                tdCat.textContent = evaluation.category || '-';
-                row.appendChild(tdCat);
-
-                var tdSummary = document.createElement('td');
-                tdSummary.textContent = evaluation.summary || '-';
-                row.appendChild(tdSummary);
-
-                var tdActions = document.createElement('td');
-                if (evaluation.trafficLight === 'GREEN' && evaluation.dslRule) {
-                    var commitBtn = document.createElement('button');
-                    commitBtn.className = 'action-btn commit';
-                    commitBtn.textContent = '\u2705 Commit';
-                    commitBtn.addEventListener('click', function() {
-                        recordOutcome(evaluation.commitHash, 'Committed');
-                        applyProposal(evaluation, 'direct-commit');
-                    });
-                    tdActions.appendChild(commitBtn);
-                }
-                if (evaluation.dslRule) {
-                    var prBtn = document.createElement('button');
-                    prBtn.className = 'action-btn pr';
-                    prBtn.textContent = '\uD83D\uDD00 PR';
-                    prBtn.addEventListener('click', function() {
-                        recordOutcome(evaluation.commitHash, 'PR opened');
-                        applyProposal(evaluation, 'pull-request');
-                    });
-                    tdActions.appendChild(prBtn);
-
-                    var dslBtn = document.createElement('button');
-                    dslBtn.className = 'action-btn dsl';
-                    dslBtn.textContent = '\uD83D\uDD27 DSL';
-                    dslBtn.addEventListener('click', function() { showDsl(evaluation); });
-                    tdActions.appendChild(dslBtn);
-
-                    if (evaluation.dslValidationResult) {
-                        var validIcon = document.createElement('span');
-                        if (evaluation.dslValidationResult === 'VALID') {
-                            validIcon.className = 'dsl-valid';
-                            validIcon.textContent = ' \u2705';
-                            validIcon.title = 'DSL rule is valid';
-                        } else {
-                            validIcon.className = 'dsl-invalid';
-                            validIcon.textContent = ' \u26A0\uFE0F';
-                            validIcon.title = evaluation.dslValidationResult;
-                        }
-                        tdActions.appendChild(validIcon);
-                    }
-                }
-                if (evaluation.trafficLight === 'RED' && evaluation.languageChangeNeeded) {
-                    var issueBtn = document.createElement('button');
-                    issueBtn.className = 'action-btn issue';
-                    issueBtn.textContent = '\uD83D\uDCCB Issue';
-                    issueBtn.addEventListener('click', function() {
-                        recordOutcome(evaluation.commitHash, 'Issue filed');
-                        createIssue(evaluation);
-                    });
-                    tdActions.appendChild(issueBtn);
-                }
-                row.appendChild(tdActions);
-
-                tbody.appendChild(row);
-            });
-        }
-
-        function applyProposal(evaluation, action) {
-            var dslBase64 = btoa(evaluation.dslRule || '');
-            var params = new URLSearchParams({
-                commit_hash: evaluation.commitHash || '',
-                action: action,
-                dsl_rule: dslBase64,
-                target_hint_file: evaluation.targetHintFile || '',
-                category: evaluation.category || '',
-                summary: evaluation.summary || ''
-            });
-            var url = window.location.origin + '/' +
-                (evaluation.repoUrl || '').replace('https://github.com/', '') +
-                '/actions/workflows/apply-mining-proposal.yml?' + params.toString();
-            window.open(url, '_blank');
-        }
-
-        function showDsl(evaluation) {
-            document.getElementById('modal-title').textContent = 'DSL Rule - ' + (evaluation.commitHash || '').substring(0, 8);
-            document.getElementById('modal-content').textContent = evaluation.dslRule || '(no DSL rule)';
-            document.getElementById('modal-target-file').textContent = evaluation.targetHintFile || '-';
-            document.getElementById('modal-category').textContent = evaluation.category || '-';
-            document.getElementById('modal-reusability').textContent = evaluation.reusability || '-';
-            document.getElementById('modal-improvement').textContent = evaluation.codeImprovement || '-';
-            document.getElementById('modal-effort').textContent = evaluation.implementationEffort || '-';
-            var extDiv = document.getElementById('modal-extension');
-            if (evaluation.languageChangeNeeded) {
-                document.getElementById('modal-language-change').textContent = evaluation.languageChangeNeeded;
-                document.getElementById('modal-rule-after-change').textContent = evaluation.dslRuleAfterChange || '';
-                extDiv.style.display = 'block';
-            } else {
-                extDiv.style.display = 'none';
-            }
-            document.getElementById('dsl-modal').classList.add('active');
-        }
-
-        function createIssue(evaluation) {
-            var title = 'DSL Extension: ' + (evaluation.summary || evaluation.category || 'Unknown');
-            var body = '## DSL Extension Request\n\n'
-                + '**Source commit:** `' + (evaluation.commitHash || '') + '`\n'
-                + '**Repository:** ' + (evaluation.repoUrl || '') + '\n'
-                + '**Category:** ' + (evaluation.category || '-') + '\n'
-                + '**Traffic Light:** RED\n\n'
-                + '### Summary\n' + (evaluation.summary || '-') + '\n\n'
-                + '### Language Change Needed\n' + (evaluation.languageChangeNeeded || '-') + '\n\n';
-            if (evaluation.dslRuleAfterChange) {
-                body += '### Proposed DSL Rule (after extension)\n```\n' + evaluation.dslRuleAfterChange + '\n```\n\n';
-            }
-            body += '---\n_Auto-generated from LLM Mining analysis_\n';
-            var params = new URLSearchParams({
-                title: title,
-                body: body,
-                labels: 'dsl-extension,mining'
-            });
-            var url = 'https://github.com/carstenartur/sandbox/issues/new?' + params.toString();
-            window.open(url, '_blank');
-        }
-
-        function renderDslSequences(data) {
-            var tbody = document.getElementById('dsl-body');
-            tbody.innerHTML = '';
-            var dslEvals = data.filter(function(e) { return e.dslRule && e.relevant; });
-            if (dslEvals.length === 0) {
-                var row = document.createElement('tr');
-                var td = document.createElement('td');
-                td.colSpan = 6;
-                td.textContent = 'No DSL sequences discovered yet. Run the mining workflow to analyze commits.';
-                td.style.textAlign = 'center';
-                td.style.color = '#666';
-                td.style.padding = '30px';
-                row.appendChild(td);
-                tbody.appendChild(row);
-                return;
-            }
-            dslEvals.forEach(function(evaluation) {
-                var row = document.createElement('tr');
-
-                var tdLight = document.createElement('td');
-                var span = document.createElement('span');
-                span.className = 'badge ' + (evaluation.trafficLight || 'NOT_APPLICABLE');
-                span.textContent = evaluation.trafficLight || 'N/A';
-                tdLight.appendChild(span);
-                row.appendChild(tdLight);
-
-                var tdCat = document.createElement('td');
-                tdCat.textContent = evaluation.category || '-';
-                row.appendChild(tdCat);
-
-                var tdFile = document.createElement('td');
-                var targetFile = evaluation.targetHintFile || '-';
-                if (targetFile !== '-') {
-                    var link = document.createElement('a');
-                    link.href = 'https://github.com/carstenartur/sandbox/blob/master/' + targetFile;
-                    link.style.color = '#0366d6';
-                    link.style.textDecoration = 'none';
-                    var code = document.createElement('code');
-                    code.textContent = targetFile;
-                    code.style.fontSize = '0.85em';
-                    link.appendChild(code);
-                    tdFile.appendChild(link);
-                } else {
-                    var code = document.createElement('code');
-                    code.textContent = '-';
-                    code.style.fontSize = '0.85em';
-                    tdFile.appendChild(code);
-                }
-                row.appendChild(tdFile);
-
-                var tdSummary = document.createElement('td');
-                tdSummary.textContent = evaluation.summary || '-';
-                row.appendChild(tdSummary);
-
-                var tdValid = document.createElement('td');
-                if (evaluation.dslValidationResult) {
-                    if (evaluation.dslValidationResult === 'VALID') {
-                        tdValid.textContent = '\u2705';
-                        tdValid.title = 'DSL rule is valid';
-                    } else {
-                        tdValid.textContent = '\u26A0\uFE0F';
-                        tdValid.title = evaluation.dslValidationResult;
-                        tdValid.style.cursor = 'help';
-                    }
-                } else {
-                    tdValid.textContent = '-';
-                }
-                row.appendChild(tdValid);
-
-                var tdRule = document.createElement('td');
-                var dslBtn = document.createElement('button');
-                dslBtn.className = 'action-btn dsl';
-                dslBtn.textContent = '\uD83D\uDD27 View Rule';
-                dslBtn.addEventListener('click', function() { showDsl(evaluation); });
-                tdRule.appendChild(dslBtn);
-                row.appendChild(tdRule);
-
-                tbody.appendChild(row);
-            });
-        }
-
-        // Outcome tracking (localStorage)
-        function loadOutcomes() {
-            try { return JSON.parse(localStorage.getItem('mining-outcomes') || '[]'); }
-            catch(e) { return []; }
-        }
-        function recordOutcome(commitHash, action) {
-            var outcomes = loadOutcomes();
-            outcomes.push({ commitHash: commitHash, action: action, timestamp: new Date().toISOString() });
-            localStorage.setItem('mining-outcomes', JSON.stringify(outcomes));
-            updateOutcomeSummary();
-            renderEvaluations(allEvaluations);
-        }
-        function updateOutcomeSummary() {
-            var outcomes = loadOutcomes();
-            var commits = outcomes.filter(function(o) { return o.action === 'Committed'; }).length;
-            var prs = outcomes.filter(function(o) { return o.action === 'PR opened'; }).length;
-            var issues = outcomes.filter(function(o) { return o.action === 'Issue filed'; }).length;
-            var el = document.getElementById('outcome-summary');
-            if (commits + prs + issues > 0) {
-                el.textContent = 'Actions taken: ' + commits + ' commits, ' + prs + ' PRs, ' + issues + ' issues';
-            } else {
-                el.textContent = '';
-            }
-        }
-
-        // Run Status rendering
-        function renderRunStatus(data) {
-            var meta = data.runMetadata;
-            if (!meta) return;
-            if (meta.completedAt) {
-                try { document.getElementById('rs-completed').textContent = new Date(meta.completedAt).toLocaleString(); }
-                catch(e) { document.getElementById('rs-completed').textContent = meta.completedAt; }
-            }
-            if (meta.durationSeconds !== undefined) {
-                var m = Math.floor(meta.durationSeconds / 60);
-                var s = meta.durationSeconds % 60;
-                document.getElementById('rs-duration').textContent = m + 'm ' + s + 's';
-            }
-            if (data.timeWindow) {
-                var tw = data.timeWindow;
-                var earlyDate = tw.earliestEvaluation ? tw.earliestEvaluation.substring(0, 10) : '?';
-                var lateDate = tw.latestEvaluation ? tw.latestEvaluation.substring(0, 10) : '?';
-                document.getElementById('rs-window').textContent = earlyDate + ' \u2192 ' + lateDate;
-            }
-            if (meta.llmModel) document.getElementById('rs-model').textContent = meta.llmModel;
-            if (meta.apiCallsMade !== undefined) document.getElementById('rs-api-calls').textContent = meta.apiCallsMade;
-            if (meta.batchSize !== undefined && meta.commitsPerRequest !== undefined)
-                document.getElementById('rs-batch').textContent = meta.batchSize + ' \u00D7 ' + meta.commitsPerRequest;
-            if (meta.deferredCommits !== undefined) document.getElementById('rs-deferred').textContent = meta.deferredCommits;
-            if (meta.permanentlySkipped !== undefined) document.getElementById('rs-skipped').textContent = meta.permanentlySkipped;
-        }
-
-        // Daily Progress rendering
-        function renderDailyProgress(data) {
-            var dp = data.dailyProgress;
-            if (!dp || dp.length === 0) {
-                document.getElementById('daily-chart').innerHTML = '<span style="color:#999;font-size:0.9em;">No daily progress data available.</span>';
-                return;
-            }
-            var maxVal = Math.max.apply(null, dp.map(function(d) { return Math.max(d.processed || 0, d.relevant || 0); }));
-            if (maxVal === 0) maxVal = 1;
-            var chart = document.getElementById('daily-chart');
-            chart.innerHTML = '';
-            dp.forEach(function(day) {
-                var group = document.createElement('div');
-                group.className = 'daily-bar-group';
-                var bars = document.createElement('div');
-                bars.className = 'bars';
-                var procBar = document.createElement('div');
-                procBar.className = 'bar processed';
-                procBar.style.height = Math.max(2, ((day.processed || 0) / maxVal) * 60) + 'px';
-                procBar.title = 'Processed: ' + (day.processed || 0);
-                bars.appendChild(procBar);
-                var relBar = document.createElement('div');
-                relBar.className = 'bar relevant';
-                relBar.style.height = Math.max(2, ((day.relevant || 0) / maxVal) * 60) + 'px';
-                relBar.title = 'Relevant: ' + (day.relevant || 0);
-                bars.appendChild(relBar);
-                group.appendChild(bars);
-                var label = document.createElement('div');
-                label.className = 'date-label';
-                label.textContent = (day.date || '').substring(5);
-                group.appendChild(label);
-                chart.appendChild(group);
-            });
-        }
-
-        document.getElementById('modal-close').addEventListener('click', function() {
-            document.getElementById('dsl-modal').classList.remove('active');
-        });
-        document.getElementById('dsl-modal').addEventListener('click', function(e) {
-            if (e.target === this) this.classList.remove('active');
-        });
-
-        document.getElementById('filter-light').addEventListener('change', function() { renderEvaluations(allEvaluations); });
-        document.getElementById('filter-category').addEventListener('change', function() { renderEvaluations(allEvaluations); });
-        document.getElementById('filter-repo').addEventListener('change', function() { renderEvaluations(allEvaluations); });
-
-        // Load data
-        fetch('evaluations.json')
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                allEvaluations = data;
-                populateFilters(data);
-                renderEvaluations(data);
-                renderDslSequences(data);
-            })
-            .catch(function(err) { console.error('Failed to load evaluations:', err); });
-
-        fetch('statistics.json')
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                statistics = data;
-                // Populate irrelevant reasons table
-                if (data.irrelevantReasons) {
-                    var tbody = document.getElementById('irrelevant-body');
-                    Object.entries(data.irrelevantReasons).forEach(function(entry) {
-                        var row = document.createElement('tr');
-                        var tdReason = document.createElement('td');
-                        tdReason.textContent = entry[0];
-                        row.appendChild(tdReason);
-                        var tdCount = document.createElement('td');
-                        tdCount.textContent = entry[1];
-                        row.appendChild(tdCount);
-                        tbody.appendChild(row);
-                    });
-                }
-                // Populate per-repository table
-                if (data.perRepository) {
-                    var tbody = document.getElementById('repo-body');
-                    Object.entries(data.perRepository).forEach(function(entry) {
-                        var row = document.createElement('tr');
-                        var repo = entry[1];
-                        var tdUrl = document.createElement('td');
-                        tdUrl.textContent = entry[0];
-                        row.appendChild(tdUrl);
-                        var tdProc = document.createElement('td');
-                        tdProc.textContent = repo.totalProcessed || 0;
-                        row.appendChild(tdProc);
-                        var tdRel = document.createElement('td');
-                        tdRel.textContent = repo.relevant || 0;
-                        row.appendChild(tdRel);
-                        var tdG = document.createElement('td');
-                        tdG.textContent = repo.green || 0;
-                        row.appendChild(tdG);
-                        var tdY = document.createElement('td');
-                        tdY.textContent = repo.yellow || 0;
-                        row.appendChild(tdY);
-                        var tdR = document.createElement('td');
-                        tdR.textContent = repo.red || 0;
-                        row.appendChild(tdR);
-                        tbody.appendChild(row);
-                    });
-                }
-                renderRunStatus(data);
-                renderDailyProgress(data);
-            })
-            .catch(function(err) { console.error('Failed to load statistics:', err); });
-
-        updatePercentages();
-        updateTrafficBar();
-        updateOutcomeSummary();
-    </script>
 </body>
 </html>
