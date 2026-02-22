@@ -1,4 +1,51 @@
 {
-  "repositories": {},
-  "globalTotalProcessed": 0
+  "repositories": {
+    "https://github.com/eclipse-platform/eclipse.platform.ui": {
+      "lastProcessedCommit": "55329ed555412bf11eb387cad47f6d2819e5f276",
+      "lastProcessedDate": "2026-02-22T20:05:37.299550309Z",
+      "totalProcessed": 9361,
+      "status": "CATCHING_UP",
+      "deferredCommits": [
+        {
+          "hash": "6c459ccbb59d9b18bd9e2df71a9fcfbcd9ba2374",
+          "message": "PropertyPageNode: log full exception if any instead of popup only\n\nThis issue did not show the root exception:\nhttps://g",
+          "diffLines": 25,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T20:05:37.299115747Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "98ff2aa8d6b8487c882e3e24fd73ce80284ecc53",
+          "message": "CSS: Allow Color And Font Definitions To Be Marked As Not Editable\n\nColor and Fonts can be defined as not editable if do",
+          "diffLines": 31,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T20:05:37.299520313Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "90ae1519870fc1d142a6bfe7701e497616402442",
+          "message": "DeferredTreeContentManager mark deprecated methods for deletion",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T20:09:13.111152631Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
+    },
+    "https://github.com/carstenartur/sandbox": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
+    }
+  },
+  "globalTotalProcessed": 9361
 }
