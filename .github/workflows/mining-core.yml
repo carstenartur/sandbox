@@ -75,7 +75,9 @@ jobs:
           git commit -m "mining: Update state $(date +%Y-%m-%d)"
           git stash --include-untracked
           git pull --rebase origin ${{ github.event.repository.default_branch }}
-          git stash pop || true
+          if git rev-parse -q --verify refs/stash >/dev/null; then
+            git stash pop
+          fi
           git push origin HEAD:${{ github.event.repository.default_branch }}
 
       - name: Deploy Mining Report to gh-pages
