@@ -13,8 +13,10 @@ A hint file has optional metadata directives followed by transformation rules.
 <!id: unique-identifier>
 <!description: Human-readable description of the transformation>
 <!severity: INFO|WARNING|ERROR|HINT>
-<!min-java-version: 11>
+<!minJavaVersion: 11>
 <!tags: tag1, tag2, tag3>
+<!include: other.hint.id>
+<!caseInsensitive>
 ```
 
 **IMPORTANT**: Every metadata directive MUST be enclosed with angle brackets and have a closing `>`:
@@ -27,6 +29,57 @@ starting from `<!` until a closing `>` is found:
 <!description: Add guard for unhandled or disabled Eclipse commands after declaration.
 Prevents showing key bindings for commands that are not handled or enabled.>
 ```
+
+**NetBeans compatibility**: Metadata also supports the NetBeans `<!key="value">` format
+(e.g., `<!description="NetBeans style metadata">`). Surrounding quotes are stripped automatically.
+
+### Comments
+
+The parser supports two comment styles:
+
+```
+// This is a line comment (everything after // is ignored)
+
+/* This is a block comment.
+   It can span multiple lines. */
+```
+
+Comments are stripped before any rule parsing occurs.
+
+### Custom Code Blocks (NetBeans Compatibility)
+
+NetBeans `.hint` files may contain `<? ?>` custom Java code blocks. These are **gracefully
+skipped** by the parser (with a log message). They cannot be executed in the Eclipse JDT
+environment:
+
+```
+<? import java.util.*; ?>
+```
+
+### Foreach Expansion
+
+The `<!foreach>` directive allows a single rule template to be expanded into multiple rules,
+one for each key-value pair. This is especially useful for encoding-related transformations.
+
+**Syntax:**
+```
+<!foreach VARNAME: "key1" -> val1, "key2" -> val2, ...>
+```
+
+**Usage in rules:** `${VARNAME}` expands to the key, `${VARNAME_CONSTANT}` expands to the value.
+
+**Example (encoding rules):**
+```
+<!foreach CHARSET: "UTF-8" -> UTF_8, "ISO-8859-1" -> ISO_8859_1>
+
+$s.getBytes("${CHARSET}") :: sourceVersionGE(7)
+=>
+$s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+;;
+```
+
+This expands into two rules: one for `"UTF-8"` → `UTF_8` and one for `"ISO-8859-1"` → `ISO_8859_1`.
+
 ### Transformation Rules
 
 Each rule consists of a **pattern** (what to match) and a **rewrite** (what to replace it with).
@@ -59,7 +112,7 @@ java.nio.file.Path.of($path).toString()
 #### 2. Guarded Rule
 
 Rules can have guards (conditions) that must be true for the rule to apply.
-Multiple guards are combined with AND.
+Multiple guards are combined with AND using `&&`.
 
 ```
 pattern_expression :: guard_condition
@@ -67,6 +120,20 @@ pattern_expression :: guard_condition
 replacement_expression
 ;;
 ```
+
+**Multi-line guard continuation**: Guards can span multiple lines. A line starting with
+`::` continues the guard from the previous line, combining them with AND:
+
+```
+pattern_expression :: guard1
+                   :: guard2
+                   :: guard3
+=>
+replacement_expression
+;;
+```
+
+This is equivalent to `pattern_expression :: guard1 && guard2 && guard3`.
 
 #### 3. Multi-Rewrite Rule (Ordered Alternatives)
 
@@ -92,8 +159,9 @@ pattern_expression :: guard_condition
 
 ### Variables and Naming
 
-- `$identifier`: Matches any expression (e.g., variable, method call).
+- `$identifier`: Matches any single expression (e.g., variable, method call).
 - `$type`: Matches a type reference.
+- `$args$`: Matches zero or more arguments (varargs/list placeholder). Used for method calls with variable argument counts (e.g., `java.util.Arrays.asList($args$)`).
 - **Patterns MUST use fully qualified names (FQNs)** for types and methods (e.g., `java.nio.charset.Charset.forName()`).
   - Simple name patterns (e.g., `Charset.forName()`) will **NOT** match and should not be used.
   - FQN patterns can match both FQN usage and imported simple names in source code.
@@ -105,10 +173,9 @@ You can use these functions in `:: guard` expressions:
 
 | Guard | Description |
 |-------|-------------|
-| `instanceof($var, "Type")` | True if `$var` is of the given type (e.g., `java.lang.String`) |
+| `instanceof($var, "Type")` | True if `$var` is of the given type (e.g., `java.lang.String`). Supports array types (e.g., `"Type[]"`). |
 | `isStatic($var)` | True if the matched method/field is static |
 | `isFinal($var)` | True if the matched variable is final |
-| `isNull($var)` | True if the matched expression is `null` |
 | `contains("text")` | True if the enclosing method contains the text pattern |
 | `notContains("text")` | True if the enclosing method does **NOT** contain the text |
 | `sourceVersionGE(11)` | True if source level is Java 11 or higher |
@@ -117,10 +184,10 @@ You can use these functions in `:: guard` expressions:
 | `hasAnnotation($var, "Type")`| True if the element has the specified annotation |
 | `isDeprecated($var)` | True if the element is marked as deprecated |
 | `hasNoSideEffect($var)` | True if the expression has no side effects |
-| `referencedIn($var, "context")` | True if the variable is referenced in the specified context |
+| `referencedIn($var, $expr)` | True if `$var`'s identifier appears in `$expr`'s AST subtree. Both arguments are placeholder names. |
 | `isLiteral($var)` | True if the expression is a literal value |
-| `isNullLiteral($var)` | True if the expression is `null` |
-| `isNullable($var)` | True if the expression may be null |
+| `isNullLiteral($var)` | True if the expression is a `null` literal |
+| `isNullable($var)` | True if the expression may be null (1-arg form). With `isNullable($var, minScore)`, returns true if the nullability score (0-10) meets the threshold. |
 | `isNonNull($var)` | True if the expression is guaranteed non-null |
 | `matchesAny($var, "pattern1", "pattern2")` | True if `$var` matches any of the patterns |
 | `matchesNone($var, "pattern1", "pattern2")` | True if `$var` matches none of the patterns |
@@ -129,13 +196,14 @@ You can use these functions in `:: guard` expressions:
 | `isRegexp($var)` | True if `$var` is a regular expression pattern |
 | `elementKindMatches($var, "kind")` | True if the element kind matches (e.g., "METHOD", "FIELD") |
 | `isInTryWithResourceBlock($var)` | True if the code is inside a try-with-resources block |
-| `isPassedToMethod($var, "methodName")` | True if the variable is passed to the specified method |
+| `isPassedToMethod($var)` | True if the node is passed as an argument to a method call or constructor. Takes 0 or 1 args (placeholder name). |
 | `inSerializableClass()` | True if the code is in a serializable class |
 | `containsAnnotation("Type")` | True if the enclosing element contains the annotation |
 | `parentMatches("pattern")` | True if the parent AST node matches the pattern |
 | `inClass("ClassName")` | True if the code is inside the specified class |
 | `inPackage("package.name")` | True if the code is inside the specified package |
 | `hasModifier($var, "modifier")` | True if the element has the specified modifier (e.g., "public", "private") |
+| `mode("modeName")` | True if the `sandbox.cleanup.mode` compiler option matches the given mode (case-insensitive). Supported modes: `KEEP_BEHAVIOR`, `ENFORCE_UTF8`, `ENFORCE_UTF8_AGGREGATE`. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Common Mistakes
@@ -259,6 +327,66 @@ mark it as `RED` / not implementable:
 4. **Complex expression composition in replacements**: Wrapping a matched variable in a new
    expression (e.g., `$x` → `List.of($x)`) has limited support. Simple wrapping works, but
    combining it with arity changes may not.
+
+## Bidirectional Transformations
+
+Some code transformations are valid in **both directions**. For example:
+- `obj.toString()` → `String.valueOf(obj)` is safer when `obj` may be null
+- `String.valueOf(obj)` → `obj.toString()` is more direct when `obj` is guaranteed non-null
+
+Use nullability guards (`isNullable`, `isNonNull`) to decide the safe direction:
+
+```
+// Safe: String.valueOf handles null
+$obj.toString() :: isNullable($obj)
+=> java.lang.String.valueOf($obj)
+;;
+
+// Direct: when non-null is guaranteed
+java.lang.String.valueOf($obj) :: isNonNull($obj)
+=> $obj.toString()
+;;
+```
+
+When proposing a transformation, consider whether the reverse direction is also useful.
+If both directions are valid, propose both as separate rules with appropriate guards.
+
+## Source Version Guidance
+
+When setting `sourceVersionGE()` guards, use this table to determine the correct minimum Java version for APIs:
+
+| API / Feature | Minimum Java Version | Guard |
+|---|---|---|
+| `java.nio.charset.StandardCharsets` | 7 | `sourceVersionGE(7)` |
+| `java.util.Objects.requireNonNull()` | 7 | `sourceVersionGE(7)` |
+| `java.util.Optional` | 8 | `sourceVersionGE(8)` |
+| `java.util.stream.Stream` | 8 | `sourceVersionGE(8)` |
+| `java.util.List.of()`, `Set.of()`, `Map.of()` | 9 | `sourceVersionGE(9)` |
+| `InputStream.transferTo()` | 9 | `sourceVersionGE(9)` |
+| `java.lang.String.isBlank()`, `.strip()` | 11 | `sourceVersionGE(11)` |
+| `java.nio.file.Path.of()` | 11 | `sourceVersionGE(11)` |
+| `java.lang.String.formatted()` | 15 | `sourceVersionGE(15)` |
+| `java.util.SequencedCollection` | 21 | `sourceVersionGE(21)` |
+| Pattern matching `instanceof` | 16 | `sourceVersionGE(16)` |
+| Record classes | 16 | `sourceVersionGE(16)` |
+| Sealed classes | 17 | `sourceVersionGE(17)` |
+
+**Do NOT default to `sourceVersionGE(11)` for everything.** Check the actual API introduction version.
+
+## Invalid Constructs — Do NOT Generate
+
+The following constructs are **NOT valid** in the TriggerPattern DSL. If you see these
+in generated output, they are hallucinations and must be rejected:
+
+| Invalid Construct | Why It's Wrong |
+|-------------------|----------------|
+| `<trigger>...</trigger>` | XML syntax — the DSL uses plain text, not XML |
+| `<import>...</import>` | Imports are automatically inferred from FQNs — no explicit import directive exists |
+| `isType($var)` | Not a real guard — use `instanceof($var, "Type")` instead |
+| `isNull($var)` | Not a real guard — use `isNullLiteral($var)` to check for `null` literals |
+| `<pattern>...</pattern>` | XML wrapper — rules are written as plain text lines |
+| `@Override` in replacements | Annotations on method declarations are not supported as replacements |
+| Multi-statement replacements | Replacements must be single expressions. No `if`/`else`, `return`, or `{}` blocks. |
 
 ## JSON Output Rules
 

@@ -136,4 +136,84 @@ class PromptBuilderTest {
 		assertTrue(prompt.contains("\"trafficLight\""));
 		assertTrue(prompt.contains("\"dslRule\""));
 	}
+
+	@Test
+	void testBuildPromptContainsExistingPluginsSection() {
+		PromptBuilder builder = new PromptBuilder();
+		String prompt = builder.buildPrompt("ctx", "[]", "diff", "msg");
+
+		assertTrue(prompt.contains("Existing Java-Based Cleanup Plugins"));
+		assertTrue(prompt.contains("sandbox_encoding_quickfix"));
+		assertTrue(prompt.contains("sandbox_junit_cleanup"));
+	}
+
+	@Test
+	void testBuildPromptContainsNewJsonSchemaFields() {
+		PromptBuilder builder = new PromptBuilder();
+		String prompt = builder.buildPrompt("ctx", "[]", "diff", "msg");
+
+		assertTrue(prompt.contains("\"existsAsJavaPlugin\""), "Should contain existsAsJavaPlugin field");
+		assertTrue(prompt.contains("\"replacesPlugin\""), "Should contain replacesPlugin field");
+		assertTrue(prompt.contains("\"previouslyProposed\""), "Should contain previouslyProposed field");
+		assertTrue(prompt.contains("\"sourceVersion\""), "Should contain sourceVersion field");
+	}
+
+	@Test
+	void testBuildPromptWithPreviousResults() {
+		PromptBuilder builder = new PromptBuilder();
+		String previousResults = "[{\"dslRule\": \"old rule\", \"category\": \"encoding\"}]";
+		String prompt = builder.buildPrompt("ctx", "[]", "diff", "msg", previousResults);
+
+		assertTrue(prompt.contains("Previously Discovered Rules"));
+		assertTrue(prompt.contains("old rule"));
+		assertTrue(prompt.contains("Do NOT re-propose identical rules"));
+	}
+
+	@Test
+	void testBuildPromptWithoutPreviousResults() {
+		PromptBuilder builder = new PromptBuilder();
+		String prompt = builder.buildPrompt("ctx", "[]", "diff", "msg", null);
+
+		assertFalse(prompt.contains("Previously Discovered Rules"));
+	}
+
+	@Test
+	void testBuildBatchPromptContainsExistingPlugins() {
+		PromptBuilder builder = new PromptBuilder();
+		List<CommitData> commits = List.of(new CommitData("abc", "msg", "diff"));
+		String prompt = builder.buildBatchPrompt("ctx", "[]", commits);
+
+		assertTrue(prompt.contains("Existing Java-Based Cleanup Plugins"));
+	}
+
+	@Test
+	void testBuildBatchPromptWithPreviousResults() {
+		PromptBuilder builder = new PromptBuilder();
+		List<CommitData> commits = List.of(new CommitData("abc", "msg", "diff"));
+		String previousResults = "[{\"summary\": \"use List.of\"}]";
+		String prompt = builder.buildBatchPrompt("ctx", "[]", commits, previousResults);
+
+		assertTrue(prompt.contains("Previously Discovered Rules"));
+		assertTrue(prompt.contains("use List.of"));
+	}
+
+	@Test
+	void testBuildPromptContainsBidirectionalGuidance() {
+		PromptBuilder builder = new PromptBuilder();
+		String prompt = builder.buildPrompt("ctx", "[]", "diff", "msg");
+
+		assertTrue(prompt.contains("Bidirectional Transformations"),
+				"Should contain bidirectional transformation guidance");
+	}
+
+	@Test
+	void testBuildPromptContainsSourceVersionTable() {
+		PromptBuilder builder = new PromptBuilder();
+		String prompt = builder.buildPrompt("ctx", "[]", "diff", "msg");
+
+		assertTrue(prompt.contains("Source Version Guidance"),
+				"Should contain source version guidance table");
+		assertTrue(prompt.contains("StandardCharsets"),
+				"Should mention StandardCharsets in version table");
+	}
 }
