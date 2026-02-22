@@ -130,4 +130,42 @@ assertNotNull(repoState);
 assertEquals(-1, repoState.getLearnedMaxDiffLines());
 assertTrue(repoState.getDeferredCommits().isEmpty());
 }
+
+@Test
+void testAddDeferredCommitDeduplicatesByHash() {
+RepoState repoState = new RepoState();
+DeferredCommit dc1 = new DeferredCommit("abc123", "msg1", 500, "DIFF_TOO_LARGE",
+Instant.now().toString(), 0, 3);
+DeferredCommit dc2 = new DeferredCommit("abc123", "msg1 updated", 600, "DIFF_TOO_LARGE",
+Instant.now().toString(), 1, 3);
+repoState.addDeferredCommit(dc1);
+repoState.addDeferredCommit(dc2);
+assertEquals(1, repoState.getDeferredCommits().size());
+assertEquals("msg1", repoState.getDeferredCommits().get(0).getMessage());
+}
+
+@Test
+void testAddDeferredCommitSkipsPermanentlySkipped() {
+RepoState repoState = new RepoState();
+DeferredCommit dc = new DeferredCommit("abc123", "msg", 500, "DIFF_TOO_LARGE",
+Instant.now().toString(), 0, 3);
+repoState.addDeferredCommit(dc);
+repoState.moveToPermanentlySkipped("abc123");
+assertTrue(repoState.getDeferredCommits().isEmpty());
+DeferredCommit dc2 = new DeferredCommit("abc123", "msg", 500, "DIFF_TOO_LARGE",
+Instant.now().toString(), 0, 3);
+repoState.addDeferredCommit(dc2);
+assertTrue(repoState.getDeferredCommits().isEmpty());
+}
+
+@Test
+void testRemoveDeferredCommit() {
+RepoState repoState = new RepoState();
+DeferredCommit dc = new DeferredCommit("abc123", "msg", 500, "DIFF_TOO_LARGE",
+Instant.now().toString(), 0, 3);
+repoState.addDeferredCommit(dc);
+assertEquals(1, repoState.getDeferredCommits().size());
+repoState.removeDeferredCommit("abc123");
+assertTrue(repoState.getDeferredCommits().isEmpty());
+}
 }

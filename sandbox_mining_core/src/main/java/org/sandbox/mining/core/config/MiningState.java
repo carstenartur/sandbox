@@ -15,6 +15,7 @@ package org.sandbox.mining.core.config;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -129,7 +130,20 @@ public class MiningState {
 		 * @param deferred the deferred commit to add
 		 */
 		public void addDeferredCommit(DeferredCommit deferred) {
-			deferredCommits.add(deferred);
+			boolean alreadyDeferred = deferredCommits.stream()
+					.anyMatch(d -> d.getHash().equals(deferred.getHash()));
+			if (!alreadyDeferred && !permanentlySkipped.contains(deferred.getHash())) {
+				deferredCommits.add(deferred);
+			}
+		}
+
+		/**
+		 * Removes a deferred commit by hash (e.g. when it has been successfully evaluated).
+		 *
+		 * @param hash the commit hash to remove
+		 */
+		public void removeDeferredCommit(String hash) {
+			deferredCommits.removeIf(d -> d.getHash().equals(hash));
 		}
 
 		/**
@@ -220,7 +234,11 @@ public class MiningState {
 		}
 		Path temp = path.resolveSibling(path.getFileName() + ".tmp"); //$NON-NLS-1$
 		Files.writeString(temp, GSON.toJson(this), StandardCharsets.UTF_8);
-		Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+		try {
+			Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+		} catch (AtomicMoveNotSupportedException e) {
+			Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING);
+		}
 	}
 
 	/**

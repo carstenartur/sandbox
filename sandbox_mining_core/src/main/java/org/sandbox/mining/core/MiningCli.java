@@ -328,9 +328,13 @@ isSkipped.add(Boolean.TRUE);
 } else if (lineCount > effectiveMaxDiff) {
 System.out.println("  Deferring commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 + " (" + lineCount + " lines > limit " + effectiveMaxDiff + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+String shortMsg = commit.getShortMessage();
+String truncatedMsg = shortMsg == null
+? "" //$NON-NLS-1$
+: shortMsg.substring(0, Math.min(120, shortMsg.length()));
 repoState.addDeferredCommit(new DeferredCommit(
 commit.getName(),
-commit.getShortMessage().substring(0, Math.min(120, commit.getShortMessage().length())),
+truncatedMsg,
 lineCount, "DIFF_TOO_LARGE", Instant.now().toString(), 0, 3)); //$NON-NLS-1$
 isSkipped.add(Boolean.TRUE);
 } else {
@@ -376,9 +380,13 @@ logApiUnavailable(llmClient);
 if (evaluations != null) {
 for (int j = evaluations.size(); j < commitDataList.size(); j++) {
 CommitData cd = commitDataList.get(j);
+String msg = cd.commitMessage();
+String truncatedMsg = msg == null
+? "" //$NON-NLS-1$
+: msg.substring(0, Math.min(120, msg.length()));
 repoState.addDeferredCommit(new DeferredCommit(
 cd.commitHash(),
-cd.commitMessage().substring(0, Math.min(120, cd.commitMessage().length())),
+truncatedMsg,
 diffLineCounts.get(j), "INCOMPLETE_BATCH", Instant.now().toString(), 0, 3)); //$NON-NLS-1$
 }
 }
@@ -413,9 +421,15 @@ System.out.println("  Missing evaluation for commit " + formatCommitInfo(commit,
 + "; stopping batch to retry remaining commits later."); //$NON-NLS-1$
 break;
 }
-System.out.println("    - " + formatCommitInfo(commit, repo) + " [" + diffLineCounts.get(evalIdx - 1) + " lines]" + " -> " + evaluation.trafficLight()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+int diffIdx = evalIdx - 1;
+String diffInfo = diffIdx >= 0 && diffIdx < diffLineCounts.size()
+? " [" + diffLineCounts.get(diffIdx) + " lines]" //$NON-NLS-1$ //$NON-NLS-2$
+: ""; //$NON-NLS-1$
+System.out.println("    - " + formatCommitInfo(commit, repo) + diffInfo + " -> " + evaluation.trafficLight()); //$NON-NLS-1$ //$NON-NLS-2$
 handleEvaluation(evaluation, commit, repo, validator, categoryManager, stats, aggregator);
 state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
+// Remove from deferred list if it was previously deferred
+repoState.removeDeferredCommit(commit.getName());
 }
 }
 
@@ -517,21 +531,17 @@ RepoState repoState = state.getRepoState(repo.getUrl());
 List<DeferredCommit> toRetry = new ArrayList<>(repoState.getDeferredCommits());
 if (toRetry.isEmpty()) continue;
 
-System.out.println("Retrying " + toRetry.size() + " deferred commits for " + repo.getUrl()); //$NON-NLS-1$ //$NON-NLS-2$
+System.out.println("Processing " + toRetry.size() + " deferred commits for " + repo.getUrl()); //$NON-NLS-1$ //$NON-NLS-2$
 List<DeferredCommit> remaining = new ArrayList<>();
 for (DeferredCommit dc : toRetry) {
 if (!forceRetry && dc.getRetryCount() >= dc.getMaxRetries()) {
 repoState.moveToPermanentlySkipped(dc.getHash());
 continue;
 }
-if (!llmClient.hasRemainingQuota() || llmClient.isApiUnavailable()) {
-remaining.add(dc);
-continue;
-}
-// Single-commit retry via evaluate()
-// (We can't re-extract diffs here without the repo checkout being available,
-// so we just increment retry count and leave for next run when diff is available)
-dc.setRetryCount(dc.getRetryCount() + 1);
+// No actual retry can be performed here because the repository checkout and
+// diff extraction pipeline are not available in this context. Keep the commit
+// deferred with its current retryCount so it can be retried during the next
+// normal processing run when its diff is available again.
 remaining.add(dc);
 }
 repoState.setDeferredCommits(remaining);

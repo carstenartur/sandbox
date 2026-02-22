@@ -217,12 +217,22 @@ return response.body();
 
 if (response.statusCode() == 429) {
 String retryAfter = response.headers().firstValue("Retry-After").orElse(null); //$NON-NLS-1$
-long waitMs = retryAfter != null
-? Long.parseLong(retryAfter) * 1000
-: backoffMs;
+long waitMs = backoffMs;
+boolean usedRetryAfter = false;
+if (retryAfter != null) {
+try {
+long seconds = Long.parseLong(retryAfter.trim());
+if (seconds >= 0) {
+waitMs = seconds * 1000;
+usedRetryAfter = true;
+}
+} catch (NumberFormatException nfe) {
+System.err.println("Invalid Retry-After header value '" + retryAfter + "', using exponential backoff instead."); //$NON-NLS-1$ //$NON-NLS-2$
+}
+}
 System.err.println(providerName + " rate limited (429), attempt " + (attempt + 1) + "/" + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$
 + ", waiting " + waitMs + "ms" //$NON-NLS-1$ //$NON-NLS-2$
-+ (retryAfter != null ? " (from Retry-After header)" : " (exponential backoff)")); //$NON-NLS-1$ //$NON-NLS-2$
++ (usedRetryAfter ? " (from Retry-After header)" : " (exponential backoff)")); //$NON-NLS-1$ //$NON-NLS-2$
 Thread.sleep(waitMs);
 backoffMs *= 2;
 continue;
