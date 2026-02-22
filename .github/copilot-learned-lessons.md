@@ -448,3 +448,31 @@ when `FileNotFoundException` is the last import in the original import list.
 **Fixed**: 2026-02-22
 
 ---
+
+## 12. CRLF Line Ending Issues in Test Comparisons
+
+**Issue**: When Copilot-generated code introduces `\r\n` line endings (e.g., in `UseExplicitEncodingFixCore.java`),
+test comparisons fail because `ArrayList.remove(Object)` in `assertEqualStringsIgnoreOrder` uses exact `String.equals()`.
+
+**The comparison chain**:
+```
+assertRefactoringResultAsExpected()
+  → cu.getBuffer().getContents()    // actual source (may have \r\n)
+  → assertEqualStringsIgnoreOrder() // exact String.equals() comparison
+    → expectedList.remove(actual)   // fails if \r\n vs \n mismatch
+```
+
+**Fix (two-pronged)**:
+1. **Option A**: Always convert source files to LF-only line endings (remove CRLF from committed files)
+2. **Option B**: Normalize line endings in the test framework (`AbstractEclipseJava.java`) at:
+   - `assertRefactoringResultAsExpected()`: normalize `cu.getBuffer().getContents()`
+   - `assertEqualStringsIgnoreOrder()`: normalize both `actuals` and `expecteds` arrays
+
+**Location**: `sandbox_test_commons/.../rules/AbstractEclipseJava.java`
+- Uses `normalizeLineEndings()` private helper: `s.replace("\r\n", "\n").replace("\r", "\n")`
+
+**Rule**: When fixing CRLF issues, apply BOTH options — fix the source file AND protect the test framework.
+
+**Fixed**: 2026-02-22
+
+---
