@@ -1,4 +1,11 @@
 {
-  "repositories": {},
-  "globalTotalProcessed": 0
+  "repositories": {
+    "https://github.com/eclipse-platform/eclipse.platform.ui": {
+      "lastProcessedCommit": "6957472d7a198cf0ad3f4321ebd69873b9eba163",
+      "lastProcessedDate": "2026-02-22T04:32:57.071195766Z",
+      "totalProcessed": 9390,
+      "status": "CATCHING_UP"
+    }
+  },
+  "globalTotalProcessed": 9390
 }
