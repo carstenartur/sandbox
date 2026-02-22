@@ -481,9 +481,14 @@ that have corresponding `MYCleanUpConstants`. Missing mappings mean those featur
 Constants exist for: RULETIMEOUT, RULEERRORCOLLECTOR, PARAMETERIZED but were missing from the mapping.
 
 ### HelperVisitor Import
-Many plugin files import `HelperVisitor` but only use `HelperVisitorFactory`. Remove unused `HelperVisitor` imports.
+Many plugin files import `HelperVisitor` but only use `HelperVisitorFactory`. All 17 unused `HelperVisitor` imports
+were removed in 2026-02-22.
+
+### System.err/out Usage in JUnit Cleanup
+The module should use `Platform.getLog()` for error logging, NOT `System.err.println` + `e.printStackTrace()`.
+The `System.out.println` calls inside `getPreview()` string literals are code examples, not debug logging — they should stay.
 
 **Rule**: When modifying junit cleanup plugins, always check for unused imports, null safety on resolveBinding(),
-and type safety on cast expressions.
+type safety on cast expressions, and proper Eclipse Platform logging.
 
 ---
