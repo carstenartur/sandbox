@@ -18,6 +18,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaModelException;
@@ -349,8 +350,7 @@ public final class TestNameRefactorer {
 				}
 			}
 		} catch (JavaModelException e) {
-			System.err.println("Failed to get subclasses for type: " + typeBinding.getQualifiedName());
-			e.printStackTrace();
+			Platform.getLog(TestNameRefactorer.class).error("Failed to get subclasses for type: " + typeBinding.getQualifiedName(), e);
 			return new ArrayList<>();
 		}
 		return subclasses;
