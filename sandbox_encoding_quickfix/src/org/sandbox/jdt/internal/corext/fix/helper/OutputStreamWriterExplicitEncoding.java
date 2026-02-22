@@ -25,7 +25,6 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
 import org.sandbox.jdt.internal.common.HelperVisitor;
@@ -102,23 +101,25 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 		NodeData nodedata= (NodeData) data.get(visited);
 		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
 		/**
-		 * Add Charset.defaultCharset() as second (last) parameter
+		 * Register encoding replacement BEFORE removing exception handling.
+		 * removeUnsupportedEncodingException may call simplifyEmptyTryStatement
+		 * which uses createMoveTarget to move statements out of the try block.
+		 * replaceAndRemoveNLS fails silently on nodes that have already been
+		 * marked as move targets, so the replacement must be registered first.
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
+		boolean tryAlreadyUnwrapped= false;
 		if (nodedata.replace()) {
-			try {
-				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
-			} catch (CoreException e) {
-				JavaManipulationPlugin.log(e); // should never happen
-			}
+			tryAlreadyUnwrapped= replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
-		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);
+		if (!tryAlreadyUnwrapped) {
+			removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());
+		}
 	}
 
 	@Override

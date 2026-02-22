@@ -65,7 +65,7 @@ new java.util.Scanner($src, "${CHARSET}") :: sourceVersionGE(10)
 // === Formatter(file, String) ===
 
 new java.util.Formatter($f, "${CHARSET}") :: sourceVersionGE(10)
-=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT}, java.util.Locale.getDefault())
 ;;
 
 // === Formatter(file, String, Locale) — 3-arg form ===
@@ -168,11 +168,38 @@ java.net.URLEncoder.encode($s) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR)
 ;;
 
 // === new Scanner(source) — 1-arg constructor ===
+// Only File, InputStream, Path, and ReadableByteChannel have charset variants.
+// Scanner(String) and Scanner(Readable) do NOT — must be excluded.
+// See: https://download.java.net/java/early_access/panama/docs/api/java.base/java/util/Scanner.html
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8)
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), $src instanceof java.io.File
 => new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR)
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), $src instanceof java.io.InputStream
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), $src instanceof java.nio.file.Path
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), $src instanceof java.nio.channels.ReadableByteChannel
+=> new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src instanceof java.io.File
+=> new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
+;;
+
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src instanceof java.io.InputStream
+=> new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
+;;
+
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src instanceof java.nio.file.Path
+=> new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
+;;
+
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src instanceof java.nio.channels.ReadableByteChannel
 => new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
 ;;

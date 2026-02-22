@@ -60,7 +60,7 @@ public enum UseExplicitEncodingFixCore {
 	STRING_GETBYTES(new StringGetBytesExplicitEncoding(), true),
 	STRING(new StringExplicitEncoding(), true),
 	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding(), true),
-	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding(), false),
+	OUTPUTSTREAMWRITER(new OutputStreamWriterExplicitEncoding(), true),
 	FILEREADER(new FileReaderExplicitEncoding(), false),
 	FILEWRITER(new FileWriterExplicitEncoding(), false),
 	PRINTWRITER(new PrintWriterExplicitEncoding(), false),

@@ -24,9 +24,9 @@ import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.UnionType;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
 
 /**
@@ -57,7 +57,7 @@ public class ExceptionCleanupHelper {
 	 *                        (e.g. {@code "UnsupportedEncodingException"})
 	 * @param group           the text edit group for tracking changes
 	 * @param rewrite         the AST rewrite context
-	 * @param importRewriter  the import rewrite for removing unused imports
+	 * @param importRemover   the import remover for tracking removed nodes
 	 */
 	public static void removeCheckedException(
 			ASTNode visited,
@@ -65,7 +65,7 @@ public class ExceptionCleanupHelper {
 			String exceptionSimple,
 			TextEditGroup group,
 			ASTRewrite rewrite,
-			ImportRewrite importRewriter) {
+			ImportRemover importRemover) {
 
 		ASTNode parent = findEnclosingMethodOrTry(visited);
 		if (parent == null) {
@@ -73,10 +73,10 @@ public class ExceptionCleanupHelper {
 		}
 
 		if (parent instanceof MethodDeclaration method) {
-			removeExceptionFromMethodThrows(method, exceptionFQN, exceptionSimple, rewrite, group, importRewriter);
+			removeExceptionFromMethodThrows(method, exceptionFQN, exceptionSimple, rewrite, group, importRemover);
 		} else if (parent instanceof TryStatement tryStatement) {
-			removeExceptionFromTryCatch(tryStatement, exceptionFQN, exceptionSimple, rewrite, group, importRewriter);
-			simplifyEmptyTryStatement(tryStatement, rewrite, group);
+			int removedCount = removeExceptionFromTryCatch(tryStatement, exceptionFQN, exceptionSimple, rewrite, group, importRemover);
+			simplifyEmptyTryStatement(tryStatement, rewrite, group, removedCount);
 		}
 	}
 
@@ -106,7 +106,7 @@ public class ExceptionCleanupHelper {
 			String exceptionSimple,
 			ASTRewrite rewrite,
 			TextEditGroup group,
-			ImportRewrite importRewriter) {
+			ImportRemover importRemover) {
 
 		ListRewrite throwsRewrite = rewrite.getListRewrite(method,
 				MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);
@@ -114,12 +114,12 @@ public class ExceptionCleanupHelper {
 		for (Type exceptionType : thrownExceptions) {
 			if (isTargetException(exceptionType, exceptionSimple)) {
 				throwsRewrite.remove(exceptionType, group);
-				importRewriter.removeImport(exceptionFQN);
+				importRemover.registerRemovedNode(exceptionType);
 			}
 		}
 	}
 
-	static void removeExceptionFromUnionType(
+	static boolean removeExceptionFromUnionType(
 			UnionType unionType,
 			CatchClause catchClause,
 			String exceptionSimple,
@@ -146,33 +146,41 @@ public class ExceptionCleanupHelper {
 			}
 		} else if (remainingCount == 0) {
 			rewrite.remove(catchClause, group);
+			return true;
 		}
+		return false;
 	}
 
-	static void removeExceptionFromTryCatch(
+	static int removeExceptionFromTryCatch(
 			TryStatement tryStatement,
 			String exceptionFQN,
 			String exceptionSimple,
 			ASTRewrite rewrite,
 			TextEditGroup group,
-			ImportRewrite importRewriter) {
+			ImportRemover importRemover) {
 
+		int removedCount = 0;
 		List<CatchClause> catchClauses = tryStatement.catchClauses();
 		for (CatchClause catchClause : catchClauses) {
 			SingleVariableDeclaration exception = catchClause.getException();
 			Type exceptionType = exception.getType();
 
 			if (exceptionType instanceof UnionType unionType) {
-				removeExceptionFromUnionType(unionType, catchClause, exceptionSimple, rewrite, group);
+				if (removeExceptionFromUnionType(unionType, catchClause, exceptionSimple, rewrite, group)) {
+					removedCount++;
+				}
 			} else if (isTargetException(exceptionType, exceptionSimple)) {
 				rewrite.remove(catchClause, group);
-				importRewriter.removeImport(exceptionFQN);
+				importRemover.registerRemovedNode(catchClause);
+				removedCount++;
 			}
 		}
+		return removedCount;
 	}
 
-	static void simplifyEmptyTryStatement(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group) {
-		if (!tryStatement.catchClauses().isEmpty() || tryStatement.getFinally() != null) {
+	static void simplifyEmptyTryStatement(TryStatement tryStatement, ASTRewrite rewrite, TextEditGroup group, int removedCatchCount) {
+		int remainingCatchClauses = tryStatement.catchClauses().size() - removedCatchCount;
+		if (remainingCatchClauses > 0 || tryStatement.getFinally() != null) {
 			return;
 		}
 
@@ -182,8 +190,22 @@ public class ExceptionCleanupHelper {
 
 		if (!hasResources && !hasStatements) {
 			rewrite.remove(tryStatement, group);
-		} else if (!hasResources) {
-			rewrite.replace(tryStatement, tryBlock, group);
+		} else if (!hasResources && tryStatement.getParent() instanceof Block parentBlock) {
+			// Inline statements from try body into the parent block,
+			// replacing the try statement with its individual statements
+			// to avoid producing an orphaned { ... } block.
+			// NOTE: Callers must register child rewrites (e.g., replaceAndRemoveNLS)
+			// BEFORE invoking removeUnsupportedEncodingException (which triggers
+			// this method). createMoveTarget marks nodes as moved, and
+			// replaceAndRemoveNLS fails silently on already-moved nodes.
+			ListRewrite parentListRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
+			List<?> tryStatements = tryBlock.statements();
+			for (int i = tryStatements.size() - 1; i >= 0; i--) {
+				ASTNode stmt = (ASTNode) tryStatements.get(i);
+				ASTNode moved = rewrite.createMoveTarget(stmt);
+				parentListRewrite.insertAfter(moved, tryStatement, group);
+			}
+			rewrite.remove(tryStatement, group);
 		}
 	}
 }

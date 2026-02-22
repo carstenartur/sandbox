@@ -16,21 +16,30 @@ package org.sandbox.jdt.triggerpattern.cleanup;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.CoreException;
 
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
@@ -329,38 +338,44 @@ public class HintFileFixCore {
 				ASTNode newNode = parser.createAST(null);
 				if (newNode instanceof Expression) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
-					// Use replaceAndRemoveNLS only when the number of string literals
-					// DECREASES between the matched node and the replacement. This means
-					// a string literal (e.g., "UTF-8") was replaced by a non-string
-					// expression (e.g., StandardCharsets.UTF_8), so its //$NON-NLS-n$
-					// comment must be removed. We must NOT call replaceAndRemoveNLS when
-					// string count stays the same or increases (e.g., zero-arg expansion
-					// like new InputStreamReader(in) → new InputStreamReader(in, Charset.defaultCharset()))
-					// because that would wrongly remove NLS comments for unrelated string
-					// literals like "file1.txt".
 					int oldCount = countStringLiterals(matchedNode);
 					int newCount = countStringLiterals(copy);
-					if (oldCount > newCount) {
-						try {
-							ASTNodes.replaceAndRemoveNLS(rewrite, matchedNode, copy, group, cuRewrite);
-						} catch (CoreException e) {
-							// Fall back to plain replace if NLS removal fails
-							rewrite.replace(matchedNode, copy, group);
-						}
-					} else {
-						rewrite.replace(matchedNode, copy, group);
-					}
 
 					// Auto-detect: did we change a String charset argument to a Charset type?
 					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(
 							matchedNode, replacement);
-					if (typeChange != null) {
-						ImportRewrite importRewrite = cuRewrite.getImportRewrite();
-						ExceptionCleanupHelper.removeCheckedException(
-								matchedNode,
-								typeChange.exceptionFQN(),
-								typeChange.exceptionSimpleName(),
-								group, rewrite, importRewrite);
+
+					// Check if the matched node is inside a try body that will be unwrapped
+					// after removing the checked exception. If so, we must handle the
+					// replacement AND the try-unwrap atomically to avoid conflicts between
+					// ASTNodes.replaceAndRemoveNLS (statement-level replacement) and
+					// createMoveTarget (used by simplifyEmptyTryStatement).
+					boolean tryAlreadyHandled = false;
+					if (typeChange != null && oldCount > newCount) {
+						tryAlreadyHandled = replaceAndUnwrapTryIfNeeded(
+								matchedNode, copy, shortenedReplacement,
+								typeChange, rewrite, cuRewrite, group);
+					}
+
+					if (!tryAlreadyHandled) {
+						if (oldCount > newCount) {
+							try {
+								ASTNodes.replaceAndRemoveNLS(rewrite, matchedNode, copy, group, cuRewrite);
+							} catch (CoreException e) {
+								// Fall back to plain replace if NLS removal fails
+								rewrite.replace(matchedNode, copy, group);
+							}
+						} else {
+							rewrite.replace(matchedNode, copy, group);
+						}
+
+						if (typeChange != null) {
+							ExceptionCleanupHelper.removeCheckedException(
+									matchedNode,
+									typeChange.exceptionFQN(),
+									typeChange.exceptionSimpleName(),
+									group, rewrite, cuRewrite.getImportRemover());
+						}
 					}
 				}
 			} else if (matchedNode instanceof Annotation) {
@@ -459,6 +474,110 @@ public class HintFileFixCore {
 				}
 			});
 			return count[0];
+		}
+
+		/**
+		 * Pattern matching the LAST NLS comment on a line.
+		 * Adapted from {@code AbstractExplicitEncoding}.
+		 */
+		private static final Pattern LAST_NLS_COMMENT = Pattern.compile("[ ]*\\/\\/\\$NON-NLS-[0-9]+\\$(?!.*\\/\\/\\$NON-NLS-)"); //$NON-NLS-1$
+
+		/**
+		 * Checks whether the given statement is directly inside the body of a try statement
+		 * that will be fully unwrapped after removing the target exception. This happens when:
+		 * <ul>
+		 *   <li>The statement is in the try body (not a catch/finally block)</li>
+		 *   <li>The try has no resources (not try-with-resources)</li>
+		 *   <li>The try has no finally block</li>
+		 *   <li>The try has exactly one catch clause catching only the target exception</li>
+		 * </ul>
+		 */
+		private static boolean isInsideTryBodyWithOnlyTargetExceptionCatch(ASTNode statement, String exceptionSimple) {
+			ASTNode parent = statement.getParent();
+			if (!(parent instanceof Block block)) {
+				return false;
+			}
+			ASTNode grandParent = block.getParent();
+			if (!(grandParent instanceof TryStatement tryStatement)) {
+				return false;
+			}
+			if (tryStatement.getBody() != block) {
+				return false;
+			}
+			if (!tryStatement.resources().isEmpty()) {
+				return false;
+			}
+			if (tryStatement.getFinally() != null) {
+				return false;
+			}
+			@SuppressWarnings("unchecked")
+			List<CatchClause> catchClauses = tryStatement.catchClauses();
+			if (catchClauses.size() != 1) {
+				return false;
+			}
+			CatchClause catchClause = catchClauses.get(0);
+			Type exType = catchClause.getException().getType();
+			if (exType instanceof SimpleType simpleType) {
+				return exceptionSimple.equals(simpleType.getName().toString());
+			}
+			return false;
+		}
+
+		/**
+		 * If the matched node is inside a try body that will be unwrapped after exception
+		 * removal, handles BOTH the replacement AND the try-catch unwrapping in a single
+		 * text-based operation to avoid conflicts between {@code rewrite.replace()} on
+		 * child nodes and {@code createMoveTarget()} on parent statements.
+		 *
+		 * @return {@code true} if the combined operation was performed (caller should skip
+		 *         separate replacement and exception removal), {@code false} if not applicable
+		 */
+		private static boolean replaceAndUnwrapTryIfNeeded(
+				ASTNode matchedNode, ASTNode copy, String shortenedReplacement,
+				TypeChangeInfo typeChange, ASTRewrite rewrite,
+				CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+			ASTNode st = ASTNodes.getFirstAncestorOrNull(matchedNode, Statement.class);
+			if (st == null || !isInsideTryBodyWithOnlyTargetExceptionCatch(st, typeChange.exceptionSimpleName())) {
+				return false;
+			}
+			Block block = (Block) st.getParent();
+			TryStatement tryStatement = (TryStatement) block.getParent();
+			ASTNode tryParent = tryStatement.getParent();
+			if (!(tryParent instanceof Block parentBlock)) {
+				return false;
+			}
+			try {
+				String buffer = cuRewrite.getCu().getBuffer().getContents();
+				CompilationUnit cu = (CompilationUnit) st.getRoot();
+				String matchedSource = buffer.substring(matchedNode.getStartPosition(),
+						matchedNode.getStartPosition() + matchedNode.getLength());
+
+				ListRewrite parentListRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
+				List<?> tryStatements = block.statements();
+				for (int i = tryStatements.size() - 1; i >= 0; i--) {
+					ASTNode stmt = (ASTNode) tryStatements.get(i);
+					int stmtStart = cu.getExtendedStartPosition(stmt);
+					int stmtLength = cu.getExtendedLength(stmt);
+					String stmtSource = buffer.substring(stmtStart, stmtStart + stmtLength);
+					// Remove leading whitespace
+					stmtSource = Pattern.compile("^[ \\t]*").matcher(stmtSource).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
+					stmtSource = Pattern.compile("\n[ \\t]*").matcher(stmtSource).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
+					if (stmt == st) {
+						// Remove last NLS comment and apply the replacement
+						stmtSource = LAST_NLS_COMMENT.matcher(stmtSource).replaceFirst(""); //$NON-NLS-1$
+						stmtSource = stmtSource.replace(matchedSource, shortenedReplacement);
+					}
+					ASTNode placeholder = rewrite.createStringPlaceholder(stmtSource, stmt.getNodeType());
+					parentListRewrite.insertAfter(placeholder, tryStatement, group);
+				}
+				rewrite.remove(tryStatement, group);
+				// Register removed nodes for import removal
+				cuRewrite.getImportRemover().registerRemovedNode(matchedNode);
+				return true;
+			} catch (JavaModelException e) {
+				// Fall back to separate handling
+				return false;
+			}
 		}
 	}
 }

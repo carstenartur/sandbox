@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.text.edits.TextEditGroup;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -93,18 +92,23 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, cuRewrite.getRoot().getAST(),
 				nodedata.encoding(), getCharsetConstants());
 
+		/**
+		 * Register encoding replacement BEFORE removing exception handling.
+		 * removeUnsupportedEncodingException may call simplifyEmptyTryStatement
+		 * which uses createMoveTarget to move statements out of the try block.
+		 * replaceAndRemoveNLS fails silently on nodes that have already been
+		 * marked as move targets, so the replacement must be registered first.
+		 */
 		ListRewrite listRewrite = rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
+		boolean tryAlreadyUnwrapped= false;
 		if (nodedata.replace()) {
-			try {
-				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
-			} catch (CoreException e) {
-				JavaManipulationPlugin.log(e); // should never happen
-			}
+			tryAlreadyUnwrapped= replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
-
-		removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRewrite());
+		if (!tryAlreadyUnwrapped) {
+			removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());
+		}
 	}
 
 	@Override

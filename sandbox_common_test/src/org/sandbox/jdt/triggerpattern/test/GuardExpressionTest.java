@@ -179,6 +179,14 @@ public class GuardExpressionTest {
 	}
 	
 	@Test
+	public void testEvaluateSourceVersionGEOldStyleJava8() {
+		GuardContext ctx = createContextWithVersion("1.8"); //$NON-NLS-1$
+		GuardExpression expr = parser.parse("sourceVersionGE(7)");
+		
+		assertTrue(expr.evaluate(ctx), "Version 1.8 (Java 8) should be >= 7");
+	}
+	
+	@Test
 	public void testEvaluateSourceVersionLE() {
 		GuardContext ctx = createContextWithVersion("11"); //$NON-NLS-1$
 		GuardExpression expr = parser.parse("sourceVersionLE(17)");
