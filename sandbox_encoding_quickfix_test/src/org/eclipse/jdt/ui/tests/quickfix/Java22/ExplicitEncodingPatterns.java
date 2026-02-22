@@ -343,7 +343,7 @@ public class E1 {
 						public class E1 {
 						    void method(String filename) {
 						            ReadableByteChannel ch=null;
-						            Reader r=Channels.newReader(ch,StandardCharsets.UTF_8);
+						            Reader r=Channels.newReader(ch, StandardCharsets.UTF_8);
 						       }
 						}
 						"""),
@@ -385,7 +385,7 @@ public class E1 {
 						public class E1 {
 						    void method(String filename) {
 						            WritableByteChannel ch=null;
-						            Writer w=Channels.newWriter(ch,StandardCharsets.UTF_8);
+						            Writer w=Channels.newWriter(ch, StandardCharsets.UTF_8);
 						       }
 						}
 						"""),

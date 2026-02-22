@@ -44,9 +44,9 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 /**
  * Java 10
  *
- * Find: Channels.newWriter(ch,"UTF-8")
+ * Find: Channels.newWriter(ch, "UTF-8")
  *
- * Rewrite: Channels.newWriter(ch,StandardCharsets.UTF_8)
+ * Rewrite: Channels.newWriter(ch, StandardCharsets.UTF_8)
  *
  */
 public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<MethodInvocation> {
@@ -127,6 +127,6 @@ public class ChannelsNewWriterExplicitEncoding extends AbstractExplicitEncoding<
 
 	@Override
 	public String toString() {
-		return "Channels.newWriter(ch,StandardCharsets.UTF_8)"; //$NON-NLS-1$
+		return "Channels.newWriter(ch, StandardCharsets.UTF_8)"; //$NON-NLS-1$
 	}
 }
