@@ -1,44 +1,42 @@
 {
-  "totalProcessed": 3,
-  "relevant": 2,
-  "irrelevant": 1,
+  "totalProcessed": 1,
+  "relevant": 1,
+  "irrelevant": 0,
   "duplicates": 0,
   "green": 0,
   "yellow": 0,
-  "red": 3,
-  "irrelevantReasons": {
-    "The change involves adding new method declarations to existing classes (`setEditable(Boolean editable)` to `ColorDefinition` and `FontDefinition`). The TriggerPattern DSL is designed for matching and replacing existing code expressions or statements, not for generating new method bodies or altering class structure (e.g., adding methods or fields).": 1
-  },
+  "red": 1,
+  "irrelevantReasons": {},
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "totalProcessed": 3,
-      "relevant": 2,
+      "totalProcessed": 1,
+      "relevant": 1,
       "green": 0,
       "yellow": 0,
-      "red": 3
+      "red": 1
     }
   },
   "dailyProgress": [
     {
       "date": "2026-02-22",
-      "processed": 3,
-      "relevant": 2
+      "processed": 1,
+      "relevant": 1
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-02-22T18:12:10.495Z",
-    "completedAt": "2026-02-22T18:23:44.340033514Z",
-    "durationSeconds": 693,
+    "startedAt": "2026-02-22T19:59:21.454Z",
+    "completedAt": "2026-02-22T20:09:13.666584440Z",
+    "durationSeconds": 592,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 5,
     "commitsPerRequest": 4,
-    "apiCallsMade": 2,
-    "deferredCommits": 2,
+    "apiCallsMade": 1,
+    "deferredCommits": 3,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-02-22T18:14:48.593195481Z",
-    "latestEvaluation": "2026-02-22T18:16:31.913363100Z"
+    "earliestEvaluation": "2026-02-22T20:01:56.067646537Z",
+    "latestEvaluation": "2026-02-22T20:01:56.067646537Z"
   }
 }
