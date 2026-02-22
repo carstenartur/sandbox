@@ -17,6 +17,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.Hashtable;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,6 +38,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 
+@DisplayName("ExplicitEncodingCleanUpTest Java 22")
 public class ExplicitEncodingCleanUpTest {
 
 	@BeforeEach
@@ -61,13 +63,7 @@ public class ExplicitEncodingCleanUpTest {
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
-//		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
-//		context.enable(CleanUpConstants.REMOVE_UNNECESSARY_NLS_TAGS);
-		if (test.skipCompileCheck) {
-			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
-		} else {
-			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
-		}
+		context.assertRefactoringResultAsExpectedWithFullCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 	}
 
 	@Test

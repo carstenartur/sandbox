@@ -1042,13 +1042,23 @@ public final class BuiltInGuards {
 	/**
 	 * Parses a Java source version string to a numeric value.
 	 * Handles formats like "1.8", "11", "17", "21".
+	 *
+	 * <p>Old-style Java version strings like "1.5", "1.6", "1.7", "1.8" are
+	 * converted to their major version equivalents (5, 6, 7, 8) so that
+	 * guards like {@code sourceVersionGE(7)} work correctly for Java 8
+	 * (source version "1.8").</p>
 	 */
 	private static double parseVersion(String version) {
 		if (version == null || version.isEmpty()) {
 			return 0;
 		}
 		try {
-			return Double.parseDouble(version);
+			double v = Double.parseDouble(version);
+			// Convert old-style "1.x" versions (1.5, 1.6, 1.7, 1.8) to major versions (5, 6, 7, 8)
+			if (v > 1.0 && v < 2.0) {
+				return Math.round(v * 10) - 10; // 1.5→5, 1.6→6, 1.7→7, 1.8→8
+			}
+			return v;
 		} catch (NumberFormatException e) {
 			return 0;
 		}

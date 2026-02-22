@@ -27,16 +27,18 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 
 /**
  * Find: Properties.storeToXML(java.io.OutputStream,"comment","UTF-8") throws
@@ -97,19 +99,25 @@ public class PropertiesStoreToXMLExplicitEncoding extends AbstractExplicitEncodi
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 		NodeData nodedata= (NodeData) data.get(visited);
 		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
 		/**
-		 * Add StandardCharsets.UTF_8 as third (last) parameter
+		 * Register encoding replacement BEFORE removing exception handling.
+		 * removeUnsupportedEncodingException may call simplifyEmptyTryStatement
+		 * which uses createMoveTarget to move statements out of the try block.
+		 * replaceAndRemoveNLS fails silently on nodes that have already been
+		 * marked as move targets, so the replacement must be registered first.
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);
+		boolean tryAlreadyUnwrapped= false;
 		if (nodedata.replace()) {
-			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
+			tryAlreadyUnwrapped= replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
-		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);
+		if (!tryAlreadyUnwrapped) {
+			removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());
+		}
 	}
 
 	@Override

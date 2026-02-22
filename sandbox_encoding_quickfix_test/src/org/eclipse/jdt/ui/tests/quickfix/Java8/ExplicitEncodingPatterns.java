@@ -69,7 +69,6 @@ enum ExplicitEncodingPatterns {
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						String result2=ba2.toString("UTF-8");
 						}
-					}
 				}
 				""",
 
@@ -90,7 +89,6 @@ enum ExplicitEncodingPatterns {
 						ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						String result2=ba2.toString("UTF-8");
 						}
-					}
 				}
 						"""),
 		FILEREADER("""
@@ -110,7 +108,6 @@ enum ExplicitEncodingPatterns {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -132,7 +129,6 @@ enum ExplicitEncodingPatterns {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		FILEWRITER("""
@@ -150,7 +146,6 @@ enum ExplicitEncodingPatterns {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -172,7 +167,6 @@ enum ExplicitEncodingPatterns {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		INPUTSTREAMREADER(
@@ -253,15 +247,13 @@ enum ExplicitEncodingPatterns {
 						import java.io.FileInputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
-						import java.nio.charset.Charset;
-						import java.nio.charset.StandardCharsets;
 						import java.io.FileNotFoundException;
 
 						public class E1 {
 						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
+						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
+						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
 						            } catch (FileNotFoundException e) {
 						            e.printStackTrace();
 						            }
@@ -370,7 +362,6 @@ enum ExplicitEncodingPatterns {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -389,7 +380,6 @@ enum ExplicitEncodingPatterns {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				"""),
 		STRINGGETBYTES("""
@@ -597,27 +587,29 @@ public class E1 {
 					}
 				}
 				""",
-"""
-package test1;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.nio.charset.StandardCharsets;
-import java.util.Formatter;
+				"""
+				package test1;
+				import java.io.File;
+				import java.io.FileNotFoundException;
+				import java.io.UnsupportedEncodingException;
+				import java.util.Formatter;
 
-public class E4 {
+				public class E4 {
 
-	static void bla() throws FileNotFoundException {
-		Formatter s=new Formatter(new File("asdf"),StandardCharsets.UTF_8);
-	}
-}
-"""),
+					static void bla() throws FileNotFoundException, UnsupportedEncodingException {
+						Formatter s=new Formatter(new File("asdf"),"UTF-8");
+					}
+				}
+				"""),
 		THREE("""
 				package test1;
 
 				import java.io.ByteArrayOutputStream;
 				import java.io.InputStreamReader;
 				import java.io.FileInputStream;
+				import java.io.FileOutputStream;
 				import java.io.FileReader;
+				import java.io.OutputStreamWriter;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
 
@@ -654,7 +646,9 @@ public class E4 {
 				import java.io.ByteArrayOutputStream;
 				import java.io.InputStreamReader;
 				import java.io.FileInputStream;
+				import java.io.FileOutputStream;
 				import java.io.FileReader;
+				import java.io.OutputStreamWriter;
 				import java.io.Reader;
 				import java.nio.charset.Charset;
 				import java.io.FileNotFoundException;
@@ -692,7 +686,9 @@ public class E4 {
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
+						import java.io.OutputStreamWriter;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
 
@@ -730,7 +726,9 @@ package test1;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;

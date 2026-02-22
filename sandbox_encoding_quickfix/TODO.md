@@ -175,13 +175,23 @@ None currently identified.
 ## Future Enhancements
 
 ### DSL-Based Cleanup Integration
-**Priority**: Medium  
-**Effort**: 6-8 hours
+**Priority**: ~~Medium~~ — **Phase 1 COMPLETED**
+**Effort**: ~~6-8 hours~~ DONE
 
-The plugin now bundles `encoding.sandbox-hint`, a declarative DSL file containing encoding transformation rules. Currently this file coexists with the imperative cleanup implementation. A future enhancement would be to:
-- Use the hint file rules directly via `BatchTransformationProcessor` for simple cases
-- Keep the imperative implementation for complex cases (version-aware transformations, three cleanup modes)
-- Provide a unified preference page combining both approaches
+The plugin now bridges `encoding.sandbox-hint` DSL rules into the imperative cleanup pipeline:
+- ✅ `UseExplicitEncodingCleanUpCore.createFix()` calls `HintFileFixCore.findOperationsForBundle()` before imperative helpers
+- ✅ `isDslHandled()` flag infrastructure ready (currently all `false` — DSL not yet mature enough)
+- ✅ `ChangeBehavior` mode is passed as `sandbox.cleanup.mode` compiler option for mode-dependent DSL rules
+- ✅ Project source version passed as `org.eclipse.jdt.core.compiler.source` for `sourceVersionGE()` guards
+- ✅ AGGREGATE mode falls back to pure imperative processing (DSL cannot express static field creation)
+- ✅ `nodesprocessed` set prevents double-processing between DSL and imperative helpers
+- ✅ `Charset.forName` DSL rule correctly gated on `sourceVersionGE(18)` matching imperative handler
+
+**DSL replacement roadmap** (see issue #774):
+- [ ] Phase 2: Validate DSL output matches imperative output for individual patterns (NLS cleanup, exception removal)
+- [ ] Phase 3: Flip `isDslHandled()` to `true` per-pattern once validated, removing imperative fallback
+- [ ] Phase 4: Move more patterns to DSL as DSL gains capabilities (structural rewrites, exception cleanup)
+- [ ] Phase 5: DSL enhancements for complex patterns (FileReader wrapping, catch removal, value mapping)
 
 ### Smart Encoding Detection
 **Priority**: Low  

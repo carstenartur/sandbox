@@ -22,6 +22,7 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingC
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
@@ -43,6 +45,7 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
 
 public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 	public UseExplicitEncodingCleanUpCore(final Map<String, String> options) {
@@ -74,8 +77,37 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
 
-		// Run all imperative helpers (they produce import-aware output)
-		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, cb));
+		// DSL-first architecture: DSL rules run first from encoding.sandbox-hint.
+		// Long-term goal: DSL should progressively replace imperative Java helpers
+		// because DSL rules are shorter and declarative.
+		// AGGREGATE mode is excluded because it needs static field creation
+		// that DSL cannot express.
+		boolean dslActive= cb != ChangeBehavior.ENFORCE_UTF8_AGGREGATE;
+		if (dslActive) {
+			Map<String, String> compilerOptions= new HashMap<>();
+			compilerOptions.put("sandbox.cleanup.mode", cb.name()); //$NON-NLS-1$
+			// Pass source version so DSL guards like sourceVersionGE(10) work correctly
+			if (compilationUnit.getJavaElement() != null
+					&& compilationUnit.getJavaElement().getJavaProject() != null) {
+				String sourceVersion= compilationUnit.getJavaElement()
+						.getJavaProject().getOption(JavaCore.COMPILER_SOURCE, true);
+				if (sourceVersion != null) {
+					compilerOptions.put(JavaCore.COMPILER_SOURCE, sourceVersion);
+				}
+			}
+			HintFileFixCore.findOperationsForBundle(
+					compilationUnit, "encoding", operations, nodesprocessed, compilerOptions); //$NON-NLS-1$
+		}
+
+		// Imperative helpers: non-DSL patterns always run.
+		// DSL-handled patterns are skipped when DSL is active — DSL should handle them.
+		// The nodesprocessed set provides node-level dedup as safety net.
+		computeFixSet.forEach(i -> {
+			if (!dslActive || !i.isDslHandled()) {
+				i.findOperations(compilationUnit, operations, nodesprocessed, cb);
+			}
+		});
+
 		if (operations.isEmpty()) {
 			return null;
 		}

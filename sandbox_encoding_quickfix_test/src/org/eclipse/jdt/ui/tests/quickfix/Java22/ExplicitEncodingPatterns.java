@@ -61,13 +61,13 @@ public class E1 {
     @SuppressWarnings("unused")
 	void method(String filename) {
         // Ursprüngliche Verwendung von Charset.forName() mit verschiedenen Charsets
-        Charset cs1 = StandardCharsets.UTF_8; //$NON-NLS-1$
-        Charset cs1b = StandardCharsets.UTF_8;  // Unterschiedliche Schreibweise (diese sollten gleich behandelt werden) //$NON-NLS-1$
-        Charset cs2 = StandardCharsets.UTF_16; //$NON-NLS-1$
-        Charset cs3 = StandardCharsets.UTF_16BE; //$NON-NLS-1$
-        Charset cs4 = StandardCharsets.UTF_16LE; //$NON-NLS-1$
-        Charset cs5 = StandardCharsets.ISO_8859_1; //$NON-NLS-1$
-        Charset cs6 = StandardCharsets.US_ASCII; //$NON-NLS-1$
+		Charset cs1 = StandardCharsets.UTF_8;
+        Charset cs1b = StandardCharsets.UTF_8;  // Unterschiedliche Schreibweise (diese sollten gleich behandelt werden)
+        Charset cs2 = StandardCharsets.UTF_16;
+        Charset cs3 = StandardCharsets.UTF_16BE;
+        Charset cs4 = StandardCharsets.UTF_16LE;
+        Charset cs5 = StandardCharsets.ISO_8859_1;
+        Charset cs6 = StandardCharsets.US_ASCII;
 
         // Ausgabe, die durch den Cleanup angepasst wird
         System.out.println(cs1.toString());
@@ -75,7 +75,7 @@ public class E1 {
 
         // Beispiel mit einer Variablen
         String charsetName = "UTF-8";  // Wird durch eine Variable ersetzt //$NON-NLS-1$
-        Charset cs7 = StandardCharsets.UTF_8;  // Umstellung erforderlich
+        Charset cs7 = Charset.forName(charsetName);  // Umstellung erforderlich
         System.out.println(cs7);
 
         // Testen eines ungültigen Charsets
@@ -101,20 +101,15 @@ public class E1 {
 				package test1;
 
 				import java.io.ByteArrayOutputStream;
-				import java.io.InputStreamReader;
-				import java.io.FileInputStream;
-				import java.io.FileReader;
-				import java.io.Reader;
-				import java.io.FileNotFoundException;
+				import java.io.UnsupportedEncodingException;
 
 				public class E1 {
-				    void method(String filename) {
+				    void method(String filename) throws UnsupportedEncodingException {
 				        ByteArrayOutputStream ba=new ByteArrayOutputStream();
 				        String result=ba.toString();
 				        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
-				        String result2=ba2.toString("UTF-8");
+				        String result2=ba2.toString("UTF-8"); //$NON-NLS-1$
 				       }
-				    }
 				}
 				""",
 
@@ -122,13 +117,8 @@ public class E1 {
 						package test1;
 
 						import java.io.ByteArrayOutputStream;
-						import java.io.InputStreamReader;
-						import java.io.FileInputStream;
-						import java.io.FileReader;
-						import java.io.Reader;
 						import java.nio.charset.Charset;
 						import java.nio.charset.StandardCharsets;
-						import java.io.FileNotFoundException;
 
 						public class E1 {
 						    void method(String filename) {
@@ -137,7 +127,6 @@ public class E1 {
 						        ByteArrayOutputStream ba2=new ByteArrayOutputStream();
 						        String result2=ba2.toString(StandardCharsets.UTF_8);
 						       }
-						    }
 						}
 						"""),
 		FILEREADER("""
@@ -157,7 +146,6 @@ public class E1 {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -179,49 +167,46 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
-		FILEWRITER("""
-				package test1;
+	FILEWRITER("""
+			package test1;
 
-				import java.io.FileWriter;
-				import java.io.Writer;
-				import java.io.FileNotFoundException;
+			import java.io.FileWriter;
+			import java.io.IOException;
+			import java.io.Writer;
 
-				public class E1 {
-				    void method(String filename) {
-				        try {
-				            Writer fw=new FileWriter(filename);
-				            } catch (FileNotFoundException e) {
-				            e.printStackTrace();
-				            }
-				       }
-				    }
-				}
-				""",
+			public class E1 {
+			    void method(String filename) {
+			        try {
+			            Writer fw=new FileWriter(filename);
+			            } catch (IOException e) {
+			            e.printStackTrace();
+			            }
+			       }
+			}
+			""",
 
-				"""
-						package test1;
+			"""
+					package test1;
 
-						import java.io.FileWriter;
-						import java.io.OutputStreamWriter;
-						import java.io.Writer;
-						import java.nio.charset.Charset;
-						import java.io.FileNotFoundException;
-						import java.io.FileOutputStream;
+					import java.io.FileOutputStream;
+					import java.io.FileWriter;
+					import java.io.IOException;
+					import java.io.OutputStreamWriter;
+					import java.io.Writer;
+					import java.nio.charset.Charset;
 
-						public class E1 {
-						    void method(String filename) {
-						        try {
-						            Writer fw=new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset());
-						            } catch (FileNotFoundException e) {
-						            e.printStackTrace();
-						            }
-						       }
-						    }
-						}
-						"""),
+					public class E1 {
+					    void method(String filename) {
+					        try {
+					            Writer fw=new OutputStreamWriter(new FileOutputStream(filename), Charset.defaultCharset());
+					            } catch (IOException e) {
+					            e.printStackTrace();
+					            }
+					       }
+					}
+					"""),
 		INPUTSTREAMREADER(
 				"""
 						package test1;
@@ -231,18 +216,18 @@ public class E1 {
 						import java.io.FileReader;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
 						    void method(String filename) {
 						        try {
 						            InputStreamReader is1=new InputStreamReader(new FileInputStream("file1.txt")); //$NON-NLS-1$
 						            InputStreamReader is2=new InputStreamReader(new FileInputStream("file2.txt"), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
-						            } catch (FileNotFoundException e) {
+						            } catch (FileNotFoundException | UnsupportedEncodingException e) {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
-						}
+					}
 						""",
 
 				"""
@@ -252,9 +237,10 @@ public class E1 {
 						import java.io.FileInputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
-						import java.nio.charset.Charset;
-						import java.nio.charset.StandardCharsets;
 						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
+					import java.nio.charset.Charset;
+					import java.nio.charset.StandardCharsets;
 
 						public class E1 {
 						    void method(String filename) {
@@ -265,57 +251,60 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
-						}
+					}
 						"""),
-		OUTPUTSTREAMWRITER(
+	OUTPUTSTREAMWRITER(
 				"""
 						package test1;
 
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
+						import java.io.OutputStreamWriter;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
 						    void method(String filename) {
 						        try {
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
-						            } catch (FileNotFoundException e) {
+						            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream("")); //$NON-NLS-1$
+						            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
+						            } catch (FileNotFoundException | UnsupportedEncodingException e) {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						""",
 
 				"""
-						package test1;
+					package test1;
 
-						import java.io.ByteArrayOutputStream;
-						import java.io.InputStreamReader;
-						import java.io.FileInputStream;
-						import java.io.FileReader;
-						import java.io.Reader;
-						import java.nio.charset.Charset;
-						import java.nio.charset.StandardCharsets;
-						import java.io.FileNotFoundException;
+					import java.io.ByteArrayOutputStream;
+					import java.io.InputStreamReader;
+					import java.io.FileInputStream;
+					import java.io.FileOutputStream;
+					import java.io.FileReader;
+					import java.io.OutputStreamWriter;
+					import java.io.Reader;
+					import java.io.FileNotFoundException;
+					import java.io.UnsupportedEncodingException;
+					import java.nio.charset.Charset;
+					import java.nio.charset.StandardCharsets;
 
-						public class E1 {
-						    void method(String filename) {
-						        try {
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
-						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
-						            } catch (FileNotFoundException e) {
-						            e.printStackTrace();
-						            }
-						       }
-						    }
-						}
-						"""),
+					public class E1 {
+					    void method(String filename) {
+					        try {
+					            OutputStreamWriter os1=new OutputStreamWriter(new FileOutputStream(""), Charset.defaultCharset()); //$NON-NLS-1$
+					            OutputStreamWriter os2=new OutputStreamWriter(new FileOutputStream(""), StandardCharsets.UTF_8); //$NON-NLS-1$
+					            } catch (FileNotFoundException e) {
+					            e.printStackTrace();
+					            }
+					       }
+					}
+					"""),
 		CHANNELSNEWREADER("""
 				package test1;
 
@@ -332,10 +321,9 @@ public class E1 {
 
 				public class E1 {
 				    void method(String filename) throws UnsupportedEncodingException {
-				            ReadableByteChannel ch;
+				            ReadableByteChannel ch=null;
 				            Reader r=Channels.newReader(ch,"UTF-8"); //$NON-NLS-1$
 				       }
-				    }
 				}
 				""",
 
@@ -354,10 +342,9 @@ public class E1 {
 
 						public class E1 {
 						    void method(String filename) {
-						            ReadableByteChannel ch;
+						            ReadableByteChannel ch=null;
 						            Reader r=Channels.newReader(ch,StandardCharsets.UTF_8);
 						       }
-						    }
 						}
 						"""),
 		CHANNELSNEWWRITER("""
@@ -376,10 +363,9 @@ public class E1 {
 
 				public class E1 {
 				    void method(String filename) throws UnsupportedEncodingException {
-				            WritableByteChannel ch;
+				            WritableByteChannel ch=null;
 				            Writer w=Channels.newWriter(ch,"UTF-8"); //$NON-NLS-1$
 				       }
-				    }
 				}
 				""",
 
@@ -398,10 +384,9 @@ public class E1 {
 
 						public class E1 {
 						    void method(String filename) {
-						            WritableByteChannel ch;
-						            Writer w=Channels.newWriter(ch,StandardCharsets.UTF_8); //$NON-NLS-1$
+						            WritableByteChannel ch=null;
+						            Writer w=Channels.newWriter(ch,StandardCharsets.UTF_8);
 						       }
-						    }
 						}
 						"""),
 		PRINTWRITER("""
@@ -419,7 +404,6 @@ public class E1 {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -442,7 +426,6 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		STRINGGETBYTES(
@@ -455,15 +438,15 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.Reader;
 import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 
 public class E1 {
-    void method(String filename) {
+    void method(String filename) throws UnsupportedEncodingException {
         String s="asdf"; //$NON-NLS-1$
         byte[] bytes= s.getBytes();
         byte[] bytes2= s.getBytes("UTF-8");
         System.out.println(bytes.length);
        }
-    }
 
     void method2(String filename) {
 		String s="asdf"; //$NON-NLS-1$
@@ -487,9 +470,10 @@ import java.io.InputStreamReader;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.Reader;
+import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.io.FileNotFoundException;
 
 public class E1 {
     void method(String filename) {
@@ -498,14 +482,11 @@ public class E1 {
         byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
         System.out.println(bytes.length);
        }
-    }
 
     void method2(String filename) {
 		String s="asdf"; //$NON-NLS-1$
 		byte[] bytes= s.getBytes(Charset.defaultCharset());
-		try {
-			byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
-		}
+		byte[] bytes2= s.getBytes(StandardCharsets.UTF_8);
 		System.out.println(bytes.length);
 	}
 }
@@ -516,7 +497,7 @@ public class E1 {
 				import java.io.FileNotFoundException;
 				import java.io.UnsupportedEncodingException;
 
-				public class E5 {
+				public class E1 {
 
 					static void bla() throws FileNotFoundException, UnsupportedEncodingException {
 						byte[] b= {(byte)59};
@@ -532,12 +513,12 @@ public class E1 {
 						import java.io.FileNotFoundException;
 						import java.nio.charset.StandardCharsets;
 
-						public class E5 {
+						public class E1 {
 
 							static void bla() throws FileNotFoundException {
 								byte[] b= {(byte)59};
-								String s1=new String(b,StandardCharsets.UTF_8);
-								String s2=new String(b,0,1,StandardCharsets.UTF_8);
+								String s1=new String(b, StandardCharsets.UTF_8);
+								String s2=new String(b, 0, 1, StandardCharsets.UTF_8);
 							}
 						}
 														"""),
@@ -586,7 +567,7 @@ public class E1 {
 				import java.io.UnsupportedEncodingException;
 				import java.net.URLDecoder;
 
-				public class E2 {
+				public class E1 {
 
 					static void bla() throws UnsupportedEncodingException {
 						String url=URLDecoder.decode("asdf","UTF-8");
@@ -599,49 +580,51 @@ public class E1 {
 				import java.nio.charset.Charset;
 				import java.nio.charset.StandardCharsets;
 
-				public class E2 {
+				public class E1 {
 
 					static void bla() {
-						String url=URLDecoder.decode("asdf",StandardCharsets.UTF_8);
+						String url=URLDecoder.decode("asdf", StandardCharsets.UTF_8);
 						String url2=URLDecoder.decode("asdf", Charset.defaultCharset());
 					}
 				}
-												"""),
-		URLENCODER("""
-				package test1;
-				import java.io.UnsupportedEncodingException;
-				import java.net.URLEncoder;
+											"""),
+	URLENCODER("""
+			package test1;
+			import java.io.UnsupportedEncodingException;
+			import java.net.URLEncoder;
 
-				public class E2 {
+			public class E1 {
 
-					static void bla() throws UnsupportedEncodingException {
-						String url=URLEncoder.encode("asdf","UTF-8");
-						String url4=URLEncoder.encode("asdf");
-					}
+				static void bla() throws UnsupportedEncodingException {
+					String url=URLEncoder.encode("asdf","UTF-8");
+					String url4=URLEncoder.encode("asdf");
 				}
+			}
 								""", """
 				package test1;
 				import java.net.URLEncoder;
 				import java.nio.charset.Charset;
 				import java.nio.charset.StandardCharsets;
 
-				public class E2 {
+				public class E1 {
 
 					static void bla() {
-						String url=URLEncoder.encode("asdf",StandardCharsets.UTF_8);
+						String url=URLEncoder.encode("asdf", StandardCharsets.UTF_8);
 						String url4=URLEncoder.encode("asdf", Charset.defaultCharset());
 					}
 				}
-												"""),
+											"""),
 		SCANNER("""
 				package test1;
 				import java.io.File;
 				import java.io.FileNotFoundException;
+				import java.io.IOException;
+				import java.io.InputStream;
 				import java.util.Scanner;
 
-				public class E3 {
+				public class E1 {
 
-					static void bla3(InputStream is) throws FileNotFoundException {
+					static void bla3(InputStream is) throws IOException {
 						Scanner s=new Scanner(new File("asdf"),"UTF-8");
 						Scanner s2=new Scanner(is,"UTF-8");
 						Scanner s3=new Scanner("asdf");
@@ -652,16 +635,17 @@ public class E1 {
 package test1;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.nio.charset.Charset;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
-public class E3 {
+public class E1 {
 
-	static void bla3(InputStream is) throws FileNotFoundException {
-		Scanner s=new Scanner(new File("asdf"),StandardCharsets.UTF_8);
-		Scanner s2=new Scanner(is,StandardCharsets.UTF_8);
-		Scanner s3=new Scanner("asdf", Charset.defaultCharset());
+	static void bla3(InputStream is) throws IOException {
+		Scanner s=new Scanner(new File("asdf"), StandardCharsets.UTF_8);
+		Scanner s2=new Scanner(is, StandardCharsets.UTF_8);
+		Scanner s3=new Scanner("asdf");
 	}
 }
 """),
@@ -670,16 +654,17 @@ public class E3 {
 package test1;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Formatter;
 
-public class E4 {
+public class E1 {
 
-	static void bla() throws FileNotFoundException, UnsupportedEncodingException {
+	static void bla() throws IOException, UnsupportedEncodingException {
 		Formatter s=new Formatter(new File("asdf"),"UTF-8");
 	}
 
-	static void bli() throws FileNotFoundException {
+	static void bli() throws IOException {
 		try {
 			Formatter s=new Formatter(new File("asdf"),"UTF-8");
 		} catch (FileNotFoundException | UnsupportedEncodingException e) {
@@ -692,18 +677,21 @@ public class E4 {
 package test1;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Formatter;
+import java.util.Locale;
 
-public class E4 {
+public class E1 {
 
-	static void bla() throws FileNotFoundException {
-		Formatter s=new Formatter(new File("asdf"),StandardCharsets.UTF_8);
+	static void bla() throws IOException {
+		Formatter s=new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault());
 	}
 
-	static void bli() throws FileNotFoundException {
+	static void bli() throws IOException {
 		try {
-			Formatter s=new Formatter(new File("asdf"),StandardCharsets.UTF_8);
+			Formatter s=new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault());
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -717,7 +705,9 @@ public class E4 {
 				import java.io.ByteArrayOutputStream;
 				import java.io.InputStreamReader;
 				import java.io.FileInputStream;
+				import java.io.FileOutputStream;
 				import java.io.FileReader;
+				import java.io.OutputStreamWriter;
 				import java.io.Reader;
 				import java.io.FileNotFoundException;
 
@@ -744,7 +734,6 @@ public class E4 {
 				            e.printStackTrace();
 				            }
 				       }
-				    }
 				}
 				""",
 
@@ -754,7 +743,9 @@ public class E4 {
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
+						import java.io.OutputStreamWriter;
 						import java.io.Reader;
 						import java.nio.charset.Charset;
 						import java.io.FileNotFoundException;
@@ -782,7 +773,6 @@ public class E4 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
 		ENCODINGASSTRINGPARAMETER(
@@ -792,12 +782,15 @@ public class E4 {
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
+						import java.io.OutputStreamWriter;
 						import java.io.Reader;
 						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
-						    void method(String filename) {
+						    void method(String filename) throws UnsupportedEncodingException {
 						        String s="asdf"; //$NON-NLS-1$
 						        //byte[] bytes= s.getBytes(StandardCharsets.UTF_8);
 								byte[] bytes= s.getBytes("Utf-8"); //$NON-NLS-1$
@@ -806,12 +799,12 @@ public class E4 {
 						        String result=ba.toString();
 						        try {
 						            InputStreamReader is=new InputStreamReader(new FileInputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
-						            } catch (FileNotFoundException e) {
+						            } catch (FileNotFoundException | UnsupportedEncodingException e) {
 						            e.printStackTrace();
 						            }
 						        try {
 						            OutputStreamWriter os=new OutputStreamWriter(new FileOutputStream(""), "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
-						            } catch (FileNotFoundException e) {
+						            } catch (FileNotFoundException | UnsupportedEncodingException e) {
 						            e.printStackTrace();
 						            }
 						        try {
@@ -820,7 +813,6 @@ public class E4 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						""",
 
@@ -830,11 +822,14 @@ public class E4 {
 						import java.io.ByteArrayOutputStream;
 						import java.io.InputStreamReader;
 						import java.io.FileInputStream;
+						import java.io.FileOutputStream;
 						import java.io.FileReader;
+						import java.io.OutputStreamWriter;
 						import java.io.Reader;
+						import java.io.FileNotFoundException;
+						import java.io.UnsupportedEncodingException;
 						import java.nio.charset.Charset;
 						import java.nio.charset.StandardCharsets;
-						import java.io.FileNotFoundException;
 
 						public class E1 {
 						    void method(String filename) {
@@ -860,10 +855,9 @@ public class E4 {
 						            e.printStackTrace();
 						            }
 						       }
-						    }
 						}
 						"""),
-	FILES_READSTRING("""
+		FILES_READSTRING("""
 package test1;
 
 import java.nio.file.Files;
@@ -928,15 +922,9 @@ public class E1 {
 
 		String given;
 		String expected;
-		boolean skipCompileCheck;
 
 		ExplicitEncodingPatterns(String given, String expected) {
-			this(given, expected, true);
-		}
-
-		ExplicitEncodingPatterns(String given, String expected, boolean skipCompileCheck) {
 			this.given= given;
 			this.expected= expected;
-			this.skipCompileCheck= skipCompileCheck;
 		}
 	}

@@ -17,21 +17,17 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.text.edits.TextEditGroup;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -111,24 +107,18 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ImportRewrite importRewriter= cuRewrite.getImportRewrite();
 		NodeData nodedata= (NodeData) data.get(visited);
 		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
-		/**
-		 * Add Charset.defaultCharset() as second (last) parameter
-		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
+		boolean tryAlreadyUnwrapped= false;
 		if (nodedata.replace()) {
-			try {
-				ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
-			} catch (CoreException e) {
-				JavaManipulationPlugin.log(e); // should not occur
-			}
-//			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
+			tryAlreadyUnwrapped= replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
-		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);
+		if (!tryAlreadyUnwrapped) {
+			removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());
+		}
 	}
 
 	@Override

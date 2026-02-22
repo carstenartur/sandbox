@@ -87,16 +87,18 @@ public enum UseExplicitEncodingFixCore {
 	}
 
 	/**
-	 * Returns whether this fix is handled by DSL rules in the encoding
-	 * {@code .sandbox-hint} file (Tier 1).
+	 * Returns whether this fix is fully handled by DSL rules in the encoding
+	 * {@code .sandbox-hint} file.
 	 *
-	 * <p>DSL-handled fixes perform simple argument replacement (e.g.,
-	 * {@code "UTF-8"} → {@code StandardCharsets.UTF_8}) and are processed
-	 * first by the DSL engine. The imperative helpers for these cases still
-	 * run as a fallback for {@code KEEP_BEHAVIOR} mode where DSL rules are
-	 * not applied.</p>
+	 * <p>When {@code true}, the pattern has corresponding DSL rules in
+	 * {@code encoding.sandbox-hint} that cover string-based charset argument
+	 * replacement and zero-argument/missing-encoding patterns.
+	 * Tier 2/3 patterns (structural rewrites like FileReader→InputStreamReader,
+	 * FileWriter→OutputStreamWriter, PrintWriter→BufferedWriter, etc.) remain
+	 * imperative-only ({@code false}) because they require complex AST
+	 * restructuring that the DSL cannot express.</p>
 	 *
-	 * @return {@code true} if this fix is covered by DSL rules
+	 * @return {@code true} if this fix is fully covered by DSL rules
 	 */
 	public boolean isDslHandled() {
 		return dslHandled;

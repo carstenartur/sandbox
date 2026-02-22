@@ -226,6 +226,60 @@ The corresponding feature module `sandbox_encoding_quickfix_feature` MUST mainta
 
 These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.
 
+## Hybrid Tier Architecture
+
+The encoding cleanup uses a **DSL-first architecture** where declarative `.sandbox-hint` rules are the preferred implementation, with imperative Java helpers as fallback. In the long run, DSL rules should replace the Java-based transformations where possible because they are much shorter and declarative.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    UseExplicitEncodingCleanUpCore                    │
+│                        .createFix()                                 │
+├──────────────┬──────────────────────┬───────────────────────────────┤
+│ Tier 1: DSL  │  Tier 2: Annotated   │  Tier 3: Imperative Java     │
+│ .sandbox-hint│  @CleanupPattern +   │  AbstractExplicitEncoding     │
+│ (preferred)  │  @RewriteRule        │  (fallback / complex cases)   │
+├──────────────┼──────────────────────┼───────────────────────────────┤
+│ Simple arg   │ Patterns needing     │ Complex structural rewrites   │
+│ replacement  │ Java version guards  │ (FileWriter→OutputStreamWriter│
+│ "UTF-8" →    │ or extra validation  │  wrapping, exception removal, │
+│ StandardChar │ but still 1:1 rewrite│  ChangeBehavior strategies)   │
+│ sets.UTF_8   │                      │                               │
+└──────────────┴──────────────────────┴───────────────────────────────┘
+```
+
+### Tier Classification
+
+Each `UseExplicitEncodingFixCore` enum value has an `isDslHandled()` flag indicating whether the DSL fully handles the pattern. Currently **all flags are `false`** because the DSL cannot yet fully replace the imperative helpers (NLS comment cleanup, exception removal, variable encoding detection, complex constructor rewrites). The DSL rules still run first via `HintFileFixCore.findOperationsForBundle()`, and `nodesprocessed` prevents double-processing when DSL matches. As the DSL matures, individual flags can be flipped to `true`.
+
+- **Have DSL rules** (but imperative still runs): `CHARSET`, `STRING`, `STRING_GETBYTES`, `INPUTSTREAMREADER`, `OUTPUTSTREAMWRITER`, `SCANNER`, `FORMATTER`, `PRINTSTREAM`, `URLDECODER`, `URLENCODER`
+- **Imperative-only** (no DSL rules): `FILEREADER`, `FILEWRITER`, `PRINTWRITER`, `BYTEARRAYOUTPUTSTREAM`, `CHANNELSNEWREADER`, `CHANNELSNEWWRITER`, `PROPERTIES_STORETOXML`, `FILES_NEWBUFFEREDREADER`, `FILES_NEWBUFFEREDWRITER`, `FILES_READALLLINES`, `FILES_READSTRING`, `FILES_WRITESTRING`
+
+### Execution Flow
+
+1. **DSL phase**: `HintFileFixCore.findOperationsForBundle("encoding", ...)` runs the `encoding.sandbox-hint` rules with the project's compiler options (source version and cleanup mode). Matched nodes are added to `nodesprocessed`.
+2. **Imperative phase**: All imperative helpers run their `findOperations()`. The `nodesprocessed` set and `.excluding(nodesprocessed)` in each helper's visitor prevent double-processing for nodes already handled by DSL. When `isDslHandled()` is `true` for a pattern, the imperative helper is skipped entirely.
+3. **AGGREGATE mode exception**: When `ENFORCE_UTF8_AGGREGATE` is selected, DSL is bypassed entirely and all imperative helpers run, because static field creation cannot be expressed declaratively.
+
+### DSL Migration Strategy
+
+The `isDslHandled()` flag on each enum value tracks which patterns are fully handled by DSL. When `isDslHandled()` is `true`, the imperative helper is skipped. As the DSL matures:
+
+1. **Current state**: All flags are `false` — DSL rules run first, imperative helpers also run for all patterns. The `nodesprocessed` set prevents double-processing.
+2. **Next phase**: Validate that DSL output exactly matches imperative output for individual patterns. Once validated per-pattern, flip `isDslHandled()` to `true` to skip the imperative helper.
+3. **Long-term**: Remove imperative helpers for fully DSL-covered patterns. Move more patterns to DSL as the DSL gains capabilities (structural rewrites, exception cleanup).
+
+The DSL approach is preferred because:
+- DSL rules are **shorter** (1–3 lines vs. 50+ lines of Java)
+- DSL rules are **declarative** — pattern + replacement, no visitor boilerplate
+- DSL rules are **composable** — `<!foreach CHARSET:...>` handles all 6 charsets in one macro
+- DSL rules are **portable** — compatible with NetBeans hint file format
+
+### Compiler Options
+
+The `createFix()` method passes both the cleanup mode and the project's Java source version to the DSL engine:
+- `sandbox.cleanup.mode` → enables mode-dependent rules via `mode(ENFORCE_UTF8)` / `mode(KEEP_BEHAVIOR)` guards
+- `org.eclipse.jdt.core.compiler.source` → enables version-dependent rules via `sourceVersionGE(10)` guards
+
 ## DSL Pattern Library
 
 The encoding plugin provides a declarative `.sandbox-hint` file (`encoding.sandbox-hint`) that defines encoding transformation rules using the TriggerPattern DSL. This file is located at `src/org/sandbox/jdt/internal/corext/fix/hints/encoding.sandbox-hint` and is registered via the `org.sandbox.jdt.triggerpattern.hints` extension point in `plugin.xml`.
@@ -235,6 +289,6 @@ The hint file contains rules for replacing string-based charset specifications w
 - `$str.getBytes("UTF-8")` → `$str.getBytes(StandardCharsets.UTF_8)`
 - `new InputStreamReader(in, "UTF-8")` → `new InputStreamReader(in, StandardCharsets.UTF_8)`
 
-Each rule includes `sourceVersionGE(7)` guards and `addImport java.nio.charset.StandardCharsets` directives.
+Each rule includes `sourceVersionGE()` guards matching the imperative handler requirements (e.g., `sourceVersionGE(10)` for `String` constructors, `sourceVersionGE(8)` for `Charset.forName`) and `addImport java.nio.charset.StandardCharsets` directives. A `<!foreach CHARSET:...>` macro expands rules across all six standard charsets.
 
 This file was moved from `sandbox_common` to this plugin to prevent duplication of functionality with the imperative cleanup implementation, keeping domain-specific rules together with their domain-specific plugin.

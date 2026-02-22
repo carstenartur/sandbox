@@ -1,5 +1,12 @@
 # GitHub Copilot Instructions for Sandbox Project
 
+## ⚠️ FIRST: Read Learned Lessons
+
+**Before doing ANY work**, read [copilot-learned-lessons.md](.github/copilot-learned-lessons.md).
+It contains hard-won knowledge from past sessions — recurring bugs, correct patterns, and fixes.
+**When you fix a new issue or learn something, UPDATE that file immediately.**
+This is how knowledge survives agent crashes.
+
 ## Quick Reference - Common Issues
 
 ⚠️ **Before doing ANYTHING**: Set Java 21

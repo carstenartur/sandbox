@@ -645,6 +645,32 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	}
 
 	/**
+	 * Executes the configured refactoring and asserts the result matches expectations,
+	 * after validating that both the input and output compilation units have no compilation errors.
+	 * <p>
+	 * Use this variant when both test input and expected output should compile cleanly.
+	 * This is the strictest validation mode and should be preferred for all new tests.
+	 * </p>
+	 *
+	 * @param cus the compilation units to refactor
+	 * @param expected the expected source code after refactoring (one per CU)
+	 * @param setOfExpectedGroupCategories expected group category names, or null to skip validation
+	 * @return the refactoring status
+	 * @throws CoreException if the refactoring fails
+	 */
+	public RefactoringStatus assertRefactoringResultAsExpectedWithFullCompileCheck(final ICompilationUnit[] cus,
+			final String[] expected, final Set<String> setOfExpectedGroupCategories) throws CoreException {
+		for (final ICompilationUnit cu : cus) {
+			assertNoCompilationError(cu);
+		}
+		final RefactoringStatus status = assertRefactoringResultAsExpected(cus, expected, setOfExpectedGroupCategories);
+		for (final ICompilationUnit cu : cus) {
+			assertNoCompilationError(cu);
+		}
+		return status;
+	}
+
+	/**
 	 * Asserts that the refactoring produces no changes.
 	 * <p>
 	 * Also validates that the compilation units have no compilation errors.

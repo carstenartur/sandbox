@@ -80,7 +80,11 @@ public enum ChangeBehavior {
 
 		    // Check if this charset constant is already stored in the map
 		    if (charsetConstants.containsKey(fieldName)) {
-		        return charsetConstants.get(fieldName);
+		        QualifiedName cached = charsetConstants.get(fieldName);
+		        return ast.newQualifiedName(
+		            ast.newSimpleName(cached.getQualifier().toString()),
+		            ast.newSimpleName(cached.getName().getIdentifier())
+		        );
 		    }
 
 		    // Add import for StandardCharsets
@@ -119,7 +123,7 @@ public enum ChangeBehavior {
 		        VariableDeclarationFragment fragment = (VariableDeclarationFragment) existingField.fragments().get(0);
 		        fieldReference = ast.newQualifiedName(
 		            ast.newSimpleName(enclosingType.getName().getIdentifier()),
-		            fragment.getName()
+		            ast.newSimpleName(fragment.getName().getIdentifier())
 		        );
 		    }
 

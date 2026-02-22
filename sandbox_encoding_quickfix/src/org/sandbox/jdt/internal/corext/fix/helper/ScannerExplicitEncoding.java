@@ -13,6 +13,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.io.File;
+import java.io.InputStream;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
@@ -23,6 +27,8 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -30,32 +36,41 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 
 /**
- *
  * Java 10
  *
- * Change
+ * Handles explicit encoding for {@link java.util.Scanner} constructors.
+ * See: https://download.java.net/java/early_access/panama/docs/api/java.base/java/util/Scanner.html
  *
- * Find: new java.util.Scanner(new File("filename.txt"),"UTF-8")
+ * <h2>2-argument constructors (replace String encoding with Charset):</h2>
+ * <ul>
+ *   <li>{@code Scanner(File, "UTF-8")} → {@code Scanner(File, StandardCharsets.UTF_8)}</li>
+ *   <li>{@code Scanner(InputStream, "UTF-8")} → {@code Scanner(InputStream, StandardCharsets.UTF_8)}</li>
+ *   <li>{@code Scanner(Path, "UTF-8")} → {@code Scanner(Path, StandardCharsets.UTF_8)}</li>
+ *   <li>{@code Scanner(ReadableByteChannel, "UTF-8")} → {@code Scanner(ReadableByteChannel, StandardCharsets.UTF_8)}</li>
+ * </ul>
  *
- * Rewrite: new java.util.Scanner(new File("filename.txt"),StandardCharsets.UTF_8);
+ * <h2>1-argument constructors (add Charset.defaultCharset()):</h2>
+ * <ul>
+ *   <li>{@code Scanner(File)} → {@code Scanner(File, Charset.defaultCharset())}</li>
+ *   <li>{@code Scanner(InputStream)} → {@code Scanner(InputStream, Charset.defaultCharset())}</li>
+ *   <li>{@code Scanner(Path)} → {@code Scanner(Path, Charset.defaultCharset())}</li>
+ *   <li>{@code Scanner(ReadableByteChannel)} → {@code Scanner(ReadableByteChannel, Charset.defaultCharset())}</li>
+ * </ul>
  *
- * Find: new java.util.Scanner("filename.txt", "UTF-8")
- *
- * Rewrite: new java.util.Scanner("filename.txt", StandardCharsets.UTF_8)
- *
- * Find: new java.util.Scanner(java.io.OutputStream, "UTF-8")
- *
- * Rewrite: new java.util.Scanner(java.io.OutputStream, StandardCharsets.UTF_8)
- *
- * Find: new java.util.Scanner(java.io.OutputStream)
- *
- * Rewrite: new java.util.Scanner(java.io.OutputStream, Charset.defaultCharset())
+ * <h2>Not handled (no charset-accepting variant exists):</h2>
+ * <ul>
+ *   <li>{@code Scanner(String)} — scans the string directly, no charset parameter</li>
+ *   <li>{@code Scanner(Readable)} — no charset parameter</li>
+ * </ul>
  */
 public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
 
@@ -80,10 +95,8 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 		List<ASTNode> arguments= visited.arguments();
 
 		switch (arguments.size()) {
-			case 4:
 			case 2:
-				int encodingIndex= (arguments.size() == 4) ? 3 : 1;
-				ASTNode argumentNode= arguments.get(encodingIndex);
+				ASTNode argumentNode= arguments.get(1);
 
 				if (argumentNode instanceof StringLiteral) {
 					StringLiteral encodingLiteral= (StringLiteral) argumentNode;
@@ -98,9 +111,11 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 				break;
 
 			case 1:
-				NodeData nd2= new NodeData(false, visited, null);
-				holder.put(visited, nd2);
-				operations.add(fixcore.rewrite(visited, cb, holder));
+				if (isEncodingRelevantSingleArgConstructor(visited)) {
+					NodeData nd2= new NodeData(false, visited, null);
+					holder.put(visited, nd2);
+					operations.add(fixcore.rewrite(visited, cb, holder));
+				}
 				break;
 
 			default:
@@ -108,6 +123,43 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 		}
 
 		return false;
+	}
+
+	/**
+	 * Checks whether a 1-argument Scanner constructor uses the platform default encoding
+	 * and should be migrated.
+	 *
+	 * <p>Only these 1-arg constructors use the default encoding:
+	 * <ul>
+	 *   <li>{@code Scanner(File source)} — uses default charset</li>
+	 *   <li>{@code Scanner(InputStream source)} — uses default charset</li>
+	 *   <li>{@code Scanner(Path source)} — uses default charset</li>
+	 *   <li>{@code Scanner(ReadableByteChannel source)} — uses default charset</li>
+	 * </ul>
+	 *
+	 * <p>These 1-arg constructors do NOT involve encoding and must be skipped:
+	 * <ul>
+	 *   <li>{@code Scanner(String source)} — scans the string directly, no charset variant exists</li>
+	 *   <li>{@code Scanner(Readable source)} — no charset variant exists</li>
+	 * </ul>
+	 *
+	 * @param visited the ClassInstanceCreation node
+	 * @return true if this is an encoding-relevant 1-arg Scanner constructor
+	 */
+	private static boolean isEncodingRelevantSingleArgConstructor(ClassInstanceCreation visited) {
+		IMethodBinding binding= visited.resolveConstructorBinding();
+		if (binding == null) {
+			return false;
+		}
+		ITypeBinding[] paramTypes= binding.getParameterTypes();
+		if (paramTypes.length != 1) {
+			return false;
+		}
+		String paramTypeName= paramTypes[0].getQualifiedName();
+		return File.class.getCanonicalName().equals(paramTypeName)
+				|| InputStream.class.getCanonicalName().equals(paramTypeName)
+				|| Path.class.getCanonicalName().equals(paramTypeName)
+				|| ReadableByteChannel.class.getCanonicalName().equals(paramTypeName);
 	}
 
 	@Override
@@ -122,7 +174,7 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 		 */
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
 		if (nodedata.replace()) {
-			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
+			replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
