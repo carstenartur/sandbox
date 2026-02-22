@@ -1,26 +1,33 @@
 {
-  "totalProcessed": 2,
-  "relevant": 2,
-  "irrelevant": 0,
+  "totalProcessed": 21,
+  "relevant": 15,
+  "irrelevant": 6,
   "duplicates": 0,
-  "green": 1,
-  "yellow": 0,
-  "red": 1,
-  "irrelevantReasons": {},
+  "green": 7,
+  "yellow": 1,
+  "red": 11,
+  "irrelevantReasons": {
+    "The commit introduces new methods to classes to extend their API functionality (implementing an interface method), rather than transforming existing code structures. The TriggerPattern DSL is designed for matching and replacing existing code patterns, not for generating or adding new methods to classes.": 1,
+    "The commit involves a significant refactoring of a method body, including the introduction of a new private helper method and a switch from imperative loops/conditionals to a Java 8+ Stream API pipeline. The TriggerPattern DSL is designed for expression-level or single-statement replacements, not for transforming entire method bodies, changing control flow paradigms, or introducing new methods. It aims for localized, declarative transformations rather than complex structural refactorings.": 1,
+    "The commit removes a specific, unused image declaration. The TriggerPattern DSL is designed for code transformations (replacing one valid expression/statement with another, or suggesting improvements), not for detecting and removing dead code or unused resources based on semantic analysis (like checking if an image is actually referenced elsewhere in the project). Such a change cannot be generalized into a pattern-replacement rule without advanced static analysis capabilities beyond the DSL\u0027s scope.": 1,
+    "The commit introduces new feature logic, including complex control flow (if/else blocks), new method invocations, and several new helper methods. The TriggerPattern DSL is designed for pattern matching and replacement of single expressions or statements, not for arbitrary code generation, insertion of control flow statements, or defining new methods. This change goes beyond the capabilities of the DSL.": 1,
+    "The code change is a complex refactoring that replaces a simple method call with an `if-else` statement block, including logging, checking system properties, and conditional `System.setProperty` calls. This goes beyond simple expression or single-statement transformations supported by the TriggerPattern DSL. It involves inserting new control flow and multi-statement logic in the replacement, which is explicitly listed as an unsupported feature.": 1,
+    "The commit removes multiple, non-contiguous statements related to a specific internal preference (`IWorkbenchPreferenceConstants.ENABLE_ANIMATIONS`) that was no longer effective. The TriggerPattern DSL is designed for single expression/statement pattern matching and replacement, not for orchestrating the removal of several distinct lines that might be scattered or create compiler errors if removed in isolation. This is more akin to targeted dead code elimination for a very specific API, which is beyond the scope of simple pattern rules.": 1
+  },
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "totalProcessed": 2,
-      "relevant": 2,
-      "green": 1,
-      "yellow": 0,
-      "red": 1
+      "totalProcessed": 21,
+      "relevant": 15,
+      "green": 7,
+      "yellow": 1,
+      "red": 11
     }
   },
   "dailyProgress": [
     {
       "date": "2026-02-22",
-      "processed": 2,
-      "relevant": 2
+      "processed": 21,
+      "relevant": 15
     }
   ]
 }
