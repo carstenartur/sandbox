@@ -49,7 +49,7 @@ class GithubPagesGeneratorTest {
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "Test summary");
+				null, null, "Test summary", null);
 		stats.record(eval);
 
 		generator.generate(List.of(eval), stats, tempDir);

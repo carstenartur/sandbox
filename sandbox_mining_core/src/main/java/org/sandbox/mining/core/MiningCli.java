@@ -217,6 +217,23 @@ deleteDirectory(workDir);
 }
 printDeferredReport(state, config);
 printRunSummary(stats, state, config, llmClient, startTimeMs);
+
+// Persist run metadata
+long durationMs = System.currentTimeMillis() - startTimeMs;
+int totalDeferred = 0;
+int totalPermanentlySkipped = 0;
+for (RepoEntry repo : config.getRepositories()) {
+RepoState rs = state.getRepoState(repo.getUrl());
+totalDeferred += rs.getDeferredCommits().size();
+totalPermanentlySkipped += rs.getPermanentlySkipped().size();
+}
+String startedAt = Instant.ofEpochMilli(startTimeMs).toString();
+String completedAt = Instant.now().toString();
+stats.recordRunMetadata(startedAt, completedAt, durationMs / 1000,
+llmClient.getClass().getSimpleName(), llmClient.getModel(),
+batchSize, commitsPerRequest,
+llmClient.getDailyRequestCount(), totalDeferred, totalPermanentlySkipped);
+stats.computeTimeWindow(aggregator.getAllEvaluations());
 }
 
 // Generate output
@@ -440,9 +457,13 @@ state.save(statePath);
 private void handleEvaluation(CommitEvaluation evaluation, RevCommit commit, RepoEntry repo,
 DslValidator validator, CategoryManager categoryManager,
 StatisticsCollector stats, ReportAggregator aggregator) {
+String validationResult = null;
 if (evaluation.dslRule() != null && !evaluation.dslRule().isBlank()) {
 var validation = validator.validate(evaluation.dslRule());
-if (!validation.valid()) {
+if (validation.valid()) {
+validationResult = "VALID"; //$NON-NLS-1$
+} else {
+validationResult = validation.message();
 System.out.println("  Invalid DSL rule for " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 + ": " + validation.message()); //$NON-NLS-1$
 if (Boolean.parseBoolean(System.getenv("GEMINI_DEBUG"))) { //$NON-NLS-1$
@@ -452,11 +473,22 @@ System.out.println("  --- DSL rule end ---"); //$NON-NLS-1$
 }
 }
 }
+// Create evaluation with validation result
+CommitEvaluation enriched = new CommitEvaluation(
+evaluation.commitHash(), evaluation.commitMessage(), evaluation.repoUrl(),
+evaluation.evaluatedAt(), evaluation.relevant(), evaluation.irrelevantReason(),
+evaluation.isDuplicate(), evaluation.duplicateOf(),
+evaluation.reusability(), evaluation.codeImprovement(), evaluation.implementationEffort(),
+evaluation.trafficLight(), evaluation.category(), evaluation.isNewCategory(),
+evaluation.categoryReason(), evaluation.canImplementInCurrentDsl(),
+evaluation.dslRule(), evaluation.targetHintFile(),
+evaluation.languageChangeNeeded(), evaluation.dslRuleAfterChange(),
+evaluation.summary(), validationResult);
 if (evaluation.isNewCategory() && evaluation.category() != null) {
 categoryManager.addCategory(evaluation.category());
 }
-stats.record(evaluation);
-aggregator.add(evaluation);
+stats.record(enriched);
+aggregator.add(enriched);
 }
 
 static String repoDirectoryName(String url) {

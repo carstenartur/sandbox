@@ -14,8 +14,10 @@
 package org.sandbox.mining.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.sandbox.mining.core.llm.CommitEvaluation;
@@ -37,7 +39,7 @@ class StatisticsCollectorTest {
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "summary");
+				null, null, "summary", null);
 
 		stats.record(eval);
 
@@ -60,7 +62,7 @@ class StatisticsCollectorTest {
 				0, 0, 0, TrafficLight.NOT_APPLICABLE,
 				null, false, null,
 				false, null, null,
-				null, null, "summary");
+				null, null, "summary", null);
 
 		stats.record(eval);
 
@@ -97,6 +99,44 @@ class StatisticsCollectorTest {
 				0, 0, 0, light,
 				null, false, null,
 				false, null, null,
-				null, null, "summary");
+				null, null, "summary", null);
+	}
+
+	@Test
+	void testRunMetadataSerialization() {
+		StatisticsCollector stats = new StatisticsCollector();
+
+		stats.recordRunMetadata("2026-01-01T00:00:00Z", "2026-01-01T00:05:00Z",
+				300, "GeminiClient", "gemini-2.0-flash", 500, 4, 10, 2, 1);
+
+		assertNotNull(stats.getRunMetadata());
+		assertEquals("2026-01-01T00:00:00Z", stats.getRunMetadata().getStartedAt());
+		assertEquals("2026-01-01T00:05:00Z", stats.getRunMetadata().getCompletedAt());
+		assertEquals(300, stats.getRunMetadata().getDurationSeconds());
+		assertEquals("gemini-2.0-flash", stats.getRunMetadata().getLlmModel());
+		assertEquals(10, stats.getRunMetadata().getApiCallsMade());
+		assertEquals(2, stats.getRunMetadata().getDeferredCommits());
+		assertEquals(1, stats.getRunMetadata().getPermanentlySkipped());
+	}
+
+	@Test
+	void testComputeTimeWindow() {
+		StatisticsCollector stats = new StatisticsCollector();
+
+		Instant early = Instant.parse("2026-01-01T10:00:00Z");
+		Instant late = Instant.parse("2026-01-01T12:00:00Z");
+		List<CommitEvaluation> evals = List.of(
+				new CommitEvaluation("h1", "m", "u", late, true, null, false, null,
+						0, 0, 0, TrafficLight.GREEN, null, false, null,
+						false, null, null, null, null, "s", null),
+				new CommitEvaluation("h2", "m", "u", early, true, null, false, null,
+						0, 0, 0, TrafficLight.GREEN, null, false, null,
+						false, null, null, null, null, "s", null));
+
+		stats.computeTimeWindow(evals);
+
+		assertNotNull(stats.getTimeWindow());
+		assertEquals(early.toString(), stats.getTimeWindow().getEarliestEvaluation());
+		assertEquals(late.toString(), stats.getTimeWindow().getLatestEvaluation());
 	}
 }

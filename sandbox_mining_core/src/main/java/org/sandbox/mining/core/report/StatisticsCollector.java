@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.mining.core.report;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -41,6 +42,8 @@ public class StatisticsCollector {
 	private final Map<String, Integer> irrelevantReasons = new LinkedHashMap<>();
 	private final Map<String, RepoStatistics> perRepository = new LinkedHashMap<>();
 	private final List<DailyProgress> dailyProgress = new ArrayList<>();
+	private RunMetadata runMetadata;
+	private TimeWindow timeWindow;
 
 	/**
 	 * Per-repository statistics.
@@ -177,5 +180,106 @@ public class StatisticsCollector {
 
 	public List<DailyProgress> getDailyProgress() {
 		return List.copyOf(dailyProgress);
+	}
+
+	public RunMetadata getRunMetadata() {
+		return runMetadata;
+	}
+
+	public void setRunMetadata(RunMetadata runMetadata) {
+		this.runMetadata = runMetadata;
+	}
+
+	/**
+	 * Convenience method to record run metadata from raw values.
+	 */
+	public void recordRunMetadata(String startedAt, String completedAt, long durationSeconds,
+			String llmProvider, String llmModel, int batchSize, int commitsPerRequest,
+			int apiCallsMade, int deferredCommits, int permanentlySkipped) {
+		RunMetadata meta = new RunMetadata();
+		meta.startedAt = startedAt;
+		meta.completedAt = completedAt;
+		meta.durationSeconds = durationSeconds;
+		meta.llmProvider = llmProvider;
+		meta.llmModel = llmModel;
+		meta.batchSize = batchSize;
+		meta.commitsPerRequest = commitsPerRequest;
+		meta.apiCallsMade = apiCallsMade;
+		meta.deferredCommits = deferredCommits;
+		meta.permanentlySkipped = permanentlySkipped;
+		this.runMetadata = meta;
+	}
+
+	public TimeWindow getTimeWindow() {
+		return timeWindow;
+	}
+
+	/**
+	 * Computes the time window (earliest and latest evaluatedAt) from a list of evaluations.
+	 */
+	public void computeTimeWindow(List<CommitEvaluation> evaluations) {
+		if (evaluations == null || evaluations.isEmpty()) {
+			return;
+		}
+		Instant earliest = null;
+		Instant latest = null;
+		for (CommitEvaluation eval : evaluations) {
+			Instant at = eval.evaluatedAt();
+			if (at == null) {
+				continue;
+			}
+			if (earliest == null || at.isBefore(earliest)) {
+				earliest = at;
+			}
+			if (latest == null || at.isAfter(latest)) {
+				latest = at;
+			}
+		}
+		if (earliest != null) {
+			this.timeWindow = new TimeWindow(earliest.toString(), latest.toString());
+		}
+	}
+
+	/**
+	 * Run-level metadata captured at the end of a mining run.
+	 */
+	public static class RunMetadata {
+		private String startedAt;
+		private String completedAt;
+		private long durationSeconds;
+		private String llmProvider;
+		private String llmModel;
+		private int batchSize;
+		private int commitsPerRequest;
+		private int apiCallsMade;
+		private int deferredCommits;
+		private int permanentlySkipped;
+
+		public String getStartedAt() { return startedAt; }
+		public String getCompletedAt() { return completedAt; }
+		public long getDurationSeconds() { return durationSeconds; }
+		public String getLlmProvider() { return llmProvider; }
+		public String getLlmModel() { return llmModel; }
+		public int getBatchSize() { return batchSize; }
+		public int getCommitsPerRequest() { return commitsPerRequest; }
+		public int getApiCallsMade() { return apiCallsMade; }
+		public int getDeferredCommits() { return deferredCommits; }
+		public int getPermanentlySkipped() { return permanentlySkipped; }
+	}
+
+	/**
+	 * Time window of evaluated commits.
+	 */
+	public static class TimeWindow {
+		private final String earliestEvaluation;
+		private final String latestEvaluation;
+
+		public TimeWindow(String earliestEvaluation, String latestEvaluation) {
+			this.earliestEvaluation = earliestEvaluation;
+			this.latestEvaluation = latestEvaluation;
+		}
+
+		public String getEarliestEvaluation() { return earliestEvaluation; }
+		public String getLatestEvaluation() { return latestEvaluation; }
 	}
 }
