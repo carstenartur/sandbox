@@ -55,8 +55,8 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 public enum UseExplicitEncodingFixCore {
 
 	CHARSET(new CharsetForNameExplicitEncoding(), true),
-	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding(), false),
-	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding(), false),
+	CHANNELSNEWREADER(new ChannelsNewReaderExplicitEncoding(), true),
+	CHANNELSNEWWRITER(new ChannelsNewWriterExplicitEncoding(), true),
 	STRING_GETBYTES(new StringGetBytesExplicitEncoding(), true),
 	STRING(new StringExplicitEncoding(), true),
 	INPUTSTREAMREADER(new InputStreamReaderExplicitEncoding(), true),
@@ -70,7 +70,7 @@ public enum UseExplicitEncodingFixCore {
 	URLDECODER(new URLDecoderDecodeExplicitEncoding(), true),
 	URLENCODER(new URLEncoderEncodeExplicitEncoding(), true),
 	SCANNER(new ScannerExplicitEncoding(), true),
-	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding(), false),
+	PROPERTIES_STORETOXML(new PropertiesStoreToXMLExplicitEncoding(), true),
 	FILES_NEWBUFFEREDREADER(new FilesNewBufferedReaderExplicitEncoding(), false),
 	FILES_NEWBUFFEREDWRITER(new FilesNewBufferedWriterExplicitEncoding(), false),
 	FILES_READALLLINES(new FilesReadAllLinesExplicitEncoding(), false),
@@ -93,10 +93,16 @@ public enum UseExplicitEncodingFixCore {
 	 * <p>When {@code true}, the pattern has corresponding DSL rules in
 	 * {@code encoding.sandbox-hint} that cover string-based charset argument
 	 * replacement and zero-argument/missing-encoding patterns.
-	 * Tier 2/3 patterns (structural rewrites like FileReader→InputStreamReader,
-	 * FileWriter→OutputStreamWriter, PrintWriter→BufferedWriter, etc.) remain
+	 * Tier 3 patterns (structural rewrites like FileReader→InputStreamReader,
+	 * FileWriter→OutputStreamWriter, PrintWriter→BufferedWriter) remain
 	 * imperative-only ({@code false}) because they require complex AST
 	 * restructuring that the DSL cannot express.</p>
+	 *
+	 * <p>Some patterns are {@code false} despite having DSL rules because the
+	 * DSL only handles a subset (e.g., zero-arg expansion) while the imperative
+	 * helper also handles FQN-shortening of existing Charset arguments.
+	 * For these, the imperative helper runs as a fallback, and the
+	 * {@code nodesprocessed} set prevents double-processing.</p>
 	 *
 	 * @return {@code true} if this fix is fully covered by DSL rules
 	 */
