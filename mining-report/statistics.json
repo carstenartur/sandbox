@@ -1,26 +1,26 @@
 {
-  "totalProcessed": 1,
-  "relevant": 1,
+  "totalProcessed": 2,
+  "relevant": 2,
   "irrelevant": 0,
   "duplicates": 0,
-  "green": 0,
+  "green": 1,
   "yellow": 0,
   "red": 1,
   "irrelevantReasons": {},
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "totalProcessed": 1,
-      "relevant": 1,
-      "green": 0,
+      "totalProcessed": 2,
+      "relevant": 2,
+      "green": 1,
       "yellow": 0,
       "red": 1
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-02-21",
-      "processed": 1,
-      "relevant": 1
+      "date": "2026-02-22",
+      "processed": 2,
+      "relevant": 2
     }
   ]
 }
