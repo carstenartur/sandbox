@@ -32,6 +32,10 @@ public static LlmClient create(LlmProvider provider) {
 return switch (provider) {
 case GEMINI -> new GeminiClient();
 case OPENAI -> new OpenAiClient();
+case DEEPSEEK -> new DeepSeekClient();
+case QWEN -> new QwenClient();
+case LLAMA -> new LlamaClient();
+case MISTRAL -> new MistralClient();
 };
 }
 
@@ -74,6 +78,22 @@ return create(LlmProvider.OPENAI);
 String geminiKey = System.getenv("GEMINI_API_KEY"); //$NON-NLS-1$
 if (geminiKey != null && !geminiKey.isBlank()) {
 return create(LlmProvider.GEMINI);
+}
+String deepSeekKey = System.getenv("DEEPSEEK_API_KEY"); //$NON-NLS-1$
+if (deepSeekKey != null && !deepSeekKey.isBlank()) {
+return create(LlmProvider.DEEPSEEK);
+}
+String dashScopeKey = System.getenv("DASHSCOPE_API_KEY"); //$NON-NLS-1$
+if (dashScopeKey != null && !dashScopeKey.isBlank()) {
+return create(LlmProvider.QWEN);
+}
+String llamaKey = System.getenv("LLAMA_API_KEY"); //$NON-NLS-1$
+if (llamaKey != null && !llamaKey.isBlank()) {
+return create(LlmProvider.LLAMA);
+}
+String mistralKey = System.getenv("MISTRAL_API_KEY"); //$NON-NLS-1$
+if (mistralKey != null && !mistralKey.isBlank()) {
+return create(LlmProvider.MISTRAL);
 }
 
 // 4. Default: GEMINI

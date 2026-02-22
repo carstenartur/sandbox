@@ -18,7 +18,11 @@ package org.sandbox.mining.core.llm;
  */
 public enum LlmProvider {
 GEMINI,
-OPENAI;
+OPENAI,
+DEEPSEEK,
+QWEN,
+LLAMA,
+MISTRAL;
 
 /**
  * Case-insensitive lookup of provider by name.

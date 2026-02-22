@@ -480,7 +480,7 @@ System.out.println("  --batch-size <n>             Number of commits per batch (
 System.out.println("  --commits-per-request <n>    Commits grouped into one API call (default: 4)"); //$NON-NLS-1$
 System.out.println("  --output <path>              Output directory (default: output)"); //$NON-NLS-1$
 System.out.println("  --max-failure-duration <s>   Seconds without a successful API call before aborting (default: 300)"); //$NON-NLS-1$
-System.out.println("  --llm-provider <name>        LLM provider to use: gemini or openai (default: auto-detect)"); //$NON-NLS-1$
+System.out.println("  --llm-provider <name>        LLM provider: gemini, openai, deepseek, qwen, llama, or mistral (default: auto-detect)"); //$NON-NLS-1$
 System.out.println("  --retry-deferred             Retry previously deferred commits"); //$NON-NLS-1$
 System.out.println("  --reset-learned-limits       Reset learned diff size limits"); //$NON-NLS-1$
 }
