@@ -106,6 +106,9 @@
             </a>
             | <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
             | <a href="https://carstenartur.github.io/sandbox/" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
+            | <a href="evaluations.json" style="color: #0366d6; text-decoration: none;">📄 evaluations.json</a>
+            | <a href="statistics.json" style="color: #0366d6; text-decoration: none;">📊 statistics.json</a>
+            | <a href="https://github.com/carstenartur/sandbox/tree/master/sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/" style="color: #0366d6; text-decoration: none;">📁 .sandbox-hint Sources</a>
         </p>
     </div>
 
@@ -545,10 +548,23 @@
                 row.appendChild(tdCat);
 
                 var tdFile = document.createElement('td');
-                var code = document.createElement('code');
-                code.textContent = evaluation.targetHintFile || '-';
-                code.style.fontSize = '0.85em';
-                tdFile.appendChild(code);
+                var targetFile = evaluation.targetHintFile || '-';
+                if (targetFile !== '-') {
+                    var link = document.createElement('a');
+                    link.href = 'https://github.com/carstenartur/sandbox/blob/master/' + targetFile;
+                    link.style.color = '#0366d6';
+                    link.style.textDecoration = 'none';
+                    var code = document.createElement('code');
+                    code.textContent = targetFile;
+                    code.style.fontSize = '0.85em';
+                    link.appendChild(code);
+                    tdFile.appendChild(link);
+                } else {
+                    var code = document.createElement('code');
+                    code.textContent = '-';
+                    code.style.fontSize = '0.85em';
+                    tdFile.appendChild(code);
+                }
                 row.appendChild(tdFile);
 
                 var tdSummary = document.createElement('td');

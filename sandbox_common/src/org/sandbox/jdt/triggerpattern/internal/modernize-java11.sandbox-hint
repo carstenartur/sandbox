@@ -23,7 +23,7 @@ $str.substring(0)
 ;;
 
 // $str.equals("") → $str.isEmpty()
-$str.equals("") :: sourceVersionGE(6)
+$str.equals("")
 => $str.isEmpty()
 ;;
 
@@ -33,7 +33,7 @@ $str.equals("") :: sourceVersionGE(6)
 ;;
 
 // $str.length() == 0 → $str.isEmpty()
-$str.length() == 0 :: sourceVersionGE(6)
+$str.length() == 0
 => $str.isEmpty()
 ;;
 
