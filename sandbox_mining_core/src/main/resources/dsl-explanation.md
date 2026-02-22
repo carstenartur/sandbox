@@ -328,6 +328,51 @@ mark it as `RED` / not implementable:
    expression (e.g., `$x` → `List.of($x)`) has limited support. Simple wrapping works, but
    combining it with arity changes may not.
 
+## Bidirectional Transformations
+
+Some code transformations are valid in **both directions**. For example:
+- `obj.toString()` → `String.valueOf(obj)` is safer when `obj` may be null
+- `String.valueOf(obj)` → `obj.toString()` is more direct when `obj` is guaranteed non-null
+
+Use nullability guards (`isNullable`, `isNonNull`) to decide the safe direction:
+
+```
+// Safe: String.valueOf handles null
+$obj.toString() :: isNullable($obj)
+=> java.lang.String.valueOf($obj)
+;;
+
+// Direct: when non-null is guaranteed
+java.lang.String.valueOf($obj) :: isNonNull($obj)
+=> $obj.toString()
+;;
+```
+
+When proposing a transformation, consider whether the reverse direction is also useful.
+If both directions are valid, propose both as separate rules with appropriate guards.
+
+## Source Version Guidance
+
+When setting `sourceVersionGE()` guards, use this table to determine the correct minimum Java version for APIs:
+
+| API / Feature | Minimum Java Version | Guard |
+|---|---|---|
+| `java.nio.charset.StandardCharsets` | 7 | `sourceVersionGE(7)` |
+| `java.util.Objects.requireNonNull()` | 7 | `sourceVersionGE(7)` |
+| `java.util.Optional` | 8 | `sourceVersionGE(8)` |
+| `java.util.stream.Stream` | 8 | `sourceVersionGE(8)` |
+| `java.util.List.of()`, `Set.of()`, `Map.of()` | 9 | `sourceVersionGE(9)` |
+| `InputStream.transferTo()` | 9 | `sourceVersionGE(9)` |
+| `java.lang.String.isBlank()`, `.strip()` | 11 | `sourceVersionGE(11)` |
+| `java.nio.file.Path.of()` | 11 | `sourceVersionGE(11)` |
+| `java.lang.String.formatted()` | 15 | `sourceVersionGE(15)` |
+| `java.util.SequencedCollection` | 21 | `sourceVersionGE(21)` |
+| Pattern matching `instanceof` | 16 | `sourceVersionGE(16)` |
+| Record classes | 16 | `sourceVersionGE(16)` |
+| Sealed classes | 17 | `sourceVersionGE(17)` |
+
+**Do NOT default to `sourceVersionGE(11)` for everything.** Check the actual API introduction version.
+
 ## Invalid Constructs — Do NOT Generate
 
 The following constructs are **NOT valid** in the TriggerPattern DSL. If you see these
