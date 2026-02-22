@@ -8,38 +8,38 @@
 <!tags: performance, optimization>
 
 // new Boolean(true) → Boolean.TRUE
-new Boolean(true)
-=> Boolean.TRUE
+new java.lang.Boolean(true)
+=> java.lang.Boolean.TRUE
 ;;
 
 // new Boolean(false) → Boolean.FALSE
-new Boolean(false)
-=> Boolean.FALSE
+new java.lang.Boolean(false)
+=> java.lang.Boolean.FALSE
 ;;
 
 // new Boolean($str) → Boolean.valueOf($str)
-new Boolean($str)
-=> Boolean.valueOf($str)
+new java.lang.Boolean($str)
+=> java.lang.Boolean.valueOf($str)
 ;;
 
 // new Integer($val) → Integer.valueOf($val)
-new Integer($val)
-=> Integer.valueOf($val)
+new java.lang.Integer($val)
+=> java.lang.Integer.valueOf($val)
 ;;
 
 // new Long($val) → Long.valueOf($val)
-new Long($val)
-=> Long.valueOf($val)
+new java.lang.Long($val)
+=> java.lang.Long.valueOf($val)
 ;;
 
 // new Double($val) → Double.valueOf($val)
-new Double($val)
-=> Double.valueOf($val)
+new java.lang.Double($val)
+=> java.lang.Double.valueOf($val)
 ;;
 
 // new Float($val) → Float.valueOf($val)
-new Float($val)
-=> Float.valueOf($val)
+new java.lang.Float($val)
+=> java.lang.Float.valueOf($val)
 ;;
 
 // $sb.append("" + $x) → $sb.append($x)
@@ -49,5 +49,5 @@ $sb.append("" + $x)
 
 // new String($str) where $str is a String literal → $str
 "Unnecessary String constructor":
-new String($str)
+new java.lang.String($str)
 ;;

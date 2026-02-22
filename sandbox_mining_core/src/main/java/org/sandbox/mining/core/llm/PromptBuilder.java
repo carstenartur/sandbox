@@ -208,7 +208,7 @@ public class PromptBuilder {
 		sb.append("Traffic light meanings:\n"); //$NON-NLS-1$
 		sb.append("- GREEN: Directly implementable as a DSL rule\n"); //$NON-NLS-1$
 		sb.append("- YELLOW: Implementable with minor DSL extensions\n"); //$NON-NLS-1$
-		sb.append("- RED: Not implementable in current or foreseeable DSL\n"); //$NON-NLS-1$
+		sb.append("- RED: Requires DSL extensions not yet available (may be supported in future DSL versions)\n"); //$NON-NLS-1$
 		sb.append("- NOT_APPLICABLE: Commit is not relevant for DSL mining\n"); //$NON-NLS-1$
 	}
 

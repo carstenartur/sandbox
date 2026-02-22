@@ -296,8 +296,8 @@ Multi-statement transformations (adding `if` blocks, `return` statements) are NO
 
 ### Unsupported Features / Limitations
 
-The following are **NOT supported** by the DSL. If a transformation requires any of these,
-mark it as `RED` / not implementable:
+The following are not yet supported by the current DSL. If a transformation requires any of these,
+mark it as `RED` / not yet implementable — these limitations may be addressed in future DSL versions:
 
 1. **Multi-line statement blocks in replacements**: Replacements must be single expressions or single statements.
    Do NOT use `if`/`else` blocks, `return` statements, or `{}` blocks as replacements.
@@ -323,6 +323,7 @@ mark it as `RED` / not implementable:
 3. **Inserting new statements or control flow**: The DSL performs **pattern matching and replacement**,
    not arbitrary code insertion. Adding guard clauses, new method calls after a statement, or
    wrapping code in try/catch blocks is not supported.
+   **Note:** Detection of structural context via guards (e.g., `isInTryWithResourceBlock()`) *is* supported — only structural rewrites that insert new statements are not yet possible.
 
 4. **Complex expression composition in replacements**: Wrapping a matched variable in a new
    expression (e.g., `$x` → `List.of($x)`) has limited support. Simple wrapping works, but
@@ -402,7 +403,7 @@ in generated output, they are hallucinations and must be rejected:
 | `isInstanceOf($var, "Type")` | Not a real guard — wrong name | `instanceof($var, "Type")` |
 | `@Override` in replacements | Annotations on method declarations are not supported as replacements | Only single-expression replacements are supported |
 | Multi-statement replacements | Replacements must be single expressions. No `if`/`else`, `return`, or `{}` blocks. | Use a single expression as the replacement |
-| `sourceVersionGE(7)` or lower | Java 7 and below are not supported; 8 is the baseline | Omit the guard entirely (applies unconditionally) |
+| `sourceVersionGE(7)` or lower (incl. `sourceVersionGE(6)`) | Java 7 and below are not supported; 8 is the baseline | Omit the guard entirely (applies unconditionally) |
 | `sourceVersionGE(8)` | Java 8 is the baseline — guard is always true and therefore useless | Omit the guard entirely (applies unconditionally) |
 | Simple names in patterns | `Charset.forName()` will not match | Use FQN: `java.nio.charset.Charset.forName()` |
 | Bitwise operators (`\|`, `&`, `^`, `>>`, `<<`) | Not supported in patterns or replacements | Mark as RED / not implementable |
