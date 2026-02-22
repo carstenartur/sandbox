@@ -1,4 +1,51 @@
 {
-  "repositories": {},
-  "globalTotalProcessed": 0
+  "repositories": {
+    "https://github.com/eclipse-platform/eclipse.platform.ui": {
+      "lastProcessedCommit": "8029b4757fdc6c9b3df7402fa5a45e7d096f0bc3",
+      "lastProcessedDate": "2026-02-22T14:16:30.002560718Z",
+      "totalProcessed": 9481,
+      "status": "CATCHING_UP",
+      "deferredCommits": [
+        {
+          "hash": "2da050751c74e8e0019c040c53c73bc8918cb356",
+          "message": "don\u0027t show key binding in UI when command is not handled or not enabled",
+          "diffLines": 15,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T14:13:02.565198388Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "db41fb4a1a8edb434df83d273c22fa7bc572ed4d",
+          "message": "Replace TextMatcher in favor of extended StringMatcher",
+          "diffLines": 366,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-22T14:13:49.142232418Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "176f5030b1ed724274f88552b8bec14e43111832",
+          "message": "Extract shared code of FilteredTrees to abstract base class",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-22T14:14:38.381754209Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
+    },
+    "https://github.com/carstenartur/sandbox": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
+    }
+  },
+  "globalTotalProcessed": 9481
 }
