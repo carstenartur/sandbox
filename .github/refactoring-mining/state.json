@@ -1,4 +1,60 @@
 {
-  "repositories": {},
-  "globalTotalProcessed": 0
+  "repositories": {
+    "https://github.com/eclipse-platform/eclipse.platform.ui": {
+      "lastProcessedCommit": "6957472d7a198cf0ad3f4321ebd69873b9eba163",
+      "lastProcessedDate": "2026-02-22T16:35:05.430101844Z",
+      "totalProcessed": 9397,
+      "status": "CATCHING_UP",
+      "deferredCommits": [
+        {
+          "hash": "5c65cbc0026b4b5403a937081e3030d1d341fbfe",
+          "message": "Mark deprecated and unsupported constants for deletion in\nIWorkbenchPreferenceConstants\n\nAlso remove initialization of u",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T16:31:29.695448878Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d58c50e418597d74a9852369ed980df884c1d317",
+          "message": "Remove special flattening-behavior for Wizard content providers\n\nThis removes the feature from the \"New\" and \"Import/Exp",
+          "diffLines": 28,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T16:31:29.695881423Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d2f73679dd1a5c918b0e492f14799a4a0185b612",
+          "message": "Add eclipse.appName System Property for setting the Display\u0027s AppName\n\nThe eclipse.appName sytem property allows users t",
+          "diffLines": 17,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T16:35:05.430061008Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2da050751c74e8e0019c040c53c73bc8918cb356",
+          "message": "don\u0027t show key binding in UI when command is not handled or not enabled",
+          "diffLines": 15,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T16:35:05.430093498Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
+    },
+    "https://github.com/carstenartur/sandbox": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
+    }
+  },
+  "globalTotalProcessed": 9397
 }
