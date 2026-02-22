@@ -59,4 +59,32 @@ assertThrows(IllegalArgumentException.class, () -> LlmProvider.fromString(null))
 void testFromStringUnknownThrows() {
 assertThrows(IllegalArgumentException.class, () -> LlmProvider.fromString("anthropic"));
 }
+
+@Test
+void testFromStringDeepSeek() {
+assertEquals(LlmProvider.DEEPSEEK, LlmProvider.fromString("deepseek"));
+assertEquals(LlmProvider.DEEPSEEK, LlmProvider.fromString("DEEPSEEK"));
+assertEquals(LlmProvider.DEEPSEEK, LlmProvider.fromString("DeepSeek"));
+}
+
+@Test
+void testFromStringQwen() {
+assertEquals(LlmProvider.QWEN, LlmProvider.fromString("qwen"));
+assertEquals(LlmProvider.QWEN, LlmProvider.fromString("QWEN"));
+assertEquals(LlmProvider.QWEN, LlmProvider.fromString("Qwen"));
+}
+
+@Test
+void testFromStringLlama() {
+assertEquals(LlmProvider.LLAMA, LlmProvider.fromString("llama"));
+assertEquals(LlmProvider.LLAMA, LlmProvider.fromString("LLAMA"));
+assertEquals(LlmProvider.LLAMA, LlmProvider.fromString("Llama"));
+}
+
+@Test
+void testFromStringMistral() {
+assertEquals(LlmProvider.MISTRAL, LlmProvider.fromString("mistral"));
+assertEquals(LlmProvider.MISTRAL, LlmProvider.fromString("MISTRAL"));
+assertEquals(LlmProvider.MISTRAL, LlmProvider.fromString("Mistral"));
+}
 }

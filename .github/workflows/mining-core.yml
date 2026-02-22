@@ -9,7 +9,7 @@ on:
         description: 'Number of commits per run (default: 500)'
         default: '500'
       llm_provider:
-        description: 'LLM provider to use (gemini or openai, auto-detected if not set)'
+        description: 'LLM provider (gemini, openai, deepseek, qwen, llama, mistral; auto-detected if not set)'
         default: ''
 
 jobs:
@@ -42,6 +42,14 @@ jobs:
           GEMINI_DEBUG: 'true'
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_MODEL: ${{ secrets.DEEPSEEK_MODEL }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          QWEN_MODEL: ${{ secrets.QWEN_MODEL }}
+          LLAMA_API_KEY: ${{ secrets.LLAMA_API_KEY }}
+          LLAMA_MODEL: ${{ secrets.LLAMA_MODEL }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          MISTRAL_MODEL: ${{ secrets.MISTRAL_MODEL }}
         run: |
           java -jar sandbox_mining_core/target/sandbox-mining-core.jar \
             --config .github/refactoring-mining/repos.yml \

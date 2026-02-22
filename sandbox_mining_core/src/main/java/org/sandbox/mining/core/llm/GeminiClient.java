@@ -62,6 +62,9 @@ public class GeminiClient implements LlmClient {
 	private int dailyRequestCount;
 	private Instant lastSuccessfulCall;
 	private Duration maxFailureDuration;
+	private int rateLimitDelayMs = RATE_LIMIT_DELAY_MS;
+	private int consecutive429Batches;
+	private boolean lastResponseTruncated;
 
 	/**
 	 * Creates a client reading the API key from the GEMINI_API_KEY environment variable.
@@ -124,6 +127,7 @@ public class GeminiClient implements LlmClient {
 	 *
 	 * @return the model name
 	 */
+	@Override
 	public String getModel() {
 		return model;
 	}
@@ -183,6 +187,16 @@ public class GeminiClient implements LlmClient {
 
 	public Duration getMaxFailureDuration() {
 		return maxFailureDuration;
+	}
+
+	/**
+	 * Returns true if the last API response was truncated (finishReason=MAX_TOKENS).
+	 *
+	 * @return true if truncation was detected
+	 */
+	@Override
+	public boolean wasLastResponseTruncated() {
+		return lastResponseTruncated;
 	}
 
 	/**
@@ -263,6 +277,7 @@ public class GeminiClient implements LlmClient {
 	public List<CommitEvaluation> parseBatchResponse(String responseBody, List<String> commitHashes,
 			List<String> commitMessages, String repoUrl) {
 		List<CommitEvaluation> results = new ArrayList<>();
+		lastResponseTruncated = false;
 		try {
 			JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();
 			JsonArray candidates = root.getAsJsonArray("candidates");
@@ -270,6 +285,18 @@ public class GeminiClient implements LlmClient {
 				return results;
 			}
 			JsonObject firstCandidate = candidates.get(0).getAsJsonObject();
+
+			// Check finishReason before parsing content
+			String finishReason = getStringOrNull(firstCandidate, "finishReason"); //$NON-NLS-1$
+			if ("MAX_TOKENS".equals(finishReason)) { //$NON-NLS-1$
+				System.err.println("Warning: Gemini response truncated (finishReason=MAX_TOKENS)"); //$NON-NLS-1$
+				lastResponseTruncated = true;
+			}
+			if ("SAFETY".equals(finishReason)) { //$NON-NLS-1$
+				System.err.println("Warning: Gemini refused (finishReason=SAFETY), skipping batch"); //$NON-NLS-1$
+				return results;
+			}
+
 			JsonObject content = firstCandidate.getAsJsonObject("content");
 			if (content == null) {
 				return results;
@@ -280,7 +307,19 @@ public class GeminiClient implements LlmClient {
 			}
 			String text = parts.get(0).getAsJsonObject().get("text").getAsString();
 			String json = extractJson(text);
-			JsonArray evalArray = JsonParser.parseString(json).getAsJsonArray();
+			JsonArray evalArray;
+			try {
+				evalArray = JsonParser.parseString(json).getAsJsonArray();
+			} catch (Exception parseEx) {
+				// Try repair for truncated responses
+				String repaired = repairTruncatedJson(json);
+				try {
+					evalArray = JsonParser.parseString(repaired).getAsJsonArray();
+					System.err.println("Recovered partial batch response after JSON repair"); //$NON-NLS-1$
+				} catch (Exception e2) {
+					throw parseEx; // Rethrow original
+				}
+			}
 			int evalCount = evalArray.size();
 			int commitCount = Math.min(commitHashes.size(), commitMessages.size());
 			if (evalCount != commitCount) {
@@ -293,28 +332,7 @@ public class GeminiClient implements LlmClient {
 				String commitMessage = commitMessages.get(i);
 				try {
 					JsonObject eval = evalArray.get(i).getAsJsonObject();
-					results.add(new CommitEvaluation(
-							commitHash,
-							commitMessage,
-							repoUrl,
-							Instant.now(),
-							getBooleanOrDefault(eval, "relevant", false), //$NON-NLS-1$
-							getStringOrNull(eval, "irrelevantReason"), //$NON-NLS-1$
-							getBooleanOrDefault(eval, "isDuplicate", false), //$NON-NLS-1$
-							getStringOrNull(eval, "duplicateOf"), //$NON-NLS-1$
-							getIntOrDefault(eval, "reusability", 0), //$NON-NLS-1$
-							getIntOrDefault(eval, "codeImprovement", 0), //$NON-NLS-1$
-							getIntOrDefault(eval, "implementationEffort", 0), //$NON-NLS-1$
-							parseTrafficLight(getStringOrNull(eval, "trafficLight")), //$NON-NLS-1$
-							getStringOrNull(eval, "category"), //$NON-NLS-1$
-							getBooleanOrDefault(eval, "isNewCategory", false), //$NON-NLS-1$
-							getStringOrNull(eval, "categoryReason"), //$NON-NLS-1$
-							getBooleanOrDefault(eval, "canImplementInCurrentDsl", false), //$NON-NLS-1$
-							getStringOrNull(eval, "dslRule"), //$NON-NLS-1$
-							getStringOrNull(eval, "targetHintFile"), //$NON-NLS-1$
-							getStringOrNull(eval, "languageChangeNeeded"), //$NON-NLS-1$
-							getStringOrNull(eval, "dslRuleAfterChange"), //$NON-NLS-1$
-							getStringOrNull(eval, "summary"))); //$NON-NLS-1$
+					results.add(createEvaluation(eval, commitHash, commitMessage, repoUrl));
 				} catch (Exception e) {
 					System.err.println("Failed to parse batch evaluation at index " + i + ": " + e.getMessage());
 				}
@@ -354,6 +372,7 @@ public class GeminiClient implements LlmClient {
 
 	private String sendWithRetry(String requestBody) throws IOException {
 		int backoffMs = INITIAL_BACKOFF_MS;
+		boolean allAttempts429 = true;
 
 		for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
 			try {
@@ -369,17 +388,38 @@ public class GeminiClient implements LlmClient {
 
 				if (response.statusCode() == 200) {
 					lastSuccessfulCall = Instant.now();
+					consecutive429Batches = 0;
+					// Gradually reduce delay after success
+					if (rateLimitDelayMs > RATE_LIMIT_DELAY_MS) {
+						rateLimitDelayMs = Math.max(RATE_LIMIT_DELAY_MS, rateLimitDelayMs / 2);
+					}
 					return response.body();
 				}
 
 				if (response.statusCode() == 429) {
-					System.err.println("Rate limited (429), attempt " + (attempt + 1) + "/" + MAX_RETRIES
-							+ ", backing off " + backoffMs + "ms");
-					Thread.sleep(backoffMs);
+					String retryAfter = response.headers().firstValue("Retry-After").orElse(null); //$NON-NLS-1$
+					long waitMs = backoffMs;
+					boolean usedRetryAfter = false;
+					if (retryAfter != null) {
+						try {
+							long seconds = Long.parseLong(retryAfter.trim());
+							if (seconds >= 0) {
+								waitMs = seconds * 1000;
+								usedRetryAfter = true;
+							}
+						} catch (NumberFormatException nfe) {
+							System.err.println("Invalid Retry-After header value '" + retryAfter + "', using exponential backoff instead."); //$NON-NLS-1$ //$NON-NLS-2$
+						}
+					}
+					System.err.println("Rate limited (429), attempt " + (attempt + 1) + "/" + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$
+							+ ", waiting " + waitMs + "ms" //$NON-NLS-1$ //$NON-NLS-2$
+							+ (usedRetryAfter ? " (from Retry-After header)" : " (exponential backoff)")); //$NON-NLS-1$ //$NON-NLS-2$
+					Thread.sleep(waitMs);
 					backoffMs *= 2;
 					continue;
 				}
 
+				allAttempts429 = false;
 				System.err.println("Gemini API error: " + response.statusCode()
 						+ " - " + response.body());
 				return null;
@@ -388,6 +428,19 @@ public class GeminiClient implements LlmClient {
 				Thread.currentThread().interrupt();
 				throw new IOException("Interrupted during Gemini API call", e);
 			}
+		}
+
+		// Track consecutive 429 batches for faster abort
+		if (allAttempts429) {
+			consecutive429Batches++;
+			if (consecutive429Batches >= 2) {
+				System.err.println("Two consecutive batches entirely rate-limited (429). " //$NON-NLS-1$
+						+ "Marking API as unavailable."); //$NON-NLS-1$
+				// Force unavailable by backdating lastSuccessfulCall
+				lastSuccessfulCall = Instant.now().minus(maxFailureDuration.plusSeconds(1));
+			}
+			// Increase rate limit delay after 429 cascade
+			rateLimitDelayMs = Math.min(rateLimitDelayMs * 2, 120000);
 		}
 
 		System.err.println("Max retries exceeded for Gemini API call, entering post-failure cooldown of "
@@ -405,6 +458,7 @@ public class GeminiClient implements LlmClient {
 	 */
 	public CommitEvaluation parseResponse(String responseBody, String commitHash,
 			String commitMessage, String repoUrl) {
+		lastResponseTruncated = false;
 		try {
 			JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();
 			JsonArray candidates = root.getAsJsonArray("candidates");
@@ -413,6 +467,18 @@ public class GeminiClient implements LlmClient {
 			}
 
 			JsonObject firstCandidate = candidates.get(0).getAsJsonObject();
+
+			// Check finishReason before parsing content
+			String finishReason = getStringOrNull(firstCandidate, "finishReason"); //$NON-NLS-1$
+			if ("MAX_TOKENS".equals(finishReason)) { //$NON-NLS-1$
+				System.err.println("Warning: Gemini response truncated (finishReason=MAX_TOKENS)"); //$NON-NLS-1$
+				lastResponseTruncated = true;
+			}
+			if ("SAFETY".equals(finishReason)) { //$NON-NLS-1$
+				System.err.println("Warning: Gemini refused (finishReason=SAFETY), skipping commit"); //$NON-NLS-1$
+				return null;
+			}
+
 			JsonObject content = firstCandidate.getAsJsonObject("content");
 			if (content == null) {
 				return null;
@@ -429,28 +495,7 @@ public class GeminiClient implements LlmClient {
 			String json = extractJson(text);
 			JsonObject eval = JsonParser.parseString(json).getAsJsonObject();
 
-			return new CommitEvaluation(
-					commitHash,
-					commitMessage,
-					repoUrl,
-					Instant.now(),
-					getBooleanOrDefault(eval, "relevant", false),
-					getStringOrNull(eval, "irrelevantReason"),
-					getBooleanOrDefault(eval, "isDuplicate", false),
-					getStringOrNull(eval, "duplicateOf"),
-					getIntOrDefault(eval, "reusability", 0),
-					getIntOrDefault(eval, "codeImprovement", 0),
-					getIntOrDefault(eval, "implementationEffort", 0),
-					parseTrafficLight(getStringOrNull(eval, "trafficLight")),
-					getStringOrNull(eval, "category"),
-					getBooleanOrDefault(eval, "isNewCategory", false),
-					getStringOrNull(eval, "categoryReason"),
-					getBooleanOrDefault(eval, "canImplementInCurrentDsl", false),
-					getStringOrNull(eval, "dslRule"),
-					getStringOrNull(eval, "targetHintFile"),
-					getStringOrNull(eval, "languageChangeNeeded"),
-					getStringOrNull(eval, "dslRuleAfterChange"),
-					getStringOrNull(eval, "summary"));
+			return createEvaluation(eval, commitHash, commitMessage, repoUrl);
 		} catch (Exception e) {
 			System.err.println("Failed to parse Gemini response: " + e.getMessage());
 			if (responseBody != null && Boolean.parseBoolean(System.getenv("GEMINI_DEBUG"))) {
@@ -569,6 +614,43 @@ public class GeminiClient implements LlmClient {
 		}
 	}
 
+	/**
+	 * Creates a CommitEvaluation from a parsed JSON object with null-safe field handling.
+	 */
+	private static CommitEvaluation createEvaluation(JsonObject eval, String commitHash,
+			String commitMessage, String repoUrl) {
+		boolean relevant = getBooleanOrDefault(eval, "relevant", false); //$NON-NLS-1$
+		String category = getStringOrNull(eval, "category"); //$NON-NLS-1$
+		// Default category for relevant commits without one
+		if (relevant && (category == null || category.isBlank())) {
+			System.err.println("Warning: relevant commit " + commitHash //$NON-NLS-1$
+					+ " has no category, defaulting to 'Uncategorized'"); //$NON-NLS-1$
+			category = "Uncategorized"; //$NON-NLS-1$
+		}
+		return new CommitEvaluation(
+				commitHash,
+				commitMessage,
+				repoUrl,
+				Instant.now(),
+				relevant,
+				getStringOrNull(eval, "irrelevantReason"), //$NON-NLS-1$
+				getBooleanOrDefault(eval, "isDuplicate", false), //$NON-NLS-1$
+				getStringOrNull(eval, "duplicateOf"), //$NON-NLS-1$
+				getIntOrDefault(eval, "reusability", 0), //$NON-NLS-1$
+				getIntOrDefault(eval, "codeImprovement", 0), //$NON-NLS-1$
+				getIntOrDefault(eval, "implementationEffort", 0), //$NON-NLS-1$
+				parseTrafficLight(getStringOrNull(eval, "trafficLight")), //$NON-NLS-1$
+				category,
+				getBooleanOrDefault(eval, "isNewCategory", false), //$NON-NLS-1$
+				getStringOrNull(eval, "categoryReason"), //$NON-NLS-1$
+				getBooleanOrDefault(eval, "canImplementInCurrentDsl", false), //$NON-NLS-1$
+				getStringOrNull(eval, "dslRule"), //$NON-NLS-1$
+				getStringOrNull(eval, "targetHintFile"), //$NON-NLS-1$
+				getStringOrNull(eval, "languageChangeNeeded"), //$NON-NLS-1$
+				getStringOrNull(eval, "dslRuleAfterChange"), //$NON-NLS-1$
+				getStringOrNull(eval, "summary")); //$NON-NLS-1$
+	}
+
 	private static String getStringOrNull(JsonObject obj, String key) {
 		JsonElement element = obj.get(key);
 		return (element != null && !element.isJsonNull()) ? element.getAsString() : null;
@@ -587,9 +669,9 @@ public class GeminiClient implements LlmClient {
 	private void rateLimit() {
 		long now = System.currentTimeMillis();
 		long elapsed = now - lastRequestTime;
-		if (elapsed < RATE_LIMIT_DELAY_MS && lastRequestTime > 0) {
+		if (elapsed < rateLimitDelayMs && lastRequestTime > 0) {
 			try {
-				Thread.sleep(RATE_LIMIT_DELAY_MS - elapsed);
+				Thread.sleep(rateLimitDelayMs - elapsed);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}

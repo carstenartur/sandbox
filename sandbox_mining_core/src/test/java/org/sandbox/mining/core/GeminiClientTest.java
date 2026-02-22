@@ -346,4 +346,86 @@ class GeminiClientTest {
 		String json = GeminiClient.extractJson(text);
 		assertTrue(json.endsWith("}"));
 	}
+
+	@Test
+	void testFinishReasonMaxTokensSetsLastResponseTruncated() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = """
+				{
+				  "candidates": [{
+				    "finishReason": "MAX_TOKENS",
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		client.parseResponse(response, "abc123", "msg", "url");
+		assertTrue(client.wasLastResponseTruncated());
+	}
+
+	@Test
+	void testFinishReasonSafetyReturnsNull() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = """
+				{
+				  "candidates": [{
+				    "finishReason": "SAFETY",
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n{\\n  \\"relevant\\": true\\n}\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		CommitEvaluation eval = client.parseResponse(response, "abc123", "msg", "url");
+		assertNull(eval);
+	}
+
+	@Test
+	void testFinishReasonStopNotTruncated() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = """
+				{
+				  "candidates": [{
+				    "finishReason": "STOP",
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		client.parseResponse(response, "abc123", "msg", "url");
+		assertFalse(client.wasLastResponseTruncated());
+	}
+
+	@Test
+	void testNullSafeCategoryDefault() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = """
+				{
+				  "candidates": [{
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		CommitEvaluation eval = client.parseResponse(response, "abc123", "msg", "url");
+		assertNotNull(eval);
+		assertEquals("Uncategorized", eval.category());
+	}
+
+	@Test
+	void testWasLastResponseTruncatedInitiallyFalse() {
+		GeminiClient client = new GeminiClient("test-key");
+		assertFalse(client.wasLastResponseTruncated());
+	}
 }

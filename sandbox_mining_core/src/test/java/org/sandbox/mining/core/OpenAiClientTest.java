@@ -174,4 +174,52 @@ void testDefaultModelUsed() {
 OpenAiClient client = new OpenAiClient("test-key");
 assertEquals("gpt-4o-mini", client.getModel());
 }
+
+@Test
+void testFinishReasonLengthSetsLastResponseTruncated() {
+OpenAiClient client = new OpenAiClient("test-key");
+String response = """
+{
+  "choices": [{
+    "finish_reason": "length",
+    "message": {
+      "role": "assistant",
+      "content": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"summary\\": \\"Replace ArrayList\\",\\n  \\"reusability\\": 4,\\n  \\"codeImprovement\\": 3,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true\\n}\\n```"
+    }
+  }]
+}
+""";
+client.parseResponse(response, "abc123", "msg", "url");
+assertTrue(client.wasLastResponseTruncated());
+}
+
+@Test
+void testFinishReasonContentFilterReturnsNull() {
+OpenAiClient client = new OpenAiClient("test-key");
+String response = """
+{
+  "choices": [{
+    "finish_reason": "content_filter",
+    "message": {
+      "role": "assistant",
+      "content": "```json\\n{\\n  \\"relevant\\": true\\n}\\n```"
+    }
+  }]
+}
+""";
+CommitEvaluation eval = client.parseResponse(response, "abc123", "msg", "url");
+assertNull(eval);
+}
+
+@Test
+void testWasLastResponseTruncatedInitiallyFalse() {
+OpenAiClient client = new OpenAiClient("test-key");
+assertFalse(client.wasLastResponseTruncated());
+}
+
+@Test
+void testGetModelReturnsConfiguredModel() {
+OpenAiClient client = new OpenAiClient("test-key");
+assertEquals("gpt-4o-mini", client.getModel());
+}
 }

@@ -38,6 +38,20 @@ Duration getMaxFailureDuration();
 
 void setMaxFailureDuration(Duration duration);
 
+/**
+ * Returns true if the last API response was truncated (e.g. finishReason=MAX_TOKENS).
+ *
+ * @return true if truncation was detected
+ */
+boolean wasLastResponseTruncated();
+
+/**
+ * Returns the model name being used by this client.
+ *
+ * @return the model name
+ */
+String getModel();
+
 @Override
 void close();
 }
