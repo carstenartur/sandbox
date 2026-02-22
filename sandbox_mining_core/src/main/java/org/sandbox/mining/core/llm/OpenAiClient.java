@@ -54,6 +54,7 @@ private final Gson gson;
 private int dailyRequestCount;
 private Instant lastSuccessfulCall;
 private Duration maxFailureDuration;
+private boolean lastResponseTruncated;
 
 /**
  * Creates a client reading the API key from the OPENAI_API_KEY environment variable.
@@ -112,6 +113,7 @@ return (envModel != null && !envModel.isBlank()) ? envModel : DEFAULT_MODEL;
  *
  * @return the model name
  */
+@Override
 public String getModel() {
 return model;
 }
@@ -140,6 +142,11 @@ this.maxFailureDuration = maxFailureDuration;
 @Override
 public Duration getMaxFailureDuration() {
 return maxFailureDuration;
+}
+
+@Override
+public boolean wasLastResponseTruncated() {
+return lastResponseTruncated;
 }
 
 @Override
@@ -224,9 +231,14 @@ return response.body();
 }
 
 if (response.statusCode() == 429) {
+String retryAfter = response.headers().firstValue("Retry-After").orElse(null); //$NON-NLS-1$
+long waitMs = retryAfter != null
+? Long.parseLong(retryAfter) * 1000
+: backoffMs;
 System.err.println("OpenAI rate limited (429), attempt " + (attempt + 1) + "/" + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$
-+ ", backing off " + backoffMs + "ms"); //$NON-NLS-1$ //$NON-NLS-2$
-Thread.sleep(backoffMs);
++ ", waiting " + waitMs + "ms" //$NON-NLS-1$ //$NON-NLS-2$
++ (retryAfter != null ? " (from Retry-After header)" : " (exponential backoff)")); //$NON-NLS-1$ //$NON-NLS-2$
+Thread.sleep(waitMs);
 backoffMs *= 2;
 continue;
 }
@@ -256,6 +268,7 @@ return null;
  */
 public CommitEvaluation parseResponse(String responseBody, String commitHash,
 String commitMessage, String repoUrl) {
+lastResponseTruncated = false;
 try {
 JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();
 JsonArray choices = root.getAsJsonArray("choices"); //$NON-NLS-1$
@@ -263,6 +276,18 @@ if (choices == null || choices.isEmpty()) {
 return null;
 }
 JsonObject firstChoice = choices.get(0).getAsJsonObject();
+
+// Check finish_reason before parsing content
+String finishReason = getStringOrNull(firstChoice, "finish_reason"); //$NON-NLS-1$
+if ("length".equals(finishReason)) { //$NON-NLS-1$
+System.err.println("Warning: OpenAI response truncated (finish_reason=length)"); //$NON-NLS-1$
+lastResponseTruncated = true;
+}
+if ("content_filter".equals(finishReason)) { //$NON-NLS-1$
+System.err.println("Warning: OpenAI refused (finish_reason=content_filter), skipping commit"); //$NON-NLS-1$
+return null;
+}
+
 JsonObject message = firstChoice.getAsJsonObject("message"); //$NON-NLS-1$
 if (message == null) {
 return null;
@@ -271,28 +296,7 @@ String text = message.get("content").getAsString(); //$NON-NLS-1$
 String json = GeminiClient.extractJson(text);
 JsonObject eval = JsonParser.parseString(json).getAsJsonObject();
 
-return new CommitEvaluation(
-commitHash,
-commitMessage,
-repoUrl,
-Instant.now(),
-getBooleanOrDefault(eval, "relevant", false), //$NON-NLS-1$
-getStringOrNull(eval, "irrelevantReason"), //$NON-NLS-1$
-getBooleanOrDefault(eval, "isDuplicate", false), //$NON-NLS-1$
-getStringOrNull(eval, "duplicateOf"), //$NON-NLS-1$
-getIntOrDefault(eval, "reusability", 0), //$NON-NLS-1$
-getIntOrDefault(eval, "codeImprovement", 0), //$NON-NLS-1$
-getIntOrDefault(eval, "implementationEffort", 0), //$NON-NLS-1$
-parseTrafficLight(getStringOrNull(eval, "trafficLight")), //$NON-NLS-1$
-getStringOrNull(eval, "category"), //$NON-NLS-1$
-getBooleanOrDefault(eval, "isNewCategory", false), //$NON-NLS-1$
-getStringOrNull(eval, "categoryReason"), //$NON-NLS-1$
-getBooleanOrDefault(eval, "canImplementInCurrentDsl", false), //$NON-NLS-1$
-getStringOrNull(eval, "dslRule"), //$NON-NLS-1$
-getStringOrNull(eval, "targetHintFile"), //$NON-NLS-1$
-getStringOrNull(eval, "languageChangeNeeded"), //$NON-NLS-1$
-getStringOrNull(eval, "dslRuleAfterChange"), //$NON-NLS-1$
-getStringOrNull(eval, "summary")); //$NON-NLS-1$
+return createEvaluation(eval, commitHash, commitMessage, repoUrl);
 } catch (Exception e) {
 System.err.println("Failed to parse OpenAI response: " + e.getMessage()); //$NON-NLS-1$
 return null;
@@ -311,6 +315,7 @@ return null;
 public List<CommitEvaluation> parseBatchResponse(String responseBody, List<String> commitHashes,
 List<String> commitMessages, String repoUrl) {
 List<CommitEvaluation> results = new ArrayList<>();
+lastResponseTruncated = false;
 try {
 JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();
 JsonArray choices = root.getAsJsonArray("choices"); //$NON-NLS-1$
@@ -318,13 +323,36 @@ if (choices == null || choices.isEmpty()) {
 return results;
 }
 JsonObject firstChoice = choices.get(0).getAsJsonObject();
+
+// Check finish_reason before parsing content
+String finishReason = getStringOrNull(firstChoice, "finish_reason"); //$NON-NLS-1$
+if ("length".equals(finishReason)) { //$NON-NLS-1$
+System.err.println("Warning: OpenAI response truncated (finish_reason=length)"); //$NON-NLS-1$
+lastResponseTruncated = true;
+}
+if ("content_filter".equals(finishReason)) { //$NON-NLS-1$
+System.err.println("Warning: OpenAI refused (finish_reason=content_filter), skipping batch"); //$NON-NLS-1$
+return results;
+}
+
 JsonObject message = firstChoice.getAsJsonObject("message"); //$NON-NLS-1$
 if (message == null) {
 return results;
 }
 String text = message.get("content").getAsString(); //$NON-NLS-1$
 String json = GeminiClient.extractJson(text);
-JsonArray evalArray = JsonParser.parseString(json).getAsJsonArray();
+JsonArray evalArray;
+try {
+evalArray = JsonParser.parseString(json).getAsJsonArray();
+} catch (Exception parseEx) {
+String repaired = GeminiClient.repairTruncatedJson(json);
+try {
+evalArray = JsonParser.parseString(repaired).getAsJsonArray();
+System.err.println("Recovered partial batch response after JSON repair"); //$NON-NLS-1$
+} catch (Exception e2) {
+throw parseEx;
+}
+}
 int evalCount = evalArray.size();
 int commitCount = Math.min(commitHashes.size(), commitMessages.size());
 if (evalCount != commitCount) {
@@ -337,28 +365,7 @@ String commitHash = commitHashes.get(i);
 String commitMessage = commitMessages.get(i);
 try {
 JsonObject eval = evalArray.get(i).getAsJsonObject();
-results.add(new CommitEvaluation(
-commitHash,
-commitMessage,
-repoUrl,
-Instant.now(),
-getBooleanOrDefault(eval, "relevant", false), //$NON-NLS-1$
-getStringOrNull(eval, "irrelevantReason"), //$NON-NLS-1$
-getBooleanOrDefault(eval, "isDuplicate", false), //$NON-NLS-1$
-getStringOrNull(eval, "duplicateOf"), //$NON-NLS-1$
-getIntOrDefault(eval, "reusability", 0), //$NON-NLS-1$
-getIntOrDefault(eval, "codeImprovement", 0), //$NON-NLS-1$
-getIntOrDefault(eval, "implementationEffort", 0), //$NON-NLS-1$
-parseTrafficLight(getStringOrNull(eval, "trafficLight")), //$NON-NLS-1$
-getStringOrNull(eval, "category"), //$NON-NLS-1$
-getBooleanOrDefault(eval, "isNewCategory", false), //$NON-NLS-1$
-getStringOrNull(eval, "categoryReason"), //$NON-NLS-1$
-getBooleanOrDefault(eval, "canImplementInCurrentDsl", false), //$NON-NLS-1$
-getStringOrNull(eval, "dslRule"), //$NON-NLS-1$
-getStringOrNull(eval, "targetHintFile"), //$NON-NLS-1$
-getStringOrNull(eval, "languageChangeNeeded"), //$NON-NLS-1$
-getStringOrNull(eval, "dslRuleAfterChange"), //$NON-NLS-1$
-getStringOrNull(eval, "summary"))); //$NON-NLS-1$
+results.add(createEvaluation(eval, commitHash, commitMessage, repoUrl));
 } catch (Exception e) {
 System.err.println("Failed to parse OpenAI batch evaluation at index " + i + ": " + e.getMessage()); //$NON-NLS-1$
 }
@@ -378,6 +385,42 @@ return CommitEvaluation.TrafficLight.valueOf(value.toUpperCase());
 } catch (IllegalArgumentException e) {
 return CommitEvaluation.TrafficLight.NOT_APPLICABLE;
 }
+}
+
+/**
+ * Creates a CommitEvaluation from a parsed JSON object with null-safe field handling.
+ */
+private static CommitEvaluation createEvaluation(JsonObject eval, String commitHash,
+String commitMessage, String repoUrl) {
+boolean relevant = getBooleanOrDefault(eval, "relevant", false); //$NON-NLS-1$
+String category = getStringOrNull(eval, "category"); //$NON-NLS-1$
+if (relevant && (category == null || category.isBlank())) {
+System.err.println("Warning: relevant commit " + commitHash //$NON-NLS-1$
++ " has no category, defaulting to 'Uncategorized'"); //$NON-NLS-1$
+category = "Uncategorized"; //$NON-NLS-1$
+}
+return new CommitEvaluation(
+commitHash,
+commitMessage,
+repoUrl,
+Instant.now(),
+relevant,
+getStringOrNull(eval, "irrelevantReason"), //$NON-NLS-1$
+getBooleanOrDefault(eval, "isDuplicate", false), //$NON-NLS-1$
+getStringOrNull(eval, "duplicateOf"), //$NON-NLS-1$
+getIntOrDefault(eval, "reusability", 0), //$NON-NLS-1$
+getIntOrDefault(eval, "codeImprovement", 0), //$NON-NLS-1$
+getIntOrDefault(eval, "implementationEffort", 0), //$NON-NLS-1$
+parseTrafficLight(getStringOrNull(eval, "trafficLight")), //$NON-NLS-1$
+category,
+getBooleanOrDefault(eval, "isNewCategory", false), //$NON-NLS-1$
+getStringOrNull(eval, "categoryReason"), //$NON-NLS-1$
+getBooleanOrDefault(eval, "canImplementInCurrentDsl", false), //$NON-NLS-1$
+getStringOrNull(eval, "dslRule"), //$NON-NLS-1$
+getStringOrNull(eval, "targetHintFile"), //$NON-NLS-1$
+getStringOrNull(eval, "languageChangeNeeded"), //$NON-NLS-1$
+getStringOrNull(eval, "dslRuleAfterChange"), //$NON-NLS-1$
+getStringOrNull(eval, "summary")); //$NON-NLS-1$
 }
 
 private static String getStringOrNull(JsonObject obj, String key) {

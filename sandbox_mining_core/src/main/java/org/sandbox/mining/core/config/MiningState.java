@@ -17,8 +17,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.google.gson.Gson;
@@ -51,6 +54,10 @@ public class MiningState {
 		private String lastProcessedDate;
 		private int totalProcessed;
 		private String status = "CATCHING_UP";
+		private List<DeferredCommit> deferredCommits = new ArrayList<>();
+		private List<String> permanentlySkipped = new ArrayList<>();
+		private int learnedMaxDiffLines = -1;
+		private String lastModelUsed;
 
 		public String getLastProcessedCommit() {
 			return lastProcessedCommit;
@@ -83,6 +90,101 @@ public class MiningState {
 		public void setStatus(String status) {
 			this.status = status;
 		}
+
+		public List<DeferredCommit> getDeferredCommits() {
+			return deferredCommits;
+		}
+
+		public void setDeferredCommits(List<DeferredCommit> deferredCommits) {
+			this.deferredCommits = deferredCommits != null ? deferredCommits : new ArrayList<>();
+		}
+
+		public List<String> getPermanentlySkipped() {
+			return permanentlySkipped;
+		}
+
+		public void setPermanentlySkipped(List<String> permanentlySkipped) {
+			this.permanentlySkipped = permanentlySkipped != null ? permanentlySkipped : new ArrayList<>();
+		}
+
+		public int getLearnedMaxDiffLines() {
+			return learnedMaxDiffLines;
+		}
+
+		public void setLearnedMaxDiffLines(int learnedMaxDiffLines) {
+			this.learnedMaxDiffLines = learnedMaxDiffLines;
+		}
+
+		public String getLastModelUsed() {
+			return lastModelUsed;
+		}
+
+		public void setLastModelUsed(String lastModelUsed) {
+			this.lastModelUsed = lastModelUsed;
+		}
+
+		/**
+		 * Adds a deferred commit to this repository state.
+		 *
+		 * @param deferred the deferred commit to add
+		 */
+		public void addDeferredCommit(DeferredCommit deferred) {
+			deferredCommits.add(deferred);
+		}
+
+		/**
+		 * Moves a deferred commit to the permanently skipped list.
+		 *
+		 * @param hash the commit hash to move
+		 */
+		public void moveToPermanentlySkipped(String hash) {
+			deferredCommits.removeIf(d -> d.getHash().equals(hash));
+			if (!permanentlySkipped.contains(hash)) {
+				permanentlySkipped.add(hash);
+			}
+		}
+	}
+
+	/**
+	 * Represents a commit that was deferred for later retry.
+	 */
+	public static class DeferredCommit {
+		private String hash;
+		private String message;
+		private int diffLines;
+		private String reason;
+		private String deferredAt;
+		private int retryCount;
+		private int maxRetries = 3;
+
+		public DeferredCommit() {
+		}
+
+		public DeferredCommit(String hash, String message, int diffLines,
+				String reason, String deferredAt, int retryCount, int maxRetries) {
+			this.hash = hash;
+			this.message = message;
+			this.diffLines = diffLines;
+			this.reason = reason;
+			this.deferredAt = deferredAt;
+			this.retryCount = retryCount;
+			this.maxRetries = maxRetries;
+		}
+
+		public String getHash() { return hash; }
+		public void setHash(String hash) { this.hash = hash; }
+		public String getMessage() { return message; }
+		public void setMessage(String message) { this.message = message; }
+		public int getDiffLines() { return diffLines; }
+		public void setDiffLines(int diffLines) { this.diffLines = diffLines; }
+		public String getReason() { return reason; }
+		public void setReason(String reason) { this.reason = reason; }
+		public String getDeferredAt() { return deferredAt; }
+		public void setDeferredAt(String deferredAt) { this.deferredAt = deferredAt; }
+		public int getRetryCount() { return retryCount; }
+		public void setRetryCount(int retryCount) { this.retryCount = retryCount; }
+		public int getMaxRetries() { return maxRetries; }
+		public void setMaxRetries(int maxRetries) { this.maxRetries = maxRetries; }
 	}
 
 	/**
@@ -103,7 +205,10 @@ public class MiningState {
 	}
 
 	/**
-	 * Saves the current state to a JSON file.
+	 * Saves the current state to a JSON file atomically.
+	 *
+	 * <p>Writes to a temporary file first, then atomically renames to avoid
+	 * corruption if the process is interrupted.</p>
 	 *
 	 * @param path path to the state JSON file
 	 * @throws IOException if the file cannot be written
@@ -113,7 +218,22 @@ public class MiningState {
 		if (parent != null) {
 			Files.createDirectories(parent);
 		}
-		Files.writeString(path, GSON.toJson(this), StandardCharsets.UTF_8);
+		Path temp = path.resolveSibling(path.getFileName() + ".tmp"); //$NON-NLS-1$
+		Files.writeString(temp, GSON.toJson(this), StandardCharsets.UTF_8);
+		Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	/**
+	 * Creates a backup of the state file if it exists.
+	 *
+	 * @param path path to the state JSON file
+	 * @throws IOException if the file cannot be copied
+	 */
+	public static void backup(Path path) throws IOException {
+		if (Files.exists(path)) {
+			Path backupPath = path.resolveSibling(path.getFileName() + ".bak"); //$NON-NLS-1$
+			Files.copy(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
+		}
 	}
 
 	/**
@@ -139,6 +259,16 @@ public class MiningState {
 		repoState.setLastProcessedDate(Instant.now().toString());
 		repoState.setTotalProcessed(repoState.getTotalProcessed() + 1);
 		globalTotalProcessed++;
+	}
+
+	/**
+	 * Gets or creates the RepoState for a repository URL.
+	 *
+	 * @param repoUrl the repository URL
+	 * @return the repo state
+	 */
+	public RepoState getRepoState(String repoUrl) {
+		return repositories.computeIfAbsent(repoUrl, k -> new RepoState());
 	}
 
 	public Map<String, RepoState> getRepositories() {
