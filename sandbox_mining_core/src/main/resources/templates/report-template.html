@@ -66,6 +66,33 @@
         .modal h3 { margin-bottom: 15px; }
         .modal pre { background: #f1f3f5; padding: 15px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
         .modal .close-btn { float: right; background: none; border: none; font-size: 1.5em; cursor: pointer; }
+
+        /* Run Status Panel */
+        .run-status { background: var(--card-bg); border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 15px 30px; align-items: center; font-size: 0.9em; }
+        .run-status .info-item { display: flex; align-items: center; gap: 6px; }
+        .run-status .info-item .icon { font-size: 1.1em; }
+        .run-status .info-item .label { color: #666; }
+        .run-status .info-item .val { font-weight: 600; }
+
+        /* Daily Progress */
+        .daily-progress { margin-bottom: 30px; }
+        .daily-bar-chart { display: flex; gap: 4px; align-items: flex-end; height: 80px; padding: 10px 0; }
+        .daily-bar-group { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 30px; }
+        .daily-bar-group .bars { display: flex; gap: 2px; align-items: flex-end; width: 100%; justify-content: center; }
+        .daily-bar-group .bar { width: 12px; border-radius: 2px 2px 0 0; min-height: 2px; }
+        .daily-bar-group .bar.processed { background: #adb5bd; }
+        .daily-bar-group .bar.relevant { background: var(--green); }
+        .daily-bar-group .date-label { font-size: 0.7em; color: #888; margin-top: 4px; white-space: nowrap; }
+
+        /* Outcome Summary */
+        .outcome-summary { font-size: 0.85em; color: #666; margin-bottom: 10px; }
+
+        /* Commit Title Ellipsis */
+        .commit-title { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
+
+        /* DSL Validation Indicator */
+        .dsl-valid { color: var(--green); cursor: default; }
+        .dsl-invalid { color: var(--yellow); cursor: help; }
     </style>
 </head>
 <body>
@@ -81,6 +108,21 @@
             | <a href="https://carstenartur.github.io/sandbox/" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
         </p>
     </div>
+
+    <!-- Run Status Panel -->
+    <div class="run-status" id="run-status">
+        <div class="info-item"><span class="icon">🕐</span><span class="label">Last Run:</span><span class="val" id="rs-completed">–</span></div>
+        <div class="info-item"><span class="icon">⏱</span><span class="label">Duration:</span><span class="val" id="rs-duration">–</span></div>
+        <div class="info-item"><span class="icon">📅</span><span class="label">Analysis Window:</span><span class="val" id="rs-window">–</span></div>
+        <div class="info-item"><span class="icon">🤖</span><span class="label">Model:</span><span class="val" id="rs-model">–</span></div>
+        <div class="info-item"><span class="icon">📊</span><span class="label">API Calls:</span><span class="val" id="rs-api-calls">–</span></div>
+        <div class="info-item"><span class="icon">📦</span><span class="label">Batch Config:</span><span class="val" id="rs-batch">–</span></div>
+        <div class="info-item"><span class="icon">⏸</span><span class="label">Deferred:</span><span class="val" id="rs-deferred">–</span></div>
+        <div class="info-item"><span class="icon">🚫</span><span class="label">Skipped:</span><span class="val" id="rs-skipped">–</span></div>
+    </div>
+
+    <!-- Outcome Summary -->
+    <div class="outcome-summary" id="outcome-summary"></div>
 
     <!-- Statistics Grid -->
     <div class="stats">
@@ -115,6 +157,16 @@
             <span><span class="dot" style="background:var(--green)"></span> Green: <span id="legend-green">{{green}}</span></span>
             <span><span class="dot" style="background:var(--yellow)"></span> Yellow: <span id="legend-yellow">{{yellow}}</span></span>
             <span><span class="dot" style="background:var(--red)"></span> Red: <span id="legend-red">{{red}}</span></span>
+        </div>
+    </div>
+
+    <!-- Daily Progress -->
+    <div class="daily-progress">
+        <h2>📈 Daily Progress</h2>
+        <div class="daily-bar-chart" id="daily-chart"></div>
+        <div style="font-size:0.8em;color:#888;display:flex;gap:15px;">
+            <span><span style="display:inline-block;width:12px;height:12px;background:#adb5bd;border-radius:2px;vertical-align:middle;"></span> Processed</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:var(--green);border-radius:2px;vertical-align:middle;"></span> Relevant</span>
         </div>
     </div>
 
@@ -174,6 +226,8 @@
         <thead>
             <tr>
                 <th>Commit</th>
+                <th>Date/Time</th>
+                <th>Commit Title</th>
                 <th>Repository</th>
                 <th>Traffic Light</th>
                 <th>Category</th>
@@ -195,6 +249,7 @@
                 <th>Category</th>
                 <th>Target File</th>
                 <th>Summary</th>
+                <th>Valid?</th>
                 <th>DSL Rule</th>
             </tr>
         </thead>
@@ -286,6 +341,7 @@
             const lightFilter = document.getElementById('filter-light').value;
             const catFilter = document.getElementById('filter-category').value;
             const repoFilter = document.getElementById('filter-repo').value;
+            var outcomes = loadOutcomes();
 
             data.filter(function(e) {
                 if (lightFilter && e.trafficLight !== lightFilter) return false;
@@ -299,7 +355,31 @@
                 var code = document.createElement('code');
                 code.textContent = (evaluation.commitHash || '').substring(0, 8);
                 tdCommit.appendChild(code);
+                var outcomeForCommit = outcomes.filter(function(o) { return o.commitHash === evaluation.commitHash; });
+                if (outcomeForCommit.length > 0) {
+                    var badge = document.createElement('span');
+                    badge.style.cssText = 'margin-left:5px;font-size:0.8em;color:#666;';
+                    badge.textContent = outcomeForCommit.map(function(o) { return o.action; }).join(', ');
+                    tdCommit.appendChild(badge);
+                }
                 row.appendChild(tdCommit);
+
+                var tdDate = document.createElement('td');
+                tdDate.style.fontSize = '0.85em';
+                tdDate.style.whiteSpace = 'nowrap';
+                if (evaluation.evaluatedAt) {
+                    try { tdDate.textContent = new Date(evaluation.evaluatedAt).toLocaleString(); }
+                    catch(e) { tdDate.textContent = evaluation.evaluatedAt; }
+                } else { tdDate.textContent = '-'; }
+                row.appendChild(tdDate);
+
+                var tdTitle = document.createElement('td');
+                var titleSpan = document.createElement('span');
+                titleSpan.className = 'commit-title';
+                titleSpan.textContent = evaluation.commitMessage || '-';
+                titleSpan.title = evaluation.commitMessage || '';
+                tdTitle.appendChild(titleSpan);
+                row.appendChild(tdTitle);
 
                 var tdRepo = document.createElement('td');
                 tdRepo.textContent = evaluation.repoUrl || '';
@@ -325,14 +405,20 @@
                     var commitBtn = document.createElement('button');
                     commitBtn.className = 'action-btn commit';
                     commitBtn.textContent = '\u2705 Commit';
-                    commitBtn.addEventListener('click', function() { applyProposal(evaluation, 'direct-commit'); });
+                    commitBtn.addEventListener('click', function() {
+                        recordOutcome(evaluation.commitHash, 'Committed');
+                        applyProposal(evaluation, 'direct-commit');
+                    });
                     tdActions.appendChild(commitBtn);
                 }
                 if (evaluation.dslRule) {
                     var prBtn = document.createElement('button');
                     prBtn.className = 'action-btn pr';
                     prBtn.textContent = '\uD83D\uDD00 PR';
-                    prBtn.addEventListener('click', function() { applyProposal(evaluation, 'pull-request'); });
+                    prBtn.addEventListener('click', function() {
+                        recordOutcome(evaluation.commitHash, 'PR opened');
+                        applyProposal(evaluation, 'pull-request');
+                    });
                     tdActions.appendChild(prBtn);
 
                     var dslBtn = document.createElement('button');
@@ -340,12 +426,29 @@
                     dslBtn.textContent = '\uD83D\uDD27 DSL';
                     dslBtn.addEventListener('click', function() { showDsl(evaluation); });
                     tdActions.appendChild(dslBtn);
+
+                    if (evaluation.dslValidationResult) {
+                        var validIcon = document.createElement('span');
+                        if (evaluation.dslValidationResult === 'VALID') {
+                            validIcon.className = 'dsl-valid';
+                            validIcon.textContent = ' \u2705';
+                            validIcon.title = 'DSL rule is valid';
+                        } else {
+                            validIcon.className = 'dsl-invalid';
+                            validIcon.textContent = ' \u26A0\uFE0F';
+                            validIcon.title = evaluation.dslValidationResult;
+                        }
+                        tdActions.appendChild(validIcon);
+                    }
                 }
                 if (evaluation.trafficLight === 'RED' && evaluation.languageChangeNeeded) {
                     var issueBtn = document.createElement('button');
                     issueBtn.className = 'action-btn issue';
                     issueBtn.textContent = '\uD83D\uDCCB Issue';
-                    issueBtn.addEventListener('click', function() { createIssue(evaluation); });
+                    issueBtn.addEventListener('click', function() {
+                        recordOutcome(evaluation.commitHash, 'Issue filed');
+                        createIssue(evaluation);
+                    });
                     tdActions.appendChild(issueBtn);
                 }
                 row.appendChild(tdActions);
@@ -418,7 +521,7 @@
             if (dslEvals.length === 0) {
                 var row = document.createElement('tr');
                 var td = document.createElement('td');
-                td.colSpan = 5;
+                td.colSpan = 6;
                 td.textContent = 'No DSL sequences discovered yet. Run the mining workflow to analyze commits.';
                 td.style.textAlign = 'center';
                 td.style.color = '#666';
@@ -452,6 +555,21 @@
                 tdSummary.textContent = evaluation.summary || '-';
                 row.appendChild(tdSummary);
 
+                var tdValid = document.createElement('td');
+                if (evaluation.dslValidationResult) {
+                    if (evaluation.dslValidationResult === 'VALID') {
+                        tdValid.textContent = '\u2705';
+                        tdValid.title = 'DSL rule is valid';
+                    } else {
+                        tdValid.textContent = '\u26A0\uFE0F';
+                        tdValid.title = evaluation.dslValidationResult;
+                        tdValid.style.cursor = 'help';
+                    }
+                } else {
+                    tdValid.textContent = '-';
+                }
+                row.appendChild(tdValid);
+
                 var tdRule = document.createElement('td');
                 var dslBtn = document.createElement('button');
                 dslBtn.className = 'action-btn dsl';
@@ -461,6 +579,93 @@
                 row.appendChild(tdRule);
 
                 tbody.appendChild(row);
+            });
+        }
+
+        // Outcome tracking (localStorage)
+        function loadOutcomes() {
+            try { return JSON.parse(localStorage.getItem('mining-outcomes') || '[]'); }
+            catch(e) { return []; }
+        }
+        function recordOutcome(commitHash, action) {
+            var outcomes = loadOutcomes();
+            outcomes.push({ commitHash: commitHash, action: action, timestamp: new Date().toISOString() });
+            localStorage.setItem('mining-outcomes', JSON.stringify(outcomes));
+            updateOutcomeSummary();
+            renderEvaluations(allEvaluations);
+        }
+        function updateOutcomeSummary() {
+            var outcomes = loadOutcomes();
+            var commits = outcomes.filter(function(o) { return o.action === 'Committed'; }).length;
+            var prs = outcomes.filter(function(o) { return o.action === 'PR opened'; }).length;
+            var issues = outcomes.filter(function(o) { return o.action === 'Issue filed'; }).length;
+            var el = document.getElementById('outcome-summary');
+            if (commits + prs + issues > 0) {
+                el.textContent = 'Actions taken: ' + commits + ' commits, ' + prs + ' PRs, ' + issues + ' issues';
+            } else {
+                el.textContent = '';
+            }
+        }
+
+        // Run Status rendering
+        function renderRunStatus(data) {
+            var meta = data.runMetadata;
+            if (!meta) return;
+            if (meta.completedAt) {
+                try { document.getElementById('rs-completed').textContent = new Date(meta.completedAt).toLocaleString(); }
+                catch(e) { document.getElementById('rs-completed').textContent = meta.completedAt; }
+            }
+            if (meta.durationSeconds !== undefined) {
+                var m = Math.floor(meta.durationSeconds / 60);
+                var s = meta.durationSeconds % 60;
+                document.getElementById('rs-duration').textContent = m + 'm ' + s + 's';
+            }
+            if (data.timeWindow) {
+                var tw = data.timeWindow;
+                var earlyDate = tw.earliestEvaluation ? tw.earliestEvaluation.substring(0, 10) : '?';
+                var lateDate = tw.latestEvaluation ? tw.latestEvaluation.substring(0, 10) : '?';
+                document.getElementById('rs-window').textContent = earlyDate + ' \u2192 ' + lateDate;
+            }
+            if (meta.llmModel) document.getElementById('rs-model').textContent = meta.llmModel;
+            if (meta.apiCallsMade !== undefined) document.getElementById('rs-api-calls').textContent = meta.apiCallsMade;
+            if (meta.batchSize !== undefined && meta.commitsPerRequest !== undefined)
+                document.getElementById('rs-batch').textContent = meta.batchSize + ' \u00D7 ' + meta.commitsPerRequest;
+            if (meta.deferredCommits !== undefined) document.getElementById('rs-deferred').textContent = meta.deferredCommits;
+            if (meta.permanentlySkipped !== undefined) document.getElementById('rs-skipped').textContent = meta.permanentlySkipped;
+        }
+
+        // Daily Progress rendering
+        function renderDailyProgress(data) {
+            var dp = data.dailyProgress;
+            if (!dp || dp.length === 0) {
+                document.getElementById('daily-chart').innerHTML = '<span style="color:#999;font-size:0.9em;">No daily progress data available.</span>';
+                return;
+            }
+            var maxVal = Math.max.apply(null, dp.map(function(d) { return Math.max(d.processed || 0, d.relevant || 0); }));
+            if (maxVal === 0) maxVal = 1;
+            var chart = document.getElementById('daily-chart');
+            chart.innerHTML = '';
+            dp.forEach(function(day) {
+                var group = document.createElement('div');
+                group.className = 'daily-bar-group';
+                var bars = document.createElement('div');
+                bars.className = 'bars';
+                var procBar = document.createElement('div');
+                procBar.className = 'bar processed';
+                procBar.style.height = Math.max(2, ((day.processed || 0) / maxVal) * 60) + 'px';
+                procBar.title = 'Processed: ' + (day.processed || 0);
+                bars.appendChild(procBar);
+                var relBar = document.createElement('div');
+                relBar.className = 'bar relevant';
+                relBar.style.height = Math.max(2, ((day.relevant || 0) / maxVal) * 60) + 'px';
+                relBar.title = 'Relevant: ' + (day.relevant || 0);
+                bars.appendChild(relBar);
+                group.appendChild(bars);
+                var label = document.createElement('div');
+                label.className = 'date-label';
+                label.textContent = (day.date || '').substring(5);
+                group.appendChild(label);
+                chart.appendChild(group);
             });
         }
 
@@ -531,11 +736,14 @@
                         tbody.appendChild(row);
                     });
                 }
+                renderRunStatus(data);
+                renderDailyProgress(data);
             })
             .catch(function(err) { console.error('Failed to load statistics:', err); });
 
         updatePercentages();
         updateTrafficBar();
+        updateOutcomeSummary();
     </script>
 </body>
 </html>

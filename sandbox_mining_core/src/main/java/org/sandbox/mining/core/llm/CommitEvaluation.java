@@ -39,6 +39,7 @@ import java.time.Instant;
  * @param languageChangeNeeded  description of language change needed
  * @param dslRuleAfterChange    DSL rule that would work after language change
  * @param summary               human-readable summary
+ * @param dslValidationResult   result of DSL validation ("VALID" or error message), null if not validated
  */
 public record CommitEvaluation(
 		String commitHash,
@@ -61,7 +62,8 @@ public record CommitEvaluation(
 		String targetHintFile,
 		String languageChangeNeeded,
 		String dslRuleAfterChange,
-		String summary) {
+		String summary,
+		String dslValidationResult) {
 
 	/**
 	 * Traffic light assessment for a commit evaluation.

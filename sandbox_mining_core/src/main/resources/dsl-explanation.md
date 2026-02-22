@@ -353,23 +353,36 @@ If both directions are valid, propose both as separate rules with appropriate gu
 
 ## Source Version Guidance
 
-When setting `sourceVersionGE()` guards, use this table to determine the correct minimum Java version for APIs:
+**Minimum version is Java 8.** We do not support anything older than Java 8. Do not use `sourceVersionGE()` with values below 8.
 
-| API / Feature | Minimum Java Version | Guard |
+**The guard version must match the Java version that INTRODUCED the replacement API**, not the project's current Java version. If the replacement API has existed since Java 8 or earlier, **omit the `sourceVersionGE()` guard entirely** — the rule applies unconditionally.
+
+**Examples:**
+- `Collection.isEmpty()` exists since Java 2 → **no guard needed**
+- `String.valueOf()` exists since Java 1.0 → **no guard needed**
+- `Map.entry()` introduced in Java 9 → `sourceVersionGE(9)`
+- `List.of()` introduced in Java 9 → `sourceVersionGE(9)`
+- `String.isBlank()` introduced in Java 11 → `sourceVersionGE(11)`
+
+| API / Feature | Introduced | Guard |
 |---|---|---|
-| `java.nio.charset.StandardCharsets` | 7 | `sourceVersionGE(7)` |
-| `java.util.Objects.requireNonNull()` | 7 | `sourceVersionGE(7)` |
-| `java.util.Optional` | 8 | `sourceVersionGE(8)` |
-| `java.util.stream.Stream` | 8 | `sourceVersionGE(8)` |
+| `Collection.isEmpty()`, `String.valueOf()`, `StringBuilder` | Java ≤ 7 | **(none — omit guard)** |
+| `java.util.Objects.requireNonNull()` | 7 → ≤8 baseline | **(none — omit guard)** |
+| `java.nio.charset.StandardCharsets` | 7 → ≤8 baseline | **(none — omit guard)** |
+| `java.util.Optional` | 8 | **(none — omit guard, 8 is baseline)** |
+| `java.util.stream.Stream` | 8 | **(none — omit guard, 8 is baseline)** |
 | `java.util.List.of()`, `Set.of()`, `Map.of()` | 9 | `sourceVersionGE(9)` |
+| `Map.entry()` | 9 | `sourceVersionGE(9)` |
 | `InputStream.transferTo()` | 9 | `sourceVersionGE(9)` |
 | `java.lang.String.isBlank()`, `.strip()` | 11 | `sourceVersionGE(11)` |
 | `java.nio.file.Path.of()` | 11 | `sourceVersionGE(11)` |
 | `java.lang.String.formatted()` | 15 | `sourceVersionGE(15)` |
-| `java.util.SequencedCollection` | 21 | `sourceVersionGE(21)` |
 | Pattern matching `instanceof` | 16 | `sourceVersionGE(16)` |
 | Record classes | 16 | `sourceVersionGE(16)` |
 | Sealed classes | 17 | `sourceVersionGE(17)` |
+| `java.util.SequencedCollection` | 21 | `sourceVersionGE(21)` |
+
+**Rule:** If the replacement API was introduced in Java 8 or earlier, do NOT add any `sourceVersionGE()` guard. Only add the guard when the replacement uses APIs introduced in Java 9 or later.
 
 **Do NOT default to `sourceVersionGE(11)` for everything.** Check the actual API introduction version.
 
@@ -378,15 +391,25 @@ When setting `sourceVersionGE()` guards, use this table to determine the correct
 The following constructs are **NOT valid** in the TriggerPattern DSL. If you see these
 in generated output, they are hallucinations and must be rejected:
 
-| Invalid Construct | Why It's Wrong |
-|-------------------|----------------|
-| `<trigger>...</trigger>` | XML syntax — the DSL uses plain text, not XML |
-| `<import>...</import>` | Imports are automatically inferred from FQNs — no explicit import directive exists |
-| `isType($var)` | Not a real guard — use `instanceof($var, "Type")` instead |
-| `isNull($var)` | Not a real guard — use `isNullLiteral($var)` to check for `null` literals |
-| `<pattern>...</pattern>` | XML wrapper — rules are written as plain text lines |
-| `@Override` in replacements | Annotations on method declarations are not supported as replacements |
-| Multi-statement replacements | Replacements must be single expressions. No `if`/`else`, `return`, or `{}` blocks. |
+| Invalid Construct | Why It's Wrong | What To Use Instead |
+|-------------------|----------------|---------------------|
+| `<trigger>...</trigger>` | XML syntax — the DSL uses plain text, not XML | Write the pattern directly as plain text |
+| `<import>...</import>` | Imports are automatically inferred from FQNs — no explicit import directive exists | Use fully qualified names; imports are managed automatically |
+| `<pattern>...</pattern>` | XML wrapper — rules are written as plain text lines | Write the pattern directly as plain text |
+| `isType($var)` | Not a real guard — does not exist | `instanceof($var, "Type")` |
+| `isNull($var)` | Not a real guard — does not exist | `isNullLiteral($var)` to check for `null` literals |
+| `hasType($var, "Type")` | Not a real guard — does not exist | `instanceof($var, "Type")` |
+| `isInstanceOf($var, "Type")` | Not a real guard — wrong name | `instanceof($var, "Type")` |
+| `@Override` in replacements | Annotations on method declarations are not supported as replacements | Only single-expression replacements are supported |
+| Multi-statement replacements | Replacements must be single expressions. No `if`/`else`, `return`, or `{}` blocks. | Use a single expression as the replacement |
+| `sourceVersionGE(7)` or lower | Java 7 and below are not supported; 8 is the baseline | Omit the guard entirely (applies unconditionally) |
+| `sourceVersionGE(8)` | Java 8 is the baseline — guard is always true and therefore useless | Omit the guard entirely (applies unconditionally) |
+| Simple names in patterns | `Charset.forName()` will not match | Use FQN: `java.nio.charset.Charset.forName()` |
+| Bitwise operators (`\|`, `&`, `^`, `>>`, `<<`) | Not supported in patterns or replacements | Mark as RED / not implementable |
+
+**CRITICAL**: Do NOT invent guard function names. The **complete** list of valid guards is in
+the "Available Guards" table above. If a guard is not in that table, it does not exist.
+Using a non-existent guard will cause a parse error.
 
 ## JSON Output Rules
 

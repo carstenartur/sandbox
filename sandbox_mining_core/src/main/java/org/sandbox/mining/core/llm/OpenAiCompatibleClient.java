@@ -410,7 +410,8 @@ getStringOrNull(eval, "dslRule"), //$NON-NLS-1$
 getStringOrNull(eval, "targetHintFile"), //$NON-NLS-1$
 getStringOrNull(eval, "languageChangeNeeded"), //$NON-NLS-1$
 getStringOrNull(eval, "dslRuleAfterChange"), //$NON-NLS-1$
-getStringOrNull(eval, "summary")); //$NON-NLS-1$
+getStringOrNull(eval, "summary"), //$NON-NLS-1$
+null);
 }
 
 static String getStringOrNull(JsonObject obj, String key) {
