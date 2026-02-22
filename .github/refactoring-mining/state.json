@@ -1,4 +1,42 @@
 {
-  "repositories": {},
-  "globalTotalProcessed": 0
+  "repositories": {
+    "https://github.com/eclipse-platform/eclipse.platform.ui": {
+      "lastProcessedCommit": "816a0569186bf893c32fced6f663e7cea5164172",
+      "lastProcessedDate": "2026-02-22T18:23:43.764966511Z",
+      "totalProcessed": 9375,
+      "status": "CATCHING_UP",
+      "deferredCommits": [
+        {
+          "hash": "90ae1519870fc1d142a6bfe7701e497616402442",
+          "message": "DeferredTreeContentManager mark deprecated methods for deletion",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T18:20:07.663746325Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "532c0fb9b6851d77e3a7cc9f70a85c77a9ba3826",
+          "message": "Restore ability to filter views by category\n\nThe ability to sort by categories was previously possible, but broke as\npar",
+          "diffLines": 43,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-22T18:23:43.764917979Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
+    },
+    "https://github.com/carstenartur/sandbox": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
+    }
+  },
+  "globalTotalProcessed": 9375
 }
