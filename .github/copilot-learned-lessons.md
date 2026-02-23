@@ -449,6 +449,47 @@ when `FileNotFoundException` is the last import in the original import list.
 
 ---
 
+## 19. JUnit Cleanup Plugin Structural Issues
+
+**Issue**: The `sandbox_junit_cleanup` module has several recurring structural issues across its plugin files:
+
+### TestJUnit3Plugin.convertToAnnotation Import Bug
+`annotation.substring(1)` produces wrong imports (e.g., `org.junit.jupiter.api.eforeEach`).
+The correct call is `"org.junit.jupiter.api." + annotation` (without substring).
+**Fixed**: 2026-02-22
+
+### Unsafe Casts on resolveBinding()
+`name.resolveBinding()` can return types other than `IVariableBinding` (e.g., `IMethodBinding`, `ITypeBinding`).
+Always use `instanceof` check before casting:
+```java
+// Wrong:
+IVariableBinding binding = (IVariableBinding) name.resolveBinding();
+// Correct:
+if (name.resolveBinding() instanceof IVariableBinding binding && binding.isField()) { ... }
+```
+
+### Missing Null Checks on resolveBinding()
+`fragment.resolveBinding()` can return null. Always check before calling `.getType()`:
+```java
+if (fragment.resolveBinding() == null) { return true; }
+ITypeBinding binding = fragment.resolveBinding().getType();
+```
+
+### JUnitCleanUpCore Missing Cleanup Mappings
+The `computeFixSet()` method in `JUnitCleanUpCore` must have entries for ALL `JUnitCleanUpFixCore` enum values
+that have corresponding `MYCleanUpConstants`. Missing mappings mean those features cannot be individually disabled.
+Constants exist for: RULETIMEOUT, RULEERRORCOLLECTOR, PARAMETERIZED but were missing from the mapping.
+
+### HelperVisitor Import
+Many plugin files import `HelperVisitor` but only use `HelperVisitorFactory`. All 17 unused `HelperVisitor` imports
+were removed in 2026-02-22.
+
+### System.err/out Usage in JUnit Cleanup
+The module should use `Platform.getLog()` for error logging, NOT `System.err.println` + `e.printStackTrace()`.
+The `System.out.println` calls inside `getPreview()` string literals are code examples, not debug logging — they should stay.
+
+**Rule**: When modifying junit cleanup plugins, always check for unused imports, null safety on resolveBinding(),
+type safety on cast expressions, and proper Eclipse Platform logging.
 ## 12. CRLF Line Ending Issues in Test Comparisons
 
 **Issue**: When Copilot-generated code introduces `\r\n` line endings (e.g., in `UseExplicitEncodingFixCore.java`),
