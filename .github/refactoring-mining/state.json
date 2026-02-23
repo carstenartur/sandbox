@@ -1,9 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "6957472d7a198cf0ad3f4321ebd69873b9eba163",
-      "lastProcessedDate": "2026-02-23T05:59:59.476170950Z",
-      "totalProcessed": 9391,
+      "lastProcessedCommit": "9ee216c34977234fac75263a85440dbe56bed19e",
+      "lastProcessedDate": "2026-02-23T07:33:03.677273881Z",
+      "totalProcessed": 9407,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -52,20 +52,29 @@
           "maxRetries": 3
         },
         {
-          "hash": "d2f73679dd1a5c918b0e492f14799a4a0185b612",
-          "message": "Add eclipse.appName System Property for setting the Display\u0027s AppName\n\nThe eclipse.appName sytem property allows users t",
-          "diffLines": 17,
+          "hash": "4bc50304d1b7adf0fbcc83b262443281a5597a41",
+          "message": "Delete Unused Image",
+          "diffLines": 13,
           "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-02-23T05:59:59.476131086Z",
+          "deferredAt": "2026-02-23T07:24:26.221216409Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "2da050751c74e8e0019c040c53c73bc8918cb356",
-          "message": "don\u0027t show key binding in UI when command is not handled or not enabled",
-          "diffLines": 15,
+          "hash": "ca298d672596d295922dc4c24ed4667524ddb2bd",
+          "message": "Fix javadoc errors/warnings\n\nAs pointed at\nhttps://ci.eclipse.org/platform/job/eclipse.platform.ui/job/master/810/javado",
+          "diffLines": 33,
           "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-02-23T05:59:59.476163025Z",
+          "deferredAt": "2026-02-23T07:29:27.935058888Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2de39578f20143acf5da297ab8db8bbe105fdc30",
+          "message": "Add circular navigation between open tabs\n\nWhen navigating the open tabs with Ctrl+Pg Up/Down and only if there is\nno ch",
+          "diffLines": 114,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-23T07:33:03.677192399Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -83,5 +92,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 9391
+  "globalTotalProcessed": 9407
 }
