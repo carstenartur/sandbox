@@ -13,6 +13,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.io.File;
+import java.io.InputStream;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
@@ -23,6 +27,8 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -30,115 +36,161 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 
 /**
- *
  * Java 10
  *
- * Change
+ * Handles explicit encoding for {@link java.util.Scanner} constructors.
+ * See: https://download.java.net/java/early_access/panama/docs/api/java.base/java/util/Scanner.html
  *
- * Find: new java.util.Scanner(new File(&quot;filename.txt&quot;),&quot;UTF-8&quot;)
+ * &lt;h2&gt;2-argument constructors (replace String encoding with Charset):&lt;/h2&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code Scanner(File, &quot;UTF-8&quot;)} → {@code Scanner(File, StandardCharsets.UTF_8)}&lt;/li&gt;
+ *   &lt;li&gt;{@code Scanner(InputStream, &quot;UTF-8&quot;)} → {@code Scanner(InputStream, StandardCharsets.UTF_8)}&lt;/li&gt;
+ *   &lt;li&gt;{@code Scanner(Path, &quot;UTF-8&quot;)} → {@code Scanner(Path, StandardCharsets.UTF_8)}&lt;/li&gt;
+ *   &lt;li&gt;{@code Scanner(ReadableByteChannel, &quot;UTF-8&quot;)} → {@code Scanner(ReadableByteChannel, StandardCharsets.UTF_8)}&lt;/li&gt;
+ * &lt;/ul&gt;
  *
- * Rewrite: new java.util.Scanner(new File(&quot;filename.txt&quot;),StandardCharsets.UTF_8);
+ * &lt;h2&gt;1-argument constructors (add Charset.defaultCharset()):&lt;/h2&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code Scanner(File)} → {@code Scanner(File, Charset.defaultCharset())}&lt;/li&gt;
+ *   &lt;li&gt;{@code Scanner(InputStream)} → {@code Scanner(InputStream, Charset.defaultCharset())}&lt;/li&gt;
+ *   &lt;li&gt;{@code Scanner(Path)} → {@code Scanner(Path, Charset.defaultCharset())}&lt;/li&gt;
+ *   &lt;li&gt;{@code Scanner(ReadableByteChannel)} → {@code Scanner(ReadableByteChannel, Charset.defaultCharset())}&lt;/li&gt;
+ * &lt;/ul&gt;
  *
- * Find: new java.util.Scanner(&quot;filename.txt&quot;, &quot;UTF-8&quot;)
- *
- * Rewrite: new java.util.Scanner(&quot;filename.txt&quot;, StandardCharsets.UTF_8)
- *
- * Find: new java.util.Scanner(java.io.OutputStream, &quot;UTF-8&quot;)
- *
- * Rewrite: new java.util.Scanner(java.io.OutputStream, StandardCharsets.UTF_8)
- *
- * Find: new java.util.Scanner(java.io.OutputStream)
- *
- * Rewrite: new java.util.Scanner(java.io.OutputStream, Charset.defaultCharset())
+ * &lt;h2&gt;Not handled (no charset-accepting variant exists):&lt;/h2&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code Scanner(String)} — scans the string directly, no charset parameter&lt;/li&gt;
+ *   &lt;li&gt;{@code Scanner(Readable)} — no charset parameter&lt;/li&gt;
+ * &lt;/ul&gt;
  */
-<span class="fc" id="L60">public class ScannerExplicitEncoding extends AbstractExplicitEncoding&lt;ClassInstanceCreation&gt; {</span>
+<span class="fc" id="L75">public class ScannerExplicitEncoding extends AbstractExplicitEncoding&lt;ClassInstanceCreation&gt; {</span>
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
 			/**
 			 * For Java 9 and older just do nothing
 			 */
-<span class="fc" id="L68">			return;</span>
+<span class="nc" id="L83">			return;</span>
 		}
-<span class="fc" id="L70">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
-<span class="fc" id="L71">		HelperVisitorFactory.forClassInstanceCreation(Scanner.class)</span>
-<span class="fc" id="L72">			.in(compilationUnit)</span>
-<span class="fc" id="L73">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L74">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L75">	}</span>
+<span class="fc" id="L85">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L86">		HelperVisitorFactory.forClassInstanceCreation(Scanner.class)</span>
+<span class="fc" id="L87">			.in(compilationUnit)</span>
+<span class="fc" id="L88">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L89">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L90">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set&lt;CompilationUnitRewriteOperation&gt; operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L80">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="fc" id="L95">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
 
-<span class="pc bpc" id="L82" title="1 of 3 branches missed.">		switch (arguments.size()) {</span>
-			case 4:
+<span class="pc bpc" id="L97" title="1 of 3 branches missed.">		switch (arguments.size()) {</span>
 			case 2:
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				int encodingIndex= (arguments.size() == 4) ? 3 : 1;</span>
-<span class="fc" id="L86">				ASTNode argumentNode= arguments.get(encodingIndex);</span>
+<span class="fc" id="L99">				ASTNode argumentNode= arguments.get(1);</span>
 
-<span class="fc bfc" id="L88" title="All 2 branches covered.">				if (argumentNode instanceof StringLiteral) {</span>
-<span class="fc" id="L89">					StringLiteral encodingLiteral= (StringLiteral) argumentNode;</span>
-<span class="fc" id="L90">					String encodingValue= encodingLiteral.getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">				if (argumentNode instanceof StringLiteral) {</span>
+<span class="fc" id="L102">					StringLiteral encodingLiteral= (StringLiteral) argumentNode;</span>
+<span class="fc" id="L103">					String encodingValue= encodingLiteral.getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
 
-<span class="fc bfc" id="L92" title="All 2 branches covered.">					if (ENCODINGS.contains(encodingValue)) {</span>
-<span class="fc" id="L93">						NodeData nd= new NodeData(true, encodingLiteral, ENCODING_MAP.get(encodingValue));</span>
-<span class="fc" id="L94">						holder.put(visited, nd);</span>
-<span class="fc" id="L95">						operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">					if (ENCODINGS.contains(encodingValue)) {</span>
+<span class="fc" id="L106">						NodeData nd= new NodeData(true, encodingLiteral, ENCODING_MAP.get(encodingValue));</span>
+<span class="fc" id="L107">						holder.put(visited, nd);</span>
+<span class="fc" id="L108">						operations.add(fixcore.rewrite(visited, cb, holder));</span>
 					}
 				}
-<span class="fc" id="L98">				break;</span>
+<span class="fc" id="L111">				break;</span>
 
 			case 1:
-<span class="fc" id="L101">				NodeData nd2= new NodeData(false, visited, null);</span>
-<span class="fc" id="L102">				holder.put(visited, nd2);</span>
-<span class="fc" id="L103">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L104">				break;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">				if (isEncodingRelevantSingleArgConstructor(visited)) {</span>
+<span class="fc" id="L115">					NodeData nd2= new NodeData(false, visited, null);</span>
+<span class="fc" id="L116">					holder.put(visited, nd2);</span>
+<span class="fc" id="L117">					operations.add(fixcore.rewrite(visited, cb, holder));</span>
+				}
+<span class="fc" id="L119">				break;</span>
 
 			default:
 				break;
 		}
 
-<span class="fc" id="L110">		return false;</span>
+<span class="fc" id="L125">		return false;</span>
+	}
+
+	/**
+	 * Checks whether a 1-argument Scanner constructor uses the platform default encoding
+	 * and should be migrated.
+	 *
+	 * &lt;p&gt;Only these 1-arg constructors use the default encoding:
+	 * &lt;ul&gt;
+	 *   &lt;li&gt;{@code Scanner(File source)} — uses default charset&lt;/li&gt;
+	 *   &lt;li&gt;{@code Scanner(InputStream source)} — uses default charset&lt;/li&gt;
+	 *   &lt;li&gt;{@code Scanner(Path source)} — uses default charset&lt;/li&gt;
+	 *   &lt;li&gt;{@code Scanner(ReadableByteChannel source)} — uses default charset&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 *
+	 * &lt;p&gt;These 1-arg constructors do NOT involve encoding and must be skipped:
+	 * &lt;ul&gt;
+	 *   &lt;li&gt;{@code Scanner(String source)} — scans the string directly, no charset variant exists&lt;/li&gt;
+	 *   &lt;li&gt;{@code Scanner(Readable source)} — no charset variant exists&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 *
+	 * @param visited the ClassInstanceCreation node
+	 * @return true if this is an encoding-relevant 1-arg Scanner constructor
+	 */
+	private static boolean isEncodingRelevantSingleArgConstructor(ClassInstanceCreation visited) {
+<span class="fc" id="L150">		IMethodBinding binding= visited.resolveConstructorBinding();</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L152">			return false;</span>
+		}
+<span class="fc" id="L154">		ITypeBinding[] paramTypes= binding.getParameterTypes();</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">		if (paramTypes.length != 1) {</span>
+<span class="nc" id="L156">			return false;</span>
+		}
+<span class="fc" id="L158">		String paramTypeName= paramTypes[0].getQualifiedName();</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		return File.class.getCanonicalName().equals(paramTypeName)</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">				|| InputStream.class.getCanonicalName().equals(paramTypeName)</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">				|| Path.class.getCanonicalName().equals(paramTypeName)</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">				|| ReadableByteChannel.class.getCanonicalName().equals(paramTypeName);</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L116">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L117">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L118">		NodeData nodedata= (NodeData) data.get(visited);</span>
-<span class="fc" id="L119">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
+<span class="fc" id="L168">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L169">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L170">		NodeData nodedata= (NodeData) data.get(visited);</span>
+<span class="fc" id="L171">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
 		/**
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */
-<span class="fc" id="L123">		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);</span>
-<span class="fc bfc" id="L124" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
-<span class="fc" id="L125">			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);</span>
-<span class="fc" id="L126">		} else {</span>
-<span class="fc" id="L127">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L175">		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
+<span class="fc" id="L177">			replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);</span>
+<span class="fc" id="L178">		} else {</span>
+<span class="fc" id="L179">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
 		}
-<span class="fc" id="L129">	}</span>
+<span class="fc" id="L181">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L133" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L134">			return &quot;new java.util.Scanner(\&quot;asdf\&quot;,StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L186">			return &quot;new java.util.Scanner(\&quot;asdf\&quot;,StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L136">		return &quot;new java.util.Scanner(\&quot;asdf\&quot;, \&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L188">		return &quot;new java.util.Scanner(\&quot;asdf\&quot;, \&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L141">		return &quot;new java.util.Scanner()&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L193">		return &quot;new java.util.Scanner()&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

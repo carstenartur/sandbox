@@ -28,7 +28,6 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
 import org.sandbox.jdt.internal.common.HelperVisitor;
@@ -39,6 +38,8 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 
 /**
  * Java 10
@@ -62,99 +63,105 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
  * works but it might be the better choice if you want to get rid of depending on environment
  * settings
  */
-<span class="fc" id="L65">public class URLDecoderDecodeExplicitEncoding extends AbstractExplicitEncoding&lt;MethodInvocation&gt; {</span>
+<span class="fc" id="L66">public class URLDecoderDecodeExplicitEncoding extends AbstractExplicitEncoding&lt;MethodInvocation&gt; {</span>
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc bfc" id="L69" title="All 2 branches covered.">		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
 			/**
 			 * For Java 9 and older just do nothing
 			 */
-<span class="fc" id="L73">			return;</span>
+<span class="nc" id="L74">			return;</span>
 		}
-<span class="fc" id="L75">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
-<span class="fc" id="L76">		HelperVisitorFactory.forMethodCall(URLDecoder.class, METHOD_DECODE)</span>
-<span class="fc" id="L77">			.in(compilationUnit)</span>
-<span class="fc" id="L78">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L79">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L80">	}</span>
+<span class="fc" id="L76">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L77">		HelperVisitorFactory.forMethodCall(URLDecoder.class, METHOD_DECODE)</span>
+<span class="fc" id="L78">			.in(compilationUnit)</span>
+<span class="fc" id="L79">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L80">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L81">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L85">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
-<span class="fc bfc" id="L86" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName(), String.class.getCanonicalName())) {</span>
-<span class="fc" id="L87">			ASTNode encodingArg= arguments.get(1);</span>
+<span class="fc" id="L86">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName(), String.class.getCanonicalName())) {</span>
+<span class="fc" id="L88">			ASTNode encodingArg= arguments.get(1);</span>
 
-<span class="fc" id="L89">			String encodingValue= null;</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">			if (encodingArg instanceof StringLiteral) {</span>
-<span class="fc" id="L91">				encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">			} else if (encodingArg instanceof SimpleName) {</span>
-<span class="fc" id="L93">				encodingValue= findVariableValue((SimpleName) encodingArg, visited);</span>
+<span class="fc" id="L90">			String encodingValue= null;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">			if (encodingArg instanceof StringLiteral) {</span>
+<span class="fc" id="L92">				encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">			} else if (encodingArg instanceof SimpleName) {</span>
+<span class="fc" id="L94">				encodingValue= findVariableValue((SimpleName) encodingArg, visited);</span>
 			}
 
-<span class="fc bfc" id="L96" title="All 4 branches covered.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
-<span class="fc" id="L97">				NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
-<span class="fc" id="L98">				holder.put(visited, nd);</span>
-<span class="fc" id="L99">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L100">				return false;</span>
+<span class="fc bfc" id="L97" title="All 4 branches covered.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
+<span class="fc" id="L98">				NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
+<span class="fc" id="L99">				holder.put(visited, nd);</span>
+<span class="fc" id="L100">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L101">				return false;</span>
 			}
 		}
-<span class="fc bfc" id="L103" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName())) {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		if (ASTNodes.usesGivenSignature(visited, URLDecoder.class.getCanonicalName(), METHOD_DECODE, String.class.getCanonicalName())) {</span>
 			String encoding;
-<span class="pc bpc" id="L105" title="1 of 4 branches missed.">			switch (cb) {</span>
+<span class="pc bpc" id="L106" title="3 of 4 branches missed.">			switch (cb) {</span>
 				case KEEP_BEHAVIOR:
-<span class="fc" id="L107">					encoding= null;</span>
-<span class="fc" id="L108">					break;</span>
+<span class="nc" id="L108">					encoding= null;</span>
+<span class="nc" id="L109">					break;</span>
 				case ENFORCE_UTF8:
-<span class="fc" id="L110">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L111">					break;</span>
+<span class="nc" id="L111">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L112">					break;</span>
 				case ENFORCE_UTF8_AGGREGATE:
-<span class="fc" id="L113">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L114">					break;</span>
+<span class="fc" id="L114">					encoding= &quot;UTF_8&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L115">					break;</span>
 				default:
-<span class="nc" id="L116">					encoding= null;</span>
+<span class="nc" id="L117">					encoding= null;</span>
 					break;
 			}
-<span class="fc" id="L119">			NodeData nd= new NodeData(false, visited, encoding);</span>
-<span class="fc" id="L120">			holder.put(visited, nd);</span>
-<span class="fc" id="L121">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L122">			return false;</span>
+<span class="fc" id="L120">			NodeData nd= new NodeData(false, visited, encoding);</span>
+<span class="fc" id="L121">			holder.put(visited, nd);</span>
+<span class="fc" id="L122">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L123">			return false;</span>
 		}
-<span class="fc" id="L124">		return false;</span>
+<span class="fc" id="L125">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final MethodInvocation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L130">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L131">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L132">		ImportRewrite importRewriter= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L131">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L132">		AST ast= cuRewrite.getRoot().getAST();</span>
 <span class="fc" id="L133">		NodeData nodedata= (NodeData) data.get(visited);</span>
 <span class="fc" id="L134">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
 		/**
-		 * Add Charset.defaultCharset() or StandardCharsets.UTF_8 as second (last) parameter
+		 * Register encoding replacement BEFORE removing exception handling.
+		 * removeUnsupportedEncodingException may call simplifyEmptyTryStatement
+		 * which uses createMoveTarget to move statements out of the try block.
+		 * replaceAndRemoveNLS fails silently on nodes that have already been
+		 * marked as move targets, so the replacement must be registered first.
 		 */
-<span class="fc" id="L138">		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="fc bfc" id="L139" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
-<span class="fc" id="L140">			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);</span>
-<span class="fc" id="L141">		} else {</span>
-<span class="fc" id="L142">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L142">		ListRewrite listRewrite= rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc" id="L143">		boolean tryAlreadyUnwrapped= false;</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
+<span class="fc" id="L145">			tryAlreadyUnwrapped= replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);</span>
+<span class="fc" id="L146">		} else {</span>
+<span class="fc" id="L147">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
 		}
-<span class="fc" id="L144">		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);</span>
-<span class="fc" id="L145">	}</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (!tryAlreadyUnwrapped) {</span>
+<span class="fc" id="L150">			removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());</span>
+		}
+<span class="fc" id="L152">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L149" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L150">			return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L157">			return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, StandardCharsets.UTF_8);\n&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L152">		return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, \&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L159">		return &quot;java.net.URLDecoder.decode(\&quot;asdf\&quot;, \&quot;UTF-8\&quot;);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L157">		return &quot;URLDecoder.decode()&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L164">		return &quot;URLDecoder.decode()&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

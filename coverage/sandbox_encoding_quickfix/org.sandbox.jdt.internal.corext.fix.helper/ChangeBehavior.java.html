@@ -80,57 +80,61 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 		    // Check if this charset constant is already stored in the map
 <span class="fc bfc" id="L82" title="All 2 branches covered.">		    if (charsetConstants.containsKey(fieldName)) {</span>
-<span class="fc" id="L83">		        return charsetConstants.get(fieldName);</span>
+<span class="fc" id="L83">		        QualifiedName cached = charsetConstants.get(fieldName);</span>
+<span class="fc" id="L84">		        return ast.newQualifiedName(</span>
+<span class="fc" id="L85">		            ast.newSimpleName(cached.getQualifier().toString()),</span>
+<span class="fc" id="L86">		            ast.newSimpleName(cached.getName().getIdentifier())</span>
+		        );
 		    }
 
 		    // Add import for StandardCharsets
-<span class="fc" id="L87">		    ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L88">		    importRewrite.addImport(StandardCharsets.class.getCanonicalName());</span>
-<span class="fc" id="L89">		    importRewrite.addImport(Charset.class.getCanonicalName());</span>
+<span class="fc" id="L91">		    ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L92">		    importRewrite.addImport(StandardCharsets.class.getCanonicalName());</span>
+<span class="fc" id="L93">		    importRewrite.addImport(Charset.class.getCanonicalName());</span>
 
 		    // Check if the static field already exists in the class
-<span class="fc" id="L92">		    TypeDeclaration enclosingType = (TypeDeclaration) cuRewrite.getRoot().types().get(0);</span>
-<span class="fc" id="L93">		    FieldDeclaration existingField = findStaticCharsetField(enclosingType, fieldName);</span>
+<span class="fc" id="L96">		    TypeDeclaration enclosingType = (TypeDeclaration) cuRewrite.getRoot().types().get(0);</span>
+<span class="fc" id="L97">		    FieldDeclaration existingField = findStaticCharsetField(enclosingType, fieldName);</span>
 
 		    QualifiedName fieldReference;
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		    if (existingField == null) {</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		    if (existingField == null) {</span>
 		        // Create a new static field if it doesn't exist
-<span class="fc" id="L98">		        VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L99">		        fragment.setName(ast.newSimpleName(fieldName));</span>
-<span class="fc" id="L100">		        fragment.setInitializer(createCharsetAccessExpression(ast, charset));</span>
+<span class="fc" id="L102">		        VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L103">		        fragment.setName(ast.newSimpleName(fieldName));</span>
+<span class="fc" id="L104">		        fragment.setInitializer(createCharsetAccessExpression(ast, charset));</span>
 
-<span class="fc" id="L102">		        FieldDeclaration fieldDeclaration = ast.newFieldDeclaration(fragment);</span>
-<span class="fc" id="L103">		        fieldDeclaration.setType(ast.newSimpleType(ast.newName(&quot;Charset&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L104">		        fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
-<span class="fc" id="L105">		        fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
-<span class="fc" id="L106">		        fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));</span>
+<span class="fc" id="L106">		        FieldDeclaration fieldDeclaration = ast.newFieldDeclaration(fragment);</span>
+<span class="fc" id="L107">		        fieldDeclaration.setType(ast.newSimpleType(ast.newName(&quot;Charset&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L108">		        fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
+<span class="fc" id="L109">		        fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
+<span class="fc" id="L110">		        fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));</span>
 
 		        // Add the new field to the class
-<span class="fc" id="L109">		        cuRewrite.getASTRewrite().getListRewrite(enclosingType, TypeDeclaration.BODY_DECLARATIONS_PROPERTY)</span>
-<span class="fc" id="L110">		            .insertFirst(fieldDeclaration, null);</span>
+<span class="fc" id="L113">		        cuRewrite.getASTRewrite().getListRewrite(enclosingType, TypeDeclaration.BODY_DECLARATIONS_PROPERTY)</span>
+<span class="fc" id="L114">		            .insertFirst(fieldDeclaration, null);</span>
 
 		        // Create a QualifiedName to refer to this new field
-<span class="fc" id="L113">		        fieldReference = ast.newQualifiedName(</span>
-<span class="fc" id="L114">		        	    ast.newSimpleName(enclosingType.getName().getIdentifier()),</span>
-<span class="fc" id="L115">		        	    ast.newSimpleName(fragment.getName().getIdentifier())</span>
+<span class="fc" id="L117">		        fieldReference = ast.newQualifiedName(</span>
+<span class="fc" id="L118">		        	    ast.newSimpleName(enclosingType.getName().getIdentifier()),</span>
+<span class="fc" id="L119">		        	    ast.newSimpleName(fragment.getName().getIdentifier())</span>
 		        	);
-<span class="fc" id="L117">		    } else {</span>
+<span class="fc" id="L121">		    } else {</span>
 		        // If the field already exists, find its reference name
-<span class="nc" id="L119">		        VariableDeclarationFragment fragment = (VariableDeclarationFragment) existingField.fragments().get(0);</span>
-<span class="nc" id="L120">		        fieldReference = ast.newQualifiedName(</span>
-<span class="nc" id="L121">		            ast.newSimpleName(enclosingType.getName().getIdentifier()),</span>
-<span class="nc" id="L122">		            fragment.getName()</span>
+<span class="nc" id="L123">		        VariableDeclarationFragment fragment = (VariableDeclarationFragment) existingField.fragments().get(0);</span>
+<span class="nc" id="L124">		        fieldReference = ast.newQualifiedName(</span>
+<span class="nc" id="L125">		            ast.newSimpleName(enclosingType.getName().getIdentifier()),</span>
+<span class="nc" id="L126">		            ast.newSimpleName(fragment.getName().getIdentifier())</span>
 		        );
 		    }
 
 		    // Cache the field reference in the map and return it
-<span class="fc" id="L127">		    charsetConstants.put(fieldName, fieldReference);</span>
-<span class="fc" id="L128">		    return fieldReference;</span>
+<span class="fc" id="L131">		    charsetConstants.put(fieldName, fieldReference);</span>
+<span class="fc" id="L132">		    return fieldReference;</span>
 		}
 
 		@Override
 		protected String computeCharsetforPreview() {
-<span class="nc" id="L133">			return &quot;CharsetConstant&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L137">			return &quot;CharsetConstant&quot;; //$NON-NLS-1$</span>
 		}
 	};
 
@@ -139,24 +143,24 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 	abstract protected String computeCharsetforPreview();
 
 	protected static FieldDeclaration findStaticCharsetField(TypeDeclaration type, String fieldName) {
-<span class="fc bfc" id="L142" title="All 2 branches covered.">	    for (FieldDeclaration field : type.getFields()) {</span>
-<span class="fc bfc" id="L143" title="All 2 branches covered.">	        for (Object fragment : field.fragments()) {</span>
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">	            if (fragment instanceof VariableDeclarationFragment) {</span>
-<span class="fc" id="L145">	                VariableDeclarationFragment varFrag = (VariableDeclarationFragment) fragment;</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">	                if (varFrag.getName().getIdentifier().equals(fieldName)) {</span>
-<span class="nc" id="L147">	                    return field;</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">	    for (FieldDeclaration field : type.getFields()) {</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">	        for (Object fragment : field.fragments()) {</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">	            if (fragment instanceof VariableDeclarationFragment) {</span>
+<span class="fc" id="L149">	                VariableDeclarationFragment varFrag = (VariableDeclarationFragment) fragment;</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">	                if (varFrag.getName().getIdentifier().equals(fieldName)) {</span>
+<span class="nc" id="L151">	                    return field;</span>
 	                }
 	            }
 	        }
 	    }
-<span class="fc" id="L152">	    return null;</span>
+<span class="fc" id="L156">	    return null;</span>
 	}
 
 	protected static Expression createCharsetAccessExpression(AST ast, String charset) {
-<span class="fc" id="L156">	    FieldAccess fieldAccess = ast.newFieldAccess();</span>
-<span class="fc" id="L157">	    fieldAccess.setExpression(ast.newName(StandardCharsets.class.getSimpleName()));</span>
-<span class="fc" id="L158">	    fieldAccess.setName(ast.newSimpleName(charset));</span>
-<span class="fc" id="L159">	    return fieldAccess;</span>
+<span class="fc" id="L160">	    FieldAccess fieldAccess = ast.newFieldAccess();</span>
+<span class="fc" id="L161">	    fieldAccess.setExpression(ast.newName(StandardCharsets.class.getSimpleName()));</span>
+<span class="fc" id="L162">	    fieldAccess.setName(ast.newSimpleName(charset));</span>
+<span class="fc" id="L163">	    return fieldAccess;</span>
 	}
 
 	/**
@@ -171,16 +175,16 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 		/**
 		 * Add import java.nio.charset.StandardCharsets - available since Java 1.7
 		 */
-<span class="fc" id="L174">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L175">		importRewrite.addImport(StandardCharsets.class.getCanonicalName());</span>
+<span class="fc" id="L178">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L179">		importRewrite.addImport(StandardCharsets.class.getCanonicalName());</span>
 		/**
 		 * Add field access to StandardCharsets.UTF_8
 		 */
-<span class="fc" id="L179">		FieldAccess fieldaccess= ast.newFieldAccess();</span>
-<span class="fc" id="L180">		fieldaccess.setExpression(ASTNodeFactory.newName(ast, StandardCharsets.class.getSimpleName()));</span>
+<span class="fc" id="L183">		FieldAccess fieldaccess= ast.newFieldAccess();</span>
+<span class="fc" id="L184">		fieldaccess.setExpression(ASTNodeFactory.newName(ast, StandardCharsets.class.getSimpleName()));</span>
 
-<span class="fc" id="L182">		fieldaccess.setName(ast.newSimpleName(charset));</span>
-<span class="fc" id="L183">		return fieldaccess;</span>
+<span class="fc" id="L186">		fieldaccess.setName(ast.newSimpleName(charset));</span>
+<span class="fc" id="L187">		return fieldaccess;</span>
 	}
 
 	/**
@@ -194,15 +198,15 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 		/**
 		 * Add import java.nio.charset.Charset
 		 */
-<span class="fc" id="L197">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L198">		importRewrite.addImport(Charset.class.getCanonicalName());</span>
+<span class="fc" id="L201">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L202">		importRewrite.addImport(Charset.class.getCanonicalName());</span>
 		/**
 		 * Add call to Charset.defaultCharset() - this is available since Java 1.5
 		 */
-<span class="fc" id="L202">		MethodInvocation firstCall= ast.newMethodInvocation();</span>
-<span class="fc" id="L203">		firstCall.setExpression(ASTNodeFactory.newName(ast, Charset.class.getSimpleName()));</span>
-<span class="fc" id="L204">		firstCall.setName(ast.newSimpleName(METHOD_DEFAULT_CHARSET));</span>
-<span class="fc" id="L205">		return firstCall;</span>
+<span class="fc" id="L206">		MethodInvocation firstCall= ast.newMethodInvocation();</span>
+<span class="fc" id="L207">		firstCall.setExpression(ASTNodeFactory.newName(ast, Charset.class.getSimpleName()));</span>
+<span class="fc" id="L208">		firstCall.setName(ast.newSimpleName(METHOD_DEFAULT_CHARSET));</span>
+<span class="fc" id="L209">		return firstCall;</span>
 	}
 
 	/**
@@ -215,14 +219,14 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 	 * @return MethodInvocation that returns String
 	 */
 	protected MethodInvocation addCharsetStringComputation(final CompilationUnitRewrite cuRewrite, AST ast, ChangeBehavior cb, String charset, Map&lt;String, QualifiedName&gt; charsetConstants) {
-<span class="nc" id="L218">		Expression callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, charset, charsetConstants);</span>
+<span class="nc" id="L222">		Expression callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, charset, charsetConstants);</span>
 		/**
 		 * Add second call to Charset.defaultCharset().displayName()
 		 */
-<span class="nc" id="L222">		MethodInvocation secondCall= ast.newMethodInvocation();</span>
-<span class="nc" id="L223">		secondCall.setExpression(callToCharsetDefaultCharset);</span>
-<span class="nc" id="L224">		secondCall.setName(ast.newSimpleName(METHOD_DISPLAY_NAME));</span>
-<span class="nc" id="L225">		return secondCall;</span>
+<span class="nc" id="L226">		MethodInvocation secondCall= ast.newMethodInvocation();</span>
+<span class="nc" id="L227">		secondCall.setExpression(callToCharsetDefaultCharset);</span>
+<span class="nc" id="L228">		secondCall.setName(ast.newSimpleName(METHOD_DISPLAY_NAME));</span>
+<span class="nc" id="L229">		return secondCall;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

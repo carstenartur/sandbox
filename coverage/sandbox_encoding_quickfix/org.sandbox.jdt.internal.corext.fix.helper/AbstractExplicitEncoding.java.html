@@ -18,7 +18,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
@@ -31,15 +33,18 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
@@ -61,7 +66,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
  *
  * @param &lt;T&gt; The type of AST node that this encoding handler processes
  */
-<span class="fc" id="L64">public abstract class AbstractExplicitEncoding&lt;T extends ASTNode&gt; {</span>
+<span class="fc" id="L69">public abstract class AbstractExplicitEncoding&lt;T extends ASTNode&gt; {</span>
 
 	/** Fully qualified name of java.io.UnsupportedEncodingException. */
 	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION = &quot;java.io.UnsupportedEncodingException&quot;; //$NON-NLS-1$
@@ -77,20 +82,20 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * &lt;/p&gt;
 	 * @since 1.3
 	 */
-<span class="fc" id="L80">	public static final Map&lt;String, String&gt; ENCODING_MAP = Map.of(</span>
-<span class="fc" id="L81">			&quot;UTF-8&quot;, &quot;UTF_8&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L82">			&quot;UTF-16&quot;, &quot;UTF_16&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L83">			&quot;UTF-16BE&quot;, &quot;UTF_16BE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L84">			&quot;UTF-16LE&quot;, &quot;UTF_16LE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L85">			&quot;ISO-8859-1&quot;, &quot;ISO_8859_1&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L86">			&quot;US-ASCII&quot;, &quot;US_ASCII&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L85">	public static final Map&lt;String, String&gt; ENCODING_MAP = Map.of(</span>
+<span class="fc" id="L86">			&quot;UTF-8&quot;, &quot;UTF_8&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L87">			&quot;UTF-16&quot;, &quot;UTF_16&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L88">			&quot;UTF-16BE&quot;, &quot;UTF_16BE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L89">			&quot;UTF-16LE&quot;, &quot;UTF_16LE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L90">			&quot;ISO-8859-1&quot;, &quot;ISO_8859_1&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L91">			&quot;US-ASCII&quot;, &quot;US_ASCII&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
 	);
 
 	/**
 	 * Immutable set of supported encoding names that can be converted to StandardCharsets constants.
 	 * @since 1.3
 	 */
-<span class="fc" id="L93">	public static final Set&lt;String&gt; ENCODINGS = ENCODING_MAP.keySet();</span>
+<span class="fc" id="L98">	public static final Set&lt;String&gt; ENCODINGS = ENCODING_MAP.keySet();</span>
 
 	/**
 	 * Maps standard charset names (e.g., &quot;UTF-8&quot;) to their corresponding
@@ -100,7 +105,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 *             if modification is attempted.
 	 */
 	@Deprecated
-<span class="fc" id="L103">	static final Map&lt;String, String&gt; encodingmap = ENCODING_MAP;</span>
+<span class="fc" id="L108">	static final Map&lt;String, String&gt; encodingmap = ENCODING_MAP;</span>
 
 	/**
 	 * Set of supported encoding names that can be converted to StandardCharsets constants.
@@ -109,7 +114,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 *             if modification is attempted.
 	 */
 	@Deprecated
-<span class="fc" id="L112">	static final Set&lt;String&gt; encodings = ENCODINGS;</span>
+<span class="fc" id="L117">	static final Set&lt;String&gt; encodings = ENCODINGS;</span>
 
 	/**
 	 * Immutable record to hold node data for encoding transformations.
@@ -126,7 +131,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * Thread-safe map to cache charset constant references during aggregation.
 	 * Used to avoid creating duplicate QualifiedName instances.
 	 */
-<span class="fc" id="L129">	private static final Map&lt;String, QualifiedName&gt; CHARSET_CONSTANTS = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L134">	private static final Map&lt;String, QualifiedName&gt; CHARSET_CONSTANTS = new ConcurrentHashMap&lt;&gt;();</span>
 
 	/**
 	 * Returns the charset constants map for use in encoding transformations.
@@ -134,7 +139,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return thread-safe map of charset constants
 	 */
 	protected static Map&lt;String, QualifiedName&gt; getCharsetConstants() {
-<span class="fc" id="L137">		return CHARSET_CONSTANTS;</span>
+<span class="fc" id="L142">		return CHARSET_CONSTANTS;</span>
 	}
 
 	/** Key used for storing encoding information in data holders. */
@@ -153,7 +158,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @deprecated Use {@link #KEY_REPLACE} instead. This field will be removed in a future version.
 	 */
 	@Deprecated(forRemoval = true)
-<span class="fc" id="L156">	protected static final String REPLACE = KEY_REPLACE;</span>
+	protected static final String REPLACE = KEY_REPLACE;
 
 	/**
 	 * Finds all occurrences of the encoding pattern that this handler processes
@@ -191,7 +196,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 *         a conflict; never null
 	 */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-<span class="fc" id="L194">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
+<span class="fc" id="L199">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
 	}
 
 	/**
@@ -202,10 +207,10 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return true if the literal contains a known encoding, false otherwise
 	 */
 	protected static boolean isKnownEncoding(StringLiteral literal) {
-<span class="nc bnc" id="L205" title="All 2 branches missed.">		if (literal == null) {</span>
-<span class="nc" id="L206">			return false;</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">		if (literal == null) {</span>
+<span class="nc" id="L211">			return false;</span>
 		}
-<span class="nc" id="L208">		return ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
+<span class="nc" id="L213">		return ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
 	}
 
 	/**
@@ -216,10 +221,10 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 *         is null or contains an unknown encoding
 	 */
 	protected static String getEncodingConstantName(StringLiteral literal) {
-<span class="nc bnc" id="L219" title="All 2 branches missed.">		if (literal == null) {</span>
-<span class="nc" id="L220">			return null;</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (literal == null) {</span>
+<span class="nc" id="L225">			return null;</span>
 		}
-<span class="nc" id="L222">		return ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
+<span class="nc" id="L227">		return ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
 	}
 
 	/**
@@ -232,16 +237,16 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return the uppercase encoding string (e.g., &quot;UTF-8&quot;), or null if not determinable
 	 */
 	protected static String getEncodingValue(ASTNode encodingArg, MethodInvocation context) {
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">		if (encodingArg instanceof StringLiteral literal) {</span>
-<span class="nc" id="L236">			return literal.getLiteralValue().toUpperCase(Locale.ROOT);</span>
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">		} else if (encodingArg instanceof SimpleName simpleName) {</span>
-<span class="nc" id="L238">			return findVariableValue(simpleName, context);</span>
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		} else if (encodingArg instanceof QualifiedName qualifiedName) {</span>
-<span class="fc" id="L240">			return extractStandardCharsetName(qualifiedName);</span>
-<span class="nc bnc" id="L241" title="All 2 branches missed.">		} else if (encodingArg instanceof FieldAccess fieldAccess) {</span>
-<span class="nc" id="L242">			return extractStandardCharsetName(fieldAccess);</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">		if (encodingArg instanceof StringLiteral literal) {</span>
+<span class="nc" id="L241">			return literal.getLiteralValue().toUpperCase(Locale.ROOT);</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		} else if (encodingArg instanceof SimpleName simpleName) {</span>
+<span class="nc" id="L243">			return findVariableValue(simpleName, context);</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">		} else if (encodingArg instanceof QualifiedName qualifiedName) {</span>
+<span class="fc" id="L245">			return extractStandardCharsetName(qualifiedName);</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">		} else if (encodingArg instanceof FieldAccess fieldAccess) {</span>
+<span class="nc" id="L247">			return extractStandardCharsetName(fieldAccess);</span>
 		}
-<span class="nc" id="L244">		return null;</span>
+<span class="nc" id="L249">		return null;</span>
 	}
 
 	/**
@@ -251,12 +256,12 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return the charset name (e.g., &quot;UTF-8&quot;), or null if not a StandardCharsets reference
 	 */
 	protected static String extractStandardCharsetName(QualifiedName qualifiedName) {
-<span class="fc" id="L254">		String qualifier = qualifiedName.getQualifier().toString();</span>
-<span class="pc bpc" id="L255" title="2 of 4 branches missed.">		if (&quot;StandardCharsets&quot;.equals(qualifier) || qualifier.endsWith(&quot;.StandardCharsets&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L256">			String fieldName = qualifiedName.getName().getIdentifier();</span>
-<span class="fc" id="L257">			return fieldName.replace('_', '-');</span>
+<span class="fc" id="L259">		String qualifier = qualifiedName.getQualifier().toString();</span>
+<span class="pc bpc" id="L260" title="2 of 4 branches missed.">		if (&quot;StandardCharsets&quot;.equals(qualifier) || qualifier.endsWith(&quot;.StandardCharsets&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L261">			String fieldName = qualifiedName.getName().getIdentifier();</span>
+<span class="fc" id="L262">			return fieldName.replace('_', '-');</span>
 		}
-<span class="nc" id="L259">		return null;</span>
+<span class="nc" id="L264">		return null;</span>
 	}
 
 	/**
@@ -266,12 +271,12 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return the charset name (e.g., &quot;UTF-8&quot;), or null if not a StandardCharsets reference
 	 */
 	protected static String extractStandardCharsetName(FieldAccess fieldAccess) {
-<span class="nc" id="L269">		String expression = fieldAccess.getExpression().toString();</span>
-<span class="nc bnc" id="L270" title="All 4 branches missed.">		if (&quot;StandardCharsets&quot;.equals(expression) || expression.endsWith(&quot;.StandardCharsets&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L271">			String fieldName = fieldAccess.getName().getIdentifier();</span>
-<span class="nc" id="L272">			return fieldName.replace('_', '-');</span>
+<span class="nc" id="L274">		String expression = fieldAccess.getExpression().toString();</span>
+<span class="nc bnc" id="L275" title="All 4 branches missed.">		if (&quot;StandardCharsets&quot;.equals(expression) || expression.endsWith(&quot;.StandardCharsets&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L276">			String fieldName = fieldAccess.getName().getIdentifier();</span>
+<span class="nc" id="L277">			return fieldName.replace('_', '-');</span>
 		}
-<span class="nc" id="L274">		return null;</span>
+<span class="nc" id="L279">		return null;</span>
 	}
 
 	/**
@@ -281,20 +286,20 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return the enclosing MethodDeclaration or TypeDeclaration, or null if not found
 	 */
 	private static ASTNode findEnclosingMethodOrType(ASTNode node) {
-<span class="pc bpc" id="L284" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L285">			return null;</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L290">			return null;</span>
 		}
-<span class="fc" id="L287">		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
-<span class="fc" id="L288">		ASTNode typeDecl = ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);</span>
+<span class="fc" id="L292">		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
+<span class="fc" id="L293">		ASTNode typeDecl = ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);</span>
 		
 		// Return the closest ancestor. In Java, methods are always declared inside types,
 		// so if a MethodDeclaration exists, it is guaranteed to be closer than any TypeDeclaration.
 		// getFirstAncestorOrNull returns the nearest ancestor of each type, so we just need to
 		// prefer the more specific (nested) one.
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">		if (methodDecl != null) {</span>
-<span class="fc" id="L295">			return methodDecl;</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">		if (methodDecl != null) {</span>
+<span class="fc" id="L300">			return methodDecl;</span>
 		}
-<span class="nc" id="L297">		return typeDecl;</span>
+<span class="nc" id="L302">		return typeDecl;</span>
 	}
 
 	/**
@@ -306,14 +311,14 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return the uppercase string literal value if found, null otherwise
 	 */
 	private static String extractStringLiteralValue(VariableDeclarationFragment fragment, String variableIdentifier) {
-<span class="fc bfc" id="L309" title="All 2 branches covered.">		if (!fragment.getName().getIdentifier().equals(variableIdentifier)) {</span>
-<span class="fc" id="L310">			return null;</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">		if (!fragment.getName().getIdentifier().equals(variableIdentifier)) {</span>
+<span class="fc" id="L315">			return null;</span>
 		}
-<span class="fc" id="L312">		Expression initializer = fragment.getInitializer();</span>
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		if (initializer instanceof StringLiteral) {</span>
-<span class="fc" id="L314">			return ((StringLiteral) initializer).getLiteralValue().toUpperCase(Locale.ROOT);</span>
+<span class="nc" id="L317">		Expression initializer = fragment.getInitializer();</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">		if (initializer instanceof StringLiteral) {</span>
+<span class="nc" id="L319">			return ((StringLiteral) initializer).getLiteralValue().toUpperCase(Locale.ROOT);</span>
 		}
-<span class="nc" id="L316">		return null;</span>
+<span class="nc" id="L321">		return null;</span>
 	}
 
 	/**
@@ -324,14 +329,14 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return the uppercase string literal value if found, null otherwise
 	 */
 	private static String findValueInFragments(List&lt;?&gt; fragments, String variableIdentifier) {
-<span class="fc bfc" id="L327" title="All 2 branches covered.">		for (Object frag : fragments) {</span>
-<span class="fc" id="L328">			VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;</span>
-<span class="fc" id="L329">			String value = extractStringLiteralValue(fragment, variableIdentifier);</span>
-<span class="fc bfc" id="L330" title="All 2 branches covered.">			if (value != null) {</span>
-<span class="fc" id="L331">				return value;</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">		for (Object frag : fragments) {</span>
+<span class="fc" id="L333">			VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;</span>
+<span class="fc" id="L334">			String value = extractStringLiteralValue(fragment, variableIdentifier);</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">			if (value != null) {</span>
+<span class="nc" id="L336">				return value;</span>
 			}
 		}
-<span class="fc" id="L334">		return null;</span>
+<span class="fc" id="L339">		return null;</span>
 	}
 
 	/**
@@ -342,21 +347,21 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return the uppercase string literal value if found, null otherwise
 	 */
 	private static String findVariableValueInMethod(MethodDeclaration method, String variableIdentifier) {
-<span class="fc" id="L345">		Block body = method.getBody();</span>
-<span class="pc bpc" id="L346" title="1 of 2 branches missed.">		if (body == null) {</span>
-<span class="nc" id="L347">			return null;</span>
+<span class="fc" id="L350">		Block body = method.getBody();</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">		if (body == null) {</span>
+<span class="nc" id="L352">			return null;</span>
 		}
-<span class="fc" id="L349">		List&lt;?&gt; statements = body.statements();</span>
-<span class="fc bfc" id="L350" title="All 2 branches covered.">		for (Object stmt : statements) {</span>
-<span class="fc bfc" id="L351" title="All 2 branches covered.">			if (stmt instanceof VariableDeclarationStatement) {</span>
-<span class="fc" id="L352">				VariableDeclarationStatement varDeclStmt = (VariableDeclarationStatement) stmt;</span>
-<span class="fc" id="L353">				String value = findValueInFragments(varDeclStmt.fragments(), variableIdentifier);</span>
-<span class="fc bfc" id="L354" title="All 2 branches covered.">				if (value != null) {</span>
-<span class="fc" id="L355">					return value;</span>
+<span class="fc" id="L354">		List&lt;?&gt; statements = body.statements();</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">		for (Object stmt : statements) {</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">			if (stmt instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L357">				VariableDeclarationStatement varDeclStmt = (VariableDeclarationStatement) stmt;</span>
+<span class="fc" id="L358">				String value = findValueInFragments(varDeclStmt.fragments(), variableIdentifier);</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">				if (value != null) {</span>
+<span class="nc" id="L360">					return value;</span>
 				}
 			}
 		}
-<span class="fc" id="L359">		return null;</span>
+<span class="fc" id="L364">		return null;</span>
 	}
 
 	/**
@@ -367,14 +372,14 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return the uppercase string literal value if found, null otherwise
 	 */
 	private static String findVariableValueInType(TypeDeclaration type, String variableIdentifier) {
-<span class="nc" id="L370">		FieldDeclaration[] fields = type.getFields();</span>
-<span class="nc bnc" id="L371" title="All 2 branches missed.">		for (FieldDeclaration field : fields) {</span>
-<span class="nc" id="L372">			String value = findValueInFragments(field.fragments(), variableIdentifier);</span>
-<span class="nc bnc" id="L373" title="All 2 branches missed.">			if (value != null) {</span>
-<span class="nc" id="L374">				return value;</span>
+<span class="nc" id="L375">		FieldDeclaration[] fields = type.getFields();</span>
+<span class="nc bnc" id="L376" title="All 2 branches missed.">		for (FieldDeclaration field : fields) {</span>
+<span class="nc" id="L377">			String value = findValueInFragments(field.fragments(), variableIdentifier);</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">			if (value != null) {</span>
+<span class="nc" id="L379">				return value;</span>
 			}
 		}
-<span class="nc" id="L377">		return null;</span>
+<span class="nc" id="L382">		return null;</span>
 	}
 
 	/**
@@ -388,22 +393,22 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 *         or null if the variable is null, context is null, or the value cannot be found
 	 */
 	protected static String findVariableValue(SimpleName variable, ASTNode context) {
-<span class="pc bpc" id="L391" title="2 of 4 branches missed.">		if (variable == null || context == null) {</span>
-<span class="nc" id="L392">			return null;</span>
-		}
-
-<span class="fc" id="L395">		ASTNode enclosing = findEnclosingMethodOrType(context);</span>
-<span class="pc bpc" id="L396" title="1 of 2 branches missed.">		if (enclosing == null) {</span>
+<span class="pc bpc" id="L396" title="2 of 4 branches missed.">		if (variable == null || context == null) {</span>
 <span class="nc" id="L397">			return null;</span>
 		}
 
-<span class="fc" id="L400">		String variableIdentifier = variable.getIdentifier();</span>
-<span class="pc bpc" id="L401" title="1 of 2 branches missed.">		if (enclosing instanceof MethodDeclaration) {</span>
-<span class="fc" id="L402">			return findVariableValueInMethod((MethodDeclaration) enclosing, variableIdentifier);</span>
-<span class="nc bnc" id="L403" title="All 2 branches missed.">		} else if (enclosing instanceof TypeDeclaration) {</span>
-<span class="nc" id="L404">			return findVariableValueInType((TypeDeclaration) enclosing, variableIdentifier);</span>
+<span class="fc" id="L400">		ASTNode enclosing = findEnclosingMethodOrType(context);</span>
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">		if (enclosing == null) {</span>
+<span class="nc" id="L402">			return null;</span>
 		}
-<span class="nc" id="L406">		return null;</span>
+
+<span class="fc" id="L405">		String variableIdentifier = variable.getIdentifier();</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">		if (enclosing instanceof MethodDeclaration) {</span>
+<span class="fc" id="L407">			return findVariableValueInMethod((MethodDeclaration) enclosing, variableIdentifier);</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">		} else if (enclosing instanceof TypeDeclaration) {</span>
+<span class="nc" id="L409">			return findVariableValueInType((TypeDeclaration) enclosing, variableIdentifier);</span>
+		}
+<span class="nc" id="L411">		return null;</span>
 	}
 
 	/**
@@ -414,6 +419,186 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @return the preview string, never null
 	 */
 	public abstract String getPreview(boolean afterRefactoring, ChangeBehavior cb);
+
+	/**
+	 * Pattern matching the LAST NLS comment on a line (the one corresponding
+	 * to the last/highest-numbered string literal). When a string literal is
+	 * replaced by a non-string expression, we must remove the last NLS comment
+	 * (not the first) because string literals are numbered left-to-right.
+	 * Uses a negative lookahead to match only the final NLS comment.
+	 * Adapted from {@code org.eclipse.jdt.internal.corext.dom.ASTNodes}.
+	 */
+<span class="fc" id="L431">	private static final Pattern LAST_NLS_COMMENT = Pattern.compile(&quot;[ ]*\\/\\/\\$NON-NLS-[0-9]+\\$(?!.*\\/\\/\\$NON-NLS-)&quot;); //$NON-NLS-1$</span>
+
+	/**
+	 * Replaces a string literal argument with a replacement node and removes the
+	 * associated {@code //$NON-NLS-n$} comment.
+	 *
+	 * &lt;p&gt;When the statement is inside a try body that will be unwrapped by
+	 * {@code removeUnsupportedEncodingException}, this method handles both the
+	 * argument replacement AND the try-catch unwrapping in a single text-based
+	 * operation to avoid conflicts between {@code rewrite.replace()} and
+	 * {@code createMoveTarget()}.
+	 *
+	 * &lt;p&gt;When the statement is NOT inside such a try body, this method replaces
+	 * the enclosing statement with a string placeholder that has the text
+	 * substitution and NLS removal already applied.
+	 *
+	 * @param rewrite the AST rewrite
+	 * @param visited the string literal node to replace
+	 * @param replacement the replacement node (e.g., StandardCharsets.UTF_8)
+	 * @param group the text edit group
+	 * @param cuRewrite the compilation unit rewrite
+	 * @return {@code true} if the enclosing try-catch was already unwrapped by
+	 *         this method (caller should skip {@code removeUnsupportedEncodingException}),
+	 *         {@code false} otherwise
+	 */
+	protected static boolean replaceArgumentAndRemoveNLS(ASTRewrite rewrite, ASTNode visited,
+			ASTNode replacement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
+<span class="fc" id="L458">		ASTNode st = ASTNodes.getFirstAncestorOrNull(visited, Statement.class, FieldDeclaration.class);</span>
+<span class="pc bpc" id="L459" title="1 of 4 branches missed.">		if (st != null &amp;&amp; isInsideTryBodyWithOnlyUnsupportedEncodingCatch(st)) {</span>
+			// Statement is in a try body that will be unwrapped.
+			// Handle BOTH the argument replacement AND the try-catch unwrapping
+			// in a single text-based operation to avoid conflicts between
+			// rewrite.replace() and createMoveTarget().
+<span class="fc" id="L464">			return replaceTryBodyAndUnwrap(rewrite, visited, replacement, st, group, cuRewrite);</span>
+		}
+<span class="pc bpc" id="L466" title="1 of 2 branches missed.">		if (st == null) {</span>
+<span class="nc" id="L467">			rewrite.replace(visited, replacement, group);</span>
+<span class="nc" id="L468">			return false;</span>
+		}
+		// Safe to use the full statement replacement with NLS removal
+		// (same approach as ASTNodes.replaceAndRemoveNLS)
+		try {
+<span class="fc" id="L473">			String buffer = cuRewrite.getCu().getBuffer().getContents();</span>
+<span class="fc" id="L474">			CompilationUnit cu = (CompilationUnit) st.getRoot();</span>
+<span class="fc" id="L475">			int origStart = cu.getExtendedStartPosition(st);</span>
+<span class="fc" id="L476">			int origLength = cu.getExtendedLength(st);</span>
+<span class="fc" id="L477">			String original = buffer.substring(origStart, origStart + origLength);</span>
+			// Remove last NLS comment (the one for the replaced encoding string literal)
+<span class="fc" id="L479">			original = LAST_NLS_COMMENT.matcher(original).replaceFirst(&quot;&quot;); //$NON-NLS-1$</span>
+			// Remove leading whitespace
+<span class="fc" id="L481">			original = Pattern.compile(&quot;^[ \\t]*&quot;).matcher(original).replaceAll(&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L482">			original = Pattern.compile(&quot;\n[ \\t]*&quot;).matcher(original).replaceAll(&quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			// Replace visited text with replacement text
+<span class="fc" id="L484">			String visitedString = buffer.substring(visited.getStartPosition(),</span>
+<span class="fc" id="L485">					visited.getStartPosition() + visited.getLength());</span>
+<span class="fc" id="L486">			String replacementString = replacement.toString().replaceAll(&quot;,&quot;, &quot;, &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L487">			String modified = original.replace(visitedString, replacementString);</span>
+<span class="fc" id="L488">			ASTNode placeholder = rewrite.createStringPlaceholder(modified, st.getNodeType());</span>
+<span class="fc" id="L489">			rewrite.replace(st, placeholder, group);</span>
+<span class="pc" id="L490">		} catch (JavaModelException e) {</span>
+			// Fall back to simple replacement without NLS removal
+<span class="nc" id="L492">			rewrite.replace(visited, replacement, group);</span>
+		}
+<span class="fc" id="L494">		return false;</span>
+	}
+
+	/**
+	 * Handles the case where a string literal replacement is needed inside a try body
+	 * that will be unwrapped (single catch clause for UnsupportedEncodingException only).
+	 *
+	 * &lt;p&gt;This method creates string placeholders for each statement in the try body
+	 * with the argument replacement already baked in, then replaces the entire try
+	 * statement with these inlined statements. This avoids the conflict between
+	 * {@code rewrite.replace()} on child nodes and {@code createMoveTarget()} on
+	 * parent statements.
+	 *
+	 * @return {@code true} if the try-catch was successfully unwrapped
+	 */
+	private static boolean replaceTryBodyAndUnwrap(ASTRewrite rewrite, ASTNode visited,
+			ASTNode replacement, ASTNode statement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
+<span class="fc" id="L511">		Block block = (Block) statement.getParent();</span>
+<span class="fc" id="L512">		org.eclipse.jdt.core.dom.TryStatement tryStatement = (org.eclipse.jdt.core.dom.TryStatement) block.getParent();</span>
+<span class="fc" id="L513">		ASTNode tryParent = tryStatement.getParent();</span>
+<span class="pc bpc" id="L514" title="1 of 2 branches missed.">		if (!(tryParent instanceof Block parentBlock)) {</span>
+			// Cannot inline statements if the try's parent is not a block
+<span class="nc" id="L516">			rewrite.replace(visited, replacement, group);</span>
+<span class="nc" id="L517">			return false;</span>
+		}
+		try {
+<span class="fc" id="L520">			String buffer = cuRewrite.getCu().getBuffer().getContents();</span>
+<span class="fc" id="L521">			CompilationUnit cu = (CompilationUnit) statement.getRoot();</span>
+<span class="fc" id="L522">			String visitedString = buffer.substring(visited.getStartPosition(),</span>
+<span class="fc" id="L523">					visited.getStartPosition() + visited.getLength());</span>
+<span class="fc" id="L524">			String replacementString = replacement.toString().replaceAll(&quot;,&quot;, &quot;, &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+			// Create string placeholders for each statement in the try body
+<span class="fc" id="L527">			ListRewrite parentListRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
+<span class="fc" id="L528">			List&lt;?&gt; tryStatements = block.statements();</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">			for (int i = tryStatements.size() - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L530">				ASTNode stmt = (ASTNode) tryStatements.get(i);</span>
+<span class="fc" id="L531">				int stmtStart = cu.getExtendedStartPosition(stmt);</span>
+<span class="fc" id="L532">				int stmtLength = cu.getExtendedLength(stmt);</span>
+<span class="fc" id="L533">				String stmtSource = buffer.substring(stmtStart, stmtStart + stmtLength);</span>
+				// Remove leading whitespace
+<span class="fc" id="L535">				stmtSource = Pattern.compile(&quot;^[ \\t]*&quot;).matcher(stmtSource).replaceAll(&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L536">				stmtSource = Pattern.compile(&quot;\n[ \\t]*&quot;).matcher(stmtSource).replaceAll(&quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+				// Apply the argument replacement if this statement contains the visited node
+<span class="pc bpc" id="L538" title="1 of 2 branches missed.">				if (stmt == statement) {</span>
+					// Remove last NLS comment (the one for the replaced encoding string literal)
+<span class="fc" id="L540">					stmtSource = LAST_NLS_COMMENT.matcher(stmtSource).replaceFirst(&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L541">					stmtSource = stmtSource.replace(visitedString, replacementString);</span>
+				}
+<span class="fc" id="L543">				ASTNode placeholder = rewrite.createStringPlaceholder(stmtSource, stmt.getNodeType());</span>
+<span class="fc" id="L544">				parentListRewrite.insertAfter(placeholder, tryStatement, group);</span>
+			}
+<span class="fc" id="L546">			rewrite.remove(tryStatement, group);</span>
+<span class="fc" id="L547">			return true;</span>
+<span class="nc" id="L548">		} catch (JavaModelException e) {</span>
+			// Fall back to simple replacement without NLS removal
+<span class="nc" id="L550">			rewrite.replace(visited, replacement, group);</span>
+<span class="nc" id="L551">			return false;</span>
+		}
+	}
+
+	/**
+	 * Checks whether the given statement is directly inside the body of a try statement
+	 * that will be fully unwrapped by removeUnsupportedEncodingException. This happens when:
+	 * &lt;ul&gt;
+	 *   &lt;li&gt;The statement is in the try body (not a catch/finally block)&lt;/li&gt;
+	 *   &lt;li&gt;The try has no resources (not try-with-resources)&lt;/li&gt;
+	 *   &lt;li&gt;The try has no finally block&lt;/li&gt;
+	 *   &lt;li&gt;The try has exactly one catch clause catching only UnsupportedEncodingException&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * In this case, simplifyEmptyTryStatement will use createMoveTarget to move
+	 * statements out of the try body, so we must not use statement-level replacement.
+	 */
+	private static boolean isInsideTryBodyWithOnlyUnsupportedEncodingCatch(ASTNode statement) {
+<span class="fc" id="L568">		ASTNode parent = statement.getParent();</span>
+<span class="pc bpc" id="L569" title="1 of 2 branches missed.">		if (!(parent instanceof Block block)) {</span>
+<span class="nc" id="L570">			return false;</span>
+		}
+<span class="fc" id="L572">		ASTNode grandParent = block.getParent();</span>
+<span class="fc bfc" id="L573" title="All 2 branches covered.">		if (!(grandParent instanceof org.eclipse.jdt.core.dom.TryStatement tryStatement)) {</span>
+<span class="fc" id="L574">			return false;</span>
+		}
+		// Check if the block is the try body (not a catch or finally block)
+<span class="pc bpc" id="L577" title="1 of 2 branches missed.">		if (tryStatement.getBody() != block) {</span>
+<span class="nc" id="L578">			return false;</span>
+		}
+		// Try-with-resources won't be unwrapped even if catch is removed
+<span class="fc bfc" id="L581" title="All 2 branches covered.">		if (!tryStatement.resources().isEmpty()) {</span>
+<span class="fc" id="L582">			return false;</span>
+		}
+<span class="fc bfc" id="L584" title="All 2 branches covered.">		if (tryStatement.getFinally() != null) {</span>
+<span class="fc" id="L585">			return false;</span>
+		}
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L588">		List&lt;org.eclipse.jdt.core.dom.CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
+<span class="fc bfc" id="L589" title="All 2 branches covered.">		if (catchClauses.size() != 1) {</span>
+<span class="fc" id="L590">			return false;</span>
+		}
+<span class="fc" id="L592">		org.eclipse.jdt.core.dom.CatchClause catchClause = catchClauses.get(0);</span>
+<span class="fc" id="L593">		org.eclipse.jdt.core.dom.Type exType = catchClause.getException().getType();</span>
+<span class="pc bpc" id="L594" title="1 of 2 branches missed.">		if (exType instanceof org.eclipse.jdt.core.dom.SimpleType simpleType) {</span>
+<span class="fc" id="L595">			return UNSUPPORTED_ENCODING_EXCEPTION.equals(simpleType.getName().toString());</span>
+		}
+		// Union type (e.g., FileNotFoundException | UnsupportedEncodingException):
+		// After removing UnsupportedEncodingException, another catch type remains,
+		// so the try won't be unwrapped → no conflict with createMoveTarget.
+<span class="nc" id="L600">		return false;</span>
+	}
 
 	/**
 	 * Removes UnsupportedEncodingException from the enclosing method's throws clause
@@ -427,15 +612,15 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	 * @param visited the AST node that was modified, must not be null
 	 * @param group the text edit group for tracking changes, must not be null
 	 * @param rewrite the AST rewrite context, must not be null
-	 * @param importRewriter the import rewrite for removing unused imports, must not be null
+	 * @param importRemover the import remover for tracking removed nodes, must not be null
 	 */
-	protected void removeUnsupportedEncodingException(final ASTNode visited, TextEditGroup group, ASTRewrite rewrite, ImportRewrite importRewriter) {
-<span class="fc" id="L433">		ExceptionCleanupHelper.removeCheckedException(</span>
-<span class="fc" id="L434">				visited,</span>
-<span class="fc" id="L435">				JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION,</span>
-<span class="fc" id="L436">				UNSUPPORTED_ENCODING_EXCEPTION,</span>
-<span class="fc" id="L437">				group, rewrite, importRewriter);</span>
-<span class="fc" id="L438">	}</span>
+	protected void removeUnsupportedEncodingException(final ASTNode visited, TextEditGroup group, ASTRewrite rewrite, ImportRemover importRemover) {
+<span class="fc" id="L618">		ExceptionCleanupHelper.removeCheckedException(</span>
+<span class="fc" id="L619">				visited,</span>
+<span class="fc" id="L620">				JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION,</span>
+<span class="fc" id="L621">				UNSUPPORTED_ENCODING_EXCEPTION,</span>
+<span class="fc" id="L622">				group, rewrite, importRemover);</span>
+<span class="fc" id="L623">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

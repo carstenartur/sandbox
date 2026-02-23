@@ -13,8 +13,11 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.io.File;
+import java.io.OutputStream;
 import java.util.Formatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import org.eclipse.text.edits.TextEditGroup;
@@ -23,124 +26,237 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
-import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 
 /**
+ * Java 10
  *
  * Find: new java.util.Formatter(new File(), String cs) throws UnsupportedEncodingException
  *
- * Rewrite: new java.util.Formatter(new File(), Charset cs)
+ * Rewrite: new java.util.Formatter(new File(), Charset cs, Locale.getDefault())
  *
- * Find: new java.util.Formatter(new File(), String cs,new java.util.Locale())
+ * Find: new java.util.Formatter(new File(), String cs, new java.util.Locale())
  *
- * Rewrite: new java.util.Formatter(new File(), Charset cs,new java.util.Locale())
+ * Rewrite: new java.util.Formatter(new File(), Charset cs, new java.util.Locale())
  *
  * Find: new java.util.Formatter(new java.io.OutputStream(), String cs)
  *
- * Rewrite: new java.util.Formatter(new java.io.OutputStream(), Charset cs)
+ * Rewrite: new java.util.Formatter(new java.io.OutputStream(), Charset cs, Locale.getDefault())
  *
- * Find: new java.util.Formatter(new java.io.OutputStream(), String cs,new java.util.Locale())
+ * Find: new java.util.Formatter(new java.io.OutputStream(), String cs, new java.util.Locale())
  *
- * Rewrite: new java.util.Formatter(new java.io.OutputStream(), Charset cs,new java.util.Locale())
+ * Rewrite: new java.util.Formatter(new java.io.OutputStream(), Charset cs, new java.util.Locale())
  *
  * Find: new java.util.Formatter(new String(), String cs)
  *
- * Rewrite: new java.util.Formatter(new String(), Charset cs)
+ * Rewrite: new java.util.Formatter(new String(), Charset cs, Locale.getDefault())
  *
- * Find: new java.util.Formatter(new String(), String cs,new java.util.Locale())
+ * Find: new java.util.Formatter(new String(), String cs, new java.util.Locale())
  *
- * Rewrite: new java.util.Formatter(new String(), Charset cs,new java.util.Locale())
+ * Rewrite: new java.util.Formatter(new String(), Charset cs, new java.util.Locale())
  *
  * Find: new java.util.Formatter(new File())
  *
- * Rewrite: new java.util.Formatter(new File(), Charset.defaultCharset()) depends on
- * https://docs.oracle.com/en/java/javase/20/docs/api/java.base/java/lang/System.html#file.encoding
+ * Rewrite: new java.util.Formatter(new File(), Charset.defaultCharset(), Locale.getDefault())
+ *
+ * Find: new java.util.Formatter(fileName)
+ *
+ * Rewrite: new java.util.Formatter(fileName, Charset.defaultCharset(), Locale.getDefault())
+ *
+ * Find: new java.util.Formatter(outputStream)
+ *
+ * Rewrite: new java.util.Formatter(outputStream, Charset.defaultCharset(), Locale.getDefault())
+ *
+ * Note: The Formatter constructors accepting Charset are all 3-argument constructors
+ * (File/String/OutputStream, Charset, Locale) and were introduced in Java 10.
+ * There is no 2-argument Formatter(File/String/OutputStream, Charset) constructor.
+ * Formatter(Appendable), Formatter(Locale), and Formatter(PrintStream) do NOT involve
+ * encoding and are intentionally NOT handled.
+ * See https://docs.oracle.com/en/java/javase/22/docs/api/java.base/java/util/Formatter.html
  *
  */
-<span class="fc" id="L70">public class FormatterExplicitEncoding extends AbstractExplicitEncoding&lt;ClassInstanceCreation&gt; {</span>
+<span class="fc" id="L95">public class FormatterExplicitEncoding extends AbstractExplicitEncoding&lt;ClassInstanceCreation&gt; {</span>
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc" id="L74">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
-<span class="fc" id="L75">		HelperVisitorFactory.forClassInstanceCreation(Formatter.class)</span>
-<span class="fc" id="L76">			.in(compilationUnit)</span>
-<span class="fc" id="L77">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L78">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L79">	}</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
+			/**
+			 * For Java 9 and older just do nothing.
+			 * The Formatter constructors accepting Charset were introduced in Java 10.
+			 */
+<span class="nc" id="L104">			return;</span>
+		}
+<span class="fc" id="L106">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L107">		HelperVisitorFactory.forClassInstanceCreation(Formatter.class)</span>
+<span class="fc" id="L108">			.in(compilationUnit)</span>
+<span class="fc" id="L109">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L110">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L111">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations,
 			ChangeBehavior cb,
 			ClassInstanceCreation visited,
 			ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L86">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="fc" id="L118">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
 
-<span class="pc bpc" id="L88" title="2 of 3 branches missed.">		switch (arguments.size()) {</span>
+<span class="pc bpc" id="L120" title="2 of 3 branches missed.">		switch (arguments.size()) {</span>
 			case 2:
 			case 3:
-<span class="fc bfc" id="L91" title="All 2 branches covered.">				if (arguments.get(1) instanceof StringLiteral) {</span>
-<span class="fc" id="L92">					StringLiteral argString= (StringLiteral) arguments.get(1);</span>
-<span class="fc" id="L93">					String encodingKey= argString.getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">				if (arguments.get(1) instanceof StringLiteral) {</span>
+<span class="fc" id="L124">					StringLiteral argString= (StringLiteral) arguments.get(1);</span>
+<span class="fc" id="L125">					String encodingKey= argString.getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
 
-<span class="fc bfc" id="L95" title="All 2 branches covered.">					if (ENCODINGS.contains(encodingKey)) {</span>
-<span class="fc" id="L96">						NodeData nd= new NodeData(true, argString, ENCODING_MAP.get(encodingKey));</span>
-<span class="fc" id="L97">						holder.put(visited, nd);</span>
-<span class="fc" id="L98">						operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">					if (ENCODINGS.contains(encodingKey)) {</span>
+<span class="fc" id="L128">						NodeData nd= new NodeData(true, argString, ENCODING_MAP.get(encodingKey));</span>
+<span class="fc" id="L129">						holder.put(visited, nd);</span>
+<span class="fc" id="L130">						operations.add(fixcore.rewrite(visited, cb, holder));</span>
 					}
 				}
-<span class="fc" id="L101">				break;</span>
+<span class="fc" id="L133">				break;</span>
 			case 1:
-<span class="nc" id="L103">				NodeData nd2= new NodeData(false, visited, null);</span>
-<span class="nc" id="L104">				holder.put(visited, nd2);</span>
-<span class="nc" id="L105">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="nc" id="L106">				break;</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">				if (isEncodingRelevantSingleArgConstructor(visited)) {</span>
+<span class="nc" id="L136">					NodeData nd2= new NodeData(false, visited, null);</span>
+<span class="nc" id="L137">					holder.put(visited, nd2);</span>
+<span class="nc" id="L138">					operations.add(fixcore.rewrite(visited, cb, holder));</span>
+				}
+<span class="nc" id="L140">				break;</span>
 			default:
 				break;
 		}
-<span class="fc" id="L110">		return false;</span>
+<span class="fc" id="L144">		return false;</span>
+	}
+
+	/**
+	 * Checks whether a 1-argument Formatter constructor uses the platform default encoding
+	 * and should be migrated.
+	 *
+	 * &lt;p&gt;Only these 1-arg constructors use the default encoding:
+	 * &lt;ul&gt;
+	 *   &lt;li&gt;{@code Formatter(String fileName)} — uses default charset&lt;/li&gt;
+	 *   &lt;li&gt;{@code Formatter(File file)} — uses default charset&lt;/li&gt;
+	 *   &lt;li&gt;{@code Formatter(OutputStream os)} — uses default charset&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 *
+	 * &lt;p&gt;These 1-arg constructors do NOT involve encoding and must be skipped:
+	 * &lt;ul&gt;
+	 *   &lt;li&gt;{@code Formatter(Appendable a)}&lt;/li&gt;
+	 *   &lt;li&gt;{@code Formatter(Locale l)}&lt;/li&gt;
+	 *   &lt;li&gt;{@code Formatter(PrintStream ps)}&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 *
+	 * @param visited the ClassInstanceCreation node
+	 * @return true if this is an encoding-relevant 1-arg Formatter constructor
+	 */
+	private static boolean isEncodingRelevantSingleArgConstructor(ClassInstanceCreation visited) {
+<span class="nc" id="L169">		IMethodBinding binding= visited.resolveConstructorBinding();</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L171">			return false;</span>
+		}
+<span class="nc" id="L173">		ITypeBinding[] paramTypes= binding.getParameterTypes();</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">		if (paramTypes.length != 1) {</span>
+<span class="nc" id="L175">			return false;</span>
+		}
+<span class="nc" id="L177">		String paramTypeName= paramTypes[0].getQualifiedName();</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">		return File.class.getCanonicalName().equals(paramTypeName)</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">				|| String.class.getCanonicalName().equals(paramTypeName)</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">				|| OutputStream.class.getCanonicalName().equals(paramTypeName);</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final ClassInstanceCreation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L116">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L117">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L118">		ImportRewrite importRewriter= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L119">		NodeData nodedata= (NodeData) data.get(visited);</span>
-<span class="fc" id="L120">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
+<span class="fc" id="L186">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L187">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L188">		NodeData nodedata= (NodeData) data.get(visited);</span>
+<span class="fc" id="L189">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
 		/**
-		 * Add Charset.defaultCharset() as second (last) parameter
+		 * Register encoding replacement BEFORE removing exception handling.
+		 * removeUnsupportedEncodingException may call simplifyEmptyTryStatement
+		 * which uses createMoveTarget to move statements out of the try block.
+		 * replaceAndRemoveNLS fails silently on nodes that have already been
+		 * marked as move targets, so the replacement must be registered first.
 		 */
-<span class="fc" id="L124">		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (nodedata.replace()) {</span>
-<span class="fc" id="L126">			listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);</span>
-<span class="fc" id="L127">		} else {</span>
-<span class="nc" id="L128">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L197">		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);</span>
+<span class="fc" id="L198">		boolean tryAlreadyUnwrapped= false;</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">		if (nodedata.replace()) {</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">			if (visited.arguments().size() == 2) {</span>
+				/**
+				 * 2-arg case: Formatter(X, String) -&gt; Formatter(X, Charset, Locale.getDefault())
+				 * There is no Formatter(X, Charset) 2-arg constructor.
+				 * All Charset constructors are 3-arg: Formatter(X, Charset, Locale).
+				 *
+				 * IMPORTANT: Cannot use replaceAndRemoveNLS here because it conflicts
+				 * with ListRewrite operations (insertLast silently fails).
+				 * Use listRewrite.replace() + listRewrite.insertLast() instead.
+				 * See https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/121
+				 */
+<span class="fc" id="L211">				listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L212">				listRewrite.insertLast(createLocaleGetDefault(cuRewrite, ast), group);</span>
+<span class="fc" id="L213">			} else {</span>
+				/**
+				 * 3-arg case: Formatter(X, String, Locale) -&gt; Formatter(X, Charset, Locale)
+				 * Only replace needed, no insertion.
+				 */
+<span class="nc" id="L218">				tryAlreadyUnwrapped= replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);</span>
+			}
+<span class="nc" id="L220">		} else {</span>
+			/**
+			 * 1-arg case: Formatter(X) -&gt; Formatter(X, Charset.defaultCharset(), Locale.getDefault())
+			 * There is no Formatter(X, Charset) 2-arg constructor.
+			 */
+<span class="nc" id="L225">			listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+<span class="nc" id="L226">			listRewrite.insertLast(createLocaleGetDefault(cuRewrite, ast), group);</span>
 		}
-<span class="fc" id="L130">		removeUnsupportedEncodingException(visited, group, rewrite, importRewriter);</span>
-<span class="fc" id="L131">	}</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		if (!tryAlreadyUnwrapped) {</span>
+<span class="fc" id="L229">			removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());</span>
+		}
+<span class="fc" id="L231">	}</span>
+
+	/**
+	 * Create call to Locale.getDefault()
+	 *
+	 * @param cuRewrite CompilationUnitRewrite
+	 * @param ast AST
+	 * @return MethodInvocation that returns Locale.getDefault()
+	 */
+	private static MethodInvocation createLocaleGetDefault(final CompilationUnitRewrite cuRewrite, AST ast) {
+<span class="fc" id="L241">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L242">		importRewrite.addImport(Locale.class.getCanonicalName());</span>
+<span class="fc" id="L243">		MethodInvocation localeCall= ast.newMethodInvocation();</span>
+<span class="fc" id="L244">		localeCall.setExpression(ASTNodeFactory.newName(ast, Locale.class.getSimpleName()));</span>
+<span class="fc" id="L245">		localeCall.setName(ast.newSimpleName(&quot;getDefault&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L246">		return localeCall;</span>
+	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L135" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L136">			return &quot;Formatter r=new java.util.Formatter(out, &quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L252">			return &quot;Formatter r=new java.util.Formatter(out, &quot; + cb.computeCharsetforPreview() + &quot;, Locale.getDefault());\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="nc" id="L138">		return &quot;Formatter r=new java.util.Formatter(out);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L254">		return &quot;Formatter r=new java.util.Formatter(out);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L143">		return &quot;new java.util.Formatter(out)&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L259">		return &quot;new java.util.Formatter(out)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

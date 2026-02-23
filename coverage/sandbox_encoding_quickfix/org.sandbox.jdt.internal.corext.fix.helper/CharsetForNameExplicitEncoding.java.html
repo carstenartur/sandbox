@@ -53,53 +53,53 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="fc bfc" id="L56" title="All 2 branches covered.">		if (!JavaModelUtil.is18OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">		if (!JavaModelUtil.is18OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
 			/**
 			 * For Java 17 and older just do nothing
 			 */
 <span class="fc" id="L60">			return;</span>
 		}
-<span class="fc" id="L62">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
-<span class="fc" id="L63">		HelperVisitorFactory.forMethodCall(Charset.class, METHOD_FOR_NAME)</span>
-<span class="fc" id="L64">			.in(compilationUnit)</span>
-<span class="fc" id="L65">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L66">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L67">	}</span>
+<span class="nc" id="L62">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="nc" id="L63">		HelperVisitorFactory.forMethodCall(Charset.class, METHOD_FOR_NAME)</span>
+<span class="nc" id="L64">			.in(compilationUnit)</span>
+<span class="nc" id="L65">			.excluding(nodesprocessed)</span>
+<span class="nc" id="L66">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="nc" id="L67">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, ChangeBehavior cb,
 			MethodInvocation visited, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L72">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
-<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		if (!ASTNodes.usesGivenSignature(visited, Charset.class.getCanonicalName(), METHOD_FOR_NAME, String.class.getCanonicalName())) {</span>
+<span class="nc" id="L72">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">		if (!ASTNodes.usesGivenSignature(visited, Charset.class.getCanonicalName(), METHOD_FOR_NAME, String.class.getCanonicalName())) {</span>
 <span class="nc" id="L74">			return true;</span>
 		}
-<span class="fc" id="L76">		ASTNode encodingArg= arguments.get(0);</span>
+<span class="nc" id="L76">		ASTNode encodingArg= arguments.get(0);</span>
 
-<span class="fc" id="L78">		String encodingValue= null;</span>
-<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (encodingArg instanceof StringLiteral) {</span>
-<span class="fc" id="L80">			encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">		} else if (encodingArg instanceof SimpleName) {</span>
-<span class="fc" id="L82">			encodingValue= findVariableValue((SimpleName) encodingArg, visited);</span>
+<span class="nc" id="L78">		String encodingValue= null;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">		if (encodingArg instanceof StringLiteral) {</span>
+<span class="nc" id="L80">			encodingValue= ((StringLiteral) encodingArg).getLiteralValue().toUpperCase(java.util.Locale.ROOT);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">		} else if (encodingArg instanceof SimpleName) {</span>
+<span class="nc" id="L82">			encodingValue= findVariableValue((SimpleName) encodingArg, visited);</span>
 		}
 
-<span class="fc bfc" id="L85" title="All 4 branches covered.">		if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
-<span class="fc" id="L86">			NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
-<span class="fc" id="L87">			holder.put(visited, nd);</span>
-<span class="fc" id="L88">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L89">			return false;</span>
+<span class="nc bnc" id="L85" title="All 4 branches missed.">		if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
+<span class="nc" id="L86">			NodeData nd= new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
+<span class="nc" id="L87">			holder.put(visited, nd);</span>
+<span class="nc" id="L88">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="nc" id="L89">			return false;</span>
 		}
-<span class="fc" id="L91">		return false;</span>
+<span class="nc" id="L91">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, final MethodInvocation visited, final CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L97">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L98">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L99">		NodeData nodedata= (NodeData) data.get(visited);</span>
-<span class="fc" id="L100">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
-<span class="fc" id="L101">		ASTNodes.replaceButKeepComment(rewrite, visited, callToCharsetDefaultCharset, group);</span>
-<span class="fc" id="L102">	}</span>
+<span class="nc" id="L97">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="nc" id="L98">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="nc" id="L99">		NodeData nodedata= (NodeData) data.get(visited);</span>
+<span class="nc" id="L100">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
+<span class="nc" id="L101">		ASTNodes.replaceButKeepComment(rewrite, visited, callToCharsetDefaultCharset, group);</span>
+<span class="nc" id="L102">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
@@ -111,7 +111,7 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L114">		return &quot;Charset.forName(\&quot;UTF-8\&quot;)&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L114">		return &quot;Charset.forName(\&quot;UTF-8\&quot;)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -22,6 +22,7 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingC
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
@@ -43,88 +45,118 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
 
 public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 	public UseExplicitEncodingCleanUpCore(final Map&lt;String, String&gt; options) {
-<span class="nc" id="L49">		super(options);</span>
-<span class="nc" id="L50">	}</span>
-<span class="fc" id="L51">	public UseExplicitEncodingCleanUpCore() {</span>
-<span class="fc" id="L52">	}</span>
+<span class="nc" id="L52">		super(options);</span>
+<span class="nc" id="L53">	}</span>
+<span class="fc" id="L54">	public UseExplicitEncodingCleanUpCore() {</span>
+<span class="fc" id="L55">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="fc" id="L56">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="fc" id="L59">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="pc bpc" id="L60" title="2 of 4 branches missed.">		return isEnabled(EXPLICITENCODING_CLEANUP)&amp;&amp; !computeFixSet().isEmpty();</span>
+<span class="pc bpc" id="L63" title="2 of 4 branches missed.">		return isEnabled(EXPLICITENCODING_CLEANUP)&amp;&amp; !computeFixSet().isEmpty();</span>
 	}
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-<span class="fc" id="L64">		CompilationUnit compilationUnit= context.getAST();</span>
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
-<span class="nc" id="L66">			return null;</span>
+<span class="fc" id="L67">		CompilationUnit compilationUnit= context.getAST();</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
+<span class="nc" id="L69">			return null;</span>
 		}
-<span class="fc" id="L68">		EnumSet&lt;UseExplicitEncodingFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="pc bpc" id="L69" title="2 of 4 branches missed.">		if(!isEnabled(EXPLICITENCODING_CLEANUP) || computeFixSet.isEmpty()) {</span>
-<span class="nc" id="L70">			return null;</span>
-		}
-
-<span class="fc" id="L73">		ChangeBehavior cb= computeRefactorDeepth();</span>
-<span class="fc" id="L74">		Set&lt;CompilationUnitRewriteOperation&gt; operations= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L75">		Set&lt;ASTNode&gt; nodesprocessed= new HashSet&lt;&gt;();</span>
-
-		// Run all imperative helpers (they produce import-aware output)
-<span class="fc" id="L78">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, nodesprocessed, cb));</span>
-<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
-<span class="fc" id="L80">			return null;</span>
+<span class="fc" id="L71">		EnumSet&lt;UseExplicitEncodingFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="pc bpc" id="L72" title="2 of 4 branches missed.">		if(!isEnabled(EXPLICITENCODING_CLEANUP) || computeFixSet.isEmpty()) {</span>
+<span class="nc" id="L73">			return null;</span>
 		}
 
-<span class="fc" id="L83">		CompilationUnitRewriteOperation[] array= operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);</span>
-<span class="fc" id="L84">		return new CompilationUnitRewriteOperationsFixCore(ExplicitEncodingCleanUpFix_refactor,</span>
-<span class="fc" id="L85">				compilationUnit, array);</span>
+<span class="fc" id="L76">		ChangeBehavior cb= computeRefactorDeepth();</span>
+<span class="fc" id="L77">		Set&lt;CompilationUnitRewriteOperation&gt; operations= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L78">		Set&lt;ASTNode&gt; nodesprocessed= new HashSet&lt;&gt;();</span>
+
+		// DSL-first architecture: DSL rules run first from encoding.sandbox-hint.
+		// Long-term goal: DSL should progressively replace imperative Java helpers
+		// because DSL rules are shorter and declarative.
+		// AGGREGATE mode is excluded because it needs static field creation
+		// that DSL cannot express.
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		boolean dslActive= cb != ChangeBehavior.ENFORCE_UTF8_AGGREGATE;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">		if (dslActive) {</span>
+<span class="fc" id="L87">			Map&lt;String, String&gt; compilerOptions= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L88">			compilerOptions.put(&quot;sandbox.cleanup.mode&quot;, cb.name()); //$NON-NLS-1$</span>
+			// Pass source version so DSL guards like sourceVersionGE(10) work correctly
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">			if (compilationUnit.getJavaElement() != null</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">					&amp;&amp; compilationUnit.getJavaElement().getJavaProject() != null) {</span>
+<span class="fc" id="L92">				String sourceVersion= compilationUnit.getJavaElement()</span>
+<span class="fc" id="L93">						.getJavaProject().getOption(JavaCore.COMPILER_SOURCE, true);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">				if (sourceVersion != null) {</span>
+<span class="fc" id="L95">					compilerOptions.put(JavaCore.COMPILER_SOURCE, sourceVersion);</span>
+				}
+			}
+<span class="fc" id="L98">			HintFileFixCore.findOperationsForBundle(</span>
+<span class="fc" id="L99">					compilationUnit, &quot;encoding&quot;, operations, nodesprocessed, compilerOptions); //$NON-NLS-1$</span>
+		}
+
+		// Imperative helpers: non-DSL patterns always run.
+		// DSL-handled patterns are skipped when DSL is active — DSL should handle them.
+		// The nodesprocessed set provides node-level dedup as safety net.
+<span class="fc" id="L105">		computeFixSet.forEach(i -&gt; {</span>
+<span class="fc bfc" id="L106" title="All 4 branches covered.">			if (!dslActive || !i.isDslHandled()) {</span>
+<span class="fc" id="L107">				i.findOperations(compilationUnit, operations, nodesprocessed, cb);</span>
+			}
+<span class="fc" id="L109">		});</span>
+
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
+<span class="fc" id="L112">			return null;</span>
+		}
+
+<span class="fc" id="L115">		CompilationUnitRewriteOperation[] array= operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);</span>
+<span class="fc" id="L116">		return new CompilationUnitRewriteOperationsFixCore(ExplicitEncodingCleanUpFix_refactor,</span>
+<span class="fc" id="L117">				compilationUnit, array);</span>
 	}
 
 	private ChangeBehavior computeRefactorDeepth() {
-<span class="fc" id="L89">		ChangeBehavior cb=ChangeBehavior.KEEP_BEHAVIOR;</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">		if(isEnabled(EXPLICITENCODING_KEEP_BEHAVIOR)) {</span>
-<span class="fc" id="L91">			cb=ChangeBehavior.KEEP_BEHAVIOR;</span>
+<span class="fc" id="L121">		ChangeBehavior cb=ChangeBehavior.KEEP_BEHAVIOR;</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		if(isEnabled(EXPLICITENCODING_KEEP_BEHAVIOR)) {</span>
+<span class="fc" id="L123">			cb=ChangeBehavior.KEEP_BEHAVIOR;</span>
 		}
-<span class="fc bfc" id="L93" title="All 2 branches covered.">		if(isEnabled(EXPLICITENCODING_INSERT_UTF8)) {</span>
-<span class="fc" id="L94">			cb=ChangeBehavior.ENFORCE_UTF8;</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">		if(isEnabled(EXPLICITENCODING_INSERT_UTF8)) {</span>
+<span class="fc" id="L126">			cb=ChangeBehavior.ENFORCE_UTF8;</span>
 		}
-<span class="fc bfc" id="L96" title="All 2 branches covered.">		if(isEnabled(EXPLICITENCODING_AGGREGATE_TO_UTF8)) {</span>
-<span class="fc" id="L97">			cb=ChangeBehavior.ENFORCE_UTF8_AGGREGATE;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		if(isEnabled(EXPLICITENCODING_AGGREGATE_TO_UTF8)) {</span>
+<span class="fc" id="L129">			cb=ChangeBehavior.ENFORCE_UTF8_AGGREGATE;</span>
 		}
-<span class="fc" id="L99">		return cb;</span>
+<span class="fc" id="L131">		return cb;</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="fc" id="L104">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (isEnabled(EXPLICITENCODING_CLEANUP)) {</span>
-<span class="nc" id="L106">			String with=computeRefactorDeepth().toString();</span>
-<span class="nc" id="L107">			result.add(Messages.format(ExplicitEncodingCleanUp_description,new Object[] {String.join(&quot;,&quot;, computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Collectors.toList())),with})); //$NON-NLS-1$</span>
+<span class="fc" id="L136">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		if (isEnabled(EXPLICITENCODING_CLEANUP)) {</span>
+<span class="nc" id="L138">			String with=computeRefactorDeepth().toString();</span>
+<span class="nc" id="L139">			result.add(Messages.format(ExplicitEncodingCleanUp_description,new Object[] {String.join(&quot;,&quot;, computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Collectors.toList())),with})); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L109">		return result.toArray(new String[0]);</span>
+<span class="fc" id="L141">		return result.toArray(new String[0]);</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="nc" id="L114">		StringBuilder sb=new StringBuilder();</span>
-<span class="nc" id="L115">		EnumSet&lt;UseExplicitEncodingFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="nc" id="L116">		ChangeBehavior cb= computeRefactorDeepth();</span>
-<span class="nc" id="L117">		EnumSet.allOf(UseExplicitEncodingFixCore.class).forEach(e-&gt;sb.append(e.getPreview(computeFixSet.contains(e),cb)));</span>
-<span class="nc" id="L118">		return sb.toString();</span>
+<span class="nc" id="L146">		StringBuilder sb=new StringBuilder();</span>
+<span class="nc" id="L147">		EnumSet&lt;UseExplicitEncodingFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="nc" id="L148">		ChangeBehavior cb= computeRefactorDeepth();</span>
+<span class="nc" id="L149">		EnumSet.allOf(UseExplicitEncodingFixCore.class).forEach(e-&gt;sb.append(e.getPreview(computeFixSet.contains(e),cb)));</span>
+<span class="nc" id="L150">		return sb.toString();</span>
 	}
 
 	private EnumSet&lt;UseExplicitEncodingFixCore&gt; computeFixSet() {
-<span class="fc" id="L122">		EnumSet&lt;UseExplicitEncodingFixCore&gt; fixSet= EnumSet.noneOf(UseExplicitEncodingFixCore.class);</span>
+<span class="fc" id="L154">		EnumSet&lt;UseExplicitEncodingFixCore&gt; fixSet= EnumSet.noneOf(UseExplicitEncodingFixCore.class);</span>
 
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		if(isEnabled(EXPLICITENCODING_CLEANUP)) {</span>
-<span class="fc" id="L125">			fixSet= EnumSet.allOf(UseExplicitEncodingFixCore.class);</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">		if(isEnabled(EXPLICITENCODING_CLEANUP)) {</span>
+<span class="fc" id="L157">			fixSet= EnumSet.allOf(UseExplicitEncodingFixCore.class);</span>
 		}
-<span class="fc" id="L127">		return fixSet;</span>
+<span class="fc" id="L159">		return fixSet;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
