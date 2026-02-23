@@ -1,42 +1,44 @@
 {
-  "totalProcessed": 1,
-  "relevant": 1,
-  "irrelevant": 0,
+  "totalProcessed": 3,
+  "relevant": 2,
+  "irrelevant": 1,
   "duplicates": 0,
   "green": 0,
   "yellow": 0,
-  "red": 1,
-  "irrelevantReasons": {},
+  "red": 2,
+  "irrelevantReasons": {
+    "The commit introduces new method definitions, adds complex `if` blocks with multiple statements, and replaces expressions with calls to a newly defined private method. The TriggerPattern DSL is designed for single-expression/single-statement replacements and does not support inserting new control flow (like `if` statements) or generating calls to non-standard, newly defined private methods as part of a generalizable rule. The changes are too specific and structural for the current DSL capabilities.": 1
+  },
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "totalProcessed": 1,
-      "relevant": 1,
+      "totalProcessed": 3,
+      "relevant": 2,
       "green": 0,
       "yellow": 0,
-      "red": 1
+      "red": 2
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-02-22",
-      "processed": 1,
-      "relevant": 1
+      "date": "2026-02-23",
+      "processed": 3,
+      "relevant": 2
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-02-22T19:59:21.454Z",
-    "completedAt": "2026-02-22T20:09:13.666584440Z",
-    "durationSeconds": 592,
+    "startedAt": "2026-02-23T07:19:45.976Z",
+    "completedAt": "2026-02-23T07:33:04.247031083Z",
+    "durationSeconds": 798,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 5,
     "commitsPerRequest": 4,
-    "apiCallsMade": 1,
-    "deferredCommits": 3,
+    "apiCallsMade": 2,
+    "deferredCommits": 8,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-02-22T20:01:56.067646537Z",
-    "latestEvaluation": "2026-02-22T20:01:56.067646537Z"
+    "earliestEvaluation": "2026-02-23T07:20:50.575919257Z",
+    "latestEvaluation": "2026-02-23T07:25:52.324343620Z"
   }
 }
