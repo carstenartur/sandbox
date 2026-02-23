@@ -20,7 +20,8 @@ jobs:
       group: mining-state
       cancel-in-progress: false
     permissions:
-      contents: write  # Required: commit state.json and deploy report to gh-pages
+      contents: write        # Required: commit state.json and deploy report to gh-pages
+      pull-requests: write   # Required: create and auto-merge the state-update PR
 
     steps:
       - uses: actions/checkout@v6
@@ -72,13 +73,30 @@ jobs:
             echo "No state changes to commit."
             exit 0
           fi
-          git commit -m "mining: Update state $(date +%Y-%m-%d)"
+          BRANCH="mining/state-update"
           git stash --include-untracked
-          git pull --rebase origin ${{ github.event.repository.default_branch }}
-          if git rev-parse -q --verify refs/stash >/dev/null; then
-            git stash pop
+          git checkout -b "$BRANCH"
+          git stash pop || true
+          git add .github/refactoring-mining/state.json
+          git commit -m "mining: Update state $(date +%Y-%m-%d)"
+          git push origin "$BRANCH" --force
+
+      - name: Auto-merge state update
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Close any existing PR from this branch first
+          EXISTING_PR=$(gh pr list --head "mining/state-update" --json number -q '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING_PR" ]; then
+            gh pr close "$EXISTING_PR" --delete-branch 2>/dev/null || true
           fi
-          git push origin HEAD:${{ github.event.repository.default_branch }}
+          # Create new PR and merge it
+          gh pr create \
+            --base main \
+            --head "mining/state-update" \
+            --title "mining: Update state $(date +%Y-%m-%d)" \
+            --body "Automated state update from mining workflow run #${{ github.run_number }}. This PR is auto-merged to persist the mining progress so the next run continues where this one left off."
+          gh pr merge "mining/state-update" --squash --auto --delete-branch
 
       - name: Deploy Mining Report to gh-pages
         uses: peaceiris/actions-gh-pages@v4
