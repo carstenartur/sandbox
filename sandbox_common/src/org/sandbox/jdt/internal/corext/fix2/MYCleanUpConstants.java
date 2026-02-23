@@ -193,6 +193,10 @@ public class MYCleanUpConstants {
 	 */
 	public static final String JUNIT_CLEANUP_4_RULETIMEOUT= "cleanup.junitcleanup_4_ruletimeout"; //$NON-NLS-1$
 	/**
+	 * Migrate JUnit 4 @Rule ExpectedException to JUnit 5 assertThrows()
+	 */
+	public static final String JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION= "cleanup.junitcleanup_4_ruleexpectedexception"; //$NON-NLS-1$
+	/**
 	 * Migrate JUnit 4 @Rule ErrorCollector to JUnit 5 assertAll() pattern
 	 */
 	public static final String JUNIT_CLEANUP_4_RULEERRORCOLLECTOR= "cleanup.junitcleanup_4_ruleerrorcollector"; //$NON-NLS-1$

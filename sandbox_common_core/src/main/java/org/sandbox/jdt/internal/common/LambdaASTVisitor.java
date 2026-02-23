@@ -375,15 +375,13 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					String annotationSimpleName = annotationclass.substring(annotationclass.lastIndexOf('.') + 1);
 					for (Object modifier : node.modifiers()) {
 						if (modifier instanceof Annotation annotation) {
-							ITypeBinding anotbinding = annotation.resolveTypeBinding();
-							String annotationName = anotbinding != null ? anotbinding.getQualifiedName()
-									: annotation.getTypeName().getFullyQualifiedName();
+							String annotationName = resolveAnnotationName(annotation);
 							if (annotationName.equals(annotationclass) || annotationName.equals(annotationSimpleName)) {
 								// Feld- oder Klassentyp des @Rule-Felds bestimmen
 								VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
 								ITypeBinding fieldBinding = fragment.resolveBinding() != null ? fragment.resolveBinding().getType() : null;
 								// Prüfen, ob die Klasse von ExternalResource erbt
-								if (isExternalResource(fieldBinding, superclassname)) {
+								if (fieldBinding != null && !fieldBinding.isRecovered() && isExternalResource(fieldBinding, superclassname)) {
 									bothmatch=true;
 								} else {
 									// Fallback: match by source type name when binding is unavailable or recovered
@@ -414,6 +412,26 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			typeBinding = typeBinding.getSuperclass();
 		}
 		return false;
+	}
+
+	/**
+	 * Resolves the fully qualified name of an annotation, falling back to the
+	 * source-level type name when the binding is null, recovered, or has an
+	 * empty qualified name. This is essential for standalone ASTParser usage
+	 * where external types (e.g., JUnit annotations) may not be on the classpath.
+	 *
+	 * @param annotation the annotation node
+	 * @return the best available qualified name for the annotation type
+	 */
+	private static String resolveAnnotationName(Annotation annotation) {
+		ITypeBinding binding = annotation.resolveTypeBinding();
+		if (binding != null && !binding.isRecovered()) {
+			String qname = binding.getQualifiedName();
+			if (qname != null && !qname.isEmpty()) {
+				return qname;
+			}
+		}
+		return annotation.getTypeName().getFullyQualifiedName();
 	}
 	
 	@Override
@@ -545,13 +563,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.MarkerAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
-				ITypeBinding binding = node.resolveTypeBinding();
-				String fullyQualifiedName;
-				if (binding != null) {
-					fullyQualifiedName = binding.getQualifiedName();
-				}else {
-					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();
-				}
+				String fullyQualifiedName = resolveAnnotationName(node);
 				if ((data!= null) && !fullyQualifiedName.equals(data)) {
 					return true;
 				}
@@ -777,13 +789,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.NormalAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
-				ITypeBinding binding = node.resolveTypeBinding();
-				String fullyQualifiedName;
-				if (binding != null) {
-					fullyQualifiedName = binding.getQualifiedName();
-				}else {
-					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();
-				}
+				String fullyQualifiedName = resolveAnnotationName(node);
 				if ((data!= null) && !fullyQualifiedName.equals(data)) {
 					return true;
 				}
@@ -951,13 +957,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.SingleMemberAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
-				ITypeBinding binding = node.resolveTypeBinding();
-				String fullyQualifiedName;
-				if (binding != null) {
-					fullyQualifiedName = binding.getQualifiedName();
-				}else {
-					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();
-				}
+				String fullyQualifiedName = resolveAnnotationName(node);
 				if ((data!= null) && !fullyQualifiedName.equals(data)) {
 					return true;
 				}
@@ -1552,13 +1552,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.MarkerAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
-				ITypeBinding binding = node.resolveTypeBinding();
-				String fullyQualifiedName;
-				if (binding != null) {
-					fullyQualifiedName = binding.getQualifiedName();
-				}else {
-					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();
-				}
+				String fullyQualifiedName = resolveAnnotationName(node);
 				if ((data!= null) && !fullyQualifiedName.equals(data)) {
 					return;
 				}
@@ -1663,13 +1657,7 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.NormalAnnotation);
 			if(config != null) {
 				String data = config.getAnnotationName();
-				ITypeBinding binding = node.resolveTypeBinding();
-				String fullyQualifiedName;
-				if (binding != null) {
-					fullyQualifiedName = binding.getQualifiedName();
-				}else {
-					fullyQualifiedName = node.getTypeName().getFullyQualifiedName();
-				}
+				String fullyQualifiedName = resolveAnnotationName(node);
 				if ((data!= null) && !fullyQualifiedName.equals(data)) {
 					return;
 				}

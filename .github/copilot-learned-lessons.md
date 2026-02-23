@@ -408,6 +408,66 @@ the try body.
 
 ---
 
+## 20. ⚠️ Recovered Bindings Break Annotation and Field Type Matching in LambdaASTVisitor
+
+**Issue**: When using the standalone `ASTParser` with `setResolveBindings(true)` and
+`setBindingsRecovery(true)`, types not on the classpath (e.g., JUnit's `@Rule`, `ErrorCollector`)
+produce **recovered** bindings — non-null `ITypeBinding` objects with `isRecovered() == true`.
+
+The old code checked `binding != null` before using `binding.getQualifiedName()`, assuming
+null meant "unresolved". But recovered bindings are non-null, so the fallback to source-level
+names (`annotation.getTypeName().getFullyQualifiedName()`) was never reached. The recovered
+binding's `getQualifiedName()` may return empty string `""` or an unreliable name.
+
+**Affected code**: `LambdaASTVisitor.java` — all annotation visit/endVisit methods:
+- `visit(MarkerAnnotation)`, `endVisit(MarkerAnnotation)`
+- `visit(NormalAnnotation)`, `endVisit(NormalAnnotation)`
+- `visit(SingleMemberAnnotation)`
+- `visit(FieldDeclaration)` — both annotation matching AND field type matching
+
+**Wrong** (trusts any non-null binding):
+```java
+ITypeBinding binding = annotation.resolveTypeBinding();
+String fullyQualifiedName;
+if (binding != null) {
+    fullyQualifiedName = binding.getQualifiedName(); // may be "" for recovered binding
+} else {
+    fullyQualifiedName = annotation.getTypeName().getFullyQualifiedName(); // never reached
+}
+```
+
+**Correct** (checks `isRecovered()` before trusting binding):
+```java
+String fullyQualifiedName = resolveAnnotationName(annotation);
+// where resolveAnnotationName is:
+private static String resolveAnnotationName(Annotation annotation) {
+    ITypeBinding binding = annotation.resolveTypeBinding();
+    if (binding != null && !binding.isRecovered()) {
+        String qname = binding.getQualifiedName();
+        if (qname != null && !qname.isEmpty()) {
+            return qname;
+        }
+    }
+    return annotation.getTypeName().getFullyQualifiedName();
+}
+```
+
+**For field type matching** in `visit(FieldDeclaration)`, the same principle applies:
+```java
+// Wrong: isExternalResource may get a recovered binding that walks up to Object
+if (isExternalResource(fieldBinding, superclassname)) { ... }
+// Correct: skip isExternalResource for recovered bindings, fall through to source-name match
+if (fieldBinding != null && !fieldBinding.isRecovered() && isExternalResource(fieldBinding, superclassname)) { ... }
+```
+
+**Rule**: When checking `ITypeBinding` from `resolveTypeBinding()` or `resolveBinding().getType()`,
+ALWAYS check `isRecovered()` before trusting `getQualifiedName()` or walking the superclass chain.
+Recovered bindings are non-null but unreliable — fall back to source-level names instead.
+
+**Fixed**: 2026-02-23
+
+---
+
 ## 17. Java 8 OutputStreamWriter Cleanup Does NOT Apply
 
 **Issue**: The `OutputStreamWriter` encoding cleanup does not transform code when targeting Java 8.
@@ -517,3 +577,4 @@ assertRefactoringResultAsExpected()
 **Fixed**: 2026-02-22
 
 ---
+
