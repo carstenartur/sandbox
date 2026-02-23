@@ -200,6 +200,18 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULETIMEOUT, MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT,
 				FALSE_TRUE);
 		
+		// Add Rule ExpectedException checkbox
+		intent(junitGroup);
+		final CheckboxPreference junit_ruleexpectedexception= createCheckboxPref(junitGroup, numColumns-1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULEEXPECTEDEXCEPTION, MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION,
+				FALSE_TRUE);
+		
+		// Add Rule ErrorCollector checkbox
+		intent(junitGroup);
+		final CheckboxPreference junit_ruleerrorcollector= createCheckboxPref(junitGroup, numColumns-1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULEERRORCOLLECTOR, MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR,
+				FALSE_TRUE);
+		
 		// Add Lost Tests checkbox
 		intent(junitGroup);
 		final CheckboxPreference junit_lost_tests= createCheckboxPref(junitGroup, numColumns-1,
@@ -225,6 +237,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_ruleexternalresource,
 				junit_externalresource,
 				junit_ruletimeout,
+				junit_ruleexpectedexception,
+				junit_ruleerrorcollector,
 				junit_runwith,
 				junit_category,
 				junit_fixmethodorder,
@@ -260,7 +274,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 						junit_test_timeout, junit_test_expected, junit_before, junit_after, 
 						junit_beforeclass, junit_afterclass, junit_ruletempfolder, junit_ruletestname,
 						junit_ruleexternalresource, junit_externalresource, junit_runwith, 
-						junit_suite, junit_category, junit_ruletimeout);
+						junit_suite, junit_category, junit_ruletimeout,
+						junit_ruleexpectedexception, junit_ruleerrorcollector);
 			}
 		});
 		
@@ -310,6 +325,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	 * @param junit_suite Suite checkbox
 	 * @param junit_category Category checkbox
 	 * @param junit_ruletimeout Rule Timeout checkbox
+	 * @param junit_ruleexpectedexception Rule ExpectedException checkbox
+	 * @param junit_ruleerrorcollector Rule ErrorCollector checkbox
 	 */
 	private void applyQuickSelection(int selectionIndex, CheckboxPreference junitcb,
 			CheckboxPreference junit_assert, CheckboxPreference junit_assume, 
@@ -320,7 +337,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 			CheckboxPreference junit_ruletempfolder, CheckboxPreference junit_ruletestname,
 			CheckboxPreference junit_ruleexternalresource, CheckboxPreference junit_externalresource,
 			CheckboxPreference junit_runwith, CheckboxPreference junit_suite,
-			CheckboxPreference junit_category, CheckboxPreference junit_ruletimeout) {
+			CheckboxPreference junit_category, CheckboxPreference junit_ruletimeout,
+			CheckboxPreference junit_ruleexpectedexception, CheckboxPreference junit_ruleerrorcollector) {
 		
 		// Reset all checkboxes to unchecked first
 		if (selectionIndex > 0) {
@@ -346,6 +364,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 			junit_suite.setChecked(false);
 			junit_category.setChecked(false);
 			junit_ruletimeout.setChecked(false);
+			junit_ruleexpectedexception.setChecked(false);
+			junit_ruleerrorcollector.setChecked(false);
 		}
 		
 		switch (selectionIndex) {
@@ -371,6 +391,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_suite.setChecked(true);
 				junit_category.setChecked(true);
 				junit_ruletimeout.setChecked(true);
+				junit_ruleexpectedexception.setChecked(true);
+				junit_ruleerrorcollector.setChecked(true);
 				break;
 				
 			case 2: // Annotations Only
@@ -399,6 +421,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				junit_ruleexternalresource.setChecked(true);
 				junit_externalresource.setChecked(true);
 				junit_ruletimeout.setChecked(true);
+				junit_ruleexpectedexception.setChecked(true);
+				junit_ruleerrorcollector.setChecked(true);
 				break;
 				
 			default:

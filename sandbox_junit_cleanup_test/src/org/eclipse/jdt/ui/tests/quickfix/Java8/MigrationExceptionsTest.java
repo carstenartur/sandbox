@@ -145,6 +145,7 @@
 	
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION);
 	
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 """
@@ -194,6 +195,7 @@ public class MyTest {
 	
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION);
 	
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 """
@@ -245,6 +247,7 @@ public class MyTest {
 	
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION);
 	
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
@@ -293,6 +296,7 @@ public class MyTest {
 	
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION);
 	
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""

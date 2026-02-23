@@ -119,7 +119,7 @@ public class MigrationRunnersTest {
 				""", false, null);
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED);
 
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 """

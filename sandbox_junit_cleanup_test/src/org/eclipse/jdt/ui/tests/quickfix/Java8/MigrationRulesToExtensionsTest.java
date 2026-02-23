@@ -182,6 +182,7 @@ public class MigrationRulesToExtensionsTest {
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
 
 		// Note: JUnit 4's @Rule Timeout applies to all test methods in the class,
 		// so the correct JUnit 5 equivalent is a class-level @Timeout annotation
