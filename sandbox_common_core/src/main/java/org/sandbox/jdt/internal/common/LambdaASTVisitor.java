@@ -383,11 +383,9 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 								VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
 								ITypeBinding fieldBinding = fragment.resolveBinding() != null ? fragment.resolveBinding().getType() : null;
 								// Prüfen, ob die Klasse von ExternalResource erbt
-								if (fieldBinding != null) {
-									if (isExternalResource(fieldBinding, superclassname)) {
-										bothmatch=true;
-									}
-								} else {
+								if (isTypeMatching(fieldBinding, superclassname)) {
+									bothmatch=true;
+								} else if (fieldBinding == null) {
 									// Fallback: match by type name when binding is unavailable
 									String fieldTypeName = node.getType().toString();
 									if (fieldTypeName.equals(superclassname) || superclassname.endsWith("." + fieldTypeName)) { //$NON-NLS-1$
