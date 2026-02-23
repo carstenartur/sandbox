@@ -46,9 +46,9 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
  *
  * Change
  *
- * Find: Reader r=Channels.newReader(ch,"UTF-8")
+ * Find: Reader r=Channels.newReader(ch, "UTF-8")
  *
- * Rewrite: Reader r=Channels.newReader(ch,StandardCharsets.UTF_8)
+ * Rewrite: Reader r=Channels.newReader(ch, StandardCharsets.UTF_8)
  *
  * Find: Reader r5 = Channels.newReader(ch, "ISO-8859-1", 0, 1024)
  *
@@ -129,13 +129,13 @@ public class ChannelsNewReaderExplicitEncoding extends AbstractExplicitEncoding<
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
 		if (afterRefactoring) {
-			return "Reader r=Channels.newReader(ch,StandardCharsets.UTF_8);\n"; //$NON-NLS-1$
+			return "Reader r=Channels.newReader(ch, StandardCharsets.UTF_8);\n"; //$NON-NLS-1$
 		}
-		return "Reader r=Channels.newReader(ch,\"UTF-8\");\n"; //$NON-NLS-1$
+		return "Reader r=Channels.newReader(ch, \"UTF-8\");\n"; //$NON-NLS-1$
 	}
 
 	@Override
 	public String toString() {
-		return "Channels.newReader(ch,StandardCharsets.UTF_8)"; //$NON-NLS-1$
+		return "Channels.newReader(ch, StandardCharsets.UTF_8)"; //$NON-NLS-1$
 	}
 }

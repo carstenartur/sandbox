@@ -203,3 +203,113 @@ new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src in
 new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src instanceof java.nio.channels.ReadableByteChannel
 => new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
 ;;
+
+// ============================================================================
+// Section 3: Channels methods (string charset argument replacement)
+// These replace string-based charset arguments in Channels.newReader/newWriter
+// with StandardCharsets constants.
+// ============================================================================
+
+// === Channels.newReader(ReadableByteChannel, String) ===
+
+java.nio.channels.Channels.newReader($ch, "${CHARSET}") :: sourceVersionGE(10)
+=> java.nio.channels.Channels.newReader($ch, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+;;
+
+// === Channels.newWriter(WritableByteChannel, String) ===
+
+java.nio.channels.Channels.newWriter($ch, "${CHARSET}") :: sourceVersionGE(10)
+=> java.nio.channels.Channels.newWriter($ch, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+;;
+
+// ============================================================================
+// Section 4: Properties.storeToXML
+// Replaces string-based charset in storeToXML(OutputStream, String, String)
+// and adds explicit UTF-8 to storeToXML(OutputStream, String) (default is UTF-8).
+// ============================================================================
+
+// === Properties.storeToXML(OutputStream, String, String) — string charset ===
+
+$props.storeToXML($out, $comment, "${CHARSET}") :: sourceVersionGE(10)
+=> $props.storeToXML($out, $comment, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+;;
+
+// === Properties.storeToXML(OutputStream, String) — default UTF-8 ===
+// Default is UTF-8, so both modes produce StandardCharsets.UTF_8
+
+$props.storeToXML($out, $comment) :: sourceVersionGE(10), mode(ENFORCE_UTF8)
+=> $props.storeToXML($out, $comment, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+$props.storeToXML($out, $comment) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR)
+=> $props.storeToXML($out, $comment, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+// ============================================================================
+// Section 5: Files methods (zero-argument expansion)
+// These methods default to UTF-8, so both modes produce StandardCharsets.UTF_8.
+// The imperative helpers remain as fallback for the 2-arg FQN-shortening case.
+// ============================================================================
+
+// === Files.newBufferedReader(Path) — default UTF-8 ===
+
+java.nio.file.Files.newBufferedReader($path) :: sourceVersionGE(8), mode(ENFORCE_UTF8)
+=> java.nio.file.Files.newBufferedReader($path, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+java.nio.file.Files.newBufferedReader($path) :: sourceVersionGE(8), mode(KEEP_BEHAVIOR)
+=> java.nio.file.Files.newBufferedReader($path, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+// === Files.newBufferedWriter(Path) — default UTF-8 ===
+
+java.nio.file.Files.newBufferedWriter($path) :: sourceVersionGE(8), mode(ENFORCE_UTF8)
+=> java.nio.file.Files.newBufferedWriter($path, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+java.nio.file.Files.newBufferedWriter($path) :: sourceVersionGE(8), mode(KEEP_BEHAVIOR)
+=> java.nio.file.Files.newBufferedWriter($path, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+// === Files.readAllLines(Path) — default UTF-8 ===
+
+java.nio.file.Files.readAllLines($path) :: sourceVersionGE(8), mode(ENFORCE_UTF8)
+=> java.nio.file.Files.readAllLines($path, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+java.nio.file.Files.readAllLines($path) :: sourceVersionGE(8), mode(KEEP_BEHAVIOR)
+=> java.nio.file.Files.readAllLines($path, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+// === Files.readString(Path) — Java 11+, default UTF-8 ===
+
+java.nio.file.Files.readString($path) :: sourceVersionGE(11), mode(ENFORCE_UTF8)
+=> java.nio.file.Files.readString($path, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+java.nio.file.Files.readString($path) :: sourceVersionGE(11), mode(KEEP_BEHAVIOR)
+=> java.nio.file.Files.readString($path, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+// === Files.writeString(Path, CharSequence) — Java 11+, default UTF-8 ===
+
+java.nio.file.Files.writeString($path, $content) :: sourceVersionGE(11), mode(ENFORCE_UTF8)
+=> java.nio.file.Files.writeString($path, $content, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+java.nio.file.Files.writeString($path, $content) :: sourceVersionGE(11), mode(KEEP_BEHAVIOR)
+=> java.nio.file.Files.writeString($path, $content, java.nio.charset.StandardCharsets.UTF_8)
+;;
+
+// ============================================================================
+// Section 6: ByteArrayOutputStream (string charset replacement only)
+// Zero-argument toString() is NOT migrated to DSL because the pattern
+// $baos.toString() would match any toString() call on any object.
+// The imperative helper handles the zero-arg case.
+// ============================================================================
+
+// === ByteArrayOutputStream.toString(String) ===
+
+$baos.toString("${CHARSET}") :: sourceVersionGE(10)
+=> $baos.toString(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
+;;

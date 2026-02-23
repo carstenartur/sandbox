@@ -614,7 +614,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		final String[] previews = new String[cus.length];
 		for (int i = 0; i < cus.length; i++) {
 			final ICompilationUnit cu = cus[i];
-			previews[i] = cu.getBuffer().getContents();
+			previews[i] = normalizeLineEndings(cu.getBuffer().getContents());
 		}
 		assertEqualStringsIgnoreOrder(previews, expected);
 		return status;
@@ -756,8 +756,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param expecteds the expected strings
 	 */
 	public static void assertEqualStringsIgnoreOrder(final String[] actuals, final String[] expecteds) {
-		final ArrayList<String> actualList = new ArrayList<>(Arrays.asList(actuals));
-		final ArrayList<String> expectedList = new ArrayList<>(Arrays.asList(expecteds));
+		final ArrayList<String> actualList = new ArrayList<>(
+				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeLineEndings).toList());
+		final ArrayList<String> expectedList = new ArrayList<>(
+				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeLineEndings).toList());
 		
 		// Remove matching elements from both lists
 		for (int i = actualList.size() - 1; i >= 0; i--) {
@@ -797,6 +799,24 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			}
 		}
 		return buf.toString();
+	}
+
+	/**
+	 * Normalizes line endings to Unix-style {@code \n}.
+	 * <p>
+	 * This prevents false test failures caused by platform-dependent line endings
+	 * (e.g., {@code \r\n} on Windows or from Copilot-generated code) when comparing
+	 * actual refactoring output against expected strings that use {@code \n}.
+	 * </p>
+	 *
+	 * @param s the string to normalize, may be {@code null}
+	 * @return the normalized string, or {@code null} if input was {@code null}
+	 */
+	private static String normalizeLineEndings(final String s) {
+		if (s == null) {
+			return null;
+		}
+		return s.replace("\r\n", "\n").replace("\r", "\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 
 	/**

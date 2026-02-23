@@ -46,8 +46,8 @@ public class EncodingHintFileTest {
 		HintFile hintFile = loadHintFile();
 		assertNotNull(hintFile, "encoding library should be loadable"); //$NON-NLS-1$
 		assertEquals("encoding", hintFile.getId()); //$NON-NLS-1$
-		assertTrue(hintFile.getRules().size() >= 60,
-				"encoding library should have at least 60 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 130,
+				"encoding library should have at least 130 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
 	}
 
 	@Test
@@ -106,14 +106,24 @@ public class EncodingHintFileTest {
 		assertTrue(UseExplicitEncodingFixCore.URLDECODER.isDslHandled());
 		assertTrue(UseExplicitEncodingFixCore.URLENCODER.isDslHandled());
 
-		// Tier 2+3 (imperative-only): complex structural rewrites
+		// Tier 2 (DSL-handled): string charset replacement + zero-arg expansion
+		assertTrue(UseExplicitEncodingFixCore.CHANNELSNEWREADER.isDslHandled());
+		assertTrue(UseExplicitEncodingFixCore.CHANNELSNEWWRITER.isDslHandled());
+		assertTrue(UseExplicitEncodingFixCore.PROPERTIES_STORETOXML.isDslHandled());
+
+		// Tier 2 (partial DSL + imperative fallback): DSL handles zero-arg expansion,
+		// imperative handles 2-arg FQN shortening and zero-arg toString()
+		assertFalse(UseExplicitEncodingFixCore.FILES_NEWBUFFEREDREADER.isDslHandled());
+		assertFalse(UseExplicitEncodingFixCore.FILES_NEWBUFFEREDWRITER.isDslHandled());
+		assertFalse(UseExplicitEncodingFixCore.FILES_READALLLINES.isDslHandled());
+		assertFalse(UseExplicitEncodingFixCore.FILES_READSTRING.isDslHandled());
+		assertFalse(UseExplicitEncodingFixCore.FILES_WRITESTRING.isDslHandled());
+		assertFalse(UseExplicitEncodingFixCore.BYTEARRAYOUTPUTSTREAM.isDslHandled());
+
+		// Tier 3 (imperative-only): complex structural rewrites
 		assertFalse(UseExplicitEncodingFixCore.FILEREADER.isDslHandled());
 		assertFalse(UseExplicitEncodingFixCore.FILEWRITER.isDslHandled());
 		assertFalse(UseExplicitEncodingFixCore.PRINTWRITER.isDslHandled());
-		assertFalse(UseExplicitEncodingFixCore.BYTEARRAYOUTPUTSTREAM.isDslHandled());
-		assertFalse(UseExplicitEncodingFixCore.CHANNELSNEWREADER.isDslHandled());
-		assertFalse(UseExplicitEncodingFixCore.CHANNELSNEWWRITER.isDslHandled());
-		assertFalse(UseExplicitEncodingFixCore.PROPERTIES_STORETOXML.isDslHandled());
 	}
 
 	/**
