@@ -248,12 +248,13 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		
 		// Step 7: Update imports
 		importRewriter.removeImport(ORG_JUNIT_RUNWITH);
+		importRewriter.removeImport(ORG_JUNIT_TEST);
 		importRewriter.removeImport(ORG_JUNIT_RUNNERS_PARAMETERIZED);
 		importRewriter.removeImport(ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS);
-		importRewriter.removeImport("java.util.Arrays");
-		importRewriter.removeImport("java.util.Collection");
+		importRewriter.removeImport("java.util.Arrays"); //$NON-NLS-1$
+		importRewriter.removeImport("java.util.Collection"); //$NON-NLS-1$
 		// Add imports for JUnit 5 parameterized tests
-		importRewriter.addImport("java.util.stream.Stream");
+		importRewriter.addImport("java.util.stream.Stream"); //$NON-NLS-1$
 		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_METHOD_SOURCE);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST);

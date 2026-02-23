@@ -75,12 +75,19 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
 		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
-		if (fragment.resolveBinding() == null) {
-			// Return true to continue processing other fields
-			return true;
-		}
-		ITypeBinding binding = fragment.resolveBinding().getType();
+		ITypeBinding binding = fragment.resolveBinding() != null ? fragment.resolveBinding().getType() : null;
+		boolean isErrorCollector;
 		if (binding != null && ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(binding.getQualifiedName())) {
+			isErrorCollector = true;
+		} else {
+			// Fallback: check by source type name when binding is unavailable or recovered
+			String typeName = node.getType().toString();
+			String simpleTypeName = ORG_JUNIT_RULES_ERROR_COLLECTOR
+					.substring(ORG_JUNIT_RULES_ERROR_COLLECTOR.lastIndexOf('.') + 1);
+			isErrorCollector = simpleTypeName.equals(typeName)
+					|| ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(typeName);
+		}
+		if (isErrorCollector) {
 			JunitHolder mh = new JunitHolder();
 			mh.setMinv(node);
 			dataHolder.put(dataHolder.size(), mh);
