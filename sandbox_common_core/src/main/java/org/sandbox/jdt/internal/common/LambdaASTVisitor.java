@@ -375,14 +375,24 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 					for (Object modifier : node.modifiers()) {
 						if (modifier instanceof Annotation annotation) {
 							ITypeBinding anotbinding = annotation.resolveTypeBinding();
-							String annotationName = anotbinding.getQualifiedName();
-							if (annotationName.equals(annotationclass)) {
+							// Use simple name as fallback when binding is unavailable
+							String annotationName = anotbinding != null ? anotbinding.getQualifiedName()
+									: annotation.getTypeName().getFullyQualifiedName();
+							if (annotationName.equals(annotationclass) || annotationclass.endsWith("." + annotationName)) { //$NON-NLS-1$
 								// Feld- oder Klassentyp des @Rule-Felds bestimmen
 								VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
-								ITypeBinding binding = fragment.resolveBinding().getType();
+								ITypeBinding fieldBinding = fragment.resolveBinding() != null ? fragment.resolveBinding().getType() : null;
 								// Prüfen, ob die Klasse von ExternalResource erbt
-								if (isExternalResource(binding,superclassname)) {
-									bothmatch=true;
+								if (fieldBinding != null) {
+									if (isExternalResource(fieldBinding, superclassname)) {
+										bothmatch=true;
+									}
+								} else {
+									// Fallback: match by type name when binding is unavailable
+									String fieldTypeName = node.getType().toString();
+									if (fieldTypeName.equals(superclassname) || superclassname.endsWith("." + fieldTypeName)) { //$NON-NLS-1$
+										bothmatch=true;
+									}
 								}
 							}
 						}
