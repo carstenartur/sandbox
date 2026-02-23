@@ -82,7 +82,8 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 		} else {
 			// Fallback: check by type name when binding is unavailable
 			String typeName = node.getType().toString();
-			isErrorCollector = "ErrorCollector".equals(typeName) || ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(typeName); //$NON-NLS-1$
+			String simpleTypeName = ORG_JUNIT_RULES_ERROR_COLLECTOR.substring(ORG_JUNIT_RULES_ERROR_COLLECTOR.lastIndexOf('.') + 1);
+			isErrorCollector = simpleTypeName.equals(typeName) || ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(typeName);
 		}
 		if (isErrorCollector) {
 			JunitHolder mh = new JunitHolder();

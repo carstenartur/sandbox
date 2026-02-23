@@ -378,17 +378,22 @@ public class LambdaASTVisitor<E extends HelperVisitorProvider<V,T,E>, V, T> exte
 							// Use simple name as fallback when binding is unavailable
 							String annotationName = anotbinding != null ? anotbinding.getQualifiedName()
 									: annotation.getTypeName().getFullyQualifiedName();
-							if (annotationName.equals(annotationclass) || annotationclass.endsWith("." + annotationName)) { //$NON-NLS-1$
+							String annotationSimpleName = annotationclass.substring(annotationclass.lastIndexOf('.') + 1);
+							if (annotationName.equals(annotationclass) || annotationName.equals(annotationSimpleName)) {
 								// Feld- oder Klassentyp des @Rule-Felds bestimmen
 								VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
 								ITypeBinding fieldBinding = fragment.resolveBinding() != null ? fragment.resolveBinding().getType() : null;
 								// Prüfen, ob die Klasse von ExternalResource erbt
-								if (isTypeMatching(fieldBinding, superclassname)) {
-									bothmatch=true;
-								} else if (fieldBinding == null) {
-									// Fallback: match by type name when binding is unavailable
+								if (fieldBinding != null) {
+									if (isExternalResource(fieldBinding, superclassname)) {
+										bothmatch=true;
+									}
+								} else {
+									// Fallback: match by simple type name when binding is unavailable
 									String fieldTypeName = node.getType().toString();
-									if (fieldTypeName.equals(superclassname) || superclassname.endsWith("." + fieldTypeName)) { //$NON-NLS-1$
+									String fieldSimpleName = fieldTypeName.substring(fieldTypeName.lastIndexOf('.') + 1);
+									String superSimpleName = superclassname.substring(superclassname.lastIndexOf('.') + 1);
+									if (fieldTypeName.equals(superclassname) || fieldSimpleName.equals(superSimpleName)) {
 										bothmatch=true;
 									}
 								}
