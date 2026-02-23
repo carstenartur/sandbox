@@ -107,7 +107,8 @@ jobs:
             --head "mining/state-update" \
             --title "mining: Update state $(date +%Y-%m-%d)" \
             --body "Automated state update from mining workflow run #${{ github.run_number }}. This PR is auto-merged to persist the mining progress so the next run continues where this one left off."
-          gh pr merge "mining/state-update" --squash --auto --delete-branch
+          gh pr merge "mining/state-update" --squash --auto --delete-branch \
+            || gh pr merge "mining/state-update" --squash --delete-branch
 
       - name: Deploy Mining Report to gh-pages
         uses: peaceiris/actions-gh-pages@v4
