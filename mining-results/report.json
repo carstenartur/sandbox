@@ -1,0 +1,119 @@
+{
+  "summary": {
+    "totalMatches": 11,
+    "repositories": {
+      "eclipse.platform.ui": {
+        "files": 1144,
+        "matches": 11,
+        "rules": 2
+      },
+      "sandbox": {
+        "files": 743,
+        "matches": 0,
+        "rules": 0
+      }
+    }
+  },
+  "matches": [
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ActivityPersistanceHelper.java",
+      "line": 213,
+      "matchedCode": "\"\".equals(store.getDefaultString(preferenceKey))",
+      "suggestedReplacement": "store.getDefaultString(preferenceKey) != null && store.getDefaultString(preferenceKey).isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementCategory.java",
+      "line": 58,
+      "matchedCode": "\"\".equals(classString)",
+      "suggestedReplacement": "classString != null && classString.isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/Policy.java",
+      "line": 186,
+      "matchedCode": "\"\".equals(DEBUG_HANDLERS_VERBOSE_COMMAND_ID)",
+      "suggestedReplacement": "DEBUG_HANDLERS_VERBOSE_COMMAND_ID != null && DEBUG_HANDLERS_VERBOSE_COMMAND_ID.isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/EditorHistory.java",
+      "line": 135,
+      "matchedCode": "\"\".equals(item.getName())",
+      "suggestedReplacement": "item.getName() != null && item.getName().isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/EditorHistory.java",
+      "line": 135,
+      "matchedCode": "\"\".equals(item.getToolTipText())",
+      "suggestedReplacement": "item.getToolTipText() != null && item.getToolTipText().isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/DynamicHelpAction.java",
+      "line": 61,
+      "matchedCode": "\"\".equals(overrideText)",
+      "suggestedReplacement": "overrideText != null && overrideText.isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/HelpSearchAction.java",
+      "line": 63,
+      "matchedCode": "\"\".equals(overrideText)",
+      "suggestedReplacement": "overrideText != null && overrideText.isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/HelpContentsAction.java",
+      "line": 63,
+      "matchedCode": "\"\".equals(overrideText)",
+      "suggestedReplacement": "overrideText != null && overrideText.isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/PropertyDialog.java",
+      "line": 69,
+      "matchedCode": "\"\".equals(name)",
+      "suggestedReplacement": "name != null && name.isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java11",
+      "rule": "unnamed",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/activities/ExtensionActivityRegistry.java",
+      "line": 181,
+      "matchedCode": "\"\".equals(store.getDefaultString(preferenceKey))",
+      "suggestedReplacement": "store.getDefaultString(preferenceKey) != null && store.getDefaultString(preferenceKey).isEmpty()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "performance",
+      "rule": "Unnecessary String constructor",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/preferences/WorkingCopyPreferences.java",
+      "line": 382,
+      "matchedCode": "new String(Base64.encode(value))"
+    }
+  ],
+  "errors": {
+  }
+}
