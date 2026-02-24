@@ -355,6 +355,7 @@
                 var code = document.createElement('code');
                 code.textContent = (evaluation.commitHash || '').substring(0, 8);
                 if (evaluation.repoUrl && evaluation.repoUrl.startsWith('https://github.com/')) {
+                    // Use full commitHash for URL; code.textContent shows only the short (8-char) form
                     var commitUrl = evaluation.repoUrl.replace(/\/$/, '') + '/commit/' + evaluation.commitHash;
                     var link = document.createElement('a');
                     link.href = commitUrl;
@@ -698,8 +699,13 @@
                 // Compute commit date range from evaluations
                 var dates = data.map(function(e) { return e.evaluatedAt; }).filter(Boolean).map(function(d) { return new Date(d); });
                 if (dates.length > 0) {
-                    var minDate = new Date(Math.min.apply(null, dates));
-                    var maxDate = new Date(Math.max.apply(null, dates));
+                    var minDate = dates[0];
+                    var maxDate = dates[0];
+                    for (var i = 1; i < dates.length; i++) {
+                        var currentDate = dates[i];
+                        if (currentDate < minDate) { minDate = currentDate; }
+                        if (currentDate > maxDate) { maxDate = currentDate; }
+                    }
                     document.getElementById('rs-window').textContent = minDate.toISOString().substring(0, 10) + ' \u2192 ' + maxDate.toISOString().substring(0, 10);
                 }
             })
