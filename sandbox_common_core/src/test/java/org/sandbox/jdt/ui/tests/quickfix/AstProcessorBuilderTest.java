@@ -35,7 +35,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.common.AstProcessorBuilder;
-import org.sandbox.jdt.internal.common.NodeMatcher;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**

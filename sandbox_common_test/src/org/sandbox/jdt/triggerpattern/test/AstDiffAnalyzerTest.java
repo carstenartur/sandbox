@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.mining.analysis.AlignmentKind;
 import org.sandbox.jdt.triggerpattern.mining.analysis.AstDiff;
 import org.sandbox.jdt.triggerpattern.mining.analysis.AstDiffAnalyzer;
-import org.sandbox.jdt.triggerpattern.mining.analysis.NodeAlignment;
 
 /**
  * Tests for {@link AstDiffAnalyzer}.

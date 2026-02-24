@@ -343,6 +343,71 @@ Potential additional string simplification patterns:
 
 See [TODO.md](TODO.md) for more details.
 
+## addAnnotation Directive (v1.3.9)
+
+The method-rewrite syntax enables adding annotations to methods matched by
+`METHOD_DECLARATION` patterns. This is particularly useful for JUnit 3 → JUnit 5
+migrations where methods follow naming conventions (e.g., `test*`, `setUp`, `tearDown`)
+but lack annotations.
+
+Uses **NetBeans-compatible natural syntax**: the replacement is the target method declaration
+with annotations prepended.
+
+### Key Features
+
+- **Idempotent**: Won't add an annotation if it's already present (checked by simple name)
+- **Import-aware**: Automatically adds the annotation's import declaration
+- **Pattern-based**: Uses `methodNameMatches` guard for regex-based method name filtering
+- **Static/non-static**: `isStatic($name)` / `!isStatic($name)` guards distinguish method types
+- **Proper formatting**: Annotations are inserted on their own line above the method
+
+### Example: JUnit 3 → JUnit 5 (Instance Methods)
+
+```
+// Add @Test to non-static methods named test*
+void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name)
+=> @org.junit.jupiter.api.Test void $name($params$)
+;;
+
+// Add @BeforeEach to non-static setUp()
+void $name($params$) :: methodNameMatches($name, "setUp") && !isStatic($name)
+=> @org.junit.jupiter.api.BeforeEach void $name($params$)
+;;
+```
+
+### Example: JUnit 3 → JUnit 5 (Static Lifecycle Methods)
+
+```
+// Add @BeforeAll to static setUpBeforeClass()
+void $name($params$) :: methodNameMatches($name, "setUpBeforeClass") && isStatic($name)
+=> @org.junit.jupiter.api.BeforeAll void $name($params$)
+;;
+```
+
+### How It Works
+
+1. The `METHOD_DECLARATION` pattern `void $name($params$)` matches all void methods
+2. Guards filter by method name (`methodNameMatches`) and modifiers (`isStatic`/`!isStatic`)
+3. The engine parses the replacement as a method declaration, diffs annotations against the source
+4. Missing annotations are added idempotently (skipped if already present)
+5. Annotations are inserted with a trailing newline and their imports are added
+
+## Multiline Replacements
+
+The DSL parser accumulates continuation lines after `=>` into a single multiline
+replacement. Lines that don't start with `=>` are continuation lines.
+
+```
+$x.open()
+=>
+$x.open()
+$x.init()
+;;
+```
+
+Multi-rewrite rules (multiple `=>` alternatives) are not affected — each `=>`
+starts a new alternative.
+
 ## Contributing
 
 To add new string simplification patterns:

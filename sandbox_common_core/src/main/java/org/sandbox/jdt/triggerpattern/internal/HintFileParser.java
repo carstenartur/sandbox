@@ -577,10 +577,22 @@ public final class HintFileParser {
 			
 			String altContent = altLine.substring(2).trim();
 			
-			// Handle => on its own line: read replacement from the next line
+			// Handle => on its own line: read replacement from the next line(s)
 			if (altContent.isEmpty() && ruleLineIdx + 1 < ruleLines.size()) {
 				ruleLineIdx++;
 				altContent = ruleLines.get(ruleLineIdx).trim();
+			}
+			
+			// Accumulate multiline replacement: continuation lines that don't
+			// start with '=>' are part of the current replacement text.
+			// This enables NetBeans-compatible multiline expressions.
+			while (ruleLineIdx + 1 < ruleLines.size()) {
+				String nextLine = ruleLines.get(ruleLineIdx + 1);
+				if (nextLine.startsWith("=>")) { //$NON-NLS-1$
+					break; // Next alternative — stop accumulating
+				}
+				ruleLineIdx++;
+				altContent = altContent + "\n" + nextLine.trim(); //$NON-NLS-1$
 			}
 			
 			if (altContent.isEmpty()) {
@@ -665,7 +677,8 @@ public final class HintFileParser {
 	 *   <li>Starts with {@code import } → IMPORT</li>
 	 *   <li>Starts with {@code new } → CONSTRUCTOR</li>
 	 *   <li>Starts with {@code {}} → BLOCK</li>
-	 *   <li>Contains return type + name + parens → METHOD_CALL</li>
+	 *   <li>Looks like a method declaration (return type + name + parens) → METHOD_DECLARATION</li>
+	 *   <li>Contains name + parens → METHOD_CALL</li>
 	 *   <li>Ends with {@code ;} → STATEMENT</li>
 	 *   <li>Default → EXPRESSION</li>
 	 * </ul>
@@ -685,6 +698,11 @@ public final class HintFileParser {
 		if (trimmed.startsWith("{")) { //$NON-NLS-1$
 			return PatternKind.BLOCK;
 		}
+		// Method declaration: starts with a return type keyword followed by name and parens
+		// e.g., "void $name($params$)", "String getName()", "int $name()"
+		if (looksLikeMethodDeclaration(trimmed)) {
+			return PatternKind.METHOD_DECLARATION;
+		}
 		// Method call: contains '(' and '.' or is a simple name with parens
 		if (trimmed.contains("(") && trimmed.contains(")") && !trimmed.endsWith(";")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			return PatternKind.METHOD_CALL;
@@ -694,6 +712,64 @@ public final class HintFileParser {
 		}
 		return PatternKind.EXPRESSION;
 	}
+	
+	/**
+	 * Checks if a pattern looks like a method declaration.
+	 * 
+	 * <p>A method declaration pattern has the form:
+	 * {@code [modifiers] returnType name(params)} where returnType is a Java
+	 * type keyword or identifier, name is an identifier or placeholder, and
+	 * params may include placeholders.</p>
+	 * 
+	 * <p>Examples that match:</p>
+	 * <ul>
+	 *   <li>{@code void $name($params$)}</li>
+	 *   <li>{@code void dispose()}</li>
+	 *   <li>{@code String getName()}</li>
+	 *   <li>{@code public void setUp()}</li>
+	 *   <li>{@code int $name()}</li>
+	 * </ul>
+	 */
+	private static boolean looksLikeMethodDeclaration(String trimmed) {
+		// Must contain parens
+		if (!trimmed.contains("(") || !trimmed.contains(")")) { //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		// Must not contain '.' (method calls have receiver.method())
+		// Method declarations don't have dots in the signature part before '('
+		String beforeParens = trimmed.substring(0, trimmed.indexOf('(')).trim();
+		if (beforeParens.contains(".")) { //$NON-NLS-1$
+			return false;
+		}
+		// Split into space-separated tokens before '('
+		String[] tokens = beforeParens.split("\\s+"); //$NON-NLS-1$
+		// Need at least 2 tokens: return type and method name
+		// e.g., "void $name" or "public void setUp"
+		if (tokens.length < 2) {
+			return false;
+		}
+		// Check if any token is a primitive type or 'void' — strong indicator
+		for (String token : tokens) {
+			if (RETURN_TYPE_KEYWORDS.contains(token)) {
+				return true;
+			}
+		}
+		// Heuristic: if the second-to-last token looks like a type (starts with uppercase
+		// or is a placeholder) and the last token looks like a name, treat as declaration
+		String possibleType = tokens[tokens.length - 2];
+		if (Character.isUpperCase(possibleType.charAt(0)) || possibleType.startsWith("$")) { //$NON-NLS-1$
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * Java primitive types and void — used to detect method declaration patterns.
+	 */
+	private static final Set<String> RETURN_TYPE_KEYWORDS = Set.of(
+			"void", "int", "long", "short", "byte", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+			"float", "double", "boolean", "char" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	);
 	
 	/**
 	 * Exception thrown when parsing a {@code .sandbox-hint} file fails.

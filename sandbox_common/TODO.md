@@ -290,6 +290,34 @@ For questions about shared utilities or adding new common code, please open an i
   - [x] At-most-once scanning per project (tracked via `loadedProjects` set)
   - [x] Comprehensive test suite (`WorkspaceHintFileTest`)
 
+### Completed (v1.3.9 - METHOD_DECLARATION Annotation Rewrite)
+- [x] Natural method-rewrite syntax for adding annotations to `METHOD_DECLARATION` patterns
+  - [x] NetBeans-compatible: replacement is a method declaration with annotations prepended
+  - [x] Engine diffs annotations between source and replacement, adds missing ones
+  - [x] Idempotent: checks if annotation is already present (by simple name)
+  - [x] Import management: adds FQN as import, uses simple name for annotation
+  - [x] Handled in `HintFileRewriteOperation.handleMethodDeclarationRewrite()`
+  - [x] Newline formatting: uses `createStringPlaceholder("@Name\n", ...)` for proper line breaks
+- [x] `methodNameMatches` guard function
+  - [x] Regex-based method name matching for METHOD_DECLARATION patterns
+  - [x] Supports exact names ("setUp") and patterns ("test.*")
+  - [x] Registered in `BuiltInGuards`
+- [x] Static/non-static method support
+  - [x] `isStatic($name)` / `!isStatic($name)` guards work with METHOD_DECLARATION patterns
+  - [x] `resolveModifiers` fallback: SimpleName → parent BodyDeclaration when bindings unavailable
+- [x] `METHOD_DECLARATION` pattern kind inference in `HintFileParser`
+  - [x] Detects method declaration patterns by return type + name + parens heuristic
+  - [x] Correctly distinguishes from METHOD_CALL patterns
+- [x] Multiline replacement support in `HintFileParser`
+  - [x] Continuation lines after `=>` that don't start with `=>` are accumulated
+  - [x] Joined with newlines into a single replacement text
+  - [x] Multi-rewrite rules (multiple `=>`) are not affected
+- [x] `junit3-migration.sandbox-hint` bundled pattern library
+  - [x] 5 rules: test*→@Test, setUp→@BeforeEach, tearDown→@AfterEach,
+    setUpBeforeClass→@BeforeAll, tearDownAfterClass→@AfterAll
+  - [x] Uses isStatic/!isStatic guards for static vs instance methods
+  - [x] Registered in `HintFileStore.BUNDLED_LIBRARIES`
+
 ### Planned Enhancements
 
 #### High Priority

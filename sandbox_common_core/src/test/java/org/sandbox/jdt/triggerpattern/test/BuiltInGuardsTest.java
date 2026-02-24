@@ -116,6 +116,126 @@ public class BuiltInGuardsTest {
 		assertTrue(guards.containsKey("notContains")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("isNullable")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("isNonNull")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("methodNameMatches")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testMethodNameMatchesWithTestPrefix() {
+		GuardFunction methodNameMatches = guards.get("methodNameMatches"); //$NON-NLS-1$
+		String code = "class Test { void testSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(methodNameMatches.evaluate(ctx, "$name", "test.*"), //$NON-NLS-1$ //$NON-NLS-2$
+				"testSomething should match test.*"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testMethodNameMatchesNoMatch() {
+		GuardFunction methodNameMatches = guards.get("methodNameMatches"); //$NON-NLS-1$
+		String code = "class Test { void doSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(methodNameMatches.evaluate(ctx, "$name", "test.*"), //$NON-NLS-1$ //$NON-NLS-2$
+				"doSomething should not match test.*"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testMethodNameMatchesExactName() {
+		GuardFunction methodNameMatches = guards.get("methodNameMatches"); //$NON-NLS-1$
+		String code = "class Test { void setUp() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(methodNameMatches.evaluate(ctx, "$name", "setUp"), //$NON-NLS-1$ //$NON-NLS-2$
+				"setUp should match exact name 'setUp'"); //$NON-NLS-1$
+		assertFalse(methodNameMatches.evaluate(ctx, "$name", "tearDown"), //$NON-NLS-1$ //$NON-NLS-2$
+				"setUp should not match 'tearDown'"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testMethodNameMatchesInsufficientArgs() {
+		GuardFunction methodNameMatches = guards.get("methodNameMatches"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(methodNameMatches.evaluate(ctx, "$name"), //$NON-NLS-1$
+				"Should return false with only one arg"); //$NON-NLS-1$
+		assertFalse(methodNameMatches.evaluate(ctx),
+				"Should return false with no args"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsStaticOnMethodNameWithBindings() {
+		GuardFunction isStatic = guards.get("isStatic"); //$NON-NLS-1$
+		String code = "class Test { public static void suiteSetUp() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isStatic.evaluate(ctx, "$name"), //$NON-NLS-1$
+				"Static method name should report isStatic=true"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsStaticOnNonStaticMethodName() {
+		GuardFunction isStatic = guards.get("isStatic"); //$NON-NLS-1$
+		String code = "class Test { public void testFoo() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isStatic.evaluate(ctx, "$name"), //$NON-NLS-1$
+				"Non-static method name should report isStatic=false"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsStaticFallbackWithoutBindings() {
+		// When bindings are NOT resolved, resolveModifiers should fall back to
+		// navigating from SimpleName to parent MethodDeclaration
+		GuardFunction isStatic = guards.get("isStatic"); //$NON-NLS-1$
+		String code = "class Test { public static void suite() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithoutBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isStatic.evaluate(ctx, "$name"), //$NON-NLS-1$
+				"isStatic should work via parent fallback even without binding resolution"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -349,6 +469,7 @@ public class BuiltInGuardsTest {
 		assertTrue(guards.containsKey("inClass")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("inPackage")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("hasModifier")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("enclosingClassExtends")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -622,6 +743,57 @@ public class BuiltInGuardsTest {
 
 		assertTrue(inClass.evaluate(ctx, "\"Test\""), "Should match enclosing class Test"); //$NON-NLS-1$ //$NON-NLS-2$
 		assertFalse(inClass.evaluate(ctx, "\"Other\""), "Should not match different class name"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testEnclosingClassExtendsDirectSuperclass() {
+		GuardFunction guard = guards.get("enclosingClassExtends"); //$NON-NLS-1$
+		// Note: without classpath, bindings won't resolve for BaseClass, so this tests the fallback path
+		String code = "class MyTest extends BaseClass { void testSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		// Fallback: simple name of "com.example.BaseClass" matches "BaseClass" in extends clause
+		assertTrue(guard.evaluate(ctx, "\"com.example.BaseClass\""), "Should match via simple name fallback"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(guard.evaluate(ctx, "\"BaseClass\""), "Should match exact simple name"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(guard.evaluate(ctx, "\"OtherClass\""), "Should not match wrong class name"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testEnclosingClassExtendsNoExtendsClause() {
+		GuardFunction guard = guards.get("enclosingClassExtends"); //$NON-NLS-1$
+		String code = "class PlainClass { void testSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(guard.evaluate(ctx, "\"junit.framework.TestCase\""), //$NON-NLS-1$
+				"Class without extends clause should not match"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testEnclosingClassExtendsNoArgs() {
+		GuardFunction guard = guards.get("enclosingClassExtends"); //$NON-NLS-1$
+		String code = "class MyTest extends BaseClass { void m() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		// No arguments — should return false
+		assertFalse(guard.evaluate(ctx), "Should return false with no arguments"); //$NON-NLS-1$
 	}
 
 	// --- Helper methods ---

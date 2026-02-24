@@ -24,6 +24,11 @@
 - ✅ `.sandbox-hint` DSL-based CleanUp and QuickAssist (`HintFileCleanUp`, `HintFileQuickAssistProcessor`)
 - ✅ Bundled pattern libraries: `collections`, `modernize-java9`, `modernize-java11`, `performance`
 - ✅ Workspace-level `.sandbox-hint` file loading — users can place hint files in project directories
+- ✅ Natural method-rewrite syntax — NetBeans-compatible annotation addition on METHOD_DECLARATION patterns (v1.3.9)
+- ✅ `methodNameMatches` guard function — regex-based method name filtering for METHOD_DECLARATION patterns
+- ✅ Static/non-static support — `isStatic`/`!isStatic` guards with SimpleName→parent fallback
+- ✅ Multiline replacement support — continuation lines after `=>` accumulated into single replacement
+- ✅ `junit3-migration.sandbox-hint` bundled library — 5 rules: test*, setUp, tearDown, setUpBeforeClass, tearDownAfterClass
 
 ### Implementation Status vs. Issue #709
 

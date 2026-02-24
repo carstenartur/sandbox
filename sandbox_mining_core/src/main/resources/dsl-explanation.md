@@ -202,8 +202,12 @@ You can use these functions in `:: guard` expressions:
 | `parentMatches("pattern")` | True if the parent AST node matches the pattern |
 | `inClass("ClassName")` | True if the code is inside the specified class |
 | `inPackage("package.name")` | True if the code is inside the specified package |
-| `hasModifier($var, "modifier")` | True if the element has the specified modifier (e.g., "public", "private") |
+| `hasModifier($var, "modifier")` | True if the element has the specified modifier (e.g., "PUBLIC", "STATIC", "FINAL") |
+| `isStatic($var)` | True if the element has the `static` modifier. Shorthand for `hasModifier($var, "STATIC")`. |
+| `isFinal($var)` | True if the element has the `final` modifier. Shorthand for `hasModifier($var, "FINAL")`. |
 | `mode("modeName")` | True if the `sandbox.cleanup.mode` compiler option matches the given mode (case-insensitive). Supported modes: `KEEP_BEHAVIOR`, `ENFORCE_UTF8`, `ENFORCE_UTF8_AGGREGATE`. |
+| `methodNameMatches($var, "regex")` | True if the method name bound to `$var` matches the given regex pattern. Used with METHOD_DECLARATION patterns (e.g., `void $name($params$)`). |
+| `enclosingClassExtends("fqn")` | True if the enclosing class extends the given type (directly or transitively). Essential for migration rules targeting specific base classes (e.g., `"junit.framework.TestCase"`). Falls back to textual `extends` clause comparison when bindings are unavailable. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Common Mistakes
@@ -294,15 +298,75 @@ Annotation patterns start with `@` and can include fully qualified names and att
 **Note:** Annotation replacement is a single expression — the `@annotation(attributes)` on one line.
 Multi-statement transformations (adding `if` blocks, `return` statements) are NOT supported.
 
+### Adding Annotations to Methods
+
+When the source and replacement are both method declarations, the engine diffs
+annotations between them and adds the missing ones to the matched method.
+This follows the **NetBeans-compatible** "source → target" pattern syntax.
+
+**Syntax:**
+```
+void $name($params$) :: methodNameMatches($name, "regex")
+=> @fully.qualified.AnnotationName void $name($params$)
+;;
+```
+
+**Key features:**
+- **Natural syntax**: The replacement IS the target method declaration with the annotation.
+- **Idempotent**: If the annotation is already present on the method, no change is made.
+- **Import management**: The FQN is added as an import; the simple name is used for the annotation.
+- **Static/non-static guards**: Use `isStatic($name)` / `!isStatic($name)` to distinguish method types.
+- **Pattern-based**: Use `methodNameMatches($name, "regex")` to filter methods by name.
+
+**Example — JUnit 3 to JUnit 5 migration (instance methods):**
+```
+// Add @Test to non-static methods named test*
+void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name)
+=> @org.junit.jupiter.api.Test void $name($params$)
+;;
+
+// Add @BeforeEach to non-static setUp() methods
+void $name($params$) :: methodNameMatches($name, "setUp") && !isStatic($name)
+=> @org.junit.jupiter.api.BeforeEach void $name($params$)
+;;
+```
+
+**Example — JUnit 3 to JUnit 5 migration (static lifecycle methods):**
+```
+// Add @BeforeAll to static setUpBeforeClass() methods
+void $name($params$) :: methodNameMatches($name, "setUpBeforeClass") && isStatic($name)
+=> @org.junit.jupiter.api.BeforeAll void $name($params$)
+;;
+```
+
+### Multiline Replacements
+
+Continuation lines after `=>` that do not start with `=>` are accumulated into
+a single multiline replacement text, joined with newlines.
+
+```
+$x.open()
+=>
+$x.open()
+$x.init()
+;;
+```
+
+The replacement text becomes `$x.open()\n$x.init()`.
+
+**Note:** Multi-rewrite rules (multiple `=>` alternatives) are NOT affected — each
+`=>` starts a new alternative as before.
+
 ### Unsupported Features / Limitations
 
 The following are not yet supported by the current DSL. If a transformation requires any of these,
 mark it as `RED` / not yet implementable — these limitations may be addressed in future DSL versions:
 
-1. **Multi-line statement blocks in replacements**: Replacements must be single expressions or single statements.
-   Do NOT use `if`/`else` blocks, `return` statements, or `{}` blocks as replacements.
+1. **Complex multi-line statement blocks in replacements**: While multiline replacements are now
+   supported for simple continuation lines, complex control flow (`if`/`else`, `return`, `{}` blocks)
+   in replacements is NOT supported at the expression rewrite level.
    ```
-   // ❌ NOT SUPPORTED — multi-line replacement block
+   // ❌ NOT SUPPORTED — control flow in replacement
    $pattern
    =>
    if (!($cmd.isHandled())) {
@@ -401,8 +465,9 @@ in generated output, they are hallucinations and must be rejected:
 | `isNull($var)` | Not a real guard — does not exist | `isNullLiteral($var)` to check for `null` literals |
 | `hasType($var, "Type")` | Not a real guard — does not exist | `instanceof($var, "Type")` |
 | `isInstanceOf($var, "Type")` | Not a real guard — wrong name | `instanceof($var, "Type")` |
-| `@Override` in replacements | Annotations on method declarations are not supported as replacements | Only single-expression replacements are supported |
-| Multi-statement replacements | Replacements must be single expressions. No `if`/`else`, `return`, or `{}` blocks. | Use a single expression as the replacement |
+| `@Override` in replacements | For expression replacements, annotations are not supported as part of the replacement text | For METHOD_DECLARATION patterns, use natural syntax: `=> @FQN void $name($params$)` |
+| Multi-statement replacements | Complex control flow (`if`/`else`, `return`, `{}` blocks) is not supported | Simple multiline continuations ARE supported (lines after `=>` are joined). For complex logic, use programmatic cleanups. |
+| `addAnnotation @FQN` | Removed — this directive syntax is no longer supported | Use natural method-rewrite syntax: `=> @FQN void $name($params$)` |
 | `sourceVersionGE(7)` or lower (incl. `sourceVersionGE(6)`) | Java 7 and below are not supported; 8 is the baseline | Omit the guard entirely (applies unconditionally) |
 | `sourceVersionGE(8)` | Java 8 is the baseline — guard is always true and therefore useless | Omit the guard entirely (applies unconditionally) |
 | Simple names in patterns | `Charset.forName()` will not match | Use FQN: `java.nio.charset.Charset.forName()` |

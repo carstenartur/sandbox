@@ -50,8 +50,20 @@ Eclipse-independent hint file storage is in `HintFileStore`. It provides:
 - In-memory ConcurrentHashMap storage with secondary index by declared ID
 - `loadFromString()`, `loadFromReader()`, `loadFromClasspath()`
 - Include resolution with circular-reference detection
-- Bundled library loading
+- Bundled library loading (generic, non-domain-specific libraries only)
 - Inferred rule management
+
+**Bundled libraries** (loaded via `HintFileStore.loadBundledLibraries()`):
+- `collections.sandbox-hint`, `modernize-java9.sandbox-hint`,
+  `modernize-java11.sandbox-hint`, `performance.sandbox-hint`
+- These are generic pattern libraries usable by CLI tools, standalone tests,
+  and any JVM application without Eclipse/OSGi.
+
+**Domain-specific hint files** live in their respective plugins and are loaded
+via the `org.sandbox.jdt.triggerpattern.hints` extension point:
+- `sandbox_encoding_quickfix`: `encoding.sandbox-hint`
+- `sandbox_junit_cleanup`: `junit5.sandbox-hint`, `annotations5.sandbox-hint`,
+  `assume5.sandbox-hint`, `junit3-migration.sandbox-hint`
 
 `HintFileRegistry` in `sandbox_common` wraps a `HintFileStore` instance and
 adds workspace scanning (`loadProjectHintFiles(IProject)`) and extension-point

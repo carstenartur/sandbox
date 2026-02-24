@@ -410,7 +410,201 @@ public class HintFileFixCore {
 					newAnnotation = newMarker;
 				}
 				rewrite.replace(matchedNode, newAnnotation, group);
+			} else if (matchedNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {
+				// Handle METHOD_DECLARATION → METHOD_DECLARATION rewrite.
+				// When the replacement is also a method declaration (e.g.,
+				// "@Test void $name($params$)"), diff the annotations between
+				// source and replacement patterns and add the missing ones.
+				handleMethodDeclarationRewrite(matchedNode, replacement, ast,
+						rewrite, cuRewrite, group);
 			}
+		}
+
+		/**
+		 * Returns the simple name of an annotation (without package prefix).
+		 */
+		private static String getAnnotationSimpleName(Annotation annotation) {
+			if (annotation instanceof MarkerAnnotation marker) {
+				return marker.getTypeName().toString();
+			} else if (annotation instanceof SingleMemberAnnotation single) {
+				return single.getTypeName().toString();
+			} else if (annotation instanceof NormalAnnotation normal) {
+				return normal.getTypeName().toString();
+			}
+			return ""; //$NON-NLS-1$
+		}
+
+		/**
+		 * Handles METHOD_DECLARATION → METHOD_DECLARATION rewrite using natural syntax.
+		 *
+		 * <p>When the replacement is a method declaration with additional annotations
+		 * (e.g., {@code @Test void $name($params$)}), this method diffs the annotations
+		 * between the source pattern and the replacement pattern, then adds any
+		 * annotations that are in the replacement but not in the source.</p>
+		 *
+		 * <p>This is <b>idempotent</b>: annotations already present on the actual
+		 * matched method are not added again.</p>
+		 *
+		 * <p>This approach is <b>NetBeans-compatible</b>: the replacement is just
+		 * valid Java code (a method declaration with annotations), not a custom directive.</p>
+		 *
+		 * @param matchedNode the matched MethodDeclaration AST node
+		 * @param replacement the replacement text (e.g., {@code "@Test void $name($params$)"})
+		 * @param ast the AST factory
+		 * @param rewrite the AST rewriter
+		 * @param cuRewrite the compilation unit rewrite context
+		 * @param group the text edit group
+		 * @since 1.3.9
+		 */
+		@SuppressWarnings("unchecked")
+		private void handleMethodDeclarationRewrite(ASTNode matchedNode, String replacement,
+				AST ast, ASTRewrite rewrite, CompilationUnitRewrite cuRewrite,
+				TextEditGroup group) {
+			if (!(matchedNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration methodDecl)) {
+				return;
+			}
+
+			// Parse the replacement as a method declaration to extract annotations
+			org.eclipse.jdt.core.dom.MethodDeclaration replacementMethod =
+					parseReplacementAsMethodDeclaration(replacement);
+			if (replacementMethod == null) {
+				return;
+			}
+
+			// Collect annotation simple names from the replacement method
+			java.util.Set<String> replacementAnnotationNames = new java.util.LinkedHashSet<>();
+			java.util.Map<String, String> annotationFqnMap = new java.util.LinkedHashMap<>();
+			for (Object modifier : replacementMethod.modifiers()) {
+				if (modifier instanceof Annotation ann) {
+					String simpleName = getAnnotationSimpleName(ann);
+					replacementAnnotationNames.add(simpleName);
+					// Try to extract FQN from the replacement text for import management
+					String fqn = extractAnnotationFqnFromText(replacement, simpleName);
+					if (fqn != null) {
+						annotationFqnMap.put(simpleName, fqn);
+					}
+				}
+			}
+
+			// Collect annotation simple names from the source pattern (pattern text, not actual code)
+			String sourcePatternText = result.rule() != null
+					? result.rule().sourcePattern().getValue() : ""; //$NON-NLS-1$
+			java.util.Set<String> sourceAnnotationNames = new java.util.LinkedHashSet<>();
+			org.eclipse.jdt.core.dom.MethodDeclaration sourceMethod =
+					parseReplacementAsMethodDeclaration(sourcePatternText);
+			if (sourceMethod != null) {
+				for (Object modifier : sourceMethod.modifiers()) {
+					if (modifier instanceof Annotation ann) {
+						sourceAnnotationNames.add(getAnnotationSimpleName(ann));
+					}
+				}
+			}
+
+			// Annotations to add = in replacement but not in source pattern
+			java.util.Set<String> annotationsToAdd = new java.util.LinkedHashSet<>(replacementAnnotationNames);
+			annotationsToAdd.removeAll(sourceAnnotationNames);
+
+			if (annotationsToAdd.isEmpty()) {
+				return;
+			}
+
+			// Collect existing annotation simple names on the actual matched method
+			java.util.Set<String> existingAnnotationNames = new java.util.LinkedHashSet<>();
+			for (Object modifier : methodDecl.modifiers()) {
+				if (modifier instanceof Annotation ann) {
+					existingAnnotationNames.add(getAnnotationSimpleName(ann));
+				}
+			}
+
+			// Add each missing annotation (idempotent: skip if already present)
+			ListRewrite modifiersRewrite = rewrite.getListRewrite(
+					methodDecl, org.eclipse.jdt.core.dom.MethodDeclaration.MODIFIERS2_PROPERTY);
+			ImportRewrite importRewrite = cuRewrite.getImportRewrite();
+			boolean changed = false;
+
+			for (String annotationName : annotationsToAdd) {
+				if (existingAnnotationNames.contains(annotationName)) {
+					continue; // Already present on the actual method — skip
+				}
+				// Use createStringPlaceholder so the annotation appears on its own
+				// line above the method declaration (proper formatting).
+				ASTNode newAnnotation = rewrite.createStringPlaceholder(
+						"@" + annotationName + "\n", ASTNode.MARKER_ANNOTATION); //$NON-NLS-1$ //$NON-NLS-2$
+				modifiersRewrite.insertFirst(newAnnotation, group);
+				changed = true;
+
+				// Add import for the FQN if available
+				String fqn = annotationFqnMap.get(annotationName);
+				if (fqn != null) {
+					importRewrite.addImport(fqn);
+				}
+			}
+
+			// If nothing changed (all annotations already present), skip
+			if (!changed) {
+				return;
+			}
+		}
+
+		/**
+		 * Parses a string as a method declaration by wrapping it in a class context.
+		 *
+		 * @param methodSnippet the method snippet (e.g., {@code "@Test void $name($params$)"})
+		 * @return the parsed MethodDeclaration, or {@code null} if parsing fails
+		 */
+		private static org.eclipse.jdt.core.dom.MethodDeclaration parseReplacementAsMethodDeclaration(
+				String methodSnippet) {
+			if (methodSnippet == null || methodSnippet.isBlank()) {
+				return null;
+			}
+			String normalized = methodSnippet.trim();
+			// Add empty body if not present
+			if (!normalized.endsWith("}") && !normalized.endsWith(";")) { //$NON-NLS-1$ //$NON-NLS-2$
+				normalized = normalized + " {}"; //$NON-NLS-1$
+			}
+			// Handle multi-placeholder parameters for valid Java syntax
+			normalized = normalized.replaceAll(
+					"\\(\\s*\\$([a-zA-Z_][a-zA-Z0-9_]*)\\$\\s*\\)", //$NON-NLS-1$
+					"(Object... \\$$1\\$)"); //$NON-NLS-1$
+			// Handle single placeholders as method names (replace $name with _name for parsing)
+			// We just need the annotations, so the method body doesn't matter
+			String source = "class _Pattern { " + normalized + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+			org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser
+					.newParser(AST.getJLSLatest());
+			parser.setSource(source.toCharArray());
+			parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_COMPILATION_UNIT);
+			parser.setCompilerOptions(org.eclipse.jdt.core.JavaCore.getOptions());
+			CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+			if (cu.types().isEmpty()) {
+				return null;
+			}
+			org.eclipse.jdt.core.dom.TypeDeclaration typeDecl =
+					(org.eclipse.jdt.core.dom.TypeDeclaration) cu.types().get(0);
+			if (typeDecl.getMethods().length == 0) {
+				return null;
+			}
+			return typeDecl.getMethods()[0];
+		}
+
+		/**
+		 * Extracts the FQN for an annotation from the replacement text.
+		 * For example, from {@code "@org.junit.jupiter.api.Test void $name($params$)"},
+		 * extracts {@code "org.junit.jupiter.api.Test"} for annotation simple name {@code "Test"}.
+		 *
+		 * @param replacementText the full replacement text
+		 * @param simpleName the annotation simple name to look for
+		 * @return the FQN (without {@code @}), or {@code null} if not found
+		 */
+		private static String extractAnnotationFqnFromText(String replacementText, String simpleName) {
+			// Look for @pkg.sub.AnnotationName pattern in the replacement text
+			java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(
+					"@((?:[a-z][a-z0-9_]*\\.)+)" + java.util.regex.Pattern.quote(simpleName) + "\\b") //$NON-NLS-1$ //$NON-NLS-2$
+					.matcher(replacementText);
+			if (matcher.find()) {
+				// Return the full FQN without @
+				return matcher.group(1) + simpleName;
+			}
+			return null;
 		}
 
 		/**

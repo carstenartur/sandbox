@@ -142,6 +142,12 @@ public final class BuiltInGuards {
 
 		// Cleanup mode guard — checks sandbox.cleanup.mode compiler option
 		guards.put("mode", BuiltInGuards::evaluateMode); //$NON-NLS-1$
+
+		// Method name pattern guard — checks if method name matches a regex pattern
+		guards.put("methodNameMatches", BuiltInGuards::evaluateMethodNameMatches); //$NON-NLS-1$
+
+		// Type hierarchy guard — checks if enclosing class extends a given type
+		guards.put("enclosingClassExtends", BuiltInGuards::evaluateEnclosingClassExtends); //$NON-NLS-1$
 	}
 
 	/**
@@ -1011,6 +1017,11 @@ public final class BuiltInGuards {
 
 	/**
 	 * Resolves the modifiers for an AST node via its binding.
+	 * 
+	 * <p>When binding resolution is unavailable (e.g., standalone ASTParser
+	 * without a project), this method falls back to navigating from a
+	 * {@link SimpleName} to its parent {@link BodyDeclaration} to read
+	 * modifiers directly from the AST.</p>
 	 */
 	private static int resolveModifiers(ASTNode node) {
 		IBinding binding = resolveBinding(node);
@@ -1019,6 +1030,15 @@ public final class BuiltInGuards {
 		}
 		if (node instanceof BodyDeclaration bodyDecl) {
 			return bodyDecl.getModifiers();
+		}
+		// Fallback: navigate from SimpleName to parent BodyDeclaration
+		// This handles METHOD_DECLARATION patterns where $name binds to the
+		// method's SimpleName but binding resolution is unavailable.
+		if (node instanceof SimpleName) {
+			ASTNode parent = node.getParent();
+			if (parent instanceof BodyDeclaration parentDecl) {
+				return parentDecl.getModifiers();
+			}
 		}
 		return 0;
 	}
@@ -1276,5 +1296,126 @@ public final class BuiltInGuards {
 			return false;
 		}
 		return requiredMode.equalsIgnoreCase(currentMode.trim());
+	}
+
+	/**
+	 * Checks if a method name (bound to a placeholder) matches a given regex pattern.
+	 *
+	 * <p>This guard is typically used with {@code METHOD_DECLARATION} patterns to
+	 * filter methods by name. The placeholder must be bound to a {@link SimpleName}
+	 * (the method name).</p>
+	 *
+	 * <p>Example DSL usage:</p>
+	 * <pre>
+	 * void $name($params$) :: methodNameMatches($name, "test.*")
+	 * =&gt; addAnnotation @org.junit.jupiter.api.Test
+	 * ;;
+	 * </pre>
+	 *
+	 * Args: [placeholderName, regexPattern]
+	 * @since 1.3.9
+	 */
+	private static boolean evaluateMethodNameMatches(GuardContext ctx, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		String regexPattern = stripQuotes(args[1].toString());
+
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+
+		String methodName;
+		if (node instanceof SimpleName simpleName) {
+			methodName = simpleName.getIdentifier();
+		} else if (node instanceof MethodDeclaration methodDecl) {
+			methodName = methodDecl.getName().getIdentifier();
+		} else {
+			methodName = node.toString().trim();
+		}
+
+		try {
+			return methodName.matches(regexPattern);
+		} catch (java.util.regex.PatternSyntaxException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Checks if the enclosing class extends a given type (directly or transitively).
+	 *
+	 * <p>This guard walks the superclass chain of the enclosing class to determine
+	 * if it extends the specified type. This is essential for migration rules that
+	 * should only apply to classes inheriting from a specific base class (e.g.,
+	 * JUnit 3 test classes extending {@code junit.framework.TestCase}).</p>
+	 *
+	 * <p><b>Graceful degradation:</b> If type bindings cannot be resolved, falls
+	 * back to a textual comparison of the {@code extends} clause's simple name
+	 * against the last segment of the given FQN. This provides partial matching
+	 * in environments where binding resolution is not available, but cannot detect
+	 * transitive inheritance without bindings.</p>
+	 *
+	 * <p>Example DSL usage:</p>
+	 * <pre>
+	 * void $name($params$) :: methodNameMatches($name, "test.*") &amp;&amp; enclosingClassExtends("junit.framework.TestCase")
+	 * =&gt; @org.junit.jupiter.api.Test void $name($params$)
+	 * ;;
+	 * </pre>
+	 *
+	 * Args: [fullyQualifiedTypeName]
+	 * @since 1.3.10
+	 */
+	private static boolean evaluateEnclosingClassExtends(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String targetFqn = stripQuotes(args[0].toString());
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);
+		if (typeDecl == null) {
+			return false;
+		}
+		ITypeBinding typeBinding = typeDecl.resolveBinding();
+		if (typeBinding != null && !typeBinding.isRecovered()) {
+			ITypeBinding superclass = typeBinding.getSuperclass();
+			if (superclass != null && !superclass.isRecovered()) {
+				return extendsType(superclass, targetFqn, new java.util.HashSet<>());
+			}
+		}
+		// Fallback without reliable bindings: check the extends clause textually (direct superclass only)
+		org.eclipse.jdt.core.dom.Type superclassType = typeDecl.getSuperclassType();
+		if (superclassType == null) {
+			return false;
+		}
+		String superclassText = superclassType.toString().trim();
+		// Match if the extends clause is the FQN or the simple name part of it
+		int lastDot = targetFqn.lastIndexOf('.');
+		String simpleName = (lastDot >= 0) ? targetFqn.substring(lastDot + 1) : targetFqn;
+		return targetFqn.equals(superclassText) || simpleName.equals(superclassText);
+	}
+
+	/**
+	 * Walks the superclass chain of a type binding to check if it extends the target type.
+	 * Uses a visited set to prevent infinite recursion in case of cycles.
+	 * Stops at recovered bindings since they are unreliable.
+	 */
+	private static boolean extendsType(ITypeBinding typeBinding, String targetFqn, java.util.Set<String> visited) {
+		if (typeBinding == null || typeBinding.isRecovered()) {
+			return false;
+		}
+		String qualifiedName = typeBinding.getQualifiedName();
+		if (!visited.add(qualifiedName)) {
+			return false; // Already visited — break potential cycle
+		}
+		if (targetFqn.equals(qualifiedName)) {
+			return true;
+		}
+		ITypeBinding superclass = typeBinding.getSuperclass();
+		return extendsType(superclass, targetFqn, visited);
 	}
 }

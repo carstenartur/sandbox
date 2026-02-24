@@ -974,4 +974,175 @@ public class HintFileParserTest {
 		
 		assertThrows(HintParseException.class, () -> parser.parse(content));
 	}
+
+	@Test
+	public void testMethodDeclarationPatternKindInference() throws HintParseException {
+		// Natural syntax: replacement is a method declaration with annotation
+		String content = """
+			void $name($params$) :: methodNameMatches($name, "test.*")
+			=> @org.junit.jupiter.api.Test void $name($params$)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(PatternKind.METHOD_DECLARATION, rule.sourcePattern().getKind(),
+				"void $name($params$) should be inferred as METHOD_DECLARATION"); //$NON-NLS-1$
+		assertNotNull(rule.sourceGuard(), "Guard should be parsed"); //$NON-NLS-1$
+		assertFalse(rule.isHintOnly(), "Should have a replacement alternative"); //$NON-NLS-1$
+		assertEquals("@org.junit.jupiter.api.Test void $name($params$)",
+				rule.alternatives().get(0).replacementPattern(),
+				"Replacement should be the annotated method declaration"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testNaturalSyntaxWithSetUpMethod() throws HintParseException {
+		// Natural syntax: setUp → @BeforeEach
+		String content = """
+			void $name($params$) :: methodNameMatches($name, "setUp")
+			=> @org.junit.jupiter.api.BeforeEach void $name($params$)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(PatternKind.METHOD_DECLARATION, rule.sourcePattern().getKind());
+		assertEquals("@org.junit.jupiter.api.BeforeEach void $name($params$)",
+				rule.alternatives().get(0).replacementPattern());
+	}
+
+	@Test
+	public void testMethodDeclarationWithReturnTypeInference() throws HintParseException {
+		// String return type should also be inferred as METHOD_DECLARATION
+		String content = """
+			String $name()
+			=> @org.junit.jupiter.api.Test String $name()
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(PatternKind.METHOD_DECLARATION, rule.sourcePattern().getKind(),
+				"String $name() should be inferred as METHOD_DECLARATION"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testMultipleAnnotationRulesNaturalSyntax() throws HintParseException {
+		// Multiple rules using natural syntax
+		String content = """
+			<!id: junit3-migration>
+			<!description: JUnit 3 to 5 migration>
+
+			void $name($params$) :: methodNameMatches($name, "test.*")
+			=> @org.junit.jupiter.api.Test void $name($params$)
+			;;
+
+			void $name($params$) :: methodNameMatches($name, "setUp")
+			=> @org.junit.jupiter.api.BeforeEach void $name($params$)
+			;;
+
+			void $name($params$) :: methodNameMatches($name, "tearDown")
+			=> @org.junit.jupiter.api.AfterEach void $name($params$)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals("junit3-migration", hintFile.getId()); //$NON-NLS-1$
+		assertEquals(3, hintFile.getRules().size(), "Should have 3 rules"); //$NON-NLS-1$
+		
+		for (TransformationRule rule : hintFile.getRules()) {
+			assertEquals(PatternKind.METHOD_DECLARATION, rule.sourcePattern().getKind());
+			assertTrue(rule.alternatives().get(0).replacementPattern().contains("void $name"), //$NON-NLS-1$
+					"Each rule should have a method declaration replacement"); //$NON-NLS-1$
+		}
+	}
+
+	@Test
+	public void testMultilineReplacement() throws HintParseException {
+		// Multiline replacement: continuation lines after => are joined with newlines
+		String content = """
+			$x.method()
+			=>
+			$x.firstCall()
+			$x.secondCall()
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		String replacement = rule.alternatives().get(0).replacementPattern();
+		assertTrue(replacement.contains("\n"), //$NON-NLS-1$
+				"Multiline replacement should contain newline"); //$NON-NLS-1$
+		assertTrue(replacement.contains("$x.firstCall()"), //$NON-NLS-1$
+				"Should contain first line"); //$NON-NLS-1$
+		assertTrue(replacement.contains("$x.secondCall()"), //$NON-NLS-1$
+				"Should contain second line"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testMultilineReplacementWithInlineArrow() throws HintParseException {
+		// Multiline replacement where => has content on the same line
+		String content = """
+			$x.method()
+			=> $x.firstCall()
+			$x.secondCall()
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		String replacement = rule.alternatives().get(0).replacementPattern();
+		assertTrue(replacement.contains("$x.firstCall()"), //$NON-NLS-1$
+				"Should contain first line"); //$NON-NLS-1$
+		assertTrue(replacement.contains("$x.secondCall()"), //$NON-NLS-1$
+				"Should contain second line from continuation"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testMultilineReplacementDoesNotBreakMultiRewrite() throws HintParseException {
+		// Multi-rewrite rules should NOT accumulate across => boundaries
+		String content = """
+			$x.method()
+			=> $x.newMethod() :: sourceVersionGE(11)
+			=> $x.fallback() :: otherwise
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(2, rule.alternatives().size(),
+				"Should have 2 alternatives, not merged into one multiline"); //$NON-NLS-1$
+		assertEquals("$x.newMethod()", rule.alternatives().get(0).replacementPattern()); //$NON-NLS-1$
+		assertEquals("$x.fallback()", rule.alternatives().get(1).replacementPattern()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testStaticGuardInMethodDeclaration() throws HintParseException {
+		// Verify !isStatic negation works in guard parsing
+		String content = """
+			void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name)
+			=> @org.junit.jupiter.api.Test void $name($params$)
+			;;
+			""";
+		
+		HintFile hintFile = parser.parse(content);
+		
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(PatternKind.METHOD_DECLARATION, rule.sourcePattern().getKind());
+		assertNotNull(rule.sourceGuard(), "Guard with !isStatic should be parsed"); //$NON-NLS-1$
+	}
 }

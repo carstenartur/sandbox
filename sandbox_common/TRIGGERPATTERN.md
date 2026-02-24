@@ -573,6 +573,76 @@ The following `.sandbox-hint` files are bundled with the engine:
 | `modernize-java9.sandbox-hint` | 7 | Java 9+ API modernization |
 | `modernize-java11.sandbox-hint` | 7 | Java 11+ API modernization |
 | `performance.sandbox-hint` | 9 | Performance optimization patterns |
+| `junit3-migration.sandbox-hint` | 5 | JUnit 3 → 5 migration (add annotations to conventionally-named methods, static/non-static) |
+
+### Adding Annotations to Method Declarations
+
+When the source and replacement are both method declarations, the engine diffs
+annotations between them and adds the missing ones to the matched method.
+This follows the **NetBeans-compatible** "source → target" pattern syntax.
+
+**Syntax:**
+```
+void $name($params$) :: methodNameMatches($name, "regex")
+=> @fully.qualified.AnnotationName void $name($params$)
+;;
+```
+
+**Key features:**
+- **Natural syntax**: The replacement IS the target method declaration — just write the
+  annotation in front. No custom directive needed.
+- **Idempotent**: If the annotation (by simple name) is already present on the method,
+  no change is made. This means running the rule multiple times is safe.
+- **Import management**: The FQN of the annotation is automatically added as an import.
+- **Static/non-static guards**: Use `isStatic($name)` / `!isStatic($name)` to distinguish
+  static from instance methods.
+- **Name pattern matching**: Use the `methodNameMatches` guard to filter methods by name regex.
+
+**Example — JUnit 3 to JUnit 5 migration (instance methods):**
+```
+// Add @Test to non-static methods whose name starts with "test"
+void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name)
+=> @org.junit.jupiter.api.Test void $name($params$)
+;;
+
+// Add @BeforeEach to non-static setUp() methods
+void $name($params$) :: methodNameMatches($name, "setUp") && !isStatic($name)
+=> @org.junit.jupiter.api.BeforeEach void $name($params$)
+;;
+```
+
+**Example — JUnit 3 to JUnit 5 migration (static lifecycle methods):**
+```
+// Add @BeforeAll to static setUpBeforeClass() methods
+void $name($params$) :: methodNameMatches($name, "setUpBeforeClass") && isStatic($name)
+=> @org.junit.jupiter.api.BeforeAll void $name($params$)
+;;
+
+// Add @AfterAll to static tearDownAfterClass() methods
+void $name($params$) :: methodNameMatches($name, "tearDownAfterClass") && isStatic($name)
+=> @org.junit.jupiter.api.AfterAll void $name($params$)
+;;
+```
+
+### Multiline Replacements
+
+Continuation lines after `=>` that do not start with `=>` are accumulated into a
+single multiline replacement text, joined with newlines. This enables NetBeans-compatible
+multiline expressions.
+
+**Example:**
+```
+$x.open()
+=>
+$x.open()
+$x.init()
+;;
+```
+
+The replacement text becomes `$x.open()\n$x.init()`.
+
+**Note:** Multi-rewrite rules (multiple `=>` alternatives) are NOT affected — each
+`=>` starts a new alternative as before.
 
 ### Guard Functions Reference
 
@@ -607,6 +677,7 @@ They are specified using the `::` operator to separate the pattern from the guar
 | `referencedIn($var, $expr)` | variable, expression | Checks if variable is referenced in expression | `$x.toString() :: referencedIn($x, $condition)` |
 | `isStatic($placeholder)` | placeholder | Checks if binding has static modifier | `$field :: isStatic($field)` |
 | `isFinal($placeholder)` | placeholder | Checks if binding has final modifier | `$var :: isFinal($var)` |
+| `hasModifier($placeholder, "MODIFIER")` | placeholder, modifier | Checks if element has a specific modifier (PUBLIC, PRIVATE, PROTECTED, ABSTRACT, STATIC, FINAL, SYNCHRONIZED, VOLATILE, TRANSIENT, NATIVE, STRICTFP) | `$m :: hasModifier($m, "PUBLIC")` |
 | `hasAnnotation($placeholder, "AnnotationName")` | placeholder, annotation | Checks if element has specific annotation | `$method :: hasAnnotation($method, "Deprecated")` |
 | `isDeprecated($placeholder)` | placeholder | Checks if element is deprecated | `$method :: isDeprecated($method)` |
 | `contains("text")` | text | Checks if text exists in enclosing method body | `$x.open() :: notContains("close")` |
@@ -615,6 +686,7 @@ They are specified using the `::` operator to separate the pattern from the guar
 | `isNullable($placeholder)` | placeholder | Checks if expression is potentially nullable (not provably NON_NULL) | `$x.toString() :: isNullable($x)` |
 | `isNullable($placeholder, minScore)` | placeholder, score | Checks if expression's nullability score >= minScore (0=NON_NULL, 5=UNKNOWN, 7=POTENTIALLY_NULLABLE, 10=NULLABLE) | `$x.toString() :: isNullable($x, 5)` |
 | `isNonNull($placeholder)` | placeholder | Checks if expression is provably non-null | `$x.close() :: isNonNull($x)` |
+| `methodNameMatches($placeholder, "regex")` | placeholder, regex | Checks if method name matches a regex pattern. Used with METHOD_DECLARATION patterns. | `void $name($params$) :: methodNameMatches($name, "test.*")` |
 
 #### Nullability Guards
 
