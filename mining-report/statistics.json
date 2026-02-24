@@ -1,45 +1,45 @@
 {
-  "totalProcessed": 23,
-  "relevant": 21,
+  "totalProcessed": 8,
+  "relevant": 6,
   "irrelevant": 2,
   "duplicates": 0,
-  "green": 6,
-  "yellow": 1,
-  "red": 14,
+  "green": 3,
+  "yellow": 0,
+  "red": 3,
   "irrelevantReasons": {
-    "The commit is about un-deprecating a constructor by removing its `@Deprecated` annotation from the API declaration itself. This is an API maintenance change, not a general code transformation pattern for API consumers. The TriggerPattern DSL is designed for transforming API usage patterns (e.g., replacing a deprecated method call with a newer one, or changing the arguments of a call), not for modifying API declarations like removing an annotation from a specific constructor declaration. While the DSL can handle annotation replacements, doing so for an API declaration itself would require matching full method/constructor signatures, which is beyond the DSL\u0027s current scope of matching expressions or specific annotation usages.": 1,
-    "The commit modifies a string literal in a `.properties` file, not Java source code. The TriggerPattern DSL is designed for Java AST transformations and cannot be applied to non-Java files.": 1
+    "The commit fixes spelling errors in Javadoc comments. The TriggerPattern DSL is designed for structural code transformations (expressions, statements, annotations) and does not support arbitrary text replacement within comments or non-code string literals.": 1,
+    "The change is in a `.properties` file, which contains string literals used for localization. The TriggerPattern DSL is designed for Java code transformations (Abstract Syntax Tree manipulation), not string literal changes in property files.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "totalProcessed": 23,
-      "relevant": 21,
-      "green": 6,
-      "yellow": 1,
-      "red": 14
+      "totalProcessed": 8,
+      "relevant": 6,
+      "green": 3,
+      "yellow": 0,
+      "red": 3
     }
   },
   "dailyProgress": [
     {
       "date": "2026-02-24",
-      "processed": 23,
-      "relevant": 21
+      "processed": 8,
+      "relevant": 6
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-02-24T03:41:32.393Z",
-    "completedAt": "2026-02-24T03:47:52.948442620Z",
-    "durationSeconds": 380,
+    "startedAt": "2026-02-24T04:21:14.957Z",
+    "completedAt": "2026-02-24T04:35:02.705163845Z",
+    "durationSeconds": 827,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
-    "batchSize": 10,
+    "batchSize": 72,
     "commitsPerRequest": 4,
-    "apiCallsMade": 18,
-    "deferredCommits": 9,
+    "apiCallsMade": 7,
+    "deferredCommits": 13,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-02-24T03:42:20.315779251Z",
-    "latestEvaluation": "2026-02-24T03:47:52.627463717Z"
+    "earliestEvaluation": "2026-02-24T04:22:10.637458966Z",
+    "latestEvaluation": "2026-02-24T04:27:50.687574114Z"
   }
 }
