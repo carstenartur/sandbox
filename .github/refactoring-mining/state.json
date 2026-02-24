@@ -1,9 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "88e83a80320f5d3ee2f47b78b9edf251a58c2e22",
-      "lastProcessedDate": "2026-02-24T03:47:52.627777122Z",
-      "totalProcessed": 9551,
+      "lastProcessedCommit": "1be8c2cb82a4490cb0046448090f988b38e4b8f9",
+      "lastProcessedDate": "2026-02-24T04:35:02.128416046Z",
+      "totalProcessed": 9622,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -86,6 +86,42 @@
           "deferredAt": "2026-02-24T03:42:54.685604725Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "b0b460f10326b39a94dca6dee304c7c084bef639",
+          "message": "Deprecate \"fastViewWidthRatio\" extension point attribute \u0026 friends\n\nFast views are unsupported and the attribute is not ",
+          "diffLines": 22,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T04:27:25.506666088Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "58e4313fbf9bb7cd254f1a0cc01ffebafc1fae70",
+          "message": "Replace PNGs with SVGs in org.eclipse.ui.workbench (incl. shared images)",
+          "diffLines": 338,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-24T04:27:50.784457414Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "70589accf31b48fba37eb414c55bbb95ba1769d3",
+          "message": "Use on-the-fly disabled icons in org.eclipse.ui.workbench (incl. shared)\n\nThis replaces the usage of pre-generated disab",
+          "diffLines": 239,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T04:31:26.425871016Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9e7f21fa966eaefb4658aaa5be13a7345e12b4e8",
+          "message": "Prevent shutdown hang when changing theme and disabling theming\n\nWhen changing the current theme via the Appearance pref",
+          "diffLines": 45,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T04:35:02.128324806Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -101,5 +137,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 9551
+  "globalTotalProcessed": 9622
 }
