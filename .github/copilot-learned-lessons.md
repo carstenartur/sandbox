@@ -578,3 +578,37 @@ assertRefactoringResultAsExpected()
 
 ---
 
+## 21. JUnit Cleanup Plugin Architecture — JUNIT_CLEANUP_4_SUITE vs JUNIT_CLEANUP_4_RUNWITH
+
+**Issue**: `JUNIT_CLEANUP_4_SUITE` constant exists in `MYCleanUpConstants` but is **NOT mapped** in
+`JUnitCleanUpCore.computeFixSet()`. The Suite migration functionality is handled by
+`RunWithJUnitPlugin` which is controlled by `JUNIT_CLEANUP_4_RUNWITH`.
+
+**Key Facts**:
+- `JUNIT_CLEANUP_4_SUITE` → not mapped to any enum value → enabling/disabling it has NO effect
+- `JUNIT_CLEANUP_4_RUNWITH` → maps to `JUnitCleanUpFixCore.RUNWITH` → controls `RunWithJUnitPlugin`
+- `RunWithJUnitPlugin` handles both `@RunWith(Suite.class)` and `@Suite.SuiteClasses` migrations
+- There are also `RUNWITH_ENCLOSED`, `RUNWITH_THEORIES`, `RUNWITH_CATEGORIES` enum values that have
+  no individual toggle — they're always active when `JUNIT_CLEANUP` is enabled
+
+**Learned**: 2026-02-24
+
+---
+
+## 22. ThrowingRunnableJUnitPlugin Already Handles ParameterizedType
+
+**Issue**: Tests `migrates_generic_type_parameter` and `migrates_complete_eclipse_platform_example`
+were `@Disabled` with message "Currently fails due to missing support for type parameter references".
+However, the plugin code ALREADY implements full ParameterizedType support:
+- `visit(ParameterizedType node)` in the ASTVisitor
+- `processParameterizedType()` for rewriting
+- `createExecutableType()` for recursive type argument transformation
+- `containsThrowingRunnable()` for detecting ThrowingRunnable in type arguments
+
+**Rule**: Before implementing a feature, check if it's already been implemented but the tests weren't
+re-enabled. The `@Disabled` annotation message may be outdated.
+
+**Learned**: 2026-02-24
+
+---
+
