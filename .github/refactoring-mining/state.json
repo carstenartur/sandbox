@@ -1,9 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "84dfe5a00b51c9c7cbedc93a3ba1776f6356eae7",
-      "lastProcessedDate": "2026-02-24T16:48:52.793590353Z",
-      "totalProcessed": 9840,
+      "lastProcessedCommit": "44f830b8bd43aa6a96046f77830d2a20b642cf62",
+      "lastProcessedDate": "2026-02-24T20:22:21.287206915Z",
+      "totalProcessed": 9946,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -122,6 +122,33 @@
           "deferredAt": "2026-02-24T16:46:34.596512736Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "ccafe58e7e349047507d7d5878beec826c19e124",
+          "message": "Fix ProgressManager.run(boolean, boolean, IRunnableWithProgress)\n\nFixed regression from ccd8bab0d789e7c3fb23d92018809548",
+          "diffLines": 20,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T20:13:31.674311988Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0f5ed4595309cdcdeff65668e85823631581bd42",
+          "message": "Show ProgressMonitorJobsDialog after delay in ProgressManager.run\n\nEven for the backwards compatible mode (when the runn",
+          "diffLines": 17,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T20:18:45.484320829Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bb9d6232f6d57d3717bc92f2f4adc1267dd915da",
+          "message": "Perform clean code of bundles/org.eclipse.ui.workbench\n",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T20:22:21.287116118Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -137,5 +164,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 9840
+  "globalTotalProcessed": 9946
 }
