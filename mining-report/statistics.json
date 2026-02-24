@@ -1,45 +1,47 @@
 {
-  "totalProcessed": 8,
-  "relevant": 6,
-  "irrelevant": 2,
+  "totalProcessed": 25,
+  "relevant": 21,
+  "irrelevant": 4,
   "duplicates": 0,
-  "green": 3,
-  "yellow": 0,
-  "red": 3,
+  "green": 5,
+  "yellow": 1,
+  "red": 15,
   "irrelevantReasons": {
-    "The commit fixes spelling errors in Javadoc comments. The TriggerPattern DSL is designed for structural code transformations (expressions, statements, annotations) and does not support arbitrary text replacement within comments or non-code string literals.": 1,
-    "The change is in a `.properties` file, which contains string literals used for localization. The TriggerPattern DSL is designed for Java code transformations (Abstract Syntax Tree manipulation), not string literal changes in property files.": 1
+    "The change involves adding a new string constant and an \u0027else if\u0027 block. This constitutes a structural modification by adding new declarations and control flow, which is outside the scope of the TriggerPattern DSL. The DSL is designed for pattern matching and replacement of existing expressions or annotations, not for inserting new code blocks or altering control flow like adding conditional branches.": 1,
+    "The commit\u0027s change consists solely of modifying Javadoc comments. The TriggerPattern DSL operates on Java Abstract Syntax Trees (AST) of executable code. The DSL parser explicitly states that comments are stripped before any rule parsing occurs, making it impossible to match or transform Javadoc comments with the current DSL capabilities.": 1,
+    "The changes primarily involve fixing typos within Javadoc comments and a string literal. The TriggerPattern DSL explicitly states that comments are stripped before any rule parsing occurs, making them untargetable. While a string literal itself is an AST node, the DSL does not support pattern matching and replacement of substrings *within* a string literal unless the entire literal matches a fixed pattern, which is not practical or generalizable for embedded typos.": 1,
+    "This commit introduces a new private helper method (`isThemingPossible`), re-introduces a field (`highContrastMode`), and then refactors multiple existing code paths to use this new method and field. The core changes are structural: adding new method/field declarations, adding a new statement (`themingEnabled.setEnabled(...)`), and modifying control flow by wrapping existing logic in an `if` statement. The TriggerPattern DSL is designed for expression-to-expression or annotation-to-annotation replacement, not for generating new declarations or modifying control flow blocks.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "totalProcessed": 8,
-      "relevant": 6,
-      "green": 3,
-      "yellow": 0,
-      "red": 3
+      "totalProcessed": 25,
+      "relevant": 21,
+      "green": 5,
+      "yellow": 1,
+      "red": 15
     }
   },
   "dailyProgress": [
     {
       "date": "2026-02-24",
-      "processed": 8,
-      "relevant": 6
+      "processed": 25,
+      "relevant": 21
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-02-24T04:21:14.957Z",
-    "completedAt": "2026-02-24T04:35:02.705163845Z",
-    "durationSeconds": 827,
+    "startedAt": "2026-02-24T16:42:07.930Z",
+    "completedAt": "2026-02-24T16:48:53.366727379Z",
+    "durationSeconds": 405,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
-    "batchSize": 72,
+    "batchSize": 15,
     "commitsPerRequest": 4,
-    "apiCallsMade": 7,
+    "apiCallsMade": 18,
     "deferredCommits": 13,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-02-24T04:22:10.637458966Z",
-    "latestEvaluation": "2026-02-24T04:27:50.687574114Z"
+    "earliestEvaluation": "2026-02-24T16:42:56.198092317Z",
+    "latestEvaluation": "2026-02-24T16:48:52.793137380Z"
   }
 }
