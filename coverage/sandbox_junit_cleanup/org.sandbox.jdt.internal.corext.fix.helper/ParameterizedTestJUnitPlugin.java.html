@@ -49,7 +49,6 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -66,96 +65,96 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
  * - Adding @ParameterizedTest and @MethodSource to test methods
  * - Adding method parameters to test methods
  */
-<span class="fc" id="L69">public class ParameterizedTestJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L68">public class ParameterizedTestJUnitPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L74">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L73">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
 		
 		// Find @RunWith(Parameterized.class) annotations
-<span class="fc" id="L77">		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)</span>
-<span class="fc" id="L78">			.in(compilationUnit)</span>
-<span class="fc" id="L79">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L80">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">				if (visited instanceof Annotation) {</span>
-<span class="fc" id="L82">					return processFoundNode(fixcore, operations, (Annotation) visited, aholder);</span>
+<span class="fc" id="L76">		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)</span>
+<span class="fc" id="L77">			.in(compilationUnit)</span>
+<span class="fc" id="L78">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L79">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">				if (visited instanceof Annotation) {</span>
+<span class="fc" id="L81">					return processFoundNode(fixcore, operations, (Annotation) visited, aholder);</span>
 				}
-<span class="nc" id="L84">				return true;</span>
+<span class="nc" id="L83">				return true;</span>
 			});
-<span class="fc" id="L86">	}</span>
+<span class="fc" id="L85">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Annotation node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 		
 		// Check if this is @RunWith(Parameterized.class)
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">		if (node instanceof SingleMemberAnnotation mynode) {</span>
-<span class="fc" id="L94">			Expression value = mynode.getValue();</span>
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">			if (value instanceof TypeLiteral myvalue) {</span>
-<span class="fc" id="L96">				Type type = myvalue.getType();</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				if (type != null) {</span>
-<span class="fc" id="L98">					ITypeBinding typeBinding = type.resolveBinding();</span>
-<span class="pc bpc" id="L99" title="1 of 2 branches missed.">					if (typeBinding != null) {</span>
-<span class="fc" id="L100">						String runnerQualifiedName = typeBinding.getQualifiedName();</span>
-<span class="fc bfc" id="L101" title="All 2 branches covered.">						if (ORG_JUNIT_RUNNERS_PARAMETERIZED.equals(runnerQualifiedName)) {</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (node instanceof SingleMemberAnnotation mynode) {</span>
+<span class="fc" id="L93">			Expression value = mynode.getValue();</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			if (value instanceof TypeLiteral myvalue) {</span>
+<span class="fc" id="L95">				Type type = myvalue.getType();</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">				if (type != null) {</span>
+<span class="fc" id="L97">					ITypeBinding typeBinding = type.resolveBinding();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">					if (typeBinding != null) {</span>
+<span class="fc" id="L99">						String runnerQualifiedName = typeBinding.getQualifiedName();</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">						if (ORG_JUNIT_RUNNERS_PARAMETERIZED.equals(runnerQualifiedName)) {</span>
 							// Found a parameterized test class
-<span class="fc" id="L103">							JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L104">							mh.setMinv(node);</span>
-<span class="fc" id="L105">							mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
-<span class="fc" id="L106">							mh.setValue(ORG_JUNIT_RUNNERS_PARAMETERIZED);</span>
+<span class="fc" id="L102">							JunitHolder mh = new JunitHolder();</span>
+<span class="fc" id="L103">							mh.setMinv(node);</span>
+<span class="fc" id="L104">							mh.setMinvname(node.getTypeName().getFullyQualifiedName());</span>
+<span class="fc" id="L105">							mh.setValue(ORG_JUNIT_RUNNERS_PARAMETERIZED);</span>
 							
 							// Get the containing type declaration to store for processing
-<span class="fc" id="L109">							ASTNode parent = node.getParent();</span>
-<span class="pc bpc" id="L110" title="2 of 4 branches missed.">							while (parent != null &amp;&amp; !(parent instanceof TypeDeclaration)) {</span>
-<span class="nc" id="L111">								parent = parent.getParent();</span>
+<span class="fc" id="L108">							ASTNode parent = node.getParent();</span>
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">							while (parent != null &amp;&amp; !(parent instanceof TypeDeclaration)) {</span>
+<span class="nc" id="L110">								parent = parent.getParent();</span>
 							}
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">							if (parent != null) {</span>
-<span class="fc" id="L114">								mh.setAdditionalInfo(parent);</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">							if (parent != null) {</span>
+<span class="fc" id="L113">								mh.setAdditionalInfo(parent);</span>
 							}
 							
-<span class="fc" id="L117">							dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L118">							operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L116">							dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L117">							operations.add(fixcore.rewrite(dataHolder));</span>
 							// Return true to continue processing (there could be nested classes)
-<span class="fc" id="L120">							return true;</span>
+<span class="fc" id="L119">							return true;</span>
 						}
 					}
 				}
 			}
 		}
 		// Return true to continue processing other annotations
-<span class="fc" id="L127">		return true;</span>
+<span class="nc" id="L126">		return true;</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		
-<span class="fc" id="L134">		Annotation runWithAnnotation = junitHolder.getAnnotation();</span>
-<span class="fc" id="L135">		TypeDeclaration typeDecl = (TypeDeclaration) junitHolder.getAdditionalInfo();</span>
+<span class="fc" id="L133">		Annotation runWithAnnotation = junitHolder.getAnnotation();</span>
+<span class="fc" id="L134">		TypeDeclaration typeDecl = (TypeDeclaration) junitHolder.getAdditionalInfo();</span>
 		
-<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
-<span class="nc" id="L138">			return; // Cannot proceed without type declaration</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
+<span class="nc" id="L137">			return; // Cannot proceed without type declaration</span>
 		}
 		
 		// Step 1: Remove @RunWith annotation
-<span class="fc" id="L142">		rewriter.remove(runWithAnnotation, group);</span>
+<span class="fc" id="L141">		rewriter.remove(runWithAnnotation, group);</span>
 		
 		// Step 2: Find @Parameters method and constructor to extract parameter info
-<span class="fc" id="L145">		MethodDeclaration parametersMethod = null;</span>
-<span class="fc" id="L146">		MethodDeclaration constructor = null;</span>
-<span class="fc" id="L147">		List&lt;SingleVariableDeclaration&gt; constructorParams = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L148">		Set&lt;String&gt; paramFieldNames = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L144">		MethodDeclaration parametersMethod = null;</span>
+<span class="fc" id="L145">		MethodDeclaration constructor = null;</span>
+<span class="fc" id="L146">		List&lt;SingleVariableDeclaration&gt; constructorParams = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L147">		Set&lt;String&gt; paramFieldNames = new HashSet&lt;&gt;();</span>
 		
-<span class="fc bfc" id="L150" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
 			// Find @Parameters method
-<span class="fc bfc" id="L152" title="All 2 branches covered.">			for (Object modifier : method.modifiers()) {</span>
-<span class="fc bfc" id="L153" title="All 2 branches covered.">				if (modifier instanceof Annotation) {</span>
-<span class="fc" id="L154">					Annotation annot = (Annotation) modifier;</span>
-<span class="fc" id="L155">					String annotName = annot.getTypeName().getFullyQualifiedName();</span>
-<span class="pc bpc" id="L156" title="1 of 4 branches missed.">					if (&quot;Parameters&quot;.equals(annotName) || ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS.equals(annotName)) {</span>
-<span class="fc" id="L157">						parametersMethod = method;</span>
-<span class="fc" id="L158">						break;</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">			for (Object modifier : method.modifiers()) {</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">				if (modifier instanceof Annotation) {</span>
+<span class="fc" id="L153">					Annotation annot = (Annotation) modifier;</span>
+<span class="fc" id="L154">					String annotName = annot.getTypeName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L155" title="1 of 4 branches missed.">					if (&quot;Parameters&quot;.equals(annotName) || ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS.equals(annotName)) {</span>
+<span class="fc" id="L156">						parametersMethod = method;</span>
+<span class="fc" id="L157">						break;</span>
 					}
 				}
 			}
@@ -163,24 +162,24 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			// Find constructor
 			// Note: If multiple constructors exist, this uses the last one found.
 			// Typically, parameterized tests have only one constructor that accepts the test parameters.
-<span class="fc bfc" id="L166" title="All 2 branches covered.">			if (method.isConstructor()) {</span>
-<span class="fc" id="L167">				constructor = method;</span>
-<span class="fc" id="L168">				List&lt;SingleVariableDeclaration&gt; params = method.parameters();</span>
-<span class="fc" id="L169">				constructorParams.addAll(params);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">			if (method.isConstructor()) {</span>
+<span class="fc" id="L166">				constructor = method;</span>
+<span class="fc" id="L167">				List&lt;SingleVariableDeclaration&gt; params = method.parameters();</span>
+<span class="fc" id="L168">				constructorParams.addAll(params);</span>
 				
 				// Extract field names from constructor body (fields being assigned from parameters)
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">				if (method.getBody() != null) {</span>
-<span class="fc bfc" id="L173" title="All 2 branches covered.">					for (Object stmt : method.getBody().statements()) {</span>
-<span class="pc bpc" id="L174" title="1 of 2 branches missed.">						if (stmt instanceof ExpressionStatement) {</span>
-<span class="fc" id="L175">							Expression expr = ((ExpressionStatement) stmt).getExpression();</span>
-<span class="pc bpc" id="L176" title="1 of 2 branches missed.">							if (expr instanceof Assignment) {</span>
-<span class="fc" id="L177">								Assignment assign = (Assignment) expr;</span>
-<span class="fc" id="L178">								Expression lhs = assign.getLeftHandSide();</span>
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">								if (lhs instanceof SimpleName) {</span>
-<span class="nc" id="L180">									paramFieldNames.add(((SimpleName) lhs).getIdentifier());</span>
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">								} else if (lhs instanceof org.eclipse.jdt.core.dom.FieldAccess) {</span>
-<span class="fc" id="L182">									org.eclipse.jdt.core.dom.FieldAccess fa = (org.eclipse.jdt.core.dom.FieldAccess) lhs;</span>
-<span class="fc" id="L183">									paramFieldNames.add(fa.getName().getIdentifier());</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">				if (method.getBody() != null) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">					for (Object stmt : method.getBody().statements()) {</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">						if (stmt instanceof ExpressionStatement) {</span>
+<span class="fc" id="L174">							Expression expr = ((ExpressionStatement) stmt).getExpression();</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">							if (expr instanceof Assignment) {</span>
+<span class="fc" id="L176">								Assignment assign = (Assignment) expr;</span>
+<span class="fc" id="L177">								Expression lhs = assign.getLeftHandSide();</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">								if (lhs instanceof SimpleName) {</span>
+<span class="nc" id="L179">									paramFieldNames.add(((SimpleName) lhs).getIdentifier());</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">								} else if (lhs instanceof org.eclipse.jdt.core.dom.FieldAccess) {</span>
+<span class="fc" id="L181">									org.eclipse.jdt.core.dom.FieldAccess fa = (org.eclipse.jdt.core.dom.FieldAccess) lhs;</span>
+<span class="fc" id="L182">									paramFieldNames.add(fa.getName().getIdentifier());</span>
 								}
 							}
 						}
@@ -190,49 +189,49 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 		}
 		
 		// Step 3: Create new transformed @Parameters method and add it at the end
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		if (parametersMethod != null) {</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">		if (parametersMethod != null) {</span>
 			// Create a completely new method with transformations applied
 			// This avoids AST rewrite conflicts from modifying and moving the same node
-<span class="fc" id="L196">			MethodDeclaration newMethod = createTransformedParametersMethod(parametersMethod, ast, rewriter, importRewriter);</span>
+<span class="fc" id="L195">			MethodDeclaration newMethod = createTransformedParametersMethod(parametersMethod, ast, rewriter, importRewriter);</span>
 			
 			// Remove the original method
-<span class="fc" id="L199">			ListRewrite bodyRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
-<span class="fc" id="L200">			bodyRewrite.remove(parametersMethod, group);</span>
+<span class="fc" id="L198">			ListRewrite bodyRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc" id="L199">			bodyRewrite.remove(parametersMethod, group);</span>
 			
 			// Insert the new transformed method at the end of the class
 			// This ensures test methods appear before the data provider in the output
-<span class="fc" id="L204">			bodyRewrite.insertLast(newMethod, group);</span>
+<span class="fc" id="L203">			bodyRewrite.insertLast(newMethod, group);</span>
 		}
 		
 		// Step 4: Remove constructor
-<span class="pc bpc" id="L208" title="1 of 2 branches missed.">		if (constructor != null) {</span>
-<span class="fc" id="L209">			rewriter.remove(constructor, group);</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">		if (constructor != null) {</span>
+<span class="fc" id="L208">			rewriter.remove(constructor, group);</span>
 		}
 		
 		// Step 5: Remove parameter fields
-<span class="fc" id="L213">		ListRewrite fieldListRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
-<span class="fc bfc" id="L214" title="All 2 branches covered.">		for (Object bodyDecl : typeDecl.bodyDeclarations()) {</span>
-<span class="fc bfc" id="L215" title="All 2 branches covered.">			if (bodyDecl instanceof FieldDeclaration) {</span>
-<span class="fc" id="L216">				FieldDeclaration field = (FieldDeclaration) bodyDecl;</span>
-<span class="fc" id="L217">				List&lt;VariableDeclarationFragment&gt; fragmentsToRemove = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L218" title="All 2 branches covered.">				for (Object frag : field.fragments()) {</span>
-<span class="pc bpc" id="L219" title="1 of 2 branches missed.">					if (frag instanceof VariableDeclarationFragment) {</span>
-<span class="fc" id="L220">						VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;</span>
-<span class="fc" id="L221">						String fieldName = fragment.getName().getIdentifier();</span>
-<span class="pc bpc" id="L222" title="1 of 2 branches missed.">						if (paramFieldNames.contains(fieldName)) {</span>
-<span class="fc" id="L223">							fragmentsToRemove.add(fragment);</span>
+<span class="fc" id="L212">		ListRewrite fieldListRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">		for (Object bodyDecl : typeDecl.bodyDeclarations()) {</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">			if (bodyDecl instanceof FieldDeclaration) {</span>
+<span class="fc" id="L215">				FieldDeclaration field = (FieldDeclaration) bodyDecl;</span>
+<span class="fc" id="L216">				List&lt;VariableDeclarationFragment&gt; fragmentsToRemove = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">				for (Object frag : field.fragments()) {</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">					if (frag instanceof VariableDeclarationFragment) {</span>
+<span class="fc" id="L219">						VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;</span>
+<span class="fc" id="L220">						String fieldName = fragment.getName().getIdentifier();</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">						if (paramFieldNames.contains(fieldName)) {</span>
+<span class="fc" id="L222">							fragmentsToRemove.add(fragment);</span>
 						}
 					}
 				}
-<span class="pc bpc" id="L227" title="1 of 2 branches missed.">				if (!fragmentsToRemove.isEmpty()) {</span>
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">					if (fragmentsToRemove.size() == field.fragments().size()) {</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">				if (!fragmentsToRemove.isEmpty()) {</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">					if (fragmentsToRemove.size() == field.fragments().size()) {</span>
 						// All fragments are parameter fields: remove entire declaration
-<span class="fc" id="L230">						fieldListRewrite.remove(field, group);</span>
-<span class="fc" id="L231">					} else {</span>
+<span class="fc" id="L229">						fieldListRewrite.remove(field, group);</span>
+<span class="fc" id="L230">					} else {</span>
 						// Only some fragments are parameter fields: remove them individually
-<span class="nc" id="L233">						ListRewrite fragmentRewrite = rewriter.getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY);</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">						for (VariableDeclarationFragment fragment : fragmentsToRemove) {</span>
-<span class="nc" id="L235">							fragmentRewrite.remove(fragment, group);</span>
+<span class="nc" id="L232">						ListRewrite fragmentRewrite = rewriter.getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY);</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">						for (VariableDeclarationFragment fragment : fragmentsToRemove) {</span>
+<span class="nc" id="L234">							fragmentRewrite.remove(fragment, group);</span>
 						}
 					}
 				}
@@ -240,21 +239,22 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 		}
 		
 		// Step 6: Transform @Test methods to @ParameterizedTest
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">		String parametersMethodName = parametersMethod != null ? parametersMethod.getName().getIdentifier() : &quot;data&quot;;</span>
-<span class="fc bfc" id="L244" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
-<span class="fc bfc" id="L245" title="All 2 branches covered.">			if (isTestMethod(method)) {</span>
-<span class="fc" id="L246">				transformTestMethod(method, constructorParams, parametersMethodName, rewriter, ast, group, importRewriter);</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		String parametersMethodName = parametersMethod != null ? parametersMethod.getName().getIdentifier() : &quot;data&quot;;</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">			if (isTestMethod(method)) {</span>
+<span class="fc" id="L245">				transformTestMethod(method, constructorParams, parametersMethodName, rewriter, ast, group, importRewriter);</span>
 			}
 		}
 		
 		// Step 7: Update imports
-<span class="fc" id="L251">		importRewriter.removeImport(ORG_JUNIT_RUNWITH);</span>
+<span class="fc" id="L250">		importRewriter.removeImport(ORG_JUNIT_RUNWITH);</span>
+<span class="fc" id="L251">		importRewriter.removeImport(ORG_JUNIT_TEST);</span>
 <span class="fc" id="L252">		importRewriter.removeImport(ORG_JUNIT_RUNNERS_PARAMETERIZED);</span>
 <span class="fc" id="L253">		importRewriter.removeImport(ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS);</span>
-<span class="fc" id="L254">		importRewriter.removeImport(&quot;java.util.Arrays&quot;);</span>
-<span class="fc" id="L255">		importRewriter.removeImport(&quot;java.util.Collection&quot;);</span>
+<span class="fc" id="L254">		importRewriter.removeImport(&quot;java.util.Arrays&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L255">		importRewriter.removeImport(&quot;java.util.Collection&quot;); //$NON-NLS-1$</span>
 		// Add imports for JUnit 5 parameterized tests
-<span class="fc" id="L257">		importRewriter.addImport(&quot;java.util.stream.Stream&quot;);</span>
+<span class="fc" id="L257">		importRewriter.addImport(&quot;java.util.stream.Stream&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L258">		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_ARGUMENTS);</span>
 <span class="fc" id="L259">		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_METHOD_SOURCE);</span>
 <span class="fc" id="L260">		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST);</span>

@@ -130,30 +130,34 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 <span class="fc" id="L130">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),</span>
 <span class="fc" id="L131">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),</span>
 <span class="fc" id="L132">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),</span>
-<span class="fc" id="L133">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS),</span>
-<span class="fc" id="L134">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, JUnitCleanUpFixCore.THROWINGRUNNABLE)</span>
+<span class="fc" id="L133">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT, JUnitCleanUpFixCore.RULETIMEOUT),</span>
+<span class="fc" id="L134">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION, JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION),</span>
+<span class="fc" id="L135">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR, JUnitCleanUpFixCore.RULEERRORCOLLECTOR),</span>
+<span class="fc" id="L136">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED, JUnitCleanUpFixCore.PARAMETERIZED),</span>
+<span class="fc" id="L137">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS),</span>
+<span class="fc" id="L138">			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, JUnitCleanUpFixCore.THROWINGRUNNABLE)</span>
 				);
-<span class="fc" id="L136">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetcombined=EnumSet.copyOf(fixSetJunit4);</span>
-<span class="fc" id="L137">		fixSetcombined.addAll(fixSetJunit3);</span>
+<span class="fc" id="L140">		EnumSet&lt;JUnitCleanUpFixCore&gt; fixSetcombined=EnumSet.copyOf(fixSetJunit4);</span>
+<span class="fc" id="L141">		fixSetcombined.addAll(fixSetJunit3);</span>
 
-<span class="fc" id="L139">		cleanupMappings.forEach((config, fix) -&gt; {</span>
-<span class="fc bfc" id="L140" title="All 2 branches covered.">			if (!isEnabled(config)) {</span>
-<span class="fc" id="L141">				fixSetcombined.remove(fix);</span>
+<span class="fc" id="L143">		cleanupMappings.forEach((config, fix) -&gt; {</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">			if (!isEnabled(config)) {</span>
+<span class="fc" id="L145">				fixSetcombined.remove(fix);</span>
 			}
-<span class="fc" id="L143">		});</span>
-<span class="fc" id="L144">		return fixSetcombined;</span>
+<span class="fc" id="L147">		});</span>
+<span class="fc" id="L148">		return fixSetcombined;</span>
 	}
 
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit4() {
-<span class="fc" id="L148">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
-<span class="fc" id="L149">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
-<span class="fc" id="L150">		return allOf;</span>
+<span class="fc" id="L152">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
+<span class="fc" id="L153">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
+<span class="fc" id="L154">		return allOf;</span>
 	}
 	
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit3() {
-<span class="nc" id="L154">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
-<span class="nc" id="L155">		allOf.add(JUnitCleanUpFixCore.TEST3);</span>
-<span class="nc" id="L156">		return allOf;</span>
+<span class="nc" id="L158">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.noneOf(JUnitCleanUpFixCore.class);</span>
+<span class="nc" id="L159">		allOf.add(JUnitCleanUpFixCore.TEST3);</span>
+<span class="nc" id="L160">		return allOf;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
