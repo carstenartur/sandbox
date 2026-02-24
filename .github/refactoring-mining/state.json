@@ -1,9 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "9ee216c34977234fac75263a85440dbe56bed19e",
-      "lastProcessedDate": "2026-02-23T07:33:03.677273881Z",
-      "totalProcessed": 9407,
+      "lastProcessedCommit": "88e83a80320f5d3ee2f47b78b9edf251a58c2e22",
+      "lastProcessedDate": "2026-02-24T03:47:52.627777122Z",
+      "totalProcessed": 9551,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -70,11 +70,20 @@
           "maxRetries": 3
         },
         {
-          "hash": "2de39578f20143acf5da297ab8db8bbe105fdc30",
-          "message": "Add circular navigation between open tabs\n\nWhen navigating the open tabs with Ctrl+Pg Up/Down and only if there is\nno ch",
-          "diffLines": 114,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-02-23T07:33:03.677192399Z",
+          "hash": "db41fb4a1a8edb434df83d273c22fa7bc572ed4d",
+          "message": "Replace TextMatcher in favor of extended StringMatcher",
+          "diffLines": 366,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-24T03:42:20.418695534Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "176f5030b1ed724274f88552b8bec14e43111832",
+          "message": "Extract shared code of FilteredTrees to abstract base class",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-24T03:42:54.685604725Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -92,5 +101,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 9407
+  "globalTotalProcessed": 9551
 }
