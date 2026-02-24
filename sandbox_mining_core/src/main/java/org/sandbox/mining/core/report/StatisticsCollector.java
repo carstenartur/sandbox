@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.sandbox.mining.core.llm.CommitEvaluation;
-import org.sandbox.mining.core.llm.CommitEvaluation.TrafficLight;
 
 /**
  * Tracks statistical counts for the mining process.

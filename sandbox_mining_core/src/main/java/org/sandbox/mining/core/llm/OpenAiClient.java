@@ -14,7 +14,6 @@
 package org.sandbox.mining.core.llm;
 
 import java.net.http.HttpClient;
-import java.time.Duration;
 
 /**
  * REST client for the OpenAI Chat Completions API.
