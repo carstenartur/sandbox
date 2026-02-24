@@ -138,26 +138,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			public boolean visit(MethodInvocation node) {
 				// Check if this is a .run() call on a ThrowingRunnable
 				if (RUN_METHOD.equals(node.getName().getIdentifier()) && node.arguments().isEmpty()) {
-					boolean isThrowingRunnableRun = false;
-					
-					// First, try to check via method binding's declaring class
-					org.eclipse.jdt.core.dom.IMethodBinding methodBinding = node.resolveMethodBinding();
-					if (methodBinding != null) {
-						ITypeBinding declaringClass = methodBinding.getDeclaringClass();
-						if (declaringClass != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(declaringClass.getQualifiedName())) {
-							isThrowingRunnableRun = true;
-						}
-					}
-					
-					// Fallback: check the receiver expression type (handles generic type arguments)
-					if (!isThrowingRunnableRun && node.getExpression() != null) {
-						ITypeBinding receiverType = node.getExpression().resolveTypeBinding();
-						if (receiverType != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(receiverType.getQualifiedName())) {
-							isThrowingRunnableRun = true;
-						}
-					}
-					
-					if (isThrowingRunnableRun) {
+					if (isThrowingRunnableRunCall(node)) {
 						if (!nodesprocessed.contains(node) && !found.contains(node)) {
 							found.add(node);
 							addStandardRewriteOperation(fixcore, operations, node, dataHolder);
@@ -295,6 +276,128 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			ParameterizedType paramType = (ParameterizedType) type;
 			for (Object arg : paramType.typeArguments()) {
 				if (containsThrowingRunnable((Type) arg)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if a type binding represents ThrowingRunnable, handling generics, type variables,
+	 * and erasure. This is needed because when calling .run() on the result of a generic method
+	 * like AtomicReference&lt;ThrowingRunnable&gt;.get(), the type binding may be a type variable
+	 * or a parameterized type that requires erasure or interface checking.
+	 */
+	private static boolean isThrowingRunnableType(ITypeBinding typeBinding) {
+		if (typeBinding == null) {
+			return false;
+		}
+		// Direct match
+		if (ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(typeBinding.getQualifiedName())) {
+			return true;
+		}
+		// Check erasure (handles parameterized types)
+		ITypeBinding erasure = typeBinding.getErasure();
+		if (erasure != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(erasure.getQualifiedName())) {
+			return true;
+		}
+		// Check if this is a type variable — check its bounds
+		if (typeBinding.isTypeVariable()) {
+			for (ITypeBinding bound : typeBinding.getTypeBounds()) {
+				if (isThrowingRunnableType(bound)) {
+					return true;
+				}
+			}
+		}
+		// Check if this is a capture binding — check wildcard bound
+		if (typeBinding.isCapture()) {
+			ITypeBinding wildcard = typeBinding.getWildcard();
+			if (wildcard != null) {
+				ITypeBinding bound = wildcard.getBound();
+				if (bound != null && isThrowingRunnableType(bound)) {
+					return true;
+				}
+			}
+		}
+		// Check all implemented interfaces
+		for (ITypeBinding iface : typeBinding.getInterfaces()) {
+			if (ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(iface.getQualifiedName())) {
+				return true;
+			}
+		}
+		// Check superclass hierarchy
+		ITypeBinding superclass = typeBinding.getSuperclass();
+		if (superclass != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(superclass.getQualifiedName())) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Comprehensive check for whether a .run() MethodInvocation is called on a ThrowingRunnable.
+	 * Uses multiple strategies to handle direct types, generic type parameters, and method chaining.
+	 */
+	private static boolean isThrowingRunnableRunCall(MethodInvocation node) {
+		// Strategy 1: Check via method binding's declaring class
+		org.eclipse.jdt.core.dom.IMethodBinding methodBinding = node.resolveMethodBinding();
+		if (methodBinding != null) {
+			ITypeBinding declaringClass = methodBinding.getDeclaringClass();
+			if (declaringClass != null && isThrowingRunnableType(declaringClass)) {
+				return true;
+			}
+			// Also check the generic method declaration's declaring class
+			org.eclipse.jdt.core.dom.IMethodBinding methodDecl = methodBinding.getMethodDeclaration();
+			if (methodDecl != null && methodDecl != methodBinding) {
+				ITypeBinding declClass = methodDecl.getDeclaringClass();
+				if (declClass != null && isThrowingRunnableType(declClass)) {
+					return true;
+				}
+			}
+		}
+
+		// Strategy 2: Check the receiver expression type
+		if (node.getExpression() != null) {
+			ITypeBinding receiverType = node.getExpression().resolveTypeBinding();
+			if (receiverType != null && isThrowingRunnableType(receiverType)) {
+				return true;
+			}
+			// Strategy 3: If receiver is a method invocation (e.g., ref.get()),
+			// check if the return type's type arguments contain ThrowingRunnable
+			if (node.getExpression() instanceof MethodInvocation) {
+				MethodInvocation receiverInvocation = (MethodInvocation) node.getExpression();
+				org.eclipse.jdt.core.dom.IMethodBinding receiverMethodBinding = receiverInvocation.resolveMethodBinding();
+				if (receiverMethodBinding != null) {
+					ITypeBinding returnType = receiverMethodBinding.getReturnType();
+					if (returnType != null && isThrowingRunnableType(returnType)) {
+						return true;
+					}
+				}
+				// Strategy 4: Check if the receiver's receiver (e.g., ref in ref.get())
+				// has a type with ThrowingRunnable as a type argument
+				if (receiverInvocation.getExpression() != null) {
+					ITypeBinding outerReceiverType = receiverInvocation.getExpression().resolveTypeBinding();
+					if (outerReceiverType != null && hasThrowingRunnableTypeArgument(outerReceiverType)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if a type binding has ThrowingRunnable as one of its type arguments.
+	 * e.g., AtomicReference&lt;ThrowingRunnable&gt; → true
+	 */
+	private static boolean hasThrowingRunnableTypeArgument(ITypeBinding typeBinding) {
+		if (typeBinding == null) {
+			return false;
+		}
+		ITypeBinding[] typeArgs = typeBinding.getTypeArguments();
+		if (typeArgs != null) {
+			for (ITypeBinding arg : typeArgs) {
+				if (isThrowingRunnableType(arg)) {
 					return true;
 				}
 			}

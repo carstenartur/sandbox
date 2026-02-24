@@ -612,3 +612,32 @@ re-enabled. The `@Disabled` annotation message may be outdated.
 
 ---
 
+## 23. Generic Type Parameter Method Call Migration (.run() → .execute())
+
+**Issue**: When `ThrowingRunnable` is used as a generic type argument (e.g., `AtomicReference<ThrowingRunnable>`),
+calling `.run()` on the result of a generic method (e.g., `ref.get().run()`) was NOT being migrated to `.execute()`.
+The type replacement worked (→ `AtomicReference<Executable>`), but the method call stayed as `.run()`.
+
+**Root Cause**: Eclipse JDT's binding resolution for method calls through generic return types
+may not resolve `methodBinding.getDeclaringClass()` or `expression.resolveTypeBinding()` to
+`ThrowingRunnable` in a straightforward way. The simple `getQualifiedName()` check was insufficient.
+
+**Fix**: Created a comprehensive `isThrowingRunnableRunCall(MethodInvocation)` method with 4 strategies:
+1. Check `methodBinding.getDeclaringClass()` via `isThrowingRunnableType()` (handles direct, erasure, type vars, captures)
+2. Check `methodBinding.getMethodDeclaration().getDeclaringClass()` (unparameterized declaration)
+3. Check `receiverMethodBinding.getReturnType()` when receiver is a method call (e.g., `ref.get()`)
+4. Check receiver's receiver type arguments (e.g., check if `ref` in `ref.get().run()` has `ThrowingRunnable` type arg)
+
+Also enhanced `isThrowingRunnableType()` to check:
+- Direct qualified name match
+- Erasure
+- Type variable bounds
+- Capture bindings (wildcard bounds)
+- Implemented interfaces
+- Superclass hierarchy
+
+**File**: `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/ThrowingRunnableJUnitPlugin.java`
+
+**Learned**: 2026-02-24
+
+---
