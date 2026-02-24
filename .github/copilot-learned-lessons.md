@@ -408,6 +408,59 @@ the try body.
 
 ---
 
+## 14. TriggerPattern DSL: METHOD_DECLARATION Annotation Rewrite and Multiline Replacements
+
+**Issue**: The `.sandbox-hint` DSL could not add annotations to method declarations — it only
+supported replacing existing nodes. JUnit 3→5 migration requires adding `@Test`, `@BeforeEach`,
+`@AfterEach` to conventionally-named methods that have no annotations.
+
+**Solution (2026-02-24)**:
+1. **Natural method-rewrite syntax** (NetBeans-compatible): The replacement is a method
+   declaration with the annotation prepended. The engine diffs annotations between source
+   and replacement patterns, adding missing ones idempotently via `handleMethodDeclarationRewrite()`.
+2. **`methodNameMatches` guard**: Regex-based method name filtering for `METHOD_DECLARATION` patterns.
+3. **Static/non-static support**: `isStatic($name)` / `!isStatic($name)` guards distinguish
+   static lifecycle methods (e.g., `setUpBeforeClass`) from instance methods (e.g., `setUp`).
+4. **`resolveModifiers` fallback**: When binding resolution is unavailable, navigates from
+   `SimpleName` to parent `BodyDeclaration` to read modifiers directly from AST.
+5. **METHOD_DECLARATION inference fix**: `HintFileParser.inferPatternKind()` correctly
+   recognizes `void $name($params$)` as `METHOD_DECLARATION`.
+6. **Newline after annotation**: Uses `rewrite.createStringPlaceholder("@Name\n", ...)`
+   to ensure the annotation appears on its own line above the method declaration.
+7. **Multiline replacements**: Continuation lines after `=>` that don't start with `=>`
+   are accumulated into a single replacement text joined with `\n`.
+
+**Key files changed**:
+- `BuiltInGuards.java` — added `evaluateMethodNameMatches()`, improved `resolveModifiers()` fallback
+- `HintFileFixCore.java` — added `handleMethodDeclarationRewrite()` (natural syntax)
+- `HintFileParser.java` — added `looksLikeMethodDeclaration()`, multiline replacement accumulation
+- `HintFileStore.java` — registered `junit3-migration.sandbox-hint` as bundled library
+
+**DSL syntax**:
+```
+// Instance method: !isStatic guard
+void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name)
+=> @org.junit.jupiter.api.Test void $name($params$)
+;;
+
+// Static method: isStatic guard
+void $name($params$) :: methodNameMatches($name, "setUpBeforeClass") && isStatic($name)
+=> @org.junit.jupiter.api.BeforeAll void $name($params$)
+;;
+```
+
+**⚠️ `addAnnotation` directive was removed** — use natural method-rewrite syntax only.
+
+**Multiline replacement example**:
+```
+$x.open()
+=>
+$x.open()
+$x.init()
+;;
+```
+
+---
 ## 20. ⚠️ Recovered Bindings Break Annotation and Field Type Matching in LambdaASTVisitor
 
 **Issue**: When using the standalone `ASTParser` with `setResolveBindings(true)` and
@@ -468,88 +521,36 @@ Recovered bindings are non-null but unreliable — fall back to source-level nam
 
 ---
 
-## 17. Java 8 OutputStreamWriter Cleanup Does NOT Apply
+## 17. JUnit 3 Migration Hint Rules Must Check Superclass
 
-**Issue**: The `OutputStreamWriter` encoding cleanup does not transform code when targeting Java 8.
-The test expected output incorrectly showed the transformation being applied (adding `Charset.defaultCharset()`
-and `StandardCharsets.UTF_8`), but the actual cleanup produces no change.
+**Issue**: The `junit3-migration.sandbox-hint` rules originally matched ANY class with methods
+named `test*`, `setUp`, `tearDown`, etc. — regardless of whether the class extends
+`junit.framework.TestCase`. This produces false positives on regular classes.
 
-**Fix**: Changed OUTPUTSTREAMWRITER expected output in `Java8/ExplicitEncodingPatterns.java` to match
-the given input (no transformation).
+**Wrong** (matches any class with test-like method names):
+```
+void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name)
+=> @org.junit.jupiter.api.Test void $name($params$)
+```
 
-**Rule**: For Java 8, `OutputStreamWriter` constructors are not rewritten by the encoding cleanup.
-The expected output should be identical to the given input.
+**Correct** (only matches classes extending TestCase):
+```
+void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name) && enclosingClassExtends("junit.framework.TestCase")
+=> @org.junit.jupiter.api.Test void $name($params$)
+```
+
+**Guard**: `enclosingClassExtends("fqn")` — walks the superclass chain (with bindings) or
+falls back to textual `extends` clause comparison (without bindings).
+
+**Location**: `sandbox_common_core/.../BuiltInGuards.java` — `evaluateEnclosingClassExtends()`
+
+**Rule**: Any migration hint that targets a framework-specific class pattern (JUnit 3, etc.)
+MUST include a type hierarchy guard to avoid false positives on unrelated classes.
+
+**Fixed**: 2026-02-24
 
 ---
 
-## 18. Java 8 INPUTSTREAMREADER Import Order After Cleanup
-
-**Issue**: When the INPUTSTREAMREADER cleanup adds `java.nio.charset.Charset` and
-`java.nio.charset.StandardCharsets` imports, they are inserted BEFORE `java.io.FileNotFoundException`
-(which was the last existing import), not after it.
-
-**Wrong expected order**:
-```java
-import java.io.FileNotFoundException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-```
-
-**Correct expected order** (what cleanup actually produces):
-```java
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.io.FileNotFoundException;
-```
-
-**Rule**: New `java.nio.charset.*` imports are inserted before `java.io.FileNotFoundException`
-when `FileNotFoundException` is the last import in the original import list.
-
-**Fixed**: 2026-02-22
-
----
-
-## 19. JUnit Cleanup Plugin Structural Issues
-
-**Issue**: The `sandbox_junit_cleanup` module has several recurring structural issues across its plugin files:
-
-### TestJUnit3Plugin.convertToAnnotation Import Bug
-`annotation.substring(1)` produces wrong imports (e.g., `org.junit.jupiter.api.eforeEach`).
-The correct call is `"org.junit.jupiter.api." + annotation` (without substring).
-**Fixed**: 2026-02-22
-
-### Unsafe Casts on resolveBinding()
-`name.resolveBinding()` can return types other than `IVariableBinding` (e.g., `IMethodBinding`, `ITypeBinding`).
-Always use `instanceof` check before casting:
-```java
-// Wrong:
-IVariableBinding binding = (IVariableBinding) name.resolveBinding();
-// Correct:
-if (name.resolveBinding() instanceof IVariableBinding binding && binding.isField()) { ... }
-```
-
-### Missing Null Checks on resolveBinding()
-`fragment.resolveBinding()` can return null. Always check before calling `.getType()`:
-```java
-if (fragment.resolveBinding() == null) { return true; }
-ITypeBinding binding = fragment.resolveBinding().getType();
-```
-
-### JUnitCleanUpCore Missing Cleanup Mappings
-The `computeFixSet()` method in `JUnitCleanUpCore` must have entries for ALL `JUnitCleanUpFixCore` enum values
-that have corresponding `MYCleanUpConstants`. Missing mappings mean those features cannot be individually disabled.
-Constants exist for: RULETIMEOUT, RULEERRORCOLLECTOR, PARAMETERIZED but were missing from the mapping.
-
-### HelperVisitor Import
-Many plugin files import `HelperVisitor` but only use `HelperVisitorFactory`. All 17 unused `HelperVisitor` imports
-were removed in 2026-02-22.
-
-### System.err/out Usage in JUnit Cleanup
-The module should use `Platform.getLog()` for error logging, NOT `System.err.println` + `e.printStackTrace()`.
-The `System.out.println` calls inside `getPreview()` string literals are code examples, not debug logging — they should stay.
-
-**Rule**: When modifying junit cleanup plugins, always check for unused imports, null safety on resolveBinding(),
-type safety on cast expressions, and proper Eclipse Platform logging.
 ## 12. CRLF Line Ending Issues in Test Comparisons
 
 **Issue**: When Copilot-generated code introduces `\r\n` line endings (e.g., in `UseExplicitEncodingFixCore.java`),
@@ -578,7 +579,29 @@ assertRefactoringResultAsExpected()
 
 ---
 
-## 21. JUnit Cleanup Plugin Architecture — JUNIT_CLEANUP_4_SUITE vs JUNIT_CLEANUP_4_RUNWITH
+## 21. Hint File (.sandbox-hint) Placement Rules
+
+**Issue**: `.sandbox-hint` files were duplicated across `sandbox_common`, `sandbox_common_core`, and domain plugins, causing stale copies and confusion about which was the source of truth.
+
+**Two loading mechanisms exist:**
+
+| Mechanism | Where files live | How loaded | Purpose |
+|---|---|---|---|
+| **Bundled libraries** | `sandbox_common_core/src/main/resources/.../triggerpattern/internal/` | `HintFileStore.BUNDLED_LIBRARIES` array | Generic patterns available everywhere (CLI, tests, non-Eclipse) |
+| **Extension-point** | Domain plugin `src/.../hints/` (e.g., `sandbox_junit_cleanup`) | `plugin.xml` via `org.sandbox.jdt.triggerpattern.hints` | Domain-specific patterns, loaded in Eclipse runtime |
+
+**Rules:**
+1. **Generic libraries** (collections, modernize-java9, modernize-java11, performance) belong in `sandbox_common_core` bundled resources
+2. **Domain-specific libraries** (junit5, annotations5, assume5, junit3-migration, encoding) belong in their respective plugin, registered via extension point in `plugin.xml`
+3. **NEVER duplicate** hint files between `sandbox_common` and `sandbox_common_core` — `sandbox_common_core` is the source of truth for bundled libraries
+4. `sandbox_common/src/` should contain **NO** `.sandbox-hint` files — those all moved to `sandbox_common_core` during the extraction (issue #730)
+5. When adding a new JUnit-related hint file, add it to `sandbox_junit_cleanup`, NOT to `sandbox_common_core`
+
+**Fixed**: 2026-02-24 — Deleted 4 stale duplicates from `sandbox_common/src/`, moved `junit3-migration.sandbox-hint` from `sandbox_common_core` bundled libraries to `sandbox_junit_cleanup` extension point.
+
+---
+
+## 22. JUnit Cleanup Plugin Architecture — JUNIT_CLEANUP_4_SUITE vs JUNIT_CLEANUP_4_RUNWITH
 
 **Issue**: `JUNIT_CLEANUP_4_SUITE` constant exists in `MYCleanUpConstants` but is **NOT mapped** in
 `JUnitCleanUpCore.computeFixSet()`. The Suite migration functionality is handled by
@@ -595,7 +618,7 @@ assertRefactoringResultAsExpected()
 
 ---
 
-## 22. ThrowingRunnableJUnitPlugin Already Handles ParameterizedType
+## 23. ThrowingRunnableJUnitPlugin Already Handles ParameterizedType
 
 **Issue**: Tests `migrates_generic_type_parameter` and `migrates_complete_eclipse_platform_example`
 were `@Disabled` with message "Currently fails due to missing support for type parameter references".
@@ -612,7 +635,7 @@ re-enabled. The `@Disabled` annotation message may be outdated.
 
 ---
 
-## 23. Generic Type Parameter Method Call Migration (.run() → .execute())
+## 24. Generic Type Parameter Method Call Migration (.run() → .execute())
 
 **Issue**: When `ThrowingRunnable` is used as a generic type argument (e.g., `AtomicReference<ThrowingRunnable>`),
 calling `.run()` on the result of a generic method (e.g., `ref.get().run()`) was NOT being migrated to `.execute()`.
@@ -639,5 +662,7 @@ Also enhanced `isThrowingRunnableType()` to check:
 **File**: `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/ThrowingRunnableJUnitPlugin.java`
 
 **Learned**: 2026-02-24
+
+---
 
 ---

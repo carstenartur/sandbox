@@ -62,19 +62,24 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 /**
  * Migrates JUnit 4 ThrowingRunnable to JUnit 5 Executable.
  * 
- * <p>Transforms:</p>
+ * <p>
+ * Transforms:
+ * </p>
  * <ul>
- *   <li>org.junit.function.ThrowingRunnable → org.junit.jupiter.api.function.Executable</li>
- *   <li>ThrowingRunnable.run() → Executable.execute()</li>
+ * <li>org.junit.function.ThrowingRunnable →
+ * org.junit.jupiter.api.function.Executable</li>
+ * <li>ThrowingRunnable.run() → Executable.execute()</li>
  * </ul>
  * 
- * <p>Handles:</p>
+ * <p>
+ * Handles:
+ * </p>
  * <ul>
- *   <li>Variable declarations with ThrowingRunnable type</li>
- *   <li>Method parameters with ThrowingRunnable type</li>
- *   <li>Generic type parameters: AtomicReference&lt;ThrowingRunnable&gt;</li>
- *   <li>Method invocations: throwingRunnable.run()</li>
- *   <li>Import statements</li>
+ * <li>Variable declarations with ThrowingRunnable type</li>
+ * <li>Method parameters with ThrowingRunnable type</li>
+ * <li>Generic type parameters: AtomicReference&lt;ThrowingRunnable&gt;</li>
+ * <li>Method invocations: throwingRunnable.run()</li>
+ * <li>Import statements</li>
  * </ul>
  */
 public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
@@ -87,13 +92,13 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		
+
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 		Set<ASTNode> found = new HashSet<>();
-		
+
 		// Visit the compilation unit to find ThrowingRunnable usages
 		compilationUnit.accept(new ASTVisitor() {
-			
+
 			@Override
 			public boolean visit(ImportDeclaration node) {
 				String importName = node.getName().getFullyQualifiedName();
@@ -105,7 +110,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				}
 				return true;
 			}
-			
+
 			@Override
 			public boolean visit(SimpleType node) {
 				// Check if this is a ThrowingRunnable type reference
@@ -119,7 +124,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				}
 				return true;
 			}
-			
+
 			@Override
 			public boolean visit(ParameterizedType node) {
 				// Check if this parameterized type contains ThrowingRunnable
@@ -133,7 +138,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				// Don't visit children - we handle the whole parameterized type
 				return false;
 			}
-			
+
 			@Override
 			public boolean visit(MethodInvocation node) {
 				// Check if this is a .run() call on a ThrowingRunnable
@@ -148,16 +153,16 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				return true;
 			}
 		});
-		
+
 		nodesprocessed.addAll(found);
 	}
 
 	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, JunitHolder junitHolder) {
-		
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder junitHolder) {
+
 		ASTNode node = junitHolder.getMinv();
-		
+
 		if (node instanceof ImportDeclaration) {
 			processImportDeclaration(importRewriter, (ImportDeclaration) node);
 		} else if (node instanceof MethodInvocation) {
@@ -168,14 +173,15 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			processParameterizedType(group, rewriter, ast, importRewriter, (ParameterizedType) node);
 		}
 	}
-	
+
 	/**
-	 * Processes import declarations, replacing ThrowingRunnable import with Executable import.
+	 * Processes import declarations, replacing ThrowingRunnable import with
+	 * Executable import.
 	 */
 	private void processImportDeclaration(ImportRewrite importRewriter, ImportDeclaration importDecl) {
 		ensureImports(importRewriter);
 	}
-	
+
 	/**
 	 * Processes method invocations, replacing .run() with .execute().
 	 */
@@ -185,22 +191,23 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			ASTNodes.replaceButKeepComment(rewriter, node.getName(), newName, group);
 		}
 	}
-	
+
 	/**
 	 * Processes simple type nodes, replacing ThrowingRunnable with Executable.
 	 */
-	private void processSimpleType(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, SimpleType node) {
+	private void processSimpleType(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			SimpleType node) {
 		if (THROWING_RUNNABLE_SIMPLE.equals(node.getName().getFullyQualifiedName())) {
 			SimpleType newType = ast.newSimpleType(ast.newName(EXECUTABLE_SIMPLE));
 			ASTNodes.replaceButKeepComment(rewriter, node, newType, group);
 			ensureImports(importRewriter);
 		}
 	}
-	
+
 	/**
-	 * Processes parameterized type nodes, replacing ThrowingRunnable in type arguments with Executable.
-	 * e.g., AtomicReference&lt;ThrowingRunnable&gt; -&gt; AtomicReference&lt;Executable&gt;
+	 * Processes parameterized type nodes, replacing ThrowingRunnable in type
+	 * arguments with Executable. e.g., AtomicReference&lt;ThrowingRunnable&gt;
+	 * -&gt; AtomicReference&lt;Executable&gt;
 	 */
 	private void processParameterizedType(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, ParameterizedType node) {
@@ -210,7 +217,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			ensureImports(importRewriter);
 		}
 	}
-	
+
 	/**
 	 * Ensures the correct imports are present (removes old, adds new).
 	 * ImportRewrite handles deduplication automatically.
@@ -219,7 +226,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		importRewriter.removeImport(ORG_JUNIT_FUNCTION_THROWING_RUNNABLE);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE);
 	}
-	
+
 	/**
 	 * Creates a new Executable type, handling both simple and parameterized types.
 	 * Recursively processes nested parameterized types.
@@ -235,7 +242,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			// or nested types like Map<String, AtomicReference<ThrowingRunnable>>
 			ParameterizedType paramType = (ParameterizedType) originalType;
 			Type baseType = paramType.getType();
-			
+
 			// Check if any type argument needs transformation (recursive check)
 			boolean needsTransformation = false;
 			for (Object arg : paramType.typeArguments()) {
@@ -244,7 +251,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 					break;
 				}
 			}
-			
+
 			if (needsTransformation) {
 				// Create new parameterized type with transformed arguments
 				ParameterizedType newParamType = ast.newParameterizedType((Type) ASTNode.copySubtree(ast, baseType));
@@ -264,7 +271,7 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Checks if a type contains ThrowingRunnable anywhere in its structure.
 	 */
@@ -410,14 +417,14 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		if (afterRefactoring) {
 			return """
 					import org.junit.jupiter.api.function.Executable;
-					
+
 					Executable runnable = () -> {};
 					runnable.execute();
 					"""; //$NON-NLS-1$
 		}
 		return """
 				import org.junit.function.ThrowingRunnable;
-				
+
 				ThrowingRunnable runnable = () -> {};
 				runnable.run();
 				"""; //$NON-NLS-1$
