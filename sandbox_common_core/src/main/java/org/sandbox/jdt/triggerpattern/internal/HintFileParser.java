@@ -586,14 +586,16 @@ public final class HintFileParser {
 			// Accumulate multiline replacement: continuation lines that don't
 			// start with '=>' are part of the current replacement text.
 			// This enables NetBeans-compatible multiline expressions.
+			StringBuilder altContentBuilder = new StringBuilder(altContent);
 			while (ruleLineIdx + 1 < ruleLines.size()) {
 				String nextLine = ruleLines.get(ruleLineIdx + 1);
 				if (nextLine.startsWith("=>")) { //$NON-NLS-1$
 					break; // Next alternative — stop accumulating
 				}
 				ruleLineIdx++;
-				altContent = altContent + "\n" + nextLine.trim(); //$NON-NLS-1$
+				altContentBuilder.append('\n').append(nextLine.trim());
 			}
+			altContent = altContentBuilder.toString();
 			
 			if (altContent.isEmpty()) {
 				throw new HintParseException(
