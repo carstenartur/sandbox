@@ -557,7 +557,7 @@ To implement a new migration (e.g., @RunWith(MockitoJUnitRunner) → @ExtendWith
 
 ### Disabled Tests (Not Implemented)
 - ❌ MigrationExceptionsTest - 3 tests disabled (ExpectedException rule with message/cause)
-- ❌ MigrationRunnersTest - 4 tests disabled (Suite, Parameterized, Mockito, Spring)
+- ❌ MigrationRunnersTest - 2 tests disabled (Suite, Parameterized)
 
 ### Test Statistics (Updated 2026-01-30)
 - **Total test methods**: ~75-80 (increased from ~50-60)

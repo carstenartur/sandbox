@@ -519,6 +519,27 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	}
 
 	/**
+	 * Adds a local JAR file from the test resources to the test project's classpath.
+	 * <p>
+	 * This is useful for providing stub libraries (e.g., Mockito, Spring) that are
+	 * needed for type binding resolution in test source code, without requiring
+	 * the full library on the target platform.
+	 * </p>
+	 *
+	 * @param relativeJarPath the path to the JAR file relative to the working directory
+	 *                        (e.g., "testresources/mockito-stubs.jar")
+	 * @throws CoreException if the JAR file doesn't exist or classpath modification fails
+	 */
+	public void addLocalJarToClasspath(String relativeJarPath) throws CoreException {
+		File jarFile = new File(relativeJarPath).getAbsoluteFile();
+		if (!jarFile.exists()) {
+			throw new CoreException(Status.error("Stub JAR file not found: " + jarFile.getAbsolutePath())); //$NON-NLS-1$
+		}
+		IClasspathEntry cpe = JavaCore.newLibraryEntry(Path.fromOSString(jarFile.getPath()), null, null);
+		addToClasspath(getJavaProject(), cpe);
+	}
+
+	/**
 	 * Adds an Eclipse platform bundle to the test project's classpath.
 	 * <p>
 	 * This is needed when test input source code references classes from
