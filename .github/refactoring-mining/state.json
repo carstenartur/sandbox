@@ -1,9 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "1be8c2cb82a4490cb0046448090f988b38e4b8f9",
-      "lastProcessedDate": "2026-02-24T04:35:02.128416046Z",
-      "totalProcessed": 9622,
+      "lastProcessedCommit": "84dfe5a00b51c9c7cbedc93a3ba1776f6356eae7",
+      "lastProcessedDate": "2026-02-24T16:48:52.793590353Z",
+      "totalProcessed": 9840,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -115,11 +115,11 @@
           "maxRetries": 3
         },
         {
-          "hash": "9e7f21fa966eaefb4658aaa5be13a7345e12b4e8",
-          "message": "Prevent shutdown hang when changing theme and disabling theming\n\nWhen changing the current theme via the Appearance pref",
-          "diffLines": 45,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-02-24T04:35:02.128324806Z",
+          "hash": "0fe6c94d0df2f54f45af091bb234f9d090454ab1",
+          "message": "Convert control statement bodies to block in PerspectiveSwitcher",
+          "diffLines": 301,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-24T16:46:34.596512736Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -137,5 +137,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 9622
+  "globalTotalProcessed": 9840
 }
