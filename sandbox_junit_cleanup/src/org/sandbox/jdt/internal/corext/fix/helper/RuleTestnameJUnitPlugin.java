@@ -54,12 +54,12 @@ public class RuleTestnameJUnitPlugin extends AbstractRuleFieldPlugin {
 	}
 
 	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, JunitHolder junitHolder) {
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder junitHolder) {
 		FieldDeclaration node = junitHolder.getFieldDeclaration();
 		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);
 	}
-	
+
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

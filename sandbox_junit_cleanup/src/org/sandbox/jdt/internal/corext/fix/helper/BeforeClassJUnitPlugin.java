@@ -23,10 +23,14 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 /**
  * Migrates JUnit 4 @BeforeClass annotations to JUnit 5 @BeforeAll.
  * 
- * <p>Uses TriggerPattern-based declarative architecture
- * to reduce boilerplate.</p>
+ * <p>
+ * Uses TriggerPattern-based declarative architecture to reduce boilerplate.
+ * </p>
  * 
- * <p><b>Before:</b></p>
+ * <p>
+ * <b>Before:</b>
+ * </p>
+ * 
  * <pre>
  * import org.junit.BeforeClass;
  * 
@@ -36,7 +40,10 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * }
  * </pre>
  * 
- * <p><b>After:</b></p>
+ * <p>
+ * <b>After:</b>
+ * </p>
+ * 
  * <pre>
  * import org.junit.jupiter.api.BeforeAll;
  * 
@@ -48,34 +55,24 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * 
  * @since 1.3.0
  */
-@CleanupPattern(
-    value = "@BeforeClass",
-    kind = PatternKind.ANNOTATION,
-    qualifiedType = ORG_JUNIT_BEFORECLASS,
-    cleanupId = "cleanup.junit.beforeclass",
-    description = "Migrate @BeforeClass to @BeforeAll",
-    displayName = "JUnit 4 @BeforeClass → JUnit 5 @BeforeAll"
-)
-@RewriteRule(
-    replaceWith = "@BeforeAll",
-    addImports = {ORG_JUNIT_JUPITER_API_BEFORE_ALL}
-)
+@CleanupPattern(value = "@BeforeClass", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_BEFORECLASS, cleanupId = "cleanup.junit.beforeclass", description = "Migrate @BeforeClass to @BeforeAll", displayName = "JUnit 4 @BeforeClass → JUnit 5 @BeforeAll")
+@RewriteRule(replaceWith = "@BeforeAll", addImports = { ORG_JUNIT_JUPITER_API_BEFORE_ALL })
 public class BeforeClassJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-				@BeforeAll
+					@BeforeAll
+					public static void setUpBeforeClass() {
+					}
+					"""; //$NON-NLS-1$
+		}
+		return """
+				@BeforeClass
 				public static void setUpBeforeClass() {
 				}
 				"""; //$NON-NLS-1$
-		}
-		return """
-			@BeforeClass
-			public static void setUpBeforeClass() {
-			}
-			"""; //$NON-NLS-1$
 	}
 
 	@Override

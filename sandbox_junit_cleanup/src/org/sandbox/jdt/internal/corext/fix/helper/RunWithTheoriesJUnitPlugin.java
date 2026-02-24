@@ -47,7 +47,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
- * Plugin to migrate JUnit 4 @RunWith(Theories.class) to JUnit 5 @ParameterizedTest.
+ * Plugin to migrate JUnit 4 @RunWith(Theories.class) to JUnit
+ * 5 @ParameterizedTest.
  */
 public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
@@ -61,41 +62,39 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
-		
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
+
 		// Find @RunWith(Theories.class) annotations
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof SingleMemberAnnotation) {
-					return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);
-				}
-				return true;
-			});
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH).in(compilationUnit).excluding(nodesprocessed)
+				.processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof SingleMemberAnnotation) {
+						return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);
+					}
+					return true;
+				});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder, Set<ASTNode> nodesprocessed) {
-		
+
 		if (!(node instanceof SingleMemberAnnotation mynode)) {
 			return true;
 		}
-		
-		Expression value= mynode.getValue();
+
+		Expression value = mynode.getValue();
 		if (!(value instanceof TypeLiteral myvalue)) {
 			return true;
 		}
-		
+
 		// Check if it's Theories.class
 		String runnerQualifiedName = getRunnerQualifiedName(myvalue);
-		
+
 		// Only handle Theories runner
 		if (!ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES.equals(runnerQualifiedName)) {
 			return true;
 		}
-		
+
 		// Find the enclosing TypeDeclaration
 		TypeDeclaration typeDecl = null;
 		ASTNode parent = node.getParent();
@@ -106,41 +105,41 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 			}
 			parent = parent.getParent();
 		}
-		
+
 		if (typeDecl == null) {
 			return true;
 		}
-		
+
 		// Find @DataPoints field and @Theory methods
 		TheoriesData theoriesData = new TheoriesData();
 		theoriesData.runWithAnnotation = node;
 		findTheoriesComponents(typeDecl, theoriesData);
-		
+
 		// Only process if we found both @DataPoints and @Theory
 		if (theoriesData.dataPointsField == null || theoriesData.theoryMethod == null) {
 			return true;
 		}
-		
+
 		// Mark for transformation
 		nodesprocessed.add(node);
 		nodesprocessed.add(theoriesData.dataPointsField);
 		nodesprocessed.add(theoriesData.theoryMethod);
-		
-		JunitHolder mh= new JunitHolder();
+
+		JunitHolder mh = new JunitHolder();
 		mh.setMinv(node);
 		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 		mh.setValue(ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES);
 		mh.setAdditionalInfo(theoriesData);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
-		
+
 		return true;
 	}
 
 	private String getRunnerQualifiedName(TypeLiteral myvalue) {
-		ITypeBinding classBinding= myvalue.resolveTypeBinding();
+		ITypeBinding classBinding = myvalue.resolveTypeBinding();
 		String runnerQualifiedName = null;
-		
+
 		if (classBinding != null) {
 			Type type = myvalue.getType();
 			if (type != null) {
@@ -150,7 +149,7 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 				}
 			}
 		}
-		
+
 		// Fallback to AST name if binding resolution failed
 		if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {
 			Type runnerType = myvalue.getType();
@@ -161,7 +160,7 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 				}
 			}
 		}
-		
+
 		return runnerQualifiedName;
 	}
 
@@ -172,7 +171,8 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 			for (Object modifier : modifiers) {
 				if (modifier instanceof Annotation annotation) {
 					String annotationName = annotation.getTypeName().getFullyQualifiedName();
-					if ("DataPoints".equals(annotationName) || ORG_JUNIT_EXPERIMENTAL_THEORIES_DATAPOINTS.equals(annotationName)) {
+					if ("DataPoints".equals(annotationName)
+							|| ORG_JUNIT_EXPERIMENTAL_THEORIES_DATAPOINTS.equals(annotationName)) {
 						data.dataPointsField = field;
 						// Extract array initializer
 						List<?> fragments = field.fragments();
@@ -187,14 +187,15 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 				}
 			}
 		}
-		
+
 		// Find @Theory method
 		for (MethodDeclaration method : typeDecl.getMethods()) {
 			List<?> modifiers = method.modifiers();
 			for (Object modifier : modifiers) {
 				if (modifier instanceof Annotation annotation) {
 					String annotationName = annotation.getTypeName().getFullyQualifiedName();
-					if ("Theory".equals(annotationName) || ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORY.equals(annotationName)) {
+					if ("Theory".equals(annotationName)
+							|| ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORY.equals(annotationName)) {
 						data.theoryMethod = method;
 						break;
 					}
@@ -207,16 +208,16 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		TheoriesData theoriesData = (TheoriesData) junitHolder.getAdditionalInfo();
-		
+
 		// Remove @RunWith(Theories.class) annotation
 		rewriter.remove(theoriesData.runWithAnnotation, group);
-		
+
 		// Remove @DataPoints field
 		rewriter.remove(theoriesData.dataPointsField, group);
-		
+
 		// Transform @Theory method
 		transformTheoryMethod(theoriesData, rewriter, ast, group);
-		
+
 		// Update imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PARAMETERIZED_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_PARAMS_PROVIDER_VALUE_SOURCE);
@@ -229,7 +230,7 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 	private void transformTheoryMethod(TheoriesData theoriesData, ASTRewrite rewriter, AST ast, TextEditGroup group) {
 		MethodDeclaration theoryMethod = theoriesData.theoryMethod;
 		ListRewrite modifiersRewrite = rewriter.getListRewrite(theoryMethod, MethodDeclaration.MODIFIERS2_PROPERTY);
-		
+
 		// Replace @Theory with @ParameterizedTest
 		List<?> modifiers = theoryMethod.modifiers();
 		for (Object modifier : modifiers) {
@@ -237,11 +238,12 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 				String annotationName = annotation.getTypeName().getFullyQualifiedName();
 				if ("Theory".equals(annotationName) || ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORY.equals(annotationName)) {
 					// Create @ParameterizedTest annotation
-					Annotation parameterizedTest= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_PARAMETERIZED_TEST);
-					
+					Annotation parameterizedTest = AnnotationUtils.createMarkerAnnotation(ast,
+							ANNOTATION_PARAMETERIZED_TEST);
+
 					// Create @ValueSource annotation with data from @DataPoints
 					NormalAnnotation valueSource = createValueSourceAnnotation(ast, theoriesData);
-					
+
 					// Replace @Theory with @ParameterizedTest
 					modifiersRewrite.replace(annotation, parameterizedTest, group);
 					// Add @ValueSource after @ParameterizedTest
@@ -255,22 +257,22 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 	private NormalAnnotation createValueSourceAnnotation(AST ast, TheoriesData theoriesData) {
 		NormalAnnotation valueSource = ast.newNormalAnnotation();
 		valueSource.setTypeName(ast.newSimpleName(ANNOTATION_VALUE_SOURCE));
-		
+
 		// Determine the array type and use appropriate member name
 		String memberName = determineValueSourceMember(theoriesData.dataPointsField);
 		MemberValuePair valuePair = ast.newMemberValuePair();
 		valuePair.setName(ast.newSimpleName(memberName));
-		
+
 		// Copy the array initializer from @DataPoints
 		if (theoriesData.dataPointsArray != null) {
 			ArrayInitializer newArray = (ArrayInitializer) ASTNode.copySubtree(ast, theoriesData.dataPointsArray);
 			valuePair.setValue(newArray);
 		}
-		
+
 		valueSource.values().add(valuePair);
 		return valueSource;
 	}
-	
+
 	/**
 	 * Determine the appropriate @ValueSource member name based on the array type.
 	 */
@@ -278,46 +280,46 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		if (field == null) {
 			return "ints"; // default fallback
 		}
-		
+
 		Type fieldType = field.getType();
 		if (fieldType == null) {
 			return "ints";
 		}
-		
+
 		String typeName = fieldType.toString();
-		
+
 		// Handle array types
 		if (typeName.endsWith("[]")) {
 			String baseType = typeName.substring(0, typeName.length() - 2);
 			switch (baseType) {
-				case "int":
-					return "ints";
-				case "String":
-					return "strings";
-				case "double":
-					return "doubles";
-				case "long":
-					return "longs";
-				case "short":
-					return "shorts";
-				case "byte":
-					return "bytes";
-				case "float":
-					return "floats";
-				case "char":
-					return "chars";
-				case "boolean":
-					return "booleans";
-				case "Class":
-					return "classes";
-				default:
-					return "ints"; // fallback
+			case "int":
+				return "ints";
+			case "String":
+				return "strings";
+			case "double":
+				return "doubles";
+			case "long":
+				return "longs";
+			case "short":
+				return "shorts";
+			case "byte":
+				return "bytes";
+			case "float":
+				return "floats";
+			case "char":
+				return "chars";
+			case "boolean":
+				return "booleans";
+			case "Class":
+				return "classes";
+			default:
+				return "ints"; // fallback
 			}
 		}
-		
+
 		return "ints"; // default fallback
 	}
-	
+
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
@@ -336,7 +338,7 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 				public class TheoriesTest {
 				    @DataPoints
 				    public static int[] values = {1, 2, 3, 4, 5};
-				    
+
 				    @Theory
 				    public void testPositiveNumbers(int value) {
 				        assertTrue(value > 0);

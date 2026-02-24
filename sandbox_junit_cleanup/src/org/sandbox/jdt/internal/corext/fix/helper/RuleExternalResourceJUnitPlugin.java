@@ -63,33 +63,26 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
-		
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
+
 		// Find @Rule fields with ExternalResource type
-		HelperVisitorFactory.forField()
-			.withAnnotation(ORG_JUNIT_RULE)
-			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
-		
+		HelperVisitorFactory.forField().withAnnotation(ORG_JUNIT_RULE).ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
+				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited,
+						aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
+
 		// Find @ClassRule fields with ExternalResource type
-		HelperVisitorFactory.forField()
-			.withAnnotation(ORG_JUNIT_CLASS_RULE)
-			.ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
+		HelperVisitorFactory.forField().withAnnotation(ORG_JUNIT_CLASS_RULE).ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
+				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited,
+						aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh= new JunitHolder();
-		VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
-		ITypeBinding binding= fragment.resolveBinding().getType();
-		if (
-		(binding == null) || ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
+		JunitHolder mh = new JunitHolder();
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
+		ITypeBinding binding = fragment.resolveBinding().getType();
+		if ((binding == null) || ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
 				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
 			return true; // Continue processing other fields
 		}
@@ -102,18 +95,18 @@ public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolde
 
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		FieldDeclaration fieldDeclaration= junitHolder.getFieldDeclaration();
-		boolean fieldStatic= isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);
-		CompilationUnit cu= (CompilationUnit) fieldDeclaration.getRoot();
+		FieldDeclaration fieldDeclaration = junitHolder.getFieldDeclaration();
+		boolean fieldStatic = isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);
+		CompilationUnit cu = (CompilationUnit) fieldDeclaration.getRoot();
 
-		ASTNode node2= ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);
+		ASTNode node2 = ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);
 
 		if (node2 instanceof TypeDeclaration) {
-			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration, fieldStatic, rewriter, ast, group,
-					importRewriter);
+			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration,
+					fieldStatic, rewriter, ast, group, importRewriter);
 		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {
-			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration, fieldStatic, rewriter, ast, group,
-					importRewriter);
+			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration,
+					fieldStatic, rewriter, ast, group, importRewriter);
 		}
 		// If no matching type definition found, no action needed
 	}

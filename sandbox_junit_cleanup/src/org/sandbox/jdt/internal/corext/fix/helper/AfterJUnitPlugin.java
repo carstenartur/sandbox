@@ -23,10 +23,15 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 /**
  * Migrates JUnit 4 @After annotations to JUnit 5 @AfterEach.
  * 
- * <p>Uses TriggerPattern-based declarative architecture
- * with @RewriteRule annotation to eliminate boilerplate code.</p>
+ * <p>
+ * Uses TriggerPattern-based declarative architecture with @RewriteRule
+ * annotation to eliminate boilerplate code.
+ * </p>
  * 
- * <p><b>Before:</b></p>
+ * <p>
+ * <b>Before:</b>
+ * </p>
+ * 
  * <pre>
  * import org.junit.After;
  * 
@@ -36,7 +41,10 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * }
  * </pre>
  * 
- * <p><b>After:</b></p>
+ * <p>
+ * <b>After:</b>
+ * </p>
+ * 
  * <pre>
  * import org.junit.jupiter.api.AfterEach;
  * 
@@ -48,34 +56,24 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * 
  * @since 1.3.0
  */
-@CleanupPattern(
-    value = "@After",
-    kind = PatternKind.ANNOTATION,
-    qualifiedType = ORG_JUNIT_AFTER,
-    cleanupId = "cleanup.junit.after",
-    description = "Migrate @After to @AfterEach",
-    displayName = "JUnit 4 @After → JUnit 5 @AfterEach"
-)
-@RewriteRule(
-    replaceWith = "@AfterEach",
-    addImports = {ORG_JUNIT_JUPITER_API_AFTER_EACH}
-)
+@CleanupPattern(value = "@After", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_AFTER, cleanupId = "cleanup.junit.after", description = "Migrate @After to @AfterEach", displayName = "JUnit 4 @After → JUnit 5 @AfterEach")
+@RewriteRule(replaceWith = "@AfterEach", addImports = { ORG_JUNIT_JUPITER_API_AFTER_EACH })
 public class AfterJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-				@AfterEach
+					@AfterEach
+					public void tearDown() {
+					}
+					"""; //$NON-NLS-1$
+		}
+		return """
+				@After
 				public void tearDown() {
 				}
 				"""; //$NON-NLS-1$
-		}
-		return """
-			@After
-			public void tearDown() {
-			}
-			"""; //$NON-NLS-1$
 	}
 
 	@Override

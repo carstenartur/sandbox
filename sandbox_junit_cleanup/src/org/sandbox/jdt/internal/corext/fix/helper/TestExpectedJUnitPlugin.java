@@ -42,6 +42,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
  * Plugin to migrate JUnit 4 @Test(expected=...) to JUnit 5 assertThrows().
  * 
  * Transforms:
+ * 
  * <pre>
  * {@literal @}Test(expected = IllegalArgumentException.class)
  * public void testException() {
@@ -50,6 +51,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
  * </pre>
  * 
  * To:
+ * 
  * <pre>
  * {@literal @}Test
  * public void testException() {
@@ -77,89 +79,91 @@ public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlug
 			JunitHolder junitHolder) {
 		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();
 		MemberValuePair expectedPair = (MemberValuePair) junitHolder.getAdditionalInfo();
-		
+
 		if (expectedPair == null) {
 			return;
 		}
-		
+
 		Expression expectedValue = expectedPair.getValue();
 		if (!(expectedValue instanceof TypeLiteral)) {
 			// Can't handle non-TypeLiteral expected values
 			return;
 		}
-		
+
 		TypeLiteral expectedTypeLiteral = (TypeLiteral) expectedValue;
-		
+
 		// Get the method declaration
 		MethodDeclaration method = ASTNodes.getParent(testAnnotation, MethodDeclaration.class);
 		if (method == null) {
 			return;
 		}
-		
+
 		Block methodBody = method.getBody();
 		if (methodBody == null) {
 			return;
 		}
-		
+
 		List<Statement> statements = methodBody.statements();
-		
+
 		// Create assertThrows method invocation
 		MethodInvocation assertThrowsCall = ast.newMethodInvocation();
 		assertThrowsCall.setName(ast.newSimpleName(METHOD_ASSERT_THROWS));
-		
+
 		// Add the exception class as the first argument
 		TypeLiteral exceptionClass = (TypeLiteral) ASTNode.copySubtree(ast, expectedTypeLiteral);
 		assertThrowsCall.arguments().add(exceptionClass);
-		
+
 		// Create lambda expression for the method body
 		LambdaExpression lambda = ast.newLambdaExpression();
 		lambda.setParentheses(true);
-		
+
 		Block lambdaBody = ast.newBlock();
-		
+
 		// Copy all statements from the original method body into the lambda
 		for (Statement stmt : statements) {
 			Statement copiedStmt = (Statement) ASTNode.copySubtree(ast, stmt);
 			lambdaBody.statements().add(copiedStmt);
 		}
-		
+
 		lambda.setBody(lambdaBody);
 		assertThrowsCall.arguments().add(lambda);
-		
+
 		// Create the new expression statement with assertThrows
 		ExpressionStatement assertThrowsStatement = ast.newExpressionStatement(assertThrowsCall);
-		
+
 		// Remove all existing statements from the method body
 		for (int i = statements.size() - 1; i >= 0; i--) {
 			rewriter.remove(statements.get(i), group);
 		}
-		
+
 		// Add the assertThrows statement as the only statement in the method
 		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertThrowsStatement, group);
-		
+
 		// Remove the expected parameter from @Test annotation
 		// If expected is the only parameter remaining, replace with marker annotation
 		List<MemberValuePair> testValues = testAnnotation.values();
-		
+
 		// Count how many parameters will remain after removing expected
-		// (need to account for other parameters that might be removed by other plugins like timeout)
+		// (need to account for other parameters that might be removed by other plugins
+		// like timeout)
 		int remainingParams = 0;
 		for (MemberValuePair pair : testValues) {
 			String paramName = pair.getName().getIdentifier();
-			// Count parameters that are not expected and not timeout (which is handled by TestTimeoutJUnitPlugin)
+			// Count parameters that are not expected and not timeout (which is handled by
+			// TestTimeoutJUnitPlugin)
 			if (!"expected".equals(paramName) && !"timeout".equals(paramName)) {
 				remainingParams++;
 			}
 		}
-		
+
 		if (remainingParams == 0) {
 			// No other meaningful parameters remain, convert to marker annotation @Test
-			MarkerAnnotation markerTestAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
+			MarkerAnnotation markerTestAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
 			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);
 		} else {
 			rewriter.remove(expectedPair, group);
 		}
-		
+
 		// Add imports - order matters: remove old import first, then add new imports
 		importRewriter.removeImport(ORG_JUNIT_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
@@ -171,9 +175,9 @@ public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlug
 		if (afterRefactoring) {
 			return """
 					import static org.junit.jupiter.api.Assertions.assertThrows;
-					
+
 					import org.junit.jupiter.api.Test;
-					
+
 					@Test
 					public void testException() {
 						assertThrows(IllegalArgumentException.class, () -> {
@@ -184,7 +188,7 @@ public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlug
 		}
 		return """
 				import org.junit.Test;
-				
+
 				@Test(expected = IllegalArgumentException.class)
 				public void testException() {
 					throw new IllegalArgumentException("Expected");

@@ -49,10 +49,12 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlu
 /**
  * Migrates JUnit 4 Assert calls to JUnit 5 Assertions.
  * 
- * <p>Special handling:</p>
+ * <p>
+ * Special handling:
+ * </p>
  * <ul>
- *   <li>assertThat → Hamcrest MatcherAssert.assertThat</li>
- *   <li>Other assertions → JUnit 5 Assertions with parameter reordering</li>
+ * <li>assertThat → Hamcrest MatcherAssert.assertThat</li>
+ * <li>Other assertions → JUnit 5 Assertions with parameter reordering</li>
  * </ul>
  */
 public class AssertJUnitPlugin extends AbstractMethodMigrationPlugin {
@@ -80,16 +82,15 @@ public class AssertJUnitPlugin extends AbstractMethodMigrationPlugin {
 	@Override
 	protected void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, MethodInvocation node) {
-		
+
 		Expression assertexpression = node.getExpression();
-		
+
 		// Special handling for assertThat - delegate to Hamcrest
-		if ("assertThat".equals(node.getName().getIdentifier()) &&
-				assertexpression instanceof SimpleName &&
-				"Assert".equals(((SimpleName) assertexpression).getIdentifier())) {
+		if (METHOD_ASSERT_THAT.equals(node.getName().getIdentifier()) && assertexpression instanceof SimpleName
+				&& "Assert".equals(((SimpleName) assertexpression).getIdentifier())) {
 			rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);
-			importRewriter.addStaticImport("org.hamcrest.MatcherAssert", "assertThat", false);
-			importRewriter.removeImport("org.junit.Assert");
+			importRewriter.addStaticImport(ORG_HAMCREST_MATCHER_ASSERT, METHOD_ASSERT_THAT, false);
+			importRewriter.removeImport(ORG_JUNIT_ASSERT);
 		} else {
 			// Standard assertion handling - use base class behavior
 			super.processMethodInvocation(group, rewriter, ast, importRewriter, node);

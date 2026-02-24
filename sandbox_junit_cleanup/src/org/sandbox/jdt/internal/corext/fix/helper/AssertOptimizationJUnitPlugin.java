@@ -51,83 +51,75 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
- * Optimizes JUnit assertions by converting generic assertions to more specific ones
- * and correcting parameter order (expected/actual).
+ * Optimizes JUnit assertions by converting generic assertions to more specific
+ * ones and correcting parameter order (expected/actual).
  * 
- * Examples:
- * - assertTrue(a == b) → assertEquals(a, b)
- * - assertTrue(obj == null) → assertNull(obj)
- * - assertTrue(!condition) → assertFalse(condition)
- * - assertTrue(a.equals(b)) → assertEquals(a, b)
- * - assertEquals(getActual(), EXPECTED) → assertEquals(EXPECTED, getActual())
+ * Examples: - assertTrue(a == b) → assertEquals(a, b) - assertTrue(obj == null)
+ * → assertNull(obj) - assertTrue(!condition) → assertFalse(condition) -
+ * assertTrue(a.equals(b)) → assertEquals(a, b) - assertEquals(getActual(),
+ * EXPECTED) → assertEquals(EXPECTED, getActual())
  */
 public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	/**
-	 * Assertion methods that have expected/actual parameter order.
-	 * First parameter should be expected (constant/literal), second should be actual (computed).
+	 * Assertion methods that have expected/actual parameter order. First parameter
+	 * should be expected (constant/literal), second should be actual (computed).
 	 */
-	private static final Set<String> METHODS_WITH_EXPECTED_ACTUAL = Set.of(
-		"assertEquals",
-		"assertNotEquals",
-		"assertArrayEquals",
-		"assertSame",
-		"assertNotSame",
-		"assertIterableEquals",  // JUnit 5 only
-		"assertLinesMatch"       // JUnit 5 only
+	private static final Set<String> METHODS_WITH_EXPECTED_ACTUAL = Set.of("assertEquals", "assertNotEquals",
+			"assertArrayEquals", "assertSame", "assertNotSame", "assertIterableEquals", // JUnit 5 only
+			"assertLinesMatch" // JUnit 5 only
 	);
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		
+
 		// NOTE: We only process JUnit 5 (Assertions) calls here.
 		// JUnit 4 (Assert) calls are handled by AssertJUnitPlugin which does migration.
-		// The optimization for JUnit 4 assertions should be done within the migration itself.
-		
+		// The optimization for JUnit 4 assertions should be done within the migration
+		// itself.
+
 		// Find assertTrue and assertFalse calls for optimization (JUnit 5)
 		HelperVisitorFactory.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSERTIONS, Set.of("assertTrue", "assertFalse"))
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof MethodInvocation mi) {
-					boolean isTrue = "assertTrue".equals(mi.getName().getIdentifier());
-					return processAssertion(fixcore, operations, visited, aholder, isTrue);
-				}
-				return true;
-			});
-		
-		// Find assertion calls with expected/actual parameters for parameter order correction (JUnit 5)
+				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof MethodInvocation mi) {
+						boolean isTrue = "assertTrue".equals(mi.getName().getIdentifier());
+						return processAssertion(fixcore, operations, visited, aholder, isTrue);
+					}
+					return true;
+				});
+
+		// Find assertion calls with expected/actual parameters for parameter order
+		// correction (JUnit 5)
 		HelperVisitorFactory.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHODS_WITH_EXPECTED_ACTUAL)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof MethodInvocation) {
-					return processParameterOrder(fixcore, operations, visited, aholder);
-				}
-				return true;
-			});
+				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof MethodInvocation) {
+						return processParameterOrder(fixcore, operations, visited, aholder);
+					}
+					return true;
+				});
 	}
 
 	private boolean processAssertion(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder, boolean isTrue) {
-		
+
 		if (!(node instanceof MethodInvocation)) {
 			return true; // Continue processing other nodes
 		}
-		
+
 		MethodInvocation mi = (MethodInvocation) node;
 		List<?> arguments = mi.arguments();
-		
+
 		if (arguments.isEmpty()) {
 			return true; // Continue processing other nodes
 		}
-		
-		// Get the condition expression (may be first or second argument depending on whether message is present)
+
+		// Get the condition expression (may be first or second argument depending on
+		// whether message is present)
 		Expression condition = null;
-		
+
 		if (arguments.size() == 1) {
 			condition = (Expression) arguments.get(0);
 		} else if (arguments.size() == 2) {
@@ -141,11 +133,11 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				condition = firstArg;
 			}
 		}
-		
+
 		if (condition == null || !canOptimize(condition)) {
 			return true; // Continue processing other nodes
 		}
-		
+
 		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 	}
 
@@ -156,30 +148,31 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	private boolean processParameterOrder(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		
+
 		if (!(node instanceof MethodInvocation)) {
 			return true; // Continue processing other nodes
 		}
-		
+
 		MethodInvocation mi = (MethodInvocation) node;
 		List<?> arguments = mi.arguments();
-		
+
 		// Need at least 2 arguments (expected, actual) or 3 with message
 		if (arguments.size() < 2) {
 			return true; // Continue processing other nodes
 		}
-		
-		// Get first two arguments (they might be expected/actual or message/expected depending on JUnit version)
+
+		// Get first two arguments (they might be expected/actual or message/expected
+		// depending on JUnit version)
 		Expression first = (Expression) arguments.get(0);
 		Expression second = (Expression) arguments.get(1);
-		
+
 		// Check if first argument is a String message (JUnit 4 style)
 		ITypeBinding firstType = first.resolveTypeBinding();
 		boolean firstIsMessage = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
-		
+
 		Expression expectedParam;
 		Expression actualParam;
-		
+
 		if (firstIsMessage && arguments.size() >= 3) {
 			// JUnit 4: message, expected, actual
 			expectedParam = (Expression) arguments.get(1);
@@ -189,32 +182,31 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			expectedParam = first;
 			actualParam = second;
 		}
-		
+
 		// If expected is not constant but actual is constant, we need to swap
 		if (!isConstantExpression(expectedParam) && isConstantExpression(actualParam)) {
 			return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 		}
-		
+
 		return true; // Continue processing other nodes
 	}
 
 	/**
-	 * Determines if an expression is a constant value.
-	 * Constants include literals, final fields, enums, class literals, array literals,
-	 * and collection factory methods with constant arguments.
+	 * Determines if an expression is a constant value. Constants include literals,
+	 * final fields, enums, class literals, array literals, and collection factory
+	 * methods with constant arguments.
 	 */
 	private boolean isConstantExpression(Expression expr) {
 		if (expr == null) {
 			return false;
 		}
-		
+
 		// Literals
-		if (expr instanceof NumberLiteral || expr instanceof StringLiteral || 
-			expr instanceof BooleanLiteral || expr instanceof CharacterLiteral ||
-			expr instanceof NullLiteral || expr instanceof TypeLiteral) {
+		if (expr instanceof NumberLiteral || expr instanceof StringLiteral || expr instanceof BooleanLiteral
+				|| expr instanceof CharacterLiteral || expr instanceof NullLiteral || expr instanceof TypeLiteral) {
 			return true;
 		}
-		
+
 		// Final fields and enum constants
 		if (expr instanceof SimpleName) {
 			SimpleName name = (SimpleName) expr;
@@ -223,7 +215,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
 			}
 		}
-		
+
 		// Qualified names (e.g., MyClass.CONSTANT)
 		if (expr instanceof QualifiedName) {
 			QualifiedName qname = (QualifiedName) expr;
@@ -232,7 +224,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
 			}
 		}
-		
+
 		// Field access (e.g., Status.ACTIVE)
 		if (expr instanceof FieldAccess) {
 			FieldAccess fieldAccess = (FieldAccess) expr;
@@ -242,7 +234,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				return Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers) || binding.isEnumConstant();
 			}
 		}
-		
+
 		// Array creation with initializer containing only constants
 		if (expr instanceof ArrayCreation) {
 			ArrayCreation arrayCreation = (ArrayCreation) expr;
@@ -252,37 +244,38 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				return expressions.stream().allMatch(e -> isConstantExpression((Expression) e));
 			}
 		}
-		
+
 		// Array initializer
 		if (expr instanceof ArrayInitializer) {
 			ArrayInitializer initializer = (ArrayInitializer) expr;
 			List<?> expressions = initializer.expressions();
 			return expressions.stream().allMatch(e -> isConstantExpression((Expression) e));
 		}
-		
-		// Collection factory methods: List.of(...), Set.of(...), Arrays.asList(...), Map.of(...)
+
+		// Collection factory methods: List.of(...), Set.of(...), Arrays.asList(...),
+		// Map.of(...)
 		if (expr instanceof MethodInvocation) {
 			MethodInvocation mi = (MethodInvocation) expr;
 			String methodName = mi.getName().getIdentifier();
 			Expression receiver = mi.getExpression();
-			
+
 			if (methodName.equals("of") || methodName.equals("asList")) {
 				if (receiver instanceof SimpleName) {
 					String receiverName = ((SimpleName) receiver).getIdentifier();
-					if (receiverName.equals("List") || receiverName.equals("Set") || 
-						receiverName.equals("Arrays") || receiverName.equals("Map")) {
+					if (receiverName.equals("List") || receiverName.equals("Set") || receiverName.equals("Arrays")
+							|| receiverName.equals("Map")) {
 						List<?> arguments = mi.arguments();
 						return arguments.stream().allMatch(arg -> isConstantExpression((Expression) arg));
 					}
 				}
 			}
-			
+
 			// Method call on string literal: "test".getBytes()
 			if (receiver instanceof StringLiteral) {
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -292,20 +285,20 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			PrefixExpression prefix = (PrefixExpression) condition;
 			return prefix.getOperator() == PrefixExpression.Operator.NOT;
 		}
-		
+
 		// Check for infix expression (==, !=)
 		if (condition instanceof InfixExpression) {
 			InfixExpression infix = (InfixExpression) condition;
 			InfixExpression.Operator op = infix.getOperator();
 			return op == InfixExpression.Operator.EQUALS || op == InfixExpression.Operator.NOT_EQUALS;
 		}
-		
+
 		// Check for .equals() method call
 		if (condition instanceof MethodInvocation) {
 			MethodInvocation methodInv = (MethodInvocation) condition;
 			return "equals".equals(methodInv.getName().getIdentifier()) && methodInv.arguments().size() == 1;
 		}
-		
+
 		return false;
 	}
 
@@ -315,29 +308,29 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		if (!(junitHolder.getMinv() instanceof MethodInvocation)) {
 			return;
 		}
-		
+
 		MethodInvocation mi = junitHolder.getMethodInvocation();
 		List<?> arguments = mi.arguments();
-		
+
 		if (arguments.isEmpty()) {
 			return;
 		}
-		
+
 		String methodName = mi.getName().getIdentifier();
-		
+
 		// Check if this is a parameter order correction case
 		if (METHODS_WITH_EXPECTED_ACTUAL.contains(methodName)) {
 			swapParametersIfNeeded(mi, rewriter, group);
 			return;
 		}
-		
+
 		// Handle assertTrue/assertFalse optimization
 		boolean isTrue = "assertTrue".equals(methodName);
-		
+
 		// Get the condition and message
 		Expression condition = null;
 		Expression message = null;
-		
+
 		if (arguments.size() == 1) {
 			condition = (Expression) arguments.get(0);
 		} else if (arguments.size() == 2) {
@@ -351,11 +344,11 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				message = (Expression) arguments.get(1);
 			}
 		}
-		
+
 		if (condition == null) {
 			return;
 		}
-		
+
 		// Handle prefix expression: assertTrue(!x) → assertFalse(x)
 		if (condition instanceof PrefixExpression) {
 			PrefixExpression prefix = (PrefixExpression) condition;
@@ -363,29 +356,29 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				// Flip assertTrue/assertFalse and remove negation
 				String newMethodName = isTrue ? "assertFalse" : "assertTrue";
 				rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);
-				
+
 				// Replace condition with the operand (removing the !)
 				ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
 				argsRewrite.replace((ASTNode) condition, rewriter.createCopyTarget(prefix.getOperand()), group);
 			}
 			return;
 		}
-		
+
 		// Handle infix expression: ==, !=
 		if (condition instanceof InfixExpression) {
 			InfixExpression infix = (InfixExpression) condition;
 			InfixExpression.Operator op = infix.getOperator();
 			Expression left = infix.getLeftOperand();
 			Expression right = infix.getRightOperand();
-			
+
 			// Check for null comparisons
 			boolean leftIsNull = left instanceof NullLiteral;
 			boolean rightIsNull = right instanceof NullLiteral;
-			
+
 			if (leftIsNull || rightIsNull) {
 				Expression nonNullExpr = leftIsNull ? right : left;
 				String newMethodName = null;
-				
+
 				if (op == InfixExpression.Operator.EQUALS) {
 					// assertTrue(x == null) → assertNull(x)
 					// assertFalse(x == null) → assertNotNull(x)
@@ -395,11 +388,11 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 					// assertFalse(x != null) → assertNull(x)
 					newMethodName = isTrue ? "assertNotNull" : "assertNull";
 				}
-				
+
 				if (newMethodName != null) {
 					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);
 					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
-					
+
 					// Create new argument list
 					argsRewrite.remove((ASTNode) condition, group);
 					if (message != null) {
@@ -412,7 +405,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				// Handle equality checks between non-null values
 				boolean isPrimitiveComparison = isPrimitiveComparison(left, right);
 				String newMethodName = null;
-				
+
 				if (op == InfixExpression.Operator.EQUALS) {
 					if (isPrimitiveComparison) {
 						// assertTrue(a == b) → assertEquals(a, b)
@@ -434,11 +427,11 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 						newMethodName = isTrue ? "assertNotSame" : "assertSame";
 					}
 				}
-				
+
 				if (newMethodName != null) {
 					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);
 					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
-					
+
 					// Replace condition with two separate arguments
 					argsRewrite.remove((ASTNode) condition, group);
 					if (message != null) {
@@ -453,22 +446,22 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			}
 			return;
 		}
-		
+
 		// Handle .equals() method call
 		if (condition instanceof MethodInvocation) {
 			MethodInvocation methodInv = (MethodInvocation) condition;
 			if ("equals".equals(methodInv.getName().getIdentifier()) && methodInv.arguments().size() == 1) {
 				Expression receiver = methodInv.getExpression();
 				Expression argument = (Expression) methodInv.arguments().get(0);
-				
+
 				// assertTrue(a.equals(b)) → assertEquals(b, a)
 				// assertFalse(a.equals(b)) → assertNotEquals(b, a)
 				String newMethodName = isTrue ? "assertEquals" : "assertNotEquals";
 				rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);
-				
+
 				ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
 				argsRewrite.remove((ASTNode) condition, group);
-				
+
 				if (message != null) {
 					// JUnit 5: expected, actual, message
 					argsRewrite.insertBefore(rewriter.createCopyTarget(argument), (ASTNode) message, group);
@@ -486,28 +479,28 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	}
 
 	/**
-	 * Swaps expected/actual parameters if they are in the wrong order.
-	 * Expected (constant) should come first, actual (computed) should come second.
+	 * Swaps expected/actual parameters if they are in the wrong order. Expected
+	 * (constant) should come first, actual (computed) should come second.
 	 */
 	private void swapParametersIfNeeded(MethodInvocation mi, ASTRewrite rewriter, TextEditGroup group) {
 		List<?> arguments = mi.arguments();
-		
+
 		if (arguments.size() < 2) {
 			return;
 		}
-		
+
 		Expression first = (Expression) arguments.get(0);
 		Expression second = (Expression) arguments.get(1);
-		
+
 		// Check if first argument is a String message (JUnit 4 style)
 		ITypeBinding firstType = first.resolveTypeBinding();
 		boolean firstIsMessage = firstType != null && "java.lang.String".equals(firstType.getQualifiedName());
-		
+
 		Expression expectedParam;
 		Expression actualParam;
 		int expectedIndex;
 		int actualIndex;
-		
+
 		if (firstIsMessage && arguments.size() >= 3) {
 			// JUnit 4: message, expected, actual
 			expectedParam = (Expression) arguments.get(1);
@@ -521,7 +514,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 			expectedIndex = 0;
 			actualIndex = 1;
 		}
-		
+
 		// If expected is not constant but actual is constant, swap them
 		if (!isConstantExpression(expectedParam) && isConstantExpression(actualParam)) {
 			ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);

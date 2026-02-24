@@ -39,52 +39,50 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
- * Plugin to migrate JUnit 4 @RunWith and @Suite.SuiteClasses to JUnit 5 equivalents.
+ * Plugin to migrate JUnit 4 @RunWith and @Suite.SuiteClasses to JUnit 5
+ * equivalents.
  */
 public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
-		
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
+
 		// Find @RunWith annotations
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof SingleMemberAnnotation) {
-					return processFoundNodeRunWith(fixcore, operations, (Annotation) visited, aholder);
-				}
-				return true;
-			});
-		
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH).in(compilationUnit).excluding(nodesprocessed)
+				.processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof SingleMemberAnnotation) {
+						return processFoundNodeRunWith(fixcore, operations, (Annotation) visited, aholder);
+					}
+					return true;
+				});
+
 		// Find @Suite.SuiteClasses annotations
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_SUITE_SUITECLASSES)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof SingleMemberAnnotation) {
-					return processFoundNodeSuite(fixcore, operations, (Annotation) visited, aholder);
-				}
-				return true;
-			});
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_SUITE_SUITECLASSES).in(compilationUnit).excluding(nodesprocessed)
+				.processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof SingleMemberAnnotation) {
+						return processFoundNodeSuite(fixcore, operations, (Annotation) visited, aholder);
+					}
+					return true;
+				});
 	}
 
 	private boolean processFoundNodeRunWith(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh= new JunitHolder();
+		JunitHolder mh = new JunitHolder();
 		mh.setMinv(node);
 		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 		if (node instanceof SingleMemberAnnotation mynode) {
-			Expression value= mynode.getValue();
+			Expression value = mynode.getValue();
 			if (value instanceof TypeLiteral myvalue) {
-				ITypeBinding classBinding= myvalue.resolveTypeBinding();
+				ITypeBinding classBinding = myvalue.resolveTypeBinding();
 				String runnerQualifiedName = null;
-				
+
 				// Try to get qualified name from binding
-				// For TypeLiteral (e.g., Suite.class), we need to get the type being referenced, not Class itself
+				// For TypeLiteral (e.g., Suite.class), we need to get the type being
+				// referenced, not Class itself
 				if (classBinding != null) {
 					// Get the type from the TypeLiteral's type, not from the Class binding
 					Type type = myvalue.getType();
@@ -95,7 +93,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 						}
 					}
 				}
-				
+
 				// If binding resolution failed, try to get fully qualified name from the AST
 				if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {
 					Type runnerType = myvalue.getType();
@@ -113,7 +111,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 						// For other simple names, we can't safely migrate to avoid false positives
 					}
 				}
-				
+
 				// Handle Suite runner
 				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {
 					mh.setValue(ORG_JUNIT_RUNWITH);
@@ -121,19 +119,20 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 					operations.add(fixcore.rewrite(dataHolder));
 					return true; // Continue processing other annotations
 				}
-				
+
 				// Handle Mockito runners - only check qualified names to avoid false positives
-				if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName) ||
-						ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)) {
+				if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)
+						|| ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)) {
 					mh.setValue(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
 					return true; // Continue processing other annotations
 				}
-				
+
 				// Handle Spring runners - only check qualified names to avoid false positives
-				if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName) ||
-						ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(runnerQualifiedName)) {
+				if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName)
+						|| ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER
+								.equals(runnerQualifiedName)) {
 					mh.setValue(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER);
 					dataHolder.put(dataHolder.size(), mh);
 					operations.add(fixcore.rewrite(dataHolder));
@@ -148,7 +147,7 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	private boolean processFoundNodeSuite(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh= new JunitHolder();
+		JunitHolder mh = new JunitHolder();
 		mh.setMinv(node);
 		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 		mh.setValue(ORG_JUNIT_SUITE_SUITECLASSES);
@@ -159,61 +158,59 @@ public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, Ju
 	}
 
 	@Override
-	protected
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		Annotation minv= junitHolder.getAnnotation();
-		Annotation newAnnotation= null;
-		
+		Annotation minv = junitHolder.getAnnotation();
+		Annotation newAnnotation = null;
+
 		if (ORG_JUNIT_SUITE_SUITECLASSES.equals(junitHolder.getValue())) {
 			// Handle @Suite.SuiteClasses migration
-			SingleMemberAnnotation mynode= (SingleMemberAnnotation) minv;
-			newAnnotation= ast.newSingleMemberAnnotation();
-			((SingleMemberAnnotation) newAnnotation)
-					.setValue(ASTNodes.createMoveTarget(rewriter, mynode.getValue()));
+			SingleMemberAnnotation mynode = (SingleMemberAnnotation) minv;
+			newAnnotation = ast.newSingleMemberAnnotation();
+			((SingleMemberAnnotation) newAnnotation).setValue(ASTNodes.createMoveTarget(rewriter, mynode.getValue()));
 			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));
 			importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);
 			importRewriter.removeImport(ORG_JUNIT_SUITE_SUITECLASSES);
 			importRewriter.removeImport(ORG_JUNIT_SUITE);
 		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.getValue())) {
 			// Handle @RunWith(Suite.class) migration
-			newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_SUITE);
+			newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_SUITE);
 			// Add new import FIRST, then remove old ones
 			importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
 			importRewriter.removeImport(ORG_JUNIT_SUITE);
 			importRewriter.removeImport(ORG_JUNIT_RUNWITH);
 		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.getValue())) {
 			// Handle @RunWith(MockitoJUnitRunner.class) migration
-			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();
+			SingleMemberAnnotation extendWithAnnotation = ast.newSingleMemberAnnotation();
 			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));
-			TypeLiteral typeLiteral= ast.newTypeLiteral();
+			TypeLiteral typeLiteral = ast.newTypeLiteral();
 			typeLiteral.setType(ast.newSimpleType(ast.newName(MOCKITO_EXTENSION)));
 			extendWithAnnotation.setValue(typeLiteral);
-			newAnnotation= extendWithAnnotation;
+			newAnnotation = extendWithAnnotation;
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
 			importRewriter.addImport(ORG_MOCKITO_JUNIT_JUPITER_MOCKITO_EXTENSION);
 			importRewriter.removeImport(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);
 			importRewriter.removeImport(ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER);
 		} else if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(junitHolder.getValue())) {
 			// Handle @RunWith(SpringRunner.class) migration
-			SingleMemberAnnotation extendWithAnnotation= ast.newSingleMemberAnnotation();
+			SingleMemberAnnotation extendWithAnnotation = ast.newSingleMemberAnnotation();
 			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));
-			TypeLiteral typeLiteral= ast.newTypeLiteral();
+			TypeLiteral typeLiteral = ast.newTypeLiteral();
 			typeLiteral.setType(ast.newSimpleType(ast.newName(SPRING_EXTENSION)));
 			extendWithAnnotation.setValue(typeLiteral);
-			newAnnotation= extendWithAnnotation;
+			newAnnotation = extendWithAnnotation;
 			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);
 			importRewriter.addImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION);
 			importRewriter.removeImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER);
 			importRewriter.removeImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER);
 		}
-		
+
 		if (newAnnotation != null) {
 			ASTNodes.replaceButKeepComment(rewriter, minv, newAnnotation, group);
 			importRewriter.removeImport(ORG_JUNIT_RUNWITH);
 		}
 	}
-	
+
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

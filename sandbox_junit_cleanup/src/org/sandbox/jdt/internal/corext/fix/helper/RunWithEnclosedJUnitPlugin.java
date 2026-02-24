@@ -64,44 +64,43 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
- * Plugin to migrate JUnit 4 @RunWith(Enclosed.class) to JUnit 5 @Nested classes.
+ * Plugin to migrate JUnit 4 @RunWith(Enclosed.class) to JUnit 5 @Nested
+ * classes.
  */
 public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
-		
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
+
 		// Find @RunWith annotations
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof SingleMemberAnnotation) {
-					return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);
-				}
-				return true;
-			});
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH).in(compilationUnit).excluding(nodesprocessed)
+				.processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof SingleMemberAnnotation) {
+						return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);
+					}
+					return true;
+				});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder, Set<ASTNode> nodesprocessed) {
-		
+
 		if (!(node instanceof SingleMemberAnnotation mynode)) {
 			return true;
 		}
-		
-		Expression value= mynode.getValue();
+
+		Expression value = mynode.getValue();
 		if (!(value instanceof TypeLiteral myvalue)) {
 			return true;
 		}
-		
+
 		// Check if it's Enclosed.class
-		ITypeBinding classBinding= myvalue.resolveTypeBinding();
+		ITypeBinding classBinding = myvalue.resolveTypeBinding();
 		String runnerQualifiedName = null;
-		
+
 		if (classBinding != null) {
 			Type type = myvalue.getType();
 			if (type != null) {
@@ -111,7 +110,7 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 				}
 			}
 		}
-		
+
 		// Fallback to AST name if binding resolution failed
 		if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {
 			Type runnerType = myvalue.getType();
@@ -122,32 +121,32 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 				}
 			}
 		}
-		
+
 		// Only handle Enclosed runner
 		if (!ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED.equals(runnerQualifiedName)) {
 			return true;
 		}
-		
+
 		// Found @RunWith(Enclosed.class), mark it for transformation
 		nodesprocessed.add(node);
-		JunitHolder mh= new JunitHolder();
+		JunitHolder mh = new JunitHolder();
 		mh.setMinv(node);
 		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 		mh.setValue(ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
-		
+
 		return true;
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		Annotation runWithAnnotation= junitHolder.getAnnotation();
-		
+		Annotation runWithAnnotation = junitHolder.getAnnotation();
+
 		// Remove @RunWith(Enclosed.class) annotation
 		rewriter.remove(runWithAnnotation, group);
-		
+
 		// Find the enclosing TypeDeclaration
 		TypeDeclaration outerClass = null;
 		ASTNode parent = runWithAnnotation.getParent();
@@ -158,11 +157,11 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 			}
 			parent = parent.getParent();
 		}
-		
+
 		if (outerClass == null) {
 			return;
 		}
-		
+
 		// Transform inner static classes to @Nested classes
 		TypeDeclaration[] innerTypes = outerClass.getTypes();
 		for (TypeDeclaration innerType : innerTypes) {
@@ -180,19 +179,19 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 						modifiersRewrite.remove(mod, group);
 					}
 				}
-				
+
 				// Add @Nested annotation
-				MarkerAnnotation nestedAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_NESTED);
+				MarkerAnnotation nestedAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_NESTED);
 				modifiersRewrite.insertFirst(nestedAnnotation, group);
 			}
 		}
-		
+
 		// Update imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_NESTED);
 		importRewriter.removeImport(ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED);
 		importRewriter.removeImport(ORG_JUNIT_RUNWITH);
 	}
-	
+
 	/**
 	 * Check if a type declaration contains methods annotated with @Test.
 	 */
@@ -202,9 +201,8 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 			for (Object modifier : modifiers) {
 				if (modifier instanceof Annotation annotation) {
 					String annotationName = annotation.getTypeName().getFullyQualifiedName();
-					if ("Test".equals(annotationName) || 
-							ORG_JUNIT_TEST.equals(annotationName) || 
-							ORG_JUNIT_JUPITER_TEST.equals(annotationName)) {
+					if ("Test".equals(annotationName) || ORG_JUNIT_TEST.equals(annotationName)
+							|| ORG_JUNIT_JUPITER_TEST.equals(annotationName)) {
 						return true;
 					}
 				}
@@ -212,7 +210,7 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		}
 		return false;
 	}
-	
+
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

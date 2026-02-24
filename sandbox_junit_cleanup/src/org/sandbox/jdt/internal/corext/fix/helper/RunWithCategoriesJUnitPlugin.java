@@ -65,7 +65,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
- * Plugin to migrate JUnit 4 @RunWith(Categories.class) to JUnit 5 @Suite with @IncludeTags/@ExcludeTags.
+ * Plugin to migrate JUnit 4 @RunWith(Categories.class) to JUnit 5 @Suite
+ * with @IncludeTags/@ExcludeTags.
  */
 public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
@@ -80,41 +81,39 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
-		
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
+
 		// Find @RunWith(Categories.class) annotations
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof SingleMemberAnnotation) {
-					return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);
-				}
-				return true;
-			});
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH).in(compilationUnit).excluding(nodesprocessed)
+				.processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof SingleMemberAnnotation) {
+						return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);
+					}
+					return true;
+				});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder, Set<ASTNode> nodesprocessed) {
-		
+
 		if (!(node instanceof SingleMemberAnnotation mynode)) {
 			return true;
 		}
-		
-		Expression value= mynode.getValue();
+
+		Expression value = mynode.getValue();
 		if (!(value instanceof TypeLiteral myvalue)) {
 			return true;
 		}
-		
+
 		// Check if it's Categories.class
 		String runnerQualifiedName = getRunnerQualifiedName(myvalue);
-		
+
 		// Only handle Categories runner
 		if (!ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES.equals(runnerQualifiedName)) {
 			return true;
 		}
-		
+
 		// Find the enclosing TypeDeclaration
 		TypeDeclaration typeDecl = null;
 		ASTNode parent = node.getParent();
@@ -125,17 +124,17 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			}
 			parent = parent.getParent();
 		}
-		
+
 		if (typeDecl == null) {
 			return true;
 		}
-		
+
 		// Find @IncludeCategory, @ExcludeCategory, and @SuiteClasses annotations
 		CategoriesData categoriesData = new CategoriesData();
 		categoriesData.runWithAnnotation = node;
 		categoriesData.typeDeclaration = typeDecl;
 		findCategoryAnnotations(typeDecl, categoriesData);
-		
+
 		// Mark for transformation
 		nodesprocessed.add(node);
 		for (Annotation annotation : categoriesData.includeCategories) {
@@ -147,22 +146,22 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		if (categoriesData.suiteClasses != null) {
 			nodesprocessed.add(categoriesData.suiteClasses);
 		}
-		
-		JunitHolder mh= new JunitHolder();
+
+		JunitHolder mh = new JunitHolder();
 		mh.setMinv(node);
 		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 		mh.setValue(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES);
 		mh.setAdditionalInfo(categoriesData);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
-		
+
 		return true;
 	}
 
 	private String getRunnerQualifiedName(TypeLiteral myvalue) {
-		ITypeBinding classBinding= myvalue.resolveTypeBinding();
+		ITypeBinding classBinding = myvalue.resolveTypeBinding();
 		String runnerQualifiedName = null;
-		
+
 		if (classBinding != null) {
 			Type type = myvalue.getType();
 			if (type != null) {
@@ -172,7 +171,7 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 				}
 			}
 		}
-		
+
 		// Fallback to AST name if binding resolution failed
 		if (runnerQualifiedName == null || runnerQualifiedName.isEmpty()) {
 			Type runnerType = myvalue.getType();
@@ -183,7 +182,7 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 				}
 			}
 		}
-		
+
 		return runnerQualifiedName;
 	}
 
@@ -192,23 +191,22 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		for (Object modifier : modifiers) {
 			if (modifier instanceof Annotation annotation) {
 				String annotationName = annotation.getTypeName().getFullyQualifiedName();
-				
+
 				// Check for @IncludeCategory
-				if ("IncludeCategory".equals(annotationName) || 
-						ORG_JUNIT_EXPERIMENTAL_CATEGORIES_INCLUDE_CATEGORY.equals(annotationName) ||
-						"Categories.IncludeCategory".equals(annotationName)) {
+				if ("IncludeCategory".equals(annotationName)
+						|| ORG_JUNIT_EXPERIMENTAL_CATEGORIES_INCLUDE_CATEGORY.equals(annotationName)
+						|| "Categories.IncludeCategory".equals(annotationName)) {
 					data.includeCategories.add(annotation);
 				}
 				// Check for @ExcludeCategory
-				else if ("ExcludeCategory".equals(annotationName) || 
-						ORG_JUNIT_EXPERIMENTAL_CATEGORIES_EXCLUDE_CATEGORY.equals(annotationName) ||
-						"Categories.ExcludeCategory".equals(annotationName)) {
+				else if ("ExcludeCategory".equals(annotationName)
+						|| ORG_JUNIT_EXPERIMENTAL_CATEGORIES_EXCLUDE_CATEGORY.equals(annotationName)
+						|| "Categories.ExcludeCategory".equals(annotationName)) {
 					data.excludeCategories.add(annotation);
 				}
 				// Check for @SuiteClasses
-				else if ("SuiteClasses".equals(annotationName) || 
-						ORG_JUNIT_SUITE_SUITECLASSES.equals(annotationName) ||
-						"Suite.SuiteClasses".equals(annotationName)) {
+				else if ("SuiteClasses".equals(annotationName) || ORG_JUNIT_SUITE_SUITECLASSES.equals(annotationName)
+						|| "Suite.SuiteClasses".equals(annotationName)) {
 					data.suiteClasses = annotation;
 				}
 			}
@@ -221,31 +219,32 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		CategoriesData categoriesData = (CategoriesData) junitHolder.getAdditionalInfo();
 		TypeDeclaration typeDecl = categoriesData.typeDeclaration;
 		ListRewrite modifiersRewrite = rewriter.getListRewrite(typeDecl, TypeDeclaration.MODIFIERS2_PROPERTY);
-		
+
 		// Replace @RunWith(Categories.class) with @Suite
-		MarkerAnnotation suiteAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_SUITE);
+		MarkerAnnotation suiteAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_SUITE);
 		modifiersRewrite.replace(categoriesData.runWithAnnotation, suiteAnnotation, group);
-		
+
 		// Transform @IncludeCategory annotations
 		for (Annotation includeCategory : categoriesData.includeCategories) {
 			SingleMemberAnnotation includeTagsAnnotation = createIncludeTagsAnnotation(ast, includeCategory);
 			modifiersRewrite.replace(includeCategory, includeTagsAnnotation, group);
 		}
-		
+
 		// Transform @ExcludeCategory annotations
 		for (Annotation excludeCategory : categoriesData.excludeCategories) {
 			SingleMemberAnnotation excludeTagsAnnotation = createExcludeTagsAnnotation(ast, excludeCategory);
 			modifiersRewrite.replace(excludeCategory, excludeTagsAnnotation, group);
 		}
-		
+
 		// Transform @SuiteClasses to @SelectClasses
-		if (categoriesData.suiteClasses != null && categoriesData.suiteClasses instanceof SingleMemberAnnotation suiteClassesAnnotation) {
+		if (categoriesData.suiteClasses != null
+				&& categoriesData.suiteClasses instanceof SingleMemberAnnotation suiteClassesAnnotation) {
 			SingleMemberAnnotation selectClassesAnnotation = ast.newSingleMemberAnnotation();
 			selectClassesAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_SELECT_CLASSES));
 			selectClassesAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, suiteClassesAnnotation.getValue()));
 			modifiersRewrite.replace(categoriesData.suiteClasses, selectClassesAnnotation, group);
 		}
-		
+
 		// Update imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);
 		importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_INCLUDE_TAGS);
@@ -261,7 +260,7 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 	private SingleMemberAnnotation createIncludeTagsAnnotation(AST ast, Annotation includeCategory) {
 		SingleMemberAnnotation includeTagsAnnotation = ast.newSingleMemberAnnotation();
 		includeTagsAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_INCLUDE_TAGS));
-		
+
 		// Extract category class name and convert to string tag
 		if (includeCategory instanceof SingleMemberAnnotation categoryAnnotation) {
 			Expression value = categoryAnnotation.getValue();
@@ -270,14 +269,14 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			tagLiteral.setLiteralValue(tagName);
 			includeTagsAnnotation.setValue(tagLiteral);
 		}
-		
+
 		return includeTagsAnnotation;
 	}
 
 	private SingleMemberAnnotation createExcludeTagsAnnotation(AST ast, Annotation excludeCategory) {
 		SingleMemberAnnotation excludeTagsAnnotation = ast.newSingleMemberAnnotation();
 		excludeTagsAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXCLUDE_TAGS));
-		
+
 		// Extract category class name and convert to string tag
 		if (excludeCategory instanceof SingleMemberAnnotation categoryAnnotation) {
 			Expression value = categoryAnnotation.getValue();
@@ -286,7 +285,7 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 			tagLiteral.setLiteralValue(tagName);
 			excludeTagsAnnotation.setValue(tagLiteral);
 		}
-		
+
 		return excludeTagsAnnotation;
 	}
 
@@ -299,7 +298,7 @@ public class RunWithCategoriesJUnitPlugin extends AbstractTool<ReferenceHolder<I
 		}
 		return "Unknown";
 	}
-	
+
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

@@ -77,12 +77,9 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitorFactory.forField()
-			.withAnnotation(ORG_JUNIT_RULE)
-			.ofType(ORG_JUNIT_RULES_EXPECTED_EXCEPTION)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
+		HelperVisitorFactory.forField().withAnnotation(ORG_JUNIT_RULE).ofType(ORG_JUNIT_RULES_EXPECTED_EXCEPTION)
+				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited,
+						aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -105,8 +102,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	}
 
 	@Override
-	protected
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		FieldDeclaration field = junitHolder.getFieldDeclaration();
 		TypeDeclaration parentClass = ASTNodes.getParent(field, TypeDeclaration.class);
@@ -150,7 +146,8 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			return;
 		}
 
-		// Generate a unique variable name for the exception if we need to check the message or cause
+		// Generate a unique variable name for the exception if we need to check the
+		// message or cause
 		String exceptionVarName = null;
 		if (info.getExpectMessageCall() != null || info.getExpectCauseCall() != null) {
 			Collection<String> usedNames = getUsedVariableNames(method);
@@ -180,7 +177,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			// Skip transformation for this edge case
 			return;
 		}
-		
+
 		for (int i = startIndex; i < statements.size(); i++) {
 			Statement stmt = statements.get(i);
 			lambdaBody.statements().add(ASTNode.copySubtree(ast, stmt));
@@ -193,13 +190,15 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		Statement newStatement;
 		if (exceptionVarName != null) {
 			// Need to capture exception for message check
-			// ExceptionType exceptionVar = assertThrows(ExceptionType.class, () -> { ... });
+			// ExceptionType exceptionVar = assertThrows(ExceptionType.class, () -> { ...
+			// });
 			VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();
 			fragment.setName(ast.newSimpleName(exceptionVarName));
 			fragment.setInitializer(assertThrowsCall);
 
 			VariableDeclarationStatement varDecl = ast.newVariableDeclarationStatement(fragment);
-			// Extract the exception type from the class literal (use the Type directly to preserve simple name)
+			// Extract the exception type from the class literal (use the Type directly to
+			// preserve simple name)
 			Type exceptionType = extractExceptionType(info.getExpectCall());
 			varDecl.setType((Type) ASTNode.copySubtree(ast, exceptionType));
 
@@ -220,7 +219,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		// If there's a message expectation, add the assertion
 		if (info.getExpectMessageCall() != null && exceptionVarName != null) {
 			Expression messageArg = (Expression) info.getExpectMessageCall().arguments().get(0);
-			
+
 			// Create: assertEquals("message", exception.getMessage());
 			MethodInvocation getMessageCall = ast.newMethodInvocation();
 			getMessageCall.setExpression(ast.newSimpleName(exceptionVarName));
@@ -237,14 +236,14 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			// Add assertEquals import
 			importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, "assertEquals", false);
 		}
-		
+
 		// If there's a cause expectation, add the assertion
 		if (info.getExpectCauseCall() != null && exceptionVarName != null) {
 			// Check if expectCauseCall has arguments before accessing
 			if (!info.getExpectCauseCall().arguments().isEmpty()) {
 				Expression causeArg = (Expression) info.getExpectCauseCall().arguments().get(0);
 				Expression causeClass = extractCauseClass(causeArg);
-				
+
 				if (causeClass != null) {
 					// Create: exception.getCause()
 					MethodInvocation getCauseCall = ast.newMethodInvocation();
@@ -270,7 +269,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 
 	private ExpectedExceptionInfo findExpectedExceptionCalls(List<Statement> statements, String fieldName) {
 		ExpectedExceptionInfo info = new ExpectedExceptionInfo();
-		
+
 		for (int i = 0; i < statements.size(); i++) {
 			Statement stmt = statements.get(i);
 			if (!(stmt instanceof ExpressionStatement)) {
@@ -312,7 +311,7 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 		// The argument is typically a TypeLiteral like IllegalArgumentException.class
 		if (!expectCall.arguments().isEmpty()) {
 			Expression arg = (Expression) expectCall.arguments().get(0);
-			
+
 			// Extract the Type from the TypeLiteral
 			if (arg instanceof TypeLiteral typeLiteral) {
 				return typeLiteral.getType();
@@ -324,13 +323,11 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 	/**
 	 * Extracts the cause exception class from a Hamcrest matcher expression.
 	 * 
-	 * Supported Hamcrest matchers:
-	 * - org.hamcrest.Matchers.instanceOf(ExceptionClass.class)
-	 * - org.hamcrest.Matchers.isA(ExceptionClass.class)
+	 * Supported Hamcrest matchers: -
+	 * org.hamcrest.Matchers.instanceOf(ExceptionClass.class) -
+	 * org.hamcrest.Matchers.isA(ExceptionClass.class)
 	 * 
-	 * Unsupported matchers (will return null):
-	 * - any(Class.class)
-	 * - notNullValue()
+	 * Unsupported matchers (will return null): - any(Class.class) - notNullValue()
 	 * - Custom matchers
 	 * 
 	 * @param causeArg the expression passed to expectCause()
@@ -367,9 +364,9 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 			return """
 					import static org.junit.jupiter.api.Assertions.assertEquals;
 					import static org.junit.jupiter.api.Assertions.assertThrows;
-					
+
 					import org.junit.jupiter.api.Test;
-					
+
 					public class MyTest {
 						@Test
 						public void testException() {
@@ -385,11 +382,11 @@ public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHold
 				import org.junit.Rule;
 				import org.junit.Test;
 				import org.junit.rules.ExpectedException;
-				
+
 				public class MyTest {
 					@Rule
 					public ExpectedException thrown = ExpectedException.none();
-					
+
 					@Test
 					public void testException() {
 						thrown.expect(IllegalArgumentException.class);

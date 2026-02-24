@@ -59,6 +59,8 @@ public final class JUnitConstants {
 	public static final String METHOD_AFTER = "after";
 	public static final String METHOD_BEFORE = "before";
 	public static final String METHOD_ASSERT_THROWS = "assertThrows";
+	public static final String METHOD_ASSUME_THAT = "assumeThat";
+	public static final String METHOD_ASSERT_THAT = "assertThat";
 
 	// ===== Internal Class/Interface Names =====
 
@@ -160,6 +162,12 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES = "org.junit.platform.suite.api.SelectClasses";
 	public static final String ORG_JUNIT_PLATFORM_SUITE_API_INCLUDE_TAGS = "org.junit.platform.suite.api.IncludeTags";
 	public static final String ORG_JUNIT_PLATFORM_SUITE_API_EXCLUDE_TAGS = "org.junit.platform.suite.api.ExcludeTags";
+
+	// ===== Hamcrest Fully Qualified References =====
+
+	public static final String ORG_HAMCREST_MATCHER = "org.hamcrest.Matcher";
+	public static final String ORG_HAMCREST_MATCHER_ASSERT = "org.hamcrest.MatcherAssert";
+	public static final String ORG_HAMCREST_JUNIT_MATCHER_ASSUME = "org.hamcrest.junit.MatcherAssume";
 
 	// ===== Callback Names =====
 

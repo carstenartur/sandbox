@@ -23,10 +23,14 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 /**
  * Migrates JUnit 4 @AfterClass annotations to JUnit 5 @AfterAll.
  * 
- * <p>Uses TriggerPattern-based declarative architecture
- * to reduce boilerplate.</p>
+ * <p>
+ * Uses TriggerPattern-based declarative architecture to reduce boilerplate.
+ * </p>
  * 
- * <p><b>Before:</b></p>
+ * <p>
+ * <b>Before:</b>
+ * </p>
+ * 
  * <pre>
  * import org.junit.AfterClass;
  * 
@@ -36,7 +40,10 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * }
  * </pre>
  * 
- * <p><b>After:</b></p>
+ * <p>
+ * <b>After:</b>
+ * </p>
+ * 
  * <pre>
  * import org.junit.jupiter.api.AfterAll;
  * 
@@ -48,34 +55,24 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * 
  * @since 1.3.0
  */
-@CleanupPattern(
-    value = "@AfterClass",
-    kind = PatternKind.ANNOTATION,
-    qualifiedType = ORG_JUNIT_AFTERCLASS,
-    cleanupId = "cleanup.junit.afterclass",
-    description = "Migrate @AfterClass to @AfterAll",
-    displayName = "JUnit 4 @AfterClass → JUnit 5 @AfterAll"
-)
-@RewriteRule(
-    replaceWith = "@AfterAll",
-    addImports = {ORG_JUNIT_JUPITER_API_AFTER_ALL}
-)
+@CleanupPattern(value = "@AfterClass", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_AFTERCLASS, cleanupId = "cleanup.junit.afterclass", description = "Migrate @AfterClass to @AfterAll", displayName = "JUnit 4 @AfterClass → JUnit 5 @AfterAll")
+@RewriteRule(replaceWith = "@AfterAll", addImports = { ORG_JUNIT_JUPITER_API_AFTER_ALL })
 public class AfterClassJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-				@AfterAll
+					@AfterAll
+					public static void tearDownAfterClass() {
+					}
+					"""; //$NON-NLS-1$
+		}
+		return """
+				@AfterClass
 				public static void tearDownAfterClass() {
 				}
 				"""; //$NON-NLS-1$
-		}
-		return """
-			@AfterClass
-			public static void tearDownAfterClass() {
-			}
-			"""; //$NON-NLS-1$
 	}
 
 	@Override

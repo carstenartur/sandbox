@@ -66,38 +66,35 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 /**
  * Plugin to migrate JUnit 4 @Category annotations to JUnit 5 @Tag annotations.
  * 
- * Handles:
- * - Single category: @Category(FastTests.class) → @Tag("FastTests")
- * - Multiple categories: @Category({Fast.class, Slow.class}) → @Tag("Fast") @Tag("Slow")
- * - Categories on both class and method level
+ * Handles: - Single category: @Category(FastTests.class) → @Tag("FastTests") -
+ * Multiple categories: @Category({Fast.class, Slow.class})
+ * → @Tag("Fast") @Tag("Slow") - Categories on both class and method level
  */
 public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> {
-				if (visited instanceof Annotation) {
-					return processFoundNode(fixcore, operations, (Annotation) visited, aholder);
-				}
-				return true;
-			});
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
+		HelperVisitorFactory.forAnnotation(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY).in(compilationUnit)
+				.excluding(nodesprocessed).processEach(dataHolder, (visited, aholder) -> {
+					if (visited instanceof Annotation) {
+						return processFoundNode(fixcore, operations, (Annotation) visited, aholder);
+					}
+					return true;
+				});
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh= new JunitHolder();
+		JunitHolder mh = new JunitHolder();
 		mh.setMinv(node);
 		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
-		
+
 		if (node instanceof SingleMemberAnnotation mynode) {
-			Expression value= mynode.getValue();
-			List<String> categoryNames= extractCategoryNames(value);
+			Expression value = mynode.getValue();
+			List<String> categoryNames = extractCategoryNames(value);
 			if (!categoryNames.isEmpty()) {
 				mh.setValue(String.join(",", categoryNames));
 				dataHolder.put(dataHolder.size(), mh);
@@ -110,90 +107,90 @@ public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, J
 	}
 
 	/**
-	 * Extracts category class names from the annotation value.
-	 * Handles both single category (TypeLiteral) and multiple categories (ArrayInitializer).
+	 * Extracts category class names from the annotation value. Handles both single
+	 * category (TypeLiteral) and multiple categories (ArrayInitializer).
 	 */
 	private List<String> extractCategoryNames(Expression value) {
-		List<String> categoryNames= new ArrayList<>();
-		
+		List<String> categoryNames = new ArrayList<>();
+
 		if (value instanceof TypeLiteral typeLiteral) {
 			// Single category: @Category(FastTests.class)
-			String className= extractSimpleClassName(typeLiteral);
+			String className = extractSimpleClassName(typeLiteral);
 			if (className != null) {
 				categoryNames.add(className);
 			}
 		} else if (value instanceof ArrayInitializer arrayInit) {
 			// Multiple categories: @Category({Fast.class, Slow.class})
-			List<Expression> expressions= arrayInit.expressions();
+			List<Expression> expressions = arrayInit.expressions();
 			for (Expression expr : expressions) {
 				if (expr instanceof TypeLiteral typeLiteral) {
-					String className= extractSimpleClassName(typeLiteral);
+					String className = extractSimpleClassName(typeLiteral);
 					if (className != null) {
 						categoryNames.add(className);
 					}
 				}
 			}
 		}
-		
+
 		return categoryNames;
 	}
 
 	/**
-	 * Extracts the simple class name from a TypeLiteral.
-	 * For example, FastTests.class → "FastTests"
+	 * Extracts the simple class name from a TypeLiteral. For example,
+	 * FastTests.class → "FastTests"
 	 */
 	private String extractSimpleClassName(TypeLiteral typeLiteral) {
-		Type type= typeLiteral.getType();
+		Type type = typeLiteral.getType();
 		if (type != null) {
-			String typeName= type.toString();
+			String typeName = type.toString();
 			// Get simple name (remove package if present)
-			int lastDot= typeName.lastIndexOf('.');
+			int lastDot = typeName.lastIndexOf('.');
 			return lastDot >= 0 ? typeName.substring(lastDot + 1) : typeName;
 		}
 		return null;
 	}
 
 	@Override
-	protected
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		Annotation minv= junitHolder.getAnnotation();
-		String[] categoryNames= junitHolder.getValue().split(",");
-		
-		// Determine if annotation is on a method or class and get the appropriate ListRewrite
-		ListRewrite listRewrite= null;
-		MethodDeclaration method= ASTNodes.getParent(minv, MethodDeclaration.class);
-		TypeDeclaration type= ASTNodes.getParent(minv, TypeDeclaration.class);
-		
+		Annotation minv = junitHolder.getAnnotation();
+		String[] categoryNames = junitHolder.getValue().split(",");
+
+		// Determine if annotation is on a method or class and get the appropriate
+		// ListRewrite
+		ListRewrite listRewrite = null;
+		MethodDeclaration method = ASTNodes.getParent(minv, MethodDeclaration.class);
+		TypeDeclaration type = ASTNodes.getParent(minv, TypeDeclaration.class);
+
 		if (method != null) {
-			listRewrite= rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+			listRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
 		} else if (type != null) {
-			listRewrite= rewriter.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
+			listRewrite = rewriter.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
 		}
-		
+
 		if (listRewrite != null) {
 			// Create @Tag annotation for each category
 			for (String categoryName : categoryNames) {
-				SingleMemberAnnotation tagAnnotation= ast.newSingleMemberAnnotation();
+				SingleMemberAnnotation tagAnnotation = ast.newSingleMemberAnnotation();
 				tagAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TAG));
-				
-				StringLiteral tagValue= ast.newStringLiteral();
+
+				StringLiteral tagValue = ast.newStringLiteral();
 				tagValue.setLiteralValue(categoryName);
 				tagAnnotation.setValue(tagValue);
-				
+
 				// Insert the new annotation before the original one
 				listRewrite.insertBefore(tagAnnotation, minv, group);
 			}
-			
+
 			// Remove the original @Category annotation
 			listRewrite.remove(minv, group);
 		}
-		
+
 		// Update imports
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TAG);
 		importRewriter.removeImport(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY);
 	}
-	
+
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

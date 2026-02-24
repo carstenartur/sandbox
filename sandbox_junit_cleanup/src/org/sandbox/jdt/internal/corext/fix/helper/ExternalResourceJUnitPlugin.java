@@ -54,11 +54,13 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
- * Plugin to migrate JUnit 4 ExternalResource classes to JUnit 5 lifecycle callbacks.
+ * Plugin to migrate JUnit 4 ExternalResource classes to JUnit 5 lifecycle
+ * callbacks.
  * <p>
- * Transforms classes that extend {@code org.junit.rules.ExternalResource} to implement
- * JUnit 5 callback interfaces ({@code BeforeEachCallback}, {@code AfterEachCallback}).
- * Renames lifecycle methods (before/after) to match JUnit 5 naming conventions.
+ * Transforms classes that extend {@code org.junit.rules.ExternalResource} to
+ * implement JUnit 5 callback interfaces ({@code BeforeEachCallback},
+ * {@code AfterEachCallback}). Renames lifecycle methods (before/after) to match
+ * JUnit 5 naming conventions.
  * </p>
  */
 public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
@@ -66,21 +68,21 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 		HelperVisitorFactory.callTypeDeclarationVisitor(ORG_JUNIT_RULES_EXTERNAL_RESOURCE, compilationUnit, dataHolder,
-				nodesprocessed, (visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder,nodesprocessed));
+				nodesprocessed,
+				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder, nodesprocessed));
 	}
 
 	/**
-	 * Processes a type declaration that extends ExternalResource.
-	 * Only processes types that either:
-	 * - Directly extend ExternalResource, or
-	 * - Indirectly extend ExternalResource AND have before()/after() lifecycle methods
+	 * Processes a type declaration that extends ExternalResource. Only processes
+	 * types that either: - Directly extend ExternalResource, or - Indirectly extend
+	 * ExternalResource AND have before()/after() lifecycle methods
 	 * 
-	 * @param fixcore the cleanup fix core
-	 * @param operations the set of operations to add to
-	 * @param node the type declaration found
-	 * @param dataHolder the reference holder for data
+	 * @param fixcore        the cleanup fix core
+	 * @param operations     the set of operations to add to
+	 * @param node           the type declaration found
+	 * @param dataHolder     the reference holder for data
 	 * @param nodesprocessed set of already processed nodes
 	 * @return false to continue visiting
 	 */
@@ -90,7 +92,7 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		if (nodesprocessed.contains(node)) {
 			return false;
 		}
-		
+
 		// For indirect subclasses, only process if they have lifecycle methods
 		if (!ExternalResourceRefactorer.isDirectlyExtendingExternalResource(node.resolveBinding())) {
 			boolean hasLifecycleMethod = false;
@@ -105,9 +107,9 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				return false;
 			}
 		}
-		
+
 		nodesprocessed.add(node);
-		JunitHolder mh= new JunitHolder();
+		JunitHolder mh = new JunitHolder();
 		mh.setMinv(node);
 		dataHolder.put(dataHolder.size(), mh);
 		operations.add(fixcore.rewrite(dataHolder));
@@ -115,13 +117,12 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 	}
 
 	@Override
-	protected
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		TypeDeclaration node= junitHolder.getTypeDeclaration();
+		TypeDeclaration node = junitHolder.getTypeDeclaration();
 		ExternalResourceRefactorer.modifyExternalResourceClass(node, null, false, rewriter, ast, group, importRewriter);
 	}
-	
+
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {

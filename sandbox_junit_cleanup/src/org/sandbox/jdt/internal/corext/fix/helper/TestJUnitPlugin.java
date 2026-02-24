@@ -32,14 +32,23 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 /**
  * Migrates JUnit 4 @Test annotations to JUnit 5 @Test.
  * 
- * <p>This plugin only handles marker annotations (without expected/timeout attributes).
- * @Test annotations with expected or timeout are handled by separate plugins.</p>
+ * <p>
+ * This plugin only handles marker annotations (without expected/timeout
+ * attributes).
  * 
- * <p>Uses TriggerPattern-based declarative architecture
- * to reduce boilerplate.</p>
+ * @Test annotations with expected or timeout are handled by separate plugins.
+ *       </p>
  * 
- * <p><b>Before:</b></p>
- * <pre>
+ *       <p>
+ *       Uses TriggerPattern-based declarative architecture to reduce
+ *       boilerplate.
+ *       </p>
+ * 
+ *       <p>
+ *       <b>Before:</b>
+ *       </p>
+ * 
+ *       <pre>
  * import org.junit.Test;
  * 
  * public class MyTest {
@@ -48,8 +57,11 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * }
  * </pre>
  * 
- * <p><b>After:</b></p>
- * <pre>
+ *       <p>
+ *       <b>After:</b>
+ *       </p>
+ * 
+ *       <pre>
  * import org.junit.jupiter.api.Test;
  * 
  * public class MyTest {
@@ -60,14 +72,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * 
  * @since 1.3.0
  */
-@CleanupPattern(
-    value = "@Test",
-    kind = PatternKind.ANNOTATION,
-    qualifiedType = ORG_JUNIT_TEST,
-    cleanupId = "cleanup.junit.test",
-    description = "Migrate @Test to JUnit 5",
-    displayName = "JUnit 4 @Test → JUnit 5 @Test"
-)
+@CleanupPattern(value = "@Test", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_TEST, cleanupId = "cleanup.junit.test", description = "Migrate @Test to JUnit 5", displayName = "JUnit 4 @Test → JUnit 5 @Test")
 public class TestJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
@@ -79,10 +84,10 @@ public class TestJUnitPlugin extends TriggerPatternCleanupPlugin {
 	}
 
 	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, JunitHolder junitHolder) {
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder junitHolder) {
 		Annotation annotation = junitHolder.getAnnotation();
-		MarkerAnnotation newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
+		MarkerAnnotation newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
 		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);
 		importRewriter.removeImport(ORG_JUNIT_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
@@ -92,12 +97,12 @@ public class TestJUnitPlugin extends TriggerPatternCleanupPlugin {
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-				import org.junit.jupiter.api.Test;
-				"""; //$NON-NLS-1$
+					import org.junit.jupiter.api.Test;
+					"""; //$NON-NLS-1$
 		}
 		return """
-			import org.junit.Test;
-			"""; //$NON-NLS-1$
+				import org.junit.Test;
+				"""; //$NON-NLS-1$
 	}
 
 	@Override

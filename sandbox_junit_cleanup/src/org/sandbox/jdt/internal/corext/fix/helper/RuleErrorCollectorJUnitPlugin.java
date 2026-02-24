@@ -50,10 +50,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 /**
  * Plugin to migrate JUnit 4 ErrorCollector rule to JUnit 5 assertAll.
  * 
- * Transforms:
- * - collector.checkThat(actual, matcher) → () -> assertThat(actual, matcher)
- * - collector.addError(throwable) → () -> { throw throwable; }
- * - collector.checkSucceeds(callable) → () -> callable.call()
+ * Transforms: - collector.checkThat(actual, matcher) → () -> assertThat(actual,
+ * matcher) - collector.addError(throwable) → () -> { throw throwable; } -
+ * collector.checkSucceeds(callable) → () -> callable.call()
  * 
  * All transformations are wrapped in assertAll() per test method.
  */
@@ -63,12 +62,9 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitorFactory.forField()
-			.withAnnotation(ORG_JUNIT_RULE)
-			.ofType(ORG_JUNIT_RULES_ERROR_COLLECTOR)
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
+		HelperVisitorFactory.forField().withAnnotation(ORG_JUNIT_RULE).ofType(ORG_JUNIT_RULES_ERROR_COLLECTOR)
+				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited,
+						aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
 	}
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
@@ -84,8 +80,7 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 			String typeName = node.getType().toString();
 			String simpleTypeName = ORG_JUNIT_RULES_ERROR_COLLECTOR
 					.substring(ORG_JUNIT_RULES_ERROR_COLLECTOR.lastIndexOf('.') + 1);
-			isErrorCollector = simpleTypeName.equals(typeName)
-					|| ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(typeName);
+			isErrorCollector = simpleTypeName.equals(typeName) || ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(typeName);
 		}
 		if (isErrorCollector) {
 			JunitHolder mh = new JunitHolder();
@@ -165,13 +160,14 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 		if (!errorCollectorCalls.isEmpty()) {
 			ErrorCollectorCall firstCall = errorCollectorCalls.get(0);
 			int insertIndex = statements.indexOf(firstCall.statement);
-			rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertAt(assertAllStatement, insertIndex, group);
+			rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertAt(assertAllStatement, insertIndex,
+					group);
 		}
 	}
 
 	private List<ErrorCollectorCall> findErrorCollectorCalls(List<Statement> statements, String fieldName) {
 		List<ErrorCollectorCall> calls = new ArrayList<>();
-		
+
 		// Use ASTVisitor to find all ErrorCollector calls, including nested ones
 		for (Statement stmt : statements) {
 			stmt.accept(new ASTVisitor() {
@@ -182,7 +178,8 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 						SimpleName receiver = (SimpleName) expression;
 						if (fieldName.equals(receiver.getIdentifier())) {
 							String methodName = invocation.getName().getIdentifier();
-							if ("checkThat".equals(methodName) || "addError".equals(methodName) || "checkSucceeds".equals(methodName)) {
+							if ("checkThat".equals(methodName) || "addError".equals(methodName)
+									|| "checkSucceeds".equals(methodName)) {
 								// Find the parent statement that contains this invocation
 								Statement parentStmt = findParentStatement(invocation);
 								if (parentStmt != null) {
@@ -207,7 +204,8 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 		return (Statement) current;
 	}
 
-	private LambdaExpression createLambdaForErrorCollectorCall(ErrorCollectorCall call, AST ast, ImportRewrite importRewriter) {
+	private LambdaExpression createLambdaForErrorCollectorCall(ErrorCollectorCall call, AST ast,
+			ImportRewrite importRewriter) {
 		LambdaExpression lambda = ast.newLambdaExpression();
 		lambda.setParentheses(true);
 
@@ -217,43 +215,43 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 		if ("checkThat".equals(methodName)) {
 			// checkThat(actual, matcher) → () -> assertThat(actual, matcher)
 			// Use expression-body lambda for single-expression case
-			
+
 			// Create assertThat call with the same arguments
 			MethodInvocation assertThatCall = ast.newMethodInvocation();
 			assertThatCall.setName(ast.newSimpleName("assertThat"));
-			
+
 			// Copy arguments
 			for (Object arg : invocation.arguments()) {
 				assertThatCall.arguments().add(ASTNode.copySubtree(ast, (ASTNode) arg));
 			}
-			
+
 			// Set expression body directly (no block)
 			lambda.setBody(assertThatCall);
-			
+
 			// Add Hamcrest imports for assertThat
 			importRewriter.addStaticImport("org.hamcrest.MatcherAssert", "assertThat", false);
 		} else if ("addError".equals(methodName)) {
 			// addError(throwable) → () -> { throw throwable; }
 			// This requires a block body since throw is a statement, not an expression
 			Block lambdaBody = ast.newBlock();
-			
+
 			ThrowStatement throwStmt = ast.newThrowStatement();
 			// The argument is the throwable to throw
 			Expression throwableArg = (Expression) invocation.arguments().get(0);
 			throwStmt.setExpression((Expression) ASTNode.copySubtree(ast, throwableArg));
-			
+
 			lambdaBody.statements().add(throwStmt);
 			lambda.setBody(lambdaBody);
 		} else if ("checkSucceeds".equals(methodName)) {
 			// checkSucceeds(callable) → () -> callable.call()
 			// Use expression-body lambda for single-expression case
-			
+
 			// Create callable.call() invocation
 			Expression callableArg = (Expression) invocation.arguments().get(0);
 			MethodInvocation callInvocation = ast.newMethodInvocation();
 			callInvocation.setExpression((Expression) ASTNode.copySubtree(ast, callableArg));
 			callInvocation.setName(ast.newSimpleName("call"));
-			
+
 			// Set expression body directly (no block)
 			lambda.setBody(callInvocation);
 		}
@@ -268,9 +266,9 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 					import static org.junit.jupiter.api.Assertions.assertAll;
 					import static org.hamcrest.MatcherAssert.assertThat;
 					import static org.hamcrest.CoreMatchers.equalTo;
-					
+
 					import org.junit.jupiter.api.Test;
-					
+
 					public class MyTest {
 						@Test
 						public void testMultipleErrors() {
@@ -288,11 +286,11 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 				import org.junit.Test;
 				import org.junit.rules.ErrorCollector;
 				import static org.hamcrest.CoreMatchers.equalTo;
-				
+
 				public class MyTest {
 					@Rule
 					public ErrorCollector collector = new ErrorCollector();
-					
+
 					@Test
 					public void testMultipleErrors() {
 						collector.checkThat("value1", equalTo("expected1"));

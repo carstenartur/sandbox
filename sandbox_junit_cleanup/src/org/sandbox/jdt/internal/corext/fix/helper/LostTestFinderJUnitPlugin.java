@@ -44,26 +44,24 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 /**
- * Plugin to detect and fix "lost" JUnit 3 tests that were not properly migrated.
- * A method is considered a lost test when:
- * - The class (or its superclasses) contains @Test annotated methods
- * - Method name starts with "test"
- * - No @Test annotation present
- * - Public void signature with no parameters
- * - Not annotated with lifecycle annotations
+ * Plugin to detect and fix "lost" JUnit 3 tests that were not properly
+ * migrated. A method is considered a lost test when: - The class (or its
+ * superclasses) contains @Test annotated methods - Method name starts with
+ * "test" - No @Test annotation present - Public void signature with no
+ * parameters - Not annotated with lifecycle annotations
  */
 public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
-	private static final Set<String> LIFECYCLE_ANNOTATIONS = Set.of(
-			"Before", "After", "BeforeClass", "AfterClass",  // JUnit 4
-			"BeforeEach", "AfterEach", "BeforeAll", "AfterAll",  // JUnit 5
-			"Ignore", "Disabled"  // Skip annotations
+	private static final Set<String> LIFECYCLE_ANNOTATIONS = Set.of("Before", "After", "BeforeClass", "AfterClass", // JUnit
+																													// 4
+			"BeforeEach", "AfterEach", "BeforeAll", "AfterAll", // JUnit 5
+			"Ignore", "Disabled" // Skip annotations
 	);
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		
+
 		// Visit all type declarations to find classes that have @Test methods
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
@@ -79,7 +77,8 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	}
 
 	/**
-	 * Checks if the class or any of its superclasses contains @Test annotated methods
+	 * Checks if the class or any of its superclasses contains @Test annotated
+	 * methods
 	 */
 	private boolean classHasTestMethods(TypeDeclaration typeDecl) {
 		// Check current class methods
@@ -88,7 +87,7 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 				return true;
 			}
 		}
-		
+
 		// Check superclass hierarchy using ITypeBinding
 		ITypeBinding binding = typeDecl.resolveBinding();
 		if (binding != null) {
@@ -102,7 +101,7 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 				superclass = superclass.getSuperclass();
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -114,9 +113,7 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			if (modifier instanceof Annotation) {
 				Annotation ann = (Annotation) modifier;
 				String name = ann.getTypeName().getFullyQualifiedName();
-				if (name.equals("Test") || 
-					name.equals("org.junit.Test") || 
-					name.equals("org.junit.jupiter.api.Test")) {
+				if (name.equals("Test") || name.equals("org.junit.Test") || name.equals("org.junit.jupiter.api.Test")) {
 					return true;
 				}
 			}
@@ -130,8 +127,7 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	private boolean hasTestAnnotationOnBinding(IMethodBinding methodBinding) {
 		for (org.eclipse.jdt.core.dom.IAnnotationBinding annotation : methodBinding.getAnnotations()) {
 			String annotationName = annotation.getAnnotationType().getQualifiedName();
-			if (annotationName.equals("org.junit.Test") || 
-				annotationName.equals("org.junit.jupiter.api.Test")) {
+			if (annotationName.equals("org.junit.Test") || annotationName.equals("org.junit.jupiter.api.Test")) {
 				return true;
 			}
 		}
@@ -143,11 +139,11 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	 */
 	private void findLostTestMethods(JUnitCleanUpFixCore fixcore, TypeDeclaration typeDecl,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		
+
 		for (MethodDeclaration method : typeDecl.getMethods()) {
 			if (isLostTestMethod(method) && !nodesprocessed.contains(method)) {
 				nodesprocessed.add(method);
-				
+
 				ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 				JunitHolder mh = new JunitHolder();
 				mh.setMinv(method);
@@ -166,18 +162,19 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 		if (!methodName.startsWith("test")) {
 			return false;
 		}
-		
+
 		// Must not already have @Test annotation
 		if (hasTestAnnotation(method)) {
 			return false;
 		}
-		
+
 		// Must be public void with no parameters
 		if (!Modifier.isPublic(method.getModifiers())) {
 			return false;
 		}
-		
-		// Check for void return type using bindings when available, with a safe AST fallback
+
+		// Check for void return type using bindings when available, with a safe AST
+		// fallback
 		org.eclipse.jdt.core.dom.ITypeBinding returnBinding = null;
 		org.eclipse.jdt.core.dom.IMethodBinding methodBinding = method.resolveBinding();
 		if (methodBinding != null) {
@@ -201,25 +198,27 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 					return false;
 				}
 			} else {
-				// Only PrimitiveType with VOID is valid - any other return type is not a lost test
+				// Only PrimitiveType with VOID is valid - any other return type is not a lost
+				// test
 				return false;
 			}
 		}
-		
+
 		if (!method.parameters().isEmpty()) {
 			return false;
 		}
-		
+
 		// Must not have lifecycle annotations
 		if (hasLifecycleAnnotation(method)) {
 			return false;
 		}
-		
+
 		return true;
 	}
 
 	/**
-	 * Checks if a method has a lifecycle annotation that would prevent it from being a test
+	 * Checks if a method has a lifecycle annotation that would prevent it from
+	 * being a test
 	 */
 	private boolean hasLifecycleAnnotation(MethodDeclaration method) {
 		for (Object modifier : method.modifiers()) {
@@ -240,12 +239,13 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 	}
 
 	/**
-	 * Determines which @Test annotation to add based on imports in the compilation unit
+	 * Determines which @Test annotation to add based on imports in the compilation
+	 * unit
 	 */
 	private boolean shouldUseJUnit5(CompilationUnit compilationUnit) {
-		final boolean[] hasJUnit5Import = {false};
-		final boolean[] hasJUnit4Import = {false};
-		
+		final boolean[] hasJUnit5Import = { false };
+		final boolean[] hasJUnit4Import = { false };
+
 		// Check imports
 		List<?> imports = compilationUnit.imports();
 		for (Object obj : imports) {
@@ -260,7 +260,7 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 				}
 			}
 		}
-		
+
 		// Prefer JUnit 5 if both are imported or neither
 		return hasJUnit5Import[0] || !hasJUnit4Import[0];
 	}
@@ -270,15 +270,15 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			JunitHolder junitHolder) {
 		MethodDeclaration method = (MethodDeclaration) junitHolder.getMinv();
 		CompilationUnit cu = (CompilationUnit) method.getRoot();
-		
+
 		// Determine which @Test to use
 		boolean useJUnit5 = shouldUseJUnit5(cu);
-		
+
 		// Add @Test annotation
 		ListRewrite modifiers = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
-		MarkerAnnotation testAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
+		MarkerAnnotation testAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
 		modifiers.insertFirst(testAnnotation, group);
-		
+
 		// Add import
 		if (useJUnit5) {
 			importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);

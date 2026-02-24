@@ -68,7 +68,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
 		HelperVisitorFactory.callTypeDeclarationVisitor("junit.framework.TestCase", compilationUnit, dataHolder,
 				nodesprocessed,
 				(visited, aholder) -> processFoundNode(fixcore, operations, visited, aholder, nodesprocessed));
@@ -90,7 +90,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			}
 
 			nodesprocessed.add(node);
-			JunitHolder mh= new JunitHolder();
+			JunitHolder mh = new JunitHolder();
 			mh.setMinv(node);
 			dataHolder.put(dataHolder.size(), mh);
 			operations.add(fixcore.rewrite(dataHolder));
@@ -99,113 +99,111 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 	}
 
 	private boolean isTestMethod(MethodDeclaration method) {
-	    // Exclude constructors
-	    if (method.isConstructor()) {
-	        return false;
-	    }
+		// Exclude constructors
+		if (method.isConstructor()) {
+			return false;
+		}
 
-	    String methodName = method.getName().getIdentifier();
+		String methodName = method.getName().getIdentifier();
 
-	    // Check for typical JUnit 3 test methods
-	    if (methodName.startsWith("test")) {
-	        return true;
-	    }
+		// Check for typical JUnit 3 test methods
+		if (methodName.startsWith("test")) {
+			return true;
+		}
 
-	    // Check for alternative naming schemes
-	    if (methodName.endsWith("_test") || methodName.startsWith("should") || methodName.contains("Test")) {
-	        return true;
-	    }
+		// Check for alternative naming schemes
+		if (methodName.endsWith("_test") || methodName.startsWith("should") || methodName.contains("Test")) {
+			return true;
+		}
 
-	    // Additional conditions: public, void, no parameters
-	    Type returnType = method.getReturnType2();
-	    return Modifier.isPublic(method.getModifiers()) && returnType != null
-	            && "void".equals(returnType.toString()) && method.parameters().isEmpty();
+		// Additional conditions: public, void, no parameters
+		Type returnType = method.getReturnType2();
+		return Modifier.isPublic(method.getModifiers()) && returnType != null && "void".equals(returnType.toString())
+				&& method.parameters().isEmpty();
 	}
 
-
 	@Override
-	protected
-	void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-		TypeDeclaration node= junitHolder.getTypeDeclaration();
+		TypeDeclaration node = junitHolder.getTypeDeclaration();
 		// Remove `extends TestCase`
-		Type superclass= node.getSuperclassType();
+		Type superclass = node.getSuperclassType();
 		if (superclass != null && "TestCase".equals(superclass.toString())) {
 			rewriter.remove(node.getSuperclassType(), group);
 		}
 
 		for (MethodDeclaration method : node.getMethods()) {
-		    if (isSetupMethod(method)) {
-		        convertToAnnotation(method, "BeforeEach", importRewriter, rewriter, ast, group);
-		    } else if (isTeardownMethod(method)) {
-		        convertToAnnotation(method, "AfterEach", importRewriter, rewriter, ast, group);
-		    } else if (isTestMethod(method)) {
-		        addAnnotationToMethod(method, "Test", importRewriter, rewriter, ast, group);
-		    }
+			if (isSetupMethod(method)) {
+				convertToAnnotation(method, "BeforeEach", importRewriter, rewriter, ast, group);
+			} else if (isTeardownMethod(method)) {
+				convertToAnnotation(method, "AfterEach", importRewriter, rewriter, ast, group);
+			} else if (isTestMethod(method)) {
+				addAnnotationToMethod(method, "Test", importRewriter, rewriter, ast, group);
+			}
 
-		    // Process assertions and assumptions in all relevant methods
-		    if (method.getBody() != null) {
-		        rewriteAssertionsAndAssumptions(method, rewriter, ast, group,importRewriter);
-		    }
+			// Process assertions and assumptions in all relevant methods
+			if (method.getBody() != null) {
+				rewriteAssertionsAndAssumptions(method, rewriter, ast, group, importRewriter);
+			}
 		}
 
 	}
 
-	private void rewriteAssertionsAndAssumptions(MethodDeclaration method, ASTRewrite rewriter, AST ast, TextEditGroup group, ImportRewrite importRewriter) {
-	    method.accept(new ASTVisitor() {
-	        @Override
-	        public boolean visit(MethodInvocation node) {
-	            // Check if the method binding can be resolved
-	            if (node.resolveMethodBinding() != null) {
-	                String fullyQualifiedName = node.resolveMethodBinding().getDeclaringClass().getQualifiedName();
+	private void rewriteAssertionsAndAssumptions(MethodDeclaration method, ASTRewrite rewriter, AST ast,
+			TextEditGroup group, ImportRewrite importRewriter) {
+		method.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodInvocation node) {
+				// Check if the method binding can be resolved
+				if (node.resolveMethodBinding() != null) {
+					String fullyQualifiedName = node.resolveMethodBinding().getDeclaringClass().getQualifiedName();
 
-	                if ("junit.framework.Assert".equals(fullyQualifiedName) || "junit.framework.Assume".equals(fullyQualifiedName)) {
-	                    reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
+					if ("junit.framework.Assert".equals(fullyQualifiedName)
+							|| "junit.framework.Assume".equals(fullyQualifiedName)) {
+						reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
 
-	                    // Update qualifier (e.g., Assert.assertEquals -> Assertions.assertEquals)
-	                    rewriter.set(node.getExpression(), SimpleName.IDENTIFIER_PROPERTY, "Assertions", group);
+						// Update qualifier (e.g., Assert.assertEquals -> Assertions.assertEquals)
+						rewriter.set(node.getExpression(), SimpleName.IDENTIFIER_PROPERTY, "Assertions", group);
 
-	                    // Update imports
-	                    addImportForAssertion(node.getName().getIdentifier(), importRewriter);
-	                }
-	            }
+						// Update imports
+						addImportForAssertion(node.getName().getIdentifier(), importRewriter);
+					}
+				}
 
-	            return super.visit(node);
-	        }
-	    });
+				return super.visit(node);
+			}
+		});
 	}
-
 
 	private void addImportForAssertion(String assertionMethod, ImportRewrite importRewriter) {
-	    String importToAdd = null;
+		String importToAdd = null;
 
-	    switch (assertionMethod) {
-	        case "assertEquals":
-	        case "assertArrayEquals":
-	        case "assertTrue":
-	        case "assertFalse":
-	        case "assertNull":
-	        case "assertNotNull":
-	            importToAdd = ORG_JUNIT_JUPITER_API_ASSERTIONS;
-	            break;
-	        case "assumeTrue":
-	        case "assumeFalse":
-	        case "assumeNotNull":
-	            importToAdd = ORG_JUNIT_JUPITER_API_ASSUMPTIONS;
-	            break;
-	        case "assertThat":
-	            importToAdd = "org.hamcrest.MatcherAssert";
-	            break;
-	        default:
-	            break;
-	    }
+		switch (assertionMethod) {
+		case "assertEquals":
+		case "assertArrayEquals":
+		case "assertTrue":
+		case "assertFalse":
+		case "assertNull":
+		case "assertNotNull":
+			importToAdd = ORG_JUNIT_JUPITER_API_ASSERTIONS;
+			break;
+		case "assumeTrue":
+		case "assumeFalse":
+		case "assumeNotNull":
+			importToAdd = ORG_JUNIT_JUPITER_API_ASSUMPTIONS;
+			break;
+		case "assertThat":
+			importToAdd = ORG_HAMCREST_MATCHER_ASSERT;
+			break;
+		default:
+			break;
+		}
 
-	    if (importToAdd != null) {
-	        importRewriter.addImport(importToAdd);
-	    }
+		if (importToAdd != null) {
+			importRewriter.addImport(importToAdd);
+		}
 	}
 
-	
 	private boolean isSetupMethod(MethodDeclaration method) {
 		return "setUp".equals(method.getName().getIdentifier()) && method.parameters().isEmpty()
 				&& method.getReturnType2() == null;
@@ -218,16 +216,16 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 	private void convertToAnnotation(MethodDeclaration method, String annotation, ImportRewrite importRewrite,
 			ASTRewrite rewrite, AST ast, TextEditGroup group) {
-		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
-		MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, annotation);
+		ListRewrite modifiers = rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+		MarkerAnnotation newMarkerAnnotation = AnnotationUtils.createMarkerAnnotation(ast, annotation);
 		modifiers.insertFirst(newMarkerAnnotation, group);
 		importRewrite.addImport("org.junit.jupiter.api." + annotation);
 	}
 
 	private void addAnnotationToMethod(MethodDeclaration method, String annotation, ImportRewrite importRewrite,
 			ASTRewrite rewrite, AST ast, TextEditGroup group) {
-		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
-		MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, annotation);
+		ListRewrite modifiers = rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+		MarkerAnnotation newMarkerAnnotation = AnnotationUtils.createMarkerAnnotation(ast, annotation);
 		modifiers.insertFirst(newMarkerAnnotation, group);
 		importRewrite.addImport("org.junit.jupiter.api." + annotation);
 	}

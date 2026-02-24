@@ -35,15 +35,22 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 /**
  * Migrates JUnit 4 @Ignore annotations to JUnit 5 @Disabled.
  * 
- * <p>This plugin handles both marker and single-member annotations, preserving
- * the ignore reason when present.</p>
+ * <p>
+ * This plugin handles both marker and single-member annotations, preserving the
+ * ignore reason when present.
+ * </p>
  * 
- * <p>Uses the TriggerPattern-based declarative architecture.
- * Note: @RewriteRule cannot be used here because we need to handle three different
- * annotation patterns (marker, single-member, and normal), so we keep the custom
- * process2Rewrite() implementation.</p>
+ * <p>
+ * Uses the TriggerPattern-based declarative architecture. Note: @RewriteRule
+ * cannot be used here because we need to handle three different annotation
+ * patterns (marker, single-member, and normal), so we keep the custom
+ * process2Rewrite() implementation.
+ * </p>
  * 
- * <p><b>Before:</b></p>
+ * <p>
+ * <b>Before:</b>
+ * </p>
+ * 
  * <pre>
  * import org.junit.Ignore;
  * 
@@ -58,7 +65,10 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * }
  * </pre>
  * 
- * <p><b>After:</b></p>
+ * <p>
+ * <b>After:</b>
+ * </p>
+ * 
  * <pre>
  * import org.junit.jupiter.api.Disabled;
  * 
@@ -75,35 +85,27 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * 
  * @since 1.3.0
  */
-@CleanupPattern(
-    value = "@Ignore",
-    kind = PatternKind.ANNOTATION,
-    qualifiedType = ORG_JUNIT_IGNORE,
-    cleanupId = "cleanup.junit.ignore",
-    description = "Migrate @Ignore to @Disabled",
-    displayName = "JUnit 4 @Ignore → JUnit 5 @Disabled"
-)
+@CleanupPattern(value = "@Ignore", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_IGNORE, cleanupId = "cleanup.junit.ignore", description = "Migrate @Ignore to @Disabled", displayName = "JUnit 4 @Ignore → JUnit 5 @Disabled")
 public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	protected List<Pattern> getPatterns() {
 		// Need to explicitly match all three annotation types
 		return List.of(
-			// Match @Ignore (MarkerAnnotation)
-			new Pattern("@Ignore", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),
-			// Match @Ignore("reason") (SingleMemberAnnotation) 
-			new Pattern("@Ignore($value)", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),
-			// Match @Ignore(value="reason") (NormalAnnotation)
-			new Pattern("@Ignore(value=$value)", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE)
-		);
+				// Match @Ignore (MarkerAnnotation)
+				new Pattern("@Ignore", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),
+				// Match @Ignore("reason") (SingleMemberAnnotation)
+				new Pattern("@Ignore($value)", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),
+				// Match @Ignore(value="reason") (NormalAnnotation)
+				new Pattern("@Ignore(value=$value)", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE));
 	}
 
 	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, JunitHolder junitHolder) {
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder junitHolder) {
 		Annotation annotation = junitHolder.getAnnotation();
 		Annotation newAnnotation;
-		
+
 		// Preserve ignore reason if present
 		if (annotation instanceof SingleMemberAnnotation) {
 			SingleMemberAnnotation oldAnnotation = (SingleMemberAnnotation) annotation;
@@ -117,7 +119,7 @@ public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 			// Convert to SingleMemberAnnotation for @Disabled
 			org.eclipse.jdt.core.dom.NormalAnnotation oldAnnotation = (org.eclipse.jdt.core.dom.NormalAnnotation) annotation;
 			java.util.List<org.eclipse.jdt.core.dom.MemberValuePair> values = oldAnnotation.values();
-			
+
 			// Find the "value" member specifically
 			org.eclipse.jdt.core.dom.MemberValuePair valuePair = null;
 			for (org.eclipse.jdt.core.dom.MemberValuePair pair : values) {
@@ -126,7 +128,7 @@ public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 					break;
 				}
 			}
-			
+
 			if (valuePair != null) {
 				// If there's a value attribute, extract it and create SingleMemberAnnotation
 				SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();
@@ -135,15 +137,15 @@ public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 				newAnnotation = newSingleMemberAnnotation;
 			} else {
 				// No value, treat as marker
-				MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);
+				MarkerAnnotation newMarkerAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);
 				newAnnotation = newMarkerAnnotation;
 			}
 		} else {
 			// MarkerAnnotation - no reason to preserve
-			MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);
+			MarkerAnnotation newMarkerAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);
 			newAnnotation = newMarkerAnnotation;
 		}
-		
+
 		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);
 		importRewriter.removeImport(ORG_JUNIT_IGNORE);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);
@@ -153,20 +155,20 @@ public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-				@Disabled("not implemented")
+					@Disabled("not implemented")
+					@Test
+					public void test() {
+						fail("Not yet implemented");
+					}
+					"""; //$NON-NLS-1$
+		}
+		return """
+				@Ignore("not implemented")
 				@Test
 				public void test() {
 					fail("Not yet implemented");
 				}
 				"""; //$NON-NLS-1$
-		}
-		return """
-			@Ignore("not implemented")
-			@Test
-			public void test() {
-				fail("Not yet implemented");
-			}
-			"""; //$NON-NLS-1$
 	}
 
 	@Override

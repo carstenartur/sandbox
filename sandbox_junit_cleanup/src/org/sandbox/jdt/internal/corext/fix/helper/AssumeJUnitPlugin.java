@@ -34,17 +34,22 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlu
 /**
  * Migrates JUnit 4 Assume calls to JUnit 5 Assumptions.
  * 
- * <p>Special handling:</p>
+ * <p>
+ * Special handling:
+ * </p>
  * <ul>
- *   <li>assumeThat with Hamcrest → org.hamcrest.junit.MatcherAssume.assumeThat</li>
- *   <li>assumeThat without Hamcrest → org.junit.jupiter.api.Assumptions.assumeThat</li>
- *   <li>Other assumptions → JUnit 5 Assumptions with parameter reordering</li>
+ * <li>assumeThat with Hamcrest →
+ * org.hamcrest.junit.MatcherAssume.assumeThat</li>
+ * <li>assumeThat without Hamcrest →
+ * org.junit.jupiter.api.Assumptions.assumeThat</li>
+ * <li>Other assumptions → JUnit 5 Assumptions with parameter reordering</li>
  * </ul>
  */
 public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 
 	// Assume-specific method sets (different from assertion methods)
-	private static final Set<String> MULTI_PARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull", "assumeThat");
+	private static final Set<String> MULTI_PARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull",
+			"assumeThat");
 	private static final Set<String> ONEPARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull");
 	private static final Set<String> ALL_ASSUMPTION_METHODS = Stream.of(MULTI_PARAM_ASSUMPTIONS, ONEPARAM_ASSUMPTIONS)
 			.flatMap(Set::stream).collect(Collectors.toSet());
@@ -77,19 +82,19 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 	@Override
 	protected void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, MethodInvocation minv) {
-		
-		if ("assumeThat".equals(minv.getName().getIdentifier()) && isJUnitAssume(minv)) {
+
+		if (METHOD_ASSUME_THAT.equals(minv.getName().getIdentifier()) && isJUnitAssume(minv)) {
 			// Special handling for assumeThat - check if using Hamcrest matchers
 			if (usesHamcrestMatcher(minv)) {
 				// Use Hamcrest's MatcherAssume for Hamcrest matchers
-				importRewriter.addStaticImport("org.hamcrest.junit.MatcherAssume", "assumeThat", true);
+				importRewriter.addStaticImport(ORG_HAMCREST_JUNIT_MATCHER_ASSUME, METHOD_ASSUME_THAT, true);
 			} else {
 				// Use JUnit Jupiter's Assumptions for non-Hamcrest assumeThat
-				importRewriter.addStaticImport("org.junit.jupiter.api.Assumptions", "assumeThat", true);
+				importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, METHOD_ASSUME_THAT, true);
 			}
-			importRewriter.removeStaticImport("org.junit.Assume.assumeThat");
+			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + "." + METHOD_ASSUME_THAT);
 			MethodInvocation newAssumeThatCall = ast.newMethodInvocation();
-			newAssumeThatCall.setName(ast.newSimpleName("assumeThat"));
+			newAssumeThatCall.setName(ast.newSimpleName(METHOD_ASSUME_THAT));
 			for (Object arg : minv.arguments()) {
 				newAssumeThatCall.arguments().add(rewriter.createCopyTarget((org.eclipse.jdt.core.dom.ASTNode) arg));
 			}
@@ -105,9 +110,9 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 	@Override
 	protected void processImportDeclaration(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, ImportDeclaration importDecl) {
-		
+
 		String importName = importDecl.getName().getFullyQualifiedName();
-		
+
 		// Special handling for org.junit.Assume imports when using Hamcrest
 		if (importDecl.isStatic()) {
 			// Handle static imports
@@ -121,11 +126,13 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 				// Specific static import: import static org.junit.Assume.assumeThat
 				if (importName.startsWith(ORG_JUNIT_ASSUME + ".")) {
 					String methodName = importName.substring(ORG_JUNIT_ASSUME.length() + 1);
-					// Remove the JUnit 4 static import - the method handler will add the correct one
+					// Remove the JUnit 4 static import - the method handler will add the correct
+					// one
 					importRewriter.removeStaticImport(importName);
-					// For assumeThat, the processMethodInvocation will add the correct import (Hamcrest or JUnit 5)
+					// For assumeThat, the processMethodInvocation will add the correct import
+					// (Hamcrest or JUnit 5)
 					// For other methods, add JUnit 5 static import
-					if (!"assumeThat".equals(methodName)) {
+					if (!METHOD_ASSUME_THAT.equals(methodName)) {
 						importRewriter.addStaticImport(getTargetClass(), methodName, false);
 					}
 				}
@@ -135,14 +142,16 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 			if (ORG_JUNIT_ASSUME.equals(importName)) {
 				// Always remove the JUnit 4 import
 				importRewriter.removeImport(ORG_JUNIT_ASSUME);
-				// Only add JUnit 5 Assumptions import if needed (will be added by processMethodInvocation for non-Hamcrest methods)
+				// Only add JUnit 5 Assumptions import if needed (will be added by
+				// processMethodInvocation for non-Hamcrest methods)
 				// Don't unconditionally add it here, as Hamcrest-only usage doesn't need it
 			}
 		}
 	}
 
 	@Override
-	protected void reorderMessageParameter(TextEditGroup group, ASTRewrite rewriter, MethodInvocation methodInvocation) {
+	protected void reorderMessageParameter(TextEditGroup group, ASTRewrite rewriter,
+			MethodInvocation methodInvocation) {
 		// Use specific parameter sets for assumptions
 		reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSUMPTIONS, MULTI_PARAM_ASSUMPTIONS);
 	}
@@ -159,8 +168,8 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 	}
 
 	/**
-	 * Checks if assumeThat is being used with Hamcrest matchers.
-	 * Hamcrest's assumeThat has a Matcher parameter, identified by checking if any parameter
+	 * Checks if assumeThat is being used with Hamcrest matchers. Hamcrest's
+	 * assumeThat has a Matcher parameter, identified by checking if any parameter
 	 * implements org.hamcrest.Matcher interface.
 	 * 
 	 * @param minv the method invocation to check
@@ -170,7 +179,7 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 		if (minv.arguments().isEmpty()) {
 			return false;
 		}
-		
+
 		// Check each argument to see if it's a Hamcrest Matcher
 		for (Object arg : minv.arguments()) {
 			if (arg instanceof Expression) {
@@ -185,7 +194,8 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 	}
 
 	/**
-	 * Recursively checks if a type binding implements org.hamcrest.Matcher interface.
+	 * Recursively checks if a type binding implements org.hamcrest.Matcher
+	 * interface.
 	 * 
 	 * @param typeBinding the type binding to check
 	 * @return true if the type implements Matcher
@@ -194,29 +204,29 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 		if (typeBinding == null) {
 			return false;
 		}
-		
+
 		// Check if the type itself is Matcher
 		ITypeBinding erasure = typeBinding.getErasure();
 		if (erasure != null) {
 			String qualifiedName = erasure.getQualifiedName();
-			if ("org.hamcrest.Matcher".equals(qualifiedName)) {
+			if (ORG_HAMCREST_MATCHER.equals(qualifiedName)) {
 				return true;
 			}
 		}
-		
+
 		// Check interfaces
 		for (ITypeBinding interfaceBinding : typeBinding.getInterfaces()) {
 			if (implementsHamcrestMatcher(interfaceBinding)) {
 				return true;
 			}
 		}
-		
+
 		// Check superclass
 		ITypeBinding superclass = typeBinding.getSuperclass();
 		if (superclass != null && implementsHamcrestMatcher(superclass)) {
 			return true;
 		}
-		
+
 		return false;
 	}
 

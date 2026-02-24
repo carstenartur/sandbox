@@ -38,12 +38,11 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 /**
  * Optimizes JUnit assumptions by removing unnecessary negations.
  * 
- * Examples:
- * - assumeTrue(!condition) → assumeFalse(condition)
- * - assumeFalse(!condition) → assumeTrue(condition)
+ * Examples: - assumeTrue(!condition) → assumeFalse(condition) -
+ * assumeFalse(!condition) → assumeTrue(condition)
  * 
- * Note: JUnit 5 Assumptions does not have assumeNull/assumeNotNull,
- * so those optimizations are not applicable.
+ * Note: JUnit 5 Assumptions does not have assumeNull/assumeNotNull, so those
+ * optimizations are not applicable.
  */
 public class AssumeOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
@@ -51,38 +50,39 @@ public class AssumeOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		
+
 		// NOTE: We only process JUnit 5 (Assumptions) calls here.
 		// JUnit 4 (Assume) calls are handled by AssumeJUnitPlugin which does migration.
 		// Processing JUnit 4 here would conflict with the migration rewrites.
-		
+
 		// Find assumeTrue and assumeFalse calls in JUnit 5 only
 		HelperVisitorFactory.forMethodCalls(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, Set.of("assumeTrue", "assumeFalse"))
-			.in(compilationUnit)
-			.excluding(nodesprocessed)
-			.processEach(dataHolder, (visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
+				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder,
+						(visited, aholder) -> processAssumption(fixcore, operations, visited, aholder));
 	}
 
 	private boolean processAssumption(JUnitCleanUpFixCore fixcore,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, ASTNode node,
 			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		
+
 		if (!(node instanceof MethodInvocation)) {
 			return false;
 		}
-		
+
 		MethodInvocation mi = (MethodInvocation) node;
 		List<?> arguments = mi.arguments();
-		
+
 		if (arguments.isEmpty()) {
 			return false;
 		}
-		
-		// Get the condition expression (first or last argument depending on message presence)
+
+		// Get the condition expression (first or last argument depending on message
+		// presence)
 		Expression condition = null;
-		
+
 		// For assumptions, the condition can be in different positions
-		// assumeTrue(condition) or assumeTrue(condition, message) or assumeTrue(condition, messageSupplier)
+		// assumeTrue(condition) or assumeTrue(condition, message) or
+		// assumeTrue(condition, messageSupplier)
 		for (Object arg : arguments) {
 			Expression expr = (Expression) arg;
 			// Check if this is a negated condition
@@ -94,11 +94,11 @@ public class AssumeOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 				}
 			}
 		}
-		
+
 		if (condition == null) {
 			return false;
 		}
-		
+
 		return addStandardRewriteOperation(fixcore, operations, node, dataHolder);
 	}
 
@@ -108,32 +108,32 @@ public class AssumeOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		if (!(junitHolder.getMinv() instanceof MethodInvocation)) {
 			return;
 		}
-		
+
 		MethodInvocation mi = junitHolder.getMethodInvocation();
 		List<?> arguments = mi.arguments();
-		
+
 		if (arguments.isEmpty()) {
 			return;
 		}
-		
+
 		// Determine if this is assumeTrue or assumeFalse
 		String methodName = mi.getName().getIdentifier();
-		
+
 		// Find the negated condition
 		for (int i = 0; i < arguments.size(); i++) {
 			Expression arg = (Expression) arguments.get(i);
-			
+
 			if (arg instanceof PrefixExpression) {
 				PrefixExpression prefix = (PrefixExpression) arg;
 				if (prefix.getOperator() == PrefixExpression.Operator.NOT) {
 					// Flip assumeTrue/assumeFalse and remove negation
 					String newMethodName = "assumeTrue".equals(methodName) ? "assumeFalse" : "assumeTrue";
 					rewriter.set(mi, MethodInvocation.NAME_PROPERTY, ast.newSimpleName(newMethodName), group);
-					
+
 					// Replace the negated condition with its operand
 					ListRewrite argsRewrite = rewriter.getListRewrite(mi, MethodInvocation.ARGUMENTS_PROPERTY);
 					argsRewrite.replace((ASTNode) arg, rewriter.createCopyTarget(prefix.getOperand()), group);
-					
+
 					// Only process the first negated condition found
 					break;
 				}
