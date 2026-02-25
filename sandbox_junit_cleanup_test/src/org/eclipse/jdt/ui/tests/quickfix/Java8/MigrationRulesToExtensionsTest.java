@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -273,23 +272,9 @@ public class MyTest {
 		}, null);
 	}
 
-	@Disabled("Anonymous ExternalResource migration generates hash-based class names - covered by JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase with JUnitCleanupCases.RuleAnonymousExternalResource")
-	@Test
-	public void migrates_externalResource_anonymous_class() throws CoreException {
-		// This test is disabled because the cleanup generates hash-based class names
-		// for anonymous ExternalResource instances (e.g., Er_5b8b4).
-		// The exact hash depends on the variable name and is tested in
-		// JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase using JUnitCleanupCases.RuleAnonymousExternalResource
-	}
-
-	@Disabled("ClassRule migration generates hash-based class names - covered by JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase with JUnitCleanupCases.RuleNestedExternalResource")
-	@Test
-	public void migrates_classRule_to_static_extension() throws CoreException {
-		// This test is disabled because the cleanup generates hash-based class names
-		// for anonymous ExternalResource instances in ClassRule scenarios.
-		// The exact hash depends on the variable name and is tested in
-		// JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase using JUnitCleanupCases.RuleNestedExternalResource
-	}
+	// Note: Anonymous ExternalResource and ClassRule migrations generate hash-based class names
+	// (e.g., Er_5b8b4) and are tested in JUnitMigrationCleanUpTest.testJUnitCleanupSelectedCase
+	// using JUnitCleanupCases.RuleAnonymousExternalResource and JUnitCleanupCases.RuleNestedExternalResource
 
 	@Test
 	public void migrates_timeout_rule_with_seconds() throws CoreException {
