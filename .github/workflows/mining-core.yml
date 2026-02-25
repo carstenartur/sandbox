@@ -59,10 +59,35 @@ jobs:
             --config .github/refactoring-mining/repos.yml \
             --state .github/refactoring-mining/state.json \
             --sandbox-root . \
-            --batch-size ${{ github.event.inputs.batch_size || '72' }} \
+            --batch-size ${{ github.event.inputs.batch_size || '200' }} \
             --commits-per-request 4 \
             --output docs/mining-report/ \
             ${{ github.event.inputs.llm_provider != '' && format('--llm-provider {0}', github.event.inputs.llm_provider) || '' }}
+
+      - name: Post-run diagnostics
+        if: always()
+        run: |
+          STATS_FILE="docs/mining-report/statistics.json"
+          if [ -f "$STATS_FILE" ]; then
+            API_CALLS=$(python3 -c "import json; d=json.load(open('$STATS_FILE')); print(d.get('runMetadata',{}).get('apiCallsMade',0))" 2>/dev/null || echo "?")
+            DEFERRED=$(python3 -c "import json; d=json.load(open('$STATS_FILE')); print(d.get('runMetadata',{}).get('deferredCommits',0))" 2>/dev/null || echo "?")
+            PROCESSED=$(python3 -c "import json; d=json.load(open('$STATS_FILE')); print(d.get('totalProcessed',0))" 2>/dev/null || echo "?")
+            echo "### ⛏️ Mining Run Diagnostics" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| API Calls | $API_CALLS |" >> $GITHUB_STEP_SUMMARY
+            echo "| Commits Processed | $PROCESSED |" >> $GITHUB_STEP_SUMMARY
+            echo "| Deferred Commits | $DEFERRED |" >> $GITHUB_STEP_SUMMARY
+            if [ "$API_CALLS" = "0" ] && [ "$DEFERRED" != "0" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "⚠️ **Warning:** No API calls were made but there are deferred commits." >> $GITHUB_STEP_SUMMARY
+              echo "Possible causes: API key expired/missing, all diffs filtered out, or API rate-limited." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "### ⚠️ Mining Run Diagnostics" >> $GITHUB_STEP_SUMMARY
+            echo "statistics.json not found — mining may have failed before producing output." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Commit State
         id: commit_state
