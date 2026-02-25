@@ -26,10 +26,10 @@ import java.time.Instant;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializer;
+import com.google.gson.TypeAdapter;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
 import org.sandbox.mining.core.llm.CommitEvaluation;
 
@@ -46,10 +46,16 @@ public class JsonReporter {
 	public JsonReporter() {
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
-				.registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) ->
-						new JsonPrimitive(src.toString()))
-				.registerTypeAdapter(Instant.class, (JsonDeserializer<Instant>) (json, typeOfT, context) ->
-						Instant.parse(json.getAsString()))
+				.registerTypeAdapter(Instant.class, new TypeAdapter<Instant>() {
+					@Override
+					public void write(JsonWriter out, Instant value) throws IOException {
+						out.value(value == null ? null : value.toString());
+					}
+					@Override
+					public Instant read(JsonReader in) throws IOException {
+						return Instant.parse(in.nextString());
+					}
+				})
 				.create();
 	}
 
