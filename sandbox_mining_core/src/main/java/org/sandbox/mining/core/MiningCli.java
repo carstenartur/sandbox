@@ -33,6 +33,9 @@ import org.sandbox.mining.core.config.MiningState.RepoState;
 import org.sandbox.mining.core.config.RepoEntry;
 import org.sandbox.mining.core.dsl.DslValidator;
 import org.sandbox.mining.core.llm.CommitEvaluation;
+import org.sandbox.mining.core.engine.DslEngineFactory;
+import org.sandbox.mining.core.engine.DslSequenceEngine;
+import org.sandbox.mining.core.engine.LlmDslSequenceEngine;
 import org.sandbox.mining.core.llm.DslContextCollector;
 import org.sandbox.mining.core.llm.LlmClient;
 import org.sandbox.mining.core.llm.LlmClientFactory;
@@ -184,12 +187,14 @@ StatisticsCollector stats = new StatisticsCollector();
 ReportAggregator aggregator = new ReportAggregator();
 
 Path workDir = Files.createTempDirectory("mining-core-"); //$NON-NLS-1$
-try (LlmClient llmClient = LlmClientFactory.createFromEnvironment(llmProvider)) {
-llmClient.setMaxFailureDuration(Duration.ofSeconds(maxFailureDurationSeconds));
+try (DslSequenceEngine engine = DslEngineFactory.create(config, llmProvider)) {
+LlmDslSequenceEngine llmEngine = (LlmDslSequenceEngine) engine;
+llmEngine.setMaxFailureDuration(Duration.ofSeconds(maxFailureDurationSeconds));
+System.out.println("Engine: " + engine.getEngineType() + " (" + engine.getModelName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 // Reset learned limits if requested or if model changed
 for (RepoEntry repo : config.getRepositories()) {
 RepoState repoState = state.getRepoState(repo.getUrl());
-String currentModel = llmClient.getModel();
+String currentModel = engine.getModelName();
 if (resetLearnedLimits || (repoState.getLastModelUsed() != null
 && !repoState.getLastModelUsed().equals(currentModel))) {
 if (repoState.getLearnedMaxDiffLines() != -1) {
@@ -206,15 +211,15 @@ repoState.setLastModelUsed(currentModel);
 }
 try {
 processRepositories(config, state, statePath, workDir, batchSize, commitsPerRequest,
-llmClient, promptBuilder, dslContext, categoryManager, validator, stats, aggregator);
+engine, promptBuilder, dslContext, categoryManager, validator, stats, aggregator);
 // Always process deferred commits at end of each run
-retryDeferredCommits(state, statePath, workDir, llmClient, promptBuilder,
+retryDeferredCommits(state, statePath, workDir, engine, promptBuilder,
 dslContext, categoryManager, validator, stats, aggregator, config, retryDeferred);
 } finally {
 deleteDirectory(workDir);
 }
 printDeferredReport(state, config);
-printRunSummary(stats, state, config, llmClient, startTimeMs);
+printRunSummary(stats, state, config, engine, startTimeMs);
 
 // Persist run metadata
 long durationMs = System.currentTimeMillis() - startTimeMs;
@@ -228,9 +233,9 @@ totalPermanentlySkipped += rs.getPermanentlySkipped().size();
 String startedAt = Instant.ofEpochMilli(startTimeMs).toString();
 String completedAt = Instant.now().toString();
 stats.recordRunMetadata(startedAt, completedAt, durationMs / 1000,
-llmClient.getClass().getSimpleName(), llmClient.getModel(),
+llmEngine.getClientClassName(), engine.getModelName(),
 batchSize, commitsPerRequest,
-llmClient.getDailyRequestCount(), totalDeferred, totalPermanentlySkipped);
+engine.getRequestCount(), totalDeferred, totalPermanentlySkipped);
 stats.computeTimeWindow(aggregator.getAllEvaluations());
 }
 
@@ -253,7 +258,7 @@ System.out.println("Output:    " + outputDir.toAbsolutePath());
 
 private void processRepositories(MiningConfig config, MiningState state, Path statePath,
 Path workDir, int batchSize, int commitsPerRequest,
-LlmClient llmClient, PromptBuilder promptBuilder,
+DslSequenceEngine engine, PromptBuilder promptBuilder,
 String dslContext, CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator) throws IOException, GitAPIException {
 RepoCloner cloner = new RepoCloner();
@@ -261,13 +266,13 @@ RepoCloner cloner = new RepoCloner();
 int[] dynamicCPR = { commitsPerRequest };
 
 for (RepoEntry repo : config.getRepositories()) {
-if (!llmClient.hasRemainingQuota()) {
-System.out.println("Daily API quota exhausted (" + llmClient.getDailyRequestCount() //$NON-NLS-1$
+if (!engine.hasRemainingCapacity()) {
+System.out.println("Daily API quota exhausted (" + engine.getRequestCount() //$NON-NLS-1$
 + " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
 return;
 }
-if (llmClient.isApiUnavailable()) {
-logApiUnavailable(llmClient);
+if (engine.isUnavailable()) {
+logEngineUnavailable(engine);
 return;
 }
 System.out.println("Processing: " + repo.getUrl()); //$NON-NLS-1$
@@ -283,28 +288,28 @@ List<RevCommit> batch = walker.nextBatch(lastCommit, config.getStartDate(), batc
 while (!batch.isEmpty()) {
 // Group commits into sub-batches for API calls
 for (int i = 0; i < batch.size(); i += dynamicCPR[0]) {
-if (!llmClient.hasRemainingQuota()) {
+if (!engine.hasRemainingCapacity()) {
 System.out.println("Daily API quota exhausted (" //$NON-NLS-1$
-+ llmClient.getDailyRequestCount()
++ engine.getRequestCount()
 + " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
 return;
 }
-if (llmClient.isApiUnavailable()) {
-logApiUnavailable(llmClient);
+if (engine.isUnavailable()) {
+logEngineUnavailable(engine);
 return;
 }
 int end = Math.min(i + dynamicCPR[0], batch.size());
 List<RevCommit> subBatch = batch.subList(i, end);
 processBatch(subBatch, repo, diffExtractor, state, statePath,
-llmClient, promptBuilder, dslContext, categoryManager,
+engine, promptBuilder, dslContext, categoryManager,
 validator, stats, aggregator, config.getMinDiffLinesPerCommit(),
 config.getMaxDiffLinesPerCommit());
-if (llmClient.wasLastResponseTruncated() && dynamicCPR[0] > 1) {
+if (engine.wasLastResponseTruncated() && dynamicCPR[0] > 1) {
 dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);
 System.out.println("  Reducing commits-per-request to " + dynamicCPR[0] + " after truncated response"); //$NON-NLS-1$
 }
-if (llmClient.isApiUnavailable()) {
-logApiUnavailable(llmClient);
+if (engine.isUnavailable()) {
+logEngineUnavailable(engine);
 return;
 }
 }
@@ -319,7 +324,7 @@ System.out.println("  Completed: " + repo.getUrl()); //$NON-NLS-1$
 
 private void processBatch(List<RevCommit> commits, RepoEntry repo,
 DiffExtractor diffExtractor, MiningState state, Path statePath,
-LlmClient llmClient, PromptBuilder promptBuilder,
+DslSequenceEngine engine, PromptBuilder promptBuilder,
 String dslContext, CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
 int minDiffLines, int maxDiffLines) throws IOException {
@@ -366,10 +371,10 @@ List<String> hashes = commitDataList.stream().map(CommitData::commitHash).toList
 List<String> messages = commitDataList.stream().map(CommitData::commitMessage).toList();
 String prompt = promptBuilder.buildBatchPrompt(dslContext,
 categoryManager.getCategoriesJson(), commitDataList);
-evaluations = llmClient.evaluateBatch(prompt, hashes, messages, repo.getUrl());
+evaluations = engine.evaluateBatch(prompt, hashes, messages, repo.getUrl());
 
 // Learn from truncation
-if (llmClient.wasLastResponseTruncated() && !diffLineCounts.isEmpty()) {
+if (engine.wasLastResponseTruncated() && !diffLineCounts.isEmpty()) {
 int maxDiffInBatch = diffLineCounts.stream().mapToInt(Integer::intValue).max().orElse(0);
 if (maxDiffInBatch > 0) {
 int newLimit = (int) (maxDiffInBatch * 0.8);
@@ -389,8 +394,8 @@ System.out.println("  Batch contained commits:"); //$NON-NLS-1$
 for (RevCommit c : commits) {
 System.out.println("    - " + formatCommitInfo(c, repo)); //$NON-NLS-1$
 }
-if (llmClient.isApiUnavailable()) {
-logApiUnavailable(llmClient);
+if (engine.isUnavailable()) {
+logEngineUnavailable(engine);
 }
 // Defer commits that were not evaluated
 if (evaluations != null) {
@@ -515,6 +520,11 @@ System.out.println("LLM API has been unreachable for over " //$NON-NLS-1$
 + " minutes. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
 }
 
+private static void logEngineUnavailable(DslSequenceEngine engine) {
+System.out.println("Engine " + engine.getEngineType() //$NON-NLS-1$
++ " is unavailable. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
+}
+
 private static void printUsage() {
 System.out.println("Usage: java -jar sandbox-mining-core.jar [options]"); //$NON-NLS-1$
 System.out.println("Options:"); //$NON-NLS-1$
@@ -525,7 +535,7 @@ System.out.println("  --batch-size <n>             Number of commits per batch (
 System.out.println("  --commits-per-request <n>    Commits grouped into one API call (default: 4)"); //$NON-NLS-1$
 System.out.println("  --output <path>              Output directory (default: output)"); //$NON-NLS-1$
 System.out.println("  --max-failure-duration <s>   Seconds without a successful API call before aborting (default: 300)"); //$NON-NLS-1$
-System.out.println("  --llm-provider <name>        LLM provider: gemini, openai, deepseek, qwen, llama, or mistral (default: auto-detect)"); //$NON-NLS-1$
+System.out.println("  --llm-provider <name>        LLM provider: gemini, openai, deepseek, qwen, llama, or mistral (default: auto-detect or from config)"); //$NON-NLS-1$
 System.out.println("  --retry-deferred             Retry previously deferred commits"); //$NON-NLS-1$
 System.out.println("  --reset-learned-limits       Reset learned diff size limits"); //$NON-NLS-1$
 }
@@ -553,7 +563,7 @@ Files.deleteIfExists(p);
 }
 
 private void retryDeferredCommits(MiningState state, Path statePath, Path workDir,
-LlmClient llmClient, PromptBuilder promptBuilder, String dslContext,
+DslSequenceEngine engine, PromptBuilder promptBuilder, String dslContext,
 CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
 MiningConfig config, boolean forceRetry) throws IOException {
@@ -581,7 +591,7 @@ state.save(statePath);
 }
 
 private void printRunSummary(StatisticsCollector stats, MiningState state,
-MiningConfig config, LlmClient llmClient, long startTimeMs) {
+MiningConfig config, DslSequenceEngine engine, long startTimeMs) {
 long durationMs = System.currentTimeMillis() - startTimeMs;
 long minutes = durationMs / 60000;
 long seconds = (durationMs % 60000) / 1000;
@@ -598,8 +608,9 @@ System.out.println("Commits processed:  " + stats.getTotalProcessed()); //$NON-N
 System.out.println("Commits deferred:   " + totalDeferred); //$NON-NLS-1$
 System.out.println("Commits permanently skipped: " + totalPermanentlySkipped); //$NON-NLS-1$
 System.out.println("Relevant:           " + stats.getRelevant()); //$NON-NLS-1$
-System.out.println("API calls:          " + llmClient.getDailyRequestCount()); //$NON-NLS-1$
-System.out.println("Model:              " + llmClient.getModel()); //$NON-NLS-1$
+System.out.println("API calls:          " + engine.getRequestCount()); //$NON-NLS-1$
+System.out.println("Engine:             " + engine.getEngineType()); //$NON-NLS-1$
+System.out.println("Model:              " + engine.getModelName()); //$NON-NLS-1$
 // Learned limits
 for (RepoEntry repo : config.getRepositories()) {
 RepoState rs = state.getRepoState(repo.getUrl());

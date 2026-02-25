@@ -35,6 +35,8 @@ import org.yaml.snakeyaml.Yaml;
  *   min-diff-lines-per-commit: 10
  *   max-files-per-commit: 20
  *   timeout-per-repo-minutes: 10
+ *   llm-provider: gemini
+ *   engine-type: llm
  *   repositories:
  *     - url: https://github.com/example/repo.git
  *       branch: main
@@ -51,6 +53,8 @@ public class MiningConfig {
 	private int minDiffLinesPerCommit = 10;
 	private int maxFilesPerCommit = 20;
 	private int timeoutPerRepoMinutes = 10;
+	private String llmProvider;
+	private String engineType;
 
 	public MiningConfig() {
 	}
@@ -134,6 +138,18 @@ public class MiningConfig {
 			config.timeoutPerRepoMinutes = n.intValue();
 		}
 
+		// Parse llm-provider
+		Object llmProviderObj = source.get("llm-provider");
+		if (llmProviderObj != null) {
+			config.llmProvider = llmProviderObj.toString();
+		}
+
+		// Parse engine-type
+		Object engineTypeObj = source.get("engine-type");
+		if (engineTypeObj != null) {
+			config.engineType = engineTypeObj.toString();
+		}
+
 		// Parse repositories (always from mining directly)
 		Object reposObj = mining.get("repositories");
 		if (reposObj instanceof List<?> reposList) {
@@ -212,5 +228,21 @@ public class MiningConfig {
 
 	public void setTimeoutPerRepoMinutes(int timeoutPerRepoMinutes) {
 		this.timeoutPerRepoMinutes = timeoutPerRepoMinutes;
+	}
+
+	public String getLlmProvider() {
+		return llmProvider;
+	}
+
+	public void setLlmProvider(String llmProvider) {
+		this.llmProvider = llmProvider;
+	}
+
+	public String getEngineType() {
+		return engineType;
+	}
+
+	public void setEngineType(String engineType) {
+		this.engineType = engineType;
 	}
 }
