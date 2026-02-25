@@ -600,3 +600,68 @@ assertRefactoringResultAsExpected()
 **Fixed**: 2026-02-24 — Deleted 4 stale duplicates from `sandbox_common/src/`, moved `junit3-migration.sandbox-hint` from `sandbox_common_core` bundled libraries to `sandbox_junit_cleanup` extension point.
 
 ---
+
+## 22. JUnit Cleanup Plugin Architecture — JUNIT_CLEANUP_4_SUITE vs JUNIT_CLEANUP_4_RUNWITH
+
+**Issue**: `JUNIT_CLEANUP_4_SUITE` constant exists in `MYCleanUpConstants` but is **NOT mapped** in
+`JUnitCleanUpCore.computeFixSet()`. The Suite migration functionality is handled by
+`RunWithJUnitPlugin` which is controlled by `JUNIT_CLEANUP_4_RUNWITH`.
+
+**Key Facts**:
+- `JUNIT_CLEANUP_4_SUITE` → not mapped to any enum value → enabling/disabling it has NO effect
+- `JUNIT_CLEANUP_4_RUNWITH` → maps to `JUnitCleanUpFixCore.RUNWITH` → controls `RunWithJUnitPlugin`
+- `RunWithJUnitPlugin` handles both `@RunWith(Suite.class)` and `@Suite.SuiteClasses` migrations
+- There are also `RUNWITH_ENCLOSED`, `RUNWITH_THEORIES`, `RUNWITH_CATEGORIES` enum values that have
+  no individual toggle — they're always active when `JUNIT_CLEANUP` is enabled
+
+**Learned**: 2026-02-24
+
+---
+
+## 23. ThrowingRunnableJUnitPlugin Already Handles ParameterizedType
+
+**Issue**: Tests `migrates_generic_type_parameter` and `migrates_complete_eclipse_platform_example`
+were `@Disabled` with message "Currently fails due to missing support for type parameter references".
+However, the plugin code ALREADY implements full ParameterizedType support:
+- `visit(ParameterizedType node)` in the ASTVisitor
+- `processParameterizedType()` for rewriting
+- `createExecutableType()` for recursive type argument transformation
+- `containsThrowingRunnable()` for detecting ThrowingRunnable in type arguments
+
+**Rule**: Before implementing a feature, check if it's already been implemented but the tests weren't
+re-enabled. The `@Disabled` annotation message may be outdated.
+
+**Learned**: 2026-02-24
+
+---
+
+## 24. Generic Type Parameter Method Call Migration (.run() → .execute())
+
+**Issue**: When `ThrowingRunnable` is used as a generic type argument (e.g., `AtomicReference<ThrowingRunnable>`),
+calling `.run()` on the result of a generic method (e.g., `ref.get().run()`) was NOT being migrated to `.execute()`.
+The type replacement worked (→ `AtomicReference<Executable>`), but the method call stayed as `.run()`.
+
+**Root Cause**: Eclipse JDT's binding resolution for method calls through generic return types
+may not resolve `methodBinding.getDeclaringClass()` or `expression.resolveTypeBinding()` to
+`ThrowingRunnable` in a straightforward way. The simple `getQualifiedName()` check was insufficient.
+
+**Fix**: Created a comprehensive `isThrowingRunnableRunCall(MethodInvocation)` method with 4 strategies:
+1. Check `methodBinding.getDeclaringClass()` via `isThrowingRunnableType()` (handles direct, erasure, type vars, captures)
+2. Check `methodBinding.getMethodDeclaration().getDeclaringClass()` (unparameterized declaration)
+3. Check `receiverMethodBinding.getReturnType()` when receiver is a method call (e.g., `ref.get()`)
+4. Check receiver's receiver type arguments (e.g., check if `ref` in `ref.get().run()` has `ThrowingRunnable` type arg)
+
+Also enhanced `isThrowingRunnableType()` to check:
+- Direct qualified name match
+- Erasure
+- Type variable bounds
+- Capture bindings (wildcard bounds)
+- Implemented interfaces
+- Superclass hierarchy
+
+**File**: `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/ThrowingRunnableJUnitPlugin.java`
+
+**Learned**: 2026-02-24
+
+---
+---

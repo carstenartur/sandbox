@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -102,7 +101,6 @@ public class MigrationThrowingRunnableTest {
 		}, null);
 	}
 
-	@Disabled("Currently fails due to missing support for type parameter references in the plugin")
 	@Test
 	public void migrates_generic_type_parameter() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -242,7 +240,6 @@ public class MigrationThrowingRunnableTest {
 		}, null);
 	}
 
-	@Disabled("Currently fails due to missing support for type parameter references in the plugin")
 	@Test
 	public void migrates_complete_eclipse_platform_example() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
