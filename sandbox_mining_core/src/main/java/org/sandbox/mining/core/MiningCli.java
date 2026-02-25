@@ -37,8 +37,6 @@ import org.sandbox.mining.core.engine.DslEngineFactory;
 import org.sandbox.mining.core.engine.DslSequenceEngine;
 import org.sandbox.mining.core.engine.LlmDslSequenceEngine;
 import org.sandbox.mining.core.llm.DslContextCollector;
-import org.sandbox.mining.core.llm.LlmClient;
-import org.sandbox.mining.core.llm.LlmClientFactory;
 import org.sandbox.mining.core.llm.PromptBuilder;
 import org.sandbox.mining.core.llm.PromptBuilder.CommitData;
 import org.sandbox.mining.core.git.CommitWalker;
@@ -512,12 +510,6 @@ String datetime = COMMIT_DATE_FORMAT.format(commit.getAuthorIdent().getWhen().to
 String title = commit.getShortMessage().replace("\"", "\\\""); //$NON-NLS-1$ //$NON-NLS-2$
 return commit.getName().substring(0, 7) + " on " + repo.getBranch() //$NON-NLS-1$
 + " (" + datetime + ") \"" + title + "\""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-}
-
-private static void logApiUnavailable(LlmClient llmClient) {
-System.out.println("LLM API has been unreachable for over " //$NON-NLS-1$
-+ llmClient.getMaxFailureDuration().toMinutes()
-+ " minutes. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
 }
 
 private static void logEngineUnavailable(DslSequenceEngine engine) {
