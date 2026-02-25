@@ -21,7 +21,7 @@ on:
 
 permissions:
   contents: write       # Required to push to main branch, create tags, and push to gh-pages
-  issues: read          # Required to read issues for release notes
+  issues: write         # Required to read issues for release notes and create marketplace reminder issues
   pull-requests: write  # Required to create pull requests for next development iteration
 
 env:
@@ -475,7 +475,230 @@ jobs:
         
         echo "✓ PR created successfully"
 
-    # 16. Add Eclipse Marketplace reminder
-    - name: Eclipse Marketplace reminder
+    # 16a. Query Eclipse Marketplace API
+    - name: Query Eclipse Marketplace API
+      id: marketplace
       run: |
-        echo "::notice::Remember to update the Eclipse Marketplace listing at https://marketplace.eclipse.org/ with the new update site URL: https://carstenartur.github.io/sandbox/releases/${{ inputs.release_version }}/"
+        VERSION="${{ inputs.release_version }}"
+        echo "Querying Eclipse Marketplace API for 'sandbox' listing..."
+
+        # Try the Marketplace search API
+        SEARCH_RESPONSE=$(curl -s -o /tmp/marketplace_search.xml -w "%{http_code}" \
+          --max-time 30 \
+          "https://marketplace.eclipse.org/api/p/search?text=sandbox&max=5" || echo "000")
+
+        if [[ "$SEARCH_RESPONSE" == "200" ]]; then
+          echo "Marketplace search API returned HTTP 200"
+          cat /tmp/marketplace_search.xml > /tmp/marketplace_data.xml
+        else
+          echo "Marketplace search API returned HTTP $SEARCH_RESPONSE - trying direct listing endpoint..."
+          DIRECT_RESPONSE=$(curl -s -o /tmp/marketplace_direct.xml -w "%{http_code}" \
+            --max-time 30 \
+            "https://marketplace.eclipse.org/content/sandbox/api/p" || echo "000")
+          if [[ "$DIRECT_RESPONSE" == "200" ]]; then
+            echo "Direct listing endpoint returned HTTP 200"
+            cat /tmp/marketplace_direct.xml > /tmp/marketplace_data.xml
+          else
+            echo "Both Marketplace API endpoints unavailable (HTTP $SEARCH_RESPONSE / $DIRECT_RESPONSE)"
+            echo "<unavailable/>" > /tmp/marketplace_data.xml
+          fi
+        fi
+
+        # Extract key fields from the XML response (best-effort)
+        MARKETPLACE_XML=$(cat /tmp/marketplace_data.xml)
+
+        if echo "$MARKETPLACE_XML" | grep -qi "<unavailable"; then
+          echo "marketplace_available=false" >> $GITHUB_OUTPUT
+          echo "marketplace_summary=API unavailable - listing may not exist yet" >> $GITHUB_OUTPUT
+        else
+          echo "marketplace_available=true" >> $GITHUB_OUTPUT
+          # Extract fields with grep/sed for portability
+          LISTED_VERSION=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<version>)[^<]+' | head -1 || echo "")
+          UPDATE_URL=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<updateurl>)[^<]+' | head -1 || echo "")
+          DESCRIPTION=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<body>)[^<]+' | head -1 | cut -c1-200 || echo "")
+          CATEGORIES=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<category name=")[^"]+' | paste -sd', ' || echo "")
+          LICENSE=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<license>)[^<]+' | head -1 || echo "")
+          SCREENSHOTS=$(echo "$MARKETPLACE_XML" | grep -c '<screenshot' || echo "0")
+
+          # Sanitize values to ensure single-line GitHub outputs
+          LISTED_VERSION_CLEAN=$(printf '%s' "$LISTED_VERSION" | tr '\n' ' ' | tr '\r' ' ')
+          UPDATE_URL_CLEAN=$(printf '%s' "$UPDATE_URL" | tr '\n' ' ' | tr '\r' ' ')
+          DESCRIPTION_CLEAN=$(printf '%s' "$DESCRIPTION" | tr '\n' ' ' | tr '\r' ' ')
+          CATEGORIES_CLEAN=$(printf '%s' "$CATEGORIES" | tr '\n' ' ' | tr '\r' ' ')
+          LICENSE_CLEAN=$(printf '%s' "$LICENSE" | tr '\n' ' ' | tr '\r' ' ')
+          SCREENSHOTS_CLEAN=$(printf '%s' "$SCREENSHOTS" | tr '\n' ' ' | tr '\r' ' ')
+
+          echo "marketplace_listed_version=$LISTED_VERSION_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_update_url=$UPDATE_URL_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_description=$DESCRIPTION_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_categories=$CATEGORIES_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_license=$LICENSE_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_screenshots=$SCREENSHOTS_CLEAN" >> "$GITHUB_OUTPUT"
+
+          SUMMARY="version=${LISTED_VERSION_CLEAN:-unknown}, update_url=${UPDATE_URL_CLEAN:-unknown}, screenshots=${SCREENSHOTS_CLEAN:-0}"
+          SUMMARY_CLEAN=$(printf '%s' "$SUMMARY" | tr '\n' ' ' | tr '\r' ' ')
+          echo "marketplace_summary=$SUMMARY_CLEAN" >> "$GITHUB_OUTPUT"
+        fi
+
+        echo "Marketplace API query complete: ${SUMMARY_CLEAN:-API unavailable - listing may not exist yet}"
+
+    # 16b. Create Marketplace Update Reminder Issue
+    - name: Create Marketplace Update Reminder Issue
+      run: |
+        VERSION="${{ inputs.release_version }}"
+        UPDATE_SITE="https://carstenartur.github.io/sandbox/releases/${VERSION}/"
+        COMPOSITE_SITE="https://carstenartur.github.io/sandbox/releases/"
+        RELEASE_URL="https://github.com/carstenartur/sandbox/releases/tag/v${VERSION}"
+        PAGES_DASHBOARD="https://carstenartur.github.io/sandbox/"
+        MARKETPLACE_URL="https://marketplace.eclipse.org/"
+
+        # Build Section 2: Current Marketplace Status
+        if [[ "${{ steps.marketplace.outputs.marketplace_available }}" == "true" ]]; then
+          LISTED_VERSION="${{ steps.marketplace.outputs.marketplace_listed_version }}"
+          UPDATE_URL="${{ steps.marketplace.outputs.marketplace_update_url }}"
+          DESCRIPTION="${{ steps.marketplace.outputs.marketplace_description }}"
+          CATEGORIES="${{ steps.marketplace.outputs.marketplace_categories }}"
+          LICENSE="${{ steps.marketplace.outputs.marketplace_license }}"
+          SCREENSHOTS="${{ steps.marketplace.outputs.marketplace_screenshots }}"
+
+          SECTION2=$(cat << SECTION2_EOF
+        ## 📊 Current Marketplace Status
+
+        | Field | Value |
+        |-------|-------|
+        | Listed Version | ${LISTED_VERSION:-_not found_} |
+        | Update Site URL | ${UPDATE_URL:-_not found_} |
+        | Categories | ${CATEGORIES:-_not found_} |
+        | License | ${LICENSE:-_not found_} |
+        | Screenshots | ${SCREENSHOTS:-0} |
+
+        **Description excerpt:**
+        ${DESCRIPTION:-_No description found_}
+        SECTION2_EOF
+        )
+        else
+          SECTION2=$(cat << SECTION2_EOF
+        ## 📊 Current Marketplace Status
+
+        > ⚠️ The Eclipse Marketplace API was unavailable or the listing does not exist yet.
+        > Please check manually at $MARKETPLACE_URL
+        SECTION2_EOF
+        )
+          LISTED_VERSION=""
+          UPDATE_URL=""
+          CATEGORIES=""
+          LICENSE=""
+          SCREENSHOTS="0"
+        fi
+
+        # Build Section 3: Suggestions
+        SUGGESTIONS=""
+
+        if [[ -n "$LISTED_VERSION" && "$LISTED_VERSION" != "$VERSION" ]]; then
+          SUGGESTIONS="$SUGGESTIONS
+        - 🔴 **Version mismatch**: Marketplace shows \`$LISTED_VERSION\`, new release is \`$VERSION\`. Update the version."
+        fi
+
+        if [[ -n "$UPDATE_URL" && "$UPDATE_URL" != "$UPDATE_SITE" ]]; then
+          SUGGESTIONS="$SUGGESTIONS
+        - 🔴 **Update site URL**: Marketplace shows \`$UPDATE_URL\`, should be \`$UPDATE_SITE\`. Update the URL."
+        elif [[ -z "$UPDATE_URL" ]]; then
+          SUGGESTIONS="$SUGGESTIONS
+        - 🟡 **Update site URL**: Not found in listing. Set to \`$UPDATE_SITE\`."
+        fi
+
+        DESCRIPTION_LOWER=$(echo "${DESCRIPTION}" | tr '[:upper:]' '[:lower:]')
+        MISSING_FEATURES=""
+        for feature in "Encoding Cleanup (StandardCharsets migration)" "JUnit 5 Migration" "Functional Loop Converter (Stream API)" "JFace SubMonitor Migration" "Platform Status Helper" "PDE XML Cleanup" "CSS Cleanup" "Method Reuse Detector" "TriggerPattern Engine" "Fluent AST API" "Cleanup CLI Application"; do
+          keyword=$(echo "$feature" | cut -d'(' -f1 | tr '[:upper:]' '[:lower:]' | xargs)
+          if ! echo "$DESCRIPTION_LOWER" | grep -qi "$keyword"; then
+            MISSING_FEATURES="$MISSING_FEATURES\n  - $feature"
+          fi
+        done
+        if [[ -n "$MISSING_FEATURES" ]]; then
+          SUGGESTIONS="$SUGGESTIONS
+        - 🟡 **Description**: The following features may be missing from the marketplace description:$(echo -e "$MISSING_FEATURES")"
+        fi
+
+        if [[ "${SCREENSHOTS:-0}" == "0" ]]; then
+          SUGGESTIONS="$SUGGESTIONS
+        - 🟡 **Screenshots**: No screenshots found. Add screenshots showing cleanup dialogs and before/after code transformations."
+        fi
+
+        if [[ -z "$CATEGORIES" ]]; then
+          SUGGESTIONS="$SUGGESTIONS
+        - 🟡 **Categories/Tags**: No categories found. Consider adding: _Code Quality_, _Testing_, _Refactoring_."
+        fi
+
+        if [[ -n "$LICENSE" ]] && ! echo "$LICENSE" | grep -qi "EPL\|Eclipse Public"; then
+          SUGGESTIONS="$SUGGESTIONS
+        - 🔴 **License**: Marketplace shows \`$LICENSE\`. Should be EPL-2.0."
+        elif [[ -z "$LICENSE" ]]; then
+          SUGGESTIONS="$SUGGESTIONS
+        - 🟡 **License**: Not found in listing. Verify EPL-2.0 is set."
+        fi
+
+        SUGGESTIONS="$SUGGESTIONS
+        - 🟡 **Compatibility**: Ensure compatible Eclipse versions (2025-12+) and Java version (21+) are listed."
+
+        if [[ -z "$SUGGESTIONS" ]]; then
+          SUGGESTIONS="✅ No issues found — the marketplace listing appears up to date!"
+        fi
+
+        # Build full issue body
+        ISSUE_BODY=$(cat << EOF
+        ## 🚀 Release Information
+
+        | Field | Value |
+        |-------|-------|
+        | Release Version | \`${VERSION}\` |
+        | Release Tag | [\`v${VERSION}\`]($RELEASE_URL) |
+        | P2 Update Site | $UPDATE_SITE |
+        | Composite Update Site | $COMPOSITE_SITE |
+        | GitHub Release | $RELEASE_URL |
+        | GitHub Pages | $PAGES_DASHBOARD |
+        | Eclipse Marketplace | $MARKETPLACE_URL |
+
+        ${SECTION2}
+
+        ## 🔍 Completeness Analysis & Suggestions
+
+        ${SUGGESTIONS}
+
+        ## ✅ Manual Checklist
+
+        - [ ] Update version to \`${VERSION}\`
+        - [ ] Update P2 update site URL to \`${UPDATE_SITE}\`
+        - [ ] Update description with latest features
+        - [ ] Add/update screenshots
+        - [ ] Verify categories and tags
+        - [ ] Verify license (EPL-2.0)
+        - [ ] Verify Eclipse compatibility info (2025-12+, Java 21+)
+        - [ ] Test installation from marketplace
+
+        ---
+        *This issue was automatically created by the [release workflow](https://github.com/carstenartur/sandbox/actions) for release \`${VERSION}\`.*
+        EOF
+        )
+
+        ISSUE_TITLE="📦 Release ${VERSION} — Update Eclipse Marketplace Listing"
+
+        if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+          echo "::notice::Dry run mode - would create GitHub issue: $ISSUE_TITLE"
+          echo "--- Issue body preview ---"
+          echo "$ISSUE_BODY"
+          echo "--- End of preview ---"
+        else
+          # Ensure the 'release' label exists (ignore errors if it already exists)
+          gh label create "release" --color "0075ca" --description "Release-related tasks" 2>/dev/null || true
+
+          echo "$ISSUE_BODY" > /tmp/marketplace_issue_body.md
+          gh issue create \
+            --title "$ISSUE_TITLE" \
+            --body-file /tmp/marketplace_issue_body.md \
+            --label "release" 2>/dev/null \
+          || gh issue create \
+            --title "$ISSUE_TITLE" \
+            --body-file /tmp/marketplace_issue_body.md
+          echo "✓ Marketplace reminder issue created successfully"
+        fi
