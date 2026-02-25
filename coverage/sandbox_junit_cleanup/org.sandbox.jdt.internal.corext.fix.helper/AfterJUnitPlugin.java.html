@@ -23,10 +23,15 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 /**
  * Migrates JUnit 4 @After annotations to JUnit 5 @AfterEach.
  * 
- * &lt;p&gt;Uses TriggerPattern-based declarative architecture
- * with @RewriteRule annotation to eliminate boilerplate code.&lt;/p&gt;
+ * &lt;p&gt;
+ * Uses TriggerPattern-based declarative architecture with @RewriteRule
+ * annotation to eliminate boilerplate code.
+ * &lt;/p&gt;
  * 
- * &lt;p&gt;&lt;b&gt;Before:&lt;/b&gt;&lt;/p&gt;
+ * &lt;p&gt;
+ * &lt;b&gt;Before:&lt;/b&gt;
+ * &lt;/p&gt;
+ * 
  * &lt;pre&gt;
  * import org.junit.After;
  * 
@@ -36,7 +41,10 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * }
  * &lt;/pre&gt;
  * 
- * &lt;p&gt;&lt;b&gt;After:&lt;/b&gt;&lt;/p&gt;
+ * &lt;p&gt;
+ * &lt;b&gt;After:&lt;/b&gt;
+ * &lt;/p&gt;
+ * 
  * &lt;pre&gt;
  * import org.junit.jupiter.api.AfterEach;
  * 
@@ -48,39 +56,29 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * 
  * @since 1.3.0
  */
-@CleanupPattern(
-    value = &quot;@After&quot;,
-    kind = PatternKind.ANNOTATION,
-    qualifiedType = ORG_JUNIT_AFTER,
-    cleanupId = &quot;cleanup.junit.after&quot;,
-    description = &quot;Migrate @After to @AfterEach&quot;,
-    displayName = &quot;JUnit 4 @After → JUnit 5 @AfterEach&quot;
-)
-@RewriteRule(
-    replaceWith = &quot;@AfterEach&quot;,
-    addImports = {ORG_JUNIT_JUPITER_API_AFTER_EACH}
-)
-<span class="fc" id="L63">public class AfterJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
+@CleanupPattern(value = &quot;@After&quot;, kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_AFTER, cleanupId = &quot;cleanup.junit.after&quot;, description = &quot;Migrate @After to @AfterEach&quot;, displayName = &quot;JUnit 4 @After → JUnit 5 @AfterEach&quot;)
+@RewriteRule(replaceWith = &quot;@AfterEach&quot;, addImports = { ORG_JUNIT_JUPITER_API_AFTER_EACH })
+<span class="fc" id="L61">public class AfterJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L67" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L68">			return &quot;&quot;&quot;</span>
-				@AfterEach
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L66">			return &quot;&quot;&quot;</span>
+					@AfterEach
+					public void tearDown() {
+					}
+					&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+<span class="nc" id="L72">		return &quot;&quot;&quot;</span>
+				@After
 				public void tearDown() {
 				}
 				&quot;&quot;&quot;; //$NON-NLS-1$
-		}
-<span class="nc" id="L74">		return &quot;&quot;&quot;</span>
-			@After
-			public void tearDown() {
-			}
-			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L83">		return &quot;After&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L81">		return &quot;After&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

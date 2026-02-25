@@ -23,10 +23,15 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 /**
  * Migrates JUnit 4 @Before annotations to JUnit 5 @BeforeEach.
  * 
- * &lt;p&gt;Uses TriggerPattern-based declarative architecture
- * with @RewriteRule annotation to eliminate boilerplate code.&lt;/p&gt;
+ * &lt;p&gt;
+ * Uses TriggerPattern-based declarative architecture with @RewriteRule
+ * annotation to eliminate boilerplate code.
+ * &lt;/p&gt;
  * 
- * &lt;p&gt;&lt;b&gt;Before:&lt;/b&gt;&lt;/p&gt;
+ * &lt;p&gt;
+ * &lt;b&gt;Before:&lt;/b&gt;
+ * &lt;/p&gt;
+ * 
  * &lt;pre&gt;
  * import org.junit.Before;
  * 
@@ -36,7 +41,10 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * }
  * &lt;/pre&gt;
  * 
- * &lt;p&gt;&lt;b&gt;After:&lt;/b&gt;&lt;/p&gt;
+ * &lt;p&gt;
+ * &lt;b&gt;After:&lt;/b&gt;
+ * &lt;/p&gt;
+ * 
  * &lt;pre&gt;
  * import org.junit.jupiter.api.BeforeEach;
  * 
@@ -48,39 +56,29 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * 
  * @since 1.3.0
  */
-@CleanupPattern(
-    value = &quot;@Before&quot;,
-    kind = PatternKind.ANNOTATION,
-    qualifiedType = ORG_JUNIT_BEFORE,
-    cleanupId = &quot;cleanup.junit.before&quot;,
-    description = &quot;Migrate @Before to @BeforeEach&quot;,
-    displayName = &quot;JUnit 4 @Before → JUnit 5 @BeforeEach&quot;
-)
-@RewriteRule(
-    replaceWith = &quot;@BeforeEach&quot;,
-    addImports = {ORG_JUNIT_JUPITER_API_BEFORE_EACH}
-)
-<span class="fc" id="L63">public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
+@CleanupPattern(value = &quot;@Before&quot;, kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_BEFORE, cleanupId = &quot;cleanup.junit.before&quot;, description = &quot;Migrate @Before to @BeforeEach&quot;, displayName = &quot;JUnit 4 @Before → JUnit 5 @BeforeEach&quot;)
+@RewriteRule(replaceWith = &quot;@BeforeEach&quot;, addImports = { ORG_JUNIT_JUPITER_API_BEFORE_EACH })
+<span class="fc" id="L61">public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="fc bfc" id="L67" title="All 2 branches covered.">		if (afterRefactoring) {</span>
-<span class="fc" id="L68">			return &quot;&quot;&quot;</span>
-				@BeforeEach
+<span class="fc bfc" id="L65" title="All 2 branches covered.">		if (afterRefactoring) {</span>
+<span class="fc" id="L66">			return &quot;&quot;&quot;</span>
+					@BeforeEach
+					public void setUp() {
+					}
+					&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+<span class="fc" id="L72">		return &quot;&quot;&quot;</span>
+				@Before
 				public void setUp() {
 				}
 				&quot;&quot;&quot;; //$NON-NLS-1$
-		}
-<span class="fc" id="L74">		return &quot;&quot;&quot;</span>
-			@Before
-			public void setUp() {
-			}
-			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L83">		return &quot;Before&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L81">		return &quot;Before&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

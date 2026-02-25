@@ -54,12 +54,12 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	}
 
 	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
-			ImportRewrite importRewriter, JunitHolder junitHolder) {
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
+			JunitHolder junitHolder) {
 <span class="fc" id="L59">		FieldDeclaration node = junitHolder.getFieldDeclaration();</span>
 <span class="fc" id="L60">		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);</span>
 <span class="fc" id="L61">	}</span>
-	
+
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 <span class="nc bnc" id="L65" title="All 2 branches missed.">		if (afterRefactoring) {</span>

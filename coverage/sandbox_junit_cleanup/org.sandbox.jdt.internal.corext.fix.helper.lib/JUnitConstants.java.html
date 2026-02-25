@@ -59,6 +59,8 @@ public final class JUnitConstants {
 	public static final String METHOD_AFTER = &quot;after&quot;;
 	public static final String METHOD_BEFORE = &quot;before&quot;;
 	public static final String METHOD_ASSERT_THROWS = &quot;assertThrows&quot;;
+	public static final String METHOD_ASSUME_THAT = &quot;assumeThat&quot;;
+	public static final String METHOD_ASSERT_THAT = &quot;assertThat&quot;;
 
 	// ===== Internal Class/Interface Names =====
 
@@ -161,6 +163,12 @@ public final class JUnitConstants {
 	public static final String ORG_JUNIT_PLATFORM_SUITE_API_INCLUDE_TAGS = &quot;org.junit.platform.suite.api.IncludeTags&quot;;
 	public static final String ORG_JUNIT_PLATFORM_SUITE_API_EXCLUDE_TAGS = &quot;org.junit.platform.suite.api.ExcludeTags&quot;;
 
+	// ===== Hamcrest Fully Qualified References =====
+
+	public static final String ORG_HAMCREST_MATCHER = &quot;org.hamcrest.Matcher&quot;;
+	public static final String ORG_HAMCREST_MATCHER_ASSERT = &quot;org.hamcrest.MatcherAssert&quot;;
+	public static final String ORG_HAMCREST_JUNIT_MATCHER_ASSUME = &quot;org.hamcrest.junit.MatcherAssume&quot;;
+
 	// ===== Callback Names =====
 
 	public static final String AFTER_ALL_CALLBACK = &quot;AfterAllCallback&quot;;
@@ -170,13 +178,13 @@ public final class JUnitConstants {
 
 	// ===== Assertion Method Sets =====
 
-<span class="fc" id="L173">	public static final Set&lt;String&gt; TWOPARAM_ASSERTIONS = Set.of(&quot;assertEquals&quot;, &quot;assertNotEquals&quot;, &quot;assertArrayEquals&quot;,</span>
-<span class="fc" id="L174">			&quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;assertThat&quot;);</span>
-<span class="fc" id="L175">	public static final Set&lt;String&gt; ONEPARAM_ASSERTIONS = Set.of(&quot;assertTrue&quot;, &quot;assertFalse&quot;, &quot;assertNull&quot;, &quot;assertNotNull&quot;);</span>
-<span class="fc" id="L176">	public static final Set&lt;String&gt; NOPARAM_ASSERTIONS = Set.of(&quot;fail&quot;);</span>
-<span class="fc" id="L177">	public static final Set&lt;String&gt; ALL_ASSERTION_METHODS = Stream</span>
-<span class="fc" id="L178">			.of(TWOPARAM_ASSERTIONS, ONEPARAM_ASSERTIONS, NOPARAM_ASSERTIONS)</span>
-<span class="fc" id="L179">			.flatMap(Set::stream)</span>
-<span class="fc" id="L180">			.collect(Collectors.toSet());</span>
+<span class="fc" id="L181">	public static final Set&lt;String&gt; TWOPARAM_ASSERTIONS = Set.of(&quot;assertEquals&quot;, &quot;assertNotEquals&quot;, &quot;assertArrayEquals&quot;,</span>
+<span class="fc" id="L182">			&quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;assertThat&quot;);</span>
+<span class="fc" id="L183">	public static final Set&lt;String&gt; ONEPARAM_ASSERTIONS = Set.of(&quot;assertTrue&quot;, &quot;assertFalse&quot;, &quot;assertNull&quot;, &quot;assertNotNull&quot;);</span>
+<span class="fc" id="L184">	public static final Set&lt;String&gt; NOPARAM_ASSERTIONS = Set.of(&quot;fail&quot;);</span>
+<span class="fc" id="L185">	public static final Set&lt;String&gt; ALL_ASSERTION_METHODS = Stream</span>
+<span class="fc" id="L186">			.of(TWOPARAM_ASSERTIONS, ONEPARAM_ASSERTIONS, NOPARAM_ASSERTIONS)</span>
+<span class="fc" id="L187">			.flatMap(Set::stream)</span>
+<span class="fc" id="L188">			.collect(Collectors.toSet());</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -19,8 +19,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
@@ -118,7 +116,7 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
  * @see org.sandbox.jdt.internal.corext.util.ExpressionHelper
  * @see Refactorer
  */
-<span class="fc" id="L121">public class StreamPipelineBuilder {</span>
+<span class="fc" id="L119">public class StreamPipelineBuilder {</span>
 
 	private final EnhancedForStatement forLoop;
 	private final PreconditionsChecker preconditions;
@@ -129,11 +127,11 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 
 	private List&lt;ProspectiveOperation&gt; operations;
 	private String loopVariableName;
-<span class="fc" id="L132">	private boolean analyzed = false;</span>
-<span class="fc" id="L133">	private boolean convertible = false;</span>
-<span class="fc" id="L134">	private boolean isAnyMatchPattern = false;</span>
-<span class="fc" id="L135">	private boolean isNoneMatchPattern = false;</span>
-<span class="fc" id="L136">	private boolean isAllMatchPattern = false;</span>
+<span class="fc" id="L130">	private boolean analyzed = false;</span>
+<span class="fc" id="L131">	private boolean convertible = false;</span>
+<span class="fc" id="L132">	private boolean isAnyMatchPattern = false;</span>
+<span class="fc" id="L133">	private boolean isNoneMatchPattern = false;</span>
+<span class="fc" id="L134">	private boolean isAllMatchPattern = false;</span>
 	
 	/** Assembler for building the final pipeline (initialized after analysis). */
 	private PipelineAssembler pipelineAssembler;
@@ -145,34 +143,34 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @param preconditions the preconditions checker for the loop
 	 * @throws IllegalArgumentException if forLoop or preconditions is null
 	 */
-<span class="fc" id="L148">	public StreamPipelineBuilder(EnhancedForStatement forLoop, PreconditionsChecker preconditions) {</span>
-<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (forLoop == null) {</span>
-<span class="nc" id="L150">			throw new IllegalArgumentException(&quot;forLoop cannot be null&quot;);</span>
+<span class="fc" id="L146">	public StreamPipelineBuilder(EnhancedForStatement forLoop, PreconditionsChecker preconditions) {</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		if (forLoop == null) {</span>
+<span class="nc" id="L148">			throw new IllegalArgumentException(&quot;forLoop cannot be null&quot;);</span>
 		}
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">		if (preconditions == null) {</span>
-<span class="nc" id="L153">			throw new IllegalArgumentException(&quot;preconditions cannot be null&quot;);</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (preconditions == null) {</span>
+<span class="nc" id="L151">			throw new IllegalArgumentException(&quot;preconditions cannot be null&quot;);</span>
 		}
 
-<span class="fc" id="L156">		this.forLoop = forLoop;</span>
-<span class="fc" id="L157">		this.preconditions = preconditions;</span>
-<span class="fc" id="L158">		this.reduceDetector = new ReducePatternDetector(forLoop);</span>
-<span class="fc" id="L159">		this.collectDetector = new CollectPatternDetector(forLoop);</span>
-<span class="fc" id="L160">		this.ifAnalyzer = new IfStatementAnalyzer(forLoop);</span>
+<span class="fc" id="L154">		this.forLoop = forLoop;</span>
+<span class="fc" id="L155">		this.preconditions = preconditions;</span>
+<span class="fc" id="L156">		this.reduceDetector = new ReducePatternDetector(forLoop);</span>
+<span class="fc" id="L157">		this.collectDetector = new CollectPatternDetector(forLoop);</span>
+<span class="fc" id="L158">		this.ifAnalyzer = new IfStatementAnalyzer(forLoop);</span>
 
 		// Internal invariant: EnhancedForStatement must have a parameter with a name
-<span class="pc bnc" id="L163" title="All 4 branches missed.">		assert forLoop.getParameter() != null &amp;&amp; forLoop.getParameter().getName() != null</span>
-<span class="nc" id="L164">				: &quot;forLoop must have a valid parameter with a name&quot;;</span>
+<span class="pc bnc" id="L161" title="All 4 branches missed.">		assert forLoop.getParameter() != null &amp;&amp; forLoop.getParameter().getName() != null</span>
+<span class="nc" id="L162">				: &quot;forLoop must have a valid parameter with a name&quot;;</span>
 
-<span class="fc" id="L166">		this.loopVariableName = forLoop.getParameter().getName().getIdentifier();</span>
-<span class="fc" id="L167">		this.operations = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L168">		this.isAnyMatchPattern = preconditions.isAnyMatchPattern();</span>
-<span class="fc" id="L169">		this.isNoneMatchPattern = preconditions.isNoneMatchPattern();</span>
-<span class="fc" id="L170">		this.isAllMatchPattern = preconditions.isAllMatchPattern();</span>
+<span class="fc" id="L164">		this.loopVariableName = forLoop.getParameter().getName().getIdentifier();</span>
+<span class="fc" id="L165">		this.operations = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L166">		this.isAnyMatchPattern = preconditions.isAnyMatchPattern();</span>
+<span class="fc" id="L167">		this.isNoneMatchPattern = preconditions.isNoneMatchPattern();</span>
+<span class="fc" id="L168">		this.isAllMatchPattern = preconditions.isAllMatchPattern();</span>
 		
 		// Initialize LoopBodyParser with all required dependencies
-<span class="fc" id="L173">		this.loopBodyParser = new LoopBodyParser(forLoop, reduceDetector, collectDetector, ifAnalyzer, </span>
-<span class="fc" id="L174">				isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern);</span>
-<span class="fc" id="L175">	}</span>
+<span class="fc" id="L171">		this.loopBodyParser = new LoopBodyParser(forLoop, reduceDetector, collectDetector, ifAnalyzer, </span>
+<span class="fc" id="L172">				isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern);</span>
+<span class="fc" id="L173">	}</span>
 
 	/**
 	 * Analyzes the loop body to determine if it can be converted to a stream
@@ -187,51 +185,51 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 *         otherwise
 	 */
 	public boolean analyze() {
-<span class="pc bpc" id="L190" title="1 of 2 branches missed.">		if (analyzed) {</span>
-<span class="nc" id="L191">			return convertible;</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">		if (analyzed) {</span>
+<span class="nc" id="L189">			return convertible;</span>
 		}
 
-<span class="fc" id="L194">		analyzed = true;</span>
+<span class="fc" id="L192">		analyzed = true;</span>
 
 		// Check basic preconditions
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">		if (!preconditions.isSafeToRefactor() </span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">		if (!preconditions.isSafeToRefactor() </span>
 //				|| !preconditions.iteratesOverIterable()
 				) {
-<span class="nc" id="L200">			convertible = false;</span>
-<span class="nc" id="L201">			return false;</span>
+<span class="nc" id="L198">			convertible = false;</span>
+<span class="nc" id="L199">			return false;</span>
 		}
 
 		// Parse the loop body into operations
-<span class="fc" id="L205">		Statement loopBody = forLoop.getBody();</span>
-<span class="fc" id="L206">		operations = parseLoopBody(loopBody, loopVariableName);</span>
+<span class="fc" id="L203">		Statement loopBody = forLoop.getBody();</span>
+<span class="fc" id="L204">		operations = parseLoopBody(loopBody, loopVariableName);</span>
 
 		// Check if we have any operations
-<span class="pc bpc" id="L209" title="1 of 2 branches missed.">		if (operations.isEmpty()) {</span>
-<span class="nc" id="L210">			convertible = false;</span>
-<span class="nc" id="L211">			return false;</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">		if (operations.isEmpty()) {</span>
+<span class="nc" id="L208">			convertible = false;</span>
+<span class="nc" id="L209">			return false;</span>
 		}
 		
 		// Check for unsafe collect pattern: if collecting to a variable that is 
 		// also read during iteration, we cannot convert
-<span class="pc bpc" id="L216" title="1 of 2 branches missed.">		if (hasUnsafeCollectPattern(loopBody)) {</span>
-<span class="nc" id="L217">			convertible = false;</span>
-<span class="nc" id="L218">			return false;</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		if (hasUnsafeCollectPattern(loopBody)) {</span>
+<span class="nc" id="L215">			convertible = false;</span>
+<span class="nc" id="L216">			return false;</span>
 		}
 
 		// Validate variable scoping
-<span class="pc bpc" id="L222" title="1 of 2 branches missed.">		if (!validateVariableScope(operations, loopVariableName)) {</span>
-<span class="nc" id="L223">			convertible = false;</span>
-<span class="nc" id="L224">			return false;</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		if (!validateVariableScope(operations, loopVariableName)) {</span>
+<span class="nc" id="L221">			convertible = false;</span>
+<span class="nc" id="L222">			return false;</span>
 		}
 
 		// Initialize the pipeline assembler for building the final pipeline
-<span class="fc" id="L228">		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);</span>
-<span class="fc" id="L229">		pipelineAssembler.setUsedVariableNames(ASTNavigationUtils.getUsedVariableNames(forLoop));</span>
-<span class="fc" id="L230">		pipelineAssembler.setReduceDetector(reduceDetector);</span>
-<span class="fc" id="L231">		pipelineAssembler.setCollectDetector(collectDetector);</span>
+<span class="fc" id="L226">		pipelineAssembler = new PipelineAssembler(forLoop, operations, loopVariableName);</span>
+<span class="fc" id="L227">		pipelineAssembler.setUsedVariableNames(ASTNavigationUtils.getUsedVariableNames(forLoop));</span>
+<span class="fc" id="L228">		pipelineAssembler.setReduceDetector(reduceDetector);</span>
+<span class="fc" id="L229">		pipelineAssembler.setCollectDetector(collectDetector);</span>
 
-<span class="fc" id="L233">		convertible = true;</span>
-<span class="fc" id="L234">		return true;</span>
+<span class="fc" id="L231">		convertible = true;</span>
+<span class="fc" id="L232">		return true;</span>
 	}
 
 	/**
@@ -267,10 +265,10 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @see PipelineAssembler
 	 */
 	public MethodInvocation buildPipeline() {
-<span class="pc bpc" id="L270" title="3 of 6 branches missed.">		if (!analyzed || !convertible || pipelineAssembler == null) {</span>
-<span class="nc" id="L271">			return null;</span>
+<span class="pc bpc" id="L268" title="3 of 6 branches missed.">		if (!analyzed || !convertible || pipelineAssembler == null) {</span>
+<span class="nc" id="L269">			return null;</span>
 		}
-<span class="fc" id="L273">		return pipelineAssembler.buildPipeline();</span>
+<span class="fc" id="L271">		return pipelineAssembler.buildPipeline();</span>
 	}
 	
 	/**
@@ -283,7 +281,7 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @return true if Arrays import is needed
 	 */
 	public boolean needsArraysImport() {
-<span class="nc bnc" id="L286" title="All 4 branches missed.">		return pipelineAssembler != null &amp;&amp; pipelineAssembler.needsArraysImport();</span>
+<span class="nc bnc" id="L284" title="All 4 branches missed.">		return pipelineAssembler != null &amp;&amp; pipelineAssembler.needsArraysImport();</span>
 	}
 
 	/**
@@ -298,15 +296,15 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 */
 	public boolean needsCollectorsImport() {
 		// Delegate to PipelineAssembler which knows if .toList() is being used
-<span class="nc bnc" id="L301" title="All 2 branches missed.">		if (pipelineAssembler != null) {</span>
-<span class="nc" id="L302">			return pipelineAssembler.needsCollectorsImport();</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">		if (pipelineAssembler != null) {</span>
+<span class="nc" id="L300">			return pipelineAssembler.needsCollectorsImport();</span>
 		}
 		// Fallback: check if any operation is a COLLECT operation
-<span class="nc bnc" id="L305" title="All 2 branches missed.">		if (operations == null) {</span>
-<span class="nc" id="L306">			return false;</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">		if (operations == null) {</span>
+<span class="nc" id="L304">			return false;</span>
 		}
-<span class="nc" id="L308">		return operations.stream()</span>
-<span class="nc bnc" id="L309" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
+<span class="nc" id="L306">		return operations.stream()</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
 	}
 	
 	/**
@@ -319,11 +317,11 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @return true if this is a collect operation
 	 */
 	public boolean isCollectOperation() {
-<span class="pc bpc" id="L322" title="1 of 2 branches missed.">		if (operations == null) {</span>
-<span class="nc" id="L323">			return false;</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">		if (operations == null) {</span>
+<span class="nc" id="L321">			return false;</span>
 		}
-<span class="fc" id="L325">		return operations.stream()</span>
-<span class="fc bfc" id="L326" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
+<span class="fc" id="L323">		return operations.stream()</span>
+<span class="fc bfc" id="L324" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
 	}
 	
 	/**
@@ -343,21 +341,21 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 */
 	private boolean hasUnsafeCollectPattern(Statement loopBody) {
 		// Check if there's a COLLECT operation
-<span class="fc" id="L346">		boolean hasCollect = operations.stream()</span>
-<span class="fc bfc" id="L347" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
+<span class="fc" id="L344">		boolean hasCollect = operations.stream()</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.COLLECT);</span>
 		
-<span class="pc bpc" id="L349" title="1 of 2 branches missed.">		if (!hasCollect) {</span>
-<span class="nc" id="L350">			return false;</span>
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">		if (!hasCollect) {</span>
+<span class="nc" id="L348">			return false;</span>
 		}
 		
 		// Find the target variable from the COLLECT operation
-<span class="fc" id="L354">		String collectTarget = collectDetector.getTargetVariable();</span>
-<span class="pc bpc" id="L355" title="1 of 2 branches missed.">		if (collectTarget == null) {</span>
-<span class="nc" id="L356">			return false;</span>
+<span class="fc" id="L352">		String collectTarget = collectDetector.getTargetVariable();</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">		if (collectTarget == null) {</span>
+<span class="nc" id="L354">			return false;</span>
 		}
 		
 		// Check if the target variable is read during iteration
-<span class="fc" id="L360">		return collectDetector.isTargetReadDuringIteration(loopBody, collectTarget);</span>
+<span class="fc" id="L358">		return collectDetector.isTargetReadDuringIteration(loopBody, collectTarget);</span>
 	}
 
 	/**
@@ -379,10 +377,10 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @see PipelineAssembler
 	 */
 	public Statement wrapPipeline(MethodInvocation pipeline) {
-<span class="nc bnc" id="L382" title="All 2 branches missed.">		if (pipelineAssembler == null) {</span>
-<span class="nc" id="L383">			return null;</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">		if (pipelineAssembler == null) {</span>
+<span class="nc" id="L381">			return null;</span>
 		}
-<span class="nc" id="L385">		return pipelineAssembler.wrapPipeline(pipeline);</span>
+<span class="nc" id="L383">		return pipelineAssembler.wrapPipeline(pipeline);</span>
 	}
 
 	/**
@@ -417,7 +415,7 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @return a list of {@link ProspectiveOperation} objects
 	 */
 	private List&lt;ProspectiveOperation&gt; parseLoopBody(Statement body, String loopVarName) {
-<span class="fc" id="L420">		return loopBodyParser.parse(body, loopVarName);</span>
+<span class="fc" id="L418">		return loopBodyParser.parse(body, loopVarName);</span>
 	}
 
 	/**
@@ -467,73 +465,73 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @throws IllegalArgumentException if operations or loopVarName is null
 	 */
 	private boolean validateVariableScope(List&lt;ProspectiveOperation&gt; operations, String loopVarName) {
-<span class="pc bpc" id="L470" title="1 of 2 branches missed.">		if (operations == null) {</span>
-<span class="nc" id="L471">			throw new IllegalArgumentException(&quot;operations cannot be null&quot;);</span>
+<span class="pc bpc" id="L468" title="1 of 2 branches missed.">		if (operations == null) {</span>
+<span class="nc" id="L469">			throw new IllegalArgumentException(&quot;operations cannot be null&quot;);</span>
 		}
-<span class="pc bpc" id="L473" title="1 of 2 branches missed.">		if (loopVarName == null) {</span>
-<span class="nc" id="L474">			throw new IllegalArgumentException(&quot;loopVarName cannot be null&quot;);</span>
+<span class="pc bpc" id="L471" title="1 of 2 branches missed.">		if (loopVarName == null) {</span>
+<span class="nc" id="L472">			throw new IllegalArgumentException(&quot;loopVarName cannot be null&quot;);</span>
 		}
 
-<span class="fc" id="L477">		Set&lt;String&gt; availableVars = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L478">		availableVars.add(loopVarName);</span>
+<span class="fc" id="L475">		Set&lt;String&gt; availableVars = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L476">		availableVars.add(loopVarName);</span>
 		
 		// Add all variables from outer scope (method parameters, fields, etc.)
 		// These are always available in lambdas
-<span class="fc" id="L482">		Collection&lt;String&gt; outerScopeVars = ASTNavigationUtils.getUsedVariableNames(forLoop);</span>
-<span class="fc" id="L483">		availableVars.addAll(outerScopeVars);</span>
+<span class="fc" id="L480">		Collection&lt;String&gt; outerScopeVars = ASTNavigationUtils.getUsedVariableNames(forLoop);</span>
+<span class="fc" id="L481">		availableVars.addAll(outerScopeVars);</span>
 		
 		// Track if we've moved past the loop variable to a mapped variable
-<span class="fc" id="L486">		boolean loopVarConsumed = false;</span>
+<span class="fc" id="L484">		boolean loopVarConsumed = false;</span>
 
-<span class="fc bfc" id="L488" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
-<span class="pc bpc" id="L489" title="1 of 2 branches missed.">			if (op == null) {</span>
-<span class="nc" id="L490">				throw new IllegalStateException(&quot;Encountered null ProspectiveOperation in operations list&quot;);</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
+<span class="pc bpc" id="L487" title="1 of 2 branches missed.">			if (op == null) {</span>
+<span class="nc" id="L488">				throw new IllegalStateException(&quot;Encountered null ProspectiveOperation in operations list&quot;);</span>
 			}
 
 			// Check consumed variables are available
-<span class="fc" id="L494">			Set&lt;String&gt; consumed = op.getConsumedVariables();</span>
-<span class="fc bfc" id="L495" title="All 2 branches covered.">			for (String var : consumed) {</span>
+<span class="fc" id="L492">			Set&lt;String&gt; consumed = op.getConsumedVariables();</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">			for (String var : consumed) {</span>
 				// Accumulator variables are in outer scope, always available
-<span class="pc bpc" id="L497" title="1 of 2 branches missed.">				if (isAccumulatorVariable(var, operations)) {</span>
-<span class="nc" id="L498">					continue;</span>
+<span class="pc bpc" id="L495" title="1 of 2 branches missed.">				if (isAccumulatorVariable(var, operations)) {</span>
+<span class="nc" id="L496">					continue;</span>
 				}
 				
 				// Variables from outer scope (method parameters, fields, etc.) are always available
-<span class="fc bfc" id="L502" title="All 2 branches covered.">				if (outerScopeVars.contains(var)) {</span>
-<span class="fc" id="L503">					continue;</span>
+<span class="fc bfc" id="L500" title="All 2 branches covered.">				if (outerScopeVars.contains(var)) {</span>
+<span class="fc" id="L501">					continue;</span>
 				}
 				
 				// After a MAP produces a new variable, the loop variable should not be used
 				// unless it's the current operation that consumes it
-<span class="pc bpc" id="L508" title="1 of 2 branches missed.">				if (var.equals(loopVarName)) {</span>
-<span class="pc bpc" id="L509" title="1 of 4 branches missed.">					if (loopVarConsumed &amp;&amp; op.getProducedVariableName() != null) {</span>
+<span class="pc bpc" id="L506" title="1 of 2 branches missed.">				if (var.equals(loopVarName)) {</span>
+<span class="pc bpc" id="L507" title="1 of 4 branches missed.">					if (loopVarConsumed &amp;&amp; op.getProducedVariableName() != null) {</span>
 						// Loop variable used after it's been replaced by a MAP - scope violation
-<span class="nc" id="L511">						return false;</span>
+<span class="nc" id="L509">						return false;</span>
 					}
 				} else {
 					// Non-loop, non-accumulator, non-outer-scope variable - must be in availableVars
-<span class="nc bnc" id="L515" title="All 2 branches missed.">					if (!availableVars.contains(var)) {</span>
+<span class="nc bnc" id="L513" title="All 2 branches missed.">					if (!availableVars.contains(var)) {</span>
 						// Variable used before it's defined - this is a scope violation
-<span class="nc" id="L517">						return false;</span>
+<span class="nc" id="L515">						return false;</span>
 					}
 				}
 			}
 
 			// Add produced variables to available set and mark loop var as consumed if applicable
-<span class="fc" id="L523">			String produced = op.getProducedVariableName();</span>
-<span class="pc bpc" id="L524" title="1 of 4 branches missed.">			if (produced != null &amp;&amp; !produced.isEmpty()) {</span>
-<span class="fc" id="L525">				availableVars.add(produced);</span>
+<span class="fc" id="L521">			String produced = op.getProducedVariableName();</span>
+<span class="pc bpc" id="L522" title="1 of 4 branches missed.">			if (produced != null &amp;&amp; !produced.isEmpty()) {</span>
+<span class="fc" id="L523">				availableVars.add(produced);</span>
 				
 				// If this MAP operation consumed the loop variable, mark it as consumed
-<span class="pc bpc" id="L528" title="1 of 2 branches missed.">				if (consumed.contains(loopVarName)) {</span>
-<span class="fc" id="L529">					loopVarConsumed = true;</span>
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">				if (consumed.contains(loopVarName)) {</span>
+<span class="fc" id="L527">					loopVarConsumed = true;</span>
 					// Remove loop variable from available vars - it's now been replaced
-<span class="fc" id="L531">					availableVars.remove(loopVarName);</span>
+<span class="fc" id="L529">					availableVars.remove(loopVarName);</span>
 				}
 			}
 		}
 
-<span class="fc" id="L536">		return true;</span>
+<span class="fc" id="L534">		return true;</span>
 	}
 
 	/**
@@ -544,14 +542,14 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @return true if the variable is an accumulator, false otherwise
 	 */
 	private boolean isAccumulatorVariable(String varName, List&lt;ProspectiveOperation&gt; operations) {
-<span class="fc bfc" id="L547" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
-<span class="pc bpc" id="L548" title="1 of 2 branches missed.">					if (op.getOperationType() == OperationType.REDUCE) {</span>
-<span class="nc bnc" id="L549" title="All 2 branches missed.">				if (varName.equals(op.getAccumulatorVariableName())) {</span>
-<span class="nc" id="L550">					return true;</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">		for (ProspectiveOperation op : operations) {</span>
+<span class="pc bpc" id="L546" title="1 of 2 branches missed.">					if (op.getOperationType() == OperationType.REDUCE) {</span>
+<span class="nc bnc" id="L547" title="All 2 branches missed.">				if (varName.equals(op.getAccumulatorVariableName())) {</span>
+<span class="nc" id="L548">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L554">		return false;</span>
+<span class="fc" id="L552">		return false;</span>
 	}
 
 	
@@ -561,11 +559,11 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @return true if there is a REDUCE operation, false otherwise
 	 */
 	public boolean hasReduceOperation() {
-<span class="nc bnc" id="L564" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
-<span class="nc" id="L565">			return false;</span>
+<span class="nc bnc" id="L562" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
+<span class="nc" id="L563">			return false;</span>
 		}
-<span class="nc" id="L567">		return operations.stream()</span>
-<span class="nc bnc" id="L568" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.REDUCE);</span>
+<span class="nc" id="L565">		return operations.stream()</span>
+<span class="nc bnc" id="L566" title="All 2 branches missed.">				.anyMatch(op -&gt; op.getOperationType() == OperationType.REDUCE);</span>
 	}
 	
 	/**
@@ -574,15 +572,15 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @return the accumulator variable name, or null if no REDUCE operation exists
 	 */
 	public String getAccumulatorVariableName() {
-<span class="nc bnc" id="L577" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
-<span class="nc" id="L578">			return null;</span>
+<span class="nc bnc" id="L575" title="All 4 branches missed.">		if (!analyzed || !convertible) {</span>
+<span class="nc" id="L576">			return null;</span>
 		}
-<span class="nc bnc" id="L580" title="All 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
-<span class="nc bnc" id="L581" title="All 2 branches missed.">			if (op.getOperationType() == OperationType.REDUCE) {</span>
-<span class="nc" id="L582">				return op.getAccumulatorVariableName();</span>
+<span class="nc bnc" id="L578" title="All 2 branches missed.">		for (ProspectiveOperation op : operations) {</span>
+<span class="nc bnc" id="L579" title="All 2 branches missed.">			if (op.getOperationType() == OperationType.REDUCE) {</span>
+<span class="nc" id="L580">				return op.getAccumulatorVariableName();</span>
 			}
 		}
-<span class="nc" id="L585">		return null;</span>
+<span class="nc" id="L583">		return null;</span>
 	}
 	
 	/**
@@ -591,10 +589,10 @@ import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
 	 * @return the target variable name, or null if no COLLECT operation exists
 	 */
 	public String getCollectTargetVariable() {
-<span class="nc bnc" id="L594" title="All 6 branches missed.">		if (!analyzed || !convertible || collectDetector == null) {</span>
-<span class="nc" id="L595">			return null;</span>
+<span class="nc bnc" id="L592" title="All 6 branches missed.">		if (!analyzed || !convertible || collectDetector == null) {</span>
+<span class="nc" id="L593">			return null;</span>
 		}
-<span class="nc" id="L597">		return collectDetector.getTargetVariable();</span>
+<span class="nc" id="L595">		return collectDetector.getTargetVariable();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

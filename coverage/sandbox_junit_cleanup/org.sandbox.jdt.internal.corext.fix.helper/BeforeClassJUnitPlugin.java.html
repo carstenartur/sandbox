@@ -23,10 +23,14 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 /**
  * Migrates JUnit 4 @BeforeClass annotations to JUnit 5 @BeforeAll.
  * 
- * &lt;p&gt;Uses TriggerPattern-based declarative architecture
- * to reduce boilerplate.&lt;/p&gt;
+ * &lt;p&gt;
+ * Uses TriggerPattern-based declarative architecture to reduce boilerplate.
+ * &lt;/p&gt;
  * 
- * &lt;p&gt;&lt;b&gt;Before:&lt;/b&gt;&lt;/p&gt;
+ * &lt;p&gt;
+ * &lt;b&gt;Before:&lt;/b&gt;
+ * &lt;/p&gt;
+ * 
  * &lt;pre&gt;
  * import org.junit.BeforeClass;
  * 
@@ -36,7 +40,10 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * }
  * &lt;/pre&gt;
  * 
- * &lt;p&gt;&lt;b&gt;After:&lt;/b&gt;&lt;/p&gt;
+ * &lt;p&gt;
+ * &lt;b&gt;After:&lt;/b&gt;
+ * &lt;/p&gt;
+ * 
  * &lt;pre&gt;
  * import org.junit.jupiter.api.BeforeAll;
  * 
@@ -48,39 +55,29 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * 
  * @since 1.3.0
  */
-@CleanupPattern(
-    value = &quot;@BeforeClass&quot;,
-    kind = PatternKind.ANNOTATION,
-    qualifiedType = ORG_JUNIT_BEFORECLASS,
-    cleanupId = &quot;cleanup.junit.beforeclass&quot;,
-    description = &quot;Migrate @BeforeClass to @BeforeAll&quot;,
-    displayName = &quot;JUnit 4 @BeforeClass → JUnit 5 @BeforeAll&quot;
-)
-@RewriteRule(
-    replaceWith = &quot;@BeforeAll&quot;,
-    addImports = {ORG_JUNIT_JUPITER_API_BEFORE_ALL}
-)
-<span class="fc" id="L63">public class BeforeClassJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
+@CleanupPattern(value = &quot;@BeforeClass&quot;, kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_BEFORECLASS, cleanupId = &quot;cleanup.junit.beforeclass&quot;, description = &quot;Migrate @BeforeClass to @BeforeAll&quot;, displayName = &quot;JUnit 4 @BeforeClass → JUnit 5 @BeforeAll&quot;)
+@RewriteRule(replaceWith = &quot;@BeforeAll&quot;, addImports = { ORG_JUNIT_JUPITER_API_BEFORE_ALL })
+<span class="fc" id="L60">public class BeforeClassJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L67" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L68">			return &quot;&quot;&quot;</span>
-				@BeforeAll
+<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L65">			return &quot;&quot;&quot;</span>
+					@BeforeAll
+					public static void setUpBeforeClass() {
+					}
+					&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+<span class="nc" id="L71">		return &quot;&quot;&quot;</span>
+				@BeforeClass
 				public static void setUpBeforeClass() {
 				}
 				&quot;&quot;&quot;; //$NON-NLS-1$
-		}
-<span class="nc" id="L74">		return &quot;&quot;&quot;</span>
-			@BeforeClass
-			public static void setUpBeforeClass() {
-			}
-			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L83">		return &quot;BeforeClass&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L80">		return &quot;BeforeClass&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
