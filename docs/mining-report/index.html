@@ -102,7 +102,7 @@
     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary, #3498db);">
         <p style="margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
             <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg" alt="Nightly Commit Mining">
+                <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg?branch=main" alt="Nightly Commit Mining">
             </a>
             | <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
             | <a href="https://carstenartur.github.io/sandbox/" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
@@ -133,21 +133,21 @@
     <!-- Statistics Grid -->
     <div class="stats">
         <div class="stat-card">
-            <div class="value" id="stat-total">7</div>
+            <div class="value" id="stat-total">–</div>
             <div class="label">Total Processed</div>
         </div>
         <div class="stat-card">
-            <div class="value" id="stat-relevant">5</div>
+            <div class="value" id="stat-relevant">–</div>
             <div class="label">Relevant</div>
             <div class="percent" id="stat-relevant-pct"></div>
         </div>
         <div class="stat-card">
-            <div class="value" id="stat-irrelevant">1</div>
+            <div class="value" id="stat-irrelevant">–</div>
             <div class="label">Irrelevant</div>
             <div class="percent" id="stat-irrelevant-pct"></div>
         </div>
         <div class="stat-card">
-            <div class="value" id="stat-duplicates">1</div>
+            <div class="value" id="stat-duplicates">–</div>
             <div class="label">Duplicates</div>
         </div>
     </div>
@@ -155,14 +155,14 @@
     <!-- Traffic Light Bar with Percentages -->
     <div class="traffic-bar-container">
         <div class="traffic-bar" id="traffic-bar">
-            <div class="segment green" id="bar-green" style="width:33%">3</div>
-            <div class="segment yellow" id="bar-yellow" style="width:33%">1</div>
-            <div class="segment red" id="bar-red" style="width:34%">1</div>
+            <div class="segment green" id="bar-green" style="width:33%">–</div>
+            <div class="segment yellow" id="bar-yellow" style="width:33%">–</div>
+            <div class="segment red" id="bar-red" style="width:34%">–</div>
         </div>
         <div class="traffic-bar-legend">
-            <span><span class="dot" style="background:var(--green)"></span> Green: <span id="legend-green">3</span></span>
-            <span><span class="dot" style="background:var(--yellow)"></span> Yellow: <span id="legend-yellow">1</span></span>
-            <span><span class="dot" style="background:var(--red)"></span> Red: <span id="legend-red">1</span></span>
+            <span><span class="dot" style="background:var(--green)"></span> Green: <span id="legend-green">–</span></span>
+            <span><span class="dot" style="background:var(--yellow)"></span> Yellow: <span id="legend-yellow">–</span></span>
+            <span><span class="dot" style="background:var(--red)"></span> Red: <span id="legend-red">–</span></span>
         </div>
     </div>
 
@@ -486,8 +486,7 @@
                 category: evaluation.category || '',
                 summary: evaluation.summary || ''
             });
-            var url = window.location.origin + '/' +
-                (evaluation.repoUrl || '').replace('https://github.com/', '') +
+            var url = (evaluation.repoUrl || '').replace(/\/$/, '') +
                 '/actions/workflows/apply-mining-proposal.yml?' + params.toString();
             window.open(url, '_blank');
         }
