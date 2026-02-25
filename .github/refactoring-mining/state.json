@@ -1,9 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "44f830b8bd43aa6a96046f77830d2a20b642cf62",
-      "lastProcessedDate": "2026-02-24T20:22:21.287206915Z",
-      "totalProcessed": 9946,
+      "lastProcessedCommit": "8bdcda4fcd65aad7d2692e35d4fdf96bbe9b2a7a",
+      "lastProcessedDate": "2026-02-25T04:30:39.794109661Z",
+      "totalProcessed": 9973,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -149,6 +149,24 @@
           "deferredAt": "2026-02-24T20:22:21.287116118Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "7d6a8087fea7b21c80452669cf04c8dda113b505",
+          "message": "Fix Javadoc errors\n",
+          "diffLines": 58,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-25T04:27:03.794684674Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6dbb3dd692f0e6f9f68f461f2253fa4cfa42129e",
+          "message": "Fix javadoc warnings in ISharedImages\n\nStop pointing to deprecated Cursor constructors in\nhttps://github.com/eclipse-pla",
+          "diffLines": 47,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-25T04:30:39.793969389Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -164,5 +182,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 9946
+  "globalTotalProcessed": 9973
 }
