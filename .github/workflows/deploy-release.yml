@@ -7,6 +7,7 @@ on:
         description: 'Release version (e.g., 1.2.3) - check current SNAPSHOT version in pom.xml'
         required: true
         type: string
+        default: '1.2.6' # auto-updated by release workflow
       skip_tests:
         description: 'Skip tests during release build'
         required: false
@@ -306,6 +307,28 @@ jobs:
         echo "Release notes preview:"
         cat release_notes.md
 
+    # 12b. Upload CLI distribution archives to GitHub Release
+    - name: Upload CLI distribution archives
+      if: ${{ !inputs.dry_run }}
+      run: |
+        CLI_DIST_DIR="sandbox_cleanup_cli_dist/target"
+        for archive in "$CLI_DIST_DIR"/*-dist.tar.gz "$CLI_DIST_DIR"/*-dist.zip; do
+          if [ -f "$archive" ]; then
+            echo "Uploading $(basename $archive) to release..."
+            gh release upload "v${{ inputs.release_version }}" "$archive" --clobber
+          fi
+        done
+
+    - name: Dry run - Show CLI distribution archives that would be uploaded
+      if: ${{ inputs.dry_run }}
+      run: |
+        CLI_DIST_DIR="sandbox_cleanup_cli_dist/target"
+        for archive in "$CLI_DIST_DIR"/*-dist.tar.gz "$CLI_DIST_DIR"/*-dist.zip; do
+          if [ -f "$archive" ]; then
+            echo "::notice::Dry run mode - would upload $(basename $archive) to release v${{ inputs.release_version }}"
+          fi
+        done
+
     # 13. Deploy release to gh-pages
     - name: Checkout gh-pages branch
       if: ${{ !inputs.dry_run }}
@@ -413,6 +436,10 @@ jobs:
         IFS='.' read -r major minor patch <<< "$RELEASED_VERSION"
         NEXT_PATCH=$((patch + 1))
         NEXT_VERSION="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
+        NEXT_RELEASE="${major}.${minor}.${NEXT_PATCH}"
+        
+        # Update the default release version in deploy-release.yml to the next expected release
+        sed -i "s/default: '[0-9]*\.[0-9]*\.[0-9]*' # auto-updated by release workflow/default: '${NEXT_RELEASE}' # auto-updated by release workflow/" .github/workflows/deploy-release.yml
         
         # Create a branch for the next development iteration
         NEXT_VERSION_BRANCH="release/prepare-next-${NEXT_VERSION}"
