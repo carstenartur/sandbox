@@ -658,8 +658,9 @@ public class GeminiClient implements LlmClient {
 	 * LLMs sometimes wrap rules in {@code <trigger>}, {@code <import>},
 	 * or {@code <pattern>} tags despite being told not to.
 	 *
-	 * @param dslRule the raw DSL rule string, or null
-	 * @return the sanitized DSL rule, or null if input was null
+	 * @param dslRule the raw DSL rule string, or {@code null}
+	 * @return the sanitized DSL rule, or {@code null} if the input was {@code null}
+	 *         or if the sanitized result is empty after stripping tags and trimming
 	 */
 	static String sanitizeDslRule(String dslRule) {
 		if (dslRule == null) {
