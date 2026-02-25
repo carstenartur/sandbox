@@ -163,7 +163,10 @@ public class PromptBuilder {
 	private void appendTaskSection(StringBuilder sb) {
 		sb.append("## Task\n"); //$NON-NLS-1$
 		sb.append("Analyze this commit and determine whether the code change\n"); //$NON-NLS-1$
-		sb.append("can be generalized into a reusable TriggerPattern DSL rule.\n"); //$NON-NLS-1$
+		sb.append("can be generalized into a reusable TriggerPattern DSL rule.\n\n"); //$NON-NLS-1$
+		sb.append("IMPORTANT: The dslRule field must contain plain DSL text only.\n"); //$NON-NLS-1$
+		sb.append("Never use <trigger>, <import>, <pattern>, or any XML tags.\n"); //$NON-NLS-1$
+		sb.append("Never use isType() — use instanceof($var, \"TypeName\") instead.\n\n"); //$NON-NLS-1$
 		sb.append("Respond with a JSON object:\n\n"); //$NON-NLS-1$
 		appendJsonSchema(sb, false);
 		appendTrafficLightMeanings(sb);
@@ -188,7 +191,7 @@ public class PromptBuilder {
 		sb.append(indent).append("\"isNewCategory\": true/false,\n"); //$NON-NLS-1$
 		sb.append(indent).append("\"categoryReason\": \"why this category\",\n"); //$NON-NLS-1$
 		sb.append(indent).append("\"canImplementInCurrentDsl\": true/false,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"dslRule\": \"the DSL rule if applicable\",\n"); //$NON-NLS-1$
+		sb.append(indent).append("\"dslRule\": \"raw .sandbox-hint rule (NO <trigger> tags, NO <import> tags, NO XML)\",\n"); //$NON-NLS-1$
 		sb.append(indent).append("\"targetHintFile\": \"suggested .sandbox-hint filename\",\n"); //$NON-NLS-1$
 		sb.append(indent).append("\"languageChangeNeeded\": \"what DSL change would be needed\",\n"); //$NON-NLS-1$
 		sb.append(indent).append("\"dslRuleAfterChange\": \"DSL rule after language extension\",\n"); //$NON-NLS-1$

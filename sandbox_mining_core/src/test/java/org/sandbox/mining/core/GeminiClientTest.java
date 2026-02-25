@@ -428,4 +428,69 @@ class GeminiClientTest {
 		GeminiClient client = new GeminiClient("test-key");
 		assertFalse(client.wasLastResponseTruncated());
 	}
+
+	@Test
+	void testParseResponseSanitizesTriggerTags() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = """
+				{
+				  "candidates": [{
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Replace size check\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"reusability\\": 9,\\n  \\"codeImprovement\\": 7,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"<trigger>\\\\n$x.size() == 0\\\\n=> $x.isEmpty()\\\\n;;\\\\n</trigger>\\"\\n}\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		CommitEvaluation eval = client.parseResponse(response, "abc123", "msg", "url");
+		assertNotNull(eval);
+		assertNotNull(eval.dslRule());
+		assertFalse(eval.dslRule().contains("<trigger>"));
+		assertFalse(eval.dslRule().contains("</trigger>"));
+		assertTrue(eval.dslRule().contains("$x.size() == 0"));
+	}
+
+	@Test
+	void testParseResponseSanitizesImportTags() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = """
+				{
+				  "candidates": [{
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Use Map.entry\\",\\n  \\"category\\": \\"Java-Modernisierung\\",\\n  \\"reusability\\": 7,\\n  \\"codeImprovement\\": 5,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"new java.util.AbstractMap.SimpleEntry<>($key, $value)\\\\n=> java.util.Map.entry($key, $value)\\\\n<import>java.util.Map</import>\\\\n;;\\"\\n}\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		CommitEvaluation eval = client.parseResponse(response, "abc123", "msg", "url");
+		assertNotNull(eval);
+		assertNotNull(eval.dslRule());
+		assertFalse(eval.dslRule().contains("<import>"));
+		assertFalse(eval.dslRule().contains("</import>"));
+		assertTrue(eval.dslRule().contains("java.util.Map.entry"));
+	}
+
+	@Test
+	void testParseResponsePreservesCleanDslRule() {
+		GeminiClient client = new GeminiClient("test-key");
+		String response = """
+				{
+				  "candidates": [{
+				    "content": {
+				      "parts": [{
+				        "text": "```json\\n{\\n  \\"relevant\\": true,\\n  \\"trafficLight\\": \\"GREEN\\",\\n  \\"summary\\": \\"Clean rule\\",\\n  \\"category\\": \\"Collections\\",\\n  \\"reusability\\": 9,\\n  \\"codeImprovement\\": 7,\\n  \\"implementationEffort\\": 2,\\n  \\"canImplementInCurrentDsl\\": true,\\n  \\"dslRule\\": \\"$x.size() == 0\\\\n=> $x.isEmpty()\\\\n;;\\"\\n}\\n```"
+				      }]
+				    }
+				  }]
+				}
+				""";
+		CommitEvaluation eval = client.parseResponse(response, "abc123", "msg", "url");
+		assertNotNull(eval);
+		assertNotNull(eval.dslRule());
+		assertTrue(eval.dslRule().contains("$x.size() == 0"));
+		assertTrue(eval.dslRule().contains("$x.isEmpty()"));
+	}
 }
