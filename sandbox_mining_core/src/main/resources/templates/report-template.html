@@ -108,7 +108,7 @@
             | <a href="https://carstenartur.github.io/sandbox/" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
             | <a href="evaluations.json" style="color: #0366d6; text-decoration: none;">📄 evaluations.json</a>
             | <a href="statistics.json" style="color: #0366d6; text-decoration: none;">📊 statistics.json</a>
-            | <a href="https://github.com/carstenartur/sandbox/tree/master/sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/" style="color: #0366d6; text-decoration: none;">📁 .sandbox-hint Sources</a>
+            | <a href="https://github.com/carstenartur/sandbox/tree/main/sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/" style="color: #0366d6; text-decoration: none;">📁 .sandbox-hint Sources</a>
         </p>
     </div>
 
@@ -126,6 +126,12 @@
 
     <!-- Outcome Summary -->
     <div class="outcome-summary" id="outcome-summary"></div>
+
+    <!-- Empty State Banner (shown when no evaluations) -->
+    <div id="empty-state" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:20px; margin-bottom:20px; text-align:center;">
+        <p style="font-size:1.1em; margin:0;">📭 <strong>No evaluations yet.</strong> The mining workflow runs nightly at 2 AM UTC.</p>
+        <p style="margin:8px 0 0; color:#666;">Check the <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml" style="color:#0366d6;">workflow runs</a> for status.</p>
+    </div>
 
     <!-- Statistics Grid -->
     <div class="stats">
@@ -704,6 +710,10 @@
                 populateFilters(data);
                 renderEvaluations(data);
                 renderDslSequences(data);
+                // Show empty-state banner if no evaluations
+                if (!data || data.length === 0) {
+                    document.getElementById('empty-state').style.display = 'block';
+                }
             })
             .catch(function(err) { console.error('Failed to load evaluations:', err); });
 
@@ -754,11 +764,19 @@
                 }
                 renderRunStatus(data);
                 renderDailyProgress(data);
+                // Update stat cards from fetched statistics data
+                if (data.totalProcessed !== undefined) document.getElementById('stat-total').textContent = data.totalProcessed;
+                if (data.relevant !== undefined) document.getElementById('stat-relevant').textContent = data.relevant;
+                if (data.irrelevant !== undefined) document.getElementById('stat-irrelevant').textContent = data.irrelevant;
+                if (data.duplicates !== undefined) document.getElementById('stat-duplicates').textContent = data.duplicates;
+                if (data.green !== undefined) document.getElementById('legend-green').textContent = data.green;
+                if (data.yellow !== undefined) document.getElementById('legend-yellow').textContent = data.yellow;
+                if (data.red !== undefined) document.getElementById('legend-red').textContent = data.red;
+                updatePercentages();
+                updateTrafficBar();
             })
             .catch(function(err) { console.error('Failed to load statistics:', err); });
 
-        updatePercentages();
-        updateTrafficBar();
         updateOutcomeSummary();
     </script>
 </body>

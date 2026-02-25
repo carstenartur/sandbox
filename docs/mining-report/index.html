@@ -101,10 +101,10 @@
     <!-- Workflow Status and Links -->
     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary, #3498db);">
         <p style="margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <a href="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml/badge.svg" alt="Nightly Gemini Commit Mining">
+            <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">
+                <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg" alt="Nightly Commit Mining">
             </a>
-            | <a href="https://github.com/carstenartur/sandbox/actions/workflows/gemini-mining.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
+            | <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
             | <a href="https://carstenartur.github.io/sandbox/" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
         </p>
     </div>
@@ -123,6 +123,12 @@
 
     <!-- Outcome Summary -->
     <div class="outcome-summary" id="outcome-summary"></div>
+
+    <!-- Empty State Banner (shown when no evaluations) -->
+    <div id="empty-state" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:20px; margin-bottom:20px; text-align:center;">
+        <p style="font-size:1.1em; margin:0;">📭 <strong>No evaluations yet.</strong> The mining workflow runs nightly at 2 AM UTC.</p>
+        <p style="margin:8px 0 0; color:#666;">Check the <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml" style="color:#0366d6;">workflow runs</a> for status.</p>
+    </div>
 
     <!-- Statistics Grid -->
     <div class="stats">
@@ -696,6 +702,10 @@
                 populateFilters(data);
                 renderEvaluations(data);
                 renderDslSequences(data);
+                // Show empty-state banner if no evaluations
+                if (!data || data.length === 0) {
+                    document.getElementById('empty-state').style.display = 'block';
+                }
                 // Compute commit date range from evaluations
                 var dates = data.map(function(e) { return e.evaluatedAt; }).filter(Boolean).map(function(d) { return new Date(d); });
                 if (dates.length > 0) {
@@ -758,11 +768,19 @@
                 }
                 renderRunStatus(data);
                 renderDailyProgress(data);
+                // Update stat cards from fetched statistics data
+                if (data.totalProcessed !== undefined) document.getElementById('stat-total').textContent = data.totalProcessed;
+                if (data.relevant !== undefined) document.getElementById('stat-relevant').textContent = data.relevant;
+                if (data.irrelevant !== undefined) document.getElementById('stat-irrelevant').textContent = data.irrelevant;
+                if (data.duplicates !== undefined) document.getElementById('stat-duplicates').textContent = data.duplicates;
+                if (data.green !== undefined) document.getElementById('legend-green').textContent = data.green;
+                if (data.yellow !== undefined) document.getElementById('legend-yellow').textContent = data.yellow;
+                if (data.red !== undefined) document.getElementById('legend-red').textContent = data.red;
+                updatePercentages();
+                updateTrafficBar();
             })
             .catch(function(err) { console.error('Failed to load statistics:', err); });
 
-        updatePercentages();
-        updateTrafficBar();
         updateOutcomeSummary();
     </script>
 </body>

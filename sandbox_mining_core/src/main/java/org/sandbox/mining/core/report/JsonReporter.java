@@ -17,14 +17,19 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import java.time.Instant;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
+import com.google.gson.reflect.TypeToken;
 
 import org.sandbox.mining.core.llm.CommitEvaluation;
 
@@ -34,6 +39,8 @@ import org.sandbox.mining.core.llm.CommitEvaluation;
  */
 public class JsonReporter {
 
+	private static final String EVALUATIONS_FILE = "evaluations.json"; //$NON-NLS-1$
+
 	private final Gson gson;
 
 	public JsonReporter() {
@@ -41,20 +48,71 @@ public class JsonReporter {
 				.setPrettyPrinting()
 				.registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) ->
 						new JsonPrimitive(src.toString()))
+				.registerTypeAdapter(Instant.class, (JsonDeserializer<Instant>) (json, typeOfT, context) ->
+						Instant.parse(json.getAsString()))
 				.create();
 	}
 
 	/**
-	 * Writes evaluations to a JSON file.
+	 * Writes evaluations to a JSON file, merging with any existing evaluations
+	 * to accumulate results across runs. Deduplicates by commitHash (newer
+	 * evaluations replace older ones).
 	 *
-	 * @param evaluations the list of evaluations
+	 * @param evaluations the list of new evaluations from the current run
 	 * @param outputDir   the output directory
 	 * @throws IOException if file writing fails
 	 */
 	public void writeEvaluations(List<CommitEvaluation> evaluations, Path outputDir) throws IOException {
 		Files.createDirectories(outputDir);
-		String json = gson.toJson(evaluations);
-		Files.writeString(outputDir.resolve("evaluations.json"), json, StandardCharsets.UTF_8);
+		Path file = outputDir.resolve(EVALUATIONS_FILE);
+
+		// Load existing evaluations and merge
+		List<CommitEvaluation> existing = loadExistingEvaluations(file);
+		List<CommitEvaluation> merged = mergeEvaluations(existing, evaluations);
+
+		String json = gson.toJson(merged);
+		Files.writeString(file, json, StandardCharsets.UTF_8);
+	}
+
+	/**
+	 * Loads existing evaluations from a JSON file.
+	 *
+	 * @param file the evaluations file
+	 * @return list of existing evaluations, empty if file doesn't exist or is invalid
+	 */
+	List<CommitEvaluation> loadExistingEvaluations(Path file) {
+		if (!Files.exists(file)) {
+			return List.of();
+		}
+		try {
+			String content = Files.readString(file, StandardCharsets.UTF_8);
+			List<CommitEvaluation> result = gson.fromJson(content,
+					new TypeToken<List<CommitEvaluation>>() {}.getType());
+			return result != null ? result : List.of();
+		} catch (Exception e) {
+			System.err.println("Warning: could not load existing evaluations: " + e.getMessage()); //$NON-NLS-1$
+			return List.of();
+		}
+	}
+
+	/**
+	 * Merges existing and new evaluations, deduplicating by commitHash.
+	 * New evaluations replace existing ones with the same commitHash.
+	 *
+	 * @param existing the existing evaluations
+	 * @param newEvals the new evaluations
+	 * @return merged list
+	 */
+	static List<CommitEvaluation> mergeEvaluations(List<CommitEvaluation> existing,
+			List<CommitEvaluation> newEvals) {
+		Map<String, CommitEvaluation> byHash = new LinkedHashMap<>();
+		for (CommitEvaluation e : existing) {
+			byHash.put(e.commitHash(), e);
+		}
+		for (CommitEvaluation e : newEvals) {
+			byHash.put(e.commitHash(), e);
+		}
+		return new ArrayList<>(byHash.values());
 	}
 
 	/**

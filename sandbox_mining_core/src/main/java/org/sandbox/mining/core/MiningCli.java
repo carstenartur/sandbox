@@ -75,11 +75,10 @@ private static final DateTimeFormatter COMMIT_DATE_FORMAT =
 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC); //$NON-NLS-1$
 
 /**
- * Upper bound for useful commits by diff size.
- * <p>Commits with more diff lines than this are considered too large and are
- * skipped to avoid overwhelming the model and wasting API quota. The minimum
- * useful diff size is controlled separately via {@code minDiffLines} in the
- * configuration.</p>
+ * Default upper bound for useful commits by diff size.
+ * <p>Used as a fallback when the configuration does not specify
+ * {@code max-diff-lines-per-commit}. The configured value from
+ * {@code repos.yml} is preferred.</p>
  */
 private static final int MAX_USEFUL_DIFF_LINES = 300;
 
@@ -208,10 +207,9 @@ repoState.setLastModelUsed(currentModel);
 try {
 processRepositories(config, state, statePath, workDir, batchSize, commitsPerRequest,
 llmClient, promptBuilder, dslContext, categoryManager, validator, stats, aggregator);
-if (retryDeferred) {
+// Always process deferred commits at end of each run
 retryDeferredCommits(state, statePath, workDir, llmClient, promptBuilder,
 dslContext, categoryManager, validator, stats, aggregator, config, retryDeferred);
-}
 } finally {
 deleteDirectory(workDir);
 }
@@ -299,7 +297,8 @@ int end = Math.min(i + dynamicCPR[0], batch.size());
 List<RevCommit> subBatch = batch.subList(i, end);
 processBatch(subBatch, repo, diffExtractor, state, statePath,
 llmClient, promptBuilder, dslContext, categoryManager,
-validator, stats, aggregator, config.getMinDiffLinesPerCommit());
+validator, stats, aggregator, config.getMinDiffLinesPerCommit(),
+config.getMaxDiffLinesPerCommit());
 if (llmClient.wasLastResponseTruncated() && dynamicCPR[0] > 1) {
 dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);
 System.out.println("  Reducing commits-per-request to " + dynamicCPR[0] + " after truncated response"); //$NON-NLS-1$
@@ -323,7 +322,7 @@ DiffExtractor diffExtractor, MiningState state, Path statePath,
 LlmClient llmClient, PromptBuilder promptBuilder,
 String dslContext, CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
-int minDiffLines) throws IOException {
+int minDiffLines, int maxDiffLines) throws IOException {
 // Classify commits in original order: track which are skipped vs included
 List<CommitData> commitDataList = new ArrayList<>();
 List<Boolean> isSkipped = new ArrayList<>();
@@ -331,7 +330,7 @@ List<Integer> diffLineCounts = new ArrayList<>();
 
 RepoState repoState = state.getRepoState(repo.getUrl());
 int effectiveMaxDiff = repoState.getLearnedMaxDiffLines() > 0
-? repoState.getLearnedMaxDiffLines() : MAX_USEFUL_DIFF_LINES;
+? repoState.getLearnedMaxDiffLines() : maxDiffLines;
 
 for (RevCommit commit : commits) {
 String diff = diffExtractor.extractDiff(commit);
