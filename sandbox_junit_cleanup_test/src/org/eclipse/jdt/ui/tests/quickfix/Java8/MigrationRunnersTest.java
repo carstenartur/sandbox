@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -40,6 +39,8 @@ public class MigrationRunnersTest {
 	@BeforeEach
 	public void setup() throws CoreException {
 		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		context.addLocalJarToClasspath("testresources/mockito-stubs.jar"); //$NON-NLS-1$
+		context.addLocalJarToClasspath("testresources/spring-stubs.jar"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -145,7 +146,6 @@ public class MyParameterizedTest {
 		}, null);
 	}
 
-	@Disabled("Runner detection needs debugging - type bindings fail when Mockito library not on classpath")
 	@Test
 	public void migrates_runWith_mockito() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -195,7 +195,6 @@ public class MyParameterizedTest {
 		}, null);
 	}
 
-	@Disabled("Runner detection needs debugging - type bindings fail when Spring library not on classpath")
 	@Test
 	public void migrates_runWith_spring() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
@@ -228,8 +227,8 @@ public class MyParameterizedTest {
 				package test;
 				import org.junit.jupiter.api.Test;
 				import org.junit.jupiter.api.extension.ExtendWith;
-				import org.springframework.test.context.junit.jupiter.SpringExtension;
 				import org.springframework.beans.factory.annotation.Autowired;
+				import org.springframework.test.context.junit.jupiter.SpringExtension;
 				
 				@ExtendWith(SpringExtension.class)
 				public class MySpringTest {
