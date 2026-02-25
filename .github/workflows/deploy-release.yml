@@ -493,18 +493,27 @@ jobs:
           LICENSE=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<license>)[^<]+' | head -1 || echo "")
           SCREENSHOTS=$(echo "$MARKETPLACE_XML" | grep -c '<screenshot' || echo "0")
 
-          echo "marketplace_listed_version=$LISTED_VERSION" >> $GITHUB_OUTPUT
-          echo "marketplace_update_url=$UPDATE_URL" >> $GITHUB_OUTPUT
-          echo "marketplace_description=$DESCRIPTION" >> $GITHUB_OUTPUT
-          echo "marketplace_categories=$CATEGORIES" >> $GITHUB_OUTPUT
-          echo "marketplace_license=$LICENSE" >> $GITHUB_OUTPUT
-          echo "marketplace_screenshots=$SCREENSHOTS" >> $GITHUB_OUTPUT
+          # Sanitize values to ensure single-line GitHub outputs
+          LISTED_VERSION_CLEAN=$(printf '%s' "$LISTED_VERSION" | tr '\n' ' ' | tr '\r' ' ')
+          UPDATE_URL_CLEAN=$(printf '%s' "$UPDATE_URL" | tr '\n' ' ' | tr '\r' ' ')
+          DESCRIPTION_CLEAN=$(printf '%s' "$DESCRIPTION" | tr '\n' ' ' | tr '\r' ' ')
+          CATEGORIES_CLEAN=$(printf '%s' "$CATEGORIES" | tr '\n' ' ' | tr '\r' ' ')
+          LICENSE_CLEAN=$(printf '%s' "$LICENSE" | tr '\n' ' ' | tr '\r' ' ')
+          SCREENSHOTS_CLEAN=$(printf '%s' "$SCREENSHOTS" | tr '\n' ' ' | tr '\r' ' ')
 
-          SUMMARY="version=${LISTED_VERSION:-unknown}, update_url=${UPDATE_URL:-unknown}, screenshots=${SCREENSHOTS:-0}"
-          echo "marketplace_summary=$SUMMARY" >> $GITHUB_OUTPUT
+          echo "marketplace_listed_version=$LISTED_VERSION_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_update_url=$UPDATE_URL_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_description=$DESCRIPTION_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_categories=$CATEGORIES_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_license=$LICENSE_CLEAN" >> "$GITHUB_OUTPUT"
+          echo "marketplace_screenshots=$SCREENSHOTS_CLEAN" >> "$GITHUB_OUTPUT"
+
+          SUMMARY="version=${LISTED_VERSION_CLEAN:-unknown}, update_url=${UPDATE_URL_CLEAN:-unknown}, screenshots=${SCREENSHOTS_CLEAN:-0}"
+          SUMMARY_CLEAN=$(printf '%s' "$SUMMARY" | tr '\n' ' ' | tr '\r' ' ')
+          echo "marketplace_summary=$SUMMARY_CLEAN" >> "$GITHUB_OUTPUT"
         fi
 
-        echo "Marketplace API query complete: ${{ steps.marketplace.outputs.marketplace_summary }}"
+        echo "Marketplace API query complete: ${SUMMARY_CLEAN:-API unavailable - listing may not exist yet}"
 
     # 16b. Create Marketplace Update Reminder Issue
     - name: Create Marketplace Update Reminder Issue
@@ -571,7 +580,6 @@ jobs:
         - 🟡 **Update site URL**: Not found in listing. Set to \`$UPDATE_SITE\`."
         fi
 
-        PLUGINS_TO_CHECK="Encoding Cleanup JUnit Functional Loop JFace Platform Status PDE XML CSS Cleanup Method Reuse TriggerPattern Fluent AST Cleanup CLI"
         DESCRIPTION_LOWER=$(echo "${DESCRIPTION}" | tr '[:upper:]' '[:lower:]')
         MISSING_FEATURES=""
         for feature in "Encoding Cleanup (StandardCharsets migration)" "JUnit 5 Migration" "Functional Loop Converter (Stream API)" "JFace SubMonitor Migration" "Platform Status Helper" "PDE XML Cleanup" "CSS Cleanup" "Method Reuse Detector" "TriggerPattern Engine" "Fluent AST API" "Cleanup CLI Application"; do
