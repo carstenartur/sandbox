@@ -3,6 +3,25 @@
 The TriggerPattern DSL is a domain-specific language for describing Java code transformations.
 Each `.sandbox-hint` file contains one or more transformation rules.
 
+## CRITICAL: Output Format for dslRule field
+
+The `dslRule` field in your JSON response must contain ONLY raw `.sandbox-hint` DSL text.
+Do NOT wrap it in XML tags. Do NOT use `<trigger>`, `<import>`, `<pattern>`, or any other XML-like tags.
+
+✅ CORRECT:
+```
+"dslRule": "$x.size() == 0\n=> $x.isEmpty()\n;;"
+```
+
+❌ WRONG (will be REJECTED by the parser):
+```
+"dslRule": "<trigger>\n$x.size() == 0\n=> $x.isEmpty()\n;;\n</trigger>"
+```
+
+The parser will REJECT any rule containing `<trigger>`, `<import>`, `<pattern>`, or any other XML-like tags.
+
+Also, do NOT use `isType()` — it does not exist. Use `instanceof($var, "TypeName")` instead.
+
 ## Structure
 
 A hint file has optional metadata directives followed by transformation rules.

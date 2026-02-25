@@ -97,6 +97,18 @@
 </head>
 <body>
     <h1>Sandbox Mining Core - Dashboard</h1>
+    <p style="color:#666; font-size:0.9em; margin-bottom:15px;">
+        <strong>Traffic Light:</strong>
+        <span style="color:var(--green)">●</span> GREEN = Ready for DSL integration |
+        <span style="color:var(--yellow)">●</span> YELLOW = Needs review |
+        <span style="color:var(--red)">●</span> RED = Requires DSL extension |
+        <span style="color:#6c757d">●</span> N/A = Not applicable
+    </p>
+
+    <!-- Demo Data Banner -->
+    <div id="demo-banner" style="display:none; background:#e3f2fd; border:1px solid #90caf9; border-radius:8px; padding:15px; margin-bottom:20px; text-align:center;">
+        <p style="margin:0;">📋 <strong>Demo data.</strong> Real results will appear after the mining workflow runs.</p>
+    </div>
     
     <!-- Workflow Status and Links -->
     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary, #3498db);">
@@ -180,7 +192,7 @@
     </div>
 
     <!-- Why Not Usable Table -->
-    <h2>Why Not Usable</h2>
+    <h2>Exclusion Reasons</h2>
     <table id="irrelevant-table">
         <thead>
             <tr>
@@ -250,7 +262,9 @@
 
     <!-- Discovered DSL Sequences Section -->
     <h2>🔧 Discovered DSL Sequences</h2>
-    <p style="color:#666; margin-bottom:15px;">New DSL rules discovered by LLM analysis, ready for integration into <code>.sandbox-hint</code> files.</p>
+    <p style="color:#666; margin-bottom:15px;">New DSL rules discovered by LLM analysis, ready for integration into <code>.sandbox-hint</code> files.
+        <a href="https://github.com/carstenartur/sandbox/blob/main/sandbox_common/TRIGGERPATTERN.md#sandbox-hint-dsl-file-format" style="color:#0366d6;">📖 DSL Syntax Reference</a>
+    </p>
     <table id="dsl-table">
         <thead>
             <tr>
@@ -273,7 +287,14 @@
             <h3 id="modal-title">DSL Rule</h3>
             <p><strong>Target File:</strong> <code id="modal-target-file"></code></p>
             <p><strong>Category:</strong> <span id="modal-category"></span></p>
-            <p><strong>Scores:</strong> Reusability: <span id="modal-reusability"></span>/10 | Improvement: <span id="modal-improvement"></span>/10 | Effort: <span id="modal-effort"></span>/10</p>
+            <p><strong>Scores:</strong>
+                Reusability: <span id="modal-reusability"></span>/10
+                    <span style="color:#999;font-size:0.8em">(higher = more broadly applicable)</span> |
+                Improvement: <span id="modal-improvement"></span>/10
+                    <span style="color:#999;font-size:0.8em">(higher = more impactful)</span> |
+                Effort: <span id="modal-effort"></span>/10
+                    <span style="color:#999;font-size:0.8em">(higher = harder to implement)</span>
+            </p>
             <h4>DSL Rule:</h4>
             <pre id="modal-content"></pre>
             <div id="modal-extension" style="display:none;">
@@ -391,7 +412,9 @@
                 row.appendChild(tdTitle);
 
                 var tdRepo = document.createElement('td');
-                tdRepo.textContent = evaluation.repoUrl || '';
+                var repoDisplay = (evaluation.repoUrl || '').replace('https://github.com/', '');
+                tdRepo.textContent = repoDisplay;
+                tdRepo.title = evaluation.repoUrl || '';
                 row.appendChild(tdRepo);
 
                 var tdLight = document.createElement('td');
@@ -476,9 +499,7 @@
                 category: evaluation.category || '',
                 summary: evaluation.summary || ''
             });
-            var url = window.location.origin + '/' +
-                (evaluation.repoUrl || '').replace('https://github.com/', '') +
-                '/actions/workflows/apply-mining-proposal.yml?' + params.toString();
+            var url = 'https://github.com/carstenartur/sandbox/actions/workflows/apply-mining-proposal.yml?' + params.toString();
             window.open(url, '_blank');
         }
 
@@ -713,6 +734,24 @@
                 // Show empty-state banner if no evaluations
                 if (!data || data.length === 0) {
                     document.getElementById('empty-state').style.display = 'block';
+                }
+                // Show demo-data banner if all commit hashes match seed data pattern
+                var knownDemoHashes = [
+                    'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
+                    'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3',
+                    'c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4',
+                    'd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5',
+                    'e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6',
+                    'f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1',
+                    'a7b8c9d0e1f2a7b8c9d0e1f2a7b8c9d0e1f2a7b8'
+                ];
+                if (data && data.length > 0) {
+                    var allDemo = data.every(function(e) {
+                        return knownDemoHashes.indexOf(e.commitHash) >= 0;
+                    });
+                    if (allDemo) {
+                        document.getElementById('demo-banner').style.display = 'block';
+                    }
                 }
             })
             .catch(function(err) { console.error('Failed to load evaluations:', err); });

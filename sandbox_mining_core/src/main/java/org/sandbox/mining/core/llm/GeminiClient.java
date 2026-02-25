@@ -626,6 +626,8 @@ public class GeminiClient implements LlmClient {
 					+ " has no category, defaulting to 'Uncategorized'"); //$NON-NLS-1$
 			category = "Uncategorized"; //$NON-NLS-1$
 		}
+		String dslRule = sanitizeDslRule(getStringOrNull(eval, "dslRule")); //$NON-NLS-1$
+		String dslRuleAfterChange = sanitizeDslRule(getStringOrNull(eval, "dslRuleAfterChange")); //$NON-NLS-1$
 		return new CommitEvaluation(
 				commitHash,
 				commitMessage,
@@ -643,12 +645,31 @@ public class GeminiClient implements LlmClient {
 				getBooleanOrDefault(eval, "isNewCategory", false), //$NON-NLS-1$
 				getStringOrNull(eval, "categoryReason"), //$NON-NLS-1$
 				getBooleanOrDefault(eval, "canImplementInCurrentDsl", false), //$NON-NLS-1$
-				getStringOrNull(eval, "dslRule"), //$NON-NLS-1$
+				dslRule,
 				getStringOrNull(eval, "targetHintFile"), //$NON-NLS-1$
 				getStringOrNull(eval, "languageChangeNeeded"), //$NON-NLS-1$
-				getStringOrNull(eval, "dslRuleAfterChange"), //$NON-NLS-1$
+				dslRuleAfterChange,
 				getStringOrNull(eval, "summary"), //$NON-NLS-1$
 				null);
+	}
+
+	/**
+	 * Strips XML tag hallucinations from DSL rule strings.
+	 * LLMs sometimes wrap rules in {@code <trigger>}, {@code <import>},
+	 * or {@code <pattern>} tags despite being told not to.
+	 *
+	 * @param dslRule the raw DSL rule string, or null
+	 * @return the sanitized DSL rule, or null if input was null
+	 */
+	static String sanitizeDslRule(String dslRule) {
+		if (dslRule == null) {
+			return null;
+		}
+		String result = dslRule;
+		result = result.replaceAll("</?trigger>", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
+		result = result.replaceAll("</?pattern>", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
+		result = result.replaceAll("<import>[^<]*</import>", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
+		return result.isEmpty() ? null : result;
 	}
 
 	private static String getStringOrNull(JsonObject obj, String key) {
