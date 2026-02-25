@@ -1,44 +1,24 @@
 {
-  "totalProcessed": 3,
-  "relevant": 2,
-  "irrelevant": 1,
+  "totalProcessed": 0,
+  "relevant": 0,
+  "irrelevant": 0,
   "duplicates": 0,
-  "green": 1,
+  "green": 0,
   "yellow": 0,
-  "red": 1,
-  "irrelevantReasons": {
-    "The change is a typo fix in a Javadoc comment. The TriggerPattern DSL is designed for structural code transformations (API usage, syntax), not for correcting arbitrary text within comments or Javadoc. Matching and rewriting text inside comments is outside the current scope and capabilities of an AST-based transformation DSL.": 1
-  },
-  "perRepository": {
-    "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "totalProcessed": 3,
-      "relevant": 2,
-      "green": 1,
-      "yellow": 0,
-      "red": 1
-    }
-  },
-  "dailyProgress": [
-    {
-      "date": "2026-02-24",
-      "processed": 3,
-      "relevant": 2
-    }
-  ],
+  "red": 0,
+  "irrelevantReasons": {},
+  "perRepository": {},
+  "dailyProgress": [],
   "runMetadata": {
-    "startedAt": "2026-02-24T20:12:22.539Z",
-    "completedAt": "2026-02-24T20:22:21.869044001Z",
-    "durationSeconds": 599,
+    "startedAt": "2026-02-25T04:22:35.713Z",
+    "completedAt": "2026-02-25T04:30:40.371877931Z",
+    "durationSeconds": 484,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
-    "batchSize": 20,
+    "batchSize": 72,
     "commitsPerRequest": 4,
-    "apiCallsMade": 3,
-    "deferredCommits": 16,
+    "apiCallsMade": 0,
+    "deferredCommits": 18,
     "permanentlySkipped": 0
-  },
-  "timeWindow": {
-    "earliestEvaluation": "2026-02-24T20:13:12.151228634Z",
-    "latestEvaluation": "2026-02-24T20:15:09.767910156Z"
   }
 }
