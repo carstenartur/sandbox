@@ -25,6 +25,19 @@
             name="Refactoring Mining" />
    </extension>
    
+   <extension point="org.eclipse.ui.preferencePages">
+      <page
+            category="org.eclipse.jdt.ui.preferences.JavaBasePreferencePage"
+            class="org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage"
+            id="org.sandbox.jdt.triggerpattern.preferences.LlmPreferencePage"
+            name="LLM Rule Inference" />
+   </extension>
+
+   <extension point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="org.sandbox.jdt.internal.ui.preferences.LlmPreferenceInitializer" />
+   </extension>
+
    <extension point="org.eclipse.jdt.ui.cleanUps">
       <cleanUpConfigurationUI 
             class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" 
