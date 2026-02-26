@@ -182,9 +182,9 @@
       "lastModelUsed": "gemini-2.5-flash"
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "a08ab6c5a1a888fb837cc617f27fffac78616bdc",
-      "lastProcessedDate": "2026-02-26T05:44:51.097977917Z",
-      "totalProcessed": 259,
+      "lastProcessedCommit": "6cb38423959485832f6b2b451a0cc3345d452e56",
+      "lastProcessedDate": "2026-02-26T16:48:44.802241915Z",
+      "totalProcessed": 580,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -204,6 +204,24 @@
           "deferredAt": "2026-02-26T05:42:51.539041114Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "cf31d55db9c4d7da6ad4a761218621111070f7e1",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA9",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-26T16:43:33.741396275Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1f9867ec3f23deb207f1dd8a270cc53fb2db80e6",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA9\n\nChange-Id: I8f4fc8564453705d9a4e1c1613002bdc544bc069\n",
+          "diffLines": 224,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-26T16:47:32.825299157Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -219,5 +237,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 10232
+  "globalTotalProcessed": 10553
 }
