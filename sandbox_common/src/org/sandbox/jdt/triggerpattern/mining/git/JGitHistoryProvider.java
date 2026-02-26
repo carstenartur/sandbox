@@ -104,11 +104,11 @@ public class JGitHistoryProvider implements GitHistoryProvider {
 					if (contentBefore == null || contentAfter == null) {
 						continue;
 					}
-					List<DiffHunk> hunks = extractHunks(formatter, entry);
+					List<DiffHunk> hunks = extractHunks(repository, entry);
 					diffs.add(new FileDiff(filePath, contentBefore, contentAfter, hunks));
 				}
 			}
-		} catch (IOException | GitAPIException e) {
+		} catch (IOException e) {
 			throw new GitProviderException("Failed to get diffs for commit " //$NON-NLS-1$
 					+ commitId, e);
 		}
@@ -203,12 +203,12 @@ public class JGitHistoryProvider implements GitHistoryProvider {
 		}
 	}
 
-	private static List<DiffHunk> extractHunks(DiffFormatter formatter,
+	private static List<DiffHunk> extractHunks(Repository repository,
 			DiffEntry entry) throws IOException {
 		List<DiffHunk> hunks = new ArrayList<>();
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try (DiffFormatter hunkFormatter = new DiffFormatter(out)) {
-			hunkFormatter.setRepository(formatter.getRepository());
+			hunkFormatter.setRepository(repository);
 			hunkFormatter.format(entry);
 		}
 		String diffText = out.toString(StandardCharsets.UTF_8);
