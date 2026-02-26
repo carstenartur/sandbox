@@ -72,7 +72,7 @@ public class DslContextCollector {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
 				Path fileName = file.getFileName();
-			if (fileName != null && fileName.toString().endsWith(HINT_FILE_EXTENSION)) {
+				if (fileName != null && fileName.toString().endsWith(HINT_FILE_EXTENSION)) {
 					result.add(file);
 				}
 				return FileVisitResult.CONTINUE;

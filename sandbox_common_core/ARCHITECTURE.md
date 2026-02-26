@@ -15,6 +15,11 @@ Eclipse-independent code from OSGi/UI-dependent code.
 - `HintFileStore` — Eclipse-independent hint file storage and loading (extracted from `HintFileRegistry`)
 - Data classes: Match, Pattern, HintFile, TransformationRule, etc.
 - Annotations: @TriggerPattern, @Hint, @TriggerTreeKind, etc.
+- LLM layer (`org.sandbox.jdt.triggerpattern.llm`): LlmClient, LlmProvider, LlmClientFactory,
+  OpenAiCompatibleClient, GeminiClient, OpenAiClient, DeepSeekClient, QwenClient, LlamaClient,
+  MistralClient, CommitEvaluation, PromptBuilder, DslContextCollector
+- Git layer (`org.sandbox.jdt.triggerpattern.git`): CommitWalker, DiffExtractor, RepoCloner
+- DSL validation: DslValidator (in `org.sandbox.jdt.triggerpattern.internal`)
 
 ### What stays in sandbox_common
 
@@ -25,7 +30,6 @@ Eclipse-independent code from OSGi/UI-dependent code.
 - `HintFileRegistry` — singleton that delegates to `HintFileStore` and adds workspace/extension-point loading
 - `HintRegistry` — annotation-based hint registration with extension-point support
 - Eclipse platform integration: HintMarkerManager, HintContext
-- Mining analysis/git (may move to core in future)
 - CleanUp constants: MYCleanUpConstants
 - Utility classes using ASTNodes/ScopeAnalyzer from JDT UI
 
@@ -80,3 +84,27 @@ simply pass `ctx.getMatch()` and `ctx.getASTRewrite()`.
 
 The module produces an OSGi-compatible JAR via `bnd-maven-plugin`, allowing
 it to be used as a `Require-Bundle` dependency by `sandbox_common`.
+
+### LLM Layer (Issue #727, Phase 0)
+
+The `org.sandbox.jdt.triggerpattern.llm` package contains Eclipse-independent
+LLM client abstractions and implementations, extracted from `sandbox_mining_core`
+so that both the CLI tool and the Eclipse plugin can reuse the same infrastructure.
+
+- `LlmClient` — interface for all LLM providers
+- `LlmProvider` — enum of supported providers (GEMINI, OPENAI, DEEPSEEK, QWEN, LLAMA, MISTRAL)
+- `LlmClientFactory` — factory with auto-detection from environment variables
+- `OpenAiCompatibleClient` — abstract base class for OpenAI-compatible providers
+- Concrete clients: `GeminiClient`, `OpenAiClient`, `DeepSeekClient`, `QwenClient`, `LlamaClient`, `MistralClient`
+- `CommitEvaluation` — record holding evaluation results
+- `PromptBuilder` — constructs LLM prompts with DSL context
+- `DslContextCollector` — walks directory tree to collect `.sandbox-hint` files
+
+### Git Layer (Issue #727, Phase 0)
+
+The `org.sandbox.jdt.triggerpattern.git` package provides Eclipse-independent
+Git operations using JGit:
+
+- `CommitWalker` — iterates commits with date filtering and batch pagination
+- `DiffExtractor` — extracts diffs with truncation and path filtering
+- `RepoCloner` — clones repositories (full or shallow)
