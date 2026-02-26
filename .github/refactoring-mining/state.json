@@ -180,7 +180,44 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash"
+    },
+    "https://github.com/eclipse-jdt/eclipse.jdt.core": {
+      "lastProcessedCommit": "a08ab6c5a1a888fb837cc617f27fffac78616bdc",
+      "lastProcessedDate": "2026-02-26T05:44:51.097977917Z",
+      "totalProcessed": 259,
+      "status": "CATCHING_UP",
+      "deferredCommits": [
+        {
+          "hash": "488811f5b30befaaae3f5995fcfa0b0505629e6e",
+          "message": "Bug 429813 - [1.8][dom ast] IMethodBinding#getJavaElement() should return IMethod for lambda",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-26T05:42:35.941836444Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "57a9abe5f870a62060af37c83812c87231d59ce6",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA9",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-26T05:42:51.539041114Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
+    },
+    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 9973
+  "globalTotalProcessed": 10232
 }
