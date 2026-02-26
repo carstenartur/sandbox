@@ -31,7 +31,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
-import org.sandbox.mining.core.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 
 /**
  * Generates JSON report files (evaluations.json and statistics.json)

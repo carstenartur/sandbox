@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sandbox.mining.core.git.CommitWalker;
+import org.sandbox.jdt.triggerpattern.git.CommitWalker;
 
 /**
  * Tests for {@link CommitWalker}.

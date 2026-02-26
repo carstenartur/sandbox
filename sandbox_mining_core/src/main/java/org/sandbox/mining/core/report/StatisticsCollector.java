@@ -20,7 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.sandbox.mining.core.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 
 /**
  * Tracks statistical counts for the mining process.

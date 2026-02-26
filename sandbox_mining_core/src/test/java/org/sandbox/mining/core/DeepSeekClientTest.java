@@ -22,9 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.sandbox.mining.core.llm.CommitEvaluation;
-import org.sandbox.mining.core.llm.CommitEvaluation.TrafficLight;
-import org.sandbox.mining.core.llm.DeepSeekClient;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
+import org.sandbox.jdt.triggerpattern.llm.DeepSeekClient;
 
 /**
  * Tests for {@link DeepSeekClient}.

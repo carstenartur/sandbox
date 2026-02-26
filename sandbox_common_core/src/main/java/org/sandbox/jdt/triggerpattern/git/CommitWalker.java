@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.mining.core.git;
+package org.sandbox.jdt.triggerpattern.git;
 
 import java.io.Closeable;
 import java.io.IOException;
