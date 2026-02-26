@@ -15,6 +15,7 @@ package org.sandbox.jdt.triggerpattern.llm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -172,7 +173,7 @@ class AiRuleInferenceEngineTest {
 		CommitEvaluation eval = result.get();
 		assertNotNull(eval.dslValidationResult());
 		// "not a valid rule" won't parse correctly
-		assertFalse("VALID".equals(eval.dslValidationResult())); //$NON-NLS-1$
+		assertNotEquals("VALID", eval.dslValidationResult()); //$NON-NLS-1$
 	}
 
 	@Test
