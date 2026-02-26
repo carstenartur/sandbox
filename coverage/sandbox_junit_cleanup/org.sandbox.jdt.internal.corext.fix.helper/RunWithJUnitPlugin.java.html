@@ -113,7 +113,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 				}
 
 				// Handle Suite runner
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">				if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {</span>
 <span class="fc" id="L117">					mh.setValue(ORG_JUNIT_RUNWITH);</span>
 <span class="fc" id="L118">					dataHolder.put(dataHolder.size(), mh);</span>
 <span class="fc" id="L119">					operations.add(fixcore.rewrite(dataHolder));</span>
@@ -121,22 +121,22 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 				}
 
 				// Handle Mockito runners - only check qualified names to avoid false positives
-<span class="nc bnc" id="L124" title="All 2 branches missed.">				if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)</span>
-<span class="nc bnc" id="L125" title="All 2 branches missed.">						|| ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)) {</span>
-<span class="nc" id="L126">					mh.setValue(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);</span>
-<span class="nc" id="L127">					dataHolder.put(dataHolder.size(), mh);</span>
-<span class="nc" id="L128">					operations.add(fixcore.rewrite(dataHolder));</span>
-<span class="nc" id="L129">					return true; // Continue processing other annotations</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">				if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">						|| ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(runnerQualifiedName)) {</span>
+<span class="fc" id="L126">					mh.setValue(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);</span>
+<span class="fc" id="L127">					dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L128">					operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L129">					return true; // Continue processing other annotations</span>
 				}
 
 				// Handle Spring runners - only check qualified names to avoid false positives
-<span class="nc bnc" id="L133" title="All 2 branches missed.">				if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName)</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">				if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerQualifiedName)</span>
 <span class="nc" id="L134">						|| ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER</span>
 <span class="nc bnc" id="L135" title="All 2 branches missed.">								.equals(runnerQualifiedName)) {</span>
-<span class="nc" id="L136">					mh.setValue(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER);</span>
-<span class="nc" id="L137">					dataHolder.put(dataHolder.size(), mh);</span>
-<span class="nc" id="L138">					operations.add(fixcore.rewrite(dataHolder));</span>
-<span class="nc" id="L139">					return true; // Continue processing other annotations</span>
+<span class="fc" id="L136">					mh.setValue(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER);</span>
+<span class="fc" id="L137">					dataHolder.put(dataHolder.size(), mh);</span>
+<span class="fc" id="L138">					operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L139">					return true; // Continue processing other annotations</span>
 				}
 			}
 		}
@@ -172,37 +172,37 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 <span class="fc" id="L172">			importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES);</span>
 <span class="fc" id="L173">			importRewriter.removeImport(ORG_JUNIT_SUITE_SUITECLASSES);</span>
 <span class="fc" id="L174">			importRewriter.removeImport(ORG_JUNIT_SUITE);</span>
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.getValue())) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		} else if (ORG_JUNIT_RUNWITH.equals(junitHolder.getValue())) {</span>
 			// Handle @RunWith(Suite.class) migration
 <span class="fc" id="L177">			newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_SUITE);</span>
 			// Add new import FIRST, then remove old ones
 <span class="fc" id="L179">			importRewriter.addImport(ORG_JUNIT_JUPITER_SUITE);</span>
 <span class="fc" id="L180">			importRewriter.removeImport(ORG_JUNIT_SUITE);</span>
 <span class="fc" id="L181">			importRewriter.removeImport(ORG_JUNIT_RUNWITH);</span>
-<span class="pc bnc" id="L182" title="All 2 branches missed.">		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.getValue())) {</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		} else if (ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(junitHolder.getValue())) {</span>
 			// Handle @RunWith(MockitoJUnitRunner.class) migration
-<span class="nc" id="L184">			SingleMemberAnnotation extendWithAnnotation = ast.newSingleMemberAnnotation();</span>
-<span class="nc" id="L185">			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));</span>
-<span class="nc" id="L186">			TypeLiteral typeLiteral = ast.newTypeLiteral();</span>
-<span class="nc" id="L187">			typeLiteral.setType(ast.newSimpleType(ast.newName(MOCKITO_EXTENSION)));</span>
-<span class="nc" id="L188">			extendWithAnnotation.setValue(typeLiteral);</span>
-<span class="nc" id="L189">			newAnnotation = extendWithAnnotation;</span>
-<span class="nc" id="L190">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);</span>
-<span class="nc" id="L191">			importRewriter.addImport(ORG_MOCKITO_JUNIT_JUPITER_MOCKITO_EXTENSION);</span>
-<span class="nc" id="L192">			importRewriter.removeImport(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);</span>
-<span class="nc" id="L193">			importRewriter.removeImport(ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER);</span>
-<span class="nc bnc" id="L194" title="All 2 branches missed.">		} else if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(junitHolder.getValue())) {</span>
+<span class="fc" id="L184">			SingleMemberAnnotation extendWithAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L185">			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));</span>
+<span class="fc" id="L186">			TypeLiteral typeLiteral = ast.newTypeLiteral();</span>
+<span class="fc" id="L187">			typeLiteral.setType(ast.newSimpleType(ast.newName(MOCKITO_EXTENSION)));</span>
+<span class="fc" id="L188">			extendWithAnnotation.setValue(typeLiteral);</span>
+<span class="fc" id="L189">			newAnnotation = extendWithAnnotation;</span>
+<span class="fc" id="L190">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);</span>
+<span class="fc" id="L191">			importRewriter.addImport(ORG_MOCKITO_JUNIT_JUPITER_MOCKITO_EXTENSION);</span>
+<span class="fc" id="L192">			importRewriter.removeImport(ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER);</span>
+<span class="fc" id="L193">			importRewriter.removeImport(ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER);</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">		} else if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(junitHolder.getValue())) {</span>
 			// Handle @RunWith(SpringRunner.class) migration
-<span class="nc" id="L196">			SingleMemberAnnotation extendWithAnnotation = ast.newSingleMemberAnnotation();</span>
-<span class="nc" id="L197">			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));</span>
-<span class="nc" id="L198">			TypeLiteral typeLiteral = ast.newTypeLiteral();</span>
-<span class="nc" id="L199">			typeLiteral.setType(ast.newSimpleType(ast.newName(SPRING_EXTENSION)));</span>
-<span class="nc" id="L200">			extendWithAnnotation.setValue(typeLiteral);</span>
-<span class="nc" id="L201">			newAnnotation = extendWithAnnotation;</span>
-<span class="nc" id="L202">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);</span>
-<span class="nc" id="L203">			importRewriter.addImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION);</span>
-<span class="nc" id="L204">			importRewriter.removeImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER);</span>
-<span class="nc" id="L205">			importRewriter.removeImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER);</span>
+<span class="fc" id="L196">			SingleMemberAnnotation extendWithAnnotation = ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L197">			extendWithAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_EXTEND_WITH));</span>
+<span class="fc" id="L198">			TypeLiteral typeLiteral = ast.newTypeLiteral();</span>
+<span class="fc" id="L199">			typeLiteral.setType(ast.newSimpleType(ast.newName(SPRING_EXTENSION)));</span>
+<span class="fc" id="L200">			extendWithAnnotation.setValue(typeLiteral);</span>
+<span class="fc" id="L201">			newAnnotation = extendWithAnnotation;</span>
+<span class="fc" id="L202">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTEND_WITH);</span>
+<span class="fc" id="L203">			importRewriter.addImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT_JUPITER_SPRING_EXTENSION);</span>
+<span class="fc" id="L204">			importRewriter.removeImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER);</span>
+<span class="fc" id="L205">			importRewriter.removeImport(ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER);</span>
 		}
 
 <span class="pc bpc" id="L208" title="1 of 2 branches missed.">		if (newAnnotation != null) {</span>

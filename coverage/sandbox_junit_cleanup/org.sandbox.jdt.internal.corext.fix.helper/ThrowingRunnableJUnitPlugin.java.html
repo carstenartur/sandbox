@@ -102,7 +102,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			@Override
 			public boolean visit(ImportDeclaration node) {
 <span class="fc" id="L104">				String importName = node.getName().getFullyQualifiedName();</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">				if (ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(importName)) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">				if (ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(importName)) {</span>
 <span class="pc bpc" id="L106" title="1 of 2 branches missed.">					if (!nodesprocessed.contains(node)) {</span>
 <span class="fc" id="L107">						found.add(node);</span>
 <span class="fc" id="L108">						addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
@@ -129,101 +129,80 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			public boolean visit(ParameterizedType node) {
 				// Check if this parameterized type contains ThrowingRunnable
 				// e.g., AtomicReference&lt;ThrowingRunnable&gt;
-<span class="nc bnc" id="L132" title="All 2 branches missed.">				if (containsThrowingRunnable(node)) {</span>
-<span class="nc bnc" id="L133" title="All 4 branches missed.">					if (!nodesprocessed.contains(node) &amp;&amp; !found.contains(node)) {</span>
-<span class="nc" id="L134">						found.add(node);</span>
-<span class="nc" id="L135">						addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">				if (containsThrowingRunnable(node)) {</span>
+<span class="pc bpc" id="L133" title="2 of 4 branches missed.">					if (!nodesprocessed.contains(node) &amp;&amp; !found.contains(node)) {</span>
+<span class="fc" id="L134">						found.add(node);</span>
+<span class="fc" id="L135">						addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
 					}
 				}
 				// Don't visit children - we handle the whole parameterized type
-<span class="nc" id="L139">				return false;</span>
+<span class="fc" id="L139">				return false;</span>
 			}
 
 			@Override
 			public boolean visit(MethodInvocation node) {
 				// Check if this is a .run() call on a ThrowingRunnable
 <span class="pc bpc" id="L145" title="1 of 4 branches missed.">				if (RUN_METHOD.equals(node.getName().getIdentifier()) &amp;&amp; node.arguments().isEmpty()) {</span>
-<span class="fc" id="L146">					boolean isThrowingRunnableRun = false;</span>
-
-					// First, try to check via method binding's declaring class
-<span class="fc" id="L149">					org.eclipse.jdt.core.dom.IMethodBinding methodBinding = node.resolveMethodBinding();</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">					if (methodBinding != null) {</span>
-<span class="fc" id="L151">						ITypeBinding declaringClass = methodBinding.getDeclaringClass();</span>
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">						if (declaringClass != null</span>
-<span class="pc bpc" id="L153" title="1 of 2 branches missed.">								&amp;&amp; ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(declaringClass.getQualifiedName())) {</span>
-<span class="fc" id="L154">							isThrowingRunnableRun = true;</span>
-						}
-					}
-
-					// Fallback: check the receiver expression type (handles generic type arguments)
-<span class="pc bpc" id="L159" title="3 of 4 branches missed.">					if (!isThrowingRunnableRun &amp;&amp; node.getExpression() != null) {</span>
-<span class="nc" id="L160">						ITypeBinding receiverType = node.getExpression().resolveTypeBinding();</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">						if (receiverType != null</span>
-<span class="nc bnc" id="L162" title="All 2 branches missed.">								&amp;&amp; ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(receiverType.getQualifiedName())) {</span>
-<span class="nc" id="L163">							isThrowingRunnableRun = true;</span>
-						}
-					}
-
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">					if (isThrowingRunnableRun) {</span>
-<span class="pc bpc" id="L168" title="2 of 4 branches missed.">						if (!nodesprocessed.contains(node) &amp;&amp; !found.contains(node)) {</span>
-<span class="fc" id="L169">							found.add(node);</span>
-<span class="fc" id="L170">							addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">					if (isThrowingRunnableRunCall(node)) {</span>
+<span class="pc bpc" id="L147" title="2 of 4 branches missed.">						if (!nodesprocessed.contains(node) &amp;&amp; !found.contains(node)) {</span>
+<span class="fc" id="L148">							found.add(node);</span>
+<span class="fc" id="L149">							addStandardRewriteOperation(fixcore, operations, node, dataHolder);</span>
 						}
 					}
 				}
-<span class="fc" id="L174">				return true;</span>
+<span class="fc" id="L153">				return true;</span>
 			}
 		});
 
-<span class="fc" id="L178">		nodesprocessed.addAll(found);</span>
-<span class="fc" id="L179">	}</span>
+<span class="fc" id="L157">		nodesprocessed.addAll(found);</span>
+<span class="fc" id="L158">	}</span>
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 
-<span class="fc" id="L185">		ASTNode node = junitHolder.getMinv();</span>
+<span class="fc" id="L164">		ASTNode node = junitHolder.getMinv();</span>
 
-<span class="fc bfc" id="L187" title="All 2 branches covered.">		if (node instanceof ImportDeclaration) {</span>
-<span class="fc" id="L188">			processImportDeclaration(importRewriter, (ImportDeclaration) node);</span>
-<span class="fc bfc" id="L189" title="All 2 branches covered.">		} else if (node instanceof MethodInvocation) {</span>
-<span class="fc" id="L190">			processMethodInvocation(group, rewriter, ast, (MethodInvocation) node);</span>
-<span class="pc bpc" id="L191" title="1 of 2 branches missed.">		} else if (node instanceof SimpleType) {</span>
-<span class="fc" id="L192">			processSimpleType(group, rewriter, ast, importRewriter, (SimpleType) node);</span>
-<span class="pc bnc" id="L193" title="All 2 branches missed.">		} else if (node instanceof ParameterizedType) {</span>
-<span class="nc" id="L194">			processParameterizedType(group, rewriter, ast, importRewriter, (ParameterizedType) node);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		if (node instanceof ImportDeclaration) {</span>
+<span class="fc" id="L167">			processImportDeclaration(importRewriter, (ImportDeclaration) node);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">		} else if (node instanceof MethodInvocation) {</span>
+<span class="fc" id="L169">			processMethodInvocation(group, rewriter, ast, (MethodInvocation) node);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		} else if (node instanceof SimpleType) {</span>
+<span class="fc" id="L171">			processSimpleType(group, rewriter, ast, importRewriter, (SimpleType) node);</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">		} else if (node instanceof ParameterizedType) {</span>
+<span class="fc" id="L173">			processParameterizedType(group, rewriter, ast, importRewriter, (ParameterizedType) node);</span>
 		}
-<span class="fc" id="L196">	}</span>
+<span class="fc" id="L175">	}</span>
 
 	/**
 	 * Processes import declarations, replacing ThrowingRunnable import with
 	 * Executable import.
 	 */
 	private void processImportDeclaration(ImportRewrite importRewriter, ImportDeclaration importDecl) {
-<span class="fc" id="L203">		ensureImports(importRewriter);</span>
-<span class="fc" id="L204">	}</span>
+<span class="fc" id="L182">		ensureImports(importRewriter);</span>
+<span class="fc" id="L183">	}</span>
 
 	/**
 	 * Processes method invocations, replacing .run() with .execute().
 	 */
 	private void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast, MethodInvocation node) {
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">		if (RUN_METHOD.equals(node.getName().getIdentifier())) {</span>
-<span class="fc" id="L211">			SimpleName newName = ast.newSimpleName(EXECUTE_METHOD);</span>
-<span class="fc" id="L212">			ASTNodes.replaceButKeepComment(rewriter, node.getName(), newName, group);</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">		if (RUN_METHOD.equals(node.getName().getIdentifier())) {</span>
+<span class="fc" id="L190">			SimpleName newName = ast.newSimpleName(EXECUTE_METHOD);</span>
+<span class="fc" id="L191">			ASTNodes.replaceButKeepComment(rewriter, node.getName(), newName, group);</span>
 		}
-<span class="fc" id="L214">	}</span>
+<span class="fc" id="L193">	}</span>
 
 	/**
 	 * Processes simple type nodes, replacing ThrowingRunnable with Executable.
 	 */
 	private void processSimpleType(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			SimpleType node) {
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		if (THROWING_RUNNABLE_SIMPLE.equals(node.getName().getFullyQualifiedName())) {</span>
-<span class="fc" id="L222">			SimpleType newType = ast.newSimpleType(ast.newName(EXECUTABLE_SIMPLE));</span>
-<span class="fc" id="L223">			ASTNodes.replaceButKeepComment(rewriter, node, newType, group);</span>
-<span class="fc" id="L224">			ensureImports(importRewriter);</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (THROWING_RUNNABLE_SIMPLE.equals(node.getName().getFullyQualifiedName())) {</span>
+<span class="fc" id="L201">			SimpleType newType = ast.newSimpleType(ast.newName(EXECUTABLE_SIMPLE));</span>
+<span class="fc" id="L202">			ASTNodes.replaceButKeepComment(rewriter, node, newType, group);</span>
+<span class="fc" id="L203">			ensureImports(importRewriter);</span>
 		}
-<span class="fc" id="L226">	}</span>
+<span class="fc" id="L205">	}</span>
 
 	/**
 	 * Processes parameterized type nodes, replacing ThrowingRunnable in type
@@ -232,96 +211,218 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	 */
 	private void processParameterizedType(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, ParameterizedType node) {
-<span class="nc" id="L235">		Type newType = createExecutableType(ast, node);</span>
-<span class="nc bnc" id="L236" title="All 2 branches missed.">		if (newType != null) {</span>
-<span class="nc" id="L237">			ASTNodes.replaceButKeepComment(rewriter, node, newType, group);</span>
-<span class="nc" id="L238">			ensureImports(importRewriter);</span>
+<span class="fc" id="L214">		Type newType = createExecutableType(ast, node);</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		if (newType != null) {</span>
+<span class="fc" id="L216">			ASTNodes.replaceButKeepComment(rewriter, node, newType, group);</span>
+<span class="fc" id="L217">			ensureImports(importRewriter);</span>
 		}
-<span class="nc" id="L240">	}</span>
+<span class="fc" id="L219">	}</span>
 
 	/**
 	 * Ensures the correct imports are present (removes old, adds new).
 	 * ImportRewrite handles deduplication automatically.
 	 */
 	private void ensureImports(ImportRewrite importRewriter) {
-<span class="fc" id="L247">		importRewriter.removeImport(ORG_JUNIT_FUNCTION_THROWING_RUNNABLE);</span>
-<span class="fc" id="L248">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE);</span>
-<span class="fc" id="L249">	}</span>
+<span class="fc" id="L226">		importRewriter.removeImport(ORG_JUNIT_FUNCTION_THROWING_RUNNABLE);</span>
+<span class="fc" id="L227">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_FUNCTION_EXECUTABLE);</span>
+<span class="fc" id="L228">	}</span>
 
 	/**
 	 * Creates a new Executable type, handling both simple and parameterized types.
 	 * Recursively processes nested parameterized types.
 	 */
 	private Type createExecutableType(AST ast, Type originalType) {
-<span class="nc bnc" id="L256" title="All 2 branches missed.">		if (originalType instanceof SimpleType) {</span>
-<span class="nc" id="L257">			SimpleType simpleType = (SimpleType) originalType;</span>
-<span class="nc bnc" id="L258" title="All 2 branches missed.">			if (THROWING_RUNNABLE_SIMPLE.equals(simpleType.getName().getFullyQualifiedName())) {</span>
-<span class="nc" id="L259">				return ast.newSimpleType(ast.newName(EXECUTABLE_SIMPLE));</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">		if (originalType instanceof SimpleType) {</span>
+<span class="fc" id="L236">			SimpleType simpleType = (SimpleType) originalType;</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">			if (THROWING_RUNNABLE_SIMPLE.equals(simpleType.getName().getFullyQualifiedName())) {</span>
+<span class="fc" id="L238">				return ast.newSimpleType(ast.newName(EXECUTABLE_SIMPLE));</span>
 			}
-<span class="nc bnc" id="L261" title="All 2 branches missed.">		} else if (originalType instanceof ParameterizedType) {</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">		} else if (originalType instanceof ParameterizedType) {</span>
 			// Handle generic types like AtomicReference&lt;ThrowingRunnable&gt;
 			// or nested types like Map&lt;String, AtomicReference&lt;ThrowingRunnable&gt;&gt;
-<span class="nc" id="L264">			ParameterizedType paramType = (ParameterizedType) originalType;</span>
-<span class="nc" id="L265">			Type baseType = paramType.getType();</span>
+<span class="fc" id="L243">			ParameterizedType paramType = (ParameterizedType) originalType;</span>
+<span class="fc" id="L244">			Type baseType = paramType.getType();</span>
 
 			// Check if any type argument needs transformation (recursive check)
-<span class="nc" id="L268">			boolean needsTransformation = false;</span>
-<span class="nc bnc" id="L269" title="All 2 branches missed.">			for (Object arg : paramType.typeArguments()) {</span>
-<span class="nc bnc" id="L270" title="All 2 branches missed.">				if (containsThrowingRunnable((Type) arg)) {</span>
-<span class="nc" id="L271">					needsTransformation = true;</span>
-<span class="nc" id="L272">					break;</span>
+<span class="fc" id="L247">			boolean needsTransformation = false;</span>
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">			for (Object arg : paramType.typeArguments()) {</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">				if (containsThrowingRunnable((Type) arg)) {</span>
+<span class="fc" id="L250">					needsTransformation = true;</span>
+<span class="fc" id="L251">					break;</span>
 				}
 			}
 
-<span class="nc bnc" id="L276" title="All 2 branches missed.">			if (needsTransformation) {</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">			if (needsTransformation) {</span>
 				// Create new parameterized type with transformed arguments
-<span class="nc" id="L278">				ParameterizedType newParamType = ast.newParameterizedType((Type) ASTNode.copySubtree(ast, baseType));</span>
-<span class="nc bnc" id="L279" title="All 2 branches missed.">				for (Object arg : paramType.typeArguments()) {</span>
-<span class="nc" id="L280">					Type argType = (Type) arg;</span>
-<span class="nc" id="L281">					Type transformedArg = createExecutableType(ast, argType);</span>
-<span class="nc bnc" id="L282" title="All 2 branches missed.">					if (transformedArg != null) {</span>
+<span class="fc" id="L257">				ParameterizedType newParamType = ast.newParameterizedType((Type) ASTNode.copySubtree(ast, baseType));</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">				for (Object arg : paramType.typeArguments()) {</span>
+<span class="fc" id="L259">					Type argType = (Type) arg;</span>
+<span class="fc" id="L260">					Type transformedArg = createExecutableType(ast, argType);</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">					if (transformedArg != null) {</span>
 						// Argument was transformed
-<span class="nc" id="L284">						newParamType.typeArguments().add(transformedArg);</span>
-<span class="nc" id="L285">					} else {</span>
+<span class="fc" id="L263">						newParamType.typeArguments().add(transformedArg);</span>
+<span class="fc" id="L264">					} else {</span>
 						// Argument doesn't need transformation, copy as-is
-<span class="nc" id="L287">						newParamType.typeArguments().add(ASTNode.copySubtree(ast, argType));</span>
+<span class="nc" id="L266">						newParamType.typeArguments().add(ASTNode.copySubtree(ast, argType));</span>
 					}
 				}
-<span class="nc" id="L290">				return newParamType;</span>
+<span class="fc" id="L269">				return newParamType;</span>
 			}
 		}
-<span class="nc" id="L293">		return null;</span>
+<span class="nc" id="L272">		return null;</span>
 	}
 
 	/**
 	 * Checks if a type contains ThrowingRunnable anywhere in its structure.
 	 */
 	private boolean containsThrowingRunnable(Type type) {
-<span class="nc bnc" id="L300" title="All 2 branches missed.">		if (type instanceof SimpleType) {</span>
-<span class="nc" id="L301">			SimpleType simpleType = (SimpleType) type;</span>
-<span class="nc" id="L302">			return THROWING_RUNNABLE_SIMPLE.equals(simpleType.getName().getFullyQualifiedName());</span>
-<span class="nc bnc" id="L303" title="All 2 branches missed.">		} else if (type instanceof ParameterizedType) {</span>
-<span class="nc" id="L304">			ParameterizedType paramType = (ParameterizedType) type;</span>
-<span class="nc bnc" id="L305" title="All 2 branches missed.">			for (Object arg : paramType.typeArguments()) {</span>
-<span class="nc bnc" id="L306" title="All 2 branches missed.">				if (containsThrowingRunnable((Type) arg)) {</span>
-<span class="nc" id="L307">					return true;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">		if (type instanceof SimpleType) {</span>
+<span class="fc" id="L280">			SimpleType simpleType = (SimpleType) type;</span>
+<span class="fc" id="L281">			return THROWING_RUNNABLE_SIMPLE.equals(simpleType.getName().getFullyQualifiedName());</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">		} else if (type instanceof ParameterizedType) {</span>
+<span class="fc" id="L283">			ParameterizedType paramType = (ParameterizedType) type;</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">			for (Object arg : paramType.typeArguments()) {</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">				if (containsThrowingRunnable((Type) arg)) {</span>
+<span class="fc" id="L286">					return true;</span>
 				}
 			}
 		}
-<span class="nc" id="L311">		return false;</span>
+<span class="fc" id="L290">		return false;</span>
+	}
+
+	/**
+	 * Checks if a type binding represents ThrowingRunnable, handling generics, type variables,
+	 * and erasure. This is needed because when calling .run() on the result of a generic method
+	 * like AtomicReference&amp;lt;ThrowingRunnable&amp;gt;.get(), the type binding may be a type variable
+	 * or a parameterized type that requires erasure or interface checking.
+	 */
+	private static boolean isThrowingRunnableType(ITypeBinding typeBinding) {
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L301">			return false;</span>
+		}
+		// Direct match
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">		if (ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(typeBinding.getQualifiedName())) {</span>
+<span class="fc" id="L305">			return true;</span>
+		}
+		// Check erasure (handles parameterized types)
+<span class="nc" id="L308">		ITypeBinding erasure = typeBinding.getErasure();</span>
+<span class="nc bnc" id="L309" title="All 4 branches missed.">		if (erasure != null &amp;&amp; ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(erasure.getQualifiedName())) {</span>
+<span class="nc" id="L310">			return true;</span>
+		}
+		// Check if this is a type variable — check its bounds
+<span class="nc bnc" id="L313" title="All 2 branches missed.">		if (typeBinding.isTypeVariable()) {</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">			for (ITypeBinding bound : typeBinding.getTypeBounds()) {</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">				if (isThrowingRunnableType(bound)) {</span>
+<span class="nc" id="L316">					return true;</span>
+				}
+			}
+		}
+		// Check if this is a capture binding — check wildcard bound
+<span class="nc bnc" id="L321" title="All 2 branches missed.">		if (typeBinding.isCapture()) {</span>
+<span class="nc" id="L322">			ITypeBinding wildcard = typeBinding.getWildcard();</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">			if (wildcard != null) {</span>
+<span class="nc" id="L324">				ITypeBinding bound = wildcard.getBound();</span>
+<span class="nc bnc" id="L325" title="All 4 branches missed.">				if (bound != null &amp;&amp; isThrowingRunnableType(bound)) {</span>
+<span class="nc" id="L326">					return true;</span>
+				}
+			}
+		}
+		// Check all implemented interfaces
+<span class="nc bnc" id="L331" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">			if (ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(iface.getQualifiedName())) {</span>
+<span class="nc" id="L333">				return true;</span>
+			}
+		}
+		// Check superclass hierarchy
+<span class="nc" id="L337">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
+<span class="nc bnc" id="L338" title="All 4 branches missed.">		if (superclass != null &amp;&amp; ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(superclass.getQualifiedName())) {</span>
+<span class="nc" id="L339">			return true;</span>
+		}
+<span class="nc" id="L341">		return false;</span>
+	}
+
+	/**
+	 * Comprehensive check for whether a .run() MethodInvocation is called on a ThrowingRunnable.
+	 * Uses multiple strategies to handle direct types, generic type parameters, and method chaining.
+	 */
+	private static boolean isThrowingRunnableRunCall(MethodInvocation node) {
+		// Strategy 1: Check via method binding's declaring class
+<span class="fc" id="L350">		org.eclipse.jdt.core.dom.IMethodBinding methodBinding = node.resolveMethodBinding();</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">		if (methodBinding != null) {</span>
+<span class="fc" id="L352">			ITypeBinding declaringClass = methodBinding.getDeclaringClass();</span>
+<span class="pc bpc" id="L353" title="2 of 4 branches missed.">			if (declaringClass != null &amp;&amp; isThrowingRunnableType(declaringClass)) {</span>
+<span class="fc" id="L354">				return true;</span>
+			}
+			// Also check the generic method declaration's declaring class
+<span class="nc" id="L357">			org.eclipse.jdt.core.dom.IMethodBinding methodDecl = methodBinding.getMethodDeclaration();</span>
+<span class="nc bnc" id="L358" title="All 4 branches missed.">			if (methodDecl != null &amp;&amp; methodDecl != methodBinding) {</span>
+<span class="nc" id="L359">				ITypeBinding declClass = methodDecl.getDeclaringClass();</span>
+<span class="nc bnc" id="L360" title="All 4 branches missed.">				if (declClass != null &amp;&amp; isThrowingRunnableType(declClass)) {</span>
+<span class="nc" id="L361">					return true;</span>
+				}
+			}
+		}
+
+		// Strategy 2: Check the receiver expression type
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">		if (node.getExpression() != null) {</span>
+<span class="fc" id="L368">			ITypeBinding receiverType = node.getExpression().resolveTypeBinding();</span>
+<span class="pc bpc" id="L369" title="3 of 4 branches missed.">			if (receiverType != null &amp;&amp; isThrowingRunnableType(receiverType)) {</span>
+<span class="nc" id="L370">				return true;</span>
+			}
+			// Strategy 3: If receiver is a method invocation (e.g., ref.get()),
+			// check if the return type's type arguments contain ThrowingRunnable
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">			if (node.getExpression() instanceof MethodInvocation) {</span>
+<span class="fc" id="L375">				MethodInvocation receiverInvocation = (MethodInvocation) node.getExpression();</span>
+<span class="fc" id="L376">				org.eclipse.jdt.core.dom.IMethodBinding receiverMethodBinding = receiverInvocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">				if (receiverMethodBinding != null) {</span>
+<span class="nc" id="L378">					ITypeBinding returnType = receiverMethodBinding.getReturnType();</span>
+<span class="nc bnc" id="L379" title="All 4 branches missed.">					if (returnType != null &amp;&amp; isThrowingRunnableType(returnType)) {</span>
+<span class="nc" id="L380">						return true;</span>
+					}
+				}
+				// Strategy 4: Check if the receiver's receiver (e.g., ref in ref.get())
+				// has a type with ThrowingRunnable as a type argument
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">				if (receiverInvocation.getExpression() != null) {</span>
+<span class="fc" id="L386">					ITypeBinding outerReceiverType = receiverInvocation.getExpression().resolveTypeBinding();</span>
+<span class="pc bpc" id="L387" title="2 of 4 branches missed.">					if (outerReceiverType != null &amp;&amp; hasThrowingRunnableTypeArgument(outerReceiverType)) {</span>
+<span class="fc" id="L388">						return true;</span>
+					}
+				}
+			}
+		}
+<span class="nc" id="L393">		return false;</span>
+	}
+
+	/**
+	 * Checks if a type binding has ThrowingRunnable as one of its type arguments.
+	 * e.g., AtomicReference&amp;lt;ThrowingRunnable&amp;gt; → true
+	 */
+	private static boolean hasThrowingRunnableTypeArgument(ITypeBinding typeBinding) {
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L402">			return false;</span>
+		}
+<span class="fc" id="L404">		ITypeBinding[] typeArgs = typeBinding.getTypeArguments();</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">		if (typeArgs != null) {</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">			for (ITypeBinding arg : typeArgs) {</span>
+<span class="pc bpc" id="L407" title="1 of 2 branches missed.">				if (isThrowingRunnableType(arg)) {</span>
+<span class="fc" id="L408">					return true;</span>
+				}
+			}
+		}
+<span class="nc" id="L412">		return false;</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L316" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L317">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L418">			return &quot;&quot;&quot;</span>
 					import org.junit.jupiter.api.function.Executable;
 
 					Executable runnable = () -&gt; {};
 					runnable.execute();
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L324">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L425">		return &quot;&quot;&quot;</span>
 				import org.junit.function.ThrowingRunnable;
 
 				ThrowingRunnable runnable = () -&gt; {};
@@ -331,7 +432,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L334">		return &quot;ThrowingRunnable&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L435">		return &quot;ThrowingRunnable&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
