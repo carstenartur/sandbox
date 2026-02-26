@@ -11,14 +11,13 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.mining.core;
+package org.sandbox.jdt.triggerpattern.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
-import org.sandbox.jdt.triggerpattern.internal.DslValidator;
 import org.sandbox.jdt.triggerpattern.internal.DslValidator.ValidationResult;
 
 /**

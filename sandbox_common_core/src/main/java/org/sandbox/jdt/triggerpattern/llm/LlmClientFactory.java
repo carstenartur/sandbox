@@ -40,6 +40,31 @@ case MISTRAL -> new MistralClient();
 }
 
 /**
+ * Creates an {@link LlmClient} for the given provider with an explicit API key.
+ *
+ * <p>Use this overload when the API key is available from Eclipse preferences
+ * or another non-environment source. If {@code apiKey} is {@code null} or blank,
+ * the client falls back to reading from its provider-specific environment variable.</p>
+ *
+ * @param provider the LLM provider to use
+ * @param apiKey   explicit API key (may be {@code null} or blank to fall back to env)
+ * @return the configured client
+ */
+public static LlmClient create(LlmProvider provider, String apiKey) {
+if (apiKey == null || apiKey.isBlank()) {
+return create(provider);
+}
+return switch (provider) {
+case GEMINI -> new GeminiClient(apiKey);
+case OPENAI -> new OpenAiClient(apiKey);
+case DEEPSEEK -> new DeepSeekClient(apiKey);
+case QWEN -> new QwenClient(apiKey);
+case LLAMA -> new LlamaClient(apiKey);
+case MISTRAL -> new MistralClient(apiKey);
+};
+}
+
+/**
  * Creates an {@link LlmClient} by auto-detecting the provider.
  *
  * <p>Priority order:

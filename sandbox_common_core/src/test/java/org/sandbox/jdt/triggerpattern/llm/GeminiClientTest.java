@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.mining.core;
+package org.sandbox.jdt.triggerpattern.llm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -24,9 +24,7 @@ import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
-import org.sandbox.jdt.triggerpattern.llm.GeminiClient;
 
 /**
  * Tests for {@link GeminiClient}.

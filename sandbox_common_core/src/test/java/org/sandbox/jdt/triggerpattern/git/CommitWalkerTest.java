@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.mining.core;
+package org.sandbox.jdt.triggerpattern.git;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sandbox.jdt.triggerpattern.git.CommitWalker;
 
 /**
  * Tests for {@link CommitWalker}.

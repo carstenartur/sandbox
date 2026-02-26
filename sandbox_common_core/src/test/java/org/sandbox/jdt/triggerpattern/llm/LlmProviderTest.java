@@ -11,13 +11,12 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.mining.core;
+package org.sandbox.jdt.triggerpattern.llm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
-import org.sandbox.jdt.triggerpattern.llm.LlmProvider;
 
 /**
  * Tests for {@link LlmProvider}.

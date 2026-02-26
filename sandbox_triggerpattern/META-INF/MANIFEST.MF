@@ -27,6 +27,7 @@ Import-Package: org.eclipse.jdt.internal.corext.fix,
  org.sandbox.jdt.triggerpattern.cleanup,
  org.sandbox.jdt.triggerpattern.eclipse,
  org.sandbox.jdt.triggerpattern.internal,
+ org.sandbox.jdt.triggerpattern.llm,
  org.sandbox.jdt.triggerpattern.mining.analysis,
  org.sandbox.jdt.triggerpattern.mining.git
 

@@ -25,6 +25,19 @@
             name="Refactoring Mining" />
    </extension>
    
+   <extension point="org.eclipse.ui.preferencePages">
+      <page
+            category="org.eclipse.jdt.ui.preferences.JavaBasePreferencePage"
+            class="org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage"
+            id="org.sandbox.jdt.triggerpattern.preferences.LlmPreferencePage"
+            name="LLM Rule Inference" />
+   </extension>
+
+   <extension point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="org.sandbox.jdt.internal.ui.preferences.LlmPreferenceInitializer" />
+   </extension>
+
    <extension point="org.eclipse.jdt.ui.cleanUps">
       <cleanUpConfigurationUI 
             class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" 
@@ -52,5 +65,30 @@
       <cleanUp
             class="org.sandbox.jdt.internal.ui.fix.HintFileCleanUp"
             id="org.eclipse.jdt.ui.cleanup.hintfile" />
+   </extension>
+
+   <extension point="org.eclipse.jdt.ui.quickAssistProcessors">
+      <quickAssistProcessor
+            class="org.sandbox.jdt.internal.ui.quickassist.DslFromSelectionAssistProcessor"
+            id="org.sandbox.jdt.triggerpattern.quickassist.dslFromSelection"
+            name="Generate DSL Rule from Selection" />
+   </extension>
+
+   <extension point="org.eclipse.ui.commands">
+      <command
+            id="org.sandbox.jdt.triggerpattern.commands.mineDiff"
+            name="Mine DSL Rule from Diff" />
+      <command
+            id="org.sandbox.jdt.triggerpattern.commands.mineWorkingTree"
+            name="Mine DSL Rules from Working Tree" />
+   </extension>
+
+   <extension point="org.eclipse.ui.handlers">
+      <handler
+            class="org.sandbox.jdt.internal.ui.handlers.MineDiffHandler"
+            commandId="org.sandbox.jdt.triggerpattern.commands.mineDiff" />
+      <handler
+            class="org.sandbox.jdt.internal.ui.handlers.MineWorkingTreeHandler"
+            commandId="org.sandbox.jdt.triggerpattern.commands.mineWorkingTree" />
    </extension>
 </plugin>
