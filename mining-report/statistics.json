@@ -1,58 +1,52 @@
 {
-  "totalProcessed": 21,
-  "relevant": 6,
-  "irrelevant": 15,
-  "duplicates": 1,
-  "green": 0,
-  "yellow": 1,
-  "red": 8,
+  "totalProcessed": 18,
+  "relevant": 9,
+  "irrelevant": 9,
+  "duplicates": 0,
+  "green": 5,
+  "yellow": 0,
+  "red": 4,
   "irrelevantReasons": {
-    "The commit fixes an internal bug in the Eclipse JDT ASTParser regarding how it handles explicit `super()` calls when parsing Java code. It is a modification to the parsing logic itself, not a transformation of Java source code, and thus cannot be generalized into a TriggerPattern DSL rule.": 1,
-    "The commit introduces a fix for an internal Eclipse JDT DOM binding resolution logic, specifically for method references to array types. This is not a user-facing code transformation or refactoring pattern that can be generalized into a TriggerPattern DSL rule. The DSL is designed for transforming Java source code directly, not for modifying the behavior of the AST binding resolver.": 1,
-    "The commit is a bug fix in the internal workings of Eclipse JDT\u0027s DOM binding resolution, specifically addressing how method references are bound. It modifies the compiler\u0027s internal behavior rather than transforming user-facing Java source code patterns. Therefore, it cannot be generalized into a TriggerPattern DSL rule.": 1,
-    "The change involves inserting an \u0027if\u0027 statement and conditionally reassigning a field based on an \u0027instanceof\u0027 check. The TriggerPattern DSL is designed for expression-level and annotation-level pattern matching and replacement, not for introducing control flow statements or modifying field assignments in this manner. These are structural changes beyond the current DSL capabilities.": 1,
-    "The commit fixes an internal bug in the Eclipse JDT AST converter related to source range calculation for array types. It involves low-level manipulation of AST node properties (start position, length) rather than a transformation of user-written Java source code. The TriggerPattern DSL is designed for source-to-source transformations of Java code expressions and statements, not for internal AST node property adjustments or calculations.": 1,
-    "The change is a bug fix within the internal Eclipse JDT core logic related to import handling (adding a break to a loop for string segment comparison). It\u0027s an internal implementation detail of the IDE\u0027s refactoring engine, not a pattern in user-written Java code that can be transformed by the DSL.": 1,
-    "The change modifies a superclass constructor call within an internal JDT compiler component (`NameEnvironmentWithProgress`). It updates a specific internal API usage (adding a \u0027false\u0027 boolean argument to the superclass constructor) related to external annotations. This is an infrastructure-level change, not a generalizable code pattern or anti-pattern found in typical user-written Java code that the DSL is designed to transform.": 1,
-    "The commit fixes an internal bug in Eclipse JDT\u0027s ImportRewrite mechanism related to how implicit imports are configured for compilation units outside the classpath. This is an infrastructure change to the JDT itself, not a transformation applicable to user-written Java code patterns.": 1,
-    "The commit fixes an internal bug in the JDT import rewrite logic (handling types in the default package and on-demand imports). This is a change to the JDT core\u0027s internal algorithms, not a transformation on user-written Java code patterns that can be expressed via TriggerPattern DSL.": 1,
-    "The commit introduces complex control flow (a for loop, multiple if statements, and continue statements) within an existing method. The TriggerPattern DSL is designed for expression-level and annotation-level pattern matching and replacement, not for inserting arbitrary multi-statement blocks or control flow structures.": 1,
-    "This commit primarily involves internal JDT compiler and DOM rewrite logic, focusing on name environment lookups, import management, and handling edge cases like unnamed packages. These are not direct code transformations applied to user source code that can be generalized into a TriggerPattern DSL rule.": 1,
-    "The change involves modifying internal Eclipse JDT core logic (handling `TypeParameter` in an if-else if chain for key generation), which is not a general Java code transformation or idiomatic pattern suitable for a DSL rule. The DSL focuses on user-facing code patterns, not internal AST traversal/dispatch logic.": 1,
-    "The change refactors internal Eclipse JDT core logic for determining the enclosing method of a `LocalVariableBinding`. It replaces a verbose manual lookup with a more direct API call (`getEnclosingMethod()`). This is an internal API modernization, not a general Java code pattern or idiom that would be applicable to user code via a DSL rule. The \u0027before\u0027 pattern involves complex conditional logic and internal types not exposed to typical user code.": 1,
-    "The code change involves a complex refactoring of algorithmic logic that encompasses multiple statements, control flow (a loop with conditional additions), and intermediate variable creation (HashSet for deduplication). The current TriggerPattern DSL is designed for expression-level pattern matching and replacement, not for transforming multi-statement blocks or control flow constructs. Matching and replacing a sequence of variable declarations, loop structures, and method calls in this manner is outside its scope.": 1,
-    "The commit fixes an internal bug in the AST converter (`ASTConverter.java`) related to how source ranges are calculated for `InfixExpression` and `ConditionalExpression` nodes. This is a low-level AST implementation detail for the JDT DOM and does not represent a transformation on user-visible Java code. Therefore, it cannot be generalized into a TriggerPattern DSL rule.": 1
+    "This commit introduces a new API method (`isIntersectionType`) and modifies the core JDT AST binding behavior to support intersection types. It\u0027s an internal JDT API enhancement, not a Java code transformation that can be expressed as a DSL rule. The DSL consumes the JDT AST; it does not modify the AST itself.": 1,
+    "The change alters control flow (assignment to return statement) within a specific internal logic block, which is not a general code pattern suitable for DSL transformation. The DSL does not support rewriting statements to alter control flow like this.": 1,
+    "This commit addresses a data race by adding the \u0027volatile\u0027 modifier to several private fields within an internal JDT class (`MethodBinding`). The TriggerPattern DSL does not currently support the analysis of concurrency issues or the addition/removal of modifiers to field declarations. Its primary focus is on expression and method call replacements or annotation additions to methods. Therefore, this transformation is beyond the scope of the current DSL capabilities.": 1,
+    "This commit introduces new API (`ITypeBinding.getTypeAnnotationsOnDimensions()`) and its associated implementation within internal JDT classes. The purpose is to expose type annotations on array dimensions, a feature introduced in Java 8. This is an API addition and internal plumbing for the JDT\u0027s DOM binding layer, not a refactoring or transformation of existing client code that could be generalized into a TriggerPattern DSL rule. DSL rules are for finding code patterns and replacing them, not for defining new API methods or implementing internal object models.": 1,
+    "The commit introduces new JDT AST binding API methods (`ITypeBinding#getTypeAnnotationsOnDimensions`, `ITypeBinding#isIntersectionType`) and internal implementation details for AST binding resolution and concurrency (adding `volatile` keyword to fields). It also includes a minor bug fix in `ImportRewrite` logic. None of these changes represent a transformation or refactoring of Java source code that would be expressible or desirable as a TriggerPattern DSL rule.": 1,
+    "The commit fixes an internal bug in the Eclipse JDT AST parser related to how source ranges are calculated for ArrayType nodes. This is a fix to the AST construction logic itself, not a transformation that can be applied to user-written Java code patterns using the TriggerPattern DSL.": 1,
+    "The change involves inserting a new `if` statement with control flow (`continue`) into a method body. The current TriggerPattern DSL is designed for expression-level transformations and does not support inserting complex statement blocks or control flow structures like `if` statements and `continue`.": 1,
+    "The commit reverts an internal API (method and field) within the Eclipse JDT DOM. The TriggerPattern DSL is designed for transforming usage patterns in Java source code, not for refactoring API definitions or removing internal API methods/fields.": 1,
+    "This commit removes an API method (`ITypeBinding.getTypeAnnotationsOnDimensions`) and its internal implementation, changing the way clients should programmatically access type annotations on array dimensions. It is not a direct code transformation (pattern A -\u003e pattern B) that the TriggerPattern DSL is designed for. The suggested alternative in the Javadoc is a programmatic approach (repeatedly calling `getComponentType()`) rather than a simple expression replacement.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 21,
-      "relevant": 6,
-      "green": 0,
-      "yellow": 1,
-      "red": 8
+      "totalProcessed": 18,
+      "relevant": 9,
+      "green": 5,
+      "yellow": 0,
+      "red": 4
     }
   },
   "dailyProgress": [
     {
       "date": "2026-02-26",
-      "processed": 21,
-      "relevant": 6
+      "processed": 18,
+      "relevant": 9
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-02-26T05:38:40.845Z",
-    "completedAt": "2026-02-26T05:44:51.684387394Z",
-    "durationSeconds": 370,
+    "startedAt": "2026-02-26T16:42:23.706Z",
+    "completedAt": "2026-02-26T16:48:45.379822272Z",
+    "durationSeconds": 381,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
-    "batchSize": 15,
+    "batchSize": 5,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 20,
+    "deferredCommits": 22,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-02-26T05:39:56.689828716Z",
-    "latestEvaluation": "2026-02-26T05:44:51.097623876Z"
+    "earliestEvaluation": "2026-02-26T16:43:42.284357925Z",
+    "latestEvaluation": "2026-02-26T16:48:44.801582864Z"
   }
 }
