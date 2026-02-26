@@ -66,4 +66,29 @@
             class="org.sandbox.jdt.internal.ui.fix.HintFileCleanUp"
             id="org.eclipse.jdt.ui.cleanup.hintfile" />
    </extension>
+
+   <extension point="org.eclipse.jdt.ui.quickAssistProcessors">
+      <quickAssistProcessor
+            class="org.sandbox.jdt.internal.ui.quickassist.DslFromSelectionAssistProcessor"
+            id="org.sandbox.jdt.triggerpattern.quickassist.dslFromSelection"
+            name="Generate DSL Rule from Selection" />
+   </extension>
+
+   <extension point="org.eclipse.ui.commands">
+      <command
+            id="org.sandbox.jdt.triggerpattern.commands.mineDiff"
+            name="Mine DSL Rule from Diff" />
+      <command
+            id="org.sandbox.jdt.triggerpattern.commands.mineWorkingTree"
+            name="Mine DSL Rules from Working Tree" />
+   </extension>
+
+   <extension point="org.eclipse.ui.handlers">
+      <handler
+            class="org.sandbox.jdt.internal.ui.handlers.MineDiffHandler"
+            commandId="org.sandbox.jdt.triggerpattern.commands.mineDiff" />
+      <handler
+            class="org.sandbox.jdt.internal.ui.handlers.MineWorkingTreeHandler"
+            commandId="org.sandbox.jdt.triggerpattern.commands.mineWorkingTree" />
+   </extension>
 </plugin>
