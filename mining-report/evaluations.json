@@ -16,10 +16,11 @@
     "isNewCategory": false,
     "categoryReason": "Collection API modernization pattern",
     "canImplementInCurrentDsl": true,
-    "dslRule": "<trigger>\n$x.size() == 0\n:: sourceVersionGE(11)\n=> $x.isEmpty()\n;;\n</trigger>",
+    "dslRule": "$x.size() == 0\n=> $x.isEmpty()\n;;",
     "targetHintFile": "sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/collections.sandbox-hint",
     "languageChangeNeeded": null,
     "dslRuleAfterChange": null,
+    "dslValidationResult": "VALID",
     "summary": "Replace size()==0 with isEmpty() for better readability"
   },
   {
@@ -39,10 +40,11 @@
     "isNewCategory": false,
     "categoryReason": "String method modernization",
     "canImplementInCurrentDsl": true,
-    "dslRule": "<trigger>\nString.valueOf($x)\n:: isType($x, java.lang.Object)\n:: sourceVersionGE(11)\n=> $x.toString()\n;;\n</trigger>",
+    "dslRule": "java.lang.String.valueOf($x) :: isNonNull($x)\n=> $x.toString()\n;;",
     "targetHintFile": "sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/modernize-java11.sandbox-hint",
     "languageChangeNeeded": null,
     "dslRuleAfterChange": null,
+    "dslValidationResult": "VALID",
     "summary": "Use direct toString() instead of String.valueOf() when type is known"
   },
   {
@@ -65,7 +67,8 @@
     "dslRule": null,
     "targetHintFile": "NEW: try-with-resources.sandbox-hint",
     "languageChangeNeeded": "Requires control flow analysis to detect close() calls in finally blocks and convert to try-with-resources statements. This is a structural transformation beyond the current DSL capabilities.",
-    "dslRuleAfterChange": "<trigger>\ntry { $body } finally { $resource.close(); }\n:: isType($resource, java.lang.AutoCloseable)\n:: sourceVersionGE(11)\n=> try ($resource) { $body }\n;;\n</trigger>",
+    "dslRuleAfterChange": "try { $body } finally { $resource.close(); } :: instanceof($resource, \"java.lang.AutoCloseable\")\n=> try ($resource) { $body }\n;;",
+    "dslValidationResult": null,
     "summary": "Convert manual close() in finally to try-with-resources"
   },
   {
@@ -89,6 +92,7 @@
     "targetHintFile": null,
     "languageChangeNeeded": null,
     "dslRuleAfterChange": null,
+    "dslValidationResult": null,
     "summary": "Bug fix - not a generalizable transformation"
   },
   {
@@ -112,6 +116,7 @@
     "targetHintFile": null,
     "languageChangeNeeded": null,
     "dslRuleAfterChange": null,
+    "dslValidationResult": null,
     "summary": "Duplicate of existing List.of() rule in modernize-java9.sandbox-hint"
   },
   {
@@ -131,10 +136,11 @@
     "isNewCategory": false,
     "categoryReason": "String concatenation modernization",
     "canImplementInCurrentDsl": true,
-    "dslRule": "<trigger>\nnew StringBuilder().append($a).append($delim).append($b).toString()\n:: sourceVersionGE(11)\n=> String.join($delim, $a, $b)\n;;\n</trigger>",
+    "dslRule": "new java.lang.StringBuilder().append($a).append($delim).append($b).toString()\n=> java.lang.String.join($delim, $a, $b)\n;;",
     "targetHintFile": "sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/performance.sandbox-hint",
     "languageChangeNeeded": null,
     "dslRuleAfterChange": null,
+    "dslValidationResult": "VALID",
     "summary": "Replace StringBuilder append chains with String.join()"
   },
   {
@@ -154,10 +160,11 @@
     "isNewCategory": false,
     "categoryReason": "Java 9+ API modernization",
     "canImplementInCurrentDsl": true,
-    "dslRule": "<trigger>\nnew java.util.AbstractMap.SimpleEntry<>($key, $value)\n:: sourceVersionGE(11)\n=> java.util.Map.entry($key, $value)\n<import>java.util.Map</import>\n;;\n</trigger>",
+    "dslRule": "new java.util.AbstractMap.SimpleEntry<>($key, $value) :: sourceVersionGE(9)\n=> java.util.Map.entry($key, $value)\n;;",
     "targetHintFile": "sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/modernize-java9.sandbox-hint",
     "languageChangeNeeded": null,
     "dslRuleAfterChange": null,
+    "dslValidationResult": "VALID",
     "summary": "Use Map.entry() factory method instead of AbstractMap.SimpleEntry"
   }
 ]

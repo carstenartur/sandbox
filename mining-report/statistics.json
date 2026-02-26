@@ -45,5 +45,15 @@
       "processed": 7,
       "relevant": 5
     }
-  ]
+  ],
+  "runMetadata": {
+    "completedAt": "2026-02-16T02:50:00Z",
+    "durationSeconds": 120,
+    "llmModel": "gemini-2.0-flash",
+    "apiCallsMade": 3,
+    "batchSize": 3,
+    "commitsPerRequest": 3,
+    "deferredCommits": 0,
+    "permanentlySkipped": 0
+  }
 }
