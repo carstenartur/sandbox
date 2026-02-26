@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.mining.core;
+package org.sandbox.jdt.triggerpattern.llm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -22,24 +22,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
-import org.sandbox.jdt.triggerpattern.llm.MistralClient;
 
 /**
- * Tests for {@link MistralClient}.
+ * Tests for {@link QwenClient}.
  */
-class MistralClientTest {
+class QwenClientTest {
 
 @Test
 void testDefaultModel() {
-MistralClient client = new MistralClient("test-key");
-assertEquals("mistral-large-latest", client.getModel());
+QwenClient client = new QwenClient("test-key");
+assertEquals("qwen-max", client.getModel());
 }
 
 @Test
 void testBuildRequestBody() {
-MistralClient client = new MistralClient("test-key");
+QwenClient client = new QwenClient("test-key");
 String body = client.buildRequestBody("Hello!");
 
 assertNotNull(body);
@@ -50,7 +48,7 @@ assertTrue(body.contains("model"));
 
 @Test
 void testParseValidResponse() {
-MistralClient client = new MistralClient("test-key");
+QwenClient client = new QwenClient("test-key");
 
 String response = """
 {
@@ -75,14 +73,14 @@ assertEquals("Collections", eval.category());
 
 @Test
 void testEvaluateWithoutApiKey() throws Exception {
-MistralClient client = new MistralClient(null);
+QwenClient client = new QwenClient(null);
 CommitEvaluation result = client.evaluate("prompt", "hash", "msg", "url");
 assertNull(result);
 }
 
 @Test
 void testEvaluateBatchWithoutApiKey() throws Exception {
-MistralClient client = new MistralClient(null);
+QwenClient client = new QwenClient(null);
 List<CommitEvaluation> result = client.evaluateBatch("prompt",
 List.of("hash1"), List.of("msg1"), "url");
 assertTrue(result.isEmpty());
@@ -90,13 +88,13 @@ assertTrue(result.isEmpty());
 
 @Test
 void testWasLastResponseTruncatedInitiallyFalse() {
-MistralClient client = new MistralClient("test-key");
+QwenClient client = new QwenClient("test-key");
 assertFalse(client.wasLastResponseTruncated());
 }
 
 @Test
 void testFinishReasonLengthSetsLastResponseTruncated() {
-MistralClient client = new MistralClient("test-key");
+QwenClient client = new QwenClient("test-key");
 String response = """
 {
   "choices": [{
@@ -114,7 +112,7 @@ assertTrue(client.wasLastResponseTruncated());
 
 @Test
 void testFinishReasonContentFilterReturnsNull() {
-MistralClient client = new MistralClient("test-key");
+QwenClient client = new QwenClient("test-key");
 String response = """
 {
   "choices": [{
@@ -132,13 +130,13 @@ assertNull(eval);
 
 @Test
 void testHasRemainingQuotaAlwaysTrue() {
-MistralClient client = new MistralClient("test-key");
+QwenClient client = new QwenClient("test-key");
 assertTrue(client.hasRemainingQuota());
 }
 
 @Test
 void testIsApiUnavailableInitiallyFalse() {
-MistralClient client = new MistralClient("test-key");
+QwenClient client = new QwenClient("test-key");
 assertFalse(client.isApiUnavailable());
 }
 }
