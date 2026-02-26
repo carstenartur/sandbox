@@ -8,13 +8,13 @@ mining:
   # Eclipse projects to scan
   repositories:
     - url: https://github.com/eclipse-jdt/eclipse.jdt.core
-      branch: main
+      branch: master
       paths:
         - org.eclipse.jdt.core/dom
         - org.eclipse.jdt.core.manipulation/src
 
     - url: https://github.com/eclipse-jdt/eclipse.jdt.ui
-      branch: main
+      branch: master
       paths:
         - org.eclipse.jdt.ui/ui
 

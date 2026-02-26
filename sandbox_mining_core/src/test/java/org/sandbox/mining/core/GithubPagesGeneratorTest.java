@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.mining.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -83,6 +85,110 @@ class GithubPagesGeneratorTest {
 
 		Path indexHtml = tempDir.resolve("index.html");
 		assertTrue(Files.exists(indexHtml));
+	}
+
+	@Test
+	void testGenerateMergesExistingEvaluations() throws IOException {
+		GithubPagesGenerator generator = new GithubPagesGenerator();
+
+		CommitEvaluation first = new CommitEvaluation(
+				"existing123", "existing commit", "https://github.com/test/repo",
+				Instant.parse("2026-01-01T10:00:00Z"), true, null, false, null,
+				4, 3, 2, TrafficLight.GREEN,
+				"Collections", false, "reason",
+				true, "rule", "file.sandbox-hint",
+				null, null, "Existing summary", null);
+		StatisticsCollector stats1 = new StatisticsCollector();
+		stats1.record(first);
+		generator.generate(List.of(first), stats1, tempDir);
+
+		CommitEvaluation second = new CommitEvaluation(
+				"new456", "new commit", "https://github.com/test/repo",
+				Instant.parse("2026-01-02T10:00:00Z"), true, null, false, null,
+				5, 5, 2, TrafficLight.GREEN,
+				"String-API", false, "reason",
+				true, "rule2", "file2.sandbox-hint",
+				null, null, "New summary", null);
+		StatisticsCollector stats2 = new StatisticsCollector();
+		stats2.record(second);
+		generator.generate(List.of(second), stats2, tempDir);
+
+		String evalContent = Files.readString(tempDir.resolve("evaluations.json"), StandardCharsets.UTF_8);
+		assertTrue(evalContent.contains("existing123"));
+		assertTrue(evalContent.contains("new456"));
+
+		String statsContent = Files.readString(tempDir.resolve("statistics.json"), StandardCharsets.UTF_8);
+		assertTrue(statsContent.contains("totalProcessed"));
+	}
+
+	@Test
+	void testGenerateFiltersDemoHashes() throws IOException {
+		GithubPagesGenerator generator = new GithubPagesGenerator();
+
+		// Pre-populate with a demo hash entry
+		String demoJson = """
+				[
+				  {
+				    "commitHash": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+				    "commitMessage": "demo",
+				    "repoUrl": "https://github.com/test/repo",
+				    "evaluatedAt": "2026-01-01T10:00:00Z",
+				    "relevant": true,
+				    "isDuplicate": false,
+				    "reusability": 1,
+				    "codeImprovement": 1,
+				    "implementationEffort": 1,
+				    "trafficLight": "GREEN",
+				    "isNewCategory": false,
+				    "canImplementInCurrentDsl": false,
+				    "summary": "demo"
+				  }
+				]""";
+		Files.writeString(tempDir.resolve("evaluations.json"), demoJson, StandardCharsets.UTF_8);
+
+		CommitEvaluation real = new CommitEvaluation(
+				"real123", "real commit", "https://github.com/test/repo",
+				Instant.parse("2026-01-02T10:00:00Z"), true, null, false, null,
+				5, 5, 2, TrafficLight.GREEN,
+				"String-API", false, "reason",
+				true, "rule", "file.sandbox-hint",
+				null, null, "Real summary", null);
+		StatisticsCollector stats = new StatisticsCollector();
+		stats.record(real);
+		generator.generate(List.of(real), stats, tempDir);
+
+		String evalContent = Files.readString(tempDir.resolve("evaluations.json"), StandardCharsets.UTF_8);
+		assertFalse(evalContent.contains("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"));
+		assertTrue(evalContent.contains("real123"));
+
+		// Verify that statistics are rebuilt without counting the filtered demo entry
+		Path statisticsJson = tempDir.resolve("statistics.json");
+		assertTrue(Files.exists(statisticsJson));
+		String statsContent = Files.readString(statisticsJson, StandardCharsets.UTF_8);
+		assertTrue(statsContent.contains("\"totalProcessed\": 1"));
+	}
+
+	@Test
+	void testGenerateDeduplicatesSameCommitHash() throws IOException {
+		GithubPagesGenerator generator = new GithubPagesGenerator();
+
+		CommitEvaluation eval = new CommitEvaluation(
+				"samehash", "commit", "https://github.com/test/repo",
+				Instant.parse("2026-01-01T10:00:00Z"), true, null, false, null,
+				4, 3, 2, TrafficLight.GREEN,
+				"Collections", false, "reason",
+				true, "rule", "file.sandbox-hint",
+				null, null, "Summary", null);
+		StatisticsCollector stats = new StatisticsCollector();
+		stats.record(eval);
+		// First run
+		generator.generate(List.of(eval), stats, tempDir);
+		// Second run with the same hash
+		generator.generate(List.of(eval), stats, tempDir);
+
+		String evalContent = Files.readString(tempDir.resolve("evaluations.json"), StandardCharsets.UTF_8);
+		// "samehash" should appear exactly once
+		assertEquals(1, evalContent.split("\"samehash\"", -1).length - 1);
 	}
 
 	@Test
