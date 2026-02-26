@@ -15,6 +15,7 @@ package org.sandbox.mining.core.report;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -125,8 +126,10 @@ public class StatisticsCollector {
 					.record(evaluation);
 		}
 
-		// Daily progress tracking
-		String today = LocalDate.now().toString();
+		// Daily progress tracking — use the evaluation's date if available, else today
+		String today = (evaluation.evaluatedAt() != null)
+				? LocalDate.ofInstant(evaluation.evaluatedAt(), ZoneOffset.UTC).toString()
+				: LocalDate.now().toString();
 		DailyProgress todayProgress = dailyProgress.stream()
 				.filter(d -> d.getDate().equals(today))
 				.findFirst()
@@ -187,6 +190,20 @@ public class StatisticsCollector {
 
 	public void setRunMetadata(RunMetadata runMetadata) {
 		this.runMetadata = runMetadata;
+	}
+
+	/**
+	 * Rebuilds a {@link StatisticsCollector} from a list of evaluations.
+	 *
+	 * @param evaluations the evaluations to rebuild from
+	 * @return a new {@link StatisticsCollector} reflecting the given evaluations
+	 */
+	public static StatisticsCollector rebuildFrom(List<CommitEvaluation> evaluations) {
+		StatisticsCollector stats = new StatisticsCollector();
+		for (CommitEvaluation eval : evaluations) {
+			stats.record(eval);
+		}
+		return stats;
 	}
 
 	/**

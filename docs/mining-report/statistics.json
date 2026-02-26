@@ -1,59 +1,12 @@
 {
-  "totalProcessed": 7,
-  "relevant": 5,
-  "irrelevant": 1,
-  "duplicates": 1,
-  "green": 3,
-  "yellow": 1,
-  "red": 1,
-  "irrelevantReasons": {
-    "Bug-Fix": 1
-  },
-  "perRepository": {
-    "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 2,
-      "relevant": 1,
-      "green": 1,
-      "yellow": 0,
-      "red": 0
-    },
-    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 2,
-      "relevant": 2,
-      "green": 1,
-      "yellow": 1,
-      "red": 0
-    },
-    "https://github.com/eclipse-platform/eclipse.platform": {
-      "totalProcessed": 2,
-      "relevant": 2,
-      "green": 1,
-      "yellow": 0,
-      "red": 1
-    },
-    "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "totalProcessed": 1,
-      "relevant": 1,
-      "green": 0,
-      "yellow": 0,
-      "red": 0
-    }
-  },
-  "dailyProgress": [
-    {
-      "date": "2026-02-16",
-      "processed": 7,
-      "relevant": 5
-    }
-  ],
-  "runMetadata": {
-    "completedAt": "2026-02-16T02:50:00Z",
-    "durationSeconds": 120,
-    "llmModel": "gemini-2.0-flash",
-    "apiCallsMade": 3,
-    "batchSize": 3,
-    "commitsPerRequest": 3,
-    "deferredCommits": 0,
-    "permanentlySkipped": 0
-  }
+  "totalProcessed": 0,
+  "relevant": 0,
+  "irrelevant": 0,
+  "duplicates": 0,
+  "green": 0,
+  "yellow": 0,
+  "red": 0,
+  "irrelevantReasons": {},
+  "perRepository": {},
+  "dailyProgress": []
 }

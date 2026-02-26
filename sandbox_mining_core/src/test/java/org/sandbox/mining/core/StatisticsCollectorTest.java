@@ -103,6 +103,33 @@ class StatisticsCollectorTest {
 	}
 
 	@Test
+	void testRebuildFrom() {
+		Instant day1 = Instant.parse("2026-01-01T10:00:00Z");
+		Instant day2 = Instant.parse("2026-01-02T10:00:00Z");
+		List<CommitEvaluation> evals = List.of(
+				new CommitEvaluation("h1", "msg", "url", day1,
+						true, null, false, null,
+						4, 3, 2, TrafficLight.GREEN,
+						"Collections", false, "reason",
+						true, "rule", "file.hint",
+						null, null, "summary", null),
+				new CommitEvaluation("h2", "msg", "url", day2,
+						false, "Bug-Fix", false, null,
+						0, 0, 0, TrafficLight.NOT_APPLICABLE,
+						null, false, null,
+						false, null, null,
+						null, null, "summary", null));
+
+		StatisticsCollector stats = StatisticsCollector.rebuildFrom(evals);
+
+		assertEquals(2, stats.getTotalProcessed());
+		assertEquals(1, stats.getRelevant());
+		assertEquals(1, stats.getIrrelevant());
+		assertEquals(1, stats.getGreen());
+		assertEquals(2, stats.getDailyProgress().size());
+	}
+
+	@Test
 	void testRunMetadataSerialization() {
 		StatisticsCollector stats = new StatisticsCollector();
 

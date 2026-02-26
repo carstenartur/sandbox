@@ -15,16 +15,22 @@ package org.sandbox.mining.core.report;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
+import com.google.gson.reflect.TypeToken;
 
 import org.sandbox.mining.core.llm.CommitEvaluation;
 
@@ -37,6 +43,14 @@ import org.sandbox.mining.core.llm.CommitEvaluation;
 public class GithubPagesGenerator {
 
 	private static final String TEMPLATE_RESOURCE = "/templates/report-template.html";
+	private static final Set<String> DEMO_HASHES = Set.of(
+			"a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+			"b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+			"c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
+			"d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5",
+			"e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6",
+			"f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1",
+			"a7b8c9d0e1f2a7b8c9d0e1f2a7b8c9d0e1f2a7b8");
 	private final Gson gson;
 
 	public GithubPagesGenerator() {
@@ -44,14 +58,20 @@ public class GithubPagesGenerator {
 				.setPrettyPrinting()
 				.registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) ->
 						new JsonPrimitive(src.toString()))
+				.registerTypeAdapter(Instant.class, (JsonDeserializer<Instant>) (json, typeOfT, context) ->
+						Instant.parse(json.getAsString()))
 				.create();
 	}
 
 	/**
 	 * Generates the GitHub Pages output (index.html, evaluations.json, statistics.json).
 	 *
-	 * @param evaluations the evaluation results
-	 * @param stats       the statistics collector
+	 * <p>Loads any existing evaluations.json from the output directory, filters out
+	 * demo seed data, deduplicates by commit hash, merges with the new evaluations,
+	 * and rebuilds statistics from the combined list.</p>
+	 *
+	 * @param evaluations the evaluation results from the current run
+	 * @param stats       the statistics collector for the current run (used for run metadata)
 	 * @param outputDir   the output directory
 	 * @throws IOException if an I/O error occurs
 	 */
@@ -59,14 +79,54 @@ public class GithubPagesGenerator {
 			StatisticsCollector stats, Path outputDir) throws IOException {
 		Files.createDirectories(outputDir);
 
+		List<CommitEvaluation> merged = loadAndMerge(outputDir, evaluations);
+
+		StatisticsCollector mergedStats = StatisticsCollector.rebuildFrom(merged);
+		mergedStats.setRunMetadata(stats.getRunMetadata());
+		mergedStats.computeTimeWindow(merged);
+
 		String template = loadTemplate();
-		String html = injectStatistics(template, stats);
+		String html = injectStatistics(template, mergedStats);
 
 		Files.writeString(outputDir.resolve("index.html"), html, StandardCharsets.UTF_8);
 		Files.writeString(outputDir.resolve("evaluations.json"),
-				gson.toJson(evaluations), StandardCharsets.UTF_8);
+				gson.toJson(merged), StandardCharsets.UTF_8);
 		Files.writeString(outputDir.resolve("statistics.json"),
-				gson.toJson(stats), StandardCharsets.UTF_8);
+				gson.toJson(mergedStats), StandardCharsets.UTF_8);
+	}
+
+	/**
+	 * Loads existing evaluations from the output directory, filters demo data,
+	 * and merges with the new evaluations (deduplicating by commit hash).
+	 *
+	 * @param outputDir   the output directory
+	 * @param newEvals    the new evaluations from the current run
+	 * @return the merged list
+	 * @throws IOException if an I/O error occurs
+	 */
+	private List<CommitEvaluation> loadAndMerge(Path outputDir,
+			List<CommitEvaluation> newEvals) throws IOException {
+		Path existingFile = outputDir.resolve("evaluations.json");
+		List<CommitEvaluation> existing = new ArrayList<>();
+		if (Files.exists(existingFile)) {
+			String json = Files.readString(existingFile, StandardCharsets.UTF_8);
+			Type listType = new TypeToken<List<CommitEvaluation>>() {}.getType();
+			List<CommitEvaluation> loaded = gson.fromJson(json, listType);
+			if (loaded != null) {
+				existing = loaded.stream()
+						.filter(e -> !DEMO_HASHES.contains(e.commitHash()))
+						.collect(Collectors.toCollection(ArrayList::new));
+			}
+		}
+		Set<String> existingHashes = existing.stream()
+				.map(CommitEvaluation::commitHash)
+				.collect(Collectors.toSet());
+		for (CommitEvaluation newEval : newEvals) {
+			if (!existingHashes.contains(newEval.commitHash())) {
+				existing.add(newEval);
+			}
+		}
+		return existing;
 	}
 
 	/**
