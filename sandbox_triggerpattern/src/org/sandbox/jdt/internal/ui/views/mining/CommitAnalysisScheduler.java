@@ -19,17 +19,17 @@ import java.util.List;
 
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.widgets.Display;
-import org.sandbox.jdt.triggerpattern.mining.analysis.RuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
 
 /**
- * Orchestrates asynchronous analysis of multiple commits using Eclipse
- * {@link org.eclipse.core.runtime.jobs.Job Jobs}.
+ * Orchestrates asynchronous AI-powered analysis of multiple commits using
+ * Eclipse {@link org.eclipse.core.runtime.jobs.Job Jobs}.
  *
  * <p>Strategy:</p>
  * <ol>
  *   <li>All commits start with status PENDING (⏳)</li>
- *   <li>Jobs are scheduled (max 4 parallel by default)</li>
+ *   <li>Jobs are scheduled (one per commit)</li>
+ *   <li>Each job uses {@link EclipseLlmService} for AI inference</li>
  *   <li>On completion: {@link TableViewer#update(Object, String[])} is called
  *       via {@link Display#asyncExec(Runnable)}</li>
  * </ol>
@@ -38,12 +38,8 @@ import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
  */
 public class CommitAnalysisScheduler {
 
-	/** Default maximum number of parallel analysis jobs. */
-	private static final int DEFAULT_MAX_PARALLEL = 4;
-
 	private final GitHistoryProvider gitProvider;
 	private final Path repositoryPath;
-	private final RuleInferenceEngine engine;
 	private final TableViewer tableViewer;
 	private final List<CommitAnalysisJob> runningJobs = new ArrayList<>();
 	private volatile boolean running;
@@ -53,14 +49,12 @@ public class CommitAnalysisScheduler {
 	 *
 	 * @param gitProvider    the git history provider
 	 * @param repositoryPath path to the Git repository
-	 * @param engine         the rule inference engine
 	 * @param tableViewer    the commit table viewer to update
 	 */
 	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,
-			RuleInferenceEngine engine, TableViewer tableViewer) {
+			TableViewer tableViewer) {
 		this.gitProvider = gitProvider;
 		this.repositoryPath = repositoryPath;
-		this.engine = engine;
 		this.tableViewer = tableViewer;
 	}
 
@@ -75,7 +69,7 @@ public class CommitAnalysisScheduler {
 
 		for (CommitTableEntry entry : entries) {
 			CommitAnalysisJob job = new CommitAnalysisJob(
-					entry, gitProvider, repositoryPath, engine,
+					entry, gitProvider, repositoryPath,
 					() -> notifyUpdate(entry));
 			runningJobs.add(job);
 			job.schedule();

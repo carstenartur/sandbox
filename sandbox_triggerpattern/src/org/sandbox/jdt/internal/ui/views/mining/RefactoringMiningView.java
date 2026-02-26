@@ -37,23 +37,24 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.part.ViewPart;
 import org.sandbox.jdt.triggerpattern.mining.analysis.CommitInfo;
-import org.sandbox.jdt.triggerpattern.mining.analysis.InferredRule;
-import org.sandbox.jdt.triggerpattern.mining.analysis.RuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.mining.git.CommandLineGitProvider;
 import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
+import org.sandbox.jdt.triggerpattern.mining.git.JGitHistoryProvider;
+import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
  * Eclipse view that displays Git commit history and allows asynchronous
- * analysis of commits to infer transformation rules.
+ * AI-powered analysis of commits to infer transformation rules.
  *
  * <p>Layout:</p>
  * <ul>
- *   <li>Top: Commit table with columns (Commit, Message, Files, DSL Status)</li>
+ *   <li>Top: Commit table with columns (Commit, Message, Files, AI Status)</li>
  *   <li>Bottom: Detail panel showing inferred rules for the selected commit</li>
  * </ul>
  *
  * <p>The view uses {@link CommitAnalysisScheduler} to analyze commits
- * asynchronously and updates the table via {@code Display.asyncExec()}.</p>
+ * asynchronously via {@link EclipseLlmService} and updates the table
+ * via {@code Display.asyncExec()}.</p>
  *
  * @since 1.2.6
  */
@@ -69,15 +70,13 @@ public class RefactoringMiningView extends ViewPart {
 	private CommitAnalysisScheduler scheduler;
 
 	private GitHistoryProvider gitProvider;
-	private RuleInferenceEngine engine;
 	private int maxCommits = DEFAULT_MAX_COMMITS;
 
 	@Override
 	public void createPartControl(Composite parent) {
 		parent.setLayout(new GridLayout(1, false));
 
-		gitProvider = new CommandLineGitProvider();
-		engine = new RuleInferenceEngine();
+		gitProvider = createGitProvider();
 
 		SashForm sash = new SashForm(parent, SWT.VERTICAL);
 		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -116,7 +115,7 @@ public class RefactoringMiningView extends ViewPart {
 		createColumn("Commit", 80); //$NON-NLS-1$
 		createColumn("Message", 300); //$NON-NLS-1$
 		createColumn("Files", 50); //$NON-NLS-1$
-		createColumn("DSL Status", 80); //$NON-NLS-1$
+		createColumn("AI Status", 80); //$NON-NLS-1$
 
 		commitTable.setContentProvider(ArrayContentProvider.getInstance());
 		commitTable.setLabelProvider(new CommitTableLabelProvider());
@@ -211,7 +210,7 @@ public class RefactoringMiningView extends ViewPart {
 			commitTable.setInput(entryArray);
 
 			scheduler = new CommitAnalysisScheduler(
-					gitProvider, repositoryPath, engine, commitTable);
+					gitProvider, repositoryPath, commitTable);
 			scheduler.startAnalysis(entries);
 		} catch (Exception e) {
 			setContentDescription("Error: " + e.getMessage()); //$NON-NLS-1$
@@ -221,8 +220,8 @@ public class RefactoringMiningView extends ViewPart {
 	// ---- export ----
 
 	private void exportAsHintFile() {
-		List<InferredRule> allRules = collectSelectedRules();
-		if (allRules.isEmpty()) {
+		List<String> allDslRules = collectSelectedDslRules();
+		if (allDslRules.isEmpty()) {
 			return;
 		}
 
@@ -233,7 +232,7 @@ public class RefactoringMiningView extends ViewPart {
 
 		String path = dialog.open();
 		if (path != null) {
-			String content = engine.toHintFileString(allRules);
+			String content = buildHintFileContent(allDslRules);
 			try {
 				java.nio.file.Files.writeString(java.nio.file.Path.of(path), content);
 			} catch (java.io.IOException e) {
@@ -242,16 +241,39 @@ public class RefactoringMiningView extends ViewPart {
 		}
 	}
 
-	private List<InferredRule> collectSelectedRules() {
-		List<InferredRule> rules = new ArrayList<>();
+	private List<String> collectSelectedDslRules() {
+		List<String> rules = new ArrayList<>();
 		Object input = commitTable.getInput();
 		if (input instanceof CommitTableEntry[] entries) {
 			for (CommitTableEntry entry : entries) {
 				if (entry.hasRules()) {
-					rules.addAll(entry.getInferredRules());
+					rules.addAll(entry.getDslRules());
 				}
 			}
 		}
 		return rules;
+	}
+
+	private static String buildHintFileContent(List<String> dslRules) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("<!id: ai-inferred-rules>\n"); //$NON-NLS-1$
+		sb.append("<!description: Rules inferred by AI from code changes>\n"); //$NON-NLS-1$
+		sb.append("<!severity: info>\n"); //$NON-NLS-1$
+		sb.append("<!tags: ai-inferred, mining>\n\n"); //$NON-NLS-1$
+		for (String rule : dslRules) {
+			sb.append(rule).append("\n;;\n\n"); //$NON-NLS-1$
+		}
+		return sb.toString();
+	}
+
+	// ---- git provider ----
+
+	private static GitHistoryProvider createGitProvider() {
+		try {
+			return new JGitHistoryProvider();
+		} catch (Exception e) {
+			// Fallback to command-line git if JGit is not available
+			return new CommandLineGitProvider();
+		}
 	}
 }
