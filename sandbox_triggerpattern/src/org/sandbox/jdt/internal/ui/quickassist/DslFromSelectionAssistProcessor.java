@@ -99,11 +99,14 @@ public class DslFromSelectionAssistProcessor implements IQuickAssistProcessor {
 					protected IStatus run(IProgressMonitor monitor) {
 						AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();
 						// Wrap snippet as a pseudo-diff so the LLM can infer a generalized match rule
-						String pseudoDiff = "--- a/snippet.java\n+++ b/snippet.java\n" //$NON-NLS-1$
-								+ "@@ -1,0 +1," + selectedCode.split("\n", -1).length + " @@\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-						for (String line : selectedCode.split("\n", -1)) { //$NON-NLS-1$
-							pseudoDiff += "+" + line + "\n"; //$NON-NLS-1$ //$NON-NLS-2$
+						String[] lines = selectedCode.split("\n", -1); //$NON-NLS-1$
+						StringBuilder sb = new StringBuilder();
+						sb.append("--- a/snippet.java\n+++ b/snippet.java\n"); //$NON-NLS-1$
+						sb.append("@@ -1,0 +1,").append(lines.length).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
+						for (String line : lines) {
+							sb.append('+').append(line).append('\n');
 						}
+						String pseudoDiff = sb.toString();
 						Optional<CommitEvaluation> result = engine.inferRuleFromDiff(pseudoDiff);
 						if (result.isPresent() && result.get().dslRule() != null
 								&& !result.get().dslRule().isBlank()) {
