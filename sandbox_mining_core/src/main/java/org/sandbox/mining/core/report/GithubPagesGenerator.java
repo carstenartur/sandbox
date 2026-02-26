@@ -26,7 +26,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
 
-import org.sandbox.mining.core.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 
 /**
  * Generates an HTML page from evaluations and statistics for GitHub Pages.

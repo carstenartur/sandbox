@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.sandbox.mining.core.llm.CommitEvaluation;
-import org.sandbox.mining.core.llm.CommitEvaluation.TrafficLight;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 
 /**
  * Aggregates {@link CommitEvaluation} results.

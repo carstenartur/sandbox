@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.mining.core.llm;
+package org.sandbox.jdt.triggerpattern.llm;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -72,7 +72,7 @@ public class DslContextCollector {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
 				Path fileName = file.getFileName();
-			if (fileName != null && fileName.toString().endsWith(HINT_FILE_EXTENSION)) {
+				if (fileName != null && fileName.toString().endsWith(HINT_FILE_EXTENSION)) {
 					result.add(file);
 				}
 				return FileVisitResult.CONTINUE;

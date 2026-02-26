@@ -23,9 +23,9 @@ import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.sandbox.mining.core.llm.CommitEvaluation;
-import org.sandbox.mining.core.llm.CommitEvaluation.TrafficLight;
-import org.sandbox.mining.core.llm.OpenAiClient;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
+import org.sandbox.jdt.triggerpattern.llm.OpenAiClient;
 
 /**
  * Tests for {@link OpenAiClient}.

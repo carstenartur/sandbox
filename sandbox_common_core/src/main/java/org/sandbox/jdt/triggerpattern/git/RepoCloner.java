@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.mining.core.git;
+package org.sandbox.jdt.triggerpattern.git;
 
 import java.io.IOException;
 import java.nio.file.Path;

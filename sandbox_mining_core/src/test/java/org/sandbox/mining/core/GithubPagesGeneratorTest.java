@@ -25,8 +25,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sandbox.mining.core.llm.CommitEvaluation;
-import org.sandbox.mining.core.llm.CommitEvaluation.TrafficLight;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 import org.sandbox.mining.core.report.GithubPagesGenerator;
 import org.sandbox.mining.core.report.StatisticsCollector;
 

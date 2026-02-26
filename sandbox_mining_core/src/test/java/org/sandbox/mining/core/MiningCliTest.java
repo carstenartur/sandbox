@@ -26,7 +26,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.mining.core.config.RepoEntry;
-import org.sandbox.mining.core.git.CommitWalker;
+import org.sandbox.jdt.triggerpattern.git.CommitWalker;
 
 /**
  * Tests for {@link MiningCli}.

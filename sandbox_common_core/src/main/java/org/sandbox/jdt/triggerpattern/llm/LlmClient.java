@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer
  *******************************************************************************/
-package org.sandbox.mining.core.llm;
+package org.sandbox.jdt.triggerpattern.llm;
 
 import java.io.IOException;
 import java.time.Duration;

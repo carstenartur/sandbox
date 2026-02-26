@@ -25,7 +25,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.mining.core.config.MiningConfig;
-import org.sandbox.mining.core.git.DiffExtractor;
+import org.sandbox.jdt.triggerpattern.git.DiffExtractor;
 
 /**
  * Tests for the adaptive commit filtering feature.
