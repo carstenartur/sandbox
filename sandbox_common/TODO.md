@@ -22,6 +22,12 @@
 - ✅ Mining Phase 5.1: `HintFileRegistry.registerInferredRules()`, `getInferredHintFiles()`, `promoteToManual()` (Issue #727)
 - ✅ Mining Phase 5.2: Export functionality — `.sandbox-hint` file export from RefactoringMiningView (Issue #727)
 - ✅ Mining Tests: `HintFileRegistryInferredTest` (Issue #727)
+- ✅ AI Mining Phase 3 (revised #727): RefactoringMiningView updated to use `EclipseLlmService`/`AiRuleInferenceEngine`, traffic light UI, `CommitEvaluation` support
+- ✅ AI Mining Phase 4 (revised #727): `LlmPreferencePage` with provider/API key/model/max tokens/temperature, `LlmPreferenceInitializer`, `EclipseLlmService` reads from preferences with env var fallback
+- ✅ AI Mining Phase 5.1 (revised #727): `DslFromSelectionAssistProcessor` — Quick Assist to generate DSL rule from selected Java code
+- ✅ AI Mining Phase 5.2 (revised #727): `MineDiffHandler` — command handler to mine DSL rules from selected diff text
+- ✅ AI Mining Phase 5.3 (revised #727): `MineWorkingTreeHandler` — command handler to mine uncommitted changes via JGit in background Job
+- ✅ AI Mining Phase 5.4 (revised #727): `DslContentAssistProcessor` — content assist for `.sandbox-hint` files (directives, guards, separators)
 - ✅ `sandbox_common_core` extraction: HelperVisitor, TriggerPattern API, parsers, data classes, annotations (Issue #730)
 - ✅ Grenzfall 2: `BuiltInGuards` extracted to `sandbox_common_core`, `GuardRegistry` delegates to it (Issue #730)
 - ✅ Grenzfall 3: `HintFileStore` extracted to `sandbox_common_core`, `HintFileRegistry` delegates to it (Issue #730)
