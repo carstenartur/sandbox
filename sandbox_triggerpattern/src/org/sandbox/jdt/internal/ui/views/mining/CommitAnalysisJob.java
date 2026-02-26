@@ -122,7 +122,16 @@ public class CommitAnalysisJob extends Job {
 		}
 	}
 
-	static String buildUnifiedDiff(FileDiff diff) {
+	/**
+	 * Builds a unified diff string from a {@link FileDiff}.
+	 *
+	 * <p>Uses LCS-based hunk line reconstruction to correctly distinguish
+	 * context, added, and removed lines.</p>
+	 *
+	 * @param diff the file diff
+	 * @return a unified diff string suitable for LLM inference
+	 */
+	public static String buildUnifiedDiff(FileDiff diff) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("--- a/").append(diff.filePath()).append('\n'); //$NON-NLS-1$
 		sb.append("+++ b/").append(diff.filePath()).append('\n'); //$NON-NLS-1$
@@ -151,7 +160,7 @@ public class CommitAnalysisJob extends Job {
 	 * @param afterLines  lines from the "after" side of the hunk
 	 * @return list of lines with diff markers ({@code ' '}, {@code '-'}, {@code '+'})
 	 */
-	static List<String> buildHunkLines(String[] beforeLines, String[] afterLines) {
+	public static List<String> buildHunkLines(String[] beforeLines, String[] afterLines) {
 		int n = beforeLines.length;
 		int m = afterLines.length;
 
