@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.osgi.framework.Bundle;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 
 /**
  * Registry for loading and managing {@code .sandbox-hint} files.
@@ -427,5 +429,72 @@ public final class HintFileRegistry {
 	 */
 	public void promoteToManual(String hintFileId) {
 		store.promoteToManual(hintFileId);
+	}
+
+	/**
+	 * Registers inferred rules from a list of {@link CommitEvaluation} results.
+	 *
+	 * <p>Each evaluation with a valid DSL rule is converted into a
+	 * {@link HintFile} and registered with the tag {@code "ai-inferred"}.
+	 * Evaluations without valid rules are silently skipped.</p>
+	 *
+	 * @param evaluations the list of commit evaluations from AI inference
+	 * @param source      a label identifying the source of these evaluations
+	 * @return list of IDs of successfully registered hint files
+	 * @since 1.3.2
+	 */
+	public List<String> registerInferredRules(List<CommitEvaluation> evaluations, String source) {
+		return store.registerInferredRules(evaluations, source);
+	}
+
+	/**
+	 * Saves all AI-inferred hint files to the {@code .hints/} directory
+	 * of the given Eclipse project.
+	 *
+	 * <p>Each inferred hint file is serialized and written to
+	 * {@code <project>/.hints/ai-inferred-<id>.sandbox-hint}.
+	 * The project is refreshed after writing so Eclipse picks up the changes.</p>
+	 *
+	 * @param project the Eclipse project whose {@code .hints/} directory to use
+	 * @return list of paths that were written
+	 * @since 1.3.2
+	 */
+	public List<Path> saveInferredHintFiles(IProject project) {
+		if (project == null || !project.isAccessible()) {
+			return Collections.emptyList();
+		}
+		try {
+			Path projectPath = project.getLocation().toFile().toPath();
+			List<Path> written = store.saveInferredHintFiles(projectPath);
+			if (!written.isEmpty()) {
+				project.refreshLocal(IProject.DEPTH_INFINITE, null);
+			}
+			return written;
+		} catch (IOException | CoreException e) {
+			ILog log = Platform.getLog(HintFileRegistry.class);
+			log.log(Status.warning(
+					"Failed to save inferred hint files for project: " //$NON-NLS-1$
+							+ project.getName(), e));
+			return Collections.emptyList();
+		}
+	}
+
+	/**
+	 * Loads persisted AI-inferred hint files from the {@code .hints/}
+	 * directory of the given Eclipse project.
+	 *
+	 * <p>This should be called on workspace startup to restore previously
+	 * saved inferred rules.</p>
+	 *
+	 * @param project the Eclipse project to load from
+	 * @return list of IDs of loaded hint files
+	 * @since 1.3.2
+	 */
+	public List<String> loadInferredHintFiles(IProject project) {
+		if (project == null || !project.isAccessible()) {
+			return Collections.emptyList();
+		}
+		Path projectPath = project.getLocation().toFile().toPath();
+		return store.loadInferredHintFiles(projectPath);
 	}
 }

@@ -18,6 +18,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -26,10 +29,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 
 /**
  * Eclipse-independent store for loading, indexing and managing
@@ -47,6 +54,20 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
  * @since 1.2.6
  */
 public final class HintFileStore {
+
+	private static final Logger LOGGER = Logger.getLogger(HintFileStore.class.getName());
+
+	/** ID prefix for AI-inferred hint files. */
+	static final String INFERRED_PREFIX = "inferred:"; //$NON-NLS-1$
+
+	/** File name prefix for persisted AI-inferred hint files. */
+	private static final String AI_INFERRED_FILE_PREFIX = "ai-inferred-"; //$NON-NLS-1$
+
+	/** File extension for sandbox hint files. */
+	private static final String SANDBOX_HINT_EXTENSION = ".sandbox-hint"; //$NON-NLS-1$
+
+	/** Directory name within a project for persisted hint files. */
+	static final String HINTS_DIRECTORY = ".hints"; //$NON-NLS-1$
 
 	/**
 	 * Bundled library resource names.
@@ -305,7 +326,7 @@ public final class HintFileStore {
 	 * @since 1.2.6
 	 */
 	public void registerInferredRules(HintFile hintFile, String sourceCommit) {
-		String id = "inferred:" + sourceCommit; //$NON-NLS-1$
+		String id = INFERRED_PREFIX + sourceCommit;
 		hintFile.setId(id);
 		if (hintFile.getTags() == null || hintFile.getTags().isEmpty()) {
 			hintFile.setTags(List.of("inferred", "mining", sourceCommit)); //$NON-NLS-1$ //$NON-NLS-2$
@@ -323,7 +344,7 @@ public final class HintFileStore {
 	public List<HintFile> getInferredHintFiles() {
 		List<HintFile> inferred = new ArrayList<>();
 		for (Map.Entry<String, HintFile> entry : hintFiles.entrySet()) {
-			if (entry.getKey().startsWith("inferred:")) { //$NON-NLS-1$
+			if (entry.getKey().startsWith(INFERRED_PREFIX)) {
 				inferred.add(entry.getValue());
 			}
 		}
@@ -341,16 +362,163 @@ public final class HintFileStore {
 		HintFile hintFile = hintFiles.remove(hintFileId);
 		if (hintFile != null) {
 			hintFilesByDeclaredId.remove(hintFileId);
-			String newId = hintFileId.replace("inferred:", "manual:"); //$NON-NLS-1$ //$NON-NLS-2$
+			String newId = hintFileId.replace(INFERRED_PREFIX, "manual:"); //$NON-NLS-1$
 			hintFile.setId(newId);
 			hintFiles.put(newId, hintFile);
 			hintFilesByDeclaredId.put(newId, hintFile);
 		}
 	}
 
+	/**
+	 * Registers inferred rules from a list of {@link CommitEvaluation} results.
+	 *
+	 * <p>Each evaluation with a non-null, non-blank {@code dslRule} and a valid
+	 * DSL parse result is converted into a {@link HintFile} and registered with
+	 * the tag {@code "ai-inferred"}. Evaluations without valid rules are
+	 * silently skipped.</p>
+	 *
+	 * @param evaluations the list of commit evaluations from AI inference
+	 * @param source      a label identifying the source of these evaluations
+	 *                    (e.g., repository URL or branch name)
+	 * @return list of IDs of successfully registered hint files
+	 * @since 1.3.2
+	 */
+	public List<String> registerInferredRules(List<CommitEvaluation> evaluations, String source) {
+		List<String> registered = new ArrayList<>();
+		if (evaluations == null) {
+			return registered;
+		}
+		for (CommitEvaluation eval : evaluations) {
+			if (eval == null || !eval.relevant()) {
+				continue;
+			}
+			String dslRule = eval.dslRule();
+			if (dslRule == null || dslRule.isBlank()) {
+				continue;
+			}
+			try {
+				HintFile hintFile = parser.parse(dslRule);
+				String commitId = eval.commitHash() != null ? eval.commitHash() : source;
+				String id = INFERRED_PREFIX + commitId;
+				hintFile.setId(id);
+				hintFile.setTags(List.of("ai-inferred", source, commitId)); //$NON-NLS-1$
+				hintFile.setSeverity(Severity.INFO);
+				if (hintFile.getDescription() == null) {
+					hintFile.setDescription(eval.summary());
+				}
+				hintFiles.put(id, hintFile);
+				hintFilesByDeclaredId.put(id, hintFile);
+				registered.add(id);
+			} catch (HintParseException e) {
+				LOGGER.log(Level.WARNING,
+						"Failed to parse DSL rule from evaluation: " + eval.commitHash(), e); //$NON-NLS-1$
+			}
+		}
+		return registered;
+	}
+
+	// ------------------------------------------------------------
+	// Persistence
+	// ------------------------------------------------------------
+
+	/**
+	 * Saves all AI-inferred hint files to a {@code .hints/} directory.
+	 *
+	 * <p>Each inferred hint file is serialized to the {@code .sandbox-hint}
+	 * DSL format and written to
+	 * {@code <directory>/.hints/ai-inferred-<sanitized-id>.sandbox-hint}.</p>
+	 *
+	 * <p>The {@code .hints/} subdirectory is created if it does not exist.
+	 * Existing files with the same name are overwritten.</p>
+	 *
+	 * @param baseDirectory the project root directory
+	 * @return list of paths that were written
+	 * @throws IOException if a write error occurs
+	 * @since 1.3.2
+	 */
+	public List<Path> saveInferredHintFiles(Path baseDirectory) throws IOException {
+		List<Path> written = new ArrayList<>();
+		Path hintsDir = baseDirectory.resolve(HINTS_DIRECTORY);
+		List<HintFile> inferred = getInferredHintFiles();
+		if (inferred.isEmpty()) {
+			return written;
+		}
+		Files.createDirectories(hintsDir);
+		HintFileSerializer serializer = new HintFileSerializer();
+		for (HintFile hf : inferred) {
+			String safeName = sanitizeFileName(hf.getId());
+			Path target = hintsDir.resolve(AI_INFERRED_FILE_PREFIX + safeName + SANDBOX_HINT_EXTENSION);
+			String content = serializer.serialize(hf);
+			Files.writeString(target, content, StandardCharsets.UTF_8);
+			written.add(target);
+		}
+		return written;
+	}
+
+	/**
+	 * Loads all {@code ai-inferred-*.sandbox-hint} files from the
+	 * {@code .hints/} directory under the given base directory.
+	 *
+	 * <p>Each loaded file is registered with the {@code "inferred:"} prefix
+	 * so it appears in {@link #getInferredHintFiles()}.</p>
+	 *
+	 * @param baseDirectory the project root directory
+	 * @return list of IDs of successfully loaded hint files
+	 * @since 1.3.2
+	 */
+	public List<String> loadInferredHintFiles(Path baseDirectory) {
+		List<String> loaded = new ArrayList<>();
+		Path hintsDir = baseDirectory.resolve(HINTS_DIRECTORY);
+		if (!Files.isDirectory(hintsDir)) {
+			return loaded;
+		}
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(hintsDir,
+				AI_INFERRED_FILE_PREFIX + "*" + SANDBOX_HINT_EXTENSION)) { //$NON-NLS-1$
+			for (Path file : stream) {
+				try {
+					String content = Files.readString(file, StandardCharsets.UTF_8);
+					HintFile hintFile = parser.parse(content);
+					Path fileNamePath = file.getFileName();
+					if (fileNamePath == null) {
+						continue;
+					}
+					String fileName = fileNamePath.toString();
+					String baseName = fileName
+							.replace(AI_INFERRED_FILE_PREFIX, "") //$NON-NLS-1$
+							.replace(SANDBOX_HINT_EXTENSION, ""); //$NON-NLS-1$
+					String id = INFERRED_PREFIX + baseName;
+					if (hintFile.getId() == null) {
+						hintFile.setId(id);
+					}
+					hintFiles.put(id, hintFile);
+					hintFilesByDeclaredId.put(id, hintFile);
+					loaded.add(id);
+				} catch (HintParseException | IOException e) {
+					LOGGER.log(Level.WARNING,
+							"Failed to load inferred hint file: " + file, e); //$NON-NLS-1$
+				}
+			}
+		} catch (IOException e) {
+			LOGGER.log(Level.WARNING,
+					"Failed to scan .hints directory: " + hintsDir, e); //$NON-NLS-1$
+		}
+		return loaded;
+	}
+
 	// ------------------------------------------------------------
 	// Internal helpers
 	// ------------------------------------------------------------
+
+	/**
+	 * Sanitizes a hint file ID for use as a file name.
+	 * Replaces characters that are unsafe in file names.
+	 */
+	private static String sanitizeFileName(String id) {
+		if (id == null) {
+			return "unknown"; //$NON-NLS-1$
+		}
+		return id.replaceAll("[^a-zA-Z0-9._-]", "_"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
 
 	/**
 	 * Updates the secondary index for declared IDs.
