@@ -27,10 +27,10 @@ import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializer;
+import com.google.gson.TypeAdapter;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
 import org.sandbox.mining.core.llm.CommitEvaluation;
 
@@ -56,10 +56,16 @@ public class GithubPagesGenerator {
 	public GithubPagesGenerator() {
 		this.gson = new GsonBuilder()
 				.setPrettyPrinting()
-				.registerTypeAdapter(Instant.class, (JsonSerializer<Instant>) (src, typeOfSrc, context) ->
-						new JsonPrimitive(src.toString()))
-				.registerTypeAdapter(Instant.class, (JsonDeserializer<Instant>) (json, typeOfT, context) ->
-						Instant.parse(json.getAsString()))
+				.registerTypeAdapter(Instant.class, new TypeAdapter<Instant>() {
+					@Override
+					public void write(JsonWriter out, Instant value) throws IOException {
+						out.value(value == null ? null : value.toString());
+					}
+					@Override
+					public Instant read(JsonReader in) throws IOException {
+						return Instant.parse(in.nextString());
+					}
+				})
 				.create();
 	}
 
@@ -99,6 +105,9 @@ public class GithubPagesGenerator {
 	 * Loads existing evaluations from the output directory, filters demo data,
 	 * and merges with the new evaluations (deduplicating by commit hash).
 	 *
+	 * <p>If the existing file is malformed or unreadable, a warning is printed
+	 * and the method proceeds as if the file did not exist.</p>
+	 *
 	 * @param outputDir   the output directory
 	 * @param newEvals    the new evaluations from the current run
 	 * @return the merged list
@@ -109,20 +118,24 @@ public class GithubPagesGenerator {
 		Path existingFile = outputDir.resolve("evaluations.json");
 		List<CommitEvaluation> existing = new ArrayList<>();
 		if (Files.exists(existingFile)) {
-			String json = Files.readString(existingFile, StandardCharsets.UTF_8);
-			Type listType = new TypeToken<List<CommitEvaluation>>() {}.getType();
-			List<CommitEvaluation> loaded = gson.fromJson(json, listType);
-			if (loaded != null) {
-				existing = loaded.stream()
-						.filter(e -> !DEMO_HASHES.contains(e.commitHash()))
-						.collect(Collectors.toCollection(ArrayList::new));
+			try {
+				String json = Files.readString(existingFile, StandardCharsets.UTF_8);
+				Type listType = new TypeToken<List<CommitEvaluation>>() {}.getType();
+				List<CommitEvaluation> loaded = gson.fromJson(json, listType);
+				if (loaded != null) {
+					existing = loaded.stream()
+							.filter(e -> !DEMO_HASHES.contains(e.commitHash()))
+							.collect(Collectors.toCollection(ArrayList::new));
+				}
+			} catch (Exception e) {
+				System.err.println("Warning: could not load existing evaluations: " + e.getMessage()); //$NON-NLS-1$
 			}
 		}
 		Set<String> existingHashes = existing.stream()
 				.map(CommitEvaluation::commitHash)
-				.collect(Collectors.toSet());
+				.collect(Collectors.toCollection(java.util.HashSet::new));
 		for (CommitEvaluation newEval : newEvals) {
-			if (!existingHashes.contains(newEval.commitHash())) {
+			if (existingHashes.add(newEval.commitHash())) {
 				existing.add(newEval);
 			}
 		}

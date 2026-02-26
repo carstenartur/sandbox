@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.mining.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -159,6 +160,35 @@ class GithubPagesGeneratorTest {
 		String evalContent = Files.readString(tempDir.resolve("evaluations.json"), StandardCharsets.UTF_8);
 		assertFalse(evalContent.contains("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"));
 		assertTrue(evalContent.contains("real123"));
+
+		// Verify that statistics are rebuilt without counting the filtered demo entry
+		Path statisticsJson = tempDir.resolve("statistics.json");
+		assertTrue(Files.exists(statisticsJson));
+		String statsContent = Files.readString(statisticsJson, StandardCharsets.UTF_8);
+		assertTrue(statsContent.contains("\"totalProcessed\": 1"));
+	}
+
+	@Test
+	void testGenerateDeduplicatesSameCommitHash() throws IOException {
+		GithubPagesGenerator generator = new GithubPagesGenerator();
+
+		CommitEvaluation eval = new CommitEvaluation(
+				"samehash", "commit", "https://github.com/test/repo",
+				Instant.parse("2026-01-01T10:00:00Z"), true, null, false, null,
+				4, 3, 2, TrafficLight.GREEN,
+				"Collections", false, "reason",
+				true, "rule", "file.sandbox-hint",
+				null, null, "Summary", null);
+		StatisticsCollector stats = new StatisticsCollector();
+		stats.record(eval);
+		// First run
+		generator.generate(List.of(eval), stats, tempDir);
+		// Second run with the same hash
+		generator.generate(List.of(eval), stats, tempDir);
+
+		String evalContent = Files.readString(tempDir.resolve("evaluations.json"), StandardCharsets.UTF_8);
+		// "samehash" should appear exactly once
+		assertEquals(1, evalContent.split("\"samehash\"", -1).length - 1);
 	}
 
 	@Test
