@@ -24,12 +24,18 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -42,8 +48,9 @@ import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
  * unified diff pasted or selected in the active editor.
  *
  * <p>The handler reads the current text selection, sends it to
- * {@link AiRuleInferenceEngine#inferRuleFromDiff(String)}, and opens the
- * resulting DSL rule as a new {@code .sandbox-hint} file.</p>
+ * {@link AiRuleInferenceEngine#inferRuleFromDiff(String)} in a background
+ * {@link Job}, and opens the resulting DSL rule as a new
+ * {@code .sandbox-hint} file.</p>
  *
  * @since 1.2.6
  */
@@ -73,35 +80,46 @@ public class MineDiffHandler extends AbstractHandler {
 			return null;
 		}
 
-		AiRuleInferenceEngine engine = llmService.getEngine();
-		Optional<CommitEvaluation> result = engine.inferRuleFromDiff(diffText);
-		if (result.isPresent()) {
-			String dslRule = result.get().dslRule();
-			if (dslRule != null && !dslRule.isBlank()) {
-				openHintFile(event, dslRule);
+		Job job = new Job("Mining DSL rules from diff") { //$NON-NLS-1$
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				AiRuleInferenceEngine engine = llmService.getEngine();
+				Optional<CommitEvaluation> result = engine.inferRuleFromDiff(diffText);
+				if (result.isPresent()) {
+					String dslRule = result.get().dslRule();
+					if (dslRule != null && !dslRule.isBlank()) {
+						openHintFileOnUi(dslRule);
+					}
+				}
+				return Status.OK_STATUS;
 			}
-		}
+		};
+		job.setUser(true);
+		job.schedule();
 		return null;
 	}
 
-	private static void openHintFile(ExecutionEvent event, String ruleContent) {
-		try {
-			IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
-			if (projects.length == 0) {
-				return;
+	private static void openHintFileOnUi(String ruleContent) {
+		Display.getDefault().asyncExec(() -> {
+			try {
+				IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
+				if (projects.length == 0) {
+					return;
+				}
+				IProject project = projects[0];
+				String fileName = "mined-diff-" + System.currentTimeMillis() + ".sandbox-hint"; //$NON-NLS-1$ //$NON-NLS-2$
+				IFile file = project.getFile(new Path(fileName));
+				file.create(
+						new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)),
+						true, null);
+				IWorkbenchPage page = PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow().getActivePage();
+				if (page != null) {
+					IDE.openEditor(page, file);
+				}
+			} catch (Exception e) {
+				LOG.error("Failed to open hint file for mined diff rule", e); //$NON-NLS-1$
 			}
-			IProject project = projects[0];
-			String fileName = "mined-diff-" + System.currentTimeMillis() + ".sandbox-hint"; //$NON-NLS-1$ //$NON-NLS-2$
-			IFile file = project.getFile(new Path(fileName));
-			file.create(
-					new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)),
-					true, null);
-			IWorkbenchPage page = HandlerUtil.getActiveWorkbenchWindow(event).getActivePage();
-			if (page != null) {
-				IDE.openEditor(page, file);
-			}
-		} catch (Exception e) {
-			LOG.error("Failed to open hint file for mined diff rule", e); //$NON-NLS-1$
-		}
+		});
 	}
 }

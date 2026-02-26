@@ -132,10 +132,12 @@ public class AiRuleInferenceEngine {
 	}
 
 	/**
-	 * Validates the DSL rule in the evaluation and returns an enriched copy.
+	 * Validates the DSL rule in the evaluation and returns an enriched copy
+	 * with the validation result set. Always returns the evaluation (even if
+	 * DSL validation fails), so callers can inspect the validation message.
 	 *
 	 * @param evaluation the raw evaluation from the LLM
-	 * @return the enriched evaluation if valid, empty otherwise
+	 * @return the enriched evaluation with {@code dslValidationResult} populated
 	 */
 	private Optional<CommitEvaluation> validateAndEnrich(CommitEvaluation evaluation) {
 		if (!evaluation.relevant()) {

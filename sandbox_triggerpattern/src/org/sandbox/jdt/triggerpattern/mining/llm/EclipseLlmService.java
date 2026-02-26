@@ -19,7 +19,6 @@ import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.LlmClient;
 import org.sandbox.jdt.triggerpattern.llm.LlmClientFactory;
-import org.sandbox.jdt.triggerpattern.llm.LlmProvider;
 
 /**
  * Eclipse-level service that provides access to the AI rule inference engine.
@@ -75,6 +74,11 @@ public class EclipseLlmService {
 	 * <p>The LLM provider is resolved from Eclipse preferences first,
 	 * falling back to environment variables if preferences are empty.</p>
 	 *
+	 * <p><strong>Thread safety:</strong> The engine instance is shared across
+	 * concurrent analysis jobs. The underlying {@link LlmClient} implementations
+	 * should tolerate concurrent calls; if they do not, callers should serialize
+	 * access externally (e.g. via a scheduling rule on the analysis jobs).</p>
+	 *
 	 * @return the inference engine
 	 */
 	public synchronized AiRuleInferenceEngine getEngine() {
@@ -119,24 +123,30 @@ public class EclipseLlmService {
 
 	/**
 	 * Creates an LLM client using Eclipse preferences, falling back to env vars.
+	 *
+	 * <p>When both provider and API key are set in preferences, the provider
+	 * preference is passed as the explicit provider to
+	 * {@link LlmClientFactory#createFromEnvironment(String)}, which ensures the
+	 * correct provider is selected. The API key must still be available as an
+	 * environment variable for the chosen provider's client implementation.</p>
 	 */
 	private static LlmClient createClientFromPreferences() {
 		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
-		String apiKey = prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
 		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
 
-		if (!apiKey.isBlank() && !provider.isBlank()) {
-			return LlmClientFactory.create(LlmProvider.fromString(provider));
+		if (!provider.isBlank()) {
+			// Use the preference provider as the explicit selection
+			return LlmClientFactory.createFromEnvironment(provider);
 		}
 
-		// Fallback to environment variables
+		// Fallback to environment variables for both provider and API key
 		return LlmClientFactory.createFromEnvironment(null);
 	}
 
 	private static boolean hasPreferenceApiKey() {
 		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
-		String apiKey = prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
-		return !apiKey.isBlank();
+		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
+		return !provider.isBlank();
 	}
 
 	private static boolean hasAnyEnvApiKey() {

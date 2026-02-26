@@ -34,8 +34,8 @@ import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
  * using AI-powered inference to generate DSL rules from Java file changes.
  *
  * <p>When the LLM service is available, the job sends file diffs to the
- * AI engine. Otherwise it falls back to the deterministic
- * {@code RuleInferenceEngine}.</p>
+ * AI engine. Otherwise, the job completes without inferring any rules and
+ * records that no rules are available for the commit.</p>
  *
  * @since 1.2.6
  */
@@ -109,7 +109,9 @@ public class CommitAnalysisJob extends Job {
 				return;
 			}
 			String unifiedDiff = buildUnifiedDiff(diff);
-			engine.inferRuleFromDiff(unifiedDiff).ifPresent(evaluations::add);
+			engine.inferRuleFromDiff(unifiedDiff)
+					.filter(e -> e.dslRule() != null && !e.dslRule().isBlank())
+					.ifPresent(evaluations::add);
 		}
 
 		if (evaluations.isEmpty()) {
@@ -120,27 +122,74 @@ public class CommitAnalysisJob extends Job {
 		}
 	}
 
-	private static String buildUnifiedDiff(FileDiff diff) {
+	static String buildUnifiedDiff(FileDiff diff) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("--- a/").append(diff.filePath()).append('\n'); //$NON-NLS-1$
 		sb.append("+++ b/").append(diff.filePath()).append('\n'); //$NON-NLS-1$
 		for (DiffHunk hunk : diff.hunks()) {
+			String[] beforeLines = hunk.beforeText().split("\n", -1); //$NON-NLS-1$
+			String[] afterLines = hunk.afterText().split("\n", -1); //$NON-NLS-1$
+
 			sb.append("@@ -").append(hunk.beforeStartLine()) //$NON-NLS-1$
-					.append(',').append(hunk.beforeLineCount())
+					.append(',').append(beforeLines.length)
 					.append(" +").append(hunk.afterStartLine()) //$NON-NLS-1$
-					.append(',').append(hunk.afterLineCount())
+					.append(',').append(afterLines.length)
 					.append(" @@\n"); //$NON-NLS-1$
-			for (String line : hunk.beforeText().split("\n", -1)) { //$NON-NLS-1$
-				if (!line.isEmpty()) {
-					sb.append('-').append(line).append('\n');
-				}
-			}
-			for (String line : hunk.afterText().split("\n", -1)) { //$NON-NLS-1$
-				if (!line.isEmpty()) {
-					sb.append('+').append(line).append('\n');
-				}
+
+			for (String markedLine : buildHunkLines(beforeLines, afterLines)) {
+				sb.append(markedLine).append('\n');
 			}
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Builds unified-diff style hunk lines using LCS to correctly distinguish
+	 * context, added, and removed lines.
+	 *
+	 * @param beforeLines lines from the "before" side of the hunk
+	 * @param afterLines  lines from the "after" side of the hunk
+	 * @return list of lines with diff markers ({@code ' '}, {@code '-'}, {@code '+'})
+	 */
+	static List<String> buildHunkLines(String[] beforeLines, String[] afterLines) {
+		int n = beforeLines.length;
+		int m = afterLines.length;
+
+		int[][] dp = new int[n + 1][m + 1];
+		for (int i = n - 1; i >= 0; i--) {
+			for (int j = m - 1; j >= 0; j--) {
+				if (beforeLines[i].equals(afterLines[j])) {
+					dp[i][j] = dp[i + 1][j + 1] + 1;
+				} else {
+					dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+				}
+			}
+		}
+
+		List<String> result = new ArrayList<>();
+		int i = 0;
+		int j = 0;
+		while (i < n && j < m) {
+			if (beforeLines[i].equals(afterLines[j])) {
+				result.add(" " + beforeLines[i]); //$NON-NLS-1$
+				i++;
+				j++;
+			} else if (dp[i + 1][j] >= dp[i][j + 1]) {
+				result.add("-" + beforeLines[i]); //$NON-NLS-1$
+				i++;
+			} else {
+				result.add("+" + afterLines[j]); //$NON-NLS-1$
+				j++;
+			}
+		}
+		while (i < n) {
+			result.add("-" + beforeLines[i]); //$NON-NLS-1$
+			i++;
+		}
+		while (j < m) {
+			result.add("+" + afterLines[j]); //$NON-NLS-1$
+			j++;
+		}
+		return result;
 	}
 }

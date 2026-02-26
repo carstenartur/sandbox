@@ -96,6 +96,9 @@ public class JGitHistoryProvider implements GitHistoryProvider {
 					if (entry.getChangeType() != DiffEntry.ChangeType.MODIFY) {
 						continue;
 					}
+					if (commit.getParentCount() == 0) {
+						continue; // Initial commit — no parent for MODIFY entries
+					}
 					String filePath = entry.getNewPath();
 					String contentBefore = getFileContentAtCommit(repository,
 							commit.getParent(0), filePath);
@@ -161,6 +164,7 @@ public class JGitHistoryProvider implements GitHistoryProvider {
 		try (DiffFormatter formatter = new DiffFormatter(
 				new ByteArrayOutputStream())) {
 			formatter.setRepository(repository);
+			formatter.setPathFilter(PathSuffixFilter.create(".java")); //$NON-NLS-1$
 			AbstractTreeIterator oldIter = getParentTreeIterator(repository, commit);
 			AbstractTreeIterator newIter = prepareTreeParser(repository, commit);
 			return formatter.scan(oldIter, newIter).size();

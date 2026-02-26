@@ -35,24 +35,28 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.sandbox.jdt.internal.ui.views.mining.CommitAnalysisJob;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
-import org.sandbox.jdt.triggerpattern.mining.analysis.DiffHunk;
 import org.sandbox.jdt.triggerpattern.mining.analysis.FileDiff;
 import org.sandbox.jdt.triggerpattern.mining.git.JGitHistoryProvider;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
- * Eclipse command handler that mines the working tree (uncommitted changes)
+ * Eclipse command handler that mines the most recent commit ({@code HEAD})
  * for TriggerPattern DSL rules using AI-powered inference.
  *
- * <p>The handler uses {@link JGitHistoryProvider} to obtain diffs of
- * uncommitted changes (against {@code HEAD}), sends each file diff to
+ * <p>The handler uses {@link JGitHistoryProvider} to obtain diffs of the
+ * HEAD commit, sends each file diff to
  * {@link AiRuleInferenceEngine#inferRuleFromDiff(String)}, and opens a
  * new {@code .sandbox-hint} file with all inferred rules.</p>
  *
  * <p>Analysis runs in a background {@link Job} so the UI thread is not
  * blocked.</p>
+ *
+ * <p><strong>Note:</strong> A future enhancement could extend this handler to
+ * diff the working tree (uncommitted changes) against HEAD using JGit's
+ * {@code DiffCommand} with the working tree iterator.</p>
  *
  * @since 1.2.6
  */
@@ -102,7 +106,7 @@ public class MineWorkingTreeHandler extends AbstractHandler {
 			if (monitor.isCanceled()) {
 				return Status.CANCEL_STATUS;
 			}
-			String unifiedDiff = buildUnifiedDiff(diff);
+			String unifiedDiff = CommitAnalysisJob.buildUnifiedDiff(diff);
 			engine.inferRuleFromDiff(unifiedDiff)
 					.map(CommitEvaluation::dslRule)
 					.filter(rule -> rule != null && !rule.isBlank())
@@ -115,30 +119,6 @@ public class MineWorkingTreeHandler extends AbstractHandler {
 		}
 
 		return Status.OK_STATUS;
-	}
-
-	private static String buildUnifiedDiff(FileDiff diff) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("--- a/").append(diff.filePath()).append('\n'); //$NON-NLS-1$
-		sb.append("+++ b/").append(diff.filePath()).append('\n'); //$NON-NLS-1$
-		for (DiffHunk hunk : diff.hunks()) {
-			sb.append("@@ -").append(hunk.beforeStartLine()) //$NON-NLS-1$
-					.append(',').append(hunk.beforeLineCount())
-					.append(" +").append(hunk.afterStartLine()) //$NON-NLS-1$
-					.append(',').append(hunk.afterLineCount())
-					.append(" @@\n"); //$NON-NLS-1$
-			for (String line : hunk.beforeText().split("\n", -1)) { //$NON-NLS-1$
-				if (!line.isEmpty()) {
-					sb.append('-').append(line).append('\n');
-				}
-			}
-			for (String line : hunk.afterText().split("\n", -1)) { //$NON-NLS-1$
-				if (!line.isEmpty()) {
-					sb.append('+').append(line).append('\n');
-				}
-			}
-		}
-		return sb.toString();
 	}
 
 	private static void openHintFileOnUi(IProject project, String ruleContent) {
