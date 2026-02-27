@@ -331,7 +331,7 @@ public class LibStandardNames {
 	// ========== Common Utility Methods ==========
 	
 	/**
-	 * Method name for {@link IProgressMonitor#beginTask(String, int)}
+	 * Method name for {@link org.eclipse.core.runtime.IProgressMonitor#beginTask(String, int)}
 	 */
 	public static final String METHOD_BEGIN_TASK = "beginTask"; //$NON-NLS-1$
 
