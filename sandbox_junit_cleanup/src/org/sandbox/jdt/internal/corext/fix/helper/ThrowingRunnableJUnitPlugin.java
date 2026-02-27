@@ -97,6 +97,9 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		Set<ASTNode> found = new HashSet<>();
 
 		// Visit the compilation unit to find ThrowingRunnable usages
+		// Each visitor type must be a separate AstProcessorBuilder call because
+		// chaining multiple onXxx calls creates sequential/scoped visitors via ASTProcessor,
+		// but these visitors need to run independently on the full compilation unit.
 		AstProcessorBuilder.with(dataHolder, nodesprocessed)
 			.onImportDeclaration((node, h) -> {
 				String importName = node.getName().getFullyQualifiedName();
@@ -108,6 +111,9 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataHolder, nodesprocessed)
 			.onSimpleType((node, h) -> {
 				// Check if this is a ThrowingRunnable type reference
 				ITypeBinding binding = node.resolveBinding();
@@ -120,6 +126,9 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataHolder, nodesprocessed)
 			.onParameterizedType((node, h) -> {
 				// Check if this parameterized type contains ThrowingRunnable
 				// e.g., AtomicReference<ThrowingRunnable>
@@ -132,6 +141,9 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				// Don't visit children - we handle the whole parameterized type
 				return false;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataHolder, nodesprocessed)
 			.onMethodInvocation((node, h) -> {
 				// Check if this is a .run() call on a ThrowingRunnable
 				if (RUN_METHOD.equals(node.getName().getIdentifier()) && node.arguments().isEmpty()) {

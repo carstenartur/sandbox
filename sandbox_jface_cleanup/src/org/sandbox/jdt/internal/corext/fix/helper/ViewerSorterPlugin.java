@@ -384,6 +384,9 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 		holder.nodesprocessed = nodesprocessed;
 		dataholder.put(0, holder);
 		
+		// Each visitor type must be a separate AstProcessorBuilder call because
+		// chaining multiple onXxx calls creates sequential/scoped visitors via ASTProcessor,
+		// but these visitors need to run independently on the full compilation unit.
 		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.onTypeDeclaration((node, h) -> {
 				// Check extends clause
@@ -393,6 +396,9 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.onFieldDeclaration((node, h) -> {
 				Type fieldType = node.getType();
 				if (fieldType != null && isViewerSorterType(fieldType)) {
@@ -400,6 +406,9 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.onVariableDeclarationStatement((node, h) -> {
 				Type variableType = node.getType();
 				if (variableType != null && isViewerSorterType(variableType)) {
@@ -407,6 +416,9 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.onMethodDeclaration((node, h) -> {
 				// Check return type
 				Type returnType = node.getReturnType2();
@@ -415,6 +427,9 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.onSingleVariableDeclaration((node, h) -> {
 				// Check parameter type
 				Type paramType = node.getType();
@@ -423,6 +438,9 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.onClassInstanceCreation((node, h) -> {
 				Type instanceType = node.getType();
 				if (instanceType != null && isViewerSorterType(instanceType)) {
@@ -430,6 +448,9 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.onCastExpression((node, h) -> {
 				Type castType = node.getType();
 				if (castType != null && isViewerSorterType(castType)) {
@@ -437,6 +458,9 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.onMethodInvocation((node, h) -> {
 				SimpleName methodName = node.getName();
 				if (methodName != null) {

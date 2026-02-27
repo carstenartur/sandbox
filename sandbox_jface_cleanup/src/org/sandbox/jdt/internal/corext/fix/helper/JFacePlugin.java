@@ -311,6 +311,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		}
 		
 		// Pass 3: Find SubProgressMonitor type references for type replacement
+		// Each visitor type must be a separate AstProcessorBuilder call because
+		// chaining multiple onXxx calls creates sequential/scoped visitors via ASTProcessor,
+		// but these visitors need to run independently on the full compilation unit.
 		ReferenceHolder<Integer, MonitorHolder> typeReplacementHolder = new ReferenceHolder<>();
 		MonitorHolder typeHolder = new MonitorHolder();
 		typeHolder.nodesprocessed = nodesprocessed;
@@ -324,6 +327,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
 			.onVariableDeclarationStatement((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type varType = node.getType();
 				if (isSubProgressMonitorType(varType)) {
@@ -332,6 +338,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
 			.onMethodDeclaration((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type returnType = node.getReturnType2();
 				if (isSubProgressMonitorType(returnType)) {
@@ -340,6 +349,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
 			.onSingleVariableDeclaration((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type paramType = node.getType();
 				if (isSubProgressMonitorType(paramType)) {
@@ -348,6 +360,9 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				}
 				return true;
 			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
 			.onCastExpression((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type castType = node.getType();
 				if (isSubProgressMonitorType(castType)) {
