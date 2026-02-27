@@ -50,7 +50,7 @@ public class TriggerPatternEngineTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -85,7 +85,7 @@ public class TriggerPatternEngineTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -112,7 +112,7 @@ public class TriggerPatternEngineTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -130,7 +130,7 @@ public class TriggerPatternEngineTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("if ($cond) $then;", PatternKind.STATEMENT);
+		Pattern pattern = new Pattern("if ($cond) $then;", PatternKind.STATEMENT, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -158,7 +158,7 @@ public class TriggerPatternEngineTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + $x", PatternKind.EXPRESSION);
+		Pattern pattern = new Pattern("$x + $x", PatternKind.EXPRESSION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -177,7 +177,7 @@ public class TriggerPatternEngineTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("new String($bytes, $enc)", PatternKind.CONSTRUCTOR);
+		Pattern pattern = new Pattern("new String($bytes, $enc)", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -203,7 +203,7 @@ public class TriggerPatternEngineTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("new StringBuilder()", PatternKind.CONSTRUCTOR);
+		Pattern pattern = new Pattern("new StringBuilder()", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -224,7 +224,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses FQN "java.nio.charset.Charset.forName(...)"
-		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -244,7 +244,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses simple name "Charset.forName(...)" — patterns should use FQN
-		Pattern pattern = new Pattern("Charset.forName($arg)", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("Charset.forName($arg)", PatternKind.METHOD_CALL, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -264,7 +264,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses FQN
-		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -285,7 +285,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses java.nio.charset.Charset FQN — different from the import
-		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -305,7 +305,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses FQN
-		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("java.nio.charset.Charset.forName($arg)", PatternKind.METHOD_CALL, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -326,7 +326,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses FQN
-		Pattern pattern = new Pattern("new java.io.InputStreamReader($in, $enc)", PatternKind.CONSTRUCTOR);
+		Pattern pattern = new Pattern("new java.io.InputStreamReader($in, $enc)", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -346,7 +346,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses FQN
-		Pattern pattern = new Pattern("new java.io.InputStreamReader($in, $enc)", PatternKind.CONSTRUCTOR);
+		Pattern pattern = new Pattern("new java.io.InputStreamReader($in, $enc)", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -367,7 +367,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses java.io FQN
-		Pattern pattern = new Pattern("new java.io.InputStreamReader($in, $enc)", PatternKind.CONSTRUCTOR);
+		Pattern pattern = new Pattern("new java.io.InputStreamReader($in, $enc)", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -387,7 +387,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses FQN
-		Pattern pattern = new Pattern("new java.io.InputStreamReader($in, $enc)", PatternKind.CONSTRUCTOR);
+		Pattern pattern = new Pattern("new java.io.InputStreamReader($in, $enc)", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -407,7 +407,7 @@ public class TriggerPatternEngineTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern uses java.lang.String FQN
-		Pattern pattern = new Pattern("new java.lang.String($bytes, $enc)", PatternKind.CONSTRUCTOR);
+		Pattern pattern = new Pattern("new java.lang.String($bytes, $enc)", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -431,7 +431,7 @@ public class TriggerPatternEngineTest {
 
 	@Test
 	public void testPatternConstraintsProperty() {
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION, null, null, null, null, null);
 		assertNull(pattern.getConstraints(), "Default constraints should be null");
 
 		Pattern patternWithConstraints = new Pattern("$x.toString()", PatternKind.EXPRESSION,

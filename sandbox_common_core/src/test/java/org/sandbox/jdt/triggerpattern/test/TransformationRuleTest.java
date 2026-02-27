@@ -71,11 +71,10 @@ public class TransformationRuleTest {
 	
 	@Test
 	public void testSimpleRuleWithOneAlternative() {
-		Pattern sourcePattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern sourcePattern = new Pattern("$x + 1", PatternKind.EXPRESSION, null, null, null, null, null);
 		RewriteAlternative alt = RewriteAlternative.otherwise("++$x");
 		
-		TransformationRule rule = new TransformationRule(
-				"Simplify increment", sourcePattern, null, List.of(alt));
+		TransformationRule rule = new TransformationRule(null, "Simplify increment", sourcePattern, null, List.of(alt), null, null);
 		
 		assertEquals("Simplify increment", rule.getDescription());
 		assertEquals(sourcePattern, rule.sourcePattern());
@@ -86,10 +85,9 @@ public class TransformationRuleTest {
 	
 	@Test
 	public void testHintOnlyRule() {
-		Pattern sourcePattern = new Pattern("Thread.sleep($t)", PatternKind.METHOD_CALL);
+		Pattern sourcePattern = new Pattern("Thread.sleep($t)", PatternKind.METHOD_CALL, null, null, null, null, null);
 		
-		TransformationRule rule = new TransformationRule(
-				"Avoid Thread.sleep", sourcePattern, null, List.of());
+		TransformationRule rule = new TransformationRule(null, "Avoid Thread.sleep", sourcePattern, null, List.of(), null, null);
 		
 		assertTrue(rule.isHintOnly(), "Rule with no alternatives should be hint-only");
 	}
@@ -99,13 +97,13 @@ public class TransformationRuleTest {
 		GuardExpression guard1 = guardParser.parse("sourceVersionGE(11)");
 		GuardExpression guard2 = guardParser.parse("sourceVersionGE(7)");
 		
-		Pattern sourcePattern = new Pattern("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
+		Pattern sourcePattern = new Pattern("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		RewriteAlternative alt1 = new RewriteAlternative(
 				"new String($bytes, StandardCharsets.UTF_8)", guard1);
 		RewriteAlternative alt2 = new RewriteAlternative(
 				"new String($bytes, Charset.forName(\"UTF-8\"))", guard2);
 		
-		TransformationRule rule = new TransformationRule(null, sourcePattern, null, List.of(alt1, alt2));
+		TransformationRule rule = new TransformationRule(null, null, sourcePattern, null, List.of(alt1, alt2), null, null);
 		
 		// Java 17: first alternative should match
 		GuardContext ctx = createContextWithVersion("17"); //$NON-NLS-1$
@@ -119,13 +117,13 @@ public class TransformationRuleTest {
 	public void testTwoAlternativesSecondMatches() {
 		GuardExpression guard1 = guardParser.parse("sourceVersionGE(11)");
 		
-		Pattern sourcePattern = new Pattern("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
+		Pattern sourcePattern = new Pattern("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		RewriteAlternative alt1 = new RewriteAlternative(
 				"new String($bytes, StandardCharsets.UTF_8)", guard1);
 		RewriteAlternative alt2 = RewriteAlternative.otherwise(
 				"new String($bytes, Charset.forName(\"UTF-8\"))");
 		
-		TransformationRule rule = new TransformationRule(null, sourcePattern, null, List.of(alt1, alt2));
+		TransformationRule rule = new TransformationRule(null, null, sourcePattern, null, List.of(alt1, alt2), null, null);
 		
 		// Java 8: first doesn't match, otherwise catches
 		GuardContext ctx = createContextWithVersion("1.8"); //$NON-NLS-1$
@@ -141,11 +139,11 @@ public class TransformationRuleTest {
 		GuardExpression guard1 = guardParser.parse("sourceVersionGE(21)");
 		GuardExpression guard2 = guardParser.parse("sourceVersionGE(17)");
 		
-		Pattern sourcePattern = new Pattern("$x", PatternKind.EXPRESSION);
+		Pattern sourcePattern = new Pattern("$x", PatternKind.EXPRESSION, null, null, null, null, null);
 		RewriteAlternative alt1 = new RewriteAlternative("alt1", guard1);
 		RewriteAlternative alt2 = new RewriteAlternative("alt2", guard2);
 		
-		TransformationRule rule = new TransformationRule(null, sourcePattern, null, List.of(alt1, alt2));
+		TransformationRule rule = new TransformationRule(null, null, sourcePattern, null, List.of(alt1, alt2), null, null);
 		
 		// Java 11: neither guard matches
 		GuardContext ctx = createContextWithVersion("11"); //$NON-NLS-1$
@@ -166,10 +164,9 @@ public class TransformationRuleTest {
 	@Test
 	public void testRuleWithSourceGuard() {
 		GuardExpression sourceGuard = guardParser.parse("sourceVersionGE(11)");
-		Pattern sourcePattern = new Pattern("$x", PatternKind.EXPRESSION);
+		Pattern sourcePattern = new Pattern("$x", PatternKind.EXPRESSION, null, null, null, null, null);
 		
-		TransformationRule rule = new TransformationRule(
-				null, sourcePattern, sourceGuard, List.of());
+		TransformationRule rule = new TransformationRule(null, null, sourcePattern, sourceGuard, List.of(), null, null);
 		
 		assertNotNull(rule.sourceGuard());
 	}
@@ -195,9 +192,8 @@ public class TransformationRuleTest {
 
 	@Test
 	public void testTransformationRuleWithSeverity() {
-		Pattern pattern = new Pattern("$x.size() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
-				"Use isEmpty()", pattern, null, List.of(), null, //$NON-NLS-1$
+		Pattern pattern = new Pattern("$x.size() == 0", PatternKind.EXPRESSION, null, null, null, null, null); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null, "Use isEmpty()", pattern, null, List.of(), null, //$NON-NLS-1$
 				org.sandbox.jdt.triggerpattern.api.Severity.WARNING);
 
 		assertEquals(org.sandbox.jdt.triggerpattern.api.Severity.WARNING, rule.getSeverity());
@@ -205,9 +201,8 @@ public class TransformationRuleTest {
 
 	@Test
 	public void testTransformationRuleDefaultSeverityNull() {
-		Pattern pattern = new Pattern("$x.size() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
-				"Use isEmpty()", pattern, null, List.of()); //$NON-NLS-1$
+		Pattern pattern = new Pattern("$x.size() == 0", PatternKind.EXPRESSION, null, null, null, null, null); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null, "Use isEmpty()", pattern, null, List.of(), null, null); //$NON-NLS-1$
 
 		assertNull(rule.getSeverity(), "Default severity should be null (inherit from hint file)"); //$NON-NLS-1$
 	}

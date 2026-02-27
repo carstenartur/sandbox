@@ -174,9 +174,9 @@ public class PatternIndexTest {
 	// --- Helper methods ---
 
 	private TransformationRule createRule(String sourcePattern, PatternKind kind, String replacement) {
-		Pattern srcPattern = new Pattern(sourcePattern, kind);
+		Pattern srcPattern = new Pattern(sourcePattern, kind, null, null, null, null, null);
 		RewriteAlternative alt = new RewriteAlternative(replacement, null);
-		return new TransformationRule(null, srcPattern, null, List.of(alt));
+		return new TransformationRule(null, null, srcPattern, null, List.of(alt), null, null);
 	}
 
 	private CompilationUnit parseCode(String code) {

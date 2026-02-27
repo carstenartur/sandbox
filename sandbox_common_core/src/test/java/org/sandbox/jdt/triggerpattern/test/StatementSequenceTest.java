@@ -50,7 +50,7 @@ public class StatementSequenceTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE);
+		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -73,7 +73,7 @@ public class StatementSequenceTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE);
+		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -94,7 +94,7 @@ public class StatementSequenceTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern requires two consecutive int declarations
-		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE);
+		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -115,7 +115,7 @@ public class StatementSequenceTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE);
+		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -135,7 +135,7 @@ public class StatementSequenceTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE);
+		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -161,7 +161,7 @@ public class StatementSequenceTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE);
+		Pattern pattern = new Pattern("{ int $a = $v1; int $b = $v2; }", PatternKind.STATEMENT_SEQUENCE, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -182,7 +182,7 @@ public class StatementSequenceTest {
 		
 		CompilationUnit cu = parse(code);
 		// Use BLOCK pattern kind with variadic placeholder for statements before return
-		Pattern pattern = new Pattern("{ $before$; return $x; }", PatternKind.BLOCK);
+		Pattern pattern = new Pattern("{ $before$; return $x; }", PatternKind.BLOCK, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		

@@ -82,9 +82,9 @@ class HintFileSerializerTest {
 		HintFile hintFile = new HintFile();
 		hintFile.setId("boolean.constructor");
 
-		Pattern source = new Pattern("new Boolean(true)", PatternKind.CONSTRUCTOR);
+		Pattern source = new Pattern("new Boolean(true)", PatternKind.CONSTRUCTOR, null, null, null, null, null);
 		RewriteAlternative alt = RewriteAlternative.otherwise("Boolean.TRUE");
-		TransformationRule rule = new TransformationRule(null, source, null, List.of(alt));
+		TransformationRule rule = new TransformationRule(null, null, source, null, List.of(alt), null, null);
 		hintFile.addRule(rule);
 
 		String result = serializer.serialize(hintFile);
@@ -99,11 +99,11 @@ class HintFileSerializerTest {
 		HintFile hintFile = new HintFile();
 		hintFile.setId("guarded.rule");
 
-		Pattern source = new Pattern("$s.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
+		Pattern source = new Pattern("$s.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL, null, null, null, null, null);
 		GuardExpression guard = new GuardExpression.FunctionCall("sourceVersionGE", List.of("7"));
 		RewriteAlternative alt = RewriteAlternative.otherwise(
 				"$s.getBytes(java.nio.charset.StandardCharsets.UTF_8)");
-		TransformationRule rule = new TransformationRule(null, source, guard, List.of(alt));
+		TransformationRule rule = new TransformationRule(null, null, source, guard, List.of(alt), null, null);
 		hintFile.addRule(rule);
 
 		String result = serializer.serialize(hintFile);
@@ -116,8 +116,8 @@ class HintFileSerializerTest {
 	void testSerializeRuleWithDescription() {
 		HintFile hintFile = new HintFile();
 
-		Pattern source = new Pattern("old()", PatternKind.METHOD_CALL);
-		TransformationRule rule = new TransformationRule("Use new API", source, null, List.of());
+		Pattern source = new Pattern("old()", PatternKind.METHOD_CALL, null, null, null, null, null);
+		TransformationRule rule = new TransformationRule(null, "Use new API", source, null, List.of(), null, null);
 		hintFile.addRule(rule);
 
 		String result = serializer.serialize(hintFile);
@@ -203,7 +203,7 @@ class HintFileSerializerTest {
 	@Test
 	void testSerializePerRuleId() {
 		HintFile hintFile = new HintFile();
-		Pattern pattern = new Pattern("$x.foo()", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("$x.foo()", PatternKind.METHOD_CALL, null, null, null, null, null);
 		RewriteAlternative alt = new RewriteAlternative("$x.bar()", null);
 		TransformationRule rule = new TransformationRule(
 				"my.rule.id", null, pattern, null, List.of(alt), null, null);
@@ -217,7 +217,7 @@ class HintFileSerializerTest {
 	@Test
 	void testSerializePerRuleSeverity() {
 		HintFile hintFile = new HintFile();
-		Pattern pattern = new Pattern("$x.foo()", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("$x.foo()", PatternKind.METHOD_CALL, null, null, null, null, null);
 		RewriteAlternative alt = new RewriteAlternative("$x.bar()", null);
 		TransformationRule rule = new TransformationRule(
 				null, null, pattern, null, List.of(alt), null, Severity.ERROR);

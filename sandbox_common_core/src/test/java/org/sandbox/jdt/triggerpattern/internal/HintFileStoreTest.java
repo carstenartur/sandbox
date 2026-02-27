@@ -188,11 +188,10 @@ class HintFileStoreTest {
 	@Test
 	void testSaveCreatesHintsDirectory(@TempDir Path tempDir) throws IOException {
 		HintFile hf = new HintFile();
-		hf.addRule(new org.sandbox.jdt.triggerpattern.api.TransformationRule(
+		hf.addRule(new org.sandbox.jdt.triggerpattern.api.TransformationRule(null, null,
+				new org.sandbox.jdt.triggerpattern.api.Pattern("old()", org.sandbox.jdt.triggerpattern.api.PatternKind.METHOD_CALL, null, null, null, null, null),
 				null,
-				new org.sandbox.jdt.triggerpattern.api.Pattern("old()", org.sandbox.jdt.triggerpattern.api.PatternKind.METHOD_CALL),
-				null,
-				List.of(org.sandbox.jdt.triggerpattern.api.RewriteAlternative.otherwise("newer()"))));
+				List.of(org.sandbox.jdt.triggerpattern.api.RewriteAlternative.otherwise("newer()")), null, null));
 		store.registerInferredRules(hf, "xyz");
 
 		List<Path> written = store.saveInferredHintFiles(tempDir);

@@ -59,7 +59,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("@Before", PatternKind.ANNOTATION);
+		Pattern pattern = new Pattern("@Before", PatternKind.ANNOTATION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -83,7 +83,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("@Test(expected=$ex)", PatternKind.ANNOTATION);
+		Pattern pattern = new Pattern("@Test(expected=$ex)", PatternKind.ANNOTATION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -111,8 +111,8 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern testPattern = new Pattern("@Test", PatternKind.ANNOTATION);
-		Pattern ignorePattern = new Pattern("@Ignore", PatternKind.ANNOTATION);
+		Pattern testPattern = new Pattern("@Test", PatternKind.ANNOTATION, null, null, null, null, null);
+		Pattern ignorePattern = new Pattern("@Ignore", PatternKind.ANNOTATION, null, null, null, null, null);
 		
 		List<Match> testMatches = engine.findMatches(cu, testPattern);
 		List<Match> ignoreMatches = engine.findMatches(cu, ignorePattern);
@@ -134,7 +134,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("System.out.println($msg)", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("System.out.println($msg)", PatternKind.METHOD_CALL, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -160,7 +160,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("assertEquals($msg, $expected, $actual)", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("assertEquals($msg, $expected, $actual)", PatternKind.METHOD_CALL, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -188,7 +188,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$obj.toString()", PatternKind.METHOD_CALL);
+		Pattern pattern = new Pattern("$obj.toString()", PatternKind.METHOD_CALL, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -212,7 +212,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("import org.junit.Assert", PatternKind.IMPORT);
+		Pattern pattern = new Pattern("import org.junit.Assert", PatternKind.IMPORT, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -234,8 +234,8 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern beforePattern = new Pattern("import org.junit.Before", PatternKind.IMPORT);
-		Pattern afterPattern = new Pattern("import org.junit.After", PatternKind.IMPORT);
+		Pattern beforePattern = new Pattern("import org.junit.Before", PatternKind.IMPORT, null, null, null, null, null);
+		Pattern afterPattern = new Pattern("import org.junit.After", PatternKind.IMPORT, null, null, null, null, null);
 		
 		List<Match> beforeMatches = engine.findMatches(cu, beforePattern);
 		List<Match> afterMatches = engine.findMatches(cu, afterPattern);
@@ -253,7 +253,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("import static org.junit.Assert.assertEquals", PatternKind.IMPORT);
+		Pattern pattern = new Pattern("import static org.junit.Assert.assertEquals", PatternKind.IMPORT, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -272,7 +272,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("private String $name", PatternKind.FIELD);
+		Pattern pattern = new Pattern("private String $name", PatternKind.FIELD, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -299,7 +299,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("@Rule public TemporaryFolder $name", PatternKind.FIELD);
+		Pattern pattern = new Pattern("@Rule public TemporaryFolder $name", PatternKind.FIELD, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -320,7 +320,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("public $type $name", PatternKind.FIELD);
+		Pattern pattern = new Pattern("public $type $name", PatternKind.FIELD, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -350,7 +350,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -372,7 +372,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void $name()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void $name()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -401,7 +401,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void processEvent(int type)", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void processEvent(int type)", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -419,7 +419,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void $name($params$)", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void $name($params$)", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -443,7 +443,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("String $name()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("String $name()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -471,7 +471,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		// negate=true means: trigger when pattern is NOT found (missing super call)
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
@@ -494,7 +494,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		// negate=true: should NOT match when super.dispose() IS present
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
@@ -517,7 +517,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		// negate=false means: trigger when pattern IS found
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
@@ -539,7 +539,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		// negate=false: should NOT match when super.dispose() is missing
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
@@ -567,7 +567,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		// negate=true: find dispose() methods missing super.dispose()
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
@@ -586,7 +586,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		// negate=true: empty body has no super call
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
@@ -604,7 +604,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		// negate=true: abstract methods have no body and trivially lack the pattern
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
@@ -626,7 +626,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		// negate=true: super.dispose() is inside nested block, should still be found
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
@@ -649,7 +649,7 @@ public class NewPatternKindsTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("void process()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void process()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		// Check for presence of println call using METHOD_CALL kind
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
@@ -679,7 +679,7 @@ public class NewPatternKindsTest {
 		CompilationUnit cu = parse(code);
 		// Pattern with override constraint - without bindings, no matches expected
 		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION,
-				null, null, null, "org.eclipse.swt.widgets.Widget"); //$NON-NLS-1$
+				null, null, null, "org.eclipse.swt.widgets.Widget", null); //$NON-NLS-1$
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -700,7 +700,7 @@ public class NewPatternKindsTest {
 		
 		CompilationUnit cu = parse(code);
 		// Pattern without override constraint - should match normally
-		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION);
+		Pattern pattern = new Pattern("void dispose()", PatternKind.METHOD_DECLARATION, null, null, null, null, null);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
