@@ -664,4 +664,24 @@ Also enhanced `isThrowingRunnableType()` to check:
 **Learned**: 2026-02-24
 
 ---
+
+## 12. DslExplanationGuardSyncTest — New Guards Require Doc Update
+
+**Issue**: When adding new guards to `BuiltInGuards.registerAll()`, the `DslExplanationGuardSyncTest` will fail unless the `dsl-explanation.md` file (in both `sandbox_common_core/src/main/resources/` and `sandbox_mining_core/src/main/resources/`) is updated to include the new guard in the guard table.
+
+**Fix**: After adding any new guard function to `BuiltInGuards`, always update the guard reference table in both copies of `dsl-explanation.md`.
+
+**Learned**: 2026-02-27
+
+---
+
+## 13. TriggerPatternEngine Type Hierarchy — Use Visited Set
+
+**Issue**: Recursive type hierarchy walking methods (e.g., `matchesTypeOrSupertype`) must use a `Set<String>` visited parameter to prevent infinite recursion in case of circular type references. This pattern is already used in `BuiltInGuards.isSubtypeOf()` and `BuiltInGuards.extendsType()`.
+
+**Rule**: Any method that recursively walks `ITypeBinding.getSuperclass()` or `ITypeBinding.getInterfaces()` MUST include a `Set<String> visited` parameter with `visited.add(qualifiedName)` check.
+
+**Learned**: 2026-02-27
+
+---
 ---
