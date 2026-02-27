@@ -1,0 +1,38 @@
+// probable-bugs.sandbox-hint — Probable Bug Patterns
+// Detects code patterns that are likely programming mistakes
+
+<!id: probable-bugs>
+<!description: Probable bug detection patterns>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: bugs, correctness>
+
+// Hint-only: $x == $x on floating-point may be NaN check
+"Comparing a value to itself — use Double.isNaN() or Float.isNaN() for NaN checks":
+$x == $x
+;;
+
+// Hint-only: $x != $x on floating-point is NaN check
+"Value not equal to itself — use Double.isNaN() or Float.isNaN() instead":
+$x != $x
+;;
+
+// Hint-only: $x.equals($x) is always true (reflexive)
+"Object.equals() with same argument on both sides — always true, probably a bug":
+$x.equals($x)
+;;
+
+// Hint-only: Math.max with identical arguments
+"Math.max() with identical arguments — probably a copy-paste bug":
+java.lang.Math.max($a, $a)
+;;
+
+// Hint-only: Math.min with identical arguments
+"Math.min() with identical arguments — probably a copy-paste bug":
+java.lang.Math.min($a, $a)
+;;
+
+// Hint-only: potential time overflow
+"System.currentTimeMillis() subtraction may overflow — consider System.nanoTime() for elapsed time":
+System.currentTimeMillis() - $start < 0
+;;

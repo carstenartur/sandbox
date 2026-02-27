@@ -1,0 +1,63 @@
+// deprecations.sandbox-hint — Deprecated API Replacements
+// Identifies deprecated API usage and suggests modern alternatives
+
+<!id: deprecations>
+<!description: Deprecated API replacement suggestions>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: deprecations, modernization>
+
+// Character.isSpace($c) → Character.isWhitespace($c)
+java.lang.Character.isSpace($c)
+=> java.lang.Character.isWhitespace($c)
+;;
+
+// new Boolean($str) → Boolean.parseBoolean($str)
+new java.lang.Boolean($str)
+=> java.lang.Boolean.parseBoolean($str)
+;;
+
+// new Integer($str) → Integer.parseInt($str)
+new java.lang.Integer($str)
+=> java.lang.Integer.parseInt($str)
+;;
+
+// new Long($str) → Long.parseLong($str)
+new java.lang.Long($str)
+=> java.lang.Long.parseLong($str)
+;;
+
+// new Short($str) → Short.parseShort($str)
+new java.lang.Short($str)
+=> java.lang.Short.parseShort($str)
+;;
+
+// new Byte($str) → Byte.parseByte($str)
+new java.lang.Byte($str)
+=> java.lang.Byte.parseByte($str)
+;;
+
+// new Float($str) → Float.parseFloat($str)
+new java.lang.Float($str)
+=> java.lang.Float.parseFloat($str)
+;;
+
+// new Double($str) → Double.parseDouble($str)
+new java.lang.Double($str)
+=> java.lang.Double.parseDouble($str)
+;;
+
+// Hint-only: new Date(y, m, d) is deprecated
+"java.util.Date constructor is deprecated — consider using java.time.LocalDate.of() (Java 8+)":
+new java.util.Date($y, $m, $d) :: sourceVersionGE(8)
+;;
+
+// Hint-only: Runtime.exec(String) should use ProcessBuilder
+"Runtime.exec(String) is error-prone — consider using ProcessBuilder":
+java.lang.Runtime.getRuntime().exec($cmd)
+;;
+
+// Class.forName($name).newInstance() is deprecated since Java 9
+"Class.newInstance() is deprecated — use Constructor.newInstance() instead":
+java.lang.Class.forName($name).newInstance() :: sourceVersionGE(9)
+;;

@@ -1,0 +1,38 @@
+// io-performance.sandbox-hint — I/O Stream Performance
+// Detects double-buffering and unnecessary buffering in I/O streams
+
+<!id: io-performance>
+<!description: I/O stream performance patterns — detect double-buffering>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: performance, io>
+
+// Double-buffered InputStream
+new java.io.BufferedInputStream(new java.io.BufferedInputStream($x))
+=> new java.io.BufferedInputStream($x)
+;;
+
+// Double-buffered OutputStream
+new java.io.BufferedOutputStream(new java.io.BufferedOutputStream($x))
+=> new java.io.BufferedOutputStream($x)
+;;
+
+// Double-buffered Reader
+new java.io.BufferedReader(new java.io.BufferedReader($x))
+=> new java.io.BufferedReader($x)
+;;
+
+// Double-buffered Writer
+new java.io.BufferedWriter(new java.io.BufferedWriter($x))
+=> new java.io.BufferedWriter($x)
+;;
+
+// Hint-only: DataInputStream already buffers internally
+"DataInputStream already buffers internally — outer BufferedInputStream may be unnecessary":
+new java.io.DataInputStream(new java.io.BufferedInputStream($x))
+;;
+
+// Hint-only: ObjectOutputStream already buffers internally
+"ObjectOutputStream already buffers internally — outer BufferedOutputStream may be unnecessary":
+new java.io.ObjectOutputStream(new java.io.BufferedOutputStream($x))
+;;

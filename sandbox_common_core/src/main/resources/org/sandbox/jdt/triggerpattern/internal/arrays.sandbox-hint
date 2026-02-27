@@ -1,0 +1,28 @@
+// arrays.sandbox-hint — Array Utility Patterns
+// Replaces verbose array patterns with more efficient alternatives
+
+<!id: arrays>
+<!description: Array utility patterns and modernization>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: arrays, modernization>
+
+// Arrays.asList($arr).stream() → Arrays.stream($arr)
+java.util.Arrays.asList($arr).stream() :: sourceVersionGE(8)
+=> java.util.Arrays.stream($arr)
+;;
+
+// Hint-only: Arrays.asList for contains check
+"Consider using Arrays.stream($arr).anyMatch() instead of Arrays.asList().contains()":
+java.util.Arrays.asList($arr).contains($x) :: sourceVersionGE(8)
+;;
+
+// Hint-only: arr.clone() could use Arrays.copyOf
+"Consider using Arrays.copyOf($arr, $arr.length) instead of clone()":
+$arr.clone()
+;;
+
+// Hint-only: System.arraycopy could use Arrays.copyOf when applicable
+"Consider using Arrays.copyOf() instead of System.arraycopy() for full-array copies":
+System.arraycopy($src, 0, $dst, 0, $src.length)
+;;

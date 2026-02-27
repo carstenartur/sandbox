@@ -1,0 +1,83 @@
+// number-compare.sandbox-hint — Number.compare() Patterns
+// Replaces verbose number comparisons with static compare methods
+
+<!id: number-compare>
+<!description: Replace verbose number comparisons with Number.compare() methods>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: modernization, numbers>
+
+// new Integer($a).compareTo(new Integer($b)) → Integer.compare($a, $b)
+new java.lang.Integer($a).compareTo(new java.lang.Integer($b))
+=> java.lang.Integer.compare($a, $b)
+;;
+
+// Integer.valueOf($a).compareTo(Integer.valueOf($b)) → Integer.compare($a, $b)
+java.lang.Integer.valueOf($a).compareTo(java.lang.Integer.valueOf($b))
+=> java.lang.Integer.compare($a, $b)
+;;
+
+// new Long($a).compareTo(new Long($b)) → Long.compare($a, $b)
+new java.lang.Long($a).compareTo(new java.lang.Long($b))
+=> java.lang.Long.compare($a, $b)
+;;
+
+// Long.valueOf($a).compareTo(Long.valueOf($b)) → Long.compare($a, $b)
+java.lang.Long.valueOf($a).compareTo(java.lang.Long.valueOf($b))
+=> java.lang.Long.compare($a, $b)
+;;
+
+// new Short($a).compareTo(new Short($b)) → Short.compare($a, $b)
+new java.lang.Short($a).compareTo(new java.lang.Short($b))
+=> java.lang.Short.compare($a, $b)
+;;
+
+// Short.valueOf($a).compareTo(Short.valueOf($b)) → Short.compare($a, $b)
+java.lang.Short.valueOf($a).compareTo(java.lang.Short.valueOf($b))
+=> java.lang.Short.compare($a, $b)
+;;
+
+// new Byte($a).compareTo(new Byte($b)) → Byte.compare($a, $b)
+new java.lang.Byte($a).compareTo(new java.lang.Byte($b))
+=> java.lang.Byte.compare($a, $b)
+;;
+
+// Byte.valueOf($a).compareTo(Byte.valueOf($b)) → Byte.compare($a, $b)
+java.lang.Byte.valueOf($a).compareTo(java.lang.Byte.valueOf($b))
+=> java.lang.Byte.compare($a, $b)
+;;
+
+// new Float($a).compareTo(new Float($b)) → Float.compare($a, $b)
+new java.lang.Float($a).compareTo(new java.lang.Float($b))
+=> java.lang.Float.compare($a, $b)
+;;
+
+// Float.valueOf($a).compareTo(Float.valueOf($b)) → Float.compare($a, $b)
+java.lang.Float.valueOf($a).compareTo(java.lang.Float.valueOf($b))
+=> java.lang.Float.compare($a, $b)
+;;
+
+// new Double($a).compareTo(new Double($b)) → Double.compare($a, $b)
+new java.lang.Double($a).compareTo(new java.lang.Double($b))
+=> java.lang.Double.compare($a, $b)
+;;
+
+// Double.valueOf($a).compareTo(Double.valueOf($b)) → Double.compare($a, $b)
+java.lang.Double.valueOf($a).compareTo(java.lang.Double.valueOf($b))
+=> java.lang.Double.compare($a, $b)
+;;
+
+// new Character($a).compareTo(new Character($b)) → Character.compare($a, $b)
+new java.lang.Character($a).compareTo(new java.lang.Character($b))
+=> java.lang.Character.compare($a, $b)
+;;
+
+// Character.valueOf($a).compareTo(Character.valueOf($b)) → Character.compare($a, $b)
+java.lang.Character.valueOf($a).compareTo(java.lang.Character.valueOf($b))
+=> java.lang.Character.compare($a, $b)
+;;
+
+// Hint-only: ternary comparison pattern
+"Consider using Integer.compare($a, $b) or similar Number.compare() method":
+($a < $b) ? -1 : ($a > $b) ? 1 : 0
+;;

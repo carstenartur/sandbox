@@ -1,0 +1,28 @@
+// string-equals.sandbox-hint — String Equality Patterns
+// Identifies string equality anti-patterns and suggests improvements
+
+<!id: string-equals>
+<!description: String equality anti-patterns and null-safe comparisons>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: strings, correctness>
+
+// Hint-only: $str.equals($str) is always true (reflexive)
+"String.equals() with same variable on both sides — always true":
+$str.equals($str)
+;;
+
+// Hint-only: $str.equalsIgnoreCase($str) is always true (reflexive)
+"String.equalsIgnoreCase() with same variable on both sides — always true":
+$str.equalsIgnoreCase($str)
+;;
+
+// Hint-only: consider using equalsIgnoreCase for case-variant comparisons
+"Consider using equalsIgnoreCase() instead of multiple equals() with case variants":
+$str.equals("yes") || $str.equals("YES")
+;;
+
+// Hint-only: null check + isEmpty/isBlank pattern
+"Consider a utility method or String.isBlank() for null-or-empty checks (Java 11+)":
+$str == null || $str.isEmpty() :: sourceVersionGE(11)
+;;

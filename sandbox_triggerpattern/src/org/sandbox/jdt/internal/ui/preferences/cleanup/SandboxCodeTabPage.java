@@ -107,10 +107,69 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.HintFileTabPage_CheckboxName_BundleJunit5,
 				MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5, FALSE_TRUE);
 		intent(hintFileGroup);
+		final CheckboxPreference bundleStreamPerformance = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleStreamPerformance,
+				MYCleanUpConstants.HINTFILE_BUNDLE_STREAM_PERFORMANCE, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleIoPerformance = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleIoPerformance,
+				MYCleanUpConstants.HINTFILE_BUNDLE_IO_PERFORMANCE, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleCollectionPerformance = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollectionPerformance,
+				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_PERFORMANCE, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleNumberCompare = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleNumberCompare,
+				MYCleanUpConstants.HINTFILE_BUNDLE_NUMBER_COMPARE, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleStringEquals = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleStringEquals,
+				MYCleanUpConstants.HINTFILE_BUNDLE_STRING_EQUALS, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleStringIsblank = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleStringIsblank,
+				MYCleanUpConstants.HINTFILE_BUNDLE_STRING_ISBLANK, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleArrays = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleArrays,
+				MYCleanUpConstants.HINTFILE_BUNDLE_ARRAYS, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleCollectionToarray = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollectionToarray,
+				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_TOARRAY, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleProbableBugs = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleProbableBugs,
+				MYCleanUpConstants.HINTFILE_BUNDLE_PROBABLE_BUGS, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleMisc = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleMisc,
+				MYCleanUpConstants.HINTFILE_BUNDLE_MISC, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleDeprecations = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleDeprecations,
+				MYCleanUpConstants.HINTFILE_BUNDLE_DEPRECATIONS, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleClassfileApi = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleClassfileApi,
+				MYCleanUpConstants.HINTFILE_BUNDLE_CLASSFILE_API, FALSE_TRUE);
+		intent(hintFileGroup);
+		final CheckboxPreference bundleSerialization = createCheckboxPref(hintFileGroup, numColumns,
+				CleanUpMessages.HintFileTabPage_CheckboxName_BundleSerialization,
+				MYCleanUpConstants.HINTFILE_BUNDLE_SERIALIZATION, FALSE_TRUE);
+		intent(hintFileGroup);
 		registerSlavePreference(hintFile, new CheckboxPreference[] {
 				bundleCollections, bundlePerformance,
 				bundleModernizeJava9, bundleModernizeJava11,
-				bundleEncoding, bundleJunit5
+				bundleEncoding, bundleJunit5,
+				bundleStreamPerformance, bundleIoPerformance,
+				bundleCollectionPerformance, bundleNumberCompare,
+				bundleStringEquals, bundleStringIsblank,
+				bundleArrays, bundleCollectionToarray,
+				bundleProbableBugs, bundleMisc,
+				bundleDeprecations, bundleClassfileApi,
+				bundleSerialization
 		});
 		registerPreference(hintFile);
 	}

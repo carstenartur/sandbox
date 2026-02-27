@@ -20,6 +20,19 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_B
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_ENCODING;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STREAM_PERFORMANCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_IO_PERFORMANCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_PERFORMANCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_NUMBER_COMPARE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STRING_EQUALS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STRING_ISBLANK;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_ARRAYS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_TOARRAY;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_PROBABLE_BUGS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MISC;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_DEPRECATIONS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_CLASSFILE_API;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_SERIALIZATION;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -136,6 +149,45 @@ public class HintFileCleanUpCore extends AbstractCleanUp {
 			// assume5 and annotations5 are part of the JUnit 4→5 migration bundle
 			enabled.add("assume5"); //$NON-NLS-1$
 			enabled.add("annotations5"); //$NON-NLS-1$
+		}
+		if (isEnabled(HINTFILE_BUNDLE_STREAM_PERFORMANCE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STREAM_PERFORMANCE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_IO_PERFORMANCE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_IO_PERFORMANCE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_COLLECTION_PERFORMANCE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTION_PERFORMANCE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_NUMBER_COMPARE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_NUMBER_COMPARE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_STRING_EQUALS)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_EQUALS);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_STRING_ISBLANK)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_ISBLANK);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_ARRAYS)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_ARRAYS);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_COLLECTION_TOARRAY)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTION_TOARRAY);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_PROBABLE_BUGS)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PROBABLE_BUGS);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_MISC)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MISC);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_DEPRECATIONS)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_DEPRECATIONS);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_CLASSFILE_API)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_CLASSFILE_API);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_SERIALIZATION)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_SERIALIZATION);
 		}
 		return enabled;
 	}

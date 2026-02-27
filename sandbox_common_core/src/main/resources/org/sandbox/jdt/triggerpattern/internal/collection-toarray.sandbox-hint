@@ -1,0 +1,20 @@
+// collection-toarray.sandbox-hint — Collection.toArray() Patterns
+// Modernizes toArray() usage to use the preferred zero-length array pattern
+
+<!id: collection-toarray>
+<!description: Collection.toArray() modernization patterns>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: collections, performance>
+
+// $coll.toArray(new $T[$coll.size()]) → $coll.toArray(new $T[0])
+// Pre-sized array is slower due to zeroing; zero-length array is preferred
+$coll.toArray(new $T[$coll.size()])
+=> $coll.toArray(new $T[0])
+;;
+
+// $coll.stream().toArray($T[]::new) → $coll.toArray(new $T[0])
+// Direct toArray is simpler and avoids unnecessary stream creation
+$coll.stream().toArray($T[]::new) :: sourceVersionGE(8)
+=> $coll.toArray(new $T[0])
+;;

@@ -1,0 +1,53 @@
+// collection-performance.sandbox-hint — Collection Performance
+// Identifies inefficient collection usage patterns
+
+<!id: collection-performance>
+<!description: Collection performance optimization patterns>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: performance, collections>
+
+// $map.keySet().contains($k) → $map.containsKey($k)
+$map.keySet().contains($k)
+=> $map.containsKey($k)
+;;
+
+// $map.values().contains($v) → $map.containsValue($v)
+$map.values().contains($v)
+=> $map.containsValue($v)
+;;
+
+// $list.indexOf($x) >= 0 → $list.contains($x)
+$list.indexOf($x) >= 0
+=> $list.contains($x)
+;;
+
+// $list.indexOf($x) != -1 → $list.contains($x)
+$list.indexOf($x) != -1
+=> $list.contains($x)
+;;
+
+// $list.indexOf($x) < 0 → !$list.contains($x)
+$list.indexOf($x) < 0
+=> !$list.contains($x)
+;;
+
+// $list.indexOf($x) == -1 → !$list.contains($x)
+$list.indexOf($x) == -1
+=> !$list.contains($x)
+;;
+
+// $collection.size() == 0 → $collection.isEmpty()
+$collection.size() == 0
+=> $collection.isEmpty()
+;;
+
+// Hint-only: map.containsKey + map.get can use getOrDefault or computeIfAbsent
+"Consider using Map.getOrDefault() or Map.computeIfAbsent() instead of containsKey() + get()":
+$map.containsKey($k) ? $map.get($k) : $default :: sourceVersionGE(8)
+;;
+
+// Hint-only: sort + reverse can use Comparator.reverseOrder()
+"Consider using list.sort(Comparator.reverseOrder()) instead of sort + reverse":
+java.util.Collections.sort($list) :: sourceVersionGE(8)
+;;

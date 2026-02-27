@@ -76,7 +76,20 @@ public final class HintFileStore {
 		"collections.sandbox-hint", //$NON-NLS-1$
 		"modernize-java9.sandbox-hint", //$NON-NLS-1$
 		"modernize-java11.sandbox-hint", //$NON-NLS-1$
-		"performance.sandbox-hint" //$NON-NLS-1$
+		"performance.sandbox-hint", //$NON-NLS-1$
+		"stream-performance.sandbox-hint", //$NON-NLS-1$
+		"io-performance.sandbox-hint", //$NON-NLS-1$
+		"collection-performance.sandbox-hint", //$NON-NLS-1$
+		"number-compare.sandbox-hint", //$NON-NLS-1$
+		"string-equals.sandbox-hint", //$NON-NLS-1$
+		"string-isblank.sandbox-hint", //$NON-NLS-1$
+		"arrays.sandbox-hint", //$NON-NLS-1$
+		"collection-toarray.sandbox-hint", //$NON-NLS-1$
+		"probable-bugs.sandbox-hint", //$NON-NLS-1$
+		"misc.sandbox-hint", //$NON-NLS-1$
+		"deprecations.sandbox-hint", //$NON-NLS-1$
+		"classfile-api.sandbox-hint", //$NON-NLS-1$
+		"serialization.sandbox-hint" //$NON-NLS-1$
 	};
 
 	/**

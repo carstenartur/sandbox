@@ -539,4 +539,251 @@ public class MYCleanUpConstants {
 	 * @since 1.3.7
 	 */
 	public static final String HINTFILE_BUNDLE_ID_JUNIT5= "junit5"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code stream-performance.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, Stream API performance optimization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_STREAM_PERFORMANCE= "cleanup.hintfile.bundle.stream-performance"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the stream-performance hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_STREAM_PERFORMANCE= "stream-performance"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code io-performance.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, I/O stream performance rules are applied (e.g., double-buffering detection).
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_IO_PERFORMANCE= "cleanup.hintfile.bundle.io-performance"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the io-performance hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_IO_PERFORMANCE= "io-performance"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code collection-performance.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, collection performance optimization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_COLLECTION_PERFORMANCE= "cleanup.hintfile.bundle.collection-performance"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the collection-performance hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_COLLECTION_PERFORMANCE= "collection-performance"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code number-compare.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, Number.compare() optimization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_NUMBER_COMPARE= "cleanup.hintfile.bundle.number-compare"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the number-compare hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_NUMBER_COMPARE= "number-compare"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code string-equals.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, String equality anti-pattern detection rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_STRING_EQUALS= "cleanup.hintfile.bundle.string-equals"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the string-equals hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_STRING_EQUALS= "string-equals"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code string-isblank.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, String.isBlank() modernization rules are applied (Java 11+).
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_STRING_ISBLANK= "cleanup.hintfile.bundle.string-isblank"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the string-isblank hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_STRING_ISBLANK= "string-isblank"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code arrays.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, array utility modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ARRAYS= "cleanup.hintfile.bundle.arrays"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the arrays hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_ARRAYS= "arrays"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code collection-toarray.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, Collection.toArray() modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_COLLECTION_TOARRAY= "cleanup.hintfile.bundle.collection-toarray"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the collection-toarray hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_COLLECTION_TOARRAY= "collection-toarray"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code probable-bugs.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, probable bug detection rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_PROBABLE_BUGS= "cleanup.hintfile.bundle.probable-bugs"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the probable-bugs hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_PROBABLE_BUGS= "probable-bugs"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code misc.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, miscellaneous code improvement rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_MISC= "cleanup.hintfile.bundle.misc"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the misc hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_MISC= "misc"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code deprecations.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, deprecated API replacement rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_DEPRECATIONS= "cleanup.hintfile.bundle.deprecations"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the deprecations hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_DEPRECATIONS= "deprecations"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code classfile-api.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, Java ClassFile API and reflection modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_CLASSFILE_API= "cleanup.hintfile.bundle.classfile-api"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the classfile-api hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_CLASSFILE_API= "classfile-api"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code serialization.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, serialization best practice rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_SERIALIZATION= "cleanup.hintfile.bundle.serialization"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the serialization hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_SERIALIZATION= "serialization"; //$NON-NLS-1$
 }
