@@ -234,6 +234,10 @@ You can use these functions in `:: guard` expressions:
 | `paramCount(n)` | True if the enclosing method has exactly `n` parameters. |
 | `hasReturnType("type")` | True if the enclosing method's return type matches the given type name. Also supports two-arg form: `hasReturnType($var, "type")`. |
 | `isStringLiteral($var)` | True if the bound placeholder is a `StringLiteral` AST node. |
+| `isPublic($var)` | True if the binding has the `public` access modifier. Also supports zero-arg form on matched node. |
+| `isPrivate($var)` | True if the binding has the `private` access modifier. Also supports zero-arg form on matched node. |
+| `isProtected($var)` | True if the binding has the `protected` access modifier. Also supports zero-arg form on matched node. |
+| `throwsException("type")` | True if the enclosing method declares a `throws` clause matching the given type. Zero-arg form returns true if any throws clause is present. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Common Mistakes

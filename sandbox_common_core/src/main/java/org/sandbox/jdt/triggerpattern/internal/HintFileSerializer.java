@@ -85,6 +85,21 @@ public final class HintFileSerializer {
 		if (hintFile.isCaseInsensitive()) {
 			sb.append("<!caseInsensitive>").append(LINE_SEP); //$NON-NLS-1$
 		}
+		if (!hintFile.getSuppressWarnings().isEmpty()) {
+			StringJoiner joiner = new StringJoiner(", "); //$NON-NLS-1$
+			for (String sw : hintFile.getSuppressWarnings()) {
+				joiner.add(sw);
+			}
+			sb.append("<!suppressWarnings: ").append(joiner).append('>').append(LINE_SEP); //$NON-NLS-1$
+		}
+		if (!hintFile.getTreeKindNodeTypes().isEmpty()) {
+			StringJoiner joiner = new StringJoiner(", "); //$NON-NLS-1$
+			for (Integer nodeType : hintFile.getTreeKindNodeTypes()) {
+				String name = nodeTypeToName(nodeType);
+				joiner.add(name);
+			}
+			sb.append("<!treeKind: ").append(joiner).append('>').append(LINE_SEP); //$NON-NLS-1$
+		}
 	}
 	
 	/**
@@ -103,6 +118,14 @@ public final class HintFileSerializer {
 	 * Appends a single transformation rule in DSL format.
 	 */
 	private void appendRule(StringBuilder sb, TransformationRule rule) {
+		// Per-rule metadata annotations
+		if (rule.getRuleId() != null) {
+			sb.append("@id: ").append(rule.getRuleId()).append(LINE_SEP); //$NON-NLS-1$
+		}
+		if (rule.getSeverity() != null) {
+			sb.append("@severity: ").append(rule.getSeverity().name().toLowerCase(java.util.Locale.ROOT)).append(LINE_SEP); //$NON-NLS-1$
+		}
+		
 		// Optional description prefix
 		if (rule.getDescription() != null) {
 			sb.append('"').append(rule.getDescription()).append("\":").append(LINE_SEP); //$NON-NLS-1$
@@ -200,5 +223,27 @@ public final class HintFileSerializer {
 			joiner.add(arg);
 		}
 		return fc.name() + "(" + joiner + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	/**
+	 * Converts an AST node type constant to its field name in {@link org.eclipse.jdt.core.dom.ASTNode}.
+	 * Falls back to the numeric value if the name is not found.
+	 */
+	private static String nodeTypeToName(int nodeType) {
+		for (java.lang.reflect.Field field : org.eclipse.jdt.core.dom.ASTNode.class.getDeclaredFields()) {
+			if (field.getType() == int.class
+					&& java.lang.reflect.Modifier.isPublic(field.getModifiers())
+					&& java.lang.reflect.Modifier.isStatic(field.getModifiers())
+					&& java.lang.reflect.Modifier.isFinal(field.getModifiers())) {
+				try {
+					if (field.getInt(null) == nodeType) {
+						return field.getName();
+					}
+				} catch (IllegalAccessException e) {
+					// skip inaccessible fields
+				}
+			}
+		}
+		return String.valueOf(nodeType);
 	}
 }

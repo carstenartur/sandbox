@@ -167,6 +167,14 @@ public final class BuiltInGuards {
 
 		// String literal guard — checks if a placeholder is a StringLiteral node
 		guards.put("isStringLiteral", BuiltInGuards::evaluateIsStringLiteral); //$NON-NLS-1$
+
+		// Access modifier guards — check visibility of enclosing declaration
+		guards.put("isPublic", BuiltInGuards::evaluateIsPublic); //$NON-NLS-1$
+		guards.put("isPrivate", BuiltInGuards::evaluateIsPrivate); //$NON-NLS-1$
+		guards.put("isProtected", BuiltInGuards::evaluateIsProtected); //$NON-NLS-1$
+
+		// Throws guard — checks if enclosing method declares a throws clause
+		guards.put("throwsException", BuiltInGuards::evaluateThrowsException); //$NON-NLS-1$
 	}
 
 	/**
@@ -1676,5 +1684,126 @@ public final class BuiltInGuards {
 			current = current.getParent();
 		}
 		return null;
+	}
+
+	/**
+	 * Checks if a binding has the public modifier.
+	 * Args: [placeholderName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsPublic(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			// No argument: check the matched node directly
+			ASTNode node = ctx.getMatchedNode();
+			if (node == null) {
+				return false;
+			}
+			int modifiers = resolveModifiers(node);
+			return Modifier.isPublic(modifiers);
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		int modifiers = resolveModifiers(node);
+		return Modifier.isPublic(modifiers);
+	}
+
+	/**
+	 * Checks if a binding has the private modifier.
+	 * Args: [placeholderName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsPrivate(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			ASTNode node = ctx.getMatchedNode();
+			if (node == null) {
+				return false;
+			}
+			int modifiers = resolveModifiers(node);
+			return Modifier.isPrivate(modifiers);
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		int modifiers = resolveModifiers(node);
+		return Modifier.isPrivate(modifiers);
+	}
+
+	/**
+	 * Checks if a binding has the protected modifier.
+	 * Args: [placeholderName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsProtected(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			ASTNode node = ctx.getMatchedNode();
+			if (node == null) {
+				return false;
+			}
+			int modifiers = resolveModifiers(node);
+			return Modifier.isProtected(modifiers);
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		int modifiers = resolveModifiers(node);
+		return Modifier.isProtected(modifiers);
+	}
+
+	/**
+	 * Checks if the enclosing method declares a throws clause matching the given type.
+	 * 
+	 * <p>If no argument is given, returns true if the method has any throws clause.
+	 * If a type name argument is given, checks if the method throws that specific type.</p>
+	 * 
+	 * Args: [] (any throws) or [exceptionTypeName]
+	 * @since 1.4.1
+	 */
+	@SuppressWarnings("unchecked")
+	private static boolean evaluateThrowsException(GuardContext ctx, Object... args) {
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);
+		if (methodDecl == null) {
+			return false;
+		}
+		List<Name> thrownExceptions = methodDecl.thrownExceptionTypes();
+		if (thrownExceptions.isEmpty()) {
+			return false;
+		}
+		if (args.length < 1) {
+			return true; // any throws clause present
+		}
+		String targetType = stripQuotes(args[0].toString());
+		for (Object exType : thrownExceptions) {
+			if (exType instanceof Name name) {
+				if (targetType.equals(name.getFullyQualifiedName())) {
+					return true;
+				}
+				// Also check simple name match
+				String simpleName = name.getFullyQualifiedName();
+				int lastDot = simpleName.lastIndexOf('.');
+				if (lastDot >= 0) {
+					simpleName = simpleName.substring(lastDot + 1);
+				}
+				if (targetType.equals(simpleName)) {
+					return true;
+				}
+			} else if (exType instanceof org.eclipse.jdt.core.dom.Type type) {
+				String typeName = type.toString();
+				if (targetType.equals(typeName)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

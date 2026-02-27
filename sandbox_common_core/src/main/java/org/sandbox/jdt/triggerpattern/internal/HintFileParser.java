@@ -35,6 +35,7 @@ import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
+import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 
 /**
@@ -605,11 +606,36 @@ public final class HintFileParser {
 	private void buildRule(HintFile hintFile, List<String> ruleLines, int startIndex) throws HintParseException {
 		// Parse the rule lines
 		String description = null;
+		String ruleId = null;
+		Severity ruleSeverity = null;
 		String sourcePatternText;
 		GuardExpression sourceGuard = null;
 		List<RewriteAlternative> alternatives = new ArrayList<>();
 		
 		int ruleLineIdx = 0;
+		
+		// Check for per-rule metadata annotations: @id:, @severity:
+		while (ruleLineIdx < ruleLines.size()) {
+			String metaLine = ruleLines.get(ruleLineIdx).trim();
+			if (metaLine.startsWith("@id:")) { //$NON-NLS-1$
+				ruleId = metaLine.substring(4).trim();
+				ruleLineIdx++;
+			} else if (metaLine.startsWith("@severity:")) { //$NON-NLS-1$
+				String severityStr = metaLine.substring(10).trim();
+				try {
+					ruleSeverity = Severity.valueOf(severityStr.toUpperCase(java.util.Locale.ROOT));
+				} catch (IllegalArgumentException e) {
+					throw new HintParseException("Invalid per-rule severity: " + severityStr, startIndex + ruleLineIdx + 1); //$NON-NLS-1$
+				}
+				ruleLineIdx++;
+			} else {
+				break;
+			}
+		}
+		
+		if (ruleLineIdx >= ruleLines.size()) {
+			throw new HintParseException("Rule has metadata annotations but no pattern", startIndex + 1); //$NON-NLS-1$
+		}
 		
 		// Check for description prefix: "text":
 		String firstLine = ruleLines.get(ruleLineIdx);
@@ -719,8 +745,8 @@ public final class HintFileParser {
 		}
 		
 		TransformationRule rule = new TransformationRule(
-				description, sourcePattern, sourceGuard, alternatives, 
-				currentImports.isEmpty() ? null : currentImports);
+				ruleId, description, sourcePattern, sourceGuard, alternatives, 
+				currentImports.isEmpty() ? null : currentImports, ruleSeverity);
 		hintFile.addRule(rule);
 	}
 	
