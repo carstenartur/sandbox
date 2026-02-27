@@ -32,6 +32,7 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 
 /**
@@ -172,6 +173,37 @@ public class HintFileCleanUpBridgeTest {
 		List<TransformationResult> results = processor.process(cu);
 		assertFalse(results.isEmpty(), "Should find match even for hint-only"); //$NON-NLS-1$
 		assertFalse(results.get(0).hasReplacement(), "Hint-only should not have replacement"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testHintOnlyRulesProduceHintFindings() throws Exception {
+		String hintContent = """
+				<!id: hint-findings>
+
+				"Potential issue":
+				$x + 0
+				;;
+				"""; //$NON-NLS-1$
+
+		registry.loadFromString("hint-findings", hintContent); //$NON-NLS-1$
+
+		HintFile hintFile = registry.getHintFile("hint-findings"); //$NON-NLS-1$
+		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
+
+		String code = "class Test { void m() { int r = 1 + 0; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCode(code);
+
+		List<TransformationResult> results = processor.process(cu);
+		assertFalse(results.isEmpty());
+		TransformationResult result = results.get(0);
+		assertFalse(result.hasReplacement());
+
+		HintFinding finding = HintFinding.fromTransformationResult(result, cu);
+		assertNotNull(finding);
+		assertEquals("Potential issue", finding.message()); //$NON-NLS-1$
+		assertTrue(finding.lineNumber() > 0, "Line number should be positive"); //$NON-NLS-1$
+		assertTrue(finding.charStart() >= 0, "charStart should be non-negative"); //$NON-NLS-1$
+		assertTrue(finding.charEnd() > finding.charStart(), "charEnd should be after charStart"); //$NON-NLS-1$
 	}
 
 	@Test

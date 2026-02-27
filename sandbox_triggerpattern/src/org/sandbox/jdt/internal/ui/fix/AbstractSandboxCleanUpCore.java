@@ -52,10 +52,13 @@ import org.sandbox.jdt.triggerpattern.eclipse.HintMarkerReporter;
  *       creates markers AND returns a fix</li>
  * </ul>
  *
- * <p><b>Note:</b> This base class is only for cleanups in
- * {@code sandbox_triggerpattern} which are <em>not</em> ported to Eclipse JDT.
- * JDT-portable cleanups in other modules must continue to extend
- * {@code AbstractCleanUp} directly to maintain 1:1 porting correspondence.</p>
+ * <p><b>Note:</b> This base class is exclusively for experimental cleanups in
+ * the {@code sandbox_triggerpattern} module. These cleanups are sandbox-specific
+ * features (hint-only detection, DSL-driven rules) that do not have Eclipse JDT
+ * counterparts and are not intended for upstream contribution. JDT-portable
+ * cleanups in other modules (e.g., {@code sandbox_encoding_quickfix},
+ * {@code sandbox_junit_cleanup}) must continue to extend {@code AbstractCleanUp}
+ * directly to maintain 1:1 porting correspondence.</p>
  *
  * @since 1.3.7
  */
@@ -98,6 +101,15 @@ public abstract class AbstractSandboxCleanUpCore extends AbstractCleanUp {
 	 * @return the step description
 	 */
 	protected abstract String getDescription();
+
+	/**
+	 * Returns the preview text shown in the cleanup configuration dialog.
+	 * Subclasses must override to provide cleanup-specific before/after examples.
+	 *
+	 * @return the preview text
+	 */
+	@Override
+	public abstract String getPreview();
 
 	// ── Template method implementations ──
 
