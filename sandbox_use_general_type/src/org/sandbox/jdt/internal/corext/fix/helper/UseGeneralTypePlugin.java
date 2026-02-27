@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
