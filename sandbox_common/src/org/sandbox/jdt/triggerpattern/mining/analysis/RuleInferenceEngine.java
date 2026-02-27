@@ -193,12 +193,14 @@ public class RuleInferenceEngine {
 	 * @return the transformation rule
 	 */
 	public TransformationRule toTransformationRule(InferredRule rule) {
-		Pattern source = new Pattern(rule.sourcePattern(), rule.kind());
+		Pattern source = Pattern.of(rule.sourcePattern(), rule.kind());
 		RewriteAlternative alternative = RewriteAlternative.otherwise(rule.replacementPattern());
 		return new TransformationRule(
+				null,
 				"Inferred: " + rule.sourcePattern() + " => " + rule.replacementPattern(), //$NON-NLS-1$ //$NON-NLS-2$
 				source, null, List.of(alternative),
-				rule.importChanges() != null ? rule.importChanges() : new ImportDirective());
+				rule.importChanges() != null ? rule.importChanges() : new ImportDirective(),
+				null);
 	}
 
 	/**
