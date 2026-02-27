@@ -177,12 +177,12 @@ public class StreamConcatRefactorer {
 		// Add .collect(Collectors.toList()) terminal operation
 		MethodInvocation collectCall = ast.newMethodInvocation();
 		collectCall.setExpression(concatExpression);
-		collectCall.setName(ast.newSimpleName("collect"));
+		collectCall.setName(ast.newSimpleName(StreamConstants.COLLECT_METHOD));
 
 		// Collectors.toList() argument
 		MethodInvocation toListCall = ast.newMethodInvocation();
-		toListCall.setExpression(ast.newName("Collectors"));
-		toListCall.setName(ast.newSimpleName("toList"));
+		toListCall.setExpression(ast.newName(StreamConstants.COLLECTORS_CLASS_NAME));
+		toListCall.setName(ast.newSimpleName(StreamConstants.TO_LIST_METHOD));
 		collectCall.arguments().add(toListCall);
 
 		// Add necessary imports
@@ -260,7 +260,7 @@ public class StreamConcatRefactorer {
 		}
 
 		// Check if this is the collect call
-		if ("collect".equals(pipeline.getName().getIdentifier())) {
+		if (StreamConstants.COLLECT_METHOD.equals(pipeline.getName().getIdentifier())) {
 			// Return the expression this collect is called on
 			// e.g., "source.stream().map(...).collect(...)" -> return "source.stream().map(...)"
 			if (pipeline.getExpression() instanceof MethodInvocation) {

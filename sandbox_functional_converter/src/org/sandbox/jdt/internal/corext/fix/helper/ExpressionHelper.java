@@ -216,7 +216,7 @@ public final class ExpressionHelper {
 		// Extract collection expression (either collection or collection.stream())
 		Expression collectionExpr = forEach.getExpression();
 		if (collectionExpr instanceof MethodInvocation methodInv) {
-			if ("stream".equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$
+			if (StreamConstants.STREAM_METHOD.equals(methodInv.getName().getIdentifier())) {
 				collectionExpr = methodInv.getExpression();
 			}
 		}
@@ -268,7 +268,7 @@ public final class ExpressionHelper {
 			Set<ASTNode> nodesprocessed) {
 		ReferenceHolder<Integer, Object> dataHolder = ReferenceHolder.create();
 
-		HelperVisitorFactory.callMethodInvocationVisitor("forEach", compilationUnit, dataHolder, nodesprocessed, //$NON-NLS-1$
+		HelperVisitorFactory.callMethodInvocationVisitor(StreamConstants.FOR_EACH_METHOD, compilationUnit, dataHolder, nodesprocessed,
 			(visited, aholder) -> {
 				if (visited.arguments().size() != 1) {
 					return false;

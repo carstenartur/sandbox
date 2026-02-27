@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.StreamConstants.*;
+
 import java.util.List;
 import java.util.function.Supplier;
 import org.eclipse.jdt.core.dom.*;
@@ -55,14 +57,14 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 // collection.stream()
                 MethodInvocation streamCall = ast.newMethodInvocation();
                 streamCall.setExpression(createExpression(source.expression()));
-                streamCall.setName(ast.newSimpleName("stream"));
+                streamCall.setName(ast.newSimpleName(STREAM_METHOD));
                 return streamCall;
                 
             case ARRAY:
                 // Arrays.stream(array)
                 MethodInvocation arraysStream = ast.newMethodInvocation();
-                arraysStream.setExpression(ast.newSimpleName("Arrays"));
-                arraysStream.setName(ast.newSimpleName("stream"));
+                arraysStream.setExpression(ast.newSimpleName(ARRAYS_CLASS_NAME));
+                arraysStream.setName(ast.newSimpleName(STREAM_METHOD));
                 arraysStream.arguments().add(createExpression(source.expression()));
                 return arraysStream;
                 
@@ -70,7 +72,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 // StreamSupport.stream(iterable.spliterator(), false)
                 MethodInvocation streamSupport = ast.newMethodInvocation();
                 streamSupport.setExpression(ast.newSimpleName("StreamSupport"));
-                streamSupport.setName(ast.newSimpleName("stream"));
+                streamSupport.setName(ast.newSimpleName(STREAM_METHOD));
                 
                 MethodInvocation spliterator = ast.newMethodInvocation();
                 spliterator.setExpression(createExpression(source.expression()));
@@ -116,7 +118,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // pipeline.filter(var -> expression)
         MethodInvocation filterCall = ast.newMethodInvocation();
         filterCall.setExpression(pipeline);
-        filterCall.setName(ast.newSimpleName("filter"));
+        filterCall.setName(ast.newSimpleName(FILTER_METHOD));
         filterCall.arguments().add(createLambda(variableName, expression));
         return filterCall;
     }
@@ -136,7 +138,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // pipeline.map(var -> expression)
         MethodInvocation mapCall = ast.newMethodInvocation();
         mapCall.setExpression(pipeline);
-        mapCall.setName(ast.newSimpleName("map"));
+        mapCall.setName(ast.newSimpleName(MAP_METHOD));
         mapCall.arguments().add(createLambda(variableName, expression));
         return mapCall;
     }
@@ -162,7 +164,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     private Expression renderSideEffectMap(Expression pipeline, String statementsText, String variableName) {
         MethodInvocation mapCall = ast.newMethodInvocation();
         mapCall.setExpression(pipeline);
-        mapCall.setName(ast.newSimpleName("map"));
+        mapCall.setName(ast.newSimpleName(MAP_METHOD));
         
         // Create block lambda: var -> { statements; return var; }
         LambdaExpression lambda = ast.newLambdaExpression();
@@ -262,7 +264,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // pipeline.forEach(var -> { statements }) oder forEachOrdered
         MethodInvocation forEachCall = ast.newMethodInvocation();
         forEachCall.setExpression(pipeline);
-        forEachCall.setName(ast.newSimpleName(ordered ? "forEachOrdered" : "forEach"));
+        forEachCall.setName(ast.newSimpleName(ordered ? FOR_EACH_ORDERED_METHOD : FOR_EACH_METHOD));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
@@ -296,7 +298,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // Similar to renderForEach but uses the supplier to get the body directly
         MethodInvocation forEachCall = ast.newMethodInvocation();
         forEachCall.setExpression(pipeline);
-        forEachCall.setName(ast.newSimpleName(ordered ? "forEachOrdered" : "forEach"));
+        forEachCall.setName(ast.newSimpleName(ordered ? FOR_EACH_ORDERED_METHOD : FOR_EACH_METHOD));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
@@ -356,7 +358,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // For collections and iterables, use direct forEach
         MethodInvocation forEachCall = ast.newMethodInvocation();
         forEachCall.setExpression(createExpression(source.expression()));
-        forEachCall.setName(ast.newSimpleName("forEach"));
+        forEachCall.setName(ast.newSimpleName(FOR_EACH_METHOD));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
@@ -425,7 +427,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // Similar to renderFilter but uses the supplier
         MethodInvocation filterCall = ast.newMethodInvocation();
         filterCall.setExpression(pipeline);
-        filterCall.setName(ast.newSimpleName("filter"));
+        filterCall.setName(ast.newSimpleName(FILTER_METHOD));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
@@ -452,7 +454,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // Similar to renderMap but uses the supplier
         MethodInvocation mapCall = ast.newMethodInvocation();
         mapCall.setExpression(pipeline);
-        mapCall.setName(ast.newSimpleName("map"));
+        mapCall.setName(ast.newSimpleName(MAP_METHOD));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
@@ -479,17 +481,17 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // pipeline.collect(Collectors.toList()) etc.
         MethodInvocation collectCall = ast.newMethodInvocation();
         collectCall.setExpression(pipeline);
-        collectCall.setName(ast.newSimpleName("collect"));
+        collectCall.setName(ast.newSimpleName(COLLECT_METHOD));
         
         MethodInvocation collector = ast.newMethodInvocation();
-        collector.setExpression(ast.newSimpleName("Collectors"));
+        collector.setExpression(ast.newSimpleName(COLLECTORS_CLASS_NAME));
         
         switch (terminal.collectorType()) {
             case TO_LIST:
-                collector.setName(ast.newSimpleName("toList"));
+                collector.setName(ast.newSimpleName(TO_LIST_METHOD));
                 break;
             case TO_SET:
-                collector.setName(ast.newSimpleName("toSet"));
+                collector.setName(ast.newSimpleName(TO_SET_METHOD));
                 break;
             case TO_MAP:
                 collector.setName(ast.newSimpleName("toMap"));
@@ -502,7 +504,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 break;
             case CUSTOM:
             default:
-                collector.setName(ast.newSimpleName("toList"));
+                collector.setName(ast.newSimpleName(TO_LIST_METHOD));
         }
         
         collectCall.arguments().add(collector);
@@ -514,7 +516,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // pipeline.reduce(identity, accumulator) etc.
         MethodInvocation reduceCall = ast.newMethodInvocation();
         reduceCall.setExpression(pipeline);
-        reduceCall.setName(ast.newSimpleName("reduce"));
+        reduceCall.setName(ast.newSimpleName(REDUCE_METHOD));
         
         if (terminal.identity() != null) {
             reduceCall.arguments().add(createExpression(terminal.identity()));
@@ -550,13 +552,13 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         
         switch (terminal.matchType()) {
             case ANY_MATCH:
-                matchCall.setName(ast.newSimpleName("anyMatch"));
+                matchCall.setName(ast.newSimpleName(ANY_MATCH_METHOD));
                 break;
             case ALL_MATCH:
-                matchCall.setName(ast.newSimpleName("allMatch"));
+                matchCall.setName(ast.newSimpleName(ALL_MATCH_METHOD));
                 break;
             case NONE_MATCH:
-                matchCall.setName(ast.newSimpleName("noneMatch"));
+                matchCall.setName(ast.newSimpleName(NONE_MATCH_METHOD));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown match type: " + terminal.matchType());
@@ -675,7 +677,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         
         MethodInvocation filterCall = ast.newMethodInvocation();
         filterCall.setExpression(pipeline);
-        filterCall.setName(ast.newSimpleName("filter"));
+        filterCall.setName(ast.newSimpleName(FILTER_METHOD));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
@@ -727,7 +729,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         
         MethodInvocation mapCall = ast.newMethodInvocation();
         mapCall.setExpression(pipeline);
-        mapCall.setName(ast.newSimpleName("map"));
+        mapCall.setName(ast.newSimpleName(MAP_METHOD));
         
         LambdaExpression lambda = ast.newLambdaExpression();
         VariableDeclarationFragment param = ast.newVariableDeclarationFragment();
