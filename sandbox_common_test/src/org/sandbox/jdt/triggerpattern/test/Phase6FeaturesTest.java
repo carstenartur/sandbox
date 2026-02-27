@@ -164,10 +164,10 @@ public class Phase6FeaturesTest {
 	
 	@Test
 	public void testPreviewGeneratorFromRule() {
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		RewriteAlternative alt = new RewriteAlternative("$x", null); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
-				"Remove addition of zero", srcPattern, null, List.of(alt)); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null,
+				"Remove addition of zero", srcPattern, null, List.of(alt), null, null); //$NON-NLS-1$
 		
 		Preview preview = PreviewGenerator.generatePreview(rule);
 		assertNotNull(preview);
@@ -338,8 +338,8 @@ public class Phase6FeaturesTest {
 	
 	@Test
 	public void testTransformationRuleWithoutImports() {
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule("test", srcPattern, null, List.of()); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null, "test", srcPattern, null, List.of(), null, null); //$NON-NLS-1$
 		
 		assertFalse(rule.hasImportDirective());
 		assertNull(rule.getImportDirective());
@@ -347,12 +347,12 @@ public class Phase6FeaturesTest {
 	
 	@Test
 	public void testTransformationRuleWithImports() {
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		ImportDirective imports = new ImportDirective();
 		imports.addImport("java.util.Objects"); //$NON-NLS-1$
 		
-		TransformationRule rule = new TransformationRule(
-				"test", srcPattern, null, List.of(), imports); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null,
+				"test", srcPattern, null, List.of(), imports, null); //$NON-NLS-1$
 		
 		assertTrue(rule.hasImportDirective());
 		assertNotNull(rule.getImportDirective());

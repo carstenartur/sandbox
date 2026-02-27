@@ -77,7 +77,7 @@ public final class FixUtilities {
 		
 		// Parse the replacement pattern
 		PatternParser parser = new PatternParser();
-		Pattern pattern = new Pattern(replacementPattern, kind, null, null);
+		Pattern pattern = Pattern.of(replacementPattern, kind);
 		ASTNode replacementNode = parser.parse(pattern);
 		
 		if (replacementNode == null) {

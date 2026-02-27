@@ -38,7 +38,7 @@ public class PatternParserTest {
 	
 	@Test
 	public void testParseSimpleExpression() {
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + 1", PatternKind.EXPRESSION);
 		ASTNode node = parser.parse(pattern);
 		
 		assertNotNull(node, "Parser should return a non-null node");
@@ -48,7 +48,7 @@ public class PatternParserTest {
 	
 	@Test
 	public void testParseMethodInvocation() {
-		Pattern pattern = new Pattern("$obj.toString()", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$obj.toString()", PatternKind.EXPRESSION);
 		ASTNode node = parser.parse(pattern);
 		
 		assertNotNull(node, "Parser should return a non-null node");
@@ -57,7 +57,7 @@ public class PatternParserTest {
 	
 	@Test
 	public void testParsePlaceholderExpression() {
-		Pattern pattern = new Pattern("$x", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x", PatternKind.EXPRESSION);
 		ASTNode node = parser.parse(pattern);
 		
 		assertNotNull(node, "Parser should return a non-null node");
@@ -67,7 +67,7 @@ public class PatternParserTest {
 	}
 	@Test
 	public void testParseIfStatement() {
-		Pattern pattern = new Pattern("if ($cond) $then;", PatternKind.STATEMENT);
+		Pattern pattern = Pattern.of("if ($cond) $then;", PatternKind.STATEMENT);
 		ASTNode node = parser.parse(pattern);
 		
 		assertNotNull(node, "Parser should return a non-null node");
@@ -77,7 +77,7 @@ public class PatternParserTest {
 	
 	@Test
 	public void testParseReturnStatement() {
-		Pattern pattern = new Pattern("return $x;", PatternKind.STATEMENT);
+		Pattern pattern = Pattern.of("return $x;", PatternKind.STATEMENT);
 		ASTNode node = parser.parse(pattern);
 		
 		assertNotNull(node, "Parser should return a non-null node");
@@ -86,7 +86,7 @@ public class PatternParserTest {
 	
 	@Test
 	public void testParseConstructorWithPlaceholders() {
-		Pattern pattern = new Pattern("new String($bytes, $enc)", PatternKind.CONSTRUCTOR);
+		Pattern pattern = Pattern.of("new String($bytes, $enc)", PatternKind.CONSTRUCTOR);
 		ASTNode node = parser.parse(pattern);
 		
 		assertNotNull(node, "Parser should return a non-null node");
@@ -95,7 +95,7 @@ public class PatternParserTest {
 	
 	@Test
 	public void testParseConstructorWithoutArguments() {
-		Pattern pattern = new Pattern("new StringBuilder()", PatternKind.CONSTRUCTOR);
+		Pattern pattern = Pattern.of("new StringBuilder()", PatternKind.CONSTRUCTOR);
 		ASTNode node = parser.parse(pattern);
 		
 		assertNotNull(node, "Parser should return a non-null node");
@@ -104,7 +104,7 @@ public class PatternParserTest {
 	
 	@Test
 	public void testParseConstructorWithComplexArguments() {
-		Pattern pattern = new Pattern("new OutputStreamWriter($stream, StandardCharsets.UTF_8)", PatternKind.CONSTRUCTOR);
+		Pattern pattern = Pattern.of("new OutputStreamWriter($stream, StandardCharsets.UTF_8)", PatternKind.CONSTRUCTOR);
 		ASTNode node = parser.parse(pattern);
 		
 		assertNotNull(node, "Parser should return a non-null node");

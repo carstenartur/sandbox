@@ -48,6 +48,56 @@ implemented in `BuiltInGuards` as static methods. `GuardRegistry` in
 initialization, then adds extension-point loading on top. This allows
 standalone tests and CLI tools to use built-in guards without OSGi.
 
+**Recent additions (Phase 1.1/1.3)**:
+- `subtypeOf($var, "fqn")` — walks type hierarchy to check subtype relationships
+- `hasSuppressWarnings("key")` — checks if enclosing declaration has `@SuppressWarnings`
+
+**Tier 2 additions (Phase 1.2/2.1/2.3)**:
+- `hasField("name")` — checks if enclosing class has a field with given name
+- `isInLoop()` — checks if matched node is inside a loop (for/while/do/enhanced-for)
+- `paramCount(n)` — checks if enclosing method has exactly n parameters
+- `hasReturnType("type")` — checks if enclosing method return type matches
+- `isStringLiteral($var)` — checks if placeholder is a StringLiteral node
+
+**Tier 3 additions (Phase 3.4/3.5)**:
+- `isPublic($var)` — checks if binding has public access modifier
+- `isPrivate($var)` — checks if binding has private access modifier
+- `isProtected($var)` — checks if binding has protected access modifier
+- `throwsException("type")` — checks if enclosing method declares a matching throws clause
+
+### Per-Rule Metadata (Phase 3.1-3.3)
+
+Rules within a `.sandbox-hint` file can have per-rule annotations:
+- `@id: encoding.fileReader` — unique ID for usage tracking via `RuleUsageTracker`
+- `@severity: error` — overrides the hint-file-level severity
+
+These annotations appear on lines before the source pattern within a rule block.
+`TransformationRule.getRuleId()` and `TransformationRule.getSeverity()` expose them.
+
+### DSL `<!treeKind:>` Directive (Phase 1.2)
+
+The `HintFileParser` now supports `<!treeKind: METHOD_DECLARATION, IF_STATEMENT>`
+directives. AST node type names are resolved via lazy-initialized reflection on
+`ASTNode` class constants. The resolved node types are stored in
+`HintFile.getTreeKindNodeTypes()` for downstream consumers (e.g., `HintFileFixCore`)
+to use with `TriggerPatternEngine.findMatchesByNodeType()`.
+
+### SuppressWarningsChecker
+
+Utility class in `internal` package that walks up the AST from a given node,
+checking each enclosing `BodyDeclaration` for a `@SuppressWarnings` annotation
+containing a given key. Supports `SingleMemberAnnotation` and `NormalAnnotation`
+forms, including array initializer values.
+
+### Type Constraint Resolution (Phase 1.1)
+
+`TriggerPatternEngine.findMatches(ICompilationUnit, Pattern)` now enables
+`setResolveBindings(true)` when the pattern has `ConstraintVariableType[]`
+constraints. After structural matching, `checkTypeConstraints()` filters
+matches to retain only those where bound nodes satisfy the type constraints
+via `ITypeBinding`. Graceful degradation: constraints are skipped when
+binding resolution is not available.
+
 ### HintFileStore (Grenzfall 3)
 
 Eclipse-independent hint file storage is in `HintFileStore`. It provides:

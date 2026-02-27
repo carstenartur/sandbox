@@ -45,7 +45,7 @@ public class PlaceholderMatcherTest {
 	@Test
 	public void testPlaceholderBinds() {
 		// Pattern: $x + 1
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + 1", PatternKind.EXPRESSION);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -73,7 +73,7 @@ public class PlaceholderMatcherTest {
 	@Test
 	public void testMultipleSamePlaceholdersMustMatch() {
 		// Pattern: $x + $x  (both placeholders must bind to the same thing)
-		Pattern pattern = new Pattern("$x + $x", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + $x", PatternKind.EXPRESSION);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -99,7 +99,7 @@ public class PlaceholderMatcherTest {
 	@Test
 	public void testDifferentPlaceholdersBindIndependently() {
 		// Pattern: $x + $y
-		Pattern pattern = new Pattern("$x + $y", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + $y", PatternKind.EXPRESSION);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -122,7 +122,7 @@ public class PlaceholderMatcherTest {
 	@Test
 	public void testNonPlaceholderMustMatchExactly() {
 		// Pattern: $x + 1  (the literal 1 must match exactly)
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + 1", PatternKind.EXPRESSION);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		

@@ -108,9 +108,8 @@ public class BatchTransformationProcessorTest {
 	@Test
 	public void testProcessHintOnly() {
 		// Rule with no alternatives = hint only
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
-		TransformationRule hintOnlyRule = new TransformationRule(
-				"Addition of zero is redundant", srcPattern, null, List.of()); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		TransformationRule hintOnlyRule = new TransformationRule(null, "Addition of zero is redundant", srcPattern, null, List.of(), null, null); //$NON-NLS-1$
 		HintFile hintFile = createHintFile(List.of(hintOnlyRule));
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
 
@@ -184,9 +183,9 @@ public class BatchTransformationProcessorTest {
 	// --- Helper methods ---
 
 	private TransformationRule createRule(String sourcePattern, PatternKind kind, String replacement) {
-		Pattern srcPattern = new Pattern(sourcePattern, kind);
+		Pattern srcPattern = Pattern.of(sourcePattern, kind);
 		RewriteAlternative alt = new RewriteAlternative(replacement, null);
-		return new TransformationRule(null, srcPattern, null, List.of(alt));
+		return TransformationRule.of(srcPattern, List.of(alt));
 	}
 
 	private HintFile createHintFile(List<TransformationRule> rules) {

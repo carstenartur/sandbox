@@ -59,7 +59,7 @@ public class PatternCleanupHelper {
             return null;
         }
         String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();
-        return new Pattern(annotation.value(), annotation.kind(), qualifiedType);
+        return new Pattern(annotation.value(), annotation.kind(), null, null, qualifiedType, null, null);
     }
     
     /**

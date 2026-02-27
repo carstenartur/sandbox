@@ -350,7 +350,7 @@ public class HintRegistry {
 			triggerPattern.value(),
 			triggerPattern.kind(),
 			triggerPattern.id().isEmpty() ? null : triggerPattern.id(),
-			null
+			null, null, null, null
 		);
 		
 		HintDescriptor descriptor = createHintDescriptor(pattern, null, method, providerClass);
@@ -414,7 +414,7 @@ public class HintRegistry {
 		}
 		
 		PatternKind kind = PatternKind.valueOf(kindStr);
-		Pattern pattern = new Pattern(value, kind, id, displayName);
+		Pattern pattern = new Pattern(value, kind, id, displayName, null, null, null);
 		
 		// Load the class and method
 		Bundle bundle = Platform.getBundle(element.getContributor().getName());

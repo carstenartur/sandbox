@@ -48,6 +48,8 @@ public final class HintFile {
 	private final List<TransformationRule> rules;
 	private final List<String> includes;
 	private boolean caseInsensitive;
+	private List<String> suppressWarnings;
+	private List<Integer> treeKindNodeTypes;
 	
 	/**
 	 * Creates a new empty hint file.
@@ -57,6 +59,8 @@ public final class HintFile {
 		this.rules = new ArrayList<>();
 		this.includes = new ArrayList<>();
 		this.severity = Severity.INFO;
+		this.suppressWarnings = new ArrayList<>();
+		this.treeKindNodeTypes = new ArrayList<>();
 	}
 	
 	/**
@@ -240,5 +244,65 @@ public final class HintFile {
 	 */
 	public void setCaseInsensitive(boolean caseInsensitive) {
 		this.caseInsensitive = caseInsensitive;
+	}
+
+	/**
+	 * Returns the suppress warnings keys for this hint file.
+	 *
+	 * <p>When a key is listed here, hints from this file will not be reported
+	 * for code that has a {@code @SuppressWarnings} annotation containing
+	 * that key.</p>
+	 *
+	 * @return unmodifiable list of suppress warnings keys
+	 * @since 1.4.0
+	 */
+	public List<String> getSuppressWarnings() {
+		return Collections.unmodifiableList(suppressWarnings);
+	}
+
+	/**
+	 * Sets the suppress warnings keys.
+	 *
+	 * @param suppressWarnings the suppress warnings keys
+	 * @since 1.4.0
+	 */
+	public void setSuppressWarnings(List<String> suppressWarnings) {
+		this.suppressWarnings = suppressWarnings != null ? new ArrayList<>(suppressWarnings) : new ArrayList<>();
+	}
+
+	/**
+	 * Adds a suppress warnings key.
+	 *
+	 * @param key the suppress warnings key
+	 * @since 1.4.0
+	 */
+	public void addSuppressWarnings(String key) {
+		if (key != null && !key.isBlank()) {
+			this.suppressWarnings.add(key.trim());
+		}
+	}
+
+	/**
+	 * Returns the list of AST node type constants that this hint file targets.
+	 *
+	 * <p>When non-empty, the pattern engine should only attempt matching on
+	 * AST nodes whose {@code getNodeType()} is contained in this list.
+	 * This enables early filtering for performance.</p>
+	 *
+	 * @return unmodifiable list of {@link org.eclipse.jdt.core.dom.ASTNode} type constants
+	 * @since 1.4.1
+	 */
+	public List<Integer> getTreeKindNodeTypes() {
+		return Collections.unmodifiableList(treeKindNodeTypes);
+	}
+
+	/**
+	 * Sets the list of AST node type constants.
+	 *
+	 * @param treeKindNodeTypes the node type constants
+	 * @since 1.4.1
+	 */
+	public void setTreeKindNodeTypes(List<Integer> treeKindNodeTypes) {
+		this.treeKindNodeTypes = treeKindNodeTypes != null ? new ArrayList<>(treeKindNodeTypes) : new ArrayList<>();
 	}
 }

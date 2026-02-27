@@ -45,10 +45,9 @@ public class DryRunReporterTest {
 		String code = "class Test { void m() { int x = 1 + 0; } }"; //$NON-NLS-1$
 		CompilationUnit cu = parseCode(code);
 
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		RewriteAlternative alt = new RewriteAlternative("$x", null); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
-				"Remove addition of zero", srcPattern, null, List.of(alt)); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null, "Remove addition of zero", srcPattern, null, List.of(alt), null, null); //$NON-NLS-1$
 
 		DryRunReporter reporter = new DryRunReporter();
 		List<ReportEntry> entries = reporter.analyze(cu, List.of(rule));
@@ -67,10 +66,9 @@ public class DryRunReporterTest {
 		String code = "class Test { void m() { int x = 1 + 2; } }"; //$NON-NLS-1$
 		CompilationUnit cu = parseCode(code);
 
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		RewriteAlternative alt = new RewriteAlternative("$x", null); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
-				"Remove addition of zero", srcPattern, null, List.of(alt)); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null, "Remove addition of zero", srcPattern, null, List.of(alt), null, null); //$NON-NLS-1$
 
 		DryRunReporter reporter = new DryRunReporter();
 		List<ReportEntry> entries = reporter.analyze(cu, List.of(rule));
@@ -84,9 +82,8 @@ public class DryRunReporterTest {
 		CompilationUnit cu = parseCode(code);
 
 		// Hint-only rule (no rewrite alternatives)
-		Pattern srcPattern = new Pattern("$x.toString()", PatternKind.METHOD_CALL); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
-				"Unnecessary toString() call", srcPattern, null, List.of()); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x.toString()", PatternKind.METHOD_CALL); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null, "Unnecessary toString() call", srcPattern, null, List.of(), null, null); //$NON-NLS-1$
 
 		DryRunReporter reporter = new DryRunReporter();
 		List<ReportEntry> entries = reporter.analyze(cu, List.of(rule));
@@ -101,10 +98,9 @@ public class DryRunReporterTest {
 		String code = "class Test { void m() { int a = 1 + 0; int b = 2 + 0; } }"; //$NON-NLS-1$
 		CompilationUnit cu = parseCode(code);
 
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		RewriteAlternative alt = new RewriteAlternative("$x", null); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
-				"Remove addition of zero", srcPattern, null, List.of(alt)); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null, "Remove addition of zero", srcPattern, null, List.of(alt), null, null); //$NON-NLS-1$
 
 		DryRunReporter reporter = new DryRunReporter();
 		List<ReportEntry> entries = reporter.analyze(cu, List.of(rule));
@@ -117,10 +113,9 @@ public class DryRunReporterTest {
 		String code = "class Test { void m() { int x = 1 + 0; } }"; //$NON-NLS-1$
 		CompilationUnit cu = parseCode(code);
 
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		RewriteAlternative alt = new RewriteAlternative("$x", null); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
-				"Remove addition of zero", srcPattern, null, List.of(alt)); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null, "Remove addition of zero", srcPattern, null, List.of(alt), null, null); //$NON-NLS-1$
 
 		DryRunReporter reporter = new DryRunReporter();
 		List<ReportEntry> entries = reporter.analyze(cu, List.of(rule));
@@ -138,10 +133,9 @@ public class DryRunReporterTest {
 		String code = "class Test { void m() { int x = 1 + 0; } }"; //$NON-NLS-1$
 		CompilationUnit cu = parseCode(code);
 
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		RewriteAlternative alt = new RewriteAlternative("$x", null); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
-				"Remove addition of zero", srcPattern, null, List.of(alt)); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(null, "Remove addition of zero", srcPattern, null, List.of(alt), null, null); //$NON-NLS-1$
 
 		DryRunReporter reporter = new DryRunReporter();
 		List<ReportEntry> entries = reporter.analyze(cu, List.of(rule));

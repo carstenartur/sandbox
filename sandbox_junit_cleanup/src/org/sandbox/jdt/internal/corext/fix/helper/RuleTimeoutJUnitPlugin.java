@@ -65,10 +65,10 @@ public class RuleTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 	 */
 	@Override
 	protected List<Pattern> getPatterns() {
-		return List.of(new Pattern("@Rule public Timeout $name", PatternKind.FIELD, ORG_JUNIT_RULES_TIMEOUT),
-				new Pattern("@ClassRule public Timeout $name", PatternKind.FIELD, ORG_JUNIT_RULES_TIMEOUT),
+		return List.of(new Pattern("@Rule public Timeout $name", PatternKind.FIELD, null, null, ORG_JUNIT_RULES_TIMEOUT, null, null),
+				new Pattern("@ClassRule public Timeout $name", PatternKind.FIELD, null, null, ORG_JUNIT_RULES_TIMEOUT, null, null),
 				// Also match static fields for @ClassRule (these may have static modifier)
-				new Pattern("@ClassRule public static Timeout $name", PatternKind.FIELD, ORG_JUNIT_RULES_TIMEOUT));
+				new Pattern("@ClassRule public static Timeout $name", PatternKind.FIELD, null, null, ORG_JUNIT_RULES_TIMEOUT, null, null));
 	}
 
 	/**

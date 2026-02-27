@@ -125,11 +125,11 @@ public class HintFileRegistryInferredTest {
 	private HintFile createTestHintFile() {
 		HintFile hintFile = new HintFile();
 		hintFile.setDescription("Test inferred rules"); //$NON-NLS-1$
-		Pattern source = new Pattern("Collections.emptyList()", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern source = Pattern.of("Collections.emptyList()", PatternKind.EXPRESSION); //$NON-NLS-1$
 		RewriteAlternative alt = RewriteAlternative.otherwise("List.of()"); //$NON-NLS-1$
-		TransformationRule rule = new TransformationRule(
+		TransformationRule rule = new TransformationRule(null,
 				"Collections.emptyList() => List.of()", //$NON-NLS-1$
-				source, null, List.of(alt), new ImportDirective());
+				source, null, List.of(alt), new ImportDirective(), null);
 		hintFile.addRule(rule);
 		return hintFile;
 	}

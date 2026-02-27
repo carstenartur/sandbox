@@ -94,7 +94,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             return null; // Subclass uses getPatterns() instead
         }
         String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();
-        return new Pattern(annotation.value(), annotation.kind(), qualifiedType);
+        return new Pattern(annotation.value(), annotation.kind(), null, null, qualifiedType, null, null);
     }
     
     /**

@@ -13,7 +13,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.internal;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -38,6 +41,12 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 public final class HintFileSerializer {
 	
 	private static final String LINE_SEP = "\n"; //$NON-NLS-1$
+	
+	/**
+	 * Cached reverse map from AST node type constant to field name.
+	 * Built lazily on first use via reflection on {@link org.eclipse.jdt.core.dom.ASTNode}.
+	 */
+	private static volatile Map<Integer, String> reverseNodeTypeMap;
 	
 	/**
 	 * Serializes the given {@link HintFile} to {@code .sandbox-hint} DSL text.
@@ -85,6 +94,21 @@ public final class HintFileSerializer {
 		if (hintFile.isCaseInsensitive()) {
 			sb.append("<!caseInsensitive>").append(LINE_SEP); //$NON-NLS-1$
 		}
+		if (!hintFile.getSuppressWarnings().isEmpty()) {
+			StringJoiner joiner = new StringJoiner(", "); //$NON-NLS-1$
+			for (String sw : hintFile.getSuppressWarnings()) {
+				joiner.add(sw);
+			}
+			sb.append("<!suppressWarnings: ").append(joiner).append('>').append(LINE_SEP); //$NON-NLS-1$
+		}
+		if (!hintFile.getTreeKindNodeTypes().isEmpty()) {
+			StringJoiner joiner = new StringJoiner(", "); //$NON-NLS-1$
+			for (Integer nodeType : hintFile.getTreeKindNodeTypes()) {
+				String name = nodeTypeToName(nodeType);
+				joiner.add(name);
+			}
+			sb.append("<!treeKind: ").append(joiner).append('>').append(LINE_SEP); //$NON-NLS-1$
+		}
 	}
 	
 	/**
@@ -103,6 +127,14 @@ public final class HintFileSerializer {
 	 * Appends a single transformation rule in DSL format.
 	 */
 	private void appendRule(StringBuilder sb, TransformationRule rule) {
+		// Per-rule metadata annotations
+		if (rule.getRuleId() != null) {
+			sb.append("@id: ").append(rule.getRuleId()).append(LINE_SEP); //$NON-NLS-1$
+		}
+		if (rule.getSeverity() != null) {
+			sb.append("@severity: ").append(rule.getSeverity().name().toLowerCase(java.util.Locale.ROOT)).append(LINE_SEP); //$NON-NLS-1$
+		}
+		
 		// Optional description prefix
 		if (rule.getDescription() != null) {
 			sb.append('"').append(rule.getDescription()).append("\":").append(LINE_SEP); //$NON-NLS-1$
@@ -200,5 +232,50 @@ public final class HintFileSerializer {
 			joiner.add(arg);
 		}
 		return fc.name() + "(" + joiner + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	/**
+	 * Converts an AST node type constant to its field name in {@link org.eclipse.jdt.core.dom.ASTNode}.
+	 * Falls back to the numeric value if the name is not found.
+	 * Uses a cached reverse map built lazily on first use.
+	 */
+	private static String nodeTypeToName(int nodeType) {
+		return getReverseNodeTypeMap().getOrDefault(nodeType, String.valueOf(nodeType));
+	}
+
+	/**
+	 * Returns the cached reverse map from AST node type constant to field name,
+	 * initializing it lazily via reflection on first use.
+	 */
+	private static Map<Integer, String> getReverseNodeTypeMap() {
+		if (reverseNodeTypeMap == null) {
+			synchronized (HintFileSerializer.class) {
+				if (reverseNodeTypeMap == null) {
+					reverseNodeTypeMap = buildReverseNodeTypeMap();
+				}
+			}
+		}
+		return reverseNodeTypeMap;
+	}
+
+	/**
+	 * Builds a reverse map from AST node type int constants to their field names
+	 * using reflection on {@link org.eclipse.jdt.core.dom.ASTNode}.
+	 */
+	private static Map<Integer, String> buildReverseNodeTypeMap() {
+		Map<Integer, String> map = new HashMap<>(128);
+		for (java.lang.reflect.Field field : org.eclipse.jdt.core.dom.ASTNode.class.getDeclaredFields()) {
+			if (field.getType() == int.class
+					&& java.lang.reflect.Modifier.isPublic(field.getModifiers())
+					&& java.lang.reflect.Modifier.isStatic(field.getModifiers())
+					&& java.lang.reflect.Modifier.isFinal(field.getModifiers())) {
+				try {
+					map.put(field.getInt(null), field.getName());
+				} catch (IllegalAccessException e) {
+					// skip inaccessible fields
+				}
+			}
+		}
+		return Collections.unmodifiableMap(map);
 	}
 }

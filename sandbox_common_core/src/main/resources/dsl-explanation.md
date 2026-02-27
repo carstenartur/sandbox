@@ -99,6 +99,25 @@ $s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
 
 This expands into two rules: one for `"UTF-8"` → `UTF_8` and one for `"ISO-8859-1"` → `ISO_8859_1`.
 
+### Per-Rule Annotations
+
+Rules within a hint file can have per-rule metadata annotations placed **before** the source pattern:
+
+```
+@id: encoding.fileReader
+@severity: error
+new FileReader($path) :: sourceVersionGE(11)
+=> new FileReader($path, StandardCharsets.UTF_8)
+;;
+```
+
+| Annotation | Description |
+|-----------|-------------|
+| `@id: rule.id` | Unique identifier for this rule, used by `RuleUsageTracker` for usage metrics |
+| `@severity: ERROR` | Per-rule severity override (INFO, WARNING, ERROR, HINT) |
+
+Per-rule annotations are optional. If not specified, the rule inherits the hint-file-level severity.
+
 ### Transformation Rules
 
 Each rule consists of a **pattern** (what to match) and a **rewrite** (what to replace it with).
@@ -227,6 +246,17 @@ You can use these functions in `:: guard` expressions:
 | `mode("modeName")` | True if the `sandbox.cleanup.mode` compiler option matches the given mode (case-insensitive). Supported modes: `KEEP_BEHAVIOR`, `ENFORCE_UTF8`, `ENFORCE_UTF8_AGGREGATE`. |
 | `methodNameMatches($var, "regex")` | True if the method name bound to `$var` matches the given regex pattern. Used with METHOD_DECLARATION patterns (e.g., `void $name($params$)`). |
 | `enclosingClassExtends("fqn")` | True if the enclosing class extends the given type (directly or transitively). Essential for migration rules targeting specific base classes (e.g., `"junit.framework.TestCase"`). Falls back to textual `extends` clause comparison when bindings are unavailable. |
+| `subtypeOf($var, "fqn")` | True if `$var`'s type is a subtype of the given fully qualified type name. Walks the type hierarchy via `ITypeBinding.getSuperclass()` and `getInterfaces()`. Gracefully degrades to true when bindings are not available. |
+| `hasSuppressWarnings("key")` | True if the matched node's enclosing method, field, or type declaration has a `@SuppressWarnings` annotation containing the specified key. Walks up the AST from the matched node. |
+| `hasField("fieldName")` | True if the enclosing class has a field with the given name. Walks to the enclosing `TypeDeclaration` and checks `bodyDeclarations()` for a matching `FieldDeclaration`. |
+| `isInLoop()` | True if the matched node is inside a loop (`for`, `while`, `do-while`, or enhanced `for`). Walks up the AST from the matched node. |
+| `paramCount(n)` | True if the enclosing method has exactly `n` parameters. |
+| `hasReturnType("type")` | True if the enclosing method's return type matches the given type name. Also supports two-arg form: `hasReturnType($var, "type")`. |
+| `isStringLiteral($var)` | True if the bound placeholder is a `StringLiteral` AST node. |
+| `isPublic($var)` | True if the binding has the `public` access modifier. Also supports zero-arg form on matched node. |
+| `isPrivate($var)` | True if the binding has the `private` access modifier. Also supports zero-arg form on matched node. |
+| `isProtected($var)` | True if the binding has the `protected` access modifier. Also supports zero-arg form on matched node. |
+| `throwsException("type")` | True if the enclosing method declares a `throws` clause matching the given type. Zero-arg form returns true if any throws clause is present. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Common Mistakes

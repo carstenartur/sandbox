@@ -59,21 +59,21 @@ public class ShiftOutOfRangeFixCore {
 			Set<CompilationUnitRewriteOperation> operations) {
 
 		// Pattern 1: $v << $c
-		Pattern leftShiftPattern = new Pattern("$v << $c", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern leftShiftPattern = Pattern.of("$v << $c", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> leftShiftMatches = ENGINE.findMatches(compilationUnit, leftShiftPattern);
 		for (Match match : leftShiftMatches) {
 			addOperationIfOutOfRange(match, operations);
 		}
 
 		// Pattern 2: $v >> $c
-		Pattern rightShiftPattern = new Pattern("$v >> $c", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern rightShiftPattern = Pattern.of("$v >> $c", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> rightShiftMatches = ENGINE.findMatches(compilationUnit, rightShiftPattern);
 		for (Match match : rightShiftMatches) {
 			addOperationIfOutOfRange(match, operations);
 		}
 
 		// Pattern 3: $v >>> $c
-		Pattern unsignedRightShiftPattern = new Pattern("$v >>> $c", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern unsignedRightShiftPattern = Pattern.of("$v >>> $c", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> unsignedRightShiftMatches = ENGINE.findMatches(compilationUnit, unsignedRightShiftPattern);
 		for (Match match : unsignedRightShiftMatches) {
 			addOperationIfOutOfRange(match, operations);

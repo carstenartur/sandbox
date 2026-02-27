@@ -27,12 +27,15 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.jdt.core.dom.ASTNode;
+
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
+import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 
 /**
@@ -346,6 +349,14 @@ public final class HintFileParser {
 			case "caseInsensitive": //$NON-NLS-1$
 				hintFile.setCaseInsensitive(true);
 				break;
+			case "suppressWarnings": //$NON-NLS-1$
+				for (String sw : value.split("\\s*,\\s*")) { //$NON-NLS-1$
+					hintFile.addSuppressWarnings(sw);
+				}
+				break;
+			case "treeKind": //$NON-NLS-1$
+				parseTreeKindDirective(hintFile, value, lineNumber);
+				break;
 			default:
 				// Check for foreach directive: <!foreach VARNAME: key1 -> val1, key2 -> val2>
 				if (key.startsWith("foreach ")) { //$NON-NLS-1$
@@ -356,6 +367,79 @@ public final class HintFileParser {
 		}
 	}
 	
+	/**
+	 * AST node type name to {@link ASTNode} node type constant mapping.
+	 * Populated lazily via reflection on first use.
+	 */
+	private static volatile Map<String, Integer> astNodeTypeMap;
+
+	/**
+	 * Returns the AST node type constant map, initializing it lazily.
+	 */
+	private static Map<String, Integer> getAstNodeTypeMap() {
+		if (astNodeTypeMap == null) {
+			synchronized (HintFileParser.class) {
+				if (astNodeTypeMap == null) {
+					astNodeTypeMap = buildAstNodeTypeMap();
+				}
+			}
+		}
+		return astNodeTypeMap;
+	}
+
+	/**
+	 * Builds a map from AST node type names (e.g., "METHOD_DECLARATION") to
+	 * their integer constants using reflection on {@link ASTNode}.
+	 */
+	private static Map<String, Integer> buildAstNodeTypeMap() {
+		Map<String, Integer> map = new HashMap<>();
+		for (java.lang.reflect.Field field : ASTNode.class.getDeclaredFields()) {
+			if (field.getType() == int.class
+					&& java.lang.reflect.Modifier.isPublic(field.getModifiers())
+					&& java.lang.reflect.Modifier.isStatic(field.getModifiers())
+					&& java.lang.reflect.Modifier.isFinal(field.getModifiers())) {
+				try {
+					map.put(field.getName(), field.getInt(null));
+				} catch (IllegalAccessException e) {
+					LOGGER.log(Level.FINE, "Cannot access ASTNode field: " + field.getName(), e); //$NON-NLS-1$
+				}
+			}
+		}
+		return map;
+	}
+
+	/**
+	 * Parses a {@code <!treeKind:>} directive and sets the node type filter.
+	 *
+	 * <p>Syntax: {@code <!treeKind: METHOD_DECLARATION, IF_STATEMENT>}</p>
+	 *
+	 * @param hintFile the hint file to update
+	 * @param value the comma-separated list of AST node type names
+	 * @param lineNumber the line number for error reporting
+	 */
+	private void parseTreeKindDirective(HintFile hintFile, String value, int lineNumber) throws HintParseException {
+		if (value == null || value.isBlank()) {
+			throw new HintParseException("treeKind directive requires at least one node type", lineNumber); //$NON-NLS-1$
+		}
+		Map<String, Integer> typeMap = getAstNodeTypeMap();
+		List<Integer> nodeTypes = new ArrayList<>();
+		for (String name : value.split("\\s*,\\s*")) { //$NON-NLS-1$
+			String trimmed = name.trim();
+			if (trimmed.isEmpty()) {
+				continue;
+			}
+			Integer nodeType = typeMap.get(trimmed);
+			if (nodeType == null) {
+				throw new HintParseException("Unknown AST node type: " + trimmed, lineNumber); //$NON-NLS-1$
+			}
+			nodeTypes.add(nodeType);
+		}
+		if (nodeTypes.isEmpty()) {
+			throw new HintParseException("treeKind directive requires at least one node type", lineNumber); //$NON-NLS-1$
+		}
+		hintFile.setTreeKindNodeTypes(nodeTypes);
+	}
+
 	/**
 	 * Parses a {@code <!foreach>} directive and stores the variable mapping.
 	 * 
@@ -522,11 +606,39 @@ public final class HintFileParser {
 	private void buildRule(HintFile hintFile, List<String> ruleLines, int startIndex) throws HintParseException {
 		// Parse the rule lines
 		String description = null;
+		String ruleId = null;
+		Severity ruleSeverity = null;
 		String sourcePatternText;
 		GuardExpression sourceGuard = null;
 		List<RewriteAlternative> alternatives = new ArrayList<>();
 		
 		int ruleLineIdx = 0;
+		
+		// Check for per-rule metadata annotations: @id:, @severity:
+		while (ruleLineIdx < ruleLines.size()) {
+			String metaLine = ruleLines.get(ruleLineIdx).trim();
+			if (metaLine.startsWith("@id:")) { //$NON-NLS-1$
+				ruleId = metaLine.substring(4).trim();
+				if (ruleId.isBlank()) {
+					throw new HintParseException("Per-rule id must not be blank", startIndex + ruleLineIdx + 1); //$NON-NLS-1$
+				}
+				ruleLineIdx++;
+			} else if (metaLine.startsWith("@severity:")) { //$NON-NLS-1$
+				String severityStr = metaLine.substring(10).trim();
+				try {
+					ruleSeverity = Severity.valueOf(severityStr.toUpperCase(java.util.Locale.ROOT));
+				} catch (IllegalArgumentException e) {
+					throw new HintParseException("Invalid per-rule severity: " + severityStr, startIndex + ruleLineIdx + 1); //$NON-NLS-1$
+				}
+				ruleLineIdx++;
+			} else {
+				break;
+			}
+		}
+		
+		if (ruleLineIdx >= ruleLines.size()) {
+			throw new HintParseException("Rule has metadata annotations but no pattern", startIndex + 1); //$NON-NLS-1$
+		}
 		
 		// Check for description prefix: "text":
 		String firstLine = ruleLines.get(ruleLineIdx);
@@ -622,7 +734,7 @@ public final class HintFileParser {
 		
 		// Determine PatternKind from the source pattern text
 		PatternKind kind = inferPatternKind(sourcePatternText);
-		Pattern sourcePattern = new Pattern(sourcePatternText, kind);
+		Pattern sourcePattern = Pattern.of(sourcePatternText, kind);
 		
 		// FQN-based import inference: automatically derive imports from
 		// fully qualified names in source and replacement patterns
@@ -636,8 +748,8 @@ public final class HintFileParser {
 		}
 		
 		TransformationRule rule = new TransformationRule(
-				description, sourcePattern, sourceGuard, alternatives, 
-				currentImports.isEmpty() ? null : currentImports);
+				ruleId, description, sourcePattern, sourceGuard, alternatives, 
+				currentImports.isEmpty() ? null : currentImports, ruleSeverity);
 		hintFile.addRule(rule);
 	}
 	

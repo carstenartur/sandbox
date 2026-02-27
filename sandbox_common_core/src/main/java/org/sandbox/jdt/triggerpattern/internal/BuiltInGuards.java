@@ -87,6 +87,7 @@ public final class BuiltInGuards {
 	public static void registerAll(Map<String, GuardFunction> guards) {
 		// Type guards
 		guards.put("instanceof", BuiltInGuards::evaluateInstanceOf); //$NON-NLS-1$
+		guards.put("subtypeOf", BuiltInGuards::evaluateSubtypeOf); //$NON-NLS-1$
 
 		// Structural guards
 		guards.put("matchesAny", BuiltInGuards::evaluateMatchesAny); //$NON-NLS-1$
@@ -148,6 +149,32 @@ public final class BuiltInGuards {
 
 		// Type hierarchy guard — checks if enclosing class extends a given type
 		guards.put("enclosingClassExtends", BuiltInGuards::evaluateEnclosingClassExtends); //$NON-NLS-1$
+
+		// SuppressWarnings guard — checks if enclosing element has @SuppressWarnings with given key
+		guards.put("hasSuppressWarnings", BuiltInGuards::evaluateHasSuppressWarnings); //$NON-NLS-1$
+
+		// Field guard — checks if enclosing class has a field with a given name
+		guards.put("hasField", BuiltInGuards::evaluateHasField); //$NON-NLS-1$
+
+		// Loop guard — checks if the matched node is inside a loop
+		guards.put("isInLoop", BuiltInGuards::evaluateIsInLoop); //$NON-NLS-1$
+
+		// Parameter count guard — checks if enclosing method has expected param count
+		guards.put("paramCount", BuiltInGuards::evaluateParamCount); //$NON-NLS-1$
+
+		// Return type guard — checks if enclosing method's return type matches
+		guards.put("hasReturnType", BuiltInGuards::evaluateHasReturnType); //$NON-NLS-1$
+
+		// String literal guard — checks if a placeholder is a StringLiteral node
+		guards.put("isStringLiteral", BuiltInGuards::evaluateIsStringLiteral); //$NON-NLS-1$
+
+		// Access modifier guards — check visibility of enclosing declaration
+		guards.put("isPublic", BuiltInGuards::evaluateIsPublic); //$NON-NLS-1$
+		guards.put("isPrivate", BuiltInGuards::evaluateIsPrivate); //$NON-NLS-1$
+		guards.put("isProtected", BuiltInGuards::evaluateIsProtected); //$NON-NLS-1$
+
+		// Throws guard — checks if enclosing method declares a throws clause
+		guards.put("throwsException", BuiltInGuards::evaluateThrowsException); //$NON-NLS-1$
 	}
 
 	/**
@@ -192,6 +219,66 @@ public final class BuiltInGuards {
 		}
 
 		return matchesTypeName(typeBinding, typeName);
+	}
+
+	/**
+	 * Checks if the bound node's type is a subtype of a given fully qualified type name.
+	 * Walks the type hierarchy via {@link ITypeBinding#getSuperclass()} and
+	 * {@link ITypeBinding#getInterfaces()}.
+	 *
+	 * <p><b>Graceful degradation:</b> If the type binding cannot be resolved,
+	 * this guard returns {@code true} to allow the rule to match.</p>
+	 *
+	 * Args: [placeholderName, fullyQualifiedTypeName]
+	 * @since 1.4.0
+	 */
+	private static boolean evaluateSubtypeOf(GuardContext ctx, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		String targetFqn = stripQuotes(args[1].toString());
+
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+
+		ITypeBinding typeBinding = resolveTypeBinding(node);
+		if (typeBinding == null) {
+			// Graceful degradation: assume match if bindings not available
+			return true;
+		}
+
+		return isSubtypeOf(typeBinding, targetFqn, new java.util.HashSet<>());
+	}
+
+	/**
+	 * Recursively checks if a type binding is a subtype of the given FQN,
+	 * walking the superclass chain and all interfaces.
+	 */
+	private static boolean isSubtypeOf(ITypeBinding typeBinding, String targetFqn, java.util.Set<String> visited) {
+		if (typeBinding == null || typeBinding.isRecovered()) {
+			return false;
+		}
+		String qualifiedName = typeBinding.getQualifiedName();
+		if (!visited.add(qualifiedName)) {
+			return false; // Already visited — break potential cycle
+		}
+		if (targetFqn.equals(qualifiedName)) {
+			return true;
+		}
+		// Check superclass
+		if (isSubtypeOf(typeBinding.getSuperclass(), targetFqn, visited)) {
+			return true;
+		}
+		// Check interfaces
+		for (ITypeBinding iface : typeBinding.getInterfaces()) {
+			if (isSubtypeOf(iface, targetFqn, visited)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1417,5 +1504,300 @@ public final class BuiltInGuards {
 		}
 		ITypeBinding superclass = typeBinding.getSuperclass();
 		return extendsType(superclass, targetFqn, visited);
+	}
+
+	/**
+	 * Checks if the matched node's enclosing method, field, or type declaration has a
+	 * {@code @SuppressWarnings} annotation containing the specified key.
+	 *
+	 * <p>Walks up the AST from the matched node checking each enclosing
+	 * {@link BodyDeclaration} for a {@code @SuppressWarnings} annotation
+	 * whose value contains the given key.</p>
+	 *
+	 * Args: [suppressWarningsKey]
+	 * @since 1.4.0
+	 */
+	private static boolean evaluateHasSuppressWarnings(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String key = stripQuotes(args[0].toString());
+		ASTNode node = ctx.getMatchedNode();
+		return SuppressWarningsChecker.isSuppressed(node, key);
+	}
+
+	/**
+	 * Checks if the enclosing class has a field with the given name.
+	 *
+	 * <p>Walks to the enclosing {@link TypeDeclaration} and iterates its
+	 * {@code bodyDeclarations()} looking for a {@link FieldDeclaration}
+	 * containing a {@link VariableDeclarationFragment} with the matching name.</p>
+	 *
+	 * Args: [fieldName]
+	 * @since 1.4.1
+	 */
+	@SuppressWarnings("unchecked")
+	private static boolean evaluateHasField(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String fieldName = stripQuotes(args[0].toString());
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);
+		if (typeDecl == null) {
+			return false;
+		}
+		for (Object bodyDecl : typeDecl.bodyDeclarations()) {
+			if (bodyDecl instanceof FieldDeclaration fieldDecl) {
+				for (Object frag : fieldDecl.fragments()) {
+					if (frag instanceof VariableDeclarationFragment vdf
+							&& fieldName.equals(vdf.getName().getIdentifier())) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the matched node is inside a loop construct.
+	 *
+	 * <p>Walks up from the matched node checking if any parent is a
+	 * {@code ForStatement}, {@code WhileStatement}, {@code DoStatement},
+	 * or {@code EnhancedForStatement}.</p>
+	 *
+	 * Args: none
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsInLoop(GuardContext ctx, Object... args) {
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		ASTNode current = node.getParent();
+		while (current != null) {
+			int nodeType = current.getNodeType();
+			if (nodeType == ASTNode.FOR_STATEMENT
+					|| nodeType == ASTNode.WHILE_STATEMENT
+					|| nodeType == ASTNode.DO_STATEMENT
+					|| nodeType == ASTNode.ENHANCED_FOR_STATEMENT) {
+				return true;
+			}
+			current = current.getParent();
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the enclosing method's parameter count matches the expected value.
+	 *
+	 * <p>Finds the enclosing {@link MethodDeclaration} and compares its
+	 * parameter count with the expected value.</p>
+	 *
+	 * Args: [expectedCount]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateParamCount(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		int expectedCount;
+		try {
+			expectedCount = Integer.parseInt(args[0].toString().trim());
+		} catch (NumberFormatException e) {
+			return false;
+		}
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);
+		if (methodDecl == null) {
+			return false;
+		}
+		return methodDecl.parameters().size() == expectedCount;
+	}
+
+	/**
+	 * Checks if the enclosing method's return type matches the given type name.
+	 *
+	 * <p>Expects a single argument, the type name to compare with the return
+	 * type of the enclosing {@link MethodDeclaration}.</p>
+	 *
+	 * Args: [typeName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateHasReturnType(GuardContext ctx, Object... args) {
+		if (args.length != 1) {
+			return false;
+		}
+		String typeName = stripQuotes(args[0].toString());
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);
+		if (methodDecl == null) {
+			return false;
+		}
+		org.eclipse.jdt.core.dom.Type returnType = methodDecl.getReturnType2();
+		if (returnType == null) {
+			return "void".equals(typeName); //$NON-NLS-1$
+		}
+		String returnTypeStr = returnType.toString().trim();
+		return typeName.equals(returnTypeStr);
+	}
+
+	/**
+	 * Checks if the bound placeholder is a {@link StringLiteral} node.
+	 *
+	 * Args: [placeholderName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsStringLiteral(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		ASTNode node = ctx.getBinding(args[0].toString());
+		return node instanceof StringLiteral;
+	}
+
+	/**
+	 * Finds the nearest enclosing MethodDeclaration for an AST node.
+	 */
+	private static MethodDeclaration findEnclosingMethodDeclaration(ASTNode node) {
+		ASTNode current = node;
+		while (current != null) {
+			if (current instanceof MethodDeclaration methodDecl) {
+				return methodDecl;
+			}
+			current = current.getParent();
+		}
+		return null;
+	}
+
+	/**
+	 * Checks if a binding has the public modifier.
+	 * Args: [placeholderName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsPublic(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			// No argument: check the matched node directly
+			ASTNode node = ctx.getMatchedNode();
+			if (node == null) {
+				return false;
+			}
+			int modifiers = resolveModifiers(node);
+			return Modifier.isPublic(modifiers);
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		int modifiers = resolveModifiers(node);
+		return Modifier.isPublic(modifiers);
+	}
+
+	/**
+	 * Checks if a binding has the private modifier.
+	 * Args: [placeholderName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsPrivate(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			ASTNode node = ctx.getMatchedNode();
+			if (node == null) {
+				return false;
+			}
+			int modifiers = resolveModifiers(node);
+			return Modifier.isPrivate(modifiers);
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		int modifiers = resolveModifiers(node);
+		return Modifier.isPrivate(modifiers);
+	}
+
+	/**
+	 * Checks if a binding has the protected modifier.
+	 * Args: [placeholderName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsProtected(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			ASTNode node = ctx.getMatchedNode();
+			if (node == null) {
+				return false;
+			}
+			int modifiers = resolveModifiers(node);
+			return Modifier.isProtected(modifiers);
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		int modifiers = resolveModifiers(node);
+		return Modifier.isProtected(modifiers);
+	}
+
+	/**
+	 * Checks if the enclosing method declares a throws clause matching the given type.
+	 * 
+	 * <p>If no argument is given, returns true if the method has any throws clause.
+	 * If a type name argument is given, checks if the method throws that specific type.</p>
+	 * 
+	 * Args: [] (any throws) or [exceptionTypeName]
+	 * @since 1.4.1
+	 */
+	@SuppressWarnings("unchecked")
+	private static boolean evaluateThrowsException(GuardContext ctx, Object... args) {
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);
+		if (methodDecl == null) {
+			return false;
+		}
+		List<Name> thrownExceptions = methodDecl.thrownExceptionTypes();
+		if (thrownExceptions.isEmpty()) {
+			return false;
+		}
+		if (args.length < 1) {
+			return true; // any throws clause present
+		}
+		String targetType = stripQuotes(args[0].toString());
+		for (Object exType : thrownExceptions) {
+			if (exType instanceof Name name) {
+				if (targetType.equals(name.getFullyQualifiedName())) {
+					return true;
+				}
+				// Also check simple name match
+				String simpleName = name.getFullyQualifiedName();
+				int lastDot = simpleName.lastIndexOf('.');
+				if (lastDot >= 0) {
+					simpleName = simpleName.substring(lastDot + 1);
+				}
+				if (targetType.equals(simpleName)) {
+					return true;
+				}
+			} else if (exType instanceof org.eclipse.jdt.core.dom.Type type) {
+				String typeName = type.toString();
+				if (targetType.equals(typeName)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

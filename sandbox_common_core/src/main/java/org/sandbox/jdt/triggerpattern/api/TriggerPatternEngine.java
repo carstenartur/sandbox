@@ -30,11 +30,14 @@ import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.Statement;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
@@ -130,7 +133,8 @@ public class TriggerPatternEngine {
 			return List.of();
 		}
 		
-		boolean needsBindings = pattern.getOverridesType() != null;
+		boolean needsBindings = pattern.getOverridesType() != null
+				|| (pattern.getConstraints() != null && pattern.getConstraints().length > 0);
 		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
 		astParser.setSource(icu);
 		astParser.setResolveBindings(needsBindings);
@@ -139,7 +143,15 @@ public class TriggerPatternEngine {
 		}
 		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);
 		
-		return findMatches(cu, pattern);
+		List<Match> matches = findMatches(cu, pattern);
+		
+		// Apply type constraints if specified
+		ConstraintVariableType[] constraints = pattern.getConstraints();
+		if (constraints != null && constraints.length > 0) {
+			matches = filterByTypeConstraints(matches, constraints);
+		}
+		
+		return matches;
 	}
 	
 	/**
@@ -227,7 +239,7 @@ public class TriggerPatternEngine {
 			return signatureMatches;
 		}
 
-		Pattern bodyPattern = new Pattern(bodyConstraintPattern, bodyConstraintKind);
+		Pattern bodyPattern = Pattern.of(bodyConstraintPattern, bodyConstraintKind);
 		ASTNode bodyPatternNode = parser.parse(bodyPattern);
 		if (bodyPatternNode == null) {
 			return signatureMatches;
@@ -285,6 +297,136 @@ public class TriggerPatternEngine {
 
 		Map<String, Object> bindings = new HashMap<>(matcher.getBindings());
 		createMatchWithAutoBindings(candidate, bindings, matches);
+	}
+
+	/**
+	 * Filters matches by type constraints specified in the pattern.
+	 * 
+	 * <p>Each constraint maps a placeholder variable to an expected type.
+	 * A match is retained only if all constraints are satisfied.
+	 * If binding resolution is not available for a placeholder, the
+	 * constraint is considered satisfied (graceful degradation).</p>
+	 * 
+	 * @param matches the matches to filter
+	 * @param constraints the type constraints to check
+	 * @return a filtered list of matches that satisfy all constraints
+	 * @since 1.4.0
+	 */
+	private List<Match> filterByTypeConstraints(List<Match> matches, ConstraintVariableType[] constraints) {
+		List<Match> result = new ArrayList<>();
+		for (Match match : matches) {
+			if (checkTypeConstraints(match, constraints)) {
+				result.add(match);
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Checks whether a match satisfies all type constraints.
+	 * 
+	 * <p>For each constraint, looks up the bound AST node for the placeholder
+	 * variable and resolves its {@link ITypeBinding}. The constraint is satisfied
+	 * if the resolved type matches the expected type (by simple name or qualified
+	 * name), or if binding resolution is not available (graceful degradation).</p>
+	 * 
+	 * @param match the match to check
+	 * @param constraints the type constraints
+	 * @return {@code true} if all constraints are satisfied
+	 * @since 1.4.0
+	 */
+	private boolean checkTypeConstraints(Match match, ConstraintVariableType[] constraints) {
+		for (ConstraintVariableType constraint : constraints) {
+			String variable = constraint.variable();
+			String expectedType = constraint.type();
+			
+			ASTNode node = match.getBinding(variable);
+			if (node == null) {
+				// Placeholder not found in bindings — constraint not applicable
+				continue;
+			}
+			
+			ITypeBinding typeBinding = resolveTypeBinding(node);
+			if (typeBinding == null) {
+				// Graceful degradation: no binding available, skip constraint
+				continue;
+			}
+			
+			if (!matchesTypeOrSupertype(typeBinding, expectedType)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Resolves the type binding for an AST node.
+	 * 
+	 * @param node the AST node
+	 * @return the type binding, or {@code null} if not resolvable
+	 */
+	private ITypeBinding resolveTypeBinding(ASTNode node) {
+		if (node instanceof Name name) {
+			IBinding binding = name.resolveBinding();
+			if (binding instanceof IVariableBinding varBinding) {
+				return varBinding.getType();
+			}
+			if (binding instanceof ITypeBinding typeBinding) {
+				return typeBinding;
+			}
+		}
+		if (node instanceof MethodInvocation methodInv) {
+			IMethodBinding methodBinding = methodInv.resolveMethodBinding();
+			if (methodBinding != null) {
+				return methodBinding.getReturnType();
+			}
+		}
+		if (node instanceof Expression expr) {
+			return expr.resolveTypeBinding();
+		}
+		return null;
+	}
+
+	/**
+	 * Checks if a type binding matches an expected type name (including supertypes).
+	 * 
+	 * @param typeBinding the resolved type binding
+	 * @param expectedType the expected type name (simple or qualified)
+	 * @return {@code true} if the type matches
+	 */
+	private boolean matchesTypeOrSupertype(ITypeBinding typeBinding, String expectedType) {
+		return matchesTypeOrSupertype(typeBinding, expectedType, new java.util.HashSet<>());
+	}
+
+	/**
+	 * Recursively checks if a type binding matches an expected type name,
+	 * using a visited set to prevent infinite recursion.
+	 */
+	private boolean matchesTypeOrSupertype(ITypeBinding typeBinding, String expectedType,
+			java.util.Set<String> visited) {
+		if (typeBinding == null || typeBinding.isRecovered()) {
+			return false;
+		}
+		String qualifiedName = typeBinding.getQualifiedName();
+		if (!visited.add(qualifiedName)) {
+			return false; // Already visited — break potential cycle
+		}
+		if (typeBinding.getName().equals(expectedType) 
+				|| qualifiedName.equals(expectedType)) {
+			return true;
+		}
+		// Check superclass chain
+		ITypeBinding superclass = typeBinding.getSuperclass();
+		if (matchesTypeOrSupertype(superclass, expectedType, visited)) {
+			return true;
+		}
+		// Check interfaces
+		for (ITypeBinding iface : typeBinding.getInterfaces()) {
+			if (matchesTypeOrSupertype(iface, expectedType, visited)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

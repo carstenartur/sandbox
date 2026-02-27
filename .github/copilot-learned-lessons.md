@@ -664,4 +664,81 @@ Also enhanced `isThrowingRunnableType()` to check:
 **Learned**: 2026-02-24
 
 ---
+
+## 12. DslExplanationGuardSyncTest — New Guards Require Doc Update
+
+**Issue**: When adding new guards to `BuiltInGuards.registerAll()`, the `DslExplanationGuardSyncTest` will fail unless the `dsl-explanation.md` file (in both `sandbox_common_core/src/main/resources/` and `sandbox_mining_core/src/main/resources/`) is updated to include the new guard in the guard table.
+
+**Fix**: After adding any new guard function to `BuiltInGuards`, always update the guard reference table in both copies of `dsl-explanation.md`.
+
+**Learned**: 2026-02-27
+
+---
+
+## 13. TriggerPatternEngine Type Hierarchy — Use Visited Set
+
+**Issue**: Recursive type hierarchy walking methods (e.g., `matchesTypeOrSupertype`) must use a `Set<String>` visited parameter to prevent infinite recursion in case of circular type references. This pattern is already used in `BuiltInGuards.isSubtypeOf()` and `BuiltInGuards.extendsType()`.
+
+**Rule**: Any method that recursively walks `ITypeBinding.getSuperclass()` or `ITypeBinding.getInterfaces()` MUST include a `Set<String> visited` parameter with `visited.add(qualifiedName)` check.
+
+**Learned**: 2026-02-27
+
+---
+
+## 14. Adding New BuiltInGuards — Complete Checklist
+
+**Issue**: When adding new guard functions to `BuiltInGuards.registerAll()`, there are THREE things that must be updated:
+
+1. **Register the guard** in `BuiltInGuards.registerAll()` method
+2. **Update the `testAllBuiltInGuardsRegistered` test** in `BuiltInGuardsTest.java`
+3. **Add the guard to `dsl-explanation.md`** in BOTH:
+   - `sandbox_common_core/src/main/resources/dsl-explanation.md`
+   - `sandbox_mining_core/src/main/resources/dsl-explanation.md`
+
+**Why**: The `DslExplanationGuardSyncTest` verifies that all guards in `registerAll()` are documented. The `testAllBuiltInGuardsRegistered` test verifies key guards are present.
+
+**Learned**: 2026-02-27
+
+---
+
+## 15. HintFileParser Lazy Initialization Pattern
+
+**Pattern**: When adding cached data that requires reflection (like the AST node type map for `<!treeKind:>` parsing), use the `volatile` + double-checked locking pattern already established in `HintFileParser`:
+
+```java
+private static volatile Map<String, Integer> cache;
+private static Map<String, Integer> getCache() {
+    if (cache == null) {
+        synchronized (HintFileParser.class) {
+            if (cache == null) {
+                cache = buildCache();
+            }
+        }
+    }
+    return cache;
+**Learned**: 2026-02-27
+
+---
+
+## 16. Per-Rule Metadata in DSL — @id: and @severity: Annotations
+
+**Pattern**: To add per-rule metadata within a `.sandbox-hint` file, use `@id:` and `@severity:` annotation lines **before** the source pattern line in a rule block. These lines are recognized by `HintFileParser.buildRule()` before the description/pattern parsing begins.
+
+```
+@id: encoding.fileReader
+@severity: error
+new FileReader($path)
+=> new FileReader($path, StandardCharsets.UTF_8)
+;;
+```
+
+**Key Facts**:
+- `@id:` and `@severity:` lines are NOT comments (comments start with `//` and are stripped)
+- They must appear at the start of a rule block, before the description prefix and source pattern
+- They are consumed by `buildRule()` before pattern kind inference
+- The `TransformationRule` 7-arg constructor accepts `ruleId` as first parameter
+- Existing 4/5/6-arg constructors pass `null` for `ruleId` (backward compatible)
+
+**Learned**: 2026-02-27
+
 ---

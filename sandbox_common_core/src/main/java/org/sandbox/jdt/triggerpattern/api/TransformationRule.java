@@ -47,37 +47,41 @@ import java.util.Optional;
  */
 public final class TransformationRule {
 	
+	private final String ruleId;
 	private final String description;
 	private final Pattern sourcePattern;
 	private final GuardExpression sourceGuard;
 	private final List<RewriteAlternative> alternatives;
 	private final ImportDirective importDirective;
+	private final Severity severity;
+	
+	/**
+	 * Creates a rule with only a source pattern and alternatives, all other fields null.
+	 * Pass an empty list for hint-only rules that flag matches without rewriting.
+	 * 
+	 * @param sourcePattern the pattern to match
+	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
+	 * @return a new transformation rule
+	 */
+	public static TransformationRule of(Pattern sourcePattern, List<RewriteAlternative> alternatives) {
+		return new TransformationRule(null, null, sourcePattern, null, alternatives, null, null);
+	}
 	
 	/**
 	 * Creates a new transformation rule.
 	 * 
-	 * @param description optional description (may be {@code null})
-	 * @param sourcePattern the pattern to match
-	 * @param sourceGuard optional guard on the source pattern (may be {@code null})
-	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
-	 */
-	public TransformationRule(String description, Pattern sourcePattern,
-			GuardExpression sourceGuard, List<RewriteAlternative> alternatives) {
-		this(description, sourcePattern, sourceGuard, alternatives, null);
-	}
-	
-	/**
-	 * Creates a new transformation rule with import directives.
-	 * 
+	 * @param ruleId optional unique rule ID for usage tracking (may be {@code null})
 	 * @param description optional description (may be {@code null})
 	 * @param sourcePattern the pattern to match
 	 * @param sourceGuard optional guard on the source pattern (may be {@code null})
 	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
 	 * @param importDirective optional import directives (may be {@code null})
+	 * @param severity optional per-rule severity level (may be {@code null} to inherit from hint file)
 	 */
-	public TransformationRule(String description, Pattern sourcePattern,
+	public TransformationRule(String ruleId, String description, Pattern sourcePattern,
 			GuardExpression sourceGuard, List<RewriteAlternative> alternatives,
-			ImportDirective importDirective) {
+			ImportDirective importDirective, Severity severity) {
+		this.ruleId = ruleId;
 		this.description = description;
 		this.sourcePattern = Objects.requireNonNull(sourcePattern, "Source pattern cannot be null"); //$NON-NLS-1$
 		this.sourceGuard = sourceGuard;
@@ -85,6 +89,20 @@ public final class TransformationRule {
 				? Collections.unmodifiableList(alternatives)
 				: Collections.emptyList();
 		this.importDirective = importDirective;
+		this.severity = severity;
+	}
+	
+	/**
+	 * Returns the unique rule ID for usage tracking.
+	 * 
+	 * <p>If not set, the rule has no explicit ID. Callers should fall back to
+	 * a generated ID (e.g., hint file ID + rule index).</p>
+	 * 
+	 * @return the rule ID, or {@code null} if not set
+	 * @since 1.4.1
+	 */
+	public String getRuleId() {
+		return ruleId;
 	}
 	
 	/**
@@ -150,6 +168,19 @@ public final class TransformationRule {
 	 */
 	public boolean hasImportDirective() {
 		return importDirective != null && !importDirective.isEmpty();
+	}
+	
+	/**
+	 * Returns the per-rule severity level.
+	 * 
+	 * <p>If not set, the severity should be inherited from the containing
+	 * {@link HintFile}.</p>
+	 * 
+	 * @return the severity, or {@code null} if not set (inherit from hint file)
+	 * @since 1.4.0
+	 */
+	public Severity getSeverity() {
+		return severity;
 	}
 	
 	/**

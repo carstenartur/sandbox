@@ -53,7 +53,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("\"\" + $x", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -81,7 +81,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + \"\"", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + \"\"", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -109,7 +109,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$str.length() == 0", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$str.length() == 0", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -137,7 +137,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$str.equals(\"\")", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$str.equals(\"\")", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -167,7 +167,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x == true", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x == true", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -197,7 +197,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x == false", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x == false", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -225,7 +225,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$cond ? true : false", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$cond ? true : false", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -253,7 +253,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$cond ? false : true", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$cond ? false : true", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -283,7 +283,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("\"\" + $x", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -307,7 +307,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("\"\" + $x", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -328,7 +328,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("\"\" + $x", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -349,7 +349,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("\"\" + $x", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -373,12 +373,12 @@ public class StringSimplificationTest {
 		CompilationUnit cu = parse(code);
 
 		// Test prefix pattern
-		Pattern prefixPattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION);
+		Pattern prefixPattern = Pattern.of("\"\" + $x", PatternKind.EXPRESSION);
 		List<Match> prefixMatches = engine.findMatches(cu, prefixPattern);
 		assertEquals(1, prefixMatches.size(), "Should find one prefix match");
 
 		// Test suffix pattern
-		Pattern suffixPattern = new Pattern("$x + \"\"", PatternKind.EXPRESSION);
+		Pattern suffixPattern = Pattern.of("$x + \"\"", PatternKind.EXPRESSION);
 		List<Match> suffixMatches = engine.findMatches(cu, suffixPattern);
 		assertEquals(1, suffixMatches.size(), "Should find one suffix match");
 	}
@@ -429,14 +429,14 @@ public class StringSimplificationTest {
 		// Count all pattern matches
 		int totalMatches = 0;
 		
-		totalMatches += engine.findMatches(cu, new Pattern("\"\" + $x", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$x + \"\"", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$str.length() == 0", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$str.equals(\"\")", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$x == true", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$x == false", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$cond ? true : false", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$cond ? false : true", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("\"\" + $x", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$x + \"\"", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$str.length() == 0", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$str.equals(\"\")", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$x == true", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$x == false", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$cond ? true : false", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$cond ? false : true", PatternKind.EXPRESSION)).size();
 
 		assertEquals(8, totalMatches, "Should find all 8 pattern instances in realistic code");
 	}
@@ -472,9 +472,9 @@ public class StringSimplificationTest {
 		CompilationUnit cu = parse(code);
 
 		// Should match complex expressions
-		assertEquals(1, engine.findMatches(cu, new Pattern("$x == true", PatternKind.EXPRESSION)).size());
-		assertEquals(1, engine.findMatches(cu, new Pattern("$cond ? true : false", PatternKind.EXPRESSION)).size());
-		assertEquals(1, engine.findMatches(cu, new Pattern("$str.length() == 0", PatternKind.EXPRESSION)).size());
+		assertEquals(1, engine.findMatches(cu, Pattern.of("$x == true", PatternKind.EXPRESSION)).size());
+		assertEquals(1, engine.findMatches(cu, Pattern.of("$cond ? true : false", PatternKind.EXPRESSION)).size());
+		assertEquals(1, engine.findMatches(cu, Pattern.of("$str.length() == 0", PatternKind.EXPRESSION)).size());
 	}
 
 	/**
@@ -499,12 +499,12 @@ public class StringSimplificationTest {
 		CompilationUnit cu = parse(code);
 
 		// Test size() == 0 pattern
-		Pattern sizeEqualsZeroPattern = new Pattern("$list.size() == 0", PatternKind.EXPRESSION);
+		Pattern sizeEqualsZeroPattern = Pattern.of("$list.size() == 0", PatternKind.EXPRESSION);
 		List<Match> sizeEqualsZeroMatches = engine.findMatches(cu, sizeEqualsZeroPattern);
 		assertEquals(1, sizeEqualsZeroMatches.size(), "Should find size() == 0 pattern");
 
 		// Test size() > 0 pattern
-		Pattern sizeGreaterThanZeroPattern = new Pattern("$list.size() > 0", PatternKind.EXPRESSION);
+		Pattern sizeGreaterThanZeroPattern = Pattern.of("$list.size() > 0", PatternKind.EXPRESSION);
 		List<Match> sizeGreaterThanZeroMatches = engine.findMatches(cu, sizeGreaterThanZeroPattern);
 		assertEquals(1, sizeGreaterThanZeroMatches.size(), "Should find size() > 0 pattern");
 	}
@@ -523,7 +523,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -550,7 +550,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("String.format(\"%s\", $x)", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("String.format(\"%s\", $x)", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -577,7 +577,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x.toString().equals($y)", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x.toString().equals($y)", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -606,7 +606,7 @@ public class StringSimplificationTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x != null ? $x : $default", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x != null ? $x : $default", PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -660,12 +660,12 @@ public class StringSimplificationTest {
 		// Count all complex pattern matches
 		int totalMatches = 0;
 		
-		totalMatches += engine.findMatches(cu, new Pattern("$list.size() == 0", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$list.size() > 0", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("String.format(\"%s\", $x)", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$x.toString().equals($y)", PatternKind.EXPRESSION)).size();
-		totalMatches += engine.findMatches(cu, new Pattern("$x != null ? $x : $default", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$list.size() == 0", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$list.size() > 0", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("String.format(\"%s\", $x)", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$x.toString().equals($y)", PatternKind.EXPRESSION)).size();
+		totalMatches += engine.findMatches(cu, Pattern.of("$x != null ? $x : $default", PatternKind.EXPRESSION)).size();
 
 		assertEquals(6, totalMatches, "Should find all 6 complex pattern instances");
 	}
@@ -693,11 +693,11 @@ public class StringSimplificationTest {
 		CompilationUnit cu = parse(code);
 
 		// These should NOT match our patterns
-		assertEquals(0, engine.findMatches(cu, new Pattern("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION)).size(),
+		assertEquals(0, engine.findMatches(cu, Pattern.of("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION)).size(),
 				"Should not match StringBuilder with multiple appends");
-		assertEquals(0, engine.findMatches(cu, new Pattern("String.format(\"%s\", $x)", PatternKind.EXPRESSION)).size(),
+		assertEquals(0, engine.findMatches(cu, Pattern.of("String.format(\"%s\", $x)", PatternKind.EXPRESSION)).size(),
 				"Should not match String.format with different format string");
-		assertEquals(0, engine.findMatches(cu, new Pattern("$x != null ? $x : $default", PatternKind.EXPRESSION)).size(),
+		assertEquals(0, engine.findMatches(cu, Pattern.of("$x != null ? $x : $default", PatternKind.EXPRESSION)).size(),
 				"Should not match when ternary branches are different");
 	}
 

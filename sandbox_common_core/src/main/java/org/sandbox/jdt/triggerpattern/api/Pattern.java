@@ -37,73 +37,40 @@ public final class Pattern {
 	private final String displayName;
 	private final String qualifiedType;
 	private final String overridesType;
+	private final ConstraintVariableType[] constraints;
 	
 	/**
-	 * Creates a new pattern with the specified value and kind.
-	 * 
-	 * @param value the pattern string with placeholders (e.g., {@code "$x + 1"})
-	 * @param kind the kind of pattern (EXPRESSION or STATEMENT)
-	 */
-	public Pattern(String value, PatternKind kind) {
-		this(value, kind, null, null, null, null);
-	}
-	
-	/**
-	 * Creates a new pattern with the specified value, kind, id, and display name.
+	 * Creates a pattern with only value and kind, all other fields null.
 	 * 
 	 * @param value the pattern string with placeholders
-	 * @param kind the kind of pattern (EXPRESSION or STATEMENT)
-	 * @param id optional unique identifier for the pattern
-	 * @param displayName optional human-readable name for the pattern
+	 * @param kind the kind of pattern
+	 * @return a new pattern
 	 */
-	public Pattern(String value, PatternKind kind, String id, String displayName) {
-		this(value, kind, id, displayName, null, null);
+	public static Pattern of(String value, PatternKind kind) {
+		return new Pattern(value, kind, null, null, null, null, null);
 	}
 	
 	/**
-	 * Creates a new pattern with the specified value, kind, id, display name, and qualified type.
+	 * Creates a new pattern with the specified value, kind, id, display name, qualified type,
+	 * overrides type, and type constraints.
 	 * 
 	 * @param value the pattern string with placeholders
 	 * @param kind the kind of pattern
 	 * @param id optional unique identifier for the pattern
 	 * @param displayName optional human-readable name for the pattern
-	 * @param qualifiedType optional qualified type name (e.g., "org.junit.Before" for annotation patterns)
-	 * @since 1.2.3
+	 * @param qualifiedType optional qualified type name
+	 * @param overridesType optional fully qualified type name for override constraint
+	 * @param constraints optional type constraints for placeholder variables
 	 */
-	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType) {
-		this(value, kind, id, displayName, qualifiedType, null);
-	}
-	
-	/**
-	 * Creates a new pattern with the specified value, kind, id, display name, qualified type, and overrides type.
-	 * 
-	 * @param value the pattern string with placeholders
-	 * @param kind the kind of pattern
-	 * @param id optional unique identifier for the pattern
-	 * @param displayName optional human-readable name for the pattern
-	 * @param qualifiedType optional qualified type name (e.g., "org.junit.Before" for annotation patterns)
-	 * @param overridesType optional fully qualified type name that the method must override (e.g., "org.eclipse.swt.widgets.Widget" for METHOD_DECLARATION patterns)
-	 * @since 1.2.6
-	 */
-	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType, String overridesType) {
+	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType,
+			String overridesType, ConstraintVariableType[] constraints) {
 		this.value = Objects.requireNonNull(value, "Pattern value cannot be null"); //$NON-NLS-1$
 		this.kind = Objects.requireNonNull(kind, "Pattern kind cannot be null"); //$NON-NLS-1$
 		this.id = id;
 		this.displayName = displayName;
 		this.qualifiedType = qualifiedType;
 		this.overridesType = overridesType;
-	}
-	
-	/**
-	 * Creates a new pattern with the specified value, kind, and qualified type.
-	 * 
-	 * @param value the pattern string with placeholders
-	 * @param kind the kind of pattern
-	 * @param qualifiedType qualified type name (e.g., "org.junit.Before")
-	 * @since 1.2.3
-	 */
-	public Pattern(String value, PatternKind kind, String qualifiedType) {
-		this(value, kind, null, null, qualifiedType, null);
+		this.constraints = constraints == null ? null : constraints.clone();
 	}
 	
 	/**
@@ -163,6 +130,23 @@ public final class Pattern {
 	 */
 	public String getOverridesType() {
 		return overridesType;
+	}
+	
+	/**
+	 * Returns the type constraints for placeholder variables.
+	 * 
+	 * <p>Each constraint maps a placeholder variable to an expected Java type.
+	 * When binding resolution is available, matches are filtered to only include
+	 * those where bound nodes satisfy the type constraints.</p>
+	 * 
+	 * @return the type constraints, or {@code null} if not set
+	 * @since 1.4.0
+	 */
+	public ConstraintVariableType[] getConstraints() {
+		if (constraints == null) {
+			return null;
+		}
+		return constraints.clone();
 	}
 	
 	@Override

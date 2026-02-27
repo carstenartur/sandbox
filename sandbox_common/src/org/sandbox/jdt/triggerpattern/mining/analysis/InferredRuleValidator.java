@@ -72,7 +72,7 @@ public class InferredRuleValidator {
 
 		// Check that source pattern is parseable
 		try {
-			Pattern sourcePattern = new Pattern(rule.sourcePattern(), rule.kind());
+			Pattern sourcePattern = Pattern.of(rule.sourcePattern(), rule.kind());
 			parser.parse(sourcePattern);
 		} catch (Exception e) {
 			return new ValidationResult(ValidationStatus.SOURCE_UNPARSEABLE,
@@ -81,7 +81,7 @@ public class InferredRuleValidator {
 
 		// Check that replacement pattern is parseable
 		try {
-			Pattern replacementPattern = new Pattern(rule.replacementPattern(), rule.kind());
+			Pattern replacementPattern = Pattern.of(rule.replacementPattern(), rule.kind());
 			parser.parse(replacementPattern);
 		} catch (Exception e) {
 			return new ValidationResult(ValidationStatus.REPLACEMENT_UNPARSEABLE,
