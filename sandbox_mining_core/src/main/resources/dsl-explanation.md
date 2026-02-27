@@ -229,6 +229,11 @@ You can use these functions in `:: guard` expressions:
 | `enclosingClassExtends("fqn")` | True if the enclosing class extends the given type (directly or transitively). Essential for migration rules targeting specific base classes (e.g., `"junit.framework.TestCase"`). Falls back to textual `extends` clause comparison when bindings are unavailable. |
 | `subtypeOf($var, "fqn")` | True if `$var`'s type is a subtype of the given fully qualified type name. Walks the type hierarchy via `ITypeBinding.getSuperclass()` and `getInterfaces()`. Gracefully degrades to true when bindings are not available. |
 | `hasSuppressWarnings("key")` | True if the matched node's enclosing method, field, or type declaration has a `@SuppressWarnings` annotation containing the specified key. Walks up the AST from the matched node. |
+| `hasField("fieldName")` | True if the enclosing class has a field with the given name. Walks to the enclosing `TypeDeclaration` and checks `bodyDeclarations()` for a matching `FieldDeclaration`. |
+| `isInLoop()` | True if the matched node is inside a loop (`for`, `while`, `do-while`, or enhanced `for`). Walks up the AST from the matched node. |
+| `paramCount(n)` | True if the enclosing method has exactly `n` parameters. |
+| `hasReturnType("type")` | True if the enclosing method's return type matches the given type name. Also supports two-arg form: `hasReturnType($var, "type")`. |
+| `isStringLiteral($var)` | True if the bound placeholder is a `StringLiteral` AST node. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Common Mistakes

@@ -119,6 +119,11 @@ public class BuiltInGuardsTest {
 		assertTrue(guards.containsKey("isNonNull")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("methodNameMatches")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("hasSuppressWarnings")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("hasField")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isInLoop")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("paramCount")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("hasReturnType")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isStringLiteral")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -472,6 +477,11 @@ public class BuiltInGuardsTest {
 		assertTrue(guards.containsKey("inPackage")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("hasModifier")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("enclosingClassExtends")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("hasField")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isInLoop")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("paramCount")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("hasReturnType")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isStringLiteral")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -941,6 +951,324 @@ public class BuiltInGuardsTest {
 	}
 
 	// --- Helper methods ---
+
+	// --- hasField guard tests ---
+
+	@Test
+	public void testHasFieldPositive() {
+		GuardFunction guard = guards.get("hasField"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				private int count;
+				void m() {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "count"), //$NON-NLS-1$
+				"Should detect field 'count' in enclosing class"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testHasFieldNegative() {
+		GuardFunction guard = guards.get("hasField"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				private int count;
+				void m() {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(guard.evaluate(ctx, "nonexistent"), //$NON-NLS-1$
+				"Should not detect non-existent field"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testHasFieldNoArgs() {
+		GuardFunction guard = guards.get("hasField"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(guard.evaluate(ctx), "Should return false with no args"); //$NON-NLS-1$
+	}
+
+	// --- isInLoop guard tests ---
+
+	@Test
+	public void testIsInLoopPositiveForLoop() {
+		GuardFunction guard = guards.get("isInLoop"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				void m() {
+					for (int i = 0; i < 10; i++) {
+						int x = 1;
+					}
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		// Get the for loop's body statement
+		org.eclipse.jdt.core.dom.ForStatement forStmt =
+				(org.eclipse.jdt.core.dom.ForStatement) method.getBody().statements().get(0);
+		org.eclipse.jdt.core.dom.Block forBody = (org.eclipse.jdt.core.dom.Block) forStmt.getBody();
+		ASTNode stmt = (ASTNode) forBody.statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx), "Should detect code inside for loop"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsInLoopPositiveWhileLoop() {
+		GuardFunction guard = guards.get("isInLoop"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				void m() {
+					while (true) {
+						int x = 1;
+					}
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		org.eclipse.jdt.core.dom.WhileStatement whileStmt =
+				(org.eclipse.jdt.core.dom.WhileStatement) method.getBody().statements().get(0);
+		org.eclipse.jdt.core.dom.Block whileBody = (org.eclipse.jdt.core.dom.Block) whileStmt.getBody();
+		ASTNode stmt = (ASTNode) whileBody.statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx), "Should detect code inside while loop"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsInLoopNegative() {
+		GuardFunction guard = guards.get("isInLoop"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				void m() {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(guard.evaluate(ctx), "Should not detect loop when not in one"); //$NON-NLS-1$
+	}
+
+	// --- paramCount guard tests ---
+
+	@Test
+	public void testParamCountMatches() {
+		GuardFunction guard = guards.get("paramCount"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				void m(int a, String b) {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "2"), "Should match 2 parameters"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(guard.evaluate(ctx, "0"), "Should not match 0 parameters"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(guard.evaluate(ctx, "3"), "Should not match 3 parameters"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testParamCountZero() {
+		GuardFunction guard = guards.get("paramCount"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				void m() {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "0"), "Should match 0 parameters"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testParamCountNoArgs() {
+		GuardFunction guard = guards.get("paramCount"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(guard.evaluate(ctx), "Should return false with no args"); //$NON-NLS-1$
+	}
+
+	// --- hasReturnType guard tests ---
+
+	@Test
+	public void testHasReturnTypeVoid() {
+		GuardFunction guard = guards.get("hasReturnType"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				void m() {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "void"), "Should match void return type"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(guard.evaluate(ctx, "int"), "Should not match int return type"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testHasReturnTypeString() {
+		GuardFunction guard = guards.get("hasReturnType"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				String getName() {
+					return "test";
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "String"), "Should match String return type"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testHasReturnTypeTwoArgs() {
+		GuardFunction guard = guards.get("hasReturnType"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				int compute() {
+					return 0;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "$name", "int"), "Should match int return type with 2-arg form"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testHasReturnTypeNoArgs() {
+		GuardFunction guard = guards.get("hasReturnType"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(guard.evaluate(ctx), "Should return false with no args"); //$NON-NLS-1$
+	}
+
+	// --- isStringLiteral guard tests ---
+
+	@Test
+	public void testIsStringLiteralPositive() {
+		GuardFunction guard = guards.get("isStringLiteral"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"hello\"; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		ASTNode stringLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.StringLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", stringLit); //$NON-NLS-1$
+		Match match = new Match(stringLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "$x"), "StringLiteral should match isStringLiteral"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsStringLiteralNegative() {
+		GuardFunction guard = guards.get("isStringLiteral"); //$NON-NLS-1$
+		String code = "class Test { void m() { int x = 42; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode varDeclStmt = (ASTNode) method.getBody().statements().get(0);
+
+		ASTNode numberLit = findNodeOfType(varDeclStmt, org.eclipse.jdt.core.dom.NumberLiteral.class);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", numberLit); //$NON-NLS-1$
+		Match match = new Match(numberLit, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(guard.evaluate(ctx, "$x"), "NumberLiteral should not match isStringLiteral"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsStringLiteralNoArgs() {
+		GuardFunction guard = guards.get("isStringLiteral"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(guard.evaluate(ctx), "Should return false with no args"); //$NON-NLS-1$
+	}
+
+	// --- Original helper methods ---
 
 	private ASTNode createDummyNode() {
 		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());

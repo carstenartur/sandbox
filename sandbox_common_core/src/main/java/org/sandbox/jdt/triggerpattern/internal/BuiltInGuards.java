@@ -152,6 +152,21 @@ public final class BuiltInGuards {
 
 		// SuppressWarnings guard — checks if enclosing element has @SuppressWarnings with given key
 		guards.put("hasSuppressWarnings", BuiltInGuards::evaluateHasSuppressWarnings); //$NON-NLS-1$
+
+		// Field guard — checks if enclosing class has a field with a given name
+		guards.put("hasField", BuiltInGuards::evaluateHasField); //$NON-NLS-1$
+
+		// Loop guard — checks if the matched node is inside a loop
+		guards.put("isInLoop", BuiltInGuards::evaluateIsInLoop); //$NON-NLS-1$
+
+		// Parameter count guard — checks if enclosing method has expected param count
+		guards.put("paramCount", BuiltInGuards::evaluateParamCount); //$NON-NLS-1$
+
+		// Return type guard — checks if enclosing method's return type matches
+		guards.put("hasReturnType", BuiltInGuards::evaluateHasReturnType); //$NON-NLS-1$
+
+		// String literal guard — checks if a placeholder is a StringLiteral node
+		guards.put("isStringLiteral", BuiltInGuards::evaluateIsStringLiteral); //$NON-NLS-1$
 	}
 
 	/**
@@ -1501,5 +1516,165 @@ public final class BuiltInGuards {
 		String key = stripQuotes(args[0].toString());
 		ASTNode node = ctx.getMatchedNode();
 		return SuppressWarningsChecker.isSuppressed(node, key);
+	}
+
+	/**
+	 * Checks if the enclosing class has a field with the given name.
+	 *
+	 * <p>Walks to the enclosing {@link TypeDeclaration} and iterates its
+	 * {@code bodyDeclarations()} looking for a {@link FieldDeclaration}
+	 * containing a {@link VariableDeclarationFragment} with the matching name.</p>
+	 *
+	 * Args: [fieldName]
+	 * @since 1.4.1
+	 */
+	@SuppressWarnings("unchecked")
+	private static boolean evaluateHasField(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String fieldName = stripQuotes(args[0].toString());
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);
+		if (typeDecl == null) {
+			return false;
+		}
+		for (Object bodyDecl : typeDecl.bodyDeclarations()) {
+			if (bodyDecl instanceof FieldDeclaration fieldDecl) {
+				for (Object frag : fieldDecl.fragments()) {
+					if (frag instanceof VariableDeclarationFragment vdf
+							&& fieldName.equals(vdf.getName().getIdentifier())) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the matched node is inside a loop construct.
+	 *
+	 * <p>Walks up from the matched node checking if any parent is a
+	 * {@code ForStatement}, {@code WhileStatement}, {@code DoStatement},
+	 * or {@code EnhancedForStatement}.</p>
+	 *
+	 * Args: none
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsInLoop(GuardContext ctx, Object... args) {
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		ASTNode current = node.getParent();
+		while (current != null) {
+			int nodeType = current.getNodeType();
+			if (nodeType == ASTNode.FOR_STATEMENT
+					|| nodeType == ASTNode.WHILE_STATEMENT
+					|| nodeType == ASTNode.DO_STATEMENT
+					|| nodeType == ASTNode.ENHANCED_FOR_STATEMENT) {
+				return true;
+			}
+			current = current.getParent();
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the enclosing method's parameter count matches the expected value.
+	 *
+	 * <p>Finds the enclosing {@link MethodDeclaration} and compares its
+	 * parameter count with the expected value.</p>
+	 *
+	 * Args: [expectedCount]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateParamCount(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		int expectedCount;
+		try {
+			expectedCount = Integer.parseInt(args[0].toString().trim());
+		} catch (NumberFormatException e) {
+			return false;
+		}
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);
+		if (methodDecl == null) {
+			return false;
+		}
+		return methodDecl.parameters().size() == expectedCount;
+	}
+
+	/**
+	 * Checks if the enclosing method's return type matches the given type name.
+	 *
+	 * <p>With one argument, checks the enclosing method's return type.
+	 * With two arguments, the first is a placeholder name (ignored for now)
+	 * and the second is the type name to match.</p>
+	 *
+	 * Args: [typeName] or [placeholderName, typeName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateHasReturnType(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String typeName;
+		if (args.length >= 2) {
+			typeName = stripQuotes(args[1].toString());
+		} else {
+			typeName = stripQuotes(args[0].toString());
+		}
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);
+		if (methodDecl == null) {
+			return false;
+		}
+		org.eclipse.jdt.core.dom.Type returnType = methodDecl.getReturnType2();
+		if (returnType == null) {
+			return "void".equals(typeName); //$NON-NLS-1$
+		}
+		String returnTypeStr = returnType.toString().trim();
+		return typeName.equals(returnTypeStr);
+	}
+
+	/**
+	 * Checks if the bound placeholder is a {@link StringLiteral} node.
+	 *
+	 * Args: [placeholderName]
+	 * @since 1.4.1
+	 */
+	private static boolean evaluateIsStringLiteral(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		ASTNode node = ctx.getBinding(args[0].toString());
+		return node instanceof StringLiteral;
+	}
+
+	/**
+	 * Finds the nearest enclosing MethodDeclaration for an AST node.
+	 */
+	private static MethodDeclaration findEnclosingMethodDeclaration(ASTNode node) {
+		ASTNode current = node;
+		while (current != null) {
+			if (current instanceof MethodDeclaration methodDecl) {
+				return methodDecl;
+			}
+			current = current.getParent();
+		}
+		return null;
 	}
 }

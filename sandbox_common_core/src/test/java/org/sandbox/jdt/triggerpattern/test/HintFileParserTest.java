@@ -1222,4 +1222,77 @@ public class HintFileParserTest {
 		assertNotNull(hintFile);
 		assertEquals(Severity.INFO, hintFile.getSeverity());
 	}
+
+	// --- treeKind directive tests ---
+
+	@Test
+	public void testParseTreeKindDirective() throws HintParseException {
+		String content = """
+			<!treeKind: METHOD_DECLARATION, IF_STATEMENT>
+			void $name($params$)
+			=> void $name($params$)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertNotNull(hintFile);
+		List<Integer> treeKinds = hintFile.getTreeKindNodeTypes();
+		assertEquals(2, treeKinds.size());
+		assertEquals(org.eclipse.jdt.core.dom.ASTNode.METHOD_DECLARATION, treeKinds.get(0).intValue());
+		assertEquals(org.eclipse.jdt.core.dom.ASTNode.IF_STATEMENT, treeKinds.get(1).intValue());
+	}
+
+	@Test
+	public void testParseTreeKindSingleValue() throws HintParseException {
+		String content = """
+			<!treeKind: FOR_STATEMENT>
+			for ($init; $cond; $update) { $body$ }
+			=> $body$
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertNotNull(hintFile);
+		List<Integer> treeKinds = hintFile.getTreeKindNodeTypes();
+		assertEquals(1, treeKinds.size());
+		assertEquals(org.eclipse.jdt.core.dom.ASTNode.FOR_STATEMENT, treeKinds.get(0).intValue());
+	}
+
+	@Test
+	public void testParseTreeKindInvalidNodeType() {
+		String content = """
+			<!treeKind: INVALID_NODE_TYPE>
+			$x.foo()
+			=> $x.bar()
+			;;
+			""";
+
+		assertThrows(HintParseException.class, () -> parser.parse(content));
+	}
+
+	@Test
+	public void testParseTreeKindEmptyValue() {
+		String content = """
+			<!treeKind: >
+			$x.foo()
+			=> $x.bar()
+			;;
+			""";
+
+		assertThrows(HintParseException.class, () -> parser.parse(content));
+	}
+
+	@Test
+	public void testTreeKindDefaultEmpty() throws HintParseException {
+		String content = """
+			$x.foo()
+			=> $x.bar()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+		assertTrue(hintFile.getTreeKindNodeTypes().isEmpty(), "Default treeKindNodeTypes should be empty");
+	}
 }

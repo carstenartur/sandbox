@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.jdt.core.dom.ASTNode;
+
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
@@ -351,6 +353,9 @@ public final class HintFileParser {
 					hintFile.addSuppressWarnings(sw);
 				}
 				break;
+			case "treeKind": //$NON-NLS-1$
+				parseTreeKindDirective(hintFile, value, lineNumber);
+				break;
 			default:
 				// Check for foreach directive: <!foreach VARNAME: key1 -> val1, key2 -> val2>
 				if (key.startsWith("foreach ")) { //$NON-NLS-1$
@@ -361,6 +366,79 @@ public final class HintFileParser {
 		}
 	}
 	
+	/**
+	 * AST node type name to {@link ASTNode} node type constant mapping.
+	 * Populated lazily via reflection on first use.
+	 */
+	private static volatile Map<String, Integer> astNodeTypeMap;
+
+	/**
+	 * Returns the AST node type constant map, initializing it lazily.
+	 */
+	private static Map<String, Integer> getAstNodeTypeMap() {
+		if (astNodeTypeMap == null) {
+			synchronized (HintFileParser.class) {
+				if (astNodeTypeMap == null) {
+					astNodeTypeMap = buildAstNodeTypeMap();
+				}
+			}
+		}
+		return astNodeTypeMap;
+	}
+
+	/**
+	 * Builds a map from AST node type names (e.g., "METHOD_DECLARATION") to
+	 * their integer constants using reflection on {@link ASTNode}.
+	 */
+	private static Map<String, Integer> buildAstNodeTypeMap() {
+		Map<String, Integer> map = new HashMap<>();
+		for (java.lang.reflect.Field field : ASTNode.class.getDeclaredFields()) {
+			if (field.getType() == int.class
+					&& java.lang.reflect.Modifier.isPublic(field.getModifiers())
+					&& java.lang.reflect.Modifier.isStatic(field.getModifiers())
+					&& java.lang.reflect.Modifier.isFinal(field.getModifiers())) {
+				try {
+					map.put(field.getName(), field.getInt(null));
+				} catch (IllegalAccessException e) {
+					// skip inaccessible fields
+				}
+			}
+		}
+		return map;
+	}
+
+	/**
+	 * Parses a {@code <!treeKind:>} directive and sets the node type filter.
+	 *
+	 * <p>Syntax: {@code <!treeKind: METHOD_DECLARATION, IF_STATEMENT>}</p>
+	 *
+	 * @param hintFile the hint file to update
+	 * @param value the comma-separated list of AST node type names
+	 * @param lineNumber the line number for error reporting
+	 */
+	private void parseTreeKindDirective(HintFile hintFile, String value, int lineNumber) throws HintParseException {
+		if (value == null || value.isBlank()) {
+			throw new HintParseException("treeKind directive requires at least one node type", lineNumber); //$NON-NLS-1$
+		}
+		Map<String, Integer> typeMap = getAstNodeTypeMap();
+		List<Integer> nodeTypes = new ArrayList<>();
+		for (String name : value.split("\\s*,\\s*")) { //$NON-NLS-1$
+			String trimmed = name.trim();
+			if (trimmed.isEmpty()) {
+				continue;
+			}
+			Integer nodeType = typeMap.get(trimmed);
+			if (nodeType == null) {
+				throw new HintParseException("Unknown AST node type: " + trimmed, lineNumber); //$NON-NLS-1$
+			}
+			nodeTypes.add(nodeType);
+		}
+		if (nodeTypes.isEmpty()) {
+			throw new HintParseException("treeKind directive requires at least one node type", lineNumber); //$NON-NLS-1$
+		}
+		hintFile.setTreeKindNodeTypes(nodeTypes);
+	}
+
 	/**
 	 * Parses a {@code <!foreach>} directive and stores the variable mapping.
 	 * 
