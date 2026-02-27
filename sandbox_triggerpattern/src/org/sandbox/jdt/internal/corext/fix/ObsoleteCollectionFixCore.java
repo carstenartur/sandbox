@@ -13,8 +13,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
+import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -22,16 +24,14 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 
 /**
  * Fix core for detecting obsolete collection types.
  *
  * <p>Warns on usage of {@code Vector}, {@code Hashtable}, and {@code Stack},
- * which are legacy synchronized collections that should typically be replaced.</p>
- *
+ * which are legacy synchronized collections that should typically be replaced.
+ * Findings are reported as problem markers via {@link HintFinding}.</p>
  */
 public class ObsoleteCollectionFixCore {
 
@@ -45,17 +45,22 @@ public class ObsoleteCollectionFixCore {
 	 * Finds obsolete collection usage in the compilation unit.
 	 *
 	 * @param compilationUnit the compilation unit to search
-	 * @param operations the set to add found operations to
+	 * @param findings the list to collect hint-only findings into
 	 */
-	public static void findOperations(CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations) {
+	public static void findFindings(CompilationUnit compilationUnit,
+			List<HintFinding> findings) {
 
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(ClassInstanceCreation node) {
 				ITypeBinding typeBinding = node.resolveTypeBinding();
 				if (typeBinding != null && OBSOLETE_TYPES.contains(typeBinding.getErasure().getQualifiedName())) {
-					operations.add(new HintOnlyOperation());
+					findings.add(new HintFinding(
+							"Obsolete collection type \u2014 consider using ArrayList, HashMap, or ArrayDeque", //$NON-NLS-1$
+							compilationUnit.getLineNumber(node.getStartPosition()),
+							node.getStartPosition(),
+							node.getStartPosition() + node.getLength(),
+							IMarker.SEVERITY_WARNING));
 				}
 				return true;
 			}
@@ -66,18 +71,16 @@ public class ObsoleteCollectionFixCore {
 				if (type instanceof SimpleType simpleType) {
 					ITypeBinding binding = simpleType.resolveBinding();
 					if (binding != null && OBSOLETE_TYPES.contains(binding.getErasure().getQualifiedName())) {
-						operations.add(new HintOnlyOperation());
+						findings.add(new HintFinding(
+								"Obsolete collection type \u2014 consider using ArrayList, HashMap, or ArrayDeque", //$NON-NLS-1$
+								compilationUnit.getLineNumber(node.getStartPosition()),
+								node.getStartPosition(),
+								node.getStartPosition() + node.getLength(),
+								IMarker.SEVERITY_WARNING));
 					}
 				}
 				return true;
 			}
 		});
-	}
-
-	private static class HintOnlyOperation extends CompilationUnitRewriteOperation {
-		@Override
-		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-			// Hint-only: no rewrite
-		}
 	}
 }

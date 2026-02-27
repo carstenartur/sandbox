@@ -16,27 +16,26 @@ package org.sandbox.jdt.internal.ui.fix;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.OBSOLETE_COLLECTION_CLEANUP;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.ObsoleteCollectionFixCore;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
+import org.sandbox.jdt.triggerpattern.eclipse.HintMarkerReporter;
 
 /**
- * CleanUp for obsolete collection detection using TriggerPattern hints.
+ * CleanUp for obsolete collection detection.
  *
- * <p>This cleanup detects usage of obsolete collection types like Vector
- * and Hashtable and suggests modern alternatives.</p>
- *
+ * <p>This is a hint-only cleanup that detects usage of obsolete collection
+ * types like {@code Vector}, {@code Hashtable}, and {@code Stack} and reports
+ * them as problem markers.</p>
  */
 public class ObsoleteCollectionCleanUpCore extends AbstractCleanUp {
 
@@ -59,27 +58,21 @@ public class ObsoleteCollectionCleanUpCore extends AbstractCleanUp {
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
 		CompilationUnit compilationUnit = context.getAST();
-		if (compilationUnit == null) {
+		if (compilationUnit == null || !isEnabled(OBSOLETE_COLLECTION_CLEANUP)) {
 			return null;
 		}
 
-		if (!isEnabled(OBSOLETE_COLLECTION_CLEANUP)) {
-			return null;
+		List<HintFinding> findings = new ArrayList<>();
+		ObsoleteCollectionFixCore.findFindings(compilationUnit, findings);
+
+		if (!findings.isEmpty() && compilationUnit.getJavaElement() != null) {
+			IResource resource = compilationUnit.getJavaElement().getResource();
+			if (resource != null) {
+				HintMarkerReporter.clearMarkers(resource);
+				HintMarkerReporter.reportFindings(resource, findings);
+			}
 		}
-
-		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
-		ObsoleteCollectionFixCore.findOperations(compilationUnit, operations);
-
-		if (operations.isEmpty()) {
-			return null;
-		}
-
-		CompilationUnitRewriteOperation[] array = operations.toArray(
-				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
-		return new CompilationUnitRewriteOperationsFixCore(
-				MultiFixMessages.ObsoleteCollectionCleanUpFix_refactor,
-				compilationUnit,
-				array);
+		return null; // hint-only: no code change
 	}
 
 	@Override

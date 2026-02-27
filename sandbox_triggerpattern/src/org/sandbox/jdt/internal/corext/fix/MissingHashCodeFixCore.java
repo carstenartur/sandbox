@@ -13,24 +13,23 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
-import java.util.Set;
+import java.util.List;
 
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 
 /**
  * Fix core for detecting missing {@code hashCode()} when {@code equals()} is overridden.
  *
  * <p>Walks type declarations and checks whether a class overrides {@code equals(Object)}
- * without also overriding {@code hashCode()}.</p>
- *
+ * without also overriding {@code hashCode()}.
+ * Findings are reported as problem markers via {@link HintFinding}.</p>
  */
 public class MissingHashCodeFixCore {
 
@@ -38,10 +37,10 @@ public class MissingHashCodeFixCore {
 	 * Finds types with equals() but no hashCode() in the compilation unit.
 	 *
 	 * @param compilationUnit the compilation unit to search
-	 * @param operations the set to add found operations to
+	 * @param findings the list to collect hint-only findings into
 	 */
-	public static void findOperations(CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations) {
+	public static void findFindings(CompilationUnit compilationUnit,
+			List<HintFinding> findings) {
 
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
@@ -69,17 +68,15 @@ public class MissingHashCodeFixCore {
 				}
 
 				if (hasEquals && !hasHashCode) {
-					operations.add(new HintOnlyOperation());
+					findings.add(new HintFinding(
+							"equals() overridden without hashCode() \u2014 violates Object.hashCode() contract", //$NON-NLS-1$
+							compilationUnit.getLineNumber(node.getStartPosition()),
+							node.getStartPosition(),
+							node.getStartPosition() + node.getLength(),
+							IMarker.SEVERITY_WARNING));
 				}
 				return true;
 			}
 		});
-	}
-
-	private static class HintOnlyOperation extends CompilationUnitRewriteOperation {
-		@Override
-		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-			// Hint-only: no rewrite
-		}
 	}
 }

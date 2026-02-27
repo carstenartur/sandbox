@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
@@ -49,6 +50,8 @@ import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
+import org.sandbox.jdt.triggerpattern.eclipse.HintMarkerReporter;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /**
@@ -95,7 +98,16 @@ public class HintFileCleanUpCore extends AbstractCleanUp {
 
 		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
 		Set<String> enabledBundles = getEnabledBundles();
-		HintFileFixCore.findOperations(compilationUnit, operations, enabledBundles);
+		List<HintFinding> findings = new ArrayList<>();
+		HintFileFixCore.findOperations(compilationUnit, operations, enabledBundles, findings);
+
+		// Report hint-only findings as markers
+		if (!findings.isEmpty() && compilationUnit.getJavaElement() != null) {
+			IResource resource = compilationUnit.getJavaElement().getResource();
+			if (resource != null) {
+				HintMarkerReporter.reportFindings(resource, findings);
+			}
+		}
 
 		if (operations.isEmpty()) {
 			return null;

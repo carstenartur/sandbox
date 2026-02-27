@@ -13,23 +13,22 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
-import java.util.Set;
+import java.util.List;
 
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 
 /**
  * Fix core for detecting {@code ex.printStackTrace()} calls.
  *
  * <p>This is a hint-only cleanup that flags {@code printStackTrace()} calls
- * but does not replace them, since the appropriate logger varies per project.</p>
- *
+ * but does not replace them, since the appropriate logger varies per project.
+ * Findings are reported as problem markers via {@link HintFinding}.</p>
  */
 public class PrintStackTraceFixCore {
 
@@ -37,10 +36,10 @@ public class PrintStackTraceFixCore {
 	 * Finds printStackTrace() calls in the compilation unit.
 	 *
 	 * @param compilationUnit the compilation unit to search
-	 * @param operations the set to add found operations to
+	 * @param findings the list to collect hint-only findings into
 	 */
-	public static void findOperations(CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations) {
+	public static void findFindings(CompilationUnit compilationUnit,
+			List<HintFinding> findings) {
 
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
@@ -55,7 +54,12 @@ public class PrintStackTraceFixCore {
 				if (binding != null) {
 					ITypeBinding declaringClass = binding.getDeclaringClass();
 					if (declaringClass != null && isThrowable(declaringClass)) {
-						operations.add(new HintOnlyOperation());
+						findings.add(new HintFinding(
+								"printStackTrace() call \u2014 consider using a logger", //$NON-NLS-1$
+								compilationUnit.getLineNumber(node.getStartPosition()),
+								node.getStartPosition(),
+								node.getStartPosition() + node.getLength(),
+								IMarker.SEVERITY_WARNING));
 					}
 				}
 				return true;
@@ -72,12 +76,5 @@ public class PrintStackTraceFixCore {
 			current = current.getSuperclass();
 		}
 		return false;
-	}
-
-	private static class HintOnlyOperation extends CompilationUnitRewriteOperation {
-		@Override
-		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-			// Hint-only: no rewrite
-		}
 	}
 }

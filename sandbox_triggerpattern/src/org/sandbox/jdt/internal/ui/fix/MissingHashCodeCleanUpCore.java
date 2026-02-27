@@ -16,27 +16,26 @@ package org.sandbox.jdt.internal.ui.fix;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.MISSING_HASHCODE_CLEANUP;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.MissingHashCodeFixCore;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
+import org.sandbox.jdt.triggerpattern.eclipse.HintMarkerReporter;
 
 /**
- * CleanUp for missing hashCode() detection using TriggerPattern hints.
+ * CleanUp for missing hashCode() detection.
  *
- * <p>This cleanup detects classes that override equals() but not hashCode(),
- * violating the general contract of Object.hashCode().</p>
- *
+ * <p>This is a hint-only cleanup that detects classes overriding
+ * {@code equals()} without {@code hashCode()} and reports them as
+ * problem markers.</p>
  */
 public class MissingHashCodeCleanUpCore extends AbstractCleanUp {
 
@@ -59,27 +58,21 @@ public class MissingHashCodeCleanUpCore extends AbstractCleanUp {
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
 		CompilationUnit compilationUnit = context.getAST();
-		if (compilationUnit == null) {
+		if (compilationUnit == null || !isEnabled(MISSING_HASHCODE_CLEANUP)) {
 			return null;
 		}
 
-		if (!isEnabled(MISSING_HASHCODE_CLEANUP)) {
-			return null;
+		List<HintFinding> findings = new ArrayList<>();
+		MissingHashCodeFixCore.findFindings(compilationUnit, findings);
+
+		if (!findings.isEmpty() && compilationUnit.getJavaElement() != null) {
+			IResource resource = compilationUnit.getJavaElement().getResource();
+			if (resource != null) {
+				HintMarkerReporter.clearMarkers(resource);
+				HintMarkerReporter.reportFindings(resource, findings);
+			}
 		}
-
-		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
-		MissingHashCodeFixCore.findOperations(compilationUnit, operations);
-
-		if (operations.isEmpty()) {
-			return null;
-		}
-
-		CompilationUnitRewriteOperation[] array = operations.toArray(
-				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
-		return new CompilationUnitRewriteOperationsFixCore(
-				MultiFixMessages.MissingHashCodeCleanUpFix_refactor,
-				compilationUnit,
-				array);
+		return null; // hint-only: no code change
 	}
 
 	@Override

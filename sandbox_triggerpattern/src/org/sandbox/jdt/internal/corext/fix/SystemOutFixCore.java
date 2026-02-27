@@ -13,8 +13,9 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
-import java.util.Set;
+import java.util.List;
 
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -23,16 +24,14 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 
 /**
  * Fix core for detecting {@code System.out.println()} and {@code System.err.println()} calls.
  *
  * <p>This is a hint-only cleanup that flags direct usage of
- * {@code System.out}/{@code System.err} for printing.</p>
- *
+ * {@code System.out}/{@code System.err} for printing.
+ * Findings are reported as problem markers via {@link HintFinding}.</p>
  */
 public class SystemOutFixCore {
 
@@ -40,10 +39,10 @@ public class SystemOutFixCore {
 	 * Finds System.out/System.err usage in the compilation unit.
 	 *
 	 * @param compilationUnit the compilation unit to search
-	 * @param operations the set to add found operations to
+	 * @param findings the list to collect hint-only findings into
 	 */
-	public static void findOperations(CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations) {
+	public static void findFindings(CompilationUnit compilationUnit,
+			List<HintFinding> findings) {
 
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
@@ -53,7 +52,12 @@ public class SystemOutFixCore {
 					return true;
 				}
 				if (isSystemOutOrErr(expr)) {
-					operations.add(new HintOnlyOperation());
+					findings.add(new HintFinding(
+							"System.out/err usage \u2014 consider using a logger", //$NON-NLS-1$
+							compilationUnit.getLineNumber(node.getStartPosition()),
+							node.getStartPosition(),
+							node.getStartPosition() + node.getLength(),
+							IMarker.SEVERITY_WARNING));
 				}
 				return true;
 			}
@@ -97,12 +101,5 @@ public class SystemOutFixCore {
 			return vb;
 		}
 		return null;
-	}
-
-	private static class HintOnlyOperation extends CompilationUnitRewriteOperation {
-		@Override
-		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-			// Hint-only: no rewrite
-		}
 	}
 }

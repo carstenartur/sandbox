@@ -13,24 +13,23 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
-import java.util.Set;
+import java.util.List;
 
+import org.eclipse.core.resources.IMarker;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 
 /**
  * Fix core for detecting overridable method calls in constructors.
  *
  * <p>Calling non-final, non-private, non-static methods from a constructor
- * is dangerous because the subclass may not be fully initialized yet.</p>
- *
+ * is dangerous because the subclass may not be fully initialized yet.
+ * Findings are reported as problem markers via {@link HintFinding}.</p>
  */
 public class OverridableCallInConstructorFixCore {
 
@@ -38,10 +37,10 @@ public class OverridableCallInConstructorFixCore {
 	 * Finds overridable method calls in constructors in the compilation unit.
 	 *
 	 * @param compilationUnit the compilation unit to search
-	 * @param operations the set to add found operations to
+	 * @param findings the list to collect hint-only findings into
 	 */
-	public static void findOperations(CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations) {
+	public static void findFindings(CompilationUnit compilationUnit,
+			List<HintFinding> findings) {
 
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
@@ -64,7 +63,12 @@ public class OverridableCallInConstructorFixCore {
 							if (!Modifier.isPrivate(modifiers)
 									&& !Modifier.isStatic(modifiers)
 									&& !Modifier.isFinal(modifiers)) {
-								operations.add(new HintOnlyOperation());
+								findings.add(new HintFinding(
+										"Overridable method call in constructor \u2014 subclass may not be initialized", //$NON-NLS-1$
+										compilationUnit.getLineNumber(invocation.getStartPosition()),
+										invocation.getStartPosition(),
+										invocation.getStartPosition() + invocation.getLength(),
+										IMarker.SEVERITY_WARNING));
 							}
 							return true;
 						}
@@ -73,12 +77,5 @@ public class OverridableCallInConstructorFixCore {
 				return false;
 			}
 		});
-	}
-
-	private static class HintOnlyOperation extends CompilationUnitRewriteOperation {
-		@Override
-		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-			// Hint-only: no rewrite
-		}
 	}
 }

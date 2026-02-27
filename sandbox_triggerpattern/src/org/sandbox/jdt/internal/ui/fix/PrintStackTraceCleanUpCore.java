@@ -16,27 +16,26 @@ package org.sandbox.jdt.internal.ui.fix;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.PRINT_STACKTRACE_CLEANUP;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.PrintStackTraceFixCore;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
+import org.sandbox.jdt.triggerpattern.eclipse.HintMarkerReporter;
 
 /**
- * CleanUp for printStackTrace() detection using TriggerPattern hints.
+ * CleanUp for printStackTrace() detection.
  *
- * <p>This cleanup detects calls to printStackTrace() and suggests
- * replacing them with proper logging.</p>
- *
+ * <p>This is a hint-only cleanup that detects calls to {@code printStackTrace()}
+ * and reports them as problem markers. It does not modify code because the
+ * appropriate logger varies per project.</p>
  */
 public class PrintStackTraceCleanUpCore extends AbstractCleanUp {
 
@@ -59,27 +58,21 @@ public class PrintStackTraceCleanUpCore extends AbstractCleanUp {
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
 		CompilationUnit compilationUnit = context.getAST();
-		if (compilationUnit == null) {
+		if (compilationUnit == null || !isEnabled(PRINT_STACKTRACE_CLEANUP)) {
 			return null;
 		}
 
-		if (!isEnabled(PRINT_STACKTRACE_CLEANUP)) {
-			return null;
+		List<HintFinding> findings = new ArrayList<>();
+		PrintStackTraceFixCore.findFindings(compilationUnit, findings);
+
+		if (!findings.isEmpty() && compilationUnit.getJavaElement() != null) {
+			IResource resource = compilationUnit.getJavaElement().getResource();
+			if (resource != null) {
+				HintMarkerReporter.clearMarkers(resource);
+				HintMarkerReporter.reportFindings(resource, findings);
+			}
 		}
-
-		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
-		PrintStackTraceFixCore.findOperations(compilationUnit, operations);
-
-		if (operations.isEmpty()) {
-			return null;
-		}
-
-		CompilationUnitRewriteOperation[] array = operations.toArray(
-				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
-		return new CompilationUnitRewriteOperationsFixCore(
-				MultiFixMessages.PrintStackTraceCleanUpFix_refactor,
-				compilationUnit,
-				array);
+		return null; // hint-only: no code change
 	}
 
 	@Override

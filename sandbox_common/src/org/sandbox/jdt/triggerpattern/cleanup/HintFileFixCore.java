@@ -20,6 +20,8 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.CoreException;
 
+import org.eclipse.core.resources.IMarker;
+
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -51,6 +53,7 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.Transform
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
@@ -83,6 +86,27 @@ public class HintFileFixCore {
 	public static void findOperations(CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations,
 			Set<String> enabledBundles) {
+		findOperations(compilationUnit, operations, enabledBundles, null);
+	}
+
+	/**
+	 * Finds all hint-file-based cleanup operations for the given compilation unit,
+	 * collecting hint-only results into the provided findings list.
+	 *
+	 * <p>Rules with a replacement produce rewrite operations. Rules without a
+	 * replacement (hint-only) produce {@link HintFinding} entries that can be
+	 * reported as problem markers.</p>
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param operations the set to add found rewrite operations to
+	 * @param enabledBundles set of enabled bundled hint file IDs
+	 * @param findings list to collect hint-only findings into; may be {@code null}
+	 *        to discard hint-only results (backward compatible)
+	 */
+	public static void findOperations(CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperation> operations,
+			Set<String> enabledBundles,
+			List<HintFinding> findings) {
 
 		// Ensure built-in guard functions (sourceVersionGE, etc.) are registered
 		GuardRegistry.getInstance();
@@ -118,6 +142,18 @@ public class HintFileFixCore {
 			for (TransformationResult result : results) {
 				if (result.hasReplacement()) {
 					operations.add(new HintFileRewriteOperation(result));
+				} else if (findings != null) {
+					ASTNode node = result.match().getMatchedNode();
+					CompilationUnit cu = (CompilationUnit) node.getRoot();
+					String message = result.description() != null && !result.description().isEmpty()
+							? result.description()
+							: "Hint: " + result.rule().sourcePattern().getValue(); //$NON-NLS-1$
+					findings.add(new HintFinding(
+							message,
+							cu.getLineNumber(node.getStartPosition()),
+							node.getStartPosition(),
+							node.getStartPosition() + node.getLength(),
+							IMarker.SEVERITY_INFO));
 				}
 			}
 		}
