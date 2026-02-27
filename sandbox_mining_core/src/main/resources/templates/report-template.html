@@ -129,7 +129,7 @@
         <div class="info-item"><span class="icon">🕐</span><span class="label">Last Run:</span><span class="val" id="rs-completed">–</span></div>
         <div class="info-item"><span class="icon">⏱</span><span class="label">Duration:</span><span class="val" id="rs-duration">–</span></div>
         <div class="info-item"><span class="icon">📅</span><span class="label">Commit Date Range:</span><span class="val" id="rs-commit-range">–</span></div>
-        <div class="info-item"><span class="icon">🔬</span><span class="label">Evaluation Window:</span><span class="val" id="rs-window">–</span></div>
+        <div class="info-item"><span class="icon">⏱</span><span class="label">Evaluation Window:</span><span class="val" id="rs-window">–</span></div>
         <div class="info-item"><span class="icon">🤖</span><span class="label">Model:</span><span class="val" id="rs-model">–</span></div>
         <div class="info-item"><span class="icon">📊</span><span class="label">API Calls:</span><span class="val" id="rs-api-calls">–</span></div>
         <div class="info-item"><span class="icon">📦</span><span class="label">Batch Config:</span><span class="val" id="rs-batch">–</span></div>
@@ -432,8 +432,8 @@
                             var evalDateSpan = document.createElement('div');
                             evalDateSpan.style.fontSize = '0.85em';
                             evalDateSpan.style.color = '#888';
-                            try { evalDateSpan.textContent = '\uD83D\uDD2C ' + new Date(evaluation.evaluatedAt).toLocaleString(); }
-                            catch(e) { evalDateSpan.textContent = '\uD83D\uDD2C ' + evaluation.evaluatedAt; }
+                            try { evalDateSpan.textContent = 'eval: ' + new Date(evaluation.evaluatedAt).toLocaleString(); }
+                            catch(e) { evalDateSpan.textContent = 'eval: ' + evaluation.evaluatedAt; }
                             tdDate.appendChild(evalDateSpan);
                         }
                     } catch(e) { tdDate.textContent = evaluation.commitDate; }

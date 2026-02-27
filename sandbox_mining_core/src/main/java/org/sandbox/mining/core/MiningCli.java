@@ -472,8 +472,8 @@ System.out.println("  --- DSL rule end ---"); //$NON-NLS-1$
 }
 }
 }
-// Create evaluation with validation result and commit date
-Instant commitDate = Instant.ofEpochSecond(commit.getCommitTime());
+// Create evaluation with validation result and commit date (author date)
+Instant commitDate = commit.getAuthorIdent().getWhen().toInstant();
 CommitEvaluation enriched = new CommitEvaluation(
 evaluation.commitHash(), evaluation.commitMessage(), evaluation.repoUrl(),
 evaluation.evaluatedAt(), commitDate, evaluation.relevant(), evaluation.irrelevantReason(),
