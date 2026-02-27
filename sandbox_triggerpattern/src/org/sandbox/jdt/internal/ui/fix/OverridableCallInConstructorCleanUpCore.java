@@ -37,7 +37,6 @@ import org.sandbox.jdt.internal.corext.fix.OverridableCallInConstructorFixCore;
  * <p>This cleanup detects constructors that call overridable (non-private, non-final)
  * methods, which can lead to subtle bugs in subclasses.</p>
  *
- * @since 1.3.9
  */
 public class OverridableCallInConstructorCleanUpCore extends AbstractCleanUp {
 

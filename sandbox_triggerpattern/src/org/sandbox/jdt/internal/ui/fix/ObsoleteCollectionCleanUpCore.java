@@ -37,7 +37,6 @@ import org.sandbox.jdt.internal.corext.fix.ObsoleteCollectionFixCore;
  * <p>This cleanup detects usage of obsolete collection types like Vector
  * and Hashtable and suggests modern alternatives.</p>
  *
- * @since 1.3.9
  */
 public class ObsoleteCollectionCleanUpCore extends AbstractCleanUp {
 

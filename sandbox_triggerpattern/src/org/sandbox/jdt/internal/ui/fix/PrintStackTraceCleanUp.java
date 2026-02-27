@@ -23,7 +23,6 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
  *
  * <p>Detects calls to printStackTrace() using TriggerPattern-based hints.</p>
  *
- * @since 1.3.9
  */
 public class PrintStackTraceCleanUp extends AbstractCleanUpCoreWrapper<PrintStackTraceCleanUpCore> {
 

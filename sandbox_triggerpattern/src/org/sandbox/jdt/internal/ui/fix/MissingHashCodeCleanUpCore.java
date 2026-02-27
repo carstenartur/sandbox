@@ -37,7 +37,6 @@ import org.sandbox.jdt.internal.corext.fix.MissingHashCodeFixCore;
  * <p>This cleanup detects classes that override equals() but not hashCode(),
  * violating the general contract of Object.hashCode().</p>
  *
- * @since 1.3.9
  */
 public class MissingHashCodeCleanUpCore extends AbstractCleanUp {
 

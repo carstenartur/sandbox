@@ -37,7 +37,6 @@ import org.sandbox.jdt.internal.corext.fix.WrongStringComparisonFixCore;
  * <p>This cleanup detects string comparisons using == or != and replaces
  * them with proper .equals() calls.</p>
  *
- * @since 1.3.9
  */
 public class WrongStringComparisonCleanUpCore extends AbstractCleanUp {
 

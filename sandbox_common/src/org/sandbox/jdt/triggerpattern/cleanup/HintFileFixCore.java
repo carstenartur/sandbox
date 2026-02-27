@@ -454,7 +454,6 @@ public class HintFileFixCore {
 		 * @param rewrite the AST rewriter
 		 * @param cuRewrite the compilation unit rewrite context
 		 * @param group the text edit group
-		 * @since 1.3.9
 		 */
 		@SuppressWarnings("unchecked")
 		private void handleMethodDeclarationRewrite(ASTNode matchedNode, String replacement,

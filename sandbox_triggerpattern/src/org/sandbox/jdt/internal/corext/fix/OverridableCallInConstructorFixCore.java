@@ -31,7 +31,6 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
  * <p>Calling non-final, non-private, non-static methods from a constructor
  * is dangerous because the subclass may not be fully initialized yet.</p>
  *
- * @since 1.3.9
  */
 public class OverridableCallInConstructorFixCore {
 

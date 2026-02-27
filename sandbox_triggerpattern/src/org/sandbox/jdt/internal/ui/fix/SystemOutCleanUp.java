@@ -23,7 +23,6 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
  *
  * <p>Detects usage of System.out and System.err using TriggerPattern-based hints.</p>
  *
- * @since 1.3.9
  */
 public class SystemOutCleanUp extends AbstractCleanUpCoreWrapper<SystemOutCleanUpCore> {
 

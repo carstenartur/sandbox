@@ -37,7 +37,6 @@ import org.sandbox.jdt.internal.corext.fix.PrintStackTraceFixCore;
  * <p>This cleanup detects calls to printStackTrace() and suggests
  * replacing them with proper logging.</p>
  *
- * @since 1.3.9
  */
 public class PrintStackTraceCleanUpCore extends AbstractCleanUp {
 

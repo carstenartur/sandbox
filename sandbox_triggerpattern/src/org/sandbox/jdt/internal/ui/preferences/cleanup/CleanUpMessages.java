@@ -45,6 +45,18 @@ public class CleanUpMessages extends NLS {
 	public static String HintFileTabPage_CheckboxName_BundleDeprecations;
 	public static String HintFileTabPage_CheckboxName_BundleClassfileApi;
 	public static String HintFileTabPage_CheckboxName_BundleSerialization;
+	public static String WrongStringComparisonTabPage_GroupName;
+	public static String WrongStringComparisonTabPage_CheckboxName;
+	public static String PrintStackTraceTabPage_GroupName;
+	public static String PrintStackTraceTabPage_CheckboxName;
+	public static String SystemOutTabPage_GroupName;
+	public static String SystemOutTabPage_CheckboxName;
+	public static String ObsoleteCollectionTabPage_GroupName;
+	public static String ObsoleteCollectionTabPage_CheckboxName;
+	public static String MissingHashCodeTabPage_GroupName;
+	public static String MissingHashCodeTabPage_CheckboxName;
+	public static String OverridableCallInConstructorTabPage_GroupName;
+	public static String OverridableCallInConstructorTabPage_CheckboxName;
 
 	static {
 		// initialize resource bundle

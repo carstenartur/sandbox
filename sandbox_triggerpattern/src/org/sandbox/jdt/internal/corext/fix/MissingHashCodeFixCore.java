@@ -31,7 +31,6 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
  * <p>Walks type declarations and checks whether a class overrides {@code equals(Object)}
  * without also overriding {@code hashCode()}.</p>
  *
- * @since 1.3.9
  */
 public class MissingHashCodeFixCore {
 

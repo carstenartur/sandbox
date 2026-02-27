@@ -23,7 +23,6 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
  *
  * <p>Detects constructors calling overridable methods using TriggerPattern-based hints.</p>
  *
- * @since 1.3.9
  */
 public class OverridableCallInConstructorCleanUp extends AbstractCleanUpCoreWrapper<OverridableCallInConstructorCleanUpCore> {
 

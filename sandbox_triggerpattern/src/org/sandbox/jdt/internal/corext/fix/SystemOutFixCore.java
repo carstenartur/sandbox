@@ -33,7 +33,6 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
  * <p>This is a hint-only cleanup that flags direct usage of
  * {@code System.out}/{@code System.err} for printing.</p>
  *
- * @since 1.3.9
  */
 public class SystemOutFixCore {
 

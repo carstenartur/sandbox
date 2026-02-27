@@ -23,7 +23,6 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
  *
  * <p>Detects string comparisons using == or != using TriggerPattern-based hints.</p>
  *
- * @since 1.3.9
  */
 public class WrongStringComparisonCleanUp extends AbstractCleanUpCoreWrapper<WrongStringComparisonCleanUpCore> {
 

@@ -37,7 +37,6 @@ import org.eclipse.text.edits.TextEditGroup;
  * <p>Detects {@code str == "literal"} and replaces with {@code "literal".equals(str)},
  * and {@code str != "literal"} with {@code !"literal".equals(str)}.</p>
  *
- * @since 1.3.9
  */
 public class WrongStringComparisonFixCore {
 

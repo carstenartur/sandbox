@@ -30,7 +30,6 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
  * <p>This is a hint-only cleanup that flags {@code printStackTrace()} calls
  * but does not replace them, since the appropriate logger varies per project.</p>
  *
- * @since 1.3.9
  */
 public class PrintStackTraceFixCore {
 

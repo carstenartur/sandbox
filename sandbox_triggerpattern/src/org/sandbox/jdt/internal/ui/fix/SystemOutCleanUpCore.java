@@ -37,7 +37,6 @@ import org.sandbox.jdt.internal.corext.fix.SystemOutFixCore;
  * <p>This cleanup detects usage of System.out and System.err and suggests
  * replacing them with proper logging.</p>
  *
- * @since 1.3.9
  */
 public class SystemOutCleanUpCore extends AbstractCleanUp {
 

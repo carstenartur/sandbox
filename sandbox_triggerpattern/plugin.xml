@@ -65,6 +65,24 @@
       <cleanUp
             class="org.sandbox.jdt.internal.ui.fix.HintFileCleanUp"
             id="org.eclipse.jdt.ui.cleanup.hintfile" />
+      <cleanUp
+            class="org.sandbox.jdt.internal.ui.fix.WrongStringComparisonCleanUp"
+            id="org.eclipse.jdt.ui.cleanup.wrong_string_comparison" />
+      <cleanUp
+            class="org.sandbox.jdt.internal.ui.fix.PrintStackTraceCleanUp"
+            id="org.eclipse.jdt.ui.cleanup.print_stacktrace" />
+      <cleanUp
+            class="org.sandbox.jdt.internal.ui.fix.SystemOutCleanUp"
+            id="org.eclipse.jdt.ui.cleanup.system_out" />
+      <cleanUp
+            class="org.sandbox.jdt.internal.ui.fix.ObsoleteCollectionCleanUp"
+            id="org.eclipse.jdt.ui.cleanup.obsolete_collection" />
+      <cleanUp
+            class="org.sandbox.jdt.internal.ui.fix.MissingHashCodeCleanUp"
+            id="org.eclipse.jdt.ui.cleanup.missing_hashcode" />
+      <cleanUp
+            class="org.sandbox.jdt.internal.ui.fix.OverridableCallInConstructorCleanUp"
+            id="org.eclipse.jdt.ui.cleanup.overridable_in_constructor" />
    </extension>
 
    <extension point="org.eclipse.jdt.ui.quickAssistProcessors">

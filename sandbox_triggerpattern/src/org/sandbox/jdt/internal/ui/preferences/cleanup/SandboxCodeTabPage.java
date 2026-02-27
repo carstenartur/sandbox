@@ -22,9 +22,15 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.HintFileCleanUp;
+import org.sandbox.jdt.internal.ui.fix.MissingHashCodeCleanUp;
+import org.sandbox.jdt.internal.ui.fix.ObsoleteCollectionCleanUp;
+import org.sandbox.jdt.internal.ui.fix.OverridableCallInConstructorCleanUp;
+import org.sandbox.jdt.internal.ui.fix.PrintStackTraceCleanUp;
 import org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp;
 import org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp;
+import org.sandbox.jdt.internal.ui.fix.SystemOutCleanUp;
 import org.sandbox.jdt.internal.ui.fix.ThreadingCleanUp;
+import org.sandbox.jdt.internal.ui.fix.WrongStringComparisonCleanUp;
 
 /**
  * Preference tab page for TriggerPattern-based cleanup options
@@ -51,7 +57,13 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				new StringSimplificationCleanUp(values),
 				new ThreadingCleanUp(values),
 				new ShiftOutOfRangeCleanUp(values),
-				new HintFileCleanUp(values)
+				new HintFileCleanUp(values),
+				new WrongStringComparisonCleanUp(values),
+				new PrintStackTraceCleanUp(values),
+				new SystemOutCleanUp(values),
+				new ObsoleteCollectionCleanUp(values),
+				new MissingHashCodeCleanUp(values),
+				new OverridableCallInConstructorCleanUp(values)
 		};
 	}
 	
@@ -172,5 +184,47 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				bundleSerialization
 		});
 		registerPreference(hintFile);
+
+		Group wrongStringGroup = createGroup(numColumns, composite, CleanUpMessages.WrongStringComparisonTabPage_GroupName);
+		final CheckboxPreference wrongStringComparison = createCheckboxPref(wrongStringGroup, numColumns,
+				CleanUpMessages.WrongStringComparisonTabPage_CheckboxName,
+				MYCleanUpConstants.WRONG_STRING_COMPARISON_CLEANUP, FALSE_TRUE);
+		intent(wrongStringGroup);
+		registerPreference(wrongStringComparison);
+
+		Group printStackTraceGroup = createGroup(numColumns, composite, CleanUpMessages.PrintStackTraceTabPage_GroupName);
+		final CheckboxPreference printStackTrace = createCheckboxPref(printStackTraceGroup, numColumns,
+				CleanUpMessages.PrintStackTraceTabPage_CheckboxName,
+				MYCleanUpConstants.PRINT_STACKTRACE_CLEANUP, FALSE_TRUE);
+		intent(printStackTraceGroup);
+		registerPreference(printStackTrace);
+
+		Group systemOutGroup = createGroup(numColumns, composite, CleanUpMessages.SystemOutTabPage_GroupName);
+		final CheckboxPreference systemOut = createCheckboxPref(systemOutGroup, numColumns,
+				CleanUpMessages.SystemOutTabPage_CheckboxName,
+				MYCleanUpConstants.SYSTEM_OUT_CLEANUP, FALSE_TRUE);
+		intent(systemOutGroup);
+		registerPreference(systemOut);
+
+		Group obsoleteCollectionGroup = createGroup(numColumns, composite, CleanUpMessages.ObsoleteCollectionTabPage_GroupName);
+		final CheckboxPreference obsoleteCollection = createCheckboxPref(obsoleteCollectionGroup, numColumns,
+				CleanUpMessages.ObsoleteCollectionTabPage_CheckboxName,
+				MYCleanUpConstants.OBSOLETE_COLLECTION_CLEANUP, FALSE_TRUE);
+		intent(obsoleteCollectionGroup);
+		registerPreference(obsoleteCollection);
+
+		Group missingHashCodeGroup = createGroup(numColumns, composite, CleanUpMessages.MissingHashCodeTabPage_GroupName);
+		final CheckboxPreference missingHashCode = createCheckboxPref(missingHashCodeGroup, numColumns,
+				CleanUpMessages.MissingHashCodeTabPage_CheckboxName,
+				MYCleanUpConstants.MISSING_HASHCODE_CLEANUP, FALSE_TRUE);
+		intent(missingHashCodeGroup);
+		registerPreference(missingHashCode);
+
+		Group overridableGroup = createGroup(numColumns, composite, CleanUpMessages.OverridableCallInConstructorTabPage_GroupName);
+		final CheckboxPreference overridableInConstructor = createCheckboxPref(overridableGroup, numColumns,
+				CleanUpMessages.OverridableCallInConstructorTabPage_CheckboxName,
+				MYCleanUpConstants.OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP, FALSE_TRUE);
+		intent(overridableGroup);
+		registerPreference(overridableInConstructor);
 	}
 }

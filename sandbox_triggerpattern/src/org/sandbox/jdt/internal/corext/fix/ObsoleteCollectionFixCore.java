@@ -32,7 +32,6 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
  * <p>Warns on usage of {@code Vector}, {@code Hashtable}, and {@code Stack},
  * which are legacy synchronized collections that should typically be replaced.</p>
  *
- * @since 1.3.9
  */
 public class ObsoleteCollectionFixCore {
 

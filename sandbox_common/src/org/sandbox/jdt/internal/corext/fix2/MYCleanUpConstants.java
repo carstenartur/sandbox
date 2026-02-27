@@ -797,7 +797,6 @@ public class MYCleanUpConstants {
 	 * <p>
 	 * Possible values: {TRUE, FALSE}
 	 *
-	 * @since 1.3.9
 	 */
 	public static final String WRONG_STRING_COMPARISON_CLEANUP= "cleanup.wrong_string_comparison"; //$NON-NLS-1$
 
@@ -809,7 +808,6 @@ public class MYCleanUpConstants {
 	 * <p>
 	 * Possible values: {TRUE, FALSE}
 	 *
-	 * @since 1.3.9
 	 */
 	public static final String PRINT_STACKTRACE_CLEANUP= "cleanup.print_stacktrace"; //$NON-NLS-1$
 
@@ -822,7 +820,6 @@ public class MYCleanUpConstants {
 	 * <p>
 	 * Possible values: {TRUE, FALSE}
 	 *
-	 * @since 1.3.9
 	 */
 	public static final String SYSTEM_OUT_CLEANUP= "cleanup.system_out"; //$NON-NLS-1$
 
@@ -835,7 +832,6 @@ public class MYCleanUpConstants {
 	 * <p>
 	 * Possible values: {TRUE, FALSE}
 	 *
-	 * @since 1.3.9
 	 */
 	public static final String OBSOLETE_COLLECTION_CLEANUP= "cleanup.obsolete_collection"; //$NON-NLS-1$
 
@@ -848,7 +844,6 @@ public class MYCleanUpConstants {
 	 * <p>
 	 * Possible values: {TRUE, FALSE}
 	 *
-	 * @since 1.3.9
 	 */
 	public static final String MISSING_HASHCODE_CLEANUP= "cleanup.missing_hashcode"; //$NON-NLS-1$
 
@@ -861,7 +856,6 @@ public class MYCleanUpConstants {
 	 * <p>
 	 * Possible values: {TRUE, FALSE}
 	 *
-	 * @since 1.3.9
 	 */
 	public static final String OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP= "cleanup.overridable_in_constructor"; //$NON-NLS-1$
 }

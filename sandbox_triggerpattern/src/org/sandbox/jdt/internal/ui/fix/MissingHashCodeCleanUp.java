@@ -23,7 +23,6 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
  *
  * <p>Detects classes overriding equals() but not hashCode() using TriggerPattern-based hints.</p>
  *
- * @since 1.3.9
  */
 public class MissingHashCodeCleanUp extends AbstractCleanUpCoreWrapper<MissingHashCodeCleanUpCore> {
 
