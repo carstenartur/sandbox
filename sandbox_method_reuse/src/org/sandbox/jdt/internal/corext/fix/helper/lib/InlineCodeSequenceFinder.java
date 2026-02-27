@@ -14,13 +14,16 @@
 package org.sandbox.jdt.internal.corext.fix.helper.lib;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
-import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
  * Inline Code Sequence Finder - Searches for inline code sequences in method bodies
@@ -78,9 +81,9 @@ public class InlineCodeSequenceFinder {
 		}
 		
 		// Visit all methods in the compilation unit
-		cu.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(MethodDeclaration node) {
+		ReferenceHolder<Integer, Object> dataHolder = ReferenceHolder.createIndexed();
+		AstProcessorBuilder.with(dataHolder, new HashSet<>())
+			.onMethodDeclaration((node, holder) -> {
 				// Don't search in the target method itself
 				if (node == targetMethod) {
 					return false;
@@ -89,8 +92,8 @@ public class InlineCodeSequenceFinder {
 				// Search for matching sequences in this method
 				searchInMethod(node, targetStatements, matches);
 				return true;
-			}
-		});
+			})
+			.build(cu);
 		
 		return matches;
 	}

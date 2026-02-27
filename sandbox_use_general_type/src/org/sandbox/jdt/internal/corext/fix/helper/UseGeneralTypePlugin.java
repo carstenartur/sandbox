@@ -20,7 +20,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -31,6 +30,7 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseGeneralTypeFixCore;
 import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
@@ -94,10 +94,10 @@ public class UseGeneralTypePlugin {
 
 		// Collect VariableDeclarationStatement info needed for rewriting
 		Map<String, StatementInfo> statementsByKey = new HashMap<>();
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(VariableDeclarationStatement node) {
-				if (nodesprocessed.contains(node) || node.fragments().size() > 1) {
+		ReferenceHolder<String, StatementInfo> stmtHolder = new ReferenceHolder<>();
+		AstProcessorBuilder.with(stmtHolder, nodesprocessed)
+			.onVariableDeclarationStatement((node, holder) -> {
+				if (node.fragments().size() > 1) {
 					return true;
 				}
 				Type type = node.getType();
@@ -112,8 +112,8 @@ public class UseGeneralTypePlugin {
 					}
 				}
 				return true;
-			}
-		});
+			})
+			.build(compilationUnit);
 
 		// Build TypeWidenHolder entries from analysis results
 		ReferenceHolder<Integer, TypeWidenHolder> holder = new ReferenceHolder<>();

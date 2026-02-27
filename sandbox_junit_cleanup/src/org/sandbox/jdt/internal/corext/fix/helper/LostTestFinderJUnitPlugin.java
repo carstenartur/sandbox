@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -38,6 +37,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
@@ -63,17 +63,17 @@ public class LostTestFinderJUnitPlugin extends AbstractTool<ReferenceHolder<Inte
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 
 		// Visit all type declarations to find classes that have @Test methods
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(TypeDeclaration node) {
+		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
+		AstProcessorBuilder.with(dataHolder, nodesprocessed)
+			.onTypeDeclaration((node, holder) -> {
 				// Check if this class has any @Test methods (including inherited)
 				if (classHasTestMethods(node)) {
 					// Find lost test methods in this class
 					findLostTestMethods(fixcore, node, operations, nodesprocessed);
 				}
 				return true;
-			}
-		});
+			})
+			.build(compilationUnit);
 	}
 
 	/**
