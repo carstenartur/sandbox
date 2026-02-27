@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -41,6 +40,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -168,11 +168,11 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 	private List<ErrorCollectorCall> findErrorCollectorCalls(List<Statement> statements, String fieldName) {
 		List<ErrorCollectorCall> calls = new ArrayList<>();
 
-		// Use ASTVisitor to find all ErrorCollector calls, including nested ones
+		// Use AstProcessorBuilder to find all ErrorCollector calls, including nested ones
 		for (Statement stmt : statements) {
-			stmt.accept(new ASTVisitor() {
-				@Override
-				public boolean visit(MethodInvocation invocation) {
+			ReferenceHolder<String, Object> holder = ReferenceHolder.create();
+			AstProcessorBuilder.with(holder)
+				.onMethodInvocation((invocation, h) -> {
 					Expression expression = invocation.getExpression();
 					if (expression instanceof SimpleName) {
 						SimpleName receiver = (SimpleName) expression;
@@ -188,9 +188,9 @@ public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<
 							}
 						}
 					}
-					return super.visit(invocation);
-				}
-			});
+					return true;
+				})
+				.build(stmt);
 		}
 
 		return calls;

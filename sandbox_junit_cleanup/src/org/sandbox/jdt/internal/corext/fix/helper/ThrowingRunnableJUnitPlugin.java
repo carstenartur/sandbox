@@ -40,7 +40,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
@@ -54,6 +53,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
@@ -97,10 +97,8 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		Set<ASTNode> found = new HashSet<>();
 
 		// Visit the compilation unit to find ThrowingRunnable usages
-		compilationUnit.accept(new ASTVisitor() {
-
-			@Override
-			public boolean visit(ImportDeclaration node) {
+		AstProcessorBuilder.with(dataHolder, nodesprocessed)
+			.onImportDeclaration((node, h) -> {
 				String importName = node.getName().getFullyQualifiedName();
 				if (ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(importName)) {
 					if (!nodesprocessed.contains(node)) {
@@ -109,10 +107,8 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 					}
 				}
 				return true;
-			}
-
-			@Override
-			public boolean visit(SimpleType node) {
+			})
+			.onSimpleType((node, h) -> {
 				// Check if this is a ThrowingRunnable type reference
 				ITypeBinding binding = node.resolveBinding();
 				if (binding != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(binding.getQualifiedName())) {
@@ -123,10 +119,8 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 					}
 				}
 				return true;
-			}
-
-			@Override
-			public boolean visit(ParameterizedType node) {
+			})
+			.onParameterizedType((node, h) -> {
 				// Check if this parameterized type contains ThrowingRunnable
 				// e.g., AtomicReference<ThrowingRunnable>
 				if (containsThrowingRunnable(node)) {
@@ -137,10 +131,8 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 				}
 				// Don't visit children - we handle the whole parameterized type
 				return false;
-			}
-
-			@Override
-			public boolean visit(MethodInvocation node) {
+			})
+			.onMethodInvocation((node, h) -> {
 				// Check if this is a .run() call on a ThrowingRunnable
 				if (RUN_METHOD.equals(node.getName().getIdentifier()) && node.arguments().isEmpty()) {
 					if (isThrowingRunnableRunCall(node)) {
@@ -151,8 +143,8 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 					}
 				}
 				return true;
-			}
-		});
+			})
+			.build(compilationUnit);
 
 		nodesprocessed.addAll(found);
 	}

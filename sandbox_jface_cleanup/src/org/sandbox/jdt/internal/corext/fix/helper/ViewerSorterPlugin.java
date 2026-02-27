@@ -18,7 +18,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -38,6 +37,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
@@ -384,76 +384,60 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 		holder.nodesprocessed = nodesprocessed;
 		dataholder.put(0, holder);
 		
-		compilationUnit.accept(new ASTVisitor() {
-			
-			@Override
-			public boolean visit(TypeDeclaration node) {
+		AstProcessorBuilder.with(dataholder, nodesprocessed)
+			.onTypeDeclaration((node, h) -> {
 				// Check extends clause
 				Type superclassType = node.getSuperclassType();
 				if (superclassType != null && isViewerSorterType(superclassType)) {
 					holder.typesToReplace.add(superclassType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(FieldDeclaration node) {
+			})
+			.onFieldDeclaration((node, h) -> {
 				Type fieldType = node.getType();
 				if (fieldType != null && isViewerSorterType(fieldType)) {
 					holder.typesToReplace.add(fieldType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(VariableDeclarationStatement node) {
+			})
+			.onVariableDeclarationStatement((node, h) -> {
 				Type variableType = node.getType();
 				if (variableType != null && isViewerSorterType(variableType)) {
 					holder.typesToReplace.add(variableType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(MethodDeclaration node) {
+			})
+			.onMethodDeclaration((node, h) -> {
 				// Check return type
 				Type returnType = node.getReturnType2();
 				if (returnType != null && isViewerSorterType(returnType)) {
 					holder.typesToReplace.add(returnType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(SingleVariableDeclaration node) {
+			})
+			.onSingleVariableDeclaration((node, h) -> {
 				// Check parameter type
 				Type paramType = node.getType();
 				if (paramType != null && isViewerSorterType(paramType)) {
 					holder.typesToReplace.add(paramType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(ClassInstanceCreation node) {
+			})
+			.onClassInstanceCreation((node, h) -> {
 				Type instanceType = node.getType();
 				if (instanceType != null && isViewerSorterType(instanceType)) {
 					holder.typesToReplace.add(instanceType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(CastExpression node) {
+			})
+			.onCastExpression((node, h) -> {
 				Type castType = node.getType();
 				if (castType != null && isViewerSorterType(castType)) {
 					holder.typesToReplace.add(castType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(MethodInvocation node) {
+			})
+			.onMethodInvocation((node, h) -> {
 				SimpleName methodName = node.getName();
 				if (methodName != null) {
 					String name = methodName.getIdentifier();
@@ -466,8 +450,8 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 					}
 				}
 				return true;
-			}
-		});
+			})
+			.build(compilationUnit);
 		
 		// If we found anything to replace, register the operation
 		if (!holder.typesToReplace.isEmpty() || !holder.methodNamesToReplace.isEmpty()) {
