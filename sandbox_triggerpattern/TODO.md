@@ -38,6 +38,11 @@ See [sandbox_common/TODO.md](../sandbox_common/TODO.md#implementation-status-vs-
 **Closeable related issues**: #709 (all phases done), #722 (extension points), #723 (reporting + Problem-View), #724 (per-bundle preferences for all 6 bundles), #725 (editor support).
 **Remaining related issues**: #729 (DSL-based JUnit migration — Phases 1, 3, 4, 5 done; Phase 2 type guards and Phase 6 complex annotation params remain).
 
+### Recently Completed (Tier 1 Parity)
+- ✅ **Phase 1.1**: Runtime type constraint resolution — binding resolution enabled when pattern has constraints; `checkTypeConstraints()` implemented; `subtypeOf()` guard added
+- ✅ **Phase 1.3**: `@SuppressWarnings` integration — `<!suppressWarnings: key>` directive in DSL; `SuppressWarningsChecker` utility; `hasSuppressWarnings()` guard
+- ✅ **Phase 1.4**: Per-hint severity levels — `TransformationRule` now carries per-rule `Severity`; `<!severity:>` directive parsed and available per-rule
+
 ### In Progress
 - [ ] Additional pattern variations
 

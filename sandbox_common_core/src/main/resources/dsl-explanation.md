@@ -227,6 +227,8 @@ You can use these functions in `:: guard` expressions:
 | `mode("modeName")` | True if the `sandbox.cleanup.mode` compiler option matches the given mode (case-insensitive). Supported modes: `KEEP_BEHAVIOR`, `ENFORCE_UTF8`, `ENFORCE_UTF8_AGGREGATE`. |
 | `methodNameMatches($var, "regex")` | True if the method name bound to `$var` matches the given regex pattern. Used with METHOD_DECLARATION patterns (e.g., `void $name($params$)`). |
 | `enclosingClassExtends("fqn")` | True if the enclosing class extends the given type (directly or transitively). Essential for migration rules targeting specific base classes (e.g., `"junit.framework.TestCase"`). Falls back to textual `extends` clause comparison when bindings are unavailable. |
+| `subtypeOf($var, "fqn")` | True if `$var`'s type is a subtype of the given fully qualified type name. Walks the type hierarchy via `ITypeBinding.getSuperclass()` and `getInterfaces()`. Gracefully degrades to true when bindings are not available. |
+| `hasSuppressWarnings("key")` | True if the matched node's enclosing method, field, or type declaration has a `@SuppressWarnings` annotation containing the specified key. Walks up the AST from the matched node. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Common Mistakes

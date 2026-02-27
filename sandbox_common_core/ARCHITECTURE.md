@@ -48,6 +48,26 @@ implemented in `BuiltInGuards` as static methods. `GuardRegistry` in
 initialization, then adds extension-point loading on top. This allows
 standalone tests and CLI tools to use built-in guards without OSGi.
 
+**Recent additions (Phase 1.1/1.3)**:
+- `subtypeOf($var, "fqn")` — walks type hierarchy to check subtype relationships
+- `hasSuppressWarnings("key")` — checks if enclosing declaration has `@SuppressWarnings`
+
+### SuppressWarningsChecker
+
+Utility class in `internal` package that walks up the AST from a given node,
+checking each enclosing `BodyDeclaration` for a `@SuppressWarnings` annotation
+containing a given key. Supports `SingleMemberAnnotation` and `NormalAnnotation`
+forms, including array initializer values.
+
+### Type Constraint Resolution (Phase 1.1)
+
+`TriggerPatternEngine.findMatches(ICompilationUnit, Pattern)` now enables
+`setResolveBindings(true)` when the pattern has `ConstraintVariableType[]`
+constraints. After structural matching, `checkTypeConstraints()` filters
+matches to retain only those where bound nodes satisfy the type constraints
+via `ITypeBinding`. Graceful degradation: constraints are skipped when
+binding resolution is not available.
+
 ### HintFileStore (Grenzfall 3)
 
 Eclipse-independent hint file storage is in `HintFileStore`. It provides:

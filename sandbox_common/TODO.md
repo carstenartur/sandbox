@@ -36,6 +36,11 @@
 ### In Progress
 - None currently
 
+### Recently Completed (Issue #730 / TriggerPattern Parity)
+- ✅ **Phase 1.1**: Runtime type constraint resolution in `TriggerPatternEngine` — `setResolveBindings(true)` when constraints present; `checkTypeConstraints()` filters matches by `ITypeBinding`; `subtypeOf()` guard walks type hierarchy
+- ✅ **Phase 1.3**: `@SuppressWarnings` integration — `SuppressWarningsChecker` utility, `hasSuppressWarnings()` guard, `<!suppressWarnings:>` DSL directive
+- ✅ **Phase 1.4**: Per-hint severity levels — `TransformationRule.getSeverity()`, 6-arg constructor with `Severity` parameter
+
 ### Pending
 - [ ] Create dedicated test module for unit testing utilities
 - [ ] Extract additional shared utilities from individual plugins
