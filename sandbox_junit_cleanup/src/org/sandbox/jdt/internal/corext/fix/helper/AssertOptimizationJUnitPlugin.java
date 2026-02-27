@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
+import org.sandbox.jdt.internal.common.LibStandardNames;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
@@ -296,7 +297,7 @@ public class AssertOptimizationJUnitPlugin extends AbstractTool<ReferenceHolder<
 		// Check for .equals() method call
 		if (condition instanceof MethodInvocation) {
 			MethodInvocation methodInv = (MethodInvocation) condition;
-			return "equals".equals(methodInv.getName().getIdentifier()) && methodInv.arguments().size() == 1;
+			return LibStandardNames.METHOD_EQUALS.equals(methodInv.getName().getIdentifier()) && methodInv.arguments().size() == 1;
 		}
 
 		return false;

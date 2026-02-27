@@ -50,6 +50,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.osgi.framework.Bundle;
 import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.LibStandardNames;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
@@ -170,7 +171,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		// Pass 1: Find beginTask + SubProgressMonitor patterns (chained visitors)
 		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.processor()
-			.callMethodInvocationVisitor(IProgressMonitor.class, "beginTask", (node, holder) -> { //$NON-NLS-1$
+			.callMethodInvocationVisitor(IProgressMonitor.class, LibStandardNames.METHOD_BEGIN_TASK, (node, holder) -> {
 				if (node.arguments().size() != 2) {
 					return true;
 				}
