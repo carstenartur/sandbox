@@ -14,6 +14,10 @@
 package org.sandbox.jdt.triggerpattern.eclipse;
 
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.Severity;
 
 /**
  * Represents a hint-only finding that should be reported as a problem marker
@@ -37,4 +41,45 @@ public record HintFinding(
 		int charStart,
 		int charEnd,
 		int severity) {
+
+	/**
+	 * Creates a {@code HintFinding} from a DSL {@link TransformationResult}.
+	 *
+	 * <p>Maps the DSL {@link Severity} to an {@link IMarker} severity constant
+	 * and uses the result's description or source pattern as the message.</p>
+	 *
+	 * @param result the transformation result from the DSL engine
+	 * @param cu     the compilation unit (used for line number calculation)
+	 * @return a new {@code HintFinding}
+	 */
+	public static HintFinding fromTransformationResult(TransformationResult result, CompilationUnit cu) {
+		ASTNode node = result.match().getMatchedNode();
+		String msg = result.description() != null && !result.description().isEmpty()
+				? result.description()
+				: "Hint: " + result.rule().sourcePattern().getValue(); //$NON-NLS-1$
+		int markerSeverity = mapSeverity(result.rule().getSeverity());
+		return new HintFinding(
+				msg,
+				cu.getLineNumber(node.getStartPosition()),
+				node.getStartPosition(),
+				node.getStartPosition() + node.getLength(),
+				markerSeverity);
+	}
+
+	/**
+	 * Maps a DSL {@link Severity} to an {@link IMarker} severity constant.
+	 *
+	 * @param severity the DSL severity (may be {@code null})
+	 * @return the corresponding {@link IMarker} severity
+	 */
+	private static int mapSeverity(Severity severity) {
+		if (severity == null) {
+			return IMarker.SEVERITY_INFO;
+		}
+		return switch (severity) {
+		case ERROR -> IMarker.SEVERITY_ERROR;
+		case WARNING -> IMarker.SEVERITY_WARNING;
+		case INFO, HINT -> IMarker.SEVERITY_INFO;
+		};
+	}
 }

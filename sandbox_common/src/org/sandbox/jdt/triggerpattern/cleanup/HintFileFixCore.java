@@ -20,8 +20,6 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.CoreException;
 
-import org.eclipse.core.resources.IMarker;
-
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -145,17 +143,7 @@ public class HintFileFixCore {
 				if (result.hasReplacement()) {
 					operations.add(new HintFileRewriteOperation(result));
 				} else if (findings != null) {
-					ASTNode node = result.match().getMatchedNode();
-					CompilationUnit cu = (CompilationUnit) node.getRoot();
-					String message = result.description() != null && !result.description().isEmpty()
-							? result.description()
-							: "Hint: " + result.rule().sourcePattern().getValue(); //$NON-NLS-1$
-					findings.add(new HintFinding(
-							message,
-							cu.getLineNumber(node.getStartPosition()),
-							node.getStartPosition(),
-							node.getStartPosition() + node.getLength(),
-							IMarker.SEVERITY_INFO));
+					findings.add(HintFinding.fromTransformationResult(result, compilationUnit));
 				}
 			}
 		}

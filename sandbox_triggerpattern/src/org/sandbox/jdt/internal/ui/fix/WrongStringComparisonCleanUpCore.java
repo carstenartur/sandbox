@@ -15,21 +15,11 @@ package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.WRONG_STRING_COMPARISON_CLEANUP;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
-import org.eclipse.jdt.ui.cleanup.CleanUpContext;
-import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
-import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.WrongStringComparisonFixCore;
+import org.sandbox.jdt.triggerpattern.eclipse.CleanUpResult;
 
 /**
  * CleanUp for wrong string comparison detection using TriggerPattern hints.
@@ -38,7 +28,7 @@ import org.sandbox.jdt.internal.corext.fix.WrongStringComparisonFixCore;
  * them with proper .equals() calls.</p>
  *
  */
-public class WrongStringComparisonCleanUpCore extends AbstractCleanUp {
+public class WrongStringComparisonCleanUpCore extends AbstractSandboxCleanUpCore {
 
 	public WrongStringComparisonCleanUpCore(final Map<String, String> options) {
 		super(options);
@@ -48,47 +38,23 @@ public class WrongStringComparisonCleanUpCore extends AbstractCleanUp {
 	}
 
 	@Override
-	public CleanUpRequirements getRequirements() {
-		return new CleanUpRequirements(requireAST(), false, false, null);
-	}
-
-	public boolean requireAST() {
-		return isEnabled(WRONG_STRING_COMPARISON_CLEANUP);
+	protected String getCleanUpKey() {
+		return WRONG_STRING_COMPARISON_CLEANUP;
 	}
 
 	@Override
-	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-		CompilationUnit compilationUnit = context.getAST();
-		if (compilationUnit == null) {
-			return null;
-		}
-
-		if (!isEnabled(WRONG_STRING_COMPARISON_CLEANUP)) {
-			return null;
-		}
-
-		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
-		WrongStringComparisonFixCore.findOperations(compilationUnit, operations);
-
-		if (operations.isEmpty()) {
-			return null;
-		}
-
-		CompilationUnitRewriteOperation[] array = operations.toArray(
-				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
-		return new CompilationUnitRewriteOperationsFixCore(
-				MultiFixMessages.WrongStringComparisonCleanUpFix_refactor,
-				compilationUnit,
-				array);
+	protected String getFixLabel() {
+		return MultiFixMessages.WrongStringComparisonCleanUpFix_refactor;
 	}
 
 	@Override
-	public String[] getStepDescriptions() {
-		List<String> result = new ArrayList<>();
-		if (isEnabled(WRONG_STRING_COMPARISON_CLEANUP)) {
-			result.add(MultiFixMessages.WrongStringComparisonCleanUp_description);
-		}
-		return result.toArray(new String[0]);
+	protected String getDescription() {
+		return MultiFixMessages.WrongStringComparisonCleanUp_description;
+	}
+
+	@Override
+	protected void detect(CompilationUnit cu, CleanUpResult result) {
+		WrongStringComparisonFixCore.findOperations(cu, result.getOperations());
 	}
 
 	@Override
