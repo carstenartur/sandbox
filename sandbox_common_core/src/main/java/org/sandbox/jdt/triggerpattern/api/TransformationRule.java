@@ -56,6 +56,18 @@ public final class TransformationRule {
 	private final Severity severity;
 	
 	/**
+	 * Creates a rule with only a source pattern and alternatives, all other fields null.
+	 * Pass an empty list for hint-only rules that flag matches without rewriting.
+	 * 
+	 * @param sourcePattern the pattern to match
+	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
+	 * @return a new transformation rule
+	 */
+	public static TransformationRule of(Pattern sourcePattern, List<RewriteAlternative> alternatives) {
+		return new TransformationRule(null, null, sourcePattern, null, alternatives, null, null);
+	}
+	
+	/**
 	 * Creates a new transformation rule.
 	 * 
 	 * @param ruleId optional unique rule ID for usage tracking (may be {@code null})

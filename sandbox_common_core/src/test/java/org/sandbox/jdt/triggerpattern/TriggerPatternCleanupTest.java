@@ -50,7 +50,7 @@ class TriggerPatternCleanupTest {
 			""";
 		
 		CompilationUnit cu = parse(source);
-		Pattern pattern = new Pattern("@Before", PatternKind.ANNOTATION, null, null, null, null, null);
+		Pattern pattern = Pattern.of("@Before", PatternKind.ANNOTATION);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -90,7 +90,7 @@ class TriggerPatternCleanupTest {
 			""";
 		
 		CompilationUnit cu = parse(source);
-		Pattern pattern = new Pattern("@Test(expected=$ex)", PatternKind.ANNOTATION, null, null, null, null, null);
+		Pattern pattern = Pattern.of("@Test(expected=$ex)", PatternKind.ANNOTATION);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -119,7 +119,7 @@ class TriggerPatternCleanupTest {
 			""";
 		
 		CompilationUnit cu = parse(source);
-		Pattern pattern = new Pattern("@Before", PatternKind.ANNOTATION, null, null, null, null, null);
+		Pattern pattern = Pattern.of("@Before", PatternKind.ANNOTATION);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -137,7 +137,7 @@ class TriggerPatternCleanupTest {
 			""";
 		
 		CompilationUnit cu = parse(source);
-		Pattern pattern = new Pattern("@Before", PatternKind.ANNOTATION, null, null, null, null, null);
+		Pattern pattern = Pattern.of("@Before", PatternKind.ANNOTATION);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		

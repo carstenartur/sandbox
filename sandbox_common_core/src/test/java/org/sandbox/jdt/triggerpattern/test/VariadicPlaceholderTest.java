@@ -60,7 +60,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testMixedPatternFirstArgSeparateRestInList() {
 		// Pattern: method($a, $args$) - first arg separate, rest in list
-		Pattern pattern = new Pattern("method($a, $args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($a, $args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -91,7 +91,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testMixedPatternFirstArgSeparateEmptyRest() {
 		// Pattern: method($a, $args$) - first arg separate, no rest
-		Pattern pattern = new Pattern("method($a, $args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($a, $args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -119,7 +119,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testMixedPatternNotEnoughArgs() {
 		// Pattern: method($a, $args$) requires at least 1 argument
-		Pattern pattern = new Pattern("method($a, $args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($a, $args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -137,7 +137,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testMixedPatternLastArgSeparate() {
 		// Pattern: method($args$, $last) - last arg separate
-		Pattern pattern = new Pattern("method($args$, $last)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($args$, $last)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -167,7 +167,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testMixedPatternFirstAndLastSeparate() {
 		// Pattern: method($first, $args$, $last) - first and last separate
-		Pattern pattern = new Pattern("method($first, $args$, $last)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($first, $args$, $last)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -200,7 +200,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testBlockPatternParserCreatesBlock() {
 		// Parse a BLOCK pattern
-		Pattern pattern = new Pattern("{ $stmts$; }", PatternKind.BLOCK, null, null, null, null, null);
+		Pattern pattern = Pattern.of("{ $stmts$; }", PatternKind.BLOCK);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode, "Block pattern should be parsed");
 		assertTrue(patternNode instanceof Block, "Should parse to a Block node");
@@ -211,7 +211,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testBlockPatternMatchesAllStatements() {
 		// Pattern: { $stmts$; } - matches any block
-		Pattern pattern = new Pattern("{ $stmts$; }", PatternKind.BLOCK, null, null, null, null, null);
+		Pattern pattern = Pattern.of("{ $stmts$; }", PatternKind.BLOCK);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -235,7 +235,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testBlockPatternStatementsBeforeReturn() {
 		// Pattern: { $before$; return $x; } - statements before a return
-		Pattern pattern = new Pattern("{ $before$; return $x; }", PatternKind.BLOCK, null, null, null, null, null);
+		Pattern pattern = Pattern.of("{ $before$; return $x; }", PatternKind.BLOCK);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -266,7 +266,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testBlockPatternEmptyBeforeReturn() {
 		// Pattern: { $before$; return $x; } - no statements before return
-		Pattern pattern = new Pattern("{ $before$; return $x; }", PatternKind.BLOCK, null, null, null, null, null);
+		Pattern pattern = Pattern.of("{ $before$; return $x; }", PatternKind.BLOCK);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -294,7 +294,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testBlockPatternNoReturn() {
 		// Pattern: { $before$; return $x; } - block without return should not match
-		Pattern pattern = new Pattern("{ $before$; return $x; }", PatternKind.BLOCK, null, null, null, null, null);
+		Pattern pattern = Pattern.of("{ $before$; return $x; }", PatternKind.BLOCK);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -312,7 +312,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testBlockPatternMatchesEmptyBlock() {
 		// Pattern: { $stmts$; } - matches empty block
-		Pattern pattern = new Pattern("{ $stmts$; }", PatternKind.BLOCK, null, null, null, null, null);
+		Pattern pattern = Pattern.of("{ $stmts$; }", PatternKind.BLOCK);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -357,7 +357,7 @@ public class VariadicPlaceholderTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("{ $before$; return $x; }", PatternKind.BLOCK, null, null, null, null, null);
+		Pattern pattern = Pattern.of("{ $before$; return $x; }", PatternKind.BLOCK);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -378,7 +378,7 @@ public class VariadicPlaceholderTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("method($a, $args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($a, $args$)", PatternKind.METHOD_CALL);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -393,7 +393,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testExistingMultiPlaceholderStillWorks() {
 		// Verify backward compatibility: method($args$) still works
-		Pattern pattern = new Pattern("method($args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -417,7 +417,7 @@ public class VariadicPlaceholderTest {
 	@Test
 	public void testExistingMultiPlaceholderZeroArgs() {
 		// Verify backward compatibility: method($args$) with zero args
-		Pattern pattern = new Pattern("method($args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		

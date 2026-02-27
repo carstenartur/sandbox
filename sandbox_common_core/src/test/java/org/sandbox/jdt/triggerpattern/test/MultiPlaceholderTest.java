@@ -47,7 +47,7 @@ public class MultiPlaceholderTest {
 	@Test
 	public void testMultiPlaceholderMatchesZeroArguments() {
 		// Pattern: method($args$)
-		Pattern pattern = new Pattern("method($args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -73,7 +73,7 @@ public class MultiPlaceholderTest {
 	@Test
 	public void testMultiPlaceholderMatchesOneArgument() {
 		// Pattern: method($args$)
-		Pattern pattern = new Pattern("method($args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -99,7 +99,7 @@ public class MultiPlaceholderTest {
 	@Test
 	public void testMultiPlaceholderMatchesMultipleArguments() {
 		// Pattern: method($args$)
-		Pattern pattern = new Pattern("method($args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -130,7 +130,7 @@ public class MultiPlaceholderTest {
 	@Test
 	public void testMultiPlaceholderConsistencyCheck() {
 		// Pattern: method($args$)
-		Pattern pattern = new Pattern("method($args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("method($args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		
@@ -156,7 +156,7 @@ public class MultiPlaceholderTest {
 	@Test
 	public void testMultiPlaceholderMatchesVariousArgumentTypes() {
 		// Pattern: Assert.assertEquals($args$)
-		Pattern pattern = new Pattern("Assert.assertEquals($args$)", PatternKind.METHOD_CALL, null, null, null, null, null);
+		Pattern pattern = Pattern.of("Assert.assertEquals($args$)", PatternKind.METHOD_CALL);
 		ASTNode patternNode = parser.parse(pattern);
 		assertNotNull(patternNode);
 		

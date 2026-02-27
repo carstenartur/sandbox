@@ -132,7 +132,7 @@ public class TransformationReporterTest {
 	// --- Helper methods ---
 
 	private List<TransformationResult> createResults() {
-		Pattern srcPattern = new Pattern("$x + 0", PatternKind.EXPRESSION, null, null, null, null, null); //$NON-NLS-1$
+		Pattern srcPattern = Pattern.of("$x + 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		RewriteAlternative alt = new RewriteAlternative("$x", null); //$NON-NLS-1$
 		TransformationRule rule = new TransformationRule(null, "Remove addition of zero", srcPattern, null, List.of(alt), null, null); //$NON-NLS-1$
 		HintFile hintFile = new HintFile();

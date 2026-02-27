@@ -40,6 +40,17 @@ public final class Pattern {
 	private final ConstraintVariableType[] constraints;
 	
 	/**
+	 * Creates a pattern with only value and kind, all other fields null.
+	 * 
+	 * @param value the pattern string with placeholders
+	 * @param kind the kind of pattern
+	 * @return a new pattern
+	 */
+	public static Pattern of(String value, PatternKind kind) {
+		return new Pattern(value, kind, null, null, null, null, null);
+	}
+	
+	/**
 	 * Creates a new pattern with the specified value, kind, id, display name, qualified type,
 	 * overrides type, and type constraints.
 	 * 

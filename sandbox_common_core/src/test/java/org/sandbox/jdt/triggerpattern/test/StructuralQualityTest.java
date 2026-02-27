@@ -260,10 +260,10 @@ public class StructuralQualityTest {
 			GuardExpressionParser guardParser = new GuardExpressionParser();
 			GuardExpression guard = guardParser.parse("sourceVersionGE(21)");
 
-			Pattern sourcePattern = new Pattern("$x", PatternKind.EXPRESSION, null, null, null, null, null);
+			Pattern sourcePattern = Pattern.of("$x", PatternKind.EXPRESSION);
 			RewriteAlternative alt = new RewriteAlternative("replacement", guard);
 
-			TransformationRule rule = new TransformationRule(null, null, sourcePattern, null, List.of(alt), null, null);
+			TransformationRule rule = TransformationRule.of(sourcePattern, List.of(alt));
 
 			GuardContext ctx = createContextWithVersion("11");
 			Optional<RewriteAlternative> matched = rule.findMatchingAlternative(ctx);
@@ -274,10 +274,10 @@ public class StructuralQualityTest {
 		@Test
 		@DisplayName("returns present Optional for \"otherwise\" alternative")
 		void testOtherwiseAlternativeMatches() {
-			Pattern sourcePattern = new Pattern("$x", PatternKind.EXPRESSION, null, null, null, null, null);
+			Pattern sourcePattern = Pattern.of("$x", PatternKind.EXPRESSION);
 			RewriteAlternative alt = RewriteAlternative.otherwise("fallback($x)");
 
-			TransformationRule rule = new TransformationRule(null, null, sourcePattern, null, List.of(alt), null, null);
+			TransformationRule rule = TransformationRule.of(sourcePattern, List.of(alt));
 
 			GuardContext ctx = createContextWithVersion("11");
 			Optional<RewriteAlternative> matched = rule.findMatchingAlternative(ctx);
