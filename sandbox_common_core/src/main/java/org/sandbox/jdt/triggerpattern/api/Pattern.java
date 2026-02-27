@@ -111,7 +111,7 @@ public final class Pattern {
 		this.displayName = displayName;
 		this.qualifiedType = qualifiedType;
 		this.overridesType = overridesType;
-		this.constraints = constraints;
+		this.constraints = constraints == null ? null : constraints.clone();
 	}
 	
 	/**
@@ -196,7 +196,10 @@ public final class Pattern {
 	 * @since 1.4.0
 	 */
 	public ConstraintVariableType[] getConstraints() {
-		return constraints;
+		if (constraints == null) {
+			return null;
+		}
+		return constraints.clone();
 	}
 	
 	@Override

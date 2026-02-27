@@ -1209,7 +1209,7 @@ public class BuiltInGuardsTest {
 		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
 		GuardContext ctx = GuardContext.fromMatch(match, cu);
 
-		assertTrue(guard.evaluate(ctx, "$name", "int"), "Should match int return type with 2-arg form"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertFalse(guard.evaluate(ctx, "$name", "int"), "Should return false with 2 args (only 1-arg form supported)"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	@Test

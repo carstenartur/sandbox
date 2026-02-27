@@ -619,6 +619,9 @@ public final class HintFileParser {
 			String metaLine = ruleLines.get(ruleLineIdx).trim();
 			if (metaLine.startsWith("@id:")) { //$NON-NLS-1$
 				ruleId = metaLine.substring(4).trim();
+				if (ruleId.isBlank()) {
+					throw new HintParseException("Per-rule id must not be blank", startIndex + ruleLineIdx + 1); //$NON-NLS-1$
+				}
 				ruleLineIdx++;
 			} else if (metaLine.startsWith("@severity:")) { //$NON-NLS-1$
 				String severityStr = metaLine.substring(10).trim();

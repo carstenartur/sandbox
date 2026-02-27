@@ -1625,23 +1625,17 @@ public final class BuiltInGuards {
 	/**
 	 * Checks if the enclosing method's return type matches the given type name.
 	 *
-	 * <p>With one argument, checks the enclosing method's return type.
-	 * With two arguments, the first is a placeholder name (ignored for now)
-	 * and the second is the type name to match.</p>
+	 * <p>Expects a single argument, the type name to compare with the return
+	 * type of the enclosing {@link MethodDeclaration}.</p>
 	 *
-	 * Args: [typeName] or [placeholderName, typeName]
+	 * Args: [typeName]
 	 * @since 1.4.1
 	 */
 	private static boolean evaluateHasReturnType(GuardContext ctx, Object... args) {
-		if (args.length < 1) {
+		if (args.length != 1) {
 			return false;
 		}
-		String typeName;
-		if (args.length >= 2) {
-			typeName = stripQuotes(args[1].toString());
-		} else {
-			typeName = stripQuotes(args[0].toString());
-		}
+		String typeName = stripQuotes(args[0].toString());
 		ASTNode node = ctx.getMatchedNode();
 		if (node == null) {
 			return false;

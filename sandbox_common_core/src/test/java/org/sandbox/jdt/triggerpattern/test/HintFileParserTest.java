@@ -1393,4 +1393,16 @@ public class HintFileParserTest {
 
 		assertThrows(HintParseException.class, () -> parser.parse(content));
 	}
+
+	@Test
+	public void testBlankPerRuleIdThrows() {
+		String content = """
+			@id:
+			$x.foo()
+			=> $x.bar()
+			;;
+			""";
+
+		assertThrows(HintParseException.class, () -> parser.parse(content));
+	}
 }
