@@ -75,7 +75,9 @@ public class HintFileFixCore {
 	 *
 	 * <p>Loads all registered {@code .sandbox-hint} files from the
 	 * {@link HintFileRegistry}, processes them with {@link BatchTransformationProcessor},
-	 * and creates rewrite operations for each match with a replacement.</p>
+	 * and creates rewrite operations for each match with a replacement.
+	 * Hint-only results (rules without replacement) are silently discarded.
+	 * Use the four-parameter overload to collect hint-only findings.</p>
 	 *
 	 * @param compilationUnit the compilation unit to search
 	 * @param operations the set to add found operations to
