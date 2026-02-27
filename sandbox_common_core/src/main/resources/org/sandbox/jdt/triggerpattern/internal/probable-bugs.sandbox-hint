@@ -32,7 +32,7 @@ java.lang.Math.max($a, $a)
 java.lang.Math.min($a, $a)
 ;;
 
-// Hint-only: potential time overflow
-"System.currentTimeMillis() subtraction may overflow — consider System.nanoTime() for elapsed time":
+// Hint-only: potential time overflow due to clock adjustments
+"System.currentTimeMillis() may go backwards due to clock adjustments — consider System.nanoTime() for elapsed time":
 System.currentTimeMillis() - $start < 0
 ;;

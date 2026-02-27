@@ -47,7 +47,7 @@ $collection.size() == 0
 $map.containsKey($k) ? $map.get($k) : $default :: sourceVersionGE(8)
 ;;
 
-// Hint-only: sort + reverse can use Comparator.reverseOrder()
-"Consider using list.sort(Comparator.reverseOrder()) instead of sort + reverse":
+// Hint-only: Collections.sort() may benefit from Comparator.reverseOrder() if reverse is needed
+"Consider using list.sort(Comparator.reverseOrder()) if you need reverse-sorted order":
 java.util.Collections.sort($list) :: sourceVersionGE(8)
 ;;
