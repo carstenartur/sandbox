@@ -24,9 +24,8 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
  * Holds the combined output of a cleanup's detection phase.
  *
  * <p>A cleanup may produce rewrite operations (code changes), hint findings
- * (problem markers), or both. This unified result type enables the
- * {@link AbstractSandboxCleanUpCore} template method to handle both paths
- * in a single pipeline.</p>
+ * (problem markers), or both. This unified result type enables a cleanup
+ * core template method to handle both paths in a single pipeline.</p>
  *
  * <p>The DSL {@code HintFileCleanUp} can produce <em>both</em> rewrite
  * operations (for rules with {@code =>}) and hint findings (for hint-only

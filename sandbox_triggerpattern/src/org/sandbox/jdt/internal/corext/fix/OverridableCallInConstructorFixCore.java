@@ -18,10 +18,12 @@ import java.util.List;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.ThisExpression;
 import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 
 /**
@@ -52,7 +54,10 @@ public class OverridableCallInConstructorFixCore {
 					node.getBody().accept(new ASTVisitor() {
 						@Override
 						public boolean visit(MethodInvocation invocation) {
-							if (invocation.getExpression() != null) {
+							// Skip calls on other receivers (e.g., someObject.method())
+							// but allow unqualified calls and this.method() calls
+							Expression receiver = invocation.getExpression();
+							if (receiver != null && !(receiver instanceof ThisExpression)) {
 								return true;
 							}
 							IMethodBinding binding = invocation.resolveMethodBinding();

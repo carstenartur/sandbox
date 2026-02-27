@@ -67,31 +67,37 @@ public class SystemOutFixCore {
 	private static boolean isSystemOutOrErr(Expression expr) {
 		if (expr instanceof QualifiedName qn) {
 			String fullName = qn.getFullyQualifiedName();
-			return "System.out".equals(fullName) || "System.err".equals(fullName); //$NON-NLS-1$ //$NON-NLS-2$
+			if ("System.out".equals(fullName) || "System.err".equals(fullName) //$NON-NLS-1$ //$NON-NLS-2$
+					|| "java.lang.System.out".equals(fullName) //$NON-NLS-1$
+					|| "java.lang.System.err".equals(fullName)) { //$NON-NLS-1$
+				return true;
+			}
+			// Fall through to binding-based check for aliases or static imports
+			IVariableBinding binding = resolveFieldBinding(qn);
+			if (binding != null) {
+				return isSystemField(binding);
+			}
 		}
 		if (expr instanceof FieldAccess fa) {
 			IVariableBinding binding = fa.resolveFieldBinding();
 			if (binding != null) {
-				String fieldName = binding.getName();
-				if ("out".equals(fieldName) || "err".equals(fieldName)) { //$NON-NLS-1$ //$NON-NLS-2$
-					if (binding.getDeclaringClass() != null
-							&& "java.lang.System".equals(binding.getDeclaringClass().getQualifiedName())) { //$NON-NLS-1$
-						return true;
-					}
-				}
+				return isSystemField(binding);
 			}
 		}
 		if (expr instanceof Name name) {
 			IVariableBinding binding = resolveFieldBinding(name);
 			if (binding != null) {
-				String fieldName = binding.getName();
-				if ("out".equals(fieldName) || "err".equals(fieldName)) { //$NON-NLS-1$ //$NON-NLS-2$
-					if (binding.getDeclaringClass() != null
-							&& "java.lang.System".equals(binding.getDeclaringClass().getQualifiedName())) { //$NON-NLS-1$
-						return true;
-					}
-				}
+				return isSystemField(binding);
 			}
+		}
+		return false;
+	}
+
+	private static boolean isSystemField(IVariableBinding binding) {
+		String fieldName = binding.getName();
+		if ("out".equals(fieldName) || "err".equals(fieldName)) { //$NON-NLS-1$ //$NON-NLS-2$
+			return binding.getDeclaringClass() != null
+					&& "java.lang.System".equals(binding.getDeclaringClass().getQualifiedName()); //$NON-NLS-1$
 		}
 		return false;
 	}

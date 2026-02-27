@@ -128,12 +128,14 @@ public abstract class AbstractSandboxCleanUpCore extends AbstractCleanUp {
 		CleanUpResult result = new CleanUpResult();
 		detect(cu, result);
 
-		// Report hint-only findings as problem markers
-		if (result.hasFindings() && cu.getJavaElement() != null) {
+		// Always clear stale markers, then report any new findings
+		if (cu.getJavaElement() != null) {
 			IResource resource = cu.getJavaElement().getResource();
 			if (resource != null) {
 				HintMarkerReporter.clearMarkers(resource);
-				HintMarkerReporter.reportFindings(resource, result.getFindings());
+				if (result.hasFindings()) {
+					HintMarkerReporter.reportFindings(resource, result.getFindings());
+				}
 			}
 		}
 
