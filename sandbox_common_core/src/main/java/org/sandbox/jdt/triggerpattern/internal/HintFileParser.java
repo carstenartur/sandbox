@@ -126,6 +126,15 @@ public final class HintFileParser {
 	 * creates a mapping {@code CHARSET → {"UTF-8" → "UTF_8", "ISO-8859-1" → "ISO_8859_1"}}.</p>
 	 */
 	private final Map<String, Map<String, String>> foreachVariables = new HashMap<>();
+
+	/**
+	 * Map variable definitions: map name → ordered map of key→value pairs.
+	 * <p>Example: {@code <!map charsetNames: "UTF-8" => "StandardCharsets.UTF_8", "US-ASCII" => "StandardCharsets.US_ASCII">}
+	 * creates a mapping {@code charsetNames → {"UTF-8" → "StandardCharsets.UTF_8", "US-ASCII" → "StandardCharsets.US_ASCII"}}.</p>
+	 * <p>In rules, {@code #{charsetNames}} is replaced with the key and the corresponding value
+	 * replaces {@code #{charsetNames_VALUE}}.</p>
+	 */
+	private final Map<String, Map<String, String>> mapVariables = new HashMap<>();
 	
 	/**
 	 * Parses a {@code .sandbox-hint} file from a string.
@@ -156,6 +165,7 @@ public final class HintFileParser {
 	public HintFile parse(Reader reader) throws HintParseException, IOException {
 		HintFile hintFile = new HintFile();
 		foreachVariables.clear();
+		mapVariables.clear();
 		List<String> lines = readAndStripComments(reader);
 		
 		int i = 0;
@@ -362,6 +372,10 @@ public final class HintFileParser {
 				if (key.startsWith("foreach ")) { //$NON-NLS-1$
 					parseForeachDirective(key, value, lineNumber);
 				}
+				// Check for map directive: <!map MAPNAME: "key1" => "val1", "key2" => "val2">
+				else if (key.startsWith("map ")) { //$NON-NLS-1$
+					parseMapDirective(key, value, lineNumber);
+				}
 				// Unknown metadata key is ignored for forward compatibility
 				break;
 		}
@@ -484,6 +498,58 @@ public final class HintFileParser {
 		
 		foreachVariables.put(varName, mappings);
 	}
+
+	/**
+	 * Parses a {@code <!map>} directive and stores the variable mapping.
+	 *
+	 * <p>Syntax: {@code <!map MAPNAME: "key1" => "val1", "key2" => "val2", ...>}</p>
+	 * <p>The map can then be used in rules as {@code #{MAPNAME}} (expands to the key)
+	 * and {@code #{MAPNAME_VALUE}} (expands to the value). Rules containing map
+	 * references are expanded for each entry in the map, similar to {@code <!foreach>}.</p>
+	 *
+	 * <p>The {@code =>} separator distinguishes map entries from foreach's {@code ->}.</p>
+	 *
+	 * @param key the directive key (e.g., "map charsetNames")
+	 * @param value the directive value (e.g., {@code "UTF-8" => "StandardCharsets.UTF_8", ...})
+	 * @param lineNumber the line number for error reporting
+	 * @since 1.4.2
+	 */
+	private void parseMapDirective(String key, String value, int lineNumber) throws HintParseException {
+		String mapName = key.substring("map ".length()).trim(); //$NON-NLS-1$
+		if (mapName.isEmpty()) {
+			throw new HintParseException("map directive requires a name", lineNumber); //$NON-NLS-1$
+		}
+
+		Map<String, String> mappings = new LinkedHashMap<>();
+		List<String> entries = splitForeachEntries(value); // reuse comma-respecting split
+		for (String entry : entries) {
+			entry = entry.trim();
+			if (entry.isEmpty()) {
+				continue;
+			}
+			int arrowIdx = entry.indexOf("=>"); //$NON-NLS-1$
+			if (arrowIdx < 0) {
+				throw new HintParseException(
+						"map entry must use 'key => value' syntax: " + entry, lineNumber); //$NON-NLS-1$
+			}
+			String entryKey = entry.substring(0, arrowIdx).trim();
+			String entryValue = entry.substring(arrowIdx + 2).trim();
+			// Strip quotes from key and value if present
+			if (entryKey.startsWith("\"") && entryKey.endsWith("\"")) { //$NON-NLS-1$ //$NON-NLS-2$
+				entryKey = entryKey.substring(1, entryKey.length() - 1);
+			}
+			if (entryValue.startsWith("\"") && entryValue.endsWith("\"")) { //$NON-NLS-1$ //$NON-NLS-2$
+				entryValue = entryValue.substring(1, entryValue.length() - 1);
+			}
+			mappings.put(entryKey, entryValue);
+		}
+
+		if (mappings.isEmpty()) {
+			throw new HintParseException("map directive has no entries", lineNumber); //$NON-NLS-1$
+		}
+
+		mapVariables.put(mapName, mappings);
+	}
 	
 	/**
 	 * Splits foreach entries at commas, respecting quoted strings.
@@ -555,7 +621,13 @@ public final class HintFileParser {
 		if (foreachVar != null) {
 			expandForeachRule(hintFile, ruleLines, foreachVar, startIndex);
 		} else {
-			buildRule(hintFile, ruleLines, startIndex);
+			// Check if the rule uses map variables — expand if so
+			String mapVar = findMapVariable(ruleLines);
+			if (mapVar != null) {
+				expandMapRule(hintFile, ruleLines, mapVar, startIndex);
+			} else {
+				buildRule(hintFile, ruleLines, startIndex);
+			}
 		}
 		
 		return i;
@@ -600,6 +672,48 @@ public final class HintFileParser {
 		}
 	}
 	
+	/**
+	 * Checks if any rule line contains a {@code #{MAP}} reference to a defined map variable.
+	 *
+	 * @return the map name if found, or {@code null}
+	 * @since 1.4.2
+	 */
+	private String findMapVariable(List<String> ruleLines) {
+		for (String line : ruleLines) {
+			for (String mapName : mapVariables.keySet()) {
+				if (line.contains("#{" + mapName + "}") || line.contains("#{" + mapName + "_VALUE}")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					return mapName;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Expands a rule template for each entry in the map variable's mapping.
+	 *
+	 * <p>{@code #{MAP}} is replaced with the key and
+	 * {@code #{MAP_VALUE}} is replaced with the value.</p>
+	 *
+	 * @since 1.4.2
+	 */
+	private void expandMapRule(HintFile hintFile, List<String> ruleLines,
+			String mapName, int startIndex) throws HintParseException {
+		Map<String, String> mappings = mapVariables.get(mapName);
+		String keyPlaceholder = "#{" + mapName + "}"; //$NON-NLS-1$ //$NON-NLS-2$
+		String valuePlaceholder = "#{" + mapName + "_VALUE}"; //$NON-NLS-1$ //$NON-NLS-2$
+
+		for (Map.Entry<String, String> entry : mappings.entrySet()) {
+			List<String> expandedLines = new ArrayList<>();
+			for (String line : ruleLines) {
+				String expanded = line.replace(keyPlaceholder, entry.getKey())
+						.replace(valuePlaceholder, entry.getValue());
+				expandedLines.add(expanded);
+			}
+			buildRule(hintFile, expandedLines, startIndex);
+		}
+	}
+
 	/**
 	 * Builds a single transformation rule from the given rule lines and adds it to the hint file.
 	 */

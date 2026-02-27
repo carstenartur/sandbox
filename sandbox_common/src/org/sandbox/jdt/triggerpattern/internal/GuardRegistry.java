@@ -53,6 +53,10 @@ import org.sandbox.jdt.triggerpattern.api.GuardFunction;
  *   <tr><td>{@code isDeprecated}</td><td>Checks if a binding is deprecated</td></tr>
  *   <tr><td>{@code contains}</td><td>Checks if a text pattern occurs in the enclosing method body</td></tr>
  *   <tr><td>{@code notContains}</td><td>Checks if a text pattern does NOT occur in the enclosing method body</td></tr>
+ *   <tr><td>{@code isParameter}</td><td>Checks if a binding is a method parameter</td></tr>
+ *   <tr><td>{@code isField}</td><td>Checks if a binding is a field (instance or static)</td></tr>
+ *   <tr><td>{@code isInConstructor}</td><td>Checks if the matched node is inside a constructor</td></tr>
+ *   <tr><td>{@code classOverrides}</td><td>Checks if the enclosing class declares a method with the given name</td></tr>
  * </table>
  * 
  * @since 1.3.2
