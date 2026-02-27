@@ -46,6 +46,12 @@
 - ✅ **Phase 2.1 (partial)**: Type guards — `hasReturnType()`, `paramCount()` for method-level disambiguation
 - ✅ **Phase 2.3 (partial)**: New guards — `hasField()`, `isInLoop()`, `isStringLiteral()` for edge case handling
 
+### Recently Completed (Tier 3 — Per-Rule Metadata & Access Modifiers)
+- ✅ **Phase 3.1-3.3**: Per-rule metadata — `@id:` and `@severity:` annotations; `TransformationRule.getRuleId()` for `RuleUsageTracker` integration
+- ✅ **Phase 3.4**: Access modifier guards — `isPublic()`, `isPrivate()`, `isProtected()`
+- ✅ **Phase 3.5**: `throwsException("type")` guard — checks method throws clause
+- ✅ **Phase 3.6**: Serializer enhancements — emits ruleId, per-rule severity, suppressWarnings, treeKind
+
 ### Pending
 - [ ] Create dedicated test module for unit testing utilities
 - [ ] Extract additional shared utilities from individual plugins

@@ -48,6 +48,12 @@ See [sandbox_common/TODO.md](../sandbox_common/TODO.md#implementation-status-vs-
 - ✅ **Phase 2.1 (partial)**: Type guards — `hasReturnType()`, `paramCount()` for method-level type disambiguation in JUnit migration
 - ✅ **Phase 2.3 (partial)**: New guards — `hasField()`, `isInLoop()`, `isStringLiteral()` for edge case handling and structural queries
 
+### Recently Completed (Tier 3)
+- ✅ **Phase 3.1-3.3**: Per-rule metadata — `@id:` and `@severity:` annotations within rule blocks; `TransformationRule.getRuleId()` for `RuleUsageTracker` integration
+- ✅ **Phase 3.4**: Access modifier guards — `isPublic()`, `isPrivate()`, `isProtected()` for visibility-based rule targeting
+- ✅ **Phase 3.5**: `throwsException("type")` guard — checks if method declares throws clause (with or without specific type)
+- ✅ **Phase 3.6**: Serializer enhancements — `HintFileSerializer` now emits `ruleId`, per-rule severity, `suppressWarnings`, `treeKind` with full round-trip support
+
 ### In Progress
 - [ ] Additional pattern variations
 

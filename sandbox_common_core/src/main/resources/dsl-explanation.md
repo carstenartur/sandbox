@@ -99,6 +99,25 @@ $s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
 
 This expands into two rules: one for `"UTF-8"` → `UTF_8` and one for `"ISO-8859-1"` → `ISO_8859_1`.
 
+### Per-Rule Annotations
+
+Rules within a hint file can have per-rule metadata annotations placed **before** the source pattern:
+
+```
+@id: encoding.fileReader
+@severity: error
+new FileReader($path) :: sourceVersionGE(11)
+=> new FileReader($path, StandardCharsets.UTF_8)
+;;
+```
+
+| Annotation | Description |
+|-----------|-------------|
+| `@id: rule.id` | Unique identifier for this rule, used by `RuleUsageTracker` for usage metrics |
+| `@severity: ERROR` | Per-rule severity override (INFO, WARNING, ERROR, HINT) |
+
+Per-rule annotations are optional. If not specified, the rule inherits the hint-file-level severity.
+
 ### Transformation Rules
 
 Each rule consists of a **pattern** (what to match) and a **rewrite** (what to replace it with).

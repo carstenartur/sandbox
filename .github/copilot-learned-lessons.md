@@ -716,8 +716,28 @@ private static Map<String, Integer> getCache() {
         }
     }
     return cache;
-}
+**Learned**: 2026-02-27
+
+---
+
+## 16. Per-Rule Metadata in DSL — @id: and @severity: Annotations
+
+**Pattern**: To add per-rule metadata within a `.sandbox-hint` file, use `@id:` and `@severity:` annotation lines **before** the source pattern line in a rule block. These lines are recognized by `HintFileParser.buildRule()` before the description/pattern parsing begins.
+
 ```
+@id: encoding.fileReader
+@severity: error
+new FileReader($path)
+=> new FileReader($path, StandardCharsets.UTF_8)
+;;
+```
+
+**Key Facts**:
+- `@id:` and `@severity:` lines are NOT comments (comments start with `//` and are stripped)
+- They must appear at the start of a rule block, before the description prefix and source pattern
+- They are consumed by `buildRule()` before pattern kind inference
+- The `TransformationRule` 7-arg constructor accepts `ruleId` as first parameter
+- Existing 4/5/6-arg constructors pass `null` for `ruleId` (backward compatible)
 
 **Learned**: 2026-02-27
 

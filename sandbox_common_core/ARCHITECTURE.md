@@ -59,6 +59,21 @@ standalone tests and CLI tools to use built-in guards without OSGi.
 - `hasReturnType("type")` — checks if enclosing method return type matches
 - `isStringLiteral($var)` — checks if placeholder is a StringLiteral node
 
+**Tier 3 additions (Phase 3.4/3.5)**:
+- `isPublic($var)` — checks if binding has public access modifier
+- `isPrivate($var)` — checks if binding has private access modifier
+- `isProtected($var)` — checks if binding has protected access modifier
+- `throwsException("type")` — checks if enclosing method declares a matching throws clause
+
+### Per-Rule Metadata (Phase 3.1-3.3)
+
+Rules within a `.sandbox-hint` file can have per-rule annotations:
+- `@id: encoding.fileReader` — unique ID for usage tracking via `RuleUsageTracker`
+- `@severity: error` — overrides the hint-file-level severity
+
+These annotations appear on lines before the source pattern within a rule block.
+`TransformationRule.getRuleId()` and `TransformationRule.getSeverity()` expose them.
+
 ### DSL `<!treeKind:>` Directive (Phase 1.2)
 
 The `HintFileParser` now supports `<!treeKind: METHOD_DECLARATION, IF_STATEMENT>`
