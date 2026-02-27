@@ -239,20 +239,32 @@ public class StatisticsCollector {
 		}
 		Instant earliest = null;
 		Instant latest = null;
+		Instant earliestCommit = null;
+		Instant latestCommit = null;
 		for (CommitEvaluation eval : evaluations) {
 			Instant at = eval.evaluatedAt();
-			if (at == null) {
-				continue;
+			if (at != null) {
+				if (earliest == null || at.isBefore(earliest)) {
+					earliest = at;
+				}
+				if (latest == null || at.isAfter(latest)) {
+					latest = at;
+				}
 			}
-			if (earliest == null || at.isBefore(earliest)) {
-				earliest = at;
-			}
-			if (latest == null || at.isAfter(latest)) {
-				latest = at;
+			Instant cd = eval.commitDate();
+			if (cd != null) {
+				if (earliestCommit == null || cd.isBefore(earliestCommit)) {
+					earliestCommit = cd;
+				}
+				if (latestCommit == null || cd.isAfter(latestCommit)) {
+					latestCommit = cd;
+				}
 			}
 		}
 		if (earliest != null) {
-			this.timeWindow = new TimeWindow(earliest.toString(), latest.toString());
+			this.timeWindow = new TimeWindow(earliest.toString(), latest.toString(),
+					earliestCommit != null ? earliestCommit.toString() : null,
+					latestCommit != null ? latestCommit.toString() : null);
 		}
 	}
 
@@ -289,13 +301,20 @@ public class StatisticsCollector {
 	public static class TimeWindow {
 		private final String earliestEvaluation;
 		private final String latestEvaluation;
+		private final String earliestCommitDate;
+		private final String latestCommitDate;
 
-		public TimeWindow(String earliestEvaluation, String latestEvaluation) {
+		public TimeWindow(String earliestEvaluation, String latestEvaluation,
+				String earliestCommitDate, String latestCommitDate) {
 			this.earliestEvaluation = earliestEvaluation;
 			this.latestEvaluation = latestEvaluation;
+			this.earliestCommitDate = earliestCommitDate;
+			this.latestCommitDate = latestCommitDate;
 		}
 
 		public String getEarliestEvaluation() { return earliestEvaluation; }
 		public String getLatestEvaluation() { return latestEvaluation; }
+		public String getEarliestCommitDate() { return earliestCommitDate; }
+		public String getLatestCommitDate() { return latestCommitDate; }
 	}
 }

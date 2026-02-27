@@ -22,6 +22,7 @@ import java.time.Instant;
  * @param commitMessage         the commit message
  * @param repoUrl               the repository URL
  * @param evaluatedAt           when the evaluation was performed
+ * @param commitDate            the original Git commit's author date
  * @param relevant              whether the commit is relevant for DSL mining
  * @param irrelevantReason      reason if not relevant
  * @param isDuplicate           whether a similar rule already exists
@@ -46,6 +47,7 @@ public record CommitEvaluation(
 		String commitMessage,
 		String repoUrl,
 		Instant evaluatedAt,
+		Instant commitDate,
 		boolean relevant,
 		String irrelevantReason,
 		boolean isDuplicate,
