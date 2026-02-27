@@ -182,9 +182,9 @@
       "lastModelUsed": "gemini-2.5-flash"
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "206aa5802880dae5da4b2ca47664cf599e26194f",
-      "lastProcessedDate": "2026-02-26T21:44:21.688091804Z",
-      "totalProcessed": 705,
+      "lastProcessedCommit": "1101b9c7ad0261eb1ef559ee70d325f3eaa3ad11",
+      "lastProcessedDate": "2026-02-27T04:22:46.965470559Z",
+      "totalProcessed": 1033,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -242,11 +242,20 @@
           "maxRetries": 3
         },
         {
-          "hash": "92945fc12ab3735e68e4b1d56b02a36aa7f5bf64",
-          "message": "Fix for bug 488659 [1.9] Allow effectively-final variables to be used as\nresources in the try-with-resources\n\nChange-Id:",
-          "diffLines": 52,
+          "hash": "a7fd933d3355139bdf6e1300919630a9aaa4cb30",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA9\n\n# Conflicts:\n#\torg.eclipse.jdt.core/batch/org/eclipse/jdt/",
+          "diffLines": 427,
           "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-02-26T21:44:21.688009581Z",
+          "deferredAt": "2026-02-27T04:22:46.948868616Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8de2e23b6c0ac06f97e94fe84bc220619aee5efa",
+          "message": "Bug 500747 - Always wrap cause if throwing new exception\n\nChange-Id: Ia82f6a6cb84761eadd1e9c5b76b9453b1db7c672\nSigned-of",
+          "diffLines": 166,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-27T04:26:22.672847898Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -264,5 +273,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 10678
+  "globalTotalProcessed": 11006
 }
