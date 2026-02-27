@@ -395,18 +395,34 @@ public class TriggerPatternEngine {
 	 * @return {@code true} if the type matches
 	 */
 	private boolean matchesTypeOrSupertype(ITypeBinding typeBinding, String expectedType) {
+		return matchesTypeOrSupertype(typeBinding, expectedType, new java.util.HashSet<>());
+	}
+
+	/**
+	 * Recursively checks if a type binding matches an expected type name,
+	 * using a visited set to prevent infinite recursion.
+	 */
+	private boolean matchesTypeOrSupertype(ITypeBinding typeBinding, String expectedType,
+			java.util.Set<String> visited) {
+		if (typeBinding == null || typeBinding.isRecovered()) {
+			return false;
+		}
+		String qualifiedName = typeBinding.getQualifiedName();
+		if (!visited.add(qualifiedName)) {
+			return false; // Already visited — break potential cycle
+		}
 		if (typeBinding.getName().equals(expectedType) 
-				|| typeBinding.getQualifiedName().equals(expectedType)) {
+				|| qualifiedName.equals(expectedType)) {
 			return true;
 		}
 		// Check superclass chain
 		ITypeBinding superclass = typeBinding.getSuperclass();
-		if (superclass != null && matchesTypeOrSupertype(superclass, expectedType)) {
+		if (matchesTypeOrSupertype(superclass, expectedType, visited)) {
 			return true;
 		}
 		// Check interfaces
 		for (ITypeBinding iface : typeBinding.getInterfaces()) {
-			if (matchesTypeOrSupertype(iface, expectedType)) {
+			if (matchesTypeOrSupertype(iface, expectedType, visited)) {
 				return true;
 			}
 		}
