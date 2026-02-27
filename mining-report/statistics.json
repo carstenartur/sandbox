@@ -1,48 +1,48 @@
 {
-  "totalProcessed": 5,
-  "relevant": 0,
+  "totalProcessed": 6,
+  "relevant": 1,
   "irrelevant": 5,
   "duplicates": 0,
   "green": 0,
   "yellow": 0,
-  "red": 0,
+  "red": 2,
   "irrelevantReasons": {
-    "The commit introduces a new private helper method `checkLength` and refactors existing code to use it. The TriggerPattern DSL is designed for transforming existing language constructs or API calls into more modern or efficient equivalents, not for introducing new internal utility methods specific to a class and refactoring to them. This change is too specific to the internal implementation logic of `ASTConverter.java` and involves method introduction, which is not supported.": 1,
-    "The commit introduces a new overloaded method and refactors an existing method to delegate to it, adding a new boolean parameter to control internal logic. The TriggerPattern DSL is designed for transforming existing expressions or statements, not for introducing new method overloads or altering method implementations to this extent. This is a structural refactoring that goes beyond simple pattern matching and replacement.": 1,
-    "This commit modifies the internal formatting logic of the Eclipse JDT AST rewriting engine (`ASTRewriteAnalyzer.java`), specifically related to how annotations on variable declarations within expressions (such as resources in a try-with-resources statement) are handled during code generation. It addresses a bug in the IDE\u0027s formatting rather than introducing a pattern for transforming user-written Java code. Therefore, it cannot be generalized into a TriggerPattern DSL rule, which focuses on changing the semantic structure or API usage in source code.": 1,
-    "The commit modifies internal JDT AST rewriting and formatting logic, specifically how line breaks are handled after annotations in various contexts (method parameters, local variables, type annotations). This is an infrastructure change related to code style and formatting within the AST rewrite engine, not a semantic code transformation that can be generalized into a TriggerPattern DSL rule. The DSL is designed for pattern-matching and replacing code structures, not controlling the output formatting of the JDT rewriter.": 1,
-    "The commit fixes an internal binding resolution logic within Eclipse JDT\u0027s AST (Abstract Syntax Tree) processing, specifically for resolving types of expressions within single-member annotations involving generic method calls. This is an internal compiler/IDE fix, not a transformation of user-facing Java source code. TriggerPattern DSL is designed for source code transformations, not for modifying the compiler\u0027s behavior.": 1
+    "This commit updates the Eclipse JDT AST (Abstract Syntax Tree) converter to properly parse and represent Java 9\u0027s enhancement to try-with-resources, allowing effectively-final variables to be used as resources. It\u0027s an internal compiler/parser improvement, not a code transformation from an old pattern to a new one that the TriggerPattern DSL can implement. The DSL does not support refactoring control flow or introducing new try-with-resources blocks from older try-finally structures.": 1,
+    "This commit further enhances the Eclipse JDT AST to support Java 9\u0027s try-with-resources, specifically by allowing arbitrary `Expression` nodes (like `NameReference` or `FieldReference`) as resources, not just `VariableDeclarationExpression`. This is a core compiler/parser update to recognize new language syntax, not a code transformation. The TriggerPattern DSL is designed for pattern-based expression and annotation replacements, not for refactoring complex control flow statements like converting an existing try-finally block into a try-with-resources statement with an existing effectively-final variable.": 1,
+    "The commit modifies Javadoc comments and `@deprecated` tags, which are documentation and metadata. The TriggerPattern DSL is designed for transforming actual Java code patterns and API usage, not for modifying comments or annotation parameters directly (unless the annotation itself is being replaced, e.g., `@Before` to `@BeforeEach`).": 1,
+    "The commit updates internal Eclipse JDT AST model and parsing logic to support Java 9\u0027s try-with-resources syntax (allowing a Name as a resource). Specifically, it widens the type of resources in `TryStatement` from `VariableDeclarationExpression` to `Expression` and updates the internal ASTParser version. This is an internal API and AST representation change, not a code transformation applicable to user-level Java code that can be expressed with the TriggerPattern DSL.": 1,
+    "The changes involve method signature refactoring (adding/removing parameters) and complex structural transformations (converting a `for` loop to Java 8 Stream API with functional interfaces). These types of transformations are beyond the current capabilities of the TriggerPattern DSL, which is primarily designed for expression-level pattern matching and replacement, or simple annotation additions to methods.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 5,
-      "relevant": 0,
+      "totalProcessed": 6,
+      "relevant": 1,
       "green": 0,
       "yellow": 0,
-      "red": 0
+      "red": 2
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-02-26",
-      "processed": 5,
-      "relevant": 0
+      "date": "2026-02-27",
+      "processed": 6,
+      "relevant": 1
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-02-26T21:30:15.766Z",
-    "completedAt": "2026-02-26T21:44:22.255426482Z",
-    "durationSeconds": 846,
+    "startedAt": "2026-02-27T04:15:05.103Z",
+    "completedAt": "2026-02-27T04:26:22.975225061Z",
+    "durationSeconds": 677,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
-    "batchSize": 10,
+    "batchSize": 200,
     "commitsPerRequest": 4,
-    "apiCallsMade": 4,
-    "deferredCommits": 25,
+    "apiCallsMade": 5,
+    "deferredCommits": 26,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-02-26T21:31:40.865157745Z",
-    "latestEvaluation": "2026-02-26T21:37:10.118965653Z"
+    "earliestEvaluation": "2026-02-27T04:16:27.457951867Z",
+    "latestEvaluation": "2026-02-27T04:19:11.293223217Z"
   }
 }
