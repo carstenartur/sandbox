@@ -71,12 +71,12 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
             case ITERABLE:
                 // StreamSupport.stream(iterable.spliterator(), false)
                 MethodInvocation streamSupport = ast.newMethodInvocation();
-                streamSupport.setExpression(ast.newSimpleName("StreamSupport"));
+                streamSupport.setExpression(ast.newSimpleName(STREAM_SUPPORT_CLASS_NAME));
                 streamSupport.setName(ast.newSimpleName(STREAM_METHOD));
                 
                 MethodInvocation spliterator = ast.newMethodInvocation();
                 spliterator.setExpression(createExpression(source.expression()));
-                spliterator.setName(ast.newSimpleName("spliterator"));
+                spliterator.setName(ast.newSimpleName(SPLITERATOR_METHOD));
                 
                 streamSupport.arguments().add(spliterator);
                 streamSupport.arguments().add(ast.newBooleanLiteral(false));
@@ -494,13 +494,13 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 collector.setName(ast.newSimpleName(TO_SET_METHOD));
                 break;
             case TO_MAP:
-                collector.setName(ast.newSimpleName("toMap"));
+                collector.setName(ast.newSimpleName(TO_MAP_METHOD));
                 break;
             case JOINING:
-                collector.setName(ast.newSimpleName("joining"));
+                collector.setName(ast.newSimpleName(JOINING_METHOD));
                 break;
             case GROUPING_BY:
-                collector.setName(ast.newSimpleName("groupingBy"));
+                collector.setName(ast.newSimpleName(GROUPING_BY_METHOD));
                 break;
             case CUSTOM:
             default:

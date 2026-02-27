@@ -56,6 +56,13 @@ public final class StreamConstants {
 	public static final String STREAM_METHOD = LibStandardNames.METHOD_STREAM;
 
 	/**
+	 * Method name for creating a parallel stream from a collection.
+	 * <p>
+	 * Used in: {@code collection.parallelStream()}
+	 */
+	public static final String PARALLEL_STREAM_METHOD = "parallelStream"; //$NON-NLS-1$
+
+	/**
 	 * Method name for intermediate filter operation.
 	 * @see LibStandardNames#METHOD_FILTER
 	 */
@@ -138,6 +145,27 @@ public final class StreamConstants {
 	 */
 	public static final String TO_SET_METHOD = "toSet"; //$NON-NLS-1$
 
+	/**
+	 * Method name for Collectors.toMap() factory method.
+	 * <p>
+	 * Used in: {@code stream.collect(Collectors.toMap(...))}
+	 */
+	public static final String TO_MAP_METHOD = "toMap"; //$NON-NLS-1$
+
+	/**
+	 * Method name for Collectors.joining() factory method.
+	 * <p>
+	 * Used in: {@code stream.collect(Collectors.joining())}
+	 */
+	public static final String JOINING_METHOD = "joining"; //$NON-NLS-1$
+
+	/**
+	 * Method name for Collectors.groupingBy() factory method.
+	 * <p>
+	 * Used in: {@code stream.collect(Collectors.groupingBy(...))}
+	 */
+	public static final String GROUPING_BY_METHOD = "groupingBy"; //$NON-NLS-1$
+
 	// ========== Converter-Specific Constants ==========
 
 	/**
@@ -156,6 +184,20 @@ public final class StreamConstants {
 	 * Used for creating streams from arrays: {@code Arrays.stream(array)}
 	 */
 	public static final String ARRAYS_CLASS_NAME = "Arrays"; //$NON-NLS-1$
+
+	/**
+	 * Simple class name for StreamSupport utility class.
+	 * <p>
+	 * Used for creating streams from iterables: {@code StreamSupport.stream(spliterator, false)}
+	 */
+	public static final String STREAM_SUPPORT_CLASS_NAME = "StreamSupport"; //$NON-NLS-1$
+
+	/**
+	 * Method name for Iterable.spliterator().
+	 * <p>
+	 * Used in: {@code iterable.spliterator()}
+	 */
+	public static final String SPLITERATOR_METHOD = "spliterator"; //$NON-NLS-1$
 
 	// ========== Math Class Constants (delegating to LibStandardNames) ==========
 
