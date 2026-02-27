@@ -24,7 +24,6 @@ import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -48,6 +47,8 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.util.ASTNavigationUtils;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
  * Helper class for refactoring JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
@@ -118,15 +119,15 @@ public final class TestNameRefactorer {
 			IType subclassType = (IType) subclassBinding.getJavaElement();
 
 			CompilationUnit subclassUnit = ASTNavigationUtils.parseCompilationUnit(subclassType.getCompilationUnit());
-			subclassUnit.accept(new ASTVisitor() {
-				@Override
-				public boolean visit(TypeDeclaration subclassNode) {
+			ReferenceHolder<String, Object> subHolder = ReferenceHolder.create();
+			AstProcessorBuilder.with(subHolder)
+				.onTypeDeclaration((subclassNode, h) -> {
 					if (subclassNode.resolveBinding().equals(subclassBinding)) {
 						refactorTestnameInClass(group, rewriter, subclassNode.getAST(), importRewrite, node);
 					}
 					return false;
-				}
-			});
+				})
+				.build(subclassUnit);
 		}
 	}
 
@@ -179,9 +180,9 @@ public final class TestNameRefactorer {
 			TextEditGroup group) {
 		for (MethodDeclaration method : parentClass.getMethods()) {
 			if (method.getBody() != null) {
-				method.getBody().accept(new ASTVisitor() {
-					@Override
-					public boolean visit(MethodInvocation node) {
+				ReferenceHolder<String, Object> refHolder = ReferenceHolder.create();
+				AstProcessorBuilder.with(refHolder)
+					.onMethodInvocation((node, h) -> {
 						if (node.getExpression() != null) {
 							ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();
 							if (typeBinding != null && ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName())) {
@@ -189,9 +190,9 @@ public final class TestNameRefactorer {
 								rewriter.replace(node, newFieldAccess, group);
 							}
 						}
-						return super.visit(node);
-					}
-				});
+						return true;
+					})
+					.build(method.getBody());
 			}
 		}
 	}
@@ -214,18 +215,18 @@ public final class TestNameRefactorer {
 		
 		// First, find all TestName.getMethodName() calls in the original and record their positions
 		final java.util.Set<MethodInvocation> testNameCalls = new java.util.HashSet<>();
-		originalNode.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(MethodInvocation node) {
+		ReferenceHolder<String, Object> scanHolder = ReferenceHolder.create();
+		AstProcessorBuilder.with(scanHolder)
+			.onMethodInvocation((node, h) -> {
 				if (node.getExpression() != null && "getMethodName".equals(node.getName().getIdentifier())) {
 					ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();
 					if (typeBinding != null && ORG_JUNIT_RULES_TEST_NAME.equals(typeBinding.getQualifiedName())) {
 						testNameCalls.add(node);
 					}
 				}
-				return super.visit(node);
-			}
-		});
+				return true;
+			})
+			.build(originalNode);
 		
 		// If no TestName calls found, just return a simple copy
 		if (testNameCalls.isEmpty()) {
@@ -237,9 +238,9 @@ public final class TestNameRefactorer {
 		
 		// Now transform the copy - we need to find the corresponding nodes in the copy
 		// by matching the pattern (since we know from the original which ones need transformation)
-		copiedNode.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(MethodInvocation node) {
+		ReferenceHolder<String, Object> transformHolder = ReferenceHolder.create();
+		AstProcessorBuilder.with(transformHolder)
+			.onMethodInvocation((node, h) -> {
 				if (node.getExpression() != null && "getMethodName".equals(node.getName().getIdentifier())) {
 					// In the copy, we can't check type bindings, but we know from the original
 					// that getMethodName() calls on SimpleName expressions should be transformed
@@ -248,9 +249,9 @@ public final class TestNameRefactorer {
 						replaceInParent(node, replacement);
 					}
 				}
-				return super.visit(node);
-			}
-		});
+				return true;
+			})
+			.build(copiedNode);
 		
 		return copiedNode;
 	}
@@ -273,9 +274,9 @@ public final class TestNameRefactorer {
 			return copiedNode;
 		}
 		
-		copiedNode.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(MethodInvocation node) {
+		ReferenceHolder<String, Object> legacyHolder = ReferenceHolder.create();
+		AstProcessorBuilder.with(legacyHolder)
+			.onMethodInvocation((node, h) -> {
 				// Check if this is a getMethodName() call on a TestName-typed expression
 				if (node.getExpression() != null && "getMethodName".equals(node.getName().getIdentifier())) {
 					ITypeBinding typeBinding = node.getExpression().resolveTypeBinding();
@@ -292,9 +293,9 @@ public final class TestNameRefactorer {
 						replaceInParent(node, replacement);
 					}
 				}
-				return super.visit(node);
-			}
-		});
+				return true;
+			})
+			.build(copiedNode);
 		
 		return copiedNode;
 	}

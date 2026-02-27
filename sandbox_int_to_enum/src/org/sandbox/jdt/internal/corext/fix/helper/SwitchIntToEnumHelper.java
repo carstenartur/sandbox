@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
@@ -46,6 +45,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHolder;
@@ -72,9 +72,9 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 	public void find(IntToEnumFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SwitchStatement node) {
+		ReferenceHolder<String, Object> findHolder = ReferenceHolder.create();
+		AstProcessorBuilder.with(findHolder)
+			.onSwitchStatement((node, h) -> {
 				if (nodesprocessed.contains(node)) {
 					return true;
 				}
@@ -152,8 +152,8 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 				nodesprocessed.add(node);
 
 				return true;
-			}
-		});
+			})
+			.build(compilationUnit);
 	}
 
 	/**
@@ -197,9 +197,9 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 	private static boolean hasReferencesOutsideSwitch(CompilationUnit cu, Set<String> constantNames,
 			SwitchStatement switchStatement) {
 		AtomicBoolean hasExternalRef = new AtomicBoolean(false);
-		cu.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SimpleName node) {
+		ReferenceHolder<String, Object> refHolder = ReferenceHolder.create();
+		AstProcessorBuilder.with(refHolder)
+			.onSimpleName((node, h) -> {
 				if (hasExternalRef.get()) {
 					return false;
 				}
@@ -224,8 +224,8 @@ public class SwitchIntToEnumHelper extends AbstractTool<ReferenceHolder<Integer,
 				// Reference found outside the switch statement
 				hasExternalRef.set(true);
 				return false;
-			}
-		});
+			})
+			.build(cu);
 		return hasExternalRef.get();
 	}
 

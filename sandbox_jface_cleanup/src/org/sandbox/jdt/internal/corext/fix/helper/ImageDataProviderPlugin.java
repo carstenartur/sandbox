@@ -18,7 +18,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -38,6 +37,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
@@ -119,10 +119,9 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
 		
-		compilationUnit.accept(new ASTVisitor() {
-			
-			@Override
-			public boolean visit(ClassInstanceCreation node) {
+		ReferenceHolder<String, Object> findHolder = ReferenceHolder.create();
+		AstProcessorBuilder.with(findHolder)
+			.onClassInstanceCreation((node, h) -> {
 				// Check if this is a new Image(...) creation
 				ITypeBinding typeBinding = node.getType().resolveBinding();
 				if (typeBinding == null || !IMAGE.equals(typeBinding.getQualifiedName())) {
@@ -197,8 +196,8 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 				operations.add(fixcore.rewrite(dataholder));
 				
 				return true;
-			}
-		});
+			})
+			.build(compilationUnit);
 	}
 
 	/**
@@ -222,9 +221,9 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 		final VariableDeclarationStatement[] result = new VariableDeclarationStatement[1];
 		final String varIdentifier = varName.getIdentifier();
 		
-		parent.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(VariableDeclarationStatement node) {
+		ReferenceHolder<String, Object> searchHolder = ReferenceHolder.create();
+		AstProcessorBuilder.with(searchHolder)
+			.onVariableDeclarationStatement((node, h) -> {
 				ITypeBinding typeBinding = node.getType().resolveBinding();
 				if (typeBinding != null && IMAGE_DATA.equals(typeBinding.getQualifiedName())) {
 					@SuppressWarnings("unchecked")
@@ -237,8 +236,8 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 					}
 				}
 				return true;
-			}
-		});
+			})
+			.build(parent);
 		
 		return result[0];
 	}
@@ -287,9 +286,9 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 		// Count references to the variable (excluding the declaration)
 		final int[] count = new int[1];
 		
-		parent.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SimpleName node) {
+		ReferenceHolder<String, Object> countHolder = ReferenceHolder.create();
+		AstProcessorBuilder.with(countHolder)
+			.onSimpleName((node, h) -> {
 				// Check if this node refers to the same variable binding
 				IBinding nodeBinding = node.resolveBinding();
 				if (nodeBinding != null && nodeBinding.equals(varBinding)) {
@@ -308,8 +307,8 @@ AbstractTool<ReferenceHolder<Integer, ImageDataProviderPlugin.ImageDataHolder>> 
 					}
 				}
 				return true;
-			}
-		});
+			})
+			.build(parent);
 		
 		return count[0];
 	}

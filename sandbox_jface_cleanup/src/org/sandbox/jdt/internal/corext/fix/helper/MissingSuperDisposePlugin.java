@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.correction.ASTRewriteCorrectionProposal;
 import org.eclipse.swt.graphics.Image;
+import org.sandbox.jdt.internal.common.LibStandardNames;
 import org.sandbox.jdt.triggerpattern.api.BodyConstraint;
 import org.sandbox.jdt.triggerpattern.api.Hint;
 import org.sandbox.jdt.triggerpattern.eclipse.HintContext;
@@ -116,7 +117,7 @@ public class MissingSuperDisposePlugin {
 		AST ast = ctx.getASTRewrite().getAST();
 		
 		SuperMethodInvocation superCall = ast.newSuperMethodInvocation();
-		superCall.setName(ast.newSimpleName("dispose")); //$NON-NLS-1$
+		superCall.setName(ast.newSimpleName(LibStandardNames.METHOD_DISPOSE));
 		
 		ExpressionStatement superCallStmt = ast.newExpressionStatement(superCall);
 		
@@ -157,7 +158,7 @@ public class MissingSuperDisposePlugin {
 				ExpressionStatement exprStmt = (ExpressionStatement) stmt;
 				if (exprStmt.getExpression() instanceof SuperMethodInvocation) {
 					SuperMethodInvocation superCall = (SuperMethodInvocation) exprStmt.getExpression();
-					if ("dispose".equals(superCall.getName().getIdentifier())) { //$NON-NLS-1$
+					if (LibStandardNames.METHOD_DISPOSE.equals(superCall.getName().getIdentifier())) {
 						return true;
 					}
 				}

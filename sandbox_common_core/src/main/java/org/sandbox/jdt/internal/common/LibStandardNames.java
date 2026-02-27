@@ -334,4 +334,9 @@ public class LibStandardNames {
 	 * Method name for {@link IProgressMonitor#beginTask(String, int)}
 	 */
 	public static final String METHOD_BEGIN_TASK = "beginTask"; //$NON-NLS-1$
+
+	/**
+	 * Method name for dispose() methods (e.g., Widget.dispose(), Resource.dispose())
+	 */
+	public static final String METHOD_DISPOSE = "dispose"; //$NON-NLS-1$
 }
