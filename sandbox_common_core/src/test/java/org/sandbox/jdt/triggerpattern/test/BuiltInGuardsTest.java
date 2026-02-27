@@ -103,6 +103,7 @@ public class BuiltInGuardsTest {
 	public void testAllBuiltInGuardsRegistered() {
 		// Verify all expected guards are registered
 		assertTrue(guards.containsKey("instanceof")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("subtypeOf")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("matchesAny")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("matchesNone")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("sourceVersionGE")); //$NON-NLS-1$
@@ -117,6 +118,7 @@ public class BuiltInGuardsTest {
 		assertTrue(guards.containsKey("isNullable")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("isNonNull")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("methodNameMatches")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("hasSuppressWarnings")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -794,6 +796,148 @@ public class BuiltInGuardsTest {
 
 		// No arguments — should return false
 		assertFalse(guard.evaluate(ctx), "Should return false with no arguments"); //$NON-NLS-1$
+	}
+
+	// --- subtypeOf guard tests ---
+
+	@Test
+	public void testSubtypeOfGuardGracefulDegradation() {
+		GuardFunction subtypeOf = guards.get("subtypeOf"); //$NON-NLS-1$
+		String code = "class Test { void m() { String s = \"hello\"; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithoutBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", stmt); //$NON-NLS-1$
+		Match match = new Match(stmt, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		// Without binding resolution, subtypeOf should gracefully degrade to true
+		assertTrue(subtypeOf.evaluate(ctx, "$x", "java.lang.Object"), //$NON-NLS-1$ //$NON-NLS-2$
+				"subtypeOf should return true without bindings (graceful degradation)"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testSubtypeOfGuardNullBinding() {
+		GuardFunction subtypeOf = guards.get("subtypeOf"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(subtypeOf.evaluate(ctx, "$x", "java.lang.String"), //$NON-NLS-1$ //$NON-NLS-2$
+				"subtypeOf should return false when binding is missing"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testSubtypeOfGuardInsufficientArgs() {
+		GuardFunction subtypeOf = guards.get("subtypeOf"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(subtypeOf.evaluate(ctx), "Should return false with no args"); //$NON-NLS-1$
+		assertFalse(subtypeOf.evaluate(ctx, "$x"), "Should return false with only one arg"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	// --- hasSuppressWarnings guard tests ---
+
+	@Test
+	public void testHasSuppressWarningsWithSingleValue() {
+		GuardFunction guard = guards.get("hasSuppressWarnings"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				@SuppressWarnings("unchecked")
+				void m() {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "unchecked"), //$NON-NLS-1$
+				"Should detect @SuppressWarnings(\"unchecked\") on method"); //$NON-NLS-1$
+		assertFalse(guard.evaluate(ctx, "deprecation"), //$NON-NLS-1$
+				"Should not match a different key"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testHasSuppressWarningsWithArrayValue() {
+		GuardFunction guard = guards.get("hasSuppressWarnings"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				@SuppressWarnings({"unchecked", "deprecation"})
+				void m() {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "deprecation"), //$NON-NLS-1$
+				"Should detect 'deprecation' in array @SuppressWarnings"); //$NON-NLS-1$
+		assertTrue(guard.evaluate(ctx, "unchecked"), //$NON-NLS-1$
+				"Should detect 'unchecked' in array @SuppressWarnings"); //$NON-NLS-1$
+		assertFalse(guard.evaluate(ctx, "rawtypes"), //$NON-NLS-1$
+				"Should not match absent key"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testHasSuppressWarningsOnClass() {
+		GuardFunction guard = guards.get("hasSuppressWarnings"); //$NON-NLS-1$
+		String code = """
+			@SuppressWarnings("all")
+			class Test {
+				void m() {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "all"), //$NON-NLS-1$
+				"Should detect @SuppressWarnings on enclosing class"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testHasSuppressWarningsAbsent() {
+		GuardFunction guard = guards.get("hasSuppressWarnings"); //$NON-NLS-1$
+		String code = """
+			class Test {
+				void m() {
+					int x = 1;
+				}
+			}
+			"""; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode stmt = (ASTNode) method.getBody().statements().get(0);
+
+		Match match = new Match(stmt, new HashMap<>(), stmt.getStartPosition(), stmt.getLength());
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(guard.evaluate(ctx, "unchecked"), //$NON-NLS-1$
+				"Should return false when no @SuppressWarnings present"); //$NON-NLS-1$
 	}
 
 	// --- Helper methods ---

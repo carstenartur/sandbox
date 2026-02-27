@@ -15,6 +15,7 @@ package org.sandbox.jdt.triggerpattern.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -413,6 +414,31 @@ public class TriggerPatternEngineTest {
 		assertEquals(1, matches.size(), "java.lang.String FQN pattern should match String without explicit import");
 	}
 	
+	@Test
+	public void testFindMatchesByNodeType() {
+		String code = """
+			class Test {
+				void method1() { }
+				void method2() { }
+			}
+			""";
+
+		CompilationUnit cu = parse(code);
+		List<Match> matches = engine.findMatchesByNodeType(cu, ASTNode.METHOD_DECLARATION);
+
+		assertEquals(2, matches.size(), "Should find two method declarations");
+	}
+
+	@Test
+	public void testPatternConstraintsProperty() {
+		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		assertNull(pattern.getConstraints(), "Default constraints should be null");
+
+		Pattern patternWithConstraints = new Pattern("$x.toString()", PatternKind.EXPRESSION,
+				null, null, null, null, null);
+		assertNull(patternWithConstraints.getConstraints(), "Null constraints should remain null");
+	}
+
 	private CompilationUnit parse(String code) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(code.toCharArray());

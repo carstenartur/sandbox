@@ -87,6 +87,7 @@ public final class BuiltInGuards {
 	public static void registerAll(Map<String, GuardFunction> guards) {
 		// Type guards
 		guards.put("instanceof", BuiltInGuards::evaluateInstanceOf); //$NON-NLS-1$
+		guards.put("subtypeOf", BuiltInGuards::evaluateSubtypeOf); //$NON-NLS-1$
 
 		// Structural guards
 		guards.put("matchesAny", BuiltInGuards::evaluateMatchesAny); //$NON-NLS-1$
@@ -148,6 +149,9 @@ public final class BuiltInGuards {
 
 		// Type hierarchy guard — checks if enclosing class extends a given type
 		guards.put("enclosingClassExtends", BuiltInGuards::evaluateEnclosingClassExtends); //$NON-NLS-1$
+
+		// SuppressWarnings guard — checks if enclosing element has @SuppressWarnings with given key
+		guards.put("hasSuppressWarnings", BuiltInGuards::evaluateHasSuppressWarnings); //$NON-NLS-1$
 	}
 
 	/**
@@ -192,6 +196,66 @@ public final class BuiltInGuards {
 		}
 
 		return matchesTypeName(typeBinding, typeName);
+	}
+
+	/**
+	 * Checks if the bound node's type is a subtype of a given fully qualified type name.
+	 * Walks the type hierarchy via {@link ITypeBinding#getSuperclass()} and
+	 * {@link ITypeBinding#getInterfaces()}.
+	 *
+	 * <p><b>Graceful degradation:</b> If the type binding cannot be resolved,
+	 * this guard returns {@code true} to allow the rule to match.</p>
+	 *
+	 * Args: [placeholderName, fullyQualifiedTypeName]
+	 * @since 1.4.0
+	 */
+	private static boolean evaluateSubtypeOf(GuardContext ctx, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		String targetFqn = stripQuotes(args[1].toString());
+
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+
+		ITypeBinding typeBinding = resolveTypeBinding(node);
+		if (typeBinding == null) {
+			// Graceful degradation: assume match if bindings not available
+			return true;
+		}
+
+		return isSubtypeOf(typeBinding, targetFqn, new java.util.HashSet<>());
+	}
+
+	/**
+	 * Recursively checks if a type binding is a subtype of the given FQN,
+	 * walking the superclass chain and all interfaces.
+	 */
+	private static boolean isSubtypeOf(ITypeBinding typeBinding, String targetFqn, java.util.Set<String> visited) {
+		if (typeBinding == null || typeBinding.isRecovered()) {
+			return false;
+		}
+		String qualifiedName = typeBinding.getQualifiedName();
+		if (!visited.add(qualifiedName)) {
+			return false; // Already visited — break potential cycle
+		}
+		if (targetFqn.equals(qualifiedName)) {
+			return true;
+		}
+		// Check superclass
+		if (isSubtypeOf(typeBinding.getSuperclass(), targetFqn, visited)) {
+			return true;
+		}
+		// Check interfaces
+		for (ITypeBinding iface : typeBinding.getInterfaces()) {
+			if (isSubtypeOf(iface, targetFqn, visited)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1417,5 +1481,25 @@ public final class BuiltInGuards {
 		}
 		ITypeBinding superclass = typeBinding.getSuperclass();
 		return extendsType(superclass, targetFqn, visited);
+	}
+
+	/**
+	 * Checks if the matched node's enclosing method, field, or type declaration has a
+	 * {@code @SuppressWarnings} annotation containing the specified key.
+	 *
+	 * <p>Walks up the AST from the matched node checking each enclosing
+	 * {@link BodyDeclaration} for a {@code @SuppressWarnings} annotation
+	 * whose value contains the given key.</p>
+	 *
+	 * Args: [suppressWarningsKey]
+	 * @since 1.4.0
+	 */
+	private static boolean evaluateHasSuppressWarnings(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String key = stripQuotes(args[0].toString());
+		ASTNode node = ctx.getMatchedNode();
+		return SuppressWarningsChecker.isSuppressed(node, key);
 	}
 }

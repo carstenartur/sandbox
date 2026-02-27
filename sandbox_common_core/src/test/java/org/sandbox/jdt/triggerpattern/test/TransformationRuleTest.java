@@ -192,4 +192,23 @@ public class TransformationRuleTest {
 		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);
 		return cu.types().isEmpty() ? cu : (ASTNode) cu.types().get(0);
 	}
+
+	@Test
+	public void testTransformationRuleWithSeverity() {
+		Pattern pattern = new Pattern("$x.size() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(
+				"Use isEmpty()", pattern, null, List.of(), null, //$NON-NLS-1$
+				org.sandbox.jdt.triggerpattern.api.Severity.WARNING);
+
+		assertEquals(org.sandbox.jdt.triggerpattern.api.Severity.WARNING, rule.getSeverity());
+	}
+
+	@Test
+	public void testTransformationRuleDefaultSeverityNull() {
+		Pattern pattern = new Pattern("$x.size() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		TransformationRule rule = new TransformationRule(
+				"Use isEmpty()", pattern, null, List.of()); //$NON-NLS-1$
+
+		assertNull(rule.getSeverity(), "Default severity should be null (inherit from hint file)"); //$NON-NLS-1$
+	}
 }

@@ -1145,4 +1145,81 @@ public class HintFileParserTest {
 		assertEquals(PatternKind.METHOD_DECLARATION, rule.sourcePattern().getKind());
 		assertNotNull(rule.sourceGuard(), "Guard with !isStatic should be parsed"); //$NON-NLS-1$
 	}
+
+	@Test
+	public void testParseSuppressWarningsDirective() throws HintParseException {
+		String content = """
+			<!suppressWarnings: collection-size-check>
+			$list.size() == 0
+			=> $list.isEmpty()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertNotNull(hintFile);
+		assertEquals(1, hintFile.getSuppressWarnings().size());
+		assertEquals("collection-size-check", hintFile.getSuppressWarnings().get(0)); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testParseSuppressWarningsMultipleKeys() throws HintParseException {
+		String content = """
+			<!suppressWarnings: collection-size-check, string-equals>
+			$list.size() == 0
+			=> $list.isEmpty()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertNotNull(hintFile);
+		assertEquals(2, hintFile.getSuppressWarnings().size());
+		assertTrue(hintFile.getSuppressWarnings().contains("collection-size-check")); //$NON-NLS-1$
+		assertTrue(hintFile.getSuppressWarnings().contains("string-equals")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testParseSeverityDirective() throws HintParseException {
+		String content = """
+			<!severity: error>
+			$list.size() == 0
+			=> $list.isEmpty()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertNotNull(hintFile);
+		assertEquals(Severity.ERROR, hintFile.getSeverity());
+	}
+
+	@Test
+	public void testParseSeverityDirectiveWarning() throws HintParseException {
+		String content = """
+			<!severity: warning>
+			$list.size() == 0
+			=> $list.isEmpty()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertNotNull(hintFile);
+		assertEquals(Severity.WARNING, hintFile.getSeverity());
+	}
+
+	@Test
+	public void testDefaultSeverityIsInfo() throws HintParseException {
+		String content = """
+			$list.size() == 0
+			=> $list.isEmpty()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertNotNull(hintFile);
+		assertEquals(Severity.INFO, hintFile.getSeverity());
+	}
 }

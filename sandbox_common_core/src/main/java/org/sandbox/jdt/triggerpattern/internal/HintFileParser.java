@@ -346,6 +346,11 @@ public final class HintFileParser {
 			case "caseInsensitive": //$NON-NLS-1$
 				hintFile.setCaseInsensitive(true);
 				break;
+			case "suppressWarnings": //$NON-NLS-1$
+				for (String sw : value.split("\\s*,\\s*")) { //$NON-NLS-1$
+					hintFile.addSuppressWarnings(sw);
+				}
+				break;
 			default:
 				// Check for foreach directive: <!foreach VARNAME: key1 -> val1, key2 -> val2>
 				if (key.startsWith("foreach ")) { //$NON-NLS-1$

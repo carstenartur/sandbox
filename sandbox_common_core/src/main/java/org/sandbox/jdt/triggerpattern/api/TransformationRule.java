@@ -52,6 +52,7 @@ public final class TransformationRule {
 	private final GuardExpression sourceGuard;
 	private final List<RewriteAlternative> alternatives;
 	private final ImportDirective importDirective;
+	private final Severity severity;
 	
 	/**
 	 * Creates a new transformation rule.
@@ -63,7 +64,7 @@ public final class TransformationRule {
 	 */
 	public TransformationRule(String description, Pattern sourcePattern,
 			GuardExpression sourceGuard, List<RewriteAlternative> alternatives) {
-		this(description, sourcePattern, sourceGuard, alternatives, null);
+		this(description, sourcePattern, sourceGuard, alternatives, null, null);
 	}
 	
 	/**
@@ -78,6 +79,23 @@ public final class TransformationRule {
 	public TransformationRule(String description, Pattern sourcePattern,
 			GuardExpression sourceGuard, List<RewriteAlternative> alternatives,
 			ImportDirective importDirective) {
+		this(description, sourcePattern, sourceGuard, alternatives, importDirective, null);
+	}
+	
+	/**
+	 * Creates a new transformation rule with import directives and severity.
+	 * 
+	 * @param description optional description (may be {@code null})
+	 * @param sourcePattern the pattern to match
+	 * @param sourceGuard optional guard on the source pattern (may be {@code null})
+	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
+	 * @param importDirective optional import directives (may be {@code null})
+	 * @param severity optional per-rule severity level (may be {@code null} to inherit from hint file)
+	 * @since 1.4.0
+	 */
+	public TransformationRule(String description, Pattern sourcePattern,
+			GuardExpression sourceGuard, List<RewriteAlternative> alternatives,
+			ImportDirective importDirective, Severity severity) {
 		this.description = description;
 		this.sourcePattern = Objects.requireNonNull(sourcePattern, "Source pattern cannot be null"); //$NON-NLS-1$
 		this.sourceGuard = sourceGuard;
@@ -85,6 +103,7 @@ public final class TransformationRule {
 				? Collections.unmodifiableList(alternatives)
 				: Collections.emptyList();
 		this.importDirective = importDirective;
+		this.severity = severity;
 	}
 	
 	/**
@@ -150,6 +169,19 @@ public final class TransformationRule {
 	 */
 	public boolean hasImportDirective() {
 		return importDirective != null && !importDirective.isEmpty();
+	}
+	
+	/**
+	 * Returns the per-rule severity level.
+	 * 
+	 * <p>If not set, the severity should be inherited from the containing
+	 * {@link HintFile}.</p>
+	 * 
+	 * @return the severity, or {@code null} if not set (inherit from hint file)
+	 * @since 1.4.0
+	 */
+	public Severity getSeverity() {
+		return severity;
 	}
 	
 	/**
