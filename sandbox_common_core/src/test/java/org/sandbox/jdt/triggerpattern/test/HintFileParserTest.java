@@ -664,6 +664,97 @@ public class HintFileParserTest {
 		assertThrows(HintParseException.class, () -> parser.parse(content));
 	}
 
+	// ---- Map directive tests ----
+
+	@Test
+	public void testMapExpandsRules() throws HintParseException {
+		String content = """
+			<!map boolValues: "true" => "Boolean.TRUE", "false" => "Boolean.FALSE">
+			
+			new java.lang.Boolean(#{boolValues})
+			=> #{boolValues_VALUE}
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(2, hintFile.getRules().size(), "map should expand to 2 rules"); //$NON-NLS-1$
+
+		TransformationRule rule1 = hintFile.getRules().get(0);
+		assertEquals("new java.lang.Boolean(true)", rule1.sourcePattern().getValue()); //$NON-NLS-1$
+		assertEquals("Boolean.TRUE", //$NON-NLS-1$
+				rule1.alternatives().get(0).replacementPattern());
+
+		TransformationRule rule2 = hintFile.getRules().get(1);
+		assertEquals("new java.lang.Boolean(false)", rule2.sourcePattern().getValue()); //$NON-NLS-1$
+		assertEquals("Boolean.FALSE", //$NON-NLS-1$
+				rule2.alternatives().get(0).replacementPattern());
+	}
+
+	@Test
+	public void testMapWithMultipleEntries() throws HintParseException {
+		String content = """
+			<!map charsetNames: "UTF-8" => "StandardCharsets.UTF_8", "US-ASCII" => "StandardCharsets.US_ASCII", "ISO-8859-1" => "StandardCharsets.ISO_8859_1">
+			
+			java.nio.charset.Charset.forName(#{charsetNames})
+			=> #{charsetNames_VALUE}
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(3, hintFile.getRules().size(), "map should expand to 3 rules"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testMapMixedWithNonMapRules() throws HintParseException {
+		String content = """
+			<!map vals: "a" => "A", "b" => "B">
+			
+			$x.convert(#{vals})
+			=> $x.convert(#{vals_VALUE})
+			;;
+			
+			$y.plain()
+			=> $y.improved()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(3, hintFile.getRules().size(), "2 expanded + 1 plain rule"); //$NON-NLS-1$
+
+		// The plain rule should be the last one
+		TransformationRule plainRule = hintFile.getRules().get(2);
+		assertEquals("$y.plain()", plainRule.sourcePattern().getValue()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testMapErrorEmptyEntries() {
+		String content = """
+			<!map empty:>
+			
+			$x.method()
+			=> $x.other()
+			;;
+			""";
+
+		assertThrows(HintParseException.class, () -> parser.parse(content));
+	}
+
+	@Test
+	public void testMapErrorMissingArrow() {
+		String content = """
+			<!map broken: "key1" "val1">
+			
+			$x.method(#{broken})
+			=> $x.method(#{broken_VALUE})
+			;;
+			""";
+
+		assertThrows(HintParseException.class, () -> parser.parse(content));
+	}
+
 	// ---- NetBeans compatibility tests ----
 
 	@Test
