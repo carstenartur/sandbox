@@ -56,7 +56,7 @@ jobs:
           mvn clean verify -pl sandbox_mining_core
         
       - name: Upload Test Results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results

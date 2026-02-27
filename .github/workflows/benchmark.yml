@@ -73,7 +73,7 @@ jobs:
           alert-comment-cc-users: '@carstenartur'
           
       - name: Upload Benchmark Results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: benchmark-results
