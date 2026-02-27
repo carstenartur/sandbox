@@ -58,51 +58,6 @@ public final class TransformationRule {
 	/**
 	 * Creates a new transformation rule.
 	 * 
-	 * @param description optional description (may be {@code null})
-	 * @param sourcePattern the pattern to match
-	 * @param sourceGuard optional guard on the source pattern (may be {@code null})
-	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
-	 */
-	public TransformationRule(String description, Pattern sourcePattern,
-			GuardExpression sourceGuard, List<RewriteAlternative> alternatives) {
-		this(null, description, sourcePattern, sourceGuard, alternatives, null, null);
-	}
-	
-	/**
-	 * Creates a new transformation rule with import directives.
-	 * 
-	 * @param description optional description (may be {@code null})
-	 * @param sourcePattern the pattern to match
-	 * @param sourceGuard optional guard on the source pattern (may be {@code null})
-	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
-	 * @param importDirective optional import directives (may be {@code null})
-	 */
-	public TransformationRule(String description, Pattern sourcePattern,
-			GuardExpression sourceGuard, List<RewriteAlternative> alternatives,
-			ImportDirective importDirective) {
-		this(null, description, sourcePattern, sourceGuard, alternatives, importDirective, null);
-	}
-	
-	/**
-	 * Creates a new transformation rule with import directives and severity.
-	 * 
-	 * @param description optional description (may be {@code null})
-	 * @param sourcePattern the pattern to match
-	 * @param sourceGuard optional guard on the source pattern (may be {@code null})
-	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
-	 * @param importDirective optional import directives (may be {@code null})
-	 * @param severity optional per-rule severity level (may be {@code null} to inherit from hint file)
-	 * @since 1.4.0
-	 */
-	public TransformationRule(String description, Pattern sourcePattern,
-			GuardExpression sourceGuard, List<RewriteAlternative> alternatives,
-			ImportDirective importDirective, Severity severity) {
-		this(null, description, sourcePattern, sourceGuard, alternatives, importDirective, severity);
-	}
-	
-	/**
-	 * Creates a new transformation rule with all fields including rule ID.
-	 * 
 	 * @param ruleId optional unique rule ID for usage tracking (may be {@code null})
 	 * @param description optional description (may be {@code null})
 	 * @param sourcePattern the pattern to match
@@ -110,7 +65,6 @@ public final class TransformationRule {
 	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
 	 * @param importDirective optional import directives (may be {@code null})
 	 * @param severity optional per-rule severity level (may be {@code null} to inherit from hint file)
-	 * @since 1.4.1
 	 */
 	public TransformationRule(String ruleId, String description, Pattern sourcePattern,
 			GuardExpression sourceGuard, List<RewriteAlternative> alternatives,

@@ -239,7 +239,7 @@ public class TriggerPatternEngine {
 			return signatureMatches;
 		}
 
-		Pattern bodyPattern = new Pattern(bodyConstraintPattern, bodyConstraintKind);
+		Pattern bodyPattern = new Pattern(bodyConstraintPattern, bodyConstraintKind, null, null, null, null, null);
 		ASTNode bodyPatternNode = parser.parse(bodyPattern);
 		if (bodyPatternNode == null) {
 			return signatureMatches;

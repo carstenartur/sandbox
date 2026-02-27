@@ -40,57 +40,6 @@ public final class Pattern {
 	private final ConstraintVariableType[] constraints;
 	
 	/**
-	 * Creates a new pattern with the specified value and kind.
-	 * 
-	 * @param value the pattern string with placeholders (e.g., {@code "$x + 1"})
-	 * @param kind the kind of pattern (EXPRESSION or STATEMENT)
-	 */
-	public Pattern(String value, PatternKind kind) {
-		this(value, kind, null, null, null, null);
-	}
-	
-	/**
-	 * Creates a new pattern with the specified value, kind, id, and display name.
-	 * 
-	 * @param value the pattern string with placeholders
-	 * @param kind the kind of pattern (EXPRESSION or STATEMENT)
-	 * @param id optional unique identifier for the pattern
-	 * @param displayName optional human-readable name for the pattern
-	 */
-	public Pattern(String value, PatternKind kind, String id, String displayName) {
-		this(value, kind, id, displayName, null, null);
-	}
-	
-	/**
-	 * Creates a new pattern with the specified value, kind, id, display name, and qualified type.
-	 * 
-	 * @param value the pattern string with placeholders
-	 * @param kind the kind of pattern
-	 * @param id optional unique identifier for the pattern
-	 * @param displayName optional human-readable name for the pattern
-	 * @param qualifiedType optional qualified type name (e.g., "org.junit.Before" for annotation patterns)
-	 * @since 1.2.3
-	 */
-	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType) {
-		this(value, kind, id, displayName, qualifiedType, null);
-	}
-	
-	/**
-	 * Creates a new pattern with the specified value, kind, id, display name, qualified type, and overrides type.
-	 * 
-	 * @param value the pattern string with placeholders
-	 * @param kind the kind of pattern
-	 * @param id optional unique identifier for the pattern
-	 * @param displayName optional human-readable name for the pattern
-	 * @param qualifiedType optional qualified type name (e.g., "org.junit.Before" for annotation patterns)
-	 * @param overridesType optional fully qualified type name that the method must override (e.g., "org.eclipse.swt.widgets.Widget" for METHOD_DECLARATION patterns)
-	 * @since 1.2.6
-	 */
-	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType, String overridesType) {
-		this(value, kind, id, displayName, qualifiedType, overridesType, null);
-	}
-	
-	/**
 	 * Creates a new pattern with the specified value, kind, id, display name, qualified type,
 	 * overrides type, and type constraints.
 	 * 
@@ -101,7 +50,6 @@ public final class Pattern {
 	 * @param qualifiedType optional qualified type name
 	 * @param overridesType optional fully qualified type name for override constraint
 	 * @param constraints optional type constraints for placeholder variables
-	 * @since 1.4.0
 	 */
 	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType,
 			String overridesType, ConstraintVariableType[] constraints) {
@@ -112,18 +60,6 @@ public final class Pattern {
 		this.qualifiedType = qualifiedType;
 		this.overridesType = overridesType;
 		this.constraints = constraints == null ? null : constraints.clone();
-	}
-	
-	/**
-	 * Creates a new pattern with the specified value, kind, and qualified type.
-	 * 
-	 * @param value the pattern string with placeholders
-	 * @param kind the kind of pattern
-	 * @param qualifiedType qualified type name (e.g., "org.junit.Before")
-	 * @since 1.2.3
-	 */
-	public Pattern(String value, PatternKind kind, String qualifiedType) {
-		this(value, kind, null, null, qualifiedType, null);
 	}
 	
 	/**

@@ -734,7 +734,7 @@ public final class HintFileParser {
 		
 		// Determine PatternKind from the source pattern text
 		PatternKind kind = inferPatternKind(sourcePatternText);
-		Pattern sourcePattern = new Pattern(sourcePatternText, kind);
+		Pattern sourcePattern = new Pattern(sourcePatternText, kind, null, null, null, null, null);
 		
 		// FQN-based import inference: automatically derive imports from
 		// fully qualified names in source and replacement patterns
