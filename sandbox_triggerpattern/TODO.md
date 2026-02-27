@@ -57,6 +57,15 @@ See [sandbox_common/TODO.md](../sandbox_common/TODO.md#implementation-status-vs-
 ### In Progress
 - [ ] Additional pattern variations
 
+### Recently Completed (Phase 3: Java-coded Cleanups for Complex Analysis)
+- ✅ `WrongStringComparisonCleanUp` — detects `str == "literal"` and replaces with `"literal".equals(str)`
+- ✅ `PrintStackTraceCleanUp` — hint-only: detects `ex.printStackTrace()` calls
+- ✅ `SystemOutCleanUp` — hint-only: detects `System.out.println()` / `System.err.println()` calls
+- ✅ `ObsoleteCollectionCleanUp` — hint-only: warns on `Vector`, `Hashtable`, `Stack` usage
+- ✅ `MissingHashCodeCleanUp` — hint-only: detects `equals()` without `hashCode()` override
+- ✅ `OverridableCallInConstructorCleanUp` — hint-only: warns on overridable method calls in constructors
+- Each cleanup has its own toggle constant in `MYCleanUpConstants`, checkbox in preferences, and is registered in `plugin.xml`
+
 ### Pending
 - [ ] More complex string simplification patterns
 - [ ] Edge case handling improvements
