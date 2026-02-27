@@ -14,20 +14,28 @@
 package org.sandbox.jdt.internal.ui.views.mining;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.analysis.CommitAnalysisResult.AnalysisStatus;
-import org.sandbox.jdt.triggerpattern.mining.analysis.InferredRule;
-import org.sandbox.jdt.triggerpattern.mining.analysis.RuleInferenceEngine;
+import org.sandbox.jdt.triggerpattern.mining.analysis.DiffHunk;
+import org.sandbox.jdt.triggerpattern.mining.analysis.FileDiff;
 import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
+import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
  * Eclipse {@link Job} that analyzes a single commit in the background,
- * inferring transformation rules from its Java file changes.
+ * using AI-powered inference to generate DSL rules from Java file changes.
+ *
+ * &lt;p&gt;When the LLM service is available, the job sends file diffs to the
+ * AI engine. Otherwise, the job completes without inferring any rules and
+ * records that no rules are available for the commit.&lt;/p&gt;
  *
  * @since 1.2.6
  */
@@ -36,7 +44,6 @@ public class CommitAnalysisJob extends Job {
 	private final CommitTableEntry entry;
 	private final GitHistoryProvider gitProvider;
 	private final Path repositoryPath;
-	private final RuleInferenceEngine engine;
 	private final Runnable onComplete;
 
 	/**
@@ -45,53 +52,154 @@ public class CommitAnalysisJob extends Job {
 	 * @param entry          the commit table entry to analyze
 	 * @param gitProvider    the git history provider
 	 * @param repositoryPath path to the Git repository
-	 * @param engine         the rule inference engine
 	 * @param onComplete     callback to run (on any thread) when analysis finishes
 	 */
 	public CommitAnalysisJob(CommitTableEntry entry, GitHistoryProvider gitProvider,
-			Path repositoryPath, RuleInferenceEngine engine, Runnable onComplete) {
-<span class="nc" id="L53">		super(&quot;Analyzing commit &quot; + entry.getCommitInfo().shortId()); //$NON-NLS-1$</span>
-<span class="nc" id="L54">		this.entry = entry;</span>
-<span class="nc" id="L55">		this.gitProvider = gitProvider;</span>
-<span class="nc" id="L56">		this.repositoryPath = repositoryPath;</span>
-<span class="nc" id="L57">		this.engine = engine;</span>
-<span class="nc" id="L58">		this.onComplete = onComplete;</span>
-<span class="nc" id="L59">		setSystem(true); // Don't show in Progress view</span>
-<span class="nc" id="L60">	}</span>
+			Path repositoryPath, Runnable onComplete) {
+<span class="nc" id="L59">		super(&quot;Analyzing commit &quot; + entry.getCommitInfo().shortId()); //$NON-NLS-1$</span>
+<span class="nc" id="L60">		this.entry = entry;</span>
+<span class="nc" id="L61">		this.gitProvider = gitProvider;</span>
+<span class="nc" id="L62">		this.repositoryPath = repositoryPath;</span>
+<span class="nc" id="L63">		this.onComplete = onComplete;</span>
+<span class="nc" id="L64">		setSystem(true); // Don't show in Progress view</span>
+<span class="nc" id="L65">	}</span>
 
 	@Override
 	protected IStatus run(IProgressMonitor monitor) {
-<span class="nc" id="L64">		entry.setStatus(AnalysisStatus.ANALYZING);</span>
+<span class="nc" id="L69">		entry.setStatus(AnalysisStatus.ANALYZING);</span>
 
-<span class="nc bnc" id="L66" title="All 2 branches missed.">		if (monitor.isCanceled()) {</span>
-<span class="nc" id="L67">			entry.setStatus(AnalysisStatus.PENDING);</span>
-<span class="nc" id="L68">			return Status.CANCEL_STATUS;</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">		if (monitor.isCanceled()) {</span>
+<span class="nc" id="L72">			entry.setStatus(AnalysisStatus.PENDING);</span>
+<span class="nc" id="L73">			return Status.CANCEL_STATUS;</span>
 		}
 
 		try {
-<span class="nc" id="L72">			List&lt;InferredRule&gt; rules = engine.inferFromCommit(</span>
-<span class="nc" id="L73">					gitProvider, repositoryPath, entry.getCommitInfo().id());</span>
+<span class="nc" id="L77">			List&lt;FileDiff&gt; diffs = gitProvider.getDiffs(repositoryPath, entry.getCommitInfo().id());</span>
 
-<span class="nc bnc" id="L75" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
-<span class="nc" id="L76">				entry.setStatus(AnalysisStatus.PENDING);</span>
-<span class="nc" id="L77">				return Status.CANCEL_STATUS;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
+<span class="nc" id="L80">				entry.setStatus(AnalysisStatus.PENDING);</span>
+<span class="nc" id="L81">				return Status.CANCEL_STATUS;</span>
 			}
 
-<span class="nc bnc" id="L80" title="All 2 branches missed.">			if (rules.isEmpty()) {</span>
-<span class="nc" id="L81">				entry.setStatus(AnalysisStatus.NO_RULES);</span>
-<span class="nc" id="L82">			} else {</span>
-<span class="nc" id="L83">				entry.setInferredRules(rules);</span>
-<span class="nc" id="L84">				entry.setStatus(AnalysisStatus.DONE);</span>
+<span class="nc" id="L84">			EclipseLlmService llmService = EclipseLlmService.getInstance();</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">			if (llmService.isAvailable()) {</span>
+<span class="nc" id="L86">				analyzeWithAi(llmService.getEngine(), diffs, monitor);</span>
+<span class="nc" id="L87">			} else {</span>
+				// No LLM available — mark as no rules
+<span class="nc" id="L89">				entry.setStatus(AnalysisStatus.NO_RULES);</span>
 			}
-<span class="nc" id="L86">		} catch (Exception e) {</span>
-<span class="nc" id="L87">			entry.setStatus(AnalysisStatus.FAILED);</span>
+<span class="nc" id="L91">		} catch (Exception e) {</span>
+<span class="nc" id="L92">			entry.setStatus(AnalysisStatus.FAILED);</span>
 		}
 
-<span class="nc bnc" id="L90" title="All 2 branches missed.">		if (onComplete != null) {</span>
-<span class="nc" id="L91">			onComplete.run();</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">		if (onComplete != null) {</span>
+<span class="nc" id="L96">			onComplete.run();</span>
 		}
 
-<span class="nc" id="L94">		return Status.OK_STATUS;</span>
+<span class="nc" id="L99">		return Status.OK_STATUS;</span>
+	}
+
+	private void analyzeWithAi(AiRuleInferenceEngine engine, List&lt;FileDiff&gt; diffs,
+			IProgressMonitor monitor) {
+<span class="nc" id="L104">		List&lt;CommitEvaluation&gt; evaluations = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L106" title="All 2 branches missed.">		for (FileDiff diff : diffs) {</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
+<span class="nc" id="L108">				entry.setStatus(AnalysisStatus.PENDING);</span>
+<span class="nc" id="L109">				return;</span>
+			}
+<span class="nc" id="L111">			String unifiedDiff = buildUnifiedDiff(diff);</span>
+<span class="nc" id="L112">			engine.inferRuleFromDiff(unifiedDiff)</span>
+<span class="nc bnc" id="L113" title="All 4 branches missed.">					.filter(e -&gt; e.dslRule() != null &amp;&amp; !e.dslRule().isBlank())</span>
+<span class="nc" id="L114">					.ifPresent(evaluations::add);</span>
+		}
+
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		if (evaluations.isEmpty()) {</span>
+<span class="nc" id="L118">			entry.setStatus(AnalysisStatus.NO_RULES);</span>
+<span class="nc" id="L119">		} else {</span>
+<span class="nc" id="L120">			entry.setEvaluations(evaluations);</span>
+<span class="nc" id="L121">			entry.setStatus(AnalysisStatus.DONE);</span>
+		}
+<span class="nc" id="L123">	}</span>
+
+	/**
+	 * Builds a unified diff string from a {@link FileDiff}.
+	 *
+	 * &lt;p&gt;Uses LCS-based hunk line reconstruction to correctly distinguish
+	 * context, added, and removed lines.&lt;/p&gt;
+	 *
+	 * @param diff the file diff
+	 * @return a unified diff string suitable for LLM inference
+	 */
+	public static String buildUnifiedDiff(FileDiff diff) {
+<span class="nc" id="L135">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L136">		sb.append(&quot;--- a/&quot;).append(diff.filePath()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc" id="L137">		sb.append(&quot;+++ b/&quot;).append(diff.filePath()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">		for (DiffHunk hunk : diff.hunks()) {</span>
+<span class="nc" id="L139">			String[] beforeLines = hunk.beforeText().split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="nc" id="L140">			String[] afterLines = hunk.afterText().split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+
+<span class="nc" id="L142">			sb.append(&quot;@@ -&quot;).append(hunk.beforeStartLine()) //$NON-NLS-1$</span>
+<span class="nc" id="L143">					.append(',').append(beforeLines.length)</span>
+<span class="nc" id="L144">					.append(&quot; +&quot;).append(hunk.afterStartLine()) //$NON-NLS-1$</span>
+<span class="nc" id="L145">					.append(',').append(afterLines.length)</span>
+<span class="nc" id="L146">					.append(&quot; @@\n&quot;); //$NON-NLS-1$</span>
+
+<span class="nc bnc" id="L148" title="All 2 branches missed.">			for (String markedLine : buildHunkLines(beforeLines, afterLines)) {</span>
+<span class="nc" id="L149">				sb.append(markedLine).append('\n');</span>
+			}
+		}
+<span class="nc" id="L152">		return sb.toString();</span>
+	}
+
+	/**
+	 * Builds unified-diff style hunk lines using LCS to correctly distinguish
+	 * context, added, and removed lines.
+	 *
+	 * @param beforeLines lines from the &quot;before&quot; side of the hunk
+	 * @param afterLines  lines from the &quot;after&quot; side of the hunk
+	 * @return list of lines with diff markers ({@code ' '}, {@code '-'}, {@code '+'})
+	 */
+	public static List&lt;String&gt; buildHunkLines(String[] beforeLines, String[] afterLines) {
+<span class="nc" id="L164">		int n = beforeLines.length;</span>
+<span class="nc" id="L165">		int m = afterLines.length;</span>
+
+<span class="nc" id="L167">		int[][] dp = new int[n + 1][m + 1];</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">		for (int i = n - 1; i &gt;= 0; i--) {</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">			for (int j = m - 1; j &gt;= 0; j--) {</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">				if (beforeLines[i].equals(afterLines[j])) {</span>
+<span class="nc" id="L171">					dp[i][j] = dp[i + 1][j + 1] + 1;</span>
+<span class="nc" id="L172">				} else {</span>
+<span class="nc" id="L173">					dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);</span>
+				}
+			}
+		}
+
+<span class="nc" id="L178">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L179">		int i = 0;</span>
+<span class="nc" id="L180">		int j = 0;</span>
+<span class="nc bnc" id="L181" title="All 4 branches missed.">		while (i &lt; n &amp;&amp; j &lt; m) {</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">			if (beforeLines[i].equals(afterLines[j])) {</span>
+<span class="nc" id="L183">				result.add(&quot; &quot; + beforeLines[i]); //$NON-NLS-1$</span>
+<span class="nc" id="L184">				i++;</span>
+<span class="nc" id="L185">				j++;</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">			} else if (dp[i + 1][j] &gt;= dp[i][j + 1]) {</span>
+<span class="nc" id="L187">				result.add(&quot;-&quot; + beforeLines[i]); //$NON-NLS-1$</span>
+<span class="nc" id="L188">				i++;</span>
+<span class="nc" id="L189">			} else {</span>
+<span class="nc" id="L190">				result.add(&quot;+&quot; + afterLines[j]); //$NON-NLS-1$</span>
+<span class="nc" id="L191">				j++;</span>
+			}
+		}
+<span class="nc bnc" id="L194" title="All 2 branches missed.">		while (i &lt; n) {</span>
+<span class="nc" id="L195">			result.add(&quot;-&quot; + beforeLines[i]); //$NON-NLS-1$</span>
+<span class="nc" id="L196">			i++;</span>
+		}
+<span class="nc bnc" id="L198" title="All 2 branches missed.">		while (j &lt; m) {</span>
+<span class="nc" id="L199">			result.add(&quot;+&quot; + afterLines[j]); //$NON-NLS-1$</span>
+<span class="nc" id="L200">			j++;</span>
+		}
+<span class="nc" id="L202">		return result;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

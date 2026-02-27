@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MineDiffHandler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.handlers</a> &gt; <span class="el_source">MineDiffHandler.java</span></div><h1>MineDiffHandler.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.handlers;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+
+import org.eclipse.core.commands.AbstractHandler;
+import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.text.ITextSelection;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.texteditor.ITextEditor;
+import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
+
+/**
+ * Eclipse command handler that infers a TriggerPattern DSL rule from a
+ * unified diff pasted or selected in the active editor.
+ *
+ * &lt;p&gt;The handler reads the current text selection, sends it to
+ * {@link AiRuleInferenceEngine#inferRuleFromDiff(String)} in a background
+ * {@link Job}, and opens the resulting DSL rule as a new
+ * {@code .sandbox-hint} file.&lt;/p&gt;
+ *
+ * @since 1.2.6
+ */
+<span class="nc" id="L57">public class MineDiffHandler extends AbstractHandler {</span>
+
+<span class="nc" id="L59">	private static final ILog LOG = Platform.getLog(MineDiffHandler.class);</span>
+
+	@Override
+	public Object execute(ExecutionEvent event) throws ExecutionException {
+<span class="nc" id="L63">		IEditorPart editor = HandlerUtil.getActiveEditor(event);</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (!(editor instanceof ITextEditor textEditor)) {</span>
+<span class="nc" id="L65">			return null;</span>
+		}
+
+<span class="nc" id="L68">		ISelection sel = textEditor.getSelectionProvider().getSelection();</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (!(sel instanceof ITextSelection textSelection)) {</span>
+<span class="nc" id="L70">			return null;</span>
+		}
+
+<span class="nc" id="L73">		String diffText = textSelection.getText();</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">		if (diffText == null || diffText.isBlank()) {</span>
+<span class="nc" id="L75">			return null;</span>
+		}
+
+<span class="nc" id="L78">		EclipseLlmService llmService = EclipseLlmService.getInstance();</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">		if (!llmService.isAvailable()) {</span>
+<span class="nc" id="L80">			return null;</span>
+		}
+
+<span class="nc" id="L83">		Job job = new Job(&quot;Mining DSL rules from diff&quot;) { //$NON-NLS-1$</span>
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+<span class="nc" id="L86">				AiRuleInferenceEngine engine = llmService.getEngine();</span>
+<span class="nc" id="L87">				Optional&lt;CommitEvaluation&gt; result = engine.inferRuleFromDiff(diffText);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">				if (result.isPresent()) {</span>
+<span class="nc" id="L89">					String dslRule = result.get().dslRule();</span>
+<span class="nc bnc" id="L90" title="All 4 branches missed.">					if (dslRule != null &amp;&amp; !dslRule.isBlank()) {</span>
+<span class="nc" id="L91">						openHintFileOnUi(dslRule);</span>
+					}
+				}
+<span class="nc" id="L94">				return Status.OK_STATUS;</span>
+			}
+		};
+<span class="nc" id="L97">		job.setUser(true);</span>
+<span class="nc" id="L98">		job.schedule();</span>
+<span class="nc" id="L99">		return null;</span>
+	}
+
+	private static void openHintFileOnUi(String ruleContent) {
+<span class="nc" id="L103">		Display.getDefault().asyncExec(() -&gt; {</span>
+			try {
+<span class="nc" id="L105">				IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">				if (projects.length == 0) {</span>
+<span class="nc" id="L107">					return;</span>
+				}
+<span class="nc" id="L109">				IProject project = projects[0];</span>
+<span class="nc" id="L110">				String fileName = &quot;mined-diff-&quot; + System.currentTimeMillis() + &quot;.sandbox-hint&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L111">				IFile file = project.getFile(new Path(fileName));</span>
+<span class="nc" id="L112">				file.create(</span>
+<span class="nc" id="L113">						new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)),</span>
+<span class="nc" id="L114">						true, null);</span>
+<span class="nc" id="L115">				IWorkbenchPage page = PlatformUI.getWorkbench()</span>
+<span class="nc" id="L116">						.getActiveWorkbenchWindow().getActivePage();</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">				if (page != null) {</span>
+<span class="nc" id="L118">					IDE.openEditor(page, file);</span>
+				}
+<span class="nc" id="L120">			} catch (Exception e) {</span>
+<span class="nc" id="L121">				LOG.error(&quot;Failed to open hint file for mined diff rule&quot;, e); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L123">		});</span>
+<span class="nc" id="L124">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DslContentAssistProcessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.editor</a> &gt; <span class="el_source">DslContentAssistProcessor.java</span></div><h1>DslContentAssistProcessor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.editor;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.contentassist.CompletionProposal;
+import org.eclipse.jface.text.contentassist.ICompletionProposal;
+import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
+import org.eclipse.jface.text.contentassist.IContextInformation;
+import org.eclipse.jface.text.contentassist.IContextInformationValidator;
+
+/**
+ * Content assist processor for {@code .sandbox-hint} files that provides
+ * completions for TriggerPattern DSL keywords.
+ *
+ * &lt;p&gt;Keyword categories:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;&lt;b&gt;Metadata directives&lt;/b&gt;: {@code &lt;!id:&gt;}, {@code &lt;!description:&gt;}, etc.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Guard functions&lt;/b&gt;: {@code instanceof}, {@code matchesAny}, etc.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Rule separators&lt;/b&gt;: {@code =&gt;}, {@code ;;}, {@code otherwise}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @since 1.2.6
+ */
+<span class="nc" id="L39">public class DslContentAssistProcessor implements IContentAssistProcessor {</span>
+
+<span class="nc" id="L41">	private static final String[] METADATA_DIRECTIVES = {</span>
+<span class="nc" id="L42">			&quot;&lt;!id:&gt;&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L43">			&quot;&lt;!description:&gt;&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L44">			&quot;&lt;!severity:&gt;&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L45">			&quot;&lt;!minJavaVersion:&gt;&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L46">			&quot;&lt;!tags:&gt;&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L47">			&quot;&lt;!include:&gt;&quot; //$NON-NLS-1$</span>
+	};
+
+<span class="nc" id="L50">	private static final String[] GUARD_FUNCTIONS = {</span>
+<span class="nc" id="L51">			&quot;instanceof&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L52">			&quot;matchesAny&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L53">			&quot;matchesNone&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L54">			&quot;hasNoSideEffect&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L55">			&quot;sourceVersionGE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L56">			&quot;sourceVersionLE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L57">			&quot;sourceVersionBetween&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L58">			&quot;isStatic&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L59">			&quot;isFinal&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L60">			&quot;hasAnnotation&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L61">			&quot;isDeprecated&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L62">			&quot;referencedIn&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L63">			&quot;elementKindMatches&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L64">			&quot;contains&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L65">			&quot;notContains&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L66">			&quot;methodNameMatches&quot; //$NON-NLS-1$</span>
+	};
+
+<span class="nc" id="L69">	private static final String[] RULE_SEPARATORS = {</span>
+<span class="nc" id="L70">			&quot;=&gt;&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L71">			&quot;;;&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L72">			&quot;otherwise&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L73">	};</span>
+
+	@Override
+	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
+<span class="nc" id="L77">		String text = viewer.getDocument().get();</span>
+<span class="nc" id="L78">		String prefix = extractPrefix(text, offset);</span>
+<span class="nc" id="L79">		String prefixLower = prefix.toLowerCase();</span>
+
+<span class="nc" id="L81">		List&lt;ICompletionProposal&gt; proposals = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L82">		addMatchingProposals(METADATA_DIRECTIVES, &quot;directive&quot;, prefix, prefixLower, offset, proposals); //$NON-NLS-1$</span>
+<span class="nc" id="L83">		addMatchingProposals(GUARD_FUNCTIONS, &quot;guard&quot;, prefix, prefixLower, offset, proposals); //$NON-NLS-1$</span>
+<span class="nc" id="L84">		addMatchingProposals(RULE_SEPARATORS, &quot;separator&quot;, prefix, prefixLower, offset, proposals); //$NON-NLS-1$</span>
+<span class="nc" id="L85">		return proposals.toArray(new ICompletionProposal[0]);</span>
+	}
+
+	@Override
+	public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset) {
+<span class="nc" id="L90">		return new IContextInformation[0];</span>
+	}
+
+	@Override
+	public char[] getCompletionProposalAutoActivationCharacters() {
+<span class="nc" id="L95">		return new char[] { '&lt;', '!' };</span>
+	}
+
+	@Override
+	public char[] getContextInformationAutoActivationCharacters() {
+<span class="nc" id="L100">		return null;</span>
+	}
+
+	@Override
+	public IContextInformationValidator getContextInformationValidator() {
+<span class="nc" id="L105">		return null;</span>
+	}
+
+	@Override
+	public String getErrorMessage() {
+<span class="nc" id="L110">		return null;</span>
+	}
+
+	private static String extractPrefix(String text, int offset) {
+<span class="nc" id="L114">		int start = offset;</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">		while (start &gt; 0) {</span>
+<span class="nc" id="L116">			char ch = text.charAt(start - 1);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">			if (Character.isWhitespace(ch)) {</span>
+<span class="nc" id="L118">				break;</span>
+			}
+<span class="nc" id="L120">			start--;</span>
+		}
+<span class="nc" id="L122">		return text.substring(start, offset);</span>
+	}
+
+	private static void addMatchingProposals(String[] keywords, String category,
+			String prefix, String prefixLower, int offset,
+			List&lt;ICompletionProposal&gt; proposals) {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		for (String keyword : keywords) {</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">			if (prefix.isEmpty() || keyword.toLowerCase().startsWith(prefixLower)) {</span>
+<span class="nc" id="L130">				int replacementOffset = offset - prefix.length();</span>
+<span class="nc" id="L131">				proposals.add(new CompletionProposal(</span>
+<span class="nc" id="L132">						keyword,</span>
+<span class="nc" id="L133">						replacementOffset,</span>
+<span class="nc" id="L134">						prefix.length(),</span>
+<span class="nc" id="L135">						keyword.length(),</span>
+<span class="nc" id="L136">						null,</span>
+<span class="nc" id="L137">						keyword + &quot; - &quot; + category, //$NON-NLS-1$</span>
+<span class="nc" id="L138">						null,</span>
+<span class="nc" id="L139">						null));</span>
+			}
+		}
+<span class="nc" id="L142">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

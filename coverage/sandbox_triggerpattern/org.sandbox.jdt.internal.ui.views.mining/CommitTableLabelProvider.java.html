@@ -14,10 +14,12 @@
 package org.sandbox.jdt.internal.ui.views.mining;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.analysis.CommitAnalysisResult.AnalysisStatus;
 
 /**
@@ -28,12 +30,12 @@ import org.sandbox.jdt.triggerpattern.mining.analysis.CommitAnalysisResult.Analy
  *   &lt;li&gt;0 — Commit (short hash)&lt;/li&gt;
  *   &lt;li&gt;1 — Message (first line)&lt;/li&gt;
  *   &lt;li&gt;2 — Files (count)&lt;/li&gt;
- *   &lt;li&gt;3 — DSL Status&lt;/li&gt;
+ *   &lt;li&gt;3 — AI Status (traffic light)&lt;/li&gt;
  * &lt;/ul&gt;
  *
  * @since 1.2.6
  */
-<span class="nc" id="L36">public class CommitTableLabelProvider extends LabelProvider implements ITableLabelProvider {</span>
+<span class="nc" id="L38">public class CommitTableLabelProvider extends LabelProvider implements ITableLabelProvider {</span>
 
 	/** Column index for commit hash. */
 	public static final int COL_COMMIT = 0;
@@ -44,69 +46,96 @@ import org.sandbox.jdt.triggerpattern.mining.analysis.CommitAnalysisResult.Analy
 	/** Column index for file count. */
 	public static final int COL_FILES = 2;
 
-	/** Column index for DSL analysis status. */
+	/** Column index for AI analysis status. */
 	public static final int COL_STATUS = 3;
 
-<span class="nc" id="L50">	private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L52">	private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm&quot;); //$NON-NLS-1$</span>
 
 	@Override
 	public Image getColumnImage(Object element, int columnIndex) {
-<span class="nc" id="L54">		return null;</span>
+<span class="nc" id="L56">		return null;</span>
 	}
 
 	@Override
 	public String getColumnText(Object element, int columnIndex) {
-<span class="nc bnc" id="L59" title="All 2 branches missed.">		if (!(element instanceof CommitTableEntry entry)) {</span>
-<span class="nc" id="L60">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		if (!(element instanceof CommitTableEntry entry)) {</span>
+<span class="nc" id="L62">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
 
-<span class="nc bnc" id="L63" title="All 5 branches missed.">		return switch (columnIndex) {</span>
-<span class="nc" id="L64">		case COL_COMMIT -&gt; entry.getCommitInfo().shortId();</span>
-<span class="nc" id="L65">		case COL_MESSAGE -&gt; firstLine(entry.getCommitInfo().message());</span>
-<span class="nc" id="L66">		case COL_FILES -&gt; String.valueOf(entry.getCommitInfo().changedFileCount());</span>
-<span class="nc" id="L67">		case COL_STATUS -&gt; statusText(entry);</span>
-<span class="nc" id="L68">		default -&gt; &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L65" title="All 5 branches missed.">		return switch (columnIndex) {</span>
+<span class="nc" id="L66">		case COL_COMMIT -&gt; entry.getCommitInfo().shortId();</span>
+<span class="nc" id="L67">		case COL_MESSAGE -&gt; firstLine(entry.getCommitInfo().message());</span>
+<span class="nc" id="L68">		case COL_FILES -&gt; String.valueOf(entry.getCommitInfo().changedFileCount());</span>
+<span class="nc" id="L69">		case COL_STATUS -&gt; statusText(entry);</span>
+<span class="nc" id="L70">		default -&gt; &quot;&quot;; //$NON-NLS-1$</span>
 		};
 	}
 
 	/**
-	 * Returns a tooltip text for the given element, suitable for the DSL status
-	 * column.
+	 * Returns a tooltip text for the given element.
 	 *
 	 * @param entry the commit table entry
 	 * @return tooltip text
 	 */
 	public String getToolTipText(CommitTableEntry entry) {
-<span class="nc bnc" id="L80" title="All 2 branches missed.">		if (entry.hasRules()) {</span>
-<span class="nc" id="L81">			StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L82">			sb.append(entry.getRuleCount()).append(&quot; rule(s) inferred:\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L83">			entry.getInferredRules().forEach(rule -&gt; sb.append(&quot;  &quot;).append(rule.sourcePattern()) //$NON-NLS-1$</span>
-<span class="nc" id="L84">					.append(&quot; =&gt; &quot;).append(rule.replacementPattern()) //$NON-NLS-1$</span>
-<span class="nc" id="L85">					.append('\n'));</span>
-<span class="nc" id="L86">			return sb.toString();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">		if (entry.hasRules()) {</span>
+<span class="nc" id="L82">			StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L83">			List&lt;CommitEvaluation&gt; evals = entry.getEvaluations();</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">			if (!evals.isEmpty()) {</span>
+<span class="nc" id="L85">				sb.append(entry.getRuleCount()).append(&quot; AI rule(s):\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L86">				evals.stream()</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">						.filter(e -&gt; e.dslRule() != null &amp;&amp; !e.dslRule().isBlank())</span>
+<span class="nc" id="L88">						.forEach(e -&gt; sb.append(&quot;  [&quot;).append(e.trafficLight()).append(&quot;] &quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L89">								.append(firstLine(e.summary())).append('\n'));</span>
+<span class="nc" id="L90">			} else {</span>
+<span class="nc" id="L91">				sb.append(entry.getRuleCount()).append(&quot; rule(s) inferred:\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L92">				entry.getInferredRules().forEach(rule -&gt; sb.append(&quot;  &quot;).append(rule.sourcePattern()) //$NON-NLS-1$</span>
+<span class="nc" id="L93">						.append(&quot; =&gt; &quot;).append(rule.replacementPattern()) //$NON-NLS-1$</span>
+<span class="nc" id="L94">						.append('\n'));</span>
+			}
+<span class="nc" id="L96">			return sb.toString();</span>
 		}
-<span class="nc" id="L88">		return entry.getCommitInfo().shortId() + &quot; — &quot; + entry.getCommitInfo().message(); //$NON-NLS-1$</span>
+<span class="nc" id="L98">		return entry.getCommitInfo().shortId() + &quot; \u2014 &quot; + entry.getCommitInfo().message(); //$NON-NLS-1$</span>
 	}
 
 	private static String statusText(CommitTableEntry entry) {
-<span class="nc" id="L92">		AnalysisStatus status = entry.getStatus();</span>
-<span class="nc bnc" id="L93" title="All 5 branches missed.">		return switch (status) {</span>
-<span class="nc" id="L94">		case PENDING -&gt; &quot;\u23F3&quot;; //$NON-NLS-1$ — hourglass</span>
-<span class="nc" id="L95">		case ANALYZING -&gt; &quot;\u23F3 ...&quot;; //$NON-NLS-1$ — hourglass with dots</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">		case DONE -&gt; entry.hasRules()</span>
-<span class="nc" id="L97">				? &quot;\u2705 &quot; + entry.getRuleCount() //$NON-NLS-1$ — checkmark + count</span>
-<span class="nc" id="L98">				: &quot;\u274C&quot;; //$NON-NLS-1$ — red cross</span>
-<span class="nc" id="L99">		case FAILED -&gt; &quot;\u274C&quot;; //$NON-NLS-1$ — red cross</span>
-<span class="nc" id="L100">		case NO_RULES -&gt; &quot;\u2298&quot;; //$NON-NLS-1$ — circled not sign</span>
+<span class="nc" id="L102">		AnalysisStatus status = entry.getStatus();</span>
+<span class="nc bnc" id="L103" title="All 5 branches missed.">		return switch (status) {</span>
+<span class="nc" id="L104">		case PENDING -&gt; &quot;\u23F3&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L105">		case ANALYZING -&gt; &quot;\u23F3 ...&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">		case DONE -&gt; entry.hasRules()</span>
+<span class="nc" id="L107">				? trafficLightIcon(entry) + &quot; &quot; + entry.getRuleCount() //$NON-NLS-1$</span>
+<span class="nc" id="L108">				: &quot;\u274C&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L109">		case FAILED -&gt; &quot;\u274C&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L110">		case NO_RULES -&gt; &quot;\u2298&quot;; //$NON-NLS-1$</span>
 		};
 	}
 
-	private static String firstLine(String message) {
-<span class="nc bnc" id="L105" title="All 2 branches missed.">		if (message == null) {</span>
-<span class="nc" id="L106">			return &quot;&quot;; //$NON-NLS-1$</span>
+	private static String trafficLightIcon(CommitTableEntry entry) {
+<span class="nc" id="L115">		List&lt;CommitEvaluation&gt; evals = entry.getEvaluations();</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">		if (evals.isEmpty()) {</span>
+<span class="nc" id="L117">			return &quot;\u2705&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L108">		int nl = message.indexOf('\n');</span>
-<span class="nc bnc" id="L109" title="All 2 branches missed.">		return nl &gt; 0 ? message.substring(0, nl) : message;</span>
+		// Use the best traffic light from all evaluations
+<span class="nc" id="L120">		boolean hasGreen = evals.stream()</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">				.anyMatch(e -&gt; e.trafficLight() == CommitEvaluation.TrafficLight.GREEN);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (hasGreen) {</span>
+<span class="nc" id="L123">			return &quot;\uD83D\uDFE2&quot;; //$NON-NLS-1$ — green circle</span>
+		}
+<span class="nc" id="L125">		boolean hasYellow = evals.stream()</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">				.anyMatch(e -&gt; e.trafficLight() == CommitEvaluation.TrafficLight.YELLOW);</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (hasYellow) {</span>
+<span class="nc" id="L128">			return &quot;\uD83D\uDFE1&quot;; //$NON-NLS-1$ — yellow circle</span>
+		}
+<span class="nc" id="L130">		return &quot;\uD83D\uDD34&quot;; //$NON-NLS-1$ — red circle</span>
+	}
+
+	private static String firstLine(String message) {
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (message == null) {</span>
+<span class="nc" id="L135">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L137">		int nl = message.indexOf('\n');</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">		return nl &gt; 0 ? message.substring(0, nl) : message;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

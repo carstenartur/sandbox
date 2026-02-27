@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LlmPreferencePage.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.preferences</a> &gt; <span class="el_source">LlmPreferencePage.java</span></div><h1>LlmPreferencePage.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.preferences;
+
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jface.preference.ComboFieldEditor;
+import org.eclipse.jface.preference.FieldEditorPreferencePage;
+import org.eclipse.jface.preference.IntegerFieldEditor;
+import org.eclipse.jface.preference.StringFieldEditor;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
+
+/**
+ * Preference page for LLM settings used by AI-powered rule inference.
+ * &lt;p&gt;
+ * Users can configure the LLM provider, API key, model name, max tokens,
+ * and temperature. When preferences are empty, the system falls back to
+ * environment variables via {@code LlmClientFactory.createFromEnvironment()}.
+ * &lt;/p&gt;
+ *
+ * @since 1.2.6
+ */
+public class LlmPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
+
+	/** Plugin identifier used as preference scope node. */
+	public static final String PLUGIN_ID = &quot;sandbox_triggerpattern&quot;; //$NON-NLS-1$
+
+	private static final String PREFIX = &quot;org.sandbox.jdt.triggerpattern.llm.&quot;; //$NON-NLS-1$
+
+	/** Preference key for the selected LLM provider. */
+	public static final String PREF_PROVIDER = PREFIX + &quot;provider&quot;; //$NON-NLS-1$
+
+	/** Preference key for the API key. */
+	public static final String PREF_API_KEY = PREFIX + &quot;apiKey&quot;; //$NON-NLS-1$
+
+	/** Preference key for the model name. */
+	public static final String PREF_MODEL_NAME = PREFIX + &quot;modelName&quot;; //$NON-NLS-1$
+
+	/** Preference key for the maximum number of tokens. */
+	public static final String PREF_MAX_TOKENS = PREFIX + &quot;maxTokens&quot;; //$NON-NLS-1$
+
+	/** Preference key for the temperature value. */
+	public static final String PREF_TEMPERATURE = PREFIX + &quot;temperature&quot;; //$NON-NLS-1$
+
+<span class="nc" id="L57">	private static final String[][] PROVIDER_ENTRIES = {</span>
+<span class="nc" id="L58">			{ &quot;Gemini&quot;, &quot;GEMINI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L59">			{ &quot;OpenAI&quot;, &quot;OPENAI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L60">			{ &quot;DeepSeek&quot;, &quot;DEEPSEEK&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L61">			{ &quot;Qwen&quot;, &quot;QWEN&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L62">			{ &quot;Llama&quot;, &quot;LLAMA&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L63">			{ &quot;Mistral&quot;, &quot;MISTRAL&quot; } //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L64">	};</span>
+
+	/**
+	 * Creates a new LLM preference page with GRID layout.
+	 */
+	public LlmPreferencePage() {
+<span class="nc" id="L70">		super(GRID);</span>
+<span class="nc" id="L71">		setPreferenceStore(new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID));</span>
+<span class="nc" id="L72">		setDescription(&quot;Configure LLM settings for AI-powered rule inference.\n&quot; //$NON-NLS-1$</span>
+				+ &quot;Leave API Key empty to fall back to environment variables.&quot;); //$NON-NLS-1$
+<span class="nc" id="L74">	}</span>
+
+	@Override
+	public void createFieldEditors() {
+<span class="nc" id="L78">		addField(new ComboFieldEditor(</span>
+<span class="nc" id="L79">				PREF_PROVIDER,</span>
+<span class="nc" id="L80">				&quot;&amp;Provider:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L81">				PROVIDER_ENTRIES,</span>
+<span class="nc" id="L82">				getFieldEditorParent()));</span>
+
+<span class="nc" id="L84">		addField(new StringFieldEditor(</span>
+<span class="nc" id="L85">				PREF_API_KEY,</span>
+<span class="nc" id="L86">				&quot;&amp;API Key:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L87">				getFieldEditorParent()));</span>
+
+<span class="nc" id="L89">		addField(new StringFieldEditor(</span>
+<span class="nc" id="L90">				PREF_MODEL_NAME,</span>
+<span class="nc" id="L91">				&quot;&amp;Model name:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L92">				getFieldEditorParent()));</span>
+
+<span class="nc" id="L94">		IntegerFieldEditor maxTokensField = new IntegerFieldEditor(</span>
+<span class="nc" id="L95">				PREF_MAX_TOKENS,</span>
+<span class="nc" id="L96">				&quot;Max &amp;tokens:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L97">				getFieldEditorParent());</span>
+<span class="nc" id="L98">		maxTokensField.setValidRange(1, 128000);</span>
+<span class="nc" id="L99">		addField(maxTokensField);</span>
+
+<span class="nc" id="L101">		StringFieldEditor temperatureField = new StringFieldEditor(</span>
+<span class="nc" id="L102">				PREF_TEMPERATURE,</span>
+<span class="nc" id="L103">				&quot;T&amp;emperature (0.0\u20131.0):&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L104">				getFieldEditorParent()) {</span>
+			@Override
+			protected boolean doCheckState() {
+				try {
+<span class="nc" id="L108">					double value = Double.parseDouble(getStringValue().trim());</span>
+<span class="nc bnc" id="L109" title="All 4 branches missed.">					if (value &lt; 0.0 || value &gt; 1.0) {</span>
+<span class="nc" id="L110">						setErrorMessage(&quot;Temperature must be between 0.0 and 1.0&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L111">						return false;</span>
+					}
+<span class="nc" id="L113">				} catch (NumberFormatException e) {</span>
+<span class="nc" id="L114">					setErrorMessage(&quot;Temperature must be a valid decimal number&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L115">					return false;</span>
+				}
+<span class="nc" id="L117">				return true;</span>
+			}
+		};
+<span class="nc" id="L120">		temperatureField.setEmptyStringAllowed(false);</span>
+<span class="nc" id="L121">		addField(temperatureField);</span>
+<span class="nc" id="L122">	}</span>
+
+	@Override
+	public void init(IWorkbench workbench) {
+		// Defaults are set by LlmPreferenceInitializer
+<span class="nc" id="L127">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

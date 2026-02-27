@@ -13,15 +13,20 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.views.mining;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.analysis.CommitAnalysisResult.AnalysisStatus;
 import org.sandbox.jdt.triggerpattern.mining.analysis.CommitInfo;
 import org.sandbox.jdt.triggerpattern.mining.analysis.InferredRule;
 
 /**
  * Mutable model entry for the commit table, wrapping a {@link CommitInfo} with
- * analysis status and inferred rules.
+ * analysis status, AI evaluations, and inferred rules.
+ *
+ * &lt;p&gt;Supports both AI-based evaluation ({@link CommitEvaluation}) and
+ * deterministic rule inference ({@link InferredRule}).&lt;/p&gt;
  *
  * @since 1.2.6
  */
@@ -30,65 +35,101 @@ public class CommitTableEntry {
 	private final CommitInfo commitInfo;
 	private AnalysisStatus status;
 	private List&lt;InferredRule&gt; inferredRules;
+	private List&lt;CommitEvaluation&gt; evaluations;
 
 	/**
 	 * Creates a new table entry with initial PENDING status.
 	 *
 	 * @param commitInfo the commit metadata
 	 */
-<span class="nc" id="L39">	public CommitTableEntry(CommitInfo commitInfo) {</span>
-<span class="nc" id="L40">		this.commitInfo = commitInfo;</span>
-<span class="nc" id="L41">		this.status = AnalysisStatus.PENDING;</span>
-<span class="nc" id="L42">		this.inferredRules = List.of();</span>
-<span class="nc" id="L43">	}</span>
+<span class="nc" id="L45">	public CommitTableEntry(CommitInfo commitInfo) {</span>
+<span class="nc" id="L46">		this.commitInfo = commitInfo;</span>
+<span class="nc" id="L47">		this.status = AnalysisStatus.PENDING;</span>
+<span class="nc" id="L48">		this.inferredRules = List.of();</span>
+<span class="nc" id="L49">		this.evaluations = List.of();</span>
+<span class="nc" id="L50">	}</span>
 
 	/**
 	 * @return the commit metadata
 	 */
 	public CommitInfo getCommitInfo() {
-<span class="nc" id="L49">		return commitInfo;</span>
+<span class="nc" id="L56">		return commitInfo;</span>
 	}
 
 	/**
 	 * @return the current analysis status
 	 */
 	public AnalysisStatus getStatus() {
-<span class="nc" id="L56">		return status;</span>
+<span class="nc" id="L63">		return status;</span>
 	}
 
 	/**
 	 * @param status the new analysis status
 	 */
 	public void setStatus(AnalysisStatus status) {
-<span class="nc" id="L63">		this.status = status;</span>
-<span class="nc" id="L64">	}</span>
+<span class="nc" id="L70">		this.status = status;</span>
+<span class="nc" id="L71">	}</span>
 
 	/**
 	 * @return the inferred rules (empty list if none)
 	 */
 	public List&lt;InferredRule&gt; getInferredRules() {
-<span class="nc" id="L70">		return inferredRules;</span>
+<span class="nc" id="L77">		return inferredRules;</span>
 	}
 
 	/**
 	 * @param inferredRules the inferred rules
 	 */
 	public void setInferredRules(List&lt;InferredRule&gt; inferredRules) {
-<span class="nc bnc" id="L77" title="All 2 branches missed.">		this.inferredRules = inferredRules != null ? inferredRules : List.of();</span>
-<span class="nc" id="L78">	}</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">		this.inferredRules = inferredRules != null ? inferredRules : List.of();</span>
+<span class="nc" id="L85">	}</span>
 
 	/**
-	 * @return the number of inferred rules
+	 * @return the AI evaluations (empty list if none)
+	 */
+	public List&lt;CommitEvaluation&gt; getEvaluations() {
+<span class="nc" id="L91">		return evaluations;</span>
+	}
+
+	/**
+	 * @param evaluations the AI evaluations
+	 */
+	public void setEvaluations(List&lt;CommitEvaluation&gt; evaluations) {
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		this.evaluations = evaluations != null ? evaluations : List.of();</span>
+<span class="nc" id="L99">	}</span>
+
+	/**
+	 * @return the number of rules (from AI evaluations or deterministic inference)
 	 */
 	public int getRuleCount() {
-<span class="nc" id="L84">		return inferredRules.size();</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">		if (!evaluations.isEmpty()) {</span>
+<span class="nc" id="L106">			return (int) evaluations.stream()</span>
+<span class="nc bnc" id="L107" title="All 4 branches missed.">					.filter(e -&gt; e.dslRule() != null &amp;&amp; !e.dslRule().isBlank())</span>
+<span class="nc" id="L108">					.count();</span>
+		}
+<span class="nc" id="L110">		return inferredRules.size();</span>
 	}
 
 	/**
 	 * @return {@code true} if the commit has analyzable rules
 	 */
 	public boolean hasRules() {
-<span class="nc bnc" id="L91" title="All 4 branches missed.">		return status == AnalysisStatus.DONE &amp;&amp; !inferredRules.isEmpty();</span>
+<span class="nc bnc" id="L117" title="All 4 branches missed.">		return status == AnalysisStatus.DONE &amp;&amp; getRuleCount() &gt; 0;</span>
+	}
+
+	/**
+	 * Collects DSL rule strings from AI evaluations.
+	 *
+	 * @return list of non-blank DSL rules
+	 */
+	public List&lt;String&gt; getDslRules() {
+<span class="nc" id="L126">		List&lt;String&gt; rules = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		for (CommitEvaluation eval : evaluations) {</span>
+<span class="nc bnc" id="L128" title="All 4 branches missed.">			if (eval.dslRule() != null &amp;&amp; !eval.dslRule().isBlank()) {</span>
+<span class="nc" id="L129">				rules.add(eval.dslRule());</span>
+			}
+		}
+<span class="nc" id="L132">		return rules;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

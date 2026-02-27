@@ -37,27 +37,28 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.part.ViewPart;
 import org.sandbox.jdt.triggerpattern.mining.analysis.CommitInfo;
-import org.sandbox.jdt.triggerpattern.mining.analysis.InferredRule;
-import org.sandbox.jdt.triggerpattern.mining.analysis.RuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.mining.git.CommandLineGitProvider;
 import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
+import org.sandbox.jdt.triggerpattern.mining.git.JGitHistoryProvider;
+import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
  * Eclipse view that displays Git commit history and allows asynchronous
- * analysis of commits to infer transformation rules.
+ * AI-powered analysis of commits to infer transformation rules.
  *
  * &lt;p&gt;Layout:&lt;/p&gt;
  * &lt;ul&gt;
- *   &lt;li&gt;Top: Commit table with columns (Commit, Message, Files, DSL Status)&lt;/li&gt;
+ *   &lt;li&gt;Top: Commit table with columns (Commit, Message, Files, AI Status)&lt;/li&gt;
  *   &lt;li&gt;Bottom: Detail panel showing inferred rules for the selected commit&lt;/li&gt;
  * &lt;/ul&gt;
  *
  * &lt;p&gt;The view uses {@link CommitAnalysisScheduler} to analyze commits
- * asynchronously and updates the table via {@code Display.asyncExec()}.&lt;/p&gt;
+ * asynchronously via {@link EclipseLlmService} and updates the table
+ * via {@code Display.asyncExec()}.&lt;/p&gt;
  *
  * @since 1.2.6
  */
-<span class="nc" id="L60">public class RefactoringMiningView extends ViewPart {</span>
+<span class="nc" id="L61">public class RefactoringMiningView extends ViewPart {</span>
 
 	/** The unique view ID registered in plugin.xml. */
 	public static final String VIEW_ID = &quot;org.sandbox.jdt.views.refactoringMining&quot;; //$NON-NLS-1$
@@ -69,110 +70,108 @@ import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
 	private CommitAnalysisScheduler scheduler;
 
 	private GitHistoryProvider gitProvider;
-	private RuleInferenceEngine engine;
 <span class="nc" id="L73">	private int maxCommits = DEFAULT_MAX_COMMITS;</span>
 
 	@Override
 	public void createPartControl(Composite parent) {
 <span class="nc" id="L77">		parent.setLayout(new GridLayout(1, false));</span>
 
-<span class="nc" id="L79">		gitProvider = new CommandLineGitProvider();</span>
-<span class="nc" id="L80">		engine = new RuleInferenceEngine();</span>
+<span class="nc" id="L79">		gitProvider = createGitProvider();</span>
 
-<span class="nc" id="L82">		SashForm sash = new SashForm(parent, SWT.VERTICAL);</span>
-<span class="nc" id="L83">		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
+<span class="nc" id="L81">		SashForm sash = new SashForm(parent, SWT.VERTICAL);</span>
+<span class="nc" id="L82">		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
 
-<span class="nc" id="L85">		createCommitTable(sash);</span>
-<span class="nc" id="L86">		detailPanel = new InferredRuleDetailPanel(sash);</span>
+<span class="nc" id="L84">		createCommitTable(sash);</span>
+<span class="nc" id="L85">		detailPanel = new InferredRuleDetailPanel(sash);</span>
 
-<span class="nc" id="L88">		sash.setWeights(60, 40);</span>
+<span class="nc" id="L87">		sash.setWeights(60, 40);</span>
 
-<span class="nc" id="L90">		createToolbar();</span>
-<span class="nc" id="L91">	}</span>
+<span class="nc" id="L89">		createToolbar();</span>
+<span class="nc" id="L90">	}</span>
 
 	@Override
 	public void setFocus() {
-<span class="nc bnc" id="L95" title="All 4 branches missed.">		if (commitTable != null &amp;&amp; !commitTable.getTable().isDisposed()) {</span>
-<span class="nc" id="L96">			commitTable.getTable().setFocus();</span>
+<span class="nc bnc" id="L94" title="All 4 branches missed.">		if (commitTable != null &amp;&amp; !commitTable.getTable().isDisposed()) {</span>
+<span class="nc" id="L95">			commitTable.getTable().setFocus();</span>
 		}
-<span class="nc" id="L98">	}</span>
+<span class="nc" id="L97">	}</span>
 
 	@Override
 	public void dispose() {
-<span class="nc bnc" id="L102" title="All 2 branches missed.">		if (scheduler != null) {</span>
-<span class="nc" id="L103">			scheduler.cancelAnalysis();</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">		if (scheduler != null) {</span>
+<span class="nc" id="L102">			scheduler.cancelAnalysis();</span>
 		}
-<span class="nc" id="L105">		super.dispose();</span>
-<span class="nc" id="L106">	}</span>
+<span class="nc" id="L104">		super.dispose();</span>
+<span class="nc" id="L105">	}</span>
 
 	// ---- table creation ----
 
 	private void createCommitTable(Composite parent) {
-<span class="nc" id="L111">		commitTable = new TableViewer(parent, SWT.FULL_SELECTION | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);</span>
-<span class="nc" id="L112">		Table table = commitTable.getTable();</span>
-<span class="nc" id="L113">		table.setHeaderVisible(true);</span>
-<span class="nc" id="L114">		table.setLinesVisible(true);</span>
+<span class="nc" id="L110">		commitTable = new TableViewer(parent, SWT.FULL_SELECTION | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);</span>
+<span class="nc" id="L111">		Table table = commitTable.getTable();</span>
+<span class="nc" id="L112">		table.setHeaderVisible(true);</span>
+<span class="nc" id="L113">		table.setLinesVisible(true);</span>
 
-<span class="nc" id="L116">		createColumn(&quot;Commit&quot;, 80); //$NON-NLS-1$</span>
-<span class="nc" id="L117">		createColumn(&quot;Message&quot;, 300); //$NON-NLS-1$</span>
-<span class="nc" id="L118">		createColumn(&quot;Files&quot;, 50); //$NON-NLS-1$</span>
-<span class="nc" id="L119">		createColumn(&quot;DSL Status&quot;, 80); //$NON-NLS-1$</span>
+<span class="nc" id="L115">		createColumn(&quot;Commit&quot;, 80); //$NON-NLS-1$</span>
+<span class="nc" id="L116">		createColumn(&quot;Message&quot;, 300); //$NON-NLS-1$</span>
+<span class="nc" id="L117">		createColumn(&quot;Files&quot;, 50); //$NON-NLS-1$</span>
+<span class="nc" id="L118">		createColumn(&quot;AI Status&quot;, 80); //$NON-NLS-1$</span>
 
-<span class="nc" id="L121">		commitTable.setContentProvider(ArrayContentProvider.getInstance());</span>
-<span class="nc" id="L122">		commitTable.setLabelProvider(new CommitTableLabelProvider());</span>
+<span class="nc" id="L120">		commitTable.setContentProvider(ArrayContentProvider.getInstance());</span>
+<span class="nc" id="L121">		commitTable.setLabelProvider(new CommitTableLabelProvider());</span>
 
-<span class="nc" id="L124">		commitTable.addSelectionChangedListener(new ISelectionChangedListener() {</span>
+<span class="nc" id="L123">		commitTable.addSelectionChangedListener(new ISelectionChangedListener() {</span>
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
-<span class="nc" id="L127">				IStructuredSelection sel = (IStructuredSelection) event.getSelection();</span>
-<span class="nc bnc" id="L128" title="All 2 branches missed.">				if (sel.isEmpty()) {</span>
-<span class="nc" id="L129">					detailPanel.showRules(null);</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">				} else if (sel.getFirstElement() instanceof CommitTableEntry entry) {</span>
-<span class="nc" id="L131">					detailPanel.showRules(entry);</span>
+<span class="nc" id="L126">				IStructuredSelection sel = (IStructuredSelection) event.getSelection();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">				if (sel.isEmpty()) {</span>
+<span class="nc" id="L128">					detailPanel.showRules(null);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">				} else if (sel.getFirstElement() instanceof CommitTableEntry entry) {</span>
+<span class="nc" id="L130">					detailPanel.showRules(entry);</span>
 				}
-<span class="nc" id="L133">			}</span>
+<span class="nc" id="L132">			}</span>
 		});
-<span class="nc" id="L135">	}</span>
+<span class="nc" id="L134">	}</span>
 
 	private void createColumn(String title, int width) {
-<span class="nc" id="L138">		TableViewerColumn col = new TableViewerColumn(commitTable, SWT.NONE);</span>
-<span class="nc" id="L139">		col.getColumn().setText(title);</span>
-<span class="nc" id="L140">		col.getColumn().setWidth(width);</span>
-<span class="nc" id="L141">		col.getColumn().setResizable(true);</span>
-<span class="nc" id="L142">	}</span>
+<span class="nc" id="L137">		TableViewerColumn col = new TableViewerColumn(commitTable, SWT.NONE);</span>
+<span class="nc" id="L138">		col.getColumn().setText(title);</span>
+<span class="nc" id="L139">		col.getColumn().setWidth(width);</span>
+<span class="nc" id="L140">		col.getColumn().setResizable(true);</span>
+<span class="nc" id="L141">	}</span>
 
 	// ---- toolbar ----
 
 	private void createToolbar() {
-<span class="nc" id="L147">		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();</span>
+<span class="nc" id="L146">		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();</span>
 
-<span class="nc" id="L149">		mgr.add(new Action(&quot;Analyze Project&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L148">		mgr.add(new Action(&quot;Analyze Project&quot;) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L152">				analyzeFirstGitProject();</span>
-<span class="nc" id="L153">			}</span>
+<span class="nc" id="L151">				analyzeFirstGitProject();</span>
+<span class="nc" id="L152">			}</span>
 		});
 
-<span class="nc" id="L156">		mgr.add(new Action(&quot;Stop Analysis&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L155">		mgr.add(new Action(&quot;Stop Analysis&quot;) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc bnc" id="L159" title="All 2 branches missed.">				if (scheduler != null) {</span>
-<span class="nc" id="L160">					scheduler.cancelAnalysis();</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">				if (scheduler != null) {</span>
+<span class="nc" id="L159">					scheduler.cancelAnalysis();</span>
 				}
-<span class="nc" id="L162">			}</span>
+<span class="nc" id="L161">			}</span>
 		});
 
-<span class="nc" id="L165">		mgr.add(new Separator());</span>
+<span class="nc" id="L164">		mgr.add(new Separator());</span>
 
-<span class="nc" id="L167">		mgr.add(new Action(&quot;Export as .sandbox-hint&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L166">		mgr.add(new Action(&quot;Export as .sandbox-hint&quot;) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L170">				exportAsHintFile();</span>
-<span class="nc" id="L171">			}</span>
+<span class="nc" id="L169">				exportAsHintFile();</span>
+<span class="nc" id="L170">			}</span>
 		});
 
-<span class="nc" id="L174">		mgr.update(true);</span>
-<span class="nc" id="L175">	}</span>
+<span class="nc" id="L173">		mgr.update(true);</span>
+<span class="nc" id="L174">	}</span>
 
 	// ---- analysis ----
 
@@ -180,15 +179,15 @@ import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
 	 * Finds the first Git-enabled project in the workspace and starts analysis.
 	 */
 	void analyzeFirstGitProject() {
-<span class="nc" id="L183">		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();</span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">		for (IProject project : projects) {</span>
-<span class="nc bnc" id="L185" title="All 4 branches missed.">			if (project.isOpen() &amp;&amp; project.getLocation() != null) {</span>
-<span class="nc" id="L186">				Path repoPath = project.getLocation().toFile().toPath();</span>
-<span class="nc" id="L187">				analyzeRepository(repoPath);</span>
-<span class="nc" id="L188">				return;</span>
+<span class="nc" id="L182">		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">		for (IProject project : projects) {</span>
+<span class="nc bnc" id="L184" title="All 4 branches missed.">			if (project.isOpen() &amp;&amp; project.getLocation() != null) {</span>
+<span class="nc" id="L185">				Path repoPath = project.getLocation().toFile().toPath();</span>
+<span class="nc" id="L186">				analyzeRepository(repoPath);</span>
+<span class="nc" id="L187">				return;</span>
 			}
 		}
-<span class="nc" id="L191">	}</span>
+<span class="nc" id="L190">	}</span>
 
 	/**
 	 * Analyzes the given Git repository.
@@ -196,63 +195,86 @@ import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
 	 * @param repositoryPath path to the repository working directory
 	 */
 	void analyzeRepository(Path repositoryPath) {
-<span class="nc bnc" id="L199" title="All 2 branches missed.">		if (scheduler != null) {</span>
-<span class="nc" id="L200">			scheduler.cancelAnalysis();</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">		if (scheduler != null) {</span>
+<span class="nc" id="L199">			scheduler.cancelAnalysis();</span>
 		}
 
 		try {
-<span class="nc" id="L204">			List&lt;CommitInfo&gt; commits = gitProvider.getHistory(repositoryPath, maxCommits);</span>
-<span class="nc" id="L205">			List&lt;CommitTableEntry&gt; entries = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">			for (CommitInfo commit : commits) {</span>
-<span class="nc" id="L207">				entries.add(new CommitTableEntry(commit));</span>
+<span class="nc" id="L203">			List&lt;CommitInfo&gt; commits = gitProvider.getHistory(repositoryPath, maxCommits);</span>
+<span class="nc" id="L204">			List&lt;CommitTableEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">			for (CommitInfo commit : commits) {</span>
+<span class="nc" id="L206">				entries.add(new CommitTableEntry(commit));</span>
 			}
 
-<span class="nc" id="L210">			CommitTableEntry[] entryArray = entries.toArray(CommitTableEntry[]::new);</span>
-<span class="nc" id="L211">			commitTable.setInput(entryArray);</span>
+<span class="nc" id="L209">			CommitTableEntry[] entryArray = entries.toArray(CommitTableEntry[]::new);</span>
+<span class="nc" id="L210">			commitTable.setInput(entryArray);</span>
 
-<span class="nc" id="L213">			scheduler = new CommitAnalysisScheduler(</span>
-<span class="nc" id="L214">					gitProvider, repositoryPath, engine, commitTable);</span>
-<span class="nc" id="L215">			scheduler.startAnalysis(entries);</span>
-<span class="nc" id="L216">		} catch (Exception e) {</span>
-<span class="nc" id="L217">			setContentDescription(&quot;Error: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="nc" id="L212">			scheduler = new CommitAnalysisScheduler(</span>
+<span class="nc" id="L213">					gitProvider, repositoryPath, commitTable);</span>
+<span class="nc" id="L214">			scheduler.startAnalysis(entries);</span>
+<span class="nc" id="L215">		} catch (Exception e) {</span>
+<span class="nc" id="L216">			setContentDescription(&quot;Error: &quot; + e.getMessage()); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L219">	}</span>
+<span class="nc" id="L218">	}</span>
 
 	// ---- export ----
 
 	private void exportAsHintFile() {
-<span class="nc" id="L224">		List&lt;InferredRule&gt; allRules = collectSelectedRules();</span>
-<span class="nc bnc" id="L225" title="All 2 branches missed.">		if (allRules.isEmpty()) {</span>
-<span class="nc" id="L226">			return;</span>
+<span class="nc" id="L223">		List&lt;String&gt; allDslRules = collectSelectedDslRules();</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (allDslRules.isEmpty()) {</span>
+<span class="nc" id="L225">			return;</span>
 		}
 
-<span class="nc" id="L229">		FileDialog dialog = new FileDialog(getSite().getShell(), SWT.SAVE);</span>
-<span class="nc" id="L230">		dialog.setFilterExtensions(new String[] { &quot;*.sandbox-hint&quot; }); //$NON-NLS-1$</span>
-<span class="nc" id="L231">		dialog.setFilterNames(new String[] { &quot;Sandbox Hint Files (*.sandbox-hint)&quot; }); //$NON-NLS-1$</span>
-<span class="nc" id="L232">		dialog.setFileName(&quot;inferred.sandbox-hint&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L228">		FileDialog dialog = new FileDialog(getSite().getShell(), SWT.SAVE);</span>
+<span class="nc" id="L229">		dialog.setFilterExtensions(new String[] { &quot;*.sandbox-hint&quot; }); //$NON-NLS-1$</span>
+<span class="nc" id="L230">		dialog.setFilterNames(new String[] { &quot;Sandbox Hint Files (*.sandbox-hint)&quot; }); //$NON-NLS-1$</span>
+<span class="nc" id="L231">		dialog.setFileName(&quot;inferred.sandbox-hint&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L234">		String path = dialog.open();</span>
-<span class="nc bnc" id="L235" title="All 2 branches missed.">		if (path != null) {</span>
-<span class="nc" id="L236">			String content = engine.toHintFileString(allRules);</span>
+<span class="nc" id="L233">		String path = dialog.open();</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">		if (path != null) {</span>
+<span class="nc" id="L235">			String content = buildHintFileContent(allDslRules);</span>
 			try {
-<span class="nc" id="L238">				java.nio.file.Files.writeString(java.nio.file.Path.of(path), content);</span>
-<span class="nc" id="L239">			} catch (java.io.IOException e) {</span>
-<span class="nc" id="L240">				setContentDescription(&quot;Export failed: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="nc" id="L237">				java.nio.file.Files.writeString(java.nio.file.Path.of(path), content);</span>
+<span class="nc" id="L238">			} catch (java.io.IOException e) {</span>
+<span class="nc" id="L239">				setContentDescription(&quot;Export failed: &quot; + e.getMessage()); //$NON-NLS-1$</span>
 			}
 		}
-<span class="nc" id="L243">	}</span>
+<span class="nc" id="L242">	}</span>
 
-	private List&lt;InferredRule&gt; collectSelectedRules() {
-<span class="nc" id="L246">		List&lt;InferredRule&gt; rules = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L247">		Object input = commitTable.getInput();</span>
-<span class="nc bnc" id="L248" title="All 2 branches missed.">		if (input instanceof CommitTableEntry[] entries) {</span>
-<span class="nc bnc" id="L249" title="All 2 branches missed.">			for (CommitTableEntry entry : entries) {</span>
-<span class="nc bnc" id="L250" title="All 2 branches missed.">				if (entry.hasRules()) {</span>
-<span class="nc" id="L251">					rules.addAll(entry.getInferredRules());</span>
+	private List&lt;String&gt; collectSelectedDslRules() {
+<span class="nc" id="L245">		List&lt;String&gt; rules = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L246">		Object input = commitTable.getInput();</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">		if (input instanceof CommitTableEntry[] entries) {</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">			for (CommitTableEntry entry : entries) {</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">				if (entry.hasRules()) {</span>
+<span class="nc" id="L250">					rules.addAll(entry.getDslRules());</span>
 				}
 			}
 		}
-<span class="nc" id="L255">		return rules;</span>
+<span class="nc" id="L254">		return rules;</span>
+	}
+
+	private static String buildHintFileContent(List&lt;String&gt; dslRules) {
+<span class="nc" id="L258">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L259">		sb.append(&quot;&lt;!id: ai-inferred-rules&gt;\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L260">		sb.append(&quot;&lt;!description: Rules inferred by AI from code changes&gt;\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L261">		sb.append(&quot;&lt;!severity: info&gt;\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L262">		sb.append(&quot;&lt;!tags: ai-inferred, mining&gt;\n\n&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">		for (String rule : dslRules) {</span>
+<span class="nc" id="L264">			sb.append(rule).append(&quot;\n;;\n\n&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L266">		return sb.toString();</span>
+	}
+
+	// ---- git provider ----
+
+	private static GitHistoryProvider createGitProvider() {
+		try {
+<span class="nc" id="L273">			return new JGitHistoryProvider();</span>
+<span class="nc" id="L274">		} catch (Exception e) {</span>
+			// Fallback to command-line git if JGit is not available
+<span class="nc" id="L276">			return new CommandLineGitProvider();</span>
+		}
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

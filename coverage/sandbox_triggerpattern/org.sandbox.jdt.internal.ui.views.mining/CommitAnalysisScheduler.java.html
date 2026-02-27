@@ -19,17 +19,17 @@ import java.util.List;
 
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.widgets.Display;
-import org.sandbox.jdt.triggerpattern.mining.analysis.RuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
 
 /**
- * Orchestrates asynchronous analysis of multiple commits using Eclipse
- * {@link org.eclipse.core.runtime.jobs.Job Jobs}.
+ * Orchestrates asynchronous AI-powered analysis of multiple commits using
+ * Eclipse {@link org.eclipse.core.runtime.jobs.Job Jobs}.
  *
  * &lt;p&gt;Strategy:&lt;/p&gt;
  * &lt;ol&gt;
  *   &lt;li&gt;All commits start with status PENDING (⏳)&lt;/li&gt;
- *   &lt;li&gt;Jobs are scheduled (max 4 parallel by default)&lt;/li&gt;
+ *   &lt;li&gt;Jobs are scheduled (one per commit)&lt;/li&gt;
+ *   &lt;li&gt;Each job uses {@link EclipseLlmService} for AI inference&lt;/li&gt;
  *   &lt;li&gt;On completion: {@link TableViewer#update(Object, String[])} is called
  *       via {@link Display#asyncExec(Runnable)}&lt;/li&gt;
  * &lt;/ol&gt;
@@ -38,14 +38,10 @@ import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
  */
 public class CommitAnalysisScheduler {
 
-	/** Default maximum number of parallel analysis jobs. */
-	private static final int DEFAULT_MAX_PARALLEL = 4;
-
 	private final GitHistoryProvider gitProvider;
 	private final Path repositoryPath;
-	private final RuleInferenceEngine engine;
 	private final TableViewer tableViewer;
-<span class="nc" id="L48">	private final List&lt;CommitAnalysisJob&gt; runningJobs = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L44">	private final List&lt;CommitAnalysisJob&gt; runningJobs = new ArrayList&lt;&gt;();</span>
 	private volatile boolean running;
 
 	/**
@@ -53,16 +49,14 @@ public class CommitAnalysisScheduler {
 	 *
 	 * @param gitProvider    the git history provider
 	 * @param repositoryPath path to the Git repository
-	 * @param engine         the rule inference engine
 	 * @param tableViewer    the commit table viewer to update
 	 */
-<span class="nc" id="L59">	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,</span>
-			RuleInferenceEngine engine, TableViewer tableViewer) {
-<span class="nc" id="L61">		this.gitProvider = gitProvider;</span>
-<span class="nc" id="L62">		this.repositoryPath = repositoryPath;</span>
-<span class="nc" id="L63">		this.engine = engine;</span>
-<span class="nc" id="L64">		this.tableViewer = tableViewer;</span>
-<span class="nc" id="L65">	}</span>
+<span class="nc" id="L54">	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,</span>
+			TableViewer tableViewer) {
+<span class="nc" id="L56">		this.gitProvider = gitProvider;</span>
+<span class="nc" id="L57">		this.repositoryPath = repositoryPath;</span>
+<span class="nc" id="L58">		this.tableViewer = tableViewer;</span>
+<span class="nc" id="L59">	}</span>
 
 	/**
 	 * Starts asynchronous analysis of the given commits.
@@ -70,45 +64,45 @@ public class CommitAnalysisScheduler {
 	 * @param entries the commit entries to analyze
 	 */
 	public void startAnalysis(List&lt;CommitTableEntry&gt; entries) {
-<span class="nc" id="L73">		cancelAnalysis();</span>
-<span class="nc" id="L74">		running = true;</span>
+<span class="nc" id="L67">		cancelAnalysis();</span>
+<span class="nc" id="L68">		running = true;</span>
 
-<span class="nc bnc" id="L76" title="All 2 branches missed.">		for (CommitTableEntry entry : entries) {</span>
-<span class="nc" id="L77">			CommitAnalysisJob job = new CommitAnalysisJob(</span>
-<span class="nc" id="L78">					entry, gitProvider, repositoryPath, engine,</span>
-<span class="nc" id="L79">					() -&gt; notifyUpdate(entry));</span>
-<span class="nc" id="L80">			runningJobs.add(job);</span>
-<span class="nc" id="L81">			job.schedule();</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">		for (CommitTableEntry entry : entries) {</span>
+<span class="nc" id="L71">			CommitAnalysisJob job = new CommitAnalysisJob(</span>
+<span class="nc" id="L72">					entry, gitProvider, repositoryPath,</span>
+<span class="nc" id="L73">					() -&gt; notifyUpdate(entry));</span>
+<span class="nc" id="L74">			runningJobs.add(job);</span>
+<span class="nc" id="L75">			job.schedule();</span>
 		}
-<span class="nc" id="L83">	}</span>
+<span class="nc" id="L77">	}</span>
 
 	/**
 	 * Cancels all running analysis jobs.
 	 */
 	public void cancelAnalysis() {
-<span class="nc" id="L89">		running = false;</span>
-<span class="nc bnc" id="L90" title="All 2 branches missed.">		for (CommitAnalysisJob job : runningJobs) {</span>
-<span class="nc" id="L91">			job.cancel();</span>
+<span class="nc" id="L83">		running = false;</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">		for (CommitAnalysisJob job : runningJobs) {</span>
+<span class="nc" id="L85">			job.cancel();</span>
 		}
-<span class="nc" id="L93">		runningJobs.clear();</span>
-<span class="nc" id="L94">	}</span>
+<span class="nc" id="L87">		runningJobs.clear();</span>
+<span class="nc" id="L88">	}</span>
 
 	/**
 	 * @return {@code true} if any analysis is still running
 	 */
 	public boolean isRunning() {
-<span class="nc" id="L100">		return running;</span>
+<span class="nc" id="L94">		return running;</span>
 	}
 
 	private void notifyUpdate(CommitTableEntry entry) {
-<span class="nc" id="L104">		Display display = tableViewer.getTable().getDisplay();</span>
-<span class="nc bnc" id="L105" title="All 4 branches missed.">		if (display != null &amp;&amp; !display.isDisposed()) {</span>
-<span class="nc" id="L106">			display.asyncExec(() -&gt; {</span>
-<span class="nc bnc" id="L107" title="All 2 branches missed.">				if (!tableViewer.getTable().isDisposed()) {</span>
-<span class="nc" id="L108">					tableViewer.update(entry, null);</span>
+<span class="nc" id="L98">		Display display = tableViewer.getTable().getDisplay();</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">		if (display != null &amp;&amp; !display.isDisposed()) {</span>
+<span class="nc" id="L100">			display.asyncExec(() -&gt; {</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">				if (!tableViewer.getTable().isDisposed()) {</span>
+<span class="nc" id="L102">					tableViewer.update(entry, null);</span>
 				}
-<span class="nc" id="L110">			});</span>
+<span class="nc" id="L104">			});</span>
 		}
-<span class="nc" id="L112">	}</span>
+<span class="nc" id="L106">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
