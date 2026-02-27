@@ -198,7 +198,7 @@ class AiRuleInferenceEngineTest {
 			String dslRule, CommitEvaluation.TrafficLight trafficLight) {
 		return new CommitEvaluation(
 				"inline", "AI rule inference", "local", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				Instant.now(), relevant, null, false, null,
+				Instant.now(), null, relevant, null, false, null,
 				5, 5, 3, trafficLight,
 				"TestCategory", false, null, //$NON-NLS-1$
 				dslRule != null, dslRule, null,

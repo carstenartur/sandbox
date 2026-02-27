@@ -47,7 +47,7 @@ class GithubPagesGeneratorTest {
 
 		CommitEvaluation eval = new CommitEvaluation(
 				"abc123", "test commit", "https://github.com/test/repo",
-				Instant.now(), true, null, false, null,
+				Instant.now(), null, true, null, false, null,
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
@@ -93,7 +93,7 @@ class GithubPagesGeneratorTest {
 
 		CommitEvaluation first = new CommitEvaluation(
 				"existing123", "existing commit", "https://github.com/test/repo",
-				Instant.parse("2026-01-01T10:00:00Z"), true, null, false, null,
+				Instant.parse("2026-01-01T10:00:00Z"), null, true, null, false, null,
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
@@ -104,7 +104,7 @@ class GithubPagesGeneratorTest {
 
 		CommitEvaluation second = new CommitEvaluation(
 				"new456", "new commit", "https://github.com/test/repo",
-				Instant.parse("2026-01-02T10:00:00Z"), true, null, false, null,
+				Instant.parse("2026-01-02T10:00:00Z"), null, true, null, false, null,
 				5, 5, 2, TrafficLight.GREEN,
 				"String-API", false, "reason",
 				true, "rule2", "file2.sandbox-hint",
@@ -148,7 +148,7 @@ class GithubPagesGeneratorTest {
 
 		CommitEvaluation real = new CommitEvaluation(
 				"real123", "real commit", "https://github.com/test/repo",
-				Instant.parse("2026-01-02T10:00:00Z"), true, null, false, null,
+				Instant.parse("2026-01-02T10:00:00Z"), null, true, null, false, null,
 				5, 5, 2, TrafficLight.GREEN,
 				"String-API", false, "reason",
 				true, "rule", "file.sandbox-hint",
@@ -174,7 +174,7 @@ class GithubPagesGeneratorTest {
 
 		CommitEvaluation eval = new CommitEvaluation(
 				"samehash", "commit", "https://github.com/test/repo",
-				Instant.parse("2026-01-01T10:00:00Z"), true, null, false, null,
+				Instant.parse("2026-01-01T10:00:00Z"), null, true, null, false, null,
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",

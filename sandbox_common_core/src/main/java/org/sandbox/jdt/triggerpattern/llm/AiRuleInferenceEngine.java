@@ -154,7 +154,7 @@ public class AiRuleInferenceEngine {
 
 		CommitEvaluation enriched = new CommitEvaluation(
 				evaluation.commitHash(), evaluation.commitMessage(), evaluation.repoUrl(),
-				evaluation.evaluatedAt(), evaluation.relevant(), evaluation.irrelevantReason(),
+				evaluation.evaluatedAt(), evaluation.commitDate(), evaluation.relevant(), evaluation.irrelevantReason(),
 				evaluation.isDuplicate(), evaluation.duplicateOf(),
 				evaluation.reusability(), evaluation.codeImprovement(),
 				evaluation.implementationEffort(),

@@ -128,7 +128,8 @@
     <div class="run-status" id="run-status">
         <div class="info-item"><span class="icon">🕐</span><span class="label">Last Run:</span><span class="val" id="rs-completed">–</span></div>
         <div class="info-item"><span class="icon">⏱</span><span class="label">Duration:</span><span class="val" id="rs-duration">–</span></div>
-        <div class="info-item"><span class="icon">📅</span><span class="label">Analysis Window:</span><span class="val" id="rs-window">–</span></div>
+        <div class="info-item"><span class="icon">📅</span><span class="label">Commit Date Range:</span><span class="val" id="rs-commit-range">–</span></div>
+        <div class="info-item"><span class="icon">⏱</span><span class="label">Evaluation Window:</span><span class="val" id="rs-window">–</span></div>
         <div class="info-item"><span class="icon">🤖</span><span class="label">Model:</span><span class="val" id="rs-model">–</span></div>
         <div class="info-item"><span class="icon">📊</span><span class="label">API Calls:</span><span class="val" id="rs-api-calls">–</span></div>
         <div class="info-item"><span class="icon">📦</span><span class="label">Batch Config:</span><span class="val" id="rs-batch">–</span></div>
@@ -310,13 +311,6 @@
         let allEvaluations = [];
         let statistics = null;
 
-        function escapeHtml(str) {
-            if (!str) return '';
-            const div = document.createElement('div');
-            div.appendChild(document.createTextNode(str));
-            return div.innerHTML;
-        }
-
         function updatePercentages() {
             const total = parseInt(document.getElementById('stat-total').textContent) || 0;
             if (total > 0) {
@@ -332,13 +326,35 @@
             const y = parseInt(document.getElementById('legend-yellow').textContent) || 0;
             const r = parseInt(document.getElementById('legend-red').textContent) || 0;
             const total = g + y + r;
-            if (total > 0) {
-                document.getElementById('bar-green').style.width = ((g / total) * 100) + '%';
-                document.getElementById('bar-green').textContent = g + ' (' + ((g / total) * 100).toFixed(0) + '%)';
-                document.getElementById('bar-yellow').style.width = ((y / total) * 100) + '%';
-                document.getElementById('bar-yellow').textContent = y + ' (' + ((y / total) * 100).toFixed(0) + '%)';
-                document.getElementById('bar-red').style.width = ((r / total) * 100) + '%';
-                document.getElementById('bar-red').textContent = r + ' (' + ((r / total) * 100).toFixed(0) + '%)';
+            const barGreen = document.getElementById('bar-green');
+            const barYellow = document.getElementById('bar-yellow');
+            const barRed = document.getElementById('bar-red');
+            if (total === 0) {
+                barGreen.style.display = 'none';
+                barYellow.style.display = 'none';
+                barRed.style.display = 'none';
+                return;
+            }
+            if (g > 0) {
+                barGreen.style.display = '';
+                barGreen.style.width = ((g / total) * 100) + '%';
+                barGreen.textContent = g + ' (' + ((g / total) * 100).toFixed(0) + '%)';
+            } else {
+                barGreen.style.display = 'none';
+            }
+            if (y > 0) {
+                barYellow.style.display = '';
+                barYellow.style.width = ((y / total) * 100) + '%';
+                barYellow.textContent = y + ' (' + ((y / total) * 100).toFixed(0) + '%)';
+            } else {
+                barYellow.style.display = 'none';
+            }
+            if (r > 0) {
+                barRed.style.display = '';
+                barRed.style.width = ((r / total) * 100) + '%';
+                barRed.textContent = r + ' (' + ((r / total) * 100).toFixed(0) + '%)';
+            } else {
+                barRed.style.display = 'none';
             }
         }
 
@@ -384,7 +400,17 @@
                 var tdCommit = document.createElement('td');
                 var code = document.createElement('code');
                 code.textContent = (evaluation.commitHash || '').substring(0, 8);
-                tdCommit.appendChild(code);
+                if (evaluation.repoUrl && evaluation.commitHash) {
+                    var hashLink = document.createElement('a');
+                    hashLink.href = evaluation.repoUrl + '/commit/' + evaluation.commitHash;
+                    hashLink.target = '_blank';
+                    hashLink.style.color = 'inherit';
+                    hashLink.style.textDecoration = 'none';
+                    hashLink.appendChild(code);
+                    tdCommit.appendChild(hashLink);
+                } else {
+                    tdCommit.appendChild(code);
+                }
                 var outcomeForCommit = outcomes.filter(function(o) { return o.commitHash === evaluation.commitHash; });
                 if (outcomeForCommit.length > 0) {
                     var badge = document.createElement('span');
@@ -397,7 +423,21 @@
                 var tdDate = document.createElement('td');
                 tdDate.style.fontSize = '0.85em';
                 tdDate.style.whiteSpace = 'nowrap';
-                if (evaluation.evaluatedAt) {
+                if (evaluation.commitDate) {
+                    try {
+                        var commitDateSpan = document.createElement('span');
+                        commitDateSpan.textContent = new Date(evaluation.commitDate).toLocaleString();
+                        tdDate.appendChild(commitDateSpan);
+                        if (evaluation.evaluatedAt) {
+                            var evalDateSpan = document.createElement('div');
+                            evalDateSpan.style.fontSize = '0.85em';
+                            evalDateSpan.style.color = '#888';
+                            try { evalDateSpan.textContent = 'eval: ' + new Date(evaluation.evaluatedAt).toLocaleString(); }
+                            catch(e) { evalDateSpan.textContent = 'eval: ' + evaluation.evaluatedAt; }
+                            tdDate.appendChild(evalDateSpan);
+                        }
+                    } catch(e) { tdDate.textContent = evaluation.commitDate; }
+                } else if (evaluation.evaluatedAt) {
                     try { tdDate.textContent = new Date(evaluation.evaluatedAt).toLocaleString(); }
                     catch(e) { tdDate.textContent = evaluation.evaluatedAt; }
                 } else { tdDate.textContent = '-'; }
@@ -473,7 +513,7 @@
                         tdActions.appendChild(validIcon);
                     }
                 }
-                if (evaluation.trafficLight === 'RED' && evaluation.languageChangeNeeded) {
+                if (evaluation.trafficLight === 'RED' && evaluation.languageChangeNeeded && evaluation.relevant) {
                     var issueBtn = document.createElement('button');
                     issueBtn.className = 'action-btn issue';
                     issueBtn.textContent = '\uD83D\uDCCB Issue';
@@ -578,7 +618,7 @@
                 var targetFile = evaluation.targetHintFile || '-';
                 if (targetFile !== '-') {
                     var link = document.createElement('a');
-                    link.href = 'https://github.com/carstenartur/sandbox/blob/master/' + targetFile;
+                    link.href = 'https://github.com/carstenartur/sandbox/blob/main/' + targetFile;
                     link.style.color = '#0366d6';
                     link.style.textDecoration = 'none';
                     var code = document.createElement('code');
@@ -665,6 +705,11 @@
             }
             if (data.timeWindow) {
                 var tw = data.timeWindow;
+                if (tw.earliestCommitDate || tw.latestCommitDate) {
+                    var earlyCommit = tw.earliestCommitDate ? tw.earliestCommitDate.substring(0, 10) : '?';
+                    var lateCommit = tw.latestCommitDate ? tw.latestCommitDate.substring(0, 10) : '?';
+                    document.getElementById('rs-commit-range').textContent = earlyCommit + ' \u2192 ' + lateCommit;
+                }
                 var earlyDate = tw.earliestEvaluation ? tw.earliestEvaluation.substring(0, 10) : '?';
                 var lateDate = tw.latestEvaluation ? tw.latestEvaluation.substring(0, 10) : '?';
                 document.getElementById('rs-window').textContent = earlyDate + ' \u2192 ' + lateDate;
@@ -725,7 +770,10 @@
 
         // Load data
         fetch('evaluations.json')
-            .then(function(response) { return response.json(); })
+            .then(function(response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
             .then(function(data) {
                 allEvaluations = data;
                 populateFilters(data);
@@ -757,7 +805,10 @@
             .catch(function(err) { console.error('Failed to load evaluations:', err); });
 
         fetch('statistics.json')
-            .then(function(response) { return response.json(); })
+            .then(function(response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
             .then(function(data) {
                 statistics = data;
                 // Populate irrelevant reasons table
@@ -781,7 +832,12 @@
                         var row = document.createElement('tr');
                         var repo = entry[1];
                         var tdUrl = document.createElement('td');
-                        tdUrl.textContent = entry[0];
+                        var repoLink = document.createElement('a');
+                        repoLink.href = entry[0];
+                        repoLink.textContent = entry[0].replace('https://github.com/', '');
+                        repoLink.style.color = '#0366d6';
+                        repoLink.target = '_blank';
+                        tdUrl.appendChild(repoLink);
                         row.appendChild(tdUrl);
                         var tdProc = document.createElement('td');
                         tdProc.textContent = repo.totalProcessed || 0;

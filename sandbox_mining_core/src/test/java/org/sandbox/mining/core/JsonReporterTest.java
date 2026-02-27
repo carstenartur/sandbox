@@ -142,7 +142,7 @@ class JsonReporterTest {
 	private CommitEvaluation createEval(String hash, String message, TrafficLight light) {
 		return new CommitEvaluation(
 				hash, message, "https://github.com/test/repo",
-				Instant.now(), true, null, false, null,
+				Instant.now(), null, true, null, false, null,
 				4, 3, 2, light,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",

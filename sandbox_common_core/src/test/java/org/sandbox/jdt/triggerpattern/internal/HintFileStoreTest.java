@@ -76,7 +76,7 @@ class HintFileStoreTest {
 	@Test
 	void testRegisterInferredRulesBatchSkipsIrrelevant() {
 		CommitEvaluation irrelevant = new CommitEvaluation(
-				"commit1", "msg", "repo", Instant.now(),
+				"commit1", "msg", "repo", Instant.now(), null,
 				false, "not relevant", false, null,
 				0, 0, 0, CommitEvaluation.TrafficLight.NOT_APPLICABLE,
 				null, false, null, false, null, null, null, null, null, null);
@@ -217,7 +217,7 @@ class HintFileStoreTest {
 	private static CommitEvaluation createEvaluation(String commitHash, String dslRule) {
 		return new CommitEvaluation(
 				commitHash, "Test commit", "https://example.com",
-				Instant.now(), true, null, false, null,
+				Instant.now(), null, true, null, false, null,
 				5, 5, 3, CommitEvaluation.TrafficLight.GREEN,
 				"TestCategory", false, null,
 				dslRule != null, dslRule, null,

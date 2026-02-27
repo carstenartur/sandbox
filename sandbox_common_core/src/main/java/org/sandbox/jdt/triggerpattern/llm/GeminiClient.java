@@ -633,6 +633,7 @@ public class GeminiClient implements LlmClient {
 				commitMessage,
 				repoUrl,
 				Instant.now(),
+				null,
 				relevant,
 				getStringOrNull(eval, "irrelevantReason"), //$NON-NLS-1$
 				getBooleanOrDefault(eval, "isDuplicate", false), //$NON-NLS-1$

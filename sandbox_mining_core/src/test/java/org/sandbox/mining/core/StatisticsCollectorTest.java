@@ -34,7 +34,7 @@ class StatisticsCollectorTest {
 		StatisticsCollector stats = new StatisticsCollector();
 
 		CommitEvaluation eval = new CommitEvaluation(
-				"abc123", "msg", "url", Instant.now(),
+				"abc123", "msg", "url", Instant.now(), null,
 				true, null, false, null,
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
@@ -57,7 +57,7 @@ class StatisticsCollectorTest {
 		StatisticsCollector stats = new StatisticsCollector();
 
 		CommitEvaluation eval = new CommitEvaluation(
-				"def456", "msg", "url", Instant.now(),
+				"def456", "msg", "url", Instant.now(), null,
 				false, "Not a code change", false, null,
 				0, 0, 0, TrafficLight.NOT_APPLICABLE,
 				null, false, null,
@@ -93,7 +93,7 @@ class StatisticsCollectorTest {
 
 	private CommitEvaluation createEval(boolean relevant, TrafficLight light, boolean duplicate) {
 		return new CommitEvaluation(
-				"hash", "msg", "url", Instant.now(),
+				"hash", "msg", "url", Instant.now(), null,
 				relevant, relevant ? null : "reason",
 				duplicate, null,
 				0, 0, 0, light,
@@ -107,13 +107,13 @@ class StatisticsCollectorTest {
 		Instant day1 = Instant.parse("2026-01-01T10:00:00Z");
 		Instant day2 = Instant.parse("2026-01-02T10:00:00Z");
 		List<CommitEvaluation> evals = List.of(
-				new CommitEvaluation("h1", "msg", "url", day1,
+				new CommitEvaluation("h1", "msg", "url", day1, null,
 						true, null, false, null,
 						4, 3, 2, TrafficLight.GREEN,
 						"Collections", false, "reason",
 						true, "rule", "file.hint",
 						null, null, "summary", null),
-				new CommitEvaluation("h2", "msg", "url", day2,
+				new CommitEvaluation("h2", "msg", "url", day2, null,
 						false, "Bug-Fix", false, null,
 						0, 0, 0, TrafficLight.NOT_APPLICABLE,
 						null, false, null,
@@ -153,10 +153,10 @@ class StatisticsCollectorTest {
 		Instant early = Instant.parse("2026-01-01T10:00:00Z");
 		Instant late = Instant.parse("2026-01-01T12:00:00Z");
 		List<CommitEvaluation> evals = List.of(
-				new CommitEvaluation("h1", "m", "u", late, true, null, false, null,
+				new CommitEvaluation("h1", "m", "u", late, null, true, null, false, null,
 						0, 0, 0, TrafficLight.GREEN, null, false, null,
 						false, null, null, null, null, "s", null),
-				new CommitEvaluation("h2", "m", "u", early, true, null, false, null,
+				new CommitEvaluation("h2", "m", "u", early, null, true, null, false, null,
 						0, 0, 0, TrafficLight.GREEN, null, false, null,
 						false, null, null, null, null, "s", null));
 
