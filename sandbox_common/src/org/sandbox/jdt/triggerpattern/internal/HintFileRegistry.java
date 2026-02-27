@@ -463,8 +463,16 @@ public final class HintFileRegistry {
 		if (project == null || !project.isAccessible()) {
 			return Collections.emptyList();
 		}
+		org.eclipse.core.runtime.IPath location = project.getLocation();
+		if (location == null) {
+			ILog log = Platform.getLog(HintFileRegistry.class);
+			log.log(Status.warning(
+					"Cannot save inferred hint files: project has no local location: " //$NON-NLS-1$
+							+ project.getName()));
+			return Collections.emptyList();
+		}
 		try {
-			Path projectPath = project.getLocation().toFile().toPath();
+			Path projectPath = location.toFile().toPath();
 			List<Path> written = store.saveInferredHintFiles(projectPath);
 			if (!written.isEmpty()) {
 				project.refreshLocal(IProject.DEPTH_INFINITE, null);
@@ -494,7 +502,11 @@ public final class HintFileRegistry {
 		if (project == null || !project.isAccessible()) {
 			return Collections.emptyList();
 		}
-		Path projectPath = project.getLocation().toFile().toPath();
+		org.eclipse.core.runtime.IPath location = project.getLocation();
+		if (location == null) {
+			return Collections.emptyList();
+		}
+		Path projectPath = location.toFile().toPath();
 		return store.loadInferredHintFiles(projectPath);
 	}
 }

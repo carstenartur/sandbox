@@ -398,10 +398,14 @@ public final class HintFileStore {
 			}
 			try {
 				HintFile hintFile = parser.parse(dslRule);
-				String commitId = eval.commitHash() != null ? eval.commitHash() : source;
+				String normalizedSource = (source != null && !source.isBlank()) ? source : "unknown"; //$NON-NLS-1$
+				String commitId = eval.commitHash();
+				if (commitId == null || commitId.isBlank()) {
+					commitId = normalizedSource;
+				}
 				String id = INFERRED_PREFIX + commitId;
 				hintFile.setId(id);
-				hintFile.setTags(List.of("ai-inferred", source, commitId)); //$NON-NLS-1$
+				hintFile.setTags(List.of("ai-inferred", normalizedSource, commitId)); //$NON-NLS-1$
 				hintFile.setSeverity(Severity.INFO);
 				if (hintFile.getDescription() == null) {
 					hintFile.setDescription(eval.summary());
@@ -412,6 +416,9 @@ public final class HintFileStore {
 			} catch (HintParseException e) {
 				LOGGER.log(Level.WARNING,
 						"Failed to parse DSL rule from evaluation: " + eval.commitHash(), e); //$NON-NLS-1$
+			} catch (RuntimeException e) {
+				LOGGER.log(Level.WARNING,
+						"Unexpected error while parsing DSL rule from evaluation: " + eval.commitHash(), e); //$NON-NLS-1$
 			}
 		}
 		return registered;
@@ -446,7 +453,12 @@ public final class HintFileStore {
 		Files.createDirectories(hintsDir);
 		HintFileSerializer serializer = new HintFileSerializer();
 		for (HintFile hf : inferred) {
-			String safeName = sanitizeFileName(hf.getId());
+			String hfId = hf.getId();
+			// Strip the "inferred:" prefix to avoid doubled prefix on reload
+			if (hfId != null && hfId.startsWith(INFERRED_PREFIX)) {
+				hfId = hfId.substring(INFERRED_PREFIX.length());
+			}
+			String safeName = sanitizeFileName(hfId);
 			Path target = hintsDir.resolve(AI_INFERRED_FILE_PREFIX + safeName + SANDBOX_HINT_EXTENSION);
 			String content = serializer.serialize(hf);
 			Files.writeString(target, content, StandardCharsets.UTF_8);
@@ -478,22 +490,23 @@ public final class HintFileStore {
 				try {
 					String content = Files.readString(file, StandardCharsets.UTF_8);
 					HintFile hintFile = parser.parse(content);
-					Path fileNamePath = file.getFileName();
-					if (fileNamePath == null) {
-						continue;
+					String declaredId = hintFile.getId();
+					if (declaredId == null) {
+						Path fileNamePath = file.getFileName();
+						if (fileNamePath == null) {
+							continue;
+						}
+						String fileName = fileNamePath.toString();
+						String baseName = fileName
+								.replace(AI_INFERRED_FILE_PREFIX, "") //$NON-NLS-1$
+								.replace(SANDBOX_HINT_EXTENSION, ""); //$NON-NLS-1$
+						declaredId = INFERRED_PREFIX + baseName;
+						hintFile.setId(declaredId);
 					}
-					String fileName = fileNamePath.toString();
-					String baseName = fileName
-							.replace(AI_INFERRED_FILE_PREFIX, "") //$NON-NLS-1$
-							.replace(SANDBOX_HINT_EXTENSION, ""); //$NON-NLS-1$
-					String id = INFERRED_PREFIX + baseName;
-					if (hintFile.getId() == null) {
-						hintFile.setId(id);
-					}
-					hintFiles.put(id, hintFile);
-					hintFilesByDeclaredId.put(id, hintFile);
-					loaded.add(id);
-				} catch (HintParseException | IOException e) {
+					hintFiles.put(declaredId, hintFile);
+					indexByDeclaredId(hintFile);
+					loaded.add(declaredId);
+				} catch (HintParseException | IOException | RuntimeException e) {
 					LOGGER.log(Level.WARNING,
 							"Failed to load inferred hint file: " + file, e); //$NON-NLS-1$
 				}

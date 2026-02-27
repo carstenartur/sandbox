@@ -135,12 +135,53 @@ public final class HintFileSerializer {
 	 * @return the DSL representation
 	 */
 	private static String formatGuard(GuardExpression guard) {
-		return switch (guard) {
-			case GuardExpression.FunctionCall fc -> formatFunctionCall(fc);
-			case GuardExpression.And and -> formatGuard(and.left()) + " && " + formatGuard(and.right()); //$NON-NLS-1$
-			case GuardExpression.Or or -> formatGuard(or.left()) + " || " + formatGuard(or.right()); //$NON-NLS-1$
-			case GuardExpression.Not not -> "!" + formatGuard(not.operand()); //$NON-NLS-1$
-		};
+		return formatGuard(guard, 0);
+	}
+	
+	/**
+	 * Formats a {@link GuardExpression} with awareness of the parent operator
+	 * precedence, adding parentheses where necessary so that the expression
+	 * round-trips correctly through {@link HintFileParser}.
+	 * <p>
+	 * Precedence (low to high): {@code Or} (1) &lt; {@code And} (2) &lt;
+	 * {@code Not} (3) &lt; function calls (4).
+	 * </p>
+	 *
+	 * @param guard            the guard expression to format
+	 * @param parentPrecedence the precedence of the enclosing operator
+	 * @return the DSL representation
+	 */
+	private static String formatGuard(GuardExpression guard, int parentPrecedence) {
+		final int myPrecedence;
+		final String result;
+		switch (guard) {
+			case GuardExpression.FunctionCall fc -> {
+				myPrecedence = 4;
+				result = formatFunctionCall(fc);
+			}
+			case GuardExpression.And and -> {
+				myPrecedence = 2;
+				result = formatGuard(and.left(), myPrecedence) + " && " //$NON-NLS-1$
+						+ formatGuard(and.right(), myPrecedence);
+			}
+			case GuardExpression.Or or -> {
+				myPrecedence = 1;
+				result = formatGuard(or.left(), myPrecedence) + " || " //$NON-NLS-1$
+						+ formatGuard(or.right(), myPrecedence);
+			}
+			case GuardExpression.Not not -> {
+				myPrecedence = 3;
+				String operandText = formatGuard(not.operand(), myPrecedence);
+				if (!(not.operand() instanceof GuardExpression.FunctionCall)) {
+					operandText = "(" + operandText + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+				}
+				result = "!" + operandText; //$NON-NLS-1$
+			}
+		}
+		if (myPrecedence < parentPrecedence) {
+			return "(" + result + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		return result;
 	}
 	
 	/**

@@ -161,7 +161,7 @@ class HintFileStoreTest {
 	void testSaveAndLoadInferredHintFiles(@TempDir Path tempDir) throws IOException {
 		CommitEvaluation eval = createEvaluation("commit1",
 				"<!id: persisted>\nnew Boolean(true)\n=> Boolean.TRUE\n;;\n");
-		store.registerInferredRules(List.of(eval), "test-repo");
+		List<String> originalIds = store.registerInferredRules(List.of(eval), "test-repo");
 
 		List<Path> written = store.saveInferredHintFiles(tempDir);
 
@@ -172,12 +172,17 @@ class HintFileStoreTest {
 			assertFalse(content.isBlank());
 		}
 
-		// Load into a fresh store
+		// Load into a fresh store and verify ID mapping
 		HintFileStore store2 = new HintFileStore();
 		List<String> loaded = store2.loadInferredHintFiles(tempDir);
 
 		assertFalse(loaded.isEmpty());
 		assertFalse(store2.getInferredHintFiles().isEmpty());
+		// Verify that the loaded IDs match the original registered IDs
+		for (String originalId : originalIds) {
+			assertNotNull(store2.getHintFile(originalId),
+					"Reloaded store should contain hint file with original ID: " + originalId);
+		}
 	}
 
 	@Test

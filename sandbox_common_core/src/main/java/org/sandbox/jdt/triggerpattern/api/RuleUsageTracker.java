@@ -43,7 +43,7 @@ public final class RuleUsageTracker {
 	private static final int DEFAULT_PROMOTION_THRESHOLD = 5;
 
 	private final Map<String, AtomicInteger> matchCounts = new ConcurrentHashMap<>();
-	private int promotionThreshold = DEFAULT_PROMOTION_THRESHOLD;
+	private volatile int promotionThreshold = DEFAULT_PROMOTION_THRESHOLD;
 
 	/**
 	 * Creates a new rule usage tracker with the default promotion threshold.
