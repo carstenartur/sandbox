@@ -13,9 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -93,9 +91,8 @@ public class UseGeneralTypePlugin {
 		}
 
 		// Collect VariableDeclarationStatement info needed for rewriting
-		Map<String, StatementInfo> statementsByKey = new HashMap<>();
-		ReferenceHolder<String, StatementInfo> stmtHolder = new ReferenceHolder<>();
-		AstProcessorBuilder.with(stmtHolder, nodesprocessed)
+		ReferenceHolder<String, StatementInfo> statementsByKey = new ReferenceHolder<>();
+		AstProcessorBuilder.with(statementsByKey, nodesprocessed)
 			.onVariableDeclarationStatement((node, holder) -> {
 				if (node.fragments().size() > 1) {
 					return true;
@@ -108,7 +105,7 @@ public class UseGeneralTypePlugin {
 					VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragObj;
 					IVariableBinding varBinding = fragment.resolveBinding();
 					if (varBinding != null) {
-						statementsByKey.put(varBinding.getKey(), new StatementInfo(node, fragment));
+						holder.put(varBinding.getKey(), new StatementInfo(node, fragment));
 					}
 				}
 				return true;
