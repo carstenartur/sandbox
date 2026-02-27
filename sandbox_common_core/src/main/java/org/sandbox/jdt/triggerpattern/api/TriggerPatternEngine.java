@@ -38,6 +38,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
+import org.sandbox.jdt.triggerpattern.internal.TypeConstraintChecker;
 
 /**
  * Engine for finding pattern matches in Java code.
@@ -83,29 +84,30 @@ public class TriggerPatternEngine {
 		}
 		
 		List<Match> matches = new ArrayList<>();
+		Map<String, String> constraints = pattern.getTypeConstraints();
 		
 		cu.accept(new ASTVisitor() {
 			@Override
 			public void preVisit(ASTNode node) {
 				// Only check nodes of compatible types
 				if (pattern.getKind() == PatternKind.EXPRESSION && node instanceof Expression) {
-					checkMatch(node, patternNode, matches);
+					checkMatch(node, patternNode, constraints, matches);
 				} else if (pattern.getKind() == PatternKind.STATEMENT && node instanceof Statement) {
-					checkMatch(node, patternNode, matches);
+					checkMatch(node, patternNode, constraints, matches);
 				} else if (pattern.getKind() == PatternKind.ANNOTATION && node instanceof Annotation) {
-					checkMatch(node, patternNode, matches);
+					checkMatch(node, patternNode, constraints, matches);
 				} else if (pattern.getKind() == PatternKind.METHOD_CALL && node instanceof MethodInvocation) {
-					checkMatch(node, patternNode, matches);
+					checkMatch(node, patternNode, constraints, matches);
 				} else if (pattern.getKind() == PatternKind.IMPORT && node instanceof ImportDeclaration) {
-					checkMatch(node, patternNode, matches);
+					checkMatch(node, patternNode, constraints, matches);
 				} else if (pattern.getKind() == PatternKind.FIELD && node instanceof FieldDeclaration) {
-					checkMatch(node, patternNode, matches);
+					checkMatch(node, patternNode, constraints, matches);
 				} else if (pattern.getKind() == PatternKind.CONSTRUCTOR && node instanceof ClassInstanceCreation) {
-					checkMatch(node, patternNode, matches);
+					checkMatch(node, patternNode, constraints, matches);
 				} else if (pattern.getKind() == PatternKind.METHOD_DECLARATION && node instanceof MethodDeclaration) {
 					checkMethodDeclarationMatch((MethodDeclaration) node, patternNode, pattern, matches);
 				} else if (pattern.getKind() == PatternKind.BLOCK && node instanceof Block) {
-					checkMatch(node, patternNode, matches);
+					checkMatch(node, patternNode, constraints, matches);
 				} else if (pattern.getKind() == PatternKind.STATEMENT_SEQUENCE && node instanceof Block) {
 					checkStatementSequenceMatch((Block) node, patternNode, matches);
 				}
@@ -130,7 +132,8 @@ public class TriggerPatternEngine {
 			return List.of();
 		}
 		
-		boolean needsBindings = pattern.getOverridesType() != null;
+		boolean needsBindings = pattern.getOverridesType() != null
+				|| !pattern.getTypeConstraints().isEmpty();
 		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
 		astParser.setSource(icu);
 		astParser.setResolveBindings(needsBindings);
@@ -395,13 +398,23 @@ public class TriggerPatternEngine {
 	 *   <li>{@code $_} - the matched node itself</li>
 	 *   <li>{@code $this} - the enclosing AbstractTypeDeclaration</li>
 	 * </ul>
+	 * 
+	 * <p>When type constraints are specified, the matched bindings are verified
+	 * against the expected types using {@link TypeConstraintChecker}.</p>
 	 */
-	private void checkMatch(ASTNode candidate, ASTNode patternNode, List<Match> matches) {
+	private void checkMatch(ASTNode candidate, ASTNode patternNode,
+			Map<String, String> typeConstraints, List<Match> matches) {
 		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
 		
 		if (patternNode.subtreeMatch(matcher, candidate)) {
-			// We have a match! Create a Match object with pattern bindings and auto-bindings
 			Map<String, Object> bindings = new HashMap<>(matcher.getBindings());
+			
+			// Check type constraints if specified
+			if (typeConstraints != null && !typeConstraints.isEmpty()
+					&& !TypeConstraintChecker.satisfiesConstraints(bindings, typeConstraints)) {
+				return;
+			}
+			
 			createMatchWithAutoBindings(candidate, bindings, matches);
 		}
 	}

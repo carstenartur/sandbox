@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.api;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -23,6 +25,7 @@ import java.util.Objects;
  *   <li>A pattern string with placeholders (e.g., {@code "$x + 1"})</li>
  *   <li>A {@link PatternKind} indicating whether it's an expression or statement</li>
  *   <li>Optional metadata (id, display name)</li>
+ *   <li>Optional type constraints mapping placeholder variables to expected types</li>
  * </ul>
  * 
  * <p>Placeholders are identified by a {@code $} prefix (e.g., {@code $x}, {@code $var}, {@code $cond}).
@@ -37,6 +40,7 @@ public final class Pattern {
 	private final String displayName;
 	private final String qualifiedType;
 	private final String overridesType;
+	private final Map<String, String> typeConstraints;
 	
 	/**
 	 * Creates a new pattern with the specified value and kind.
@@ -45,7 +49,7 @@ public final class Pattern {
 	 * @param kind the kind of pattern (EXPRESSION or STATEMENT)
 	 */
 	public Pattern(String value, PatternKind kind) {
-		this(value, kind, null, null, null, null);
+		this(value, kind, null, null, null, null, null);
 	}
 	
 	/**
@@ -57,7 +61,7 @@ public final class Pattern {
 	 * @param displayName optional human-readable name for the pattern
 	 */
 	public Pattern(String value, PatternKind kind, String id, String displayName) {
-		this(value, kind, id, displayName, null, null);
+		this(value, kind, id, displayName, null, null, null);
 	}
 	
 	/**
@@ -71,7 +75,7 @@ public final class Pattern {
 	 * @since 1.2.3
 	 */
 	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType) {
-		this(value, kind, id, displayName, qualifiedType, null);
+		this(value, kind, id, displayName, qualifiedType, null, null);
 	}
 	
 	/**
@@ -86,12 +90,34 @@ public final class Pattern {
 	 * @since 1.2.6
 	 */
 	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType, String overridesType) {
+		this(value, kind, id, displayName, qualifiedType, overridesType, null);
+	}
+	
+	/**
+	 * Creates a new pattern with the specified value, kind, id, display name, qualified type, overrides type,
+	 * and type constraints.
+	 * 
+	 * @param value the pattern string with placeholders
+	 * @param kind the kind of pattern
+	 * @param id optional unique identifier for the pattern
+	 * @param displayName optional human-readable name for the pattern
+	 * @param qualifiedType optional qualified type name (e.g., "org.junit.Before" for annotation patterns)
+	 * @param overridesType optional fully qualified type name that the method must override
+	 * @param typeConstraints optional map of placeholder variable names to their required fully qualified types
+	 *        (e.g., {@code "$x" -> "java.lang.String"})
+	 * @since 1.3.3
+	 */
+	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType,
+			String overridesType, Map<String, String> typeConstraints) {
 		this.value = Objects.requireNonNull(value, "Pattern value cannot be null"); //$NON-NLS-1$
 		this.kind = Objects.requireNonNull(kind, "Pattern kind cannot be null"); //$NON-NLS-1$
 		this.id = id;
 		this.displayName = displayName;
 		this.qualifiedType = qualifiedType;
 		this.overridesType = overridesType;
+		this.typeConstraints = typeConstraints != null
+				? Collections.unmodifiableMap(typeConstraints)
+				: Collections.emptyMap();
 	}
 	
 	/**
@@ -103,7 +129,7 @@ public final class Pattern {
 	 * @since 1.2.3
 	 */
 	public Pattern(String value, PatternKind kind, String qualifiedType) {
-		this(value, kind, null, null, qualifiedType, null);
+		this(value, kind, null, null, qualifiedType, null, null);
 	}
 	
 	/**
@@ -163,6 +189,21 @@ public final class Pattern {
 	 */
 	public String getOverridesType() {
 		return overridesType;
+	}
+	
+	/**
+	 * Returns the type constraints for placeholder variables.
+	 * 
+	 * <p>Type constraints map placeholder variable names (e.g., {@code "$x"}) to their
+	 * required fully qualified Java types (e.g., {@code "java.lang.String"}).
+	 * When type constraints are specified, the engine will check that matched placeholder
+	 * bindings have the expected type using {@code ITypeBinding} resolution.</p>
+	 * 
+	 * @return an unmodifiable map of placeholder names to required types (never {@code null}, may be empty)
+	 * @since 1.3.3
+	 */
+	public Map<String, String> getTypeConstraints() {
+		return typeConstraints;
 	}
 	
 	@Override
