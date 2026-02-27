@@ -67,7 +67,7 @@ public class DoubleCheckLockingTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -101,7 +101,7 @@ public class DoubleCheckLockingTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -128,7 +128,7 @@ public class DoubleCheckLockingTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -153,7 +153,7 @@ public class DoubleCheckLockingTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -183,7 +183,7 @@ public class DoubleCheckLockingTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -214,7 +214,7 @@ public class DoubleCheckLockingTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -239,7 +239,7 @@ public class DoubleCheckLockingTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of(NULL_CHECK_PATTERN, PatternKind.EXPRESSION);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 

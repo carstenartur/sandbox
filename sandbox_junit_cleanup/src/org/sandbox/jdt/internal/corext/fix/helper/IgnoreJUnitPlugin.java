@@ -93,11 +93,11 @@ public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 		// Need to explicitly match all three annotation types
 		return List.of(
 				// Match @Ignore (MarkerAnnotation)
-				new Pattern("@Ignore", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),
+				new Pattern("@Ignore", PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null),
 				// Match @Ignore("reason") (SingleMemberAnnotation)
-				new Pattern("@Ignore($value)", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),
+				new Pattern("@Ignore($value)", PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null),
 				// Match @Ignore(value="reason") (NormalAnnotation)
-				new Pattern("@Ignore(value=$value)", PatternKind.ANNOTATION, ORG_JUNIT_IGNORE));
+				new Pattern("@Ignore(value=$value)", PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null));
 	}
 
 	@Override

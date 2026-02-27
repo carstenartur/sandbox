@@ -143,7 +143,7 @@ public class NetBeansParityTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + 1", PatternKind.EXPRESSION);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -167,7 +167,7 @@ public class NetBeansParityTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + 1", PatternKind.EXPRESSION);
 		
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
@@ -211,7 +211,7 @@ public class NetBeansParityTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + $y", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + $y", PatternKind.EXPRESSION);
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
 		assertEquals(1, matches.size());
@@ -239,7 +239,7 @@ public class NetBeansParityTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + $y", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + $y", PatternKind.EXPRESSION);
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
 		assertEquals(1, matches.size());
@@ -268,7 +268,7 @@ public class NetBeansParityTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + 1", PatternKind.EXPRESSION);
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
 		assertEquals(1, matches.size());
@@ -293,7 +293,7 @@ public class NetBeansParityTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + 1", PatternKind.EXPRESSION);
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
 		assertEquals(1, matches.size());
@@ -318,7 +318,7 @@ public class NetBeansParityTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern = Pattern.of("$x + 1", PatternKind.EXPRESSION);
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
 		assertEquals(1, matches.size());
@@ -347,7 +347,7 @@ public class NetBeansParityTest {
 			""";
 		
 		CompilationUnit cu1 = parse(code1);
-		Pattern pattern1 = new Pattern("$x + 1", PatternKind.EXPRESSION);
+		Pattern pattern1 = Pattern.of("$x + 1", PatternKind.EXPRESSION);
 		List<Match> matches1 = engine.findMatches(cu1, pattern1);
 		assertEquals(1, matches1.size());
 		
@@ -368,7 +368,7 @@ public class NetBeansParityTest {
 			""";
 		
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("new String($bytes, $enc)", PatternKind.CONSTRUCTOR);
+		Pattern pattern = Pattern.of("new String($bytes, $enc)", PatternKind.CONSTRUCTOR);
 		List<Match> matches = engine.findMatches(cu, pattern);
 		
 		assertEquals(1, matches.size(), "Should find one constructor match");

@@ -56,98 +56,98 @@ public class StringSimplificationFixCore {
 			java.util.Set<CompilationUnitRewriteOperation> operations) {
 		
 		// Pattern 1: "" + $x
-		Pattern emptyPrefixPattern = new Pattern("\"\" + $x", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern emptyPrefixPattern = Pattern.of("\"\" + $x", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> emptyPrefixMatches = ENGINE.findMatches(compilationUnit, emptyPrefixPattern);
 		for (Match match : emptyPrefixMatches) {
 			operations.add(new StringValueOfOperation(match, "Empty string prefix")); //$NON-NLS-1$
 		}
 		
 		// Pattern 2: $x + ""
-		Pattern emptySuffixPattern = new Pattern("$x + \"\"", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern emptySuffixPattern = Pattern.of("$x + \"\"", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> emptySuffixMatches = ENGINE.findMatches(compilationUnit, emptySuffixPattern);
 		for (Match match : emptySuffixMatches) {
 			operations.add(new StringValueOfOperation(match, "Empty string suffix")); //$NON-NLS-1$
 		}
 		
 		// Pattern 3: $str.length() == 0
-		Pattern lengthCheckPattern = new Pattern("$str.length() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern lengthCheckPattern = Pattern.of("$str.length() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> lengthCheckMatches = ENGINE.findMatches(compilationUnit, lengthCheckPattern);
 		for (Match match : lengthCheckMatches) {
 			operations.add(new IsEmptyOperation(match, "String length check")); //$NON-NLS-1$
 		}
 		
 		// Pattern 4: $str.equals("")
-		Pattern equalsEmptyPattern = new Pattern("$str.equals(\"\")", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern equalsEmptyPattern = Pattern.of("$str.equals(\"\")", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> equalsEmptyMatches = ENGINE.findMatches(compilationUnit, equalsEmptyPattern);
 		for (Match match : equalsEmptyMatches) {
 			operations.add(new IsEmptyOperation(match, "String equals empty")); //$NON-NLS-1$
 		}
 		
 		// Pattern 5: $x == true
-		Pattern boolTruePattern = new Pattern("$x == true", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern boolTruePattern = Pattern.of("$x == true", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> boolTrueMatches = ENGINE.findMatches(compilationUnit, boolTruePattern);
 		for (Match match : boolTrueMatches) {
 			operations.add(new SimplifyBooleanOperation(match, "Boolean == true", false)); //$NON-NLS-1$
 		}
 		
 		// Pattern 6: $x == false
-		Pattern boolFalsePattern = new Pattern("$x == false", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern boolFalsePattern = Pattern.of("$x == false", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> boolFalseMatches = ENGINE.findMatches(compilationUnit, boolFalsePattern);
 		for (Match match : boolFalseMatches) {
 			operations.add(new SimplifyBooleanOperation(match, "Boolean == false", true)); //$NON-NLS-1$
 		}
 		
 		// Pattern 7: $cond ? true : false
-		Pattern ternaryTrueFalsePattern = new Pattern("$cond ? true : false", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern ternaryTrueFalsePattern = Pattern.of("$cond ? true : false", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> ternaryTrueFalseMatches = ENGINE.findMatches(compilationUnit, ternaryTrueFalsePattern);
 		for (Match match : ternaryTrueFalseMatches) {
 			operations.add(new SimplifyTernaryOperation(match, "Ternary true:false", false)); //$NON-NLS-1$
 		}
 		
 		// Pattern 8: $cond ? false : true
-		Pattern ternaryFalseTruePattern = new Pattern("$cond ? false : true", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern ternaryFalseTruePattern = Pattern.of("$cond ? false : true", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> ternaryFalseTrueMatches = ENGINE.findMatches(compilationUnit, ternaryFalseTruePattern);
 		for (Match match : ternaryFalseTrueMatches) {
 			operations.add(new SimplifyTernaryOperation(match, "Ternary false:true", true)); //$NON-NLS-1$
 		}
 		
 		// Pattern 9: $list.size() == 0
-		Pattern collectionSizePattern = new Pattern("$list.size() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern collectionSizePattern = Pattern.of("$list.size() == 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> collectionSizeMatches = ENGINE.findMatches(compilationUnit, collectionSizePattern);
 		for (Match match : collectionSizeMatches) {
 			operations.add(new CollectionIsEmptyOperation(match, "Collection size check", "$list", false)); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		
 		// Pattern 10: $list.size() > 0
-		Pattern collectionNotEmptyPattern = new Pattern("$list.size() > 0", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern collectionNotEmptyPattern = Pattern.of("$list.size() > 0", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> collectionNotEmptyMatches = ENGINE.findMatches(compilationUnit, collectionNotEmptyPattern);
 		for (Match match : collectionNotEmptyMatches) {
 			operations.add(new CollectionIsEmptyOperation(match, "Collection non-empty check", "$list", true)); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		
 		// Pattern 11: new StringBuilder().append($x).toString()
-		Pattern stringBuilderPattern = new Pattern("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern stringBuilderPattern = Pattern.of("new StringBuilder().append($x).toString()", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> stringBuilderMatches = ENGINE.findMatches(compilationUnit, stringBuilderPattern);
 		for (Match match : stringBuilderMatches) {
 			operations.add(new MethodToStringValueOfOperation(match, "StringBuilder single append")); //$NON-NLS-1$
 		}
 		
 		// Pattern 12: String.format("%s", $x)
-		Pattern stringFormatPattern = new Pattern("String.format(\"%s\", $x)", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern stringFormatPattern = Pattern.of("String.format(\"%s\", $x)", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> stringFormatMatches = ENGINE.findMatches(compilationUnit, stringFormatPattern);
 		for (Match match : stringFormatMatches) {
 			operations.add(new MethodToStringValueOfOperation(match, "Redundant String.format")); //$NON-NLS-1$
 		}
 		
 		// Pattern 13: $x.toString().equals($y)
-		Pattern toStringEqualsPattern = new Pattern("$x.toString().equals($y)", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern toStringEqualsPattern = Pattern.of("$x.toString().equals($y)", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> toStringEqualsMatches = ENGINE.findMatches(compilationUnit, toStringEqualsPattern);
 		for (Match match : toStringEqualsMatches) {
 			operations.add(new ObjectsEqualsOperation(match, "Null-safe toString equals")); //$NON-NLS-1$
 		}
 		
 		// Pattern 14: $x != null ? $x : $default
-		Pattern nullCheckTernaryPattern = new Pattern("$x != null ? $x : $default", PatternKind.EXPRESSION); //$NON-NLS-1$
+		Pattern nullCheckTernaryPattern = Pattern.of("$x != null ? $x : $default", PatternKind.EXPRESSION); //$NON-NLS-1$
 		List<Match> nullCheckTernaryMatches = ENGINE.findMatches(compilationUnit, nullCheckTernaryPattern);
 		for (Match match : nullCheckTernaryMatches) {
 			operations.add(new RequireNonNullElseOperation(match, "Null-check ternary")); //$NON-NLS-1$

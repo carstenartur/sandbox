@@ -64,7 +64,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
+		Pattern pattern = Pattern.of("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -94,7 +94,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
+		Pattern pattern = Pattern.of("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -120,7 +120,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
+		Pattern pattern = Pattern.of("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 		assertEquals(1, matches.size());
@@ -152,7 +152,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("Charset.forName(\"UTF-8\")", PatternKind.METHOD_CALL);
+		Pattern pattern = Pattern.of("Charset.forName(\"UTF-8\")", PatternKind.METHOD_CALL);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -186,7 +186,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("Charset.forName(\"UTF-8\")", PatternKind.METHOD_CALL);
+		Pattern pattern = Pattern.of("Charset.forName(\"UTF-8\")", PatternKind.METHOD_CALL);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 		assertEquals(1, matches.size());
@@ -220,7 +220,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
+		Pattern pattern = Pattern.of("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -250,7 +250,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
+		Pattern pattern = Pattern.of("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -276,7 +276,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
+		Pattern pattern = Pattern.of("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 		assertEquals(1, matches.size());
@@ -311,12 +311,12 @@ public class EncodingPatternTest {
 		CompilationUnit cu = parse(code);
 		
 		// Test getBytes pattern
-		Pattern getBytesPattern = new Pattern("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
+		Pattern getBytesPattern = Pattern.of("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
 		List<Match> getBytesMatches = engine.findMatches(cu, getBytesPattern);
 		assertEquals(2, getBytesMatches.size(), "Should find two getBytes matches");
 
 		// Test constructor pattern
-		Pattern constructorPattern = new Pattern("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
+		Pattern constructorPattern = Pattern.of("new String($bytes, \"UTF-8\")", PatternKind.CONSTRUCTOR);
 		List<Match> constructorMatches = engine.findMatches(cu, constructorPattern);
 		assertEquals(1, constructorMatches.size(), "Should find one constructor match");
 	}
@@ -337,7 +337,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
+		Pattern pattern = Pattern.of("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
@@ -359,7 +359,7 @@ public class EncodingPatternTest {
 			""";
 
 		CompilationUnit cu = parse(code);
-		Pattern pattern = new Pattern("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
+		Pattern pattern = Pattern.of("$str.getBytes(\"UTF-8\")", PatternKind.METHOD_CALL);
 
 		List<Match> matches = engine.findMatches(cu, pattern);
 
