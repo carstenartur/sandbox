@@ -786,4 +786,82 @@ public class MYCleanUpConstants {
 	 * @since 1.3.8
 	 */
 	public static final String HINTFILE_BUNDLE_ID_SERIALIZATION= "serialization"; //$NON-NLS-1$
+
+	// --- Phase 3: Java-coded Cleanups for Complex Analysis ---
+
+	/**
+	 * Detect wrong string comparison using {@code ==} or {@code !=} with string literals.
+	 * <p>
+	 * Replaces {@code str == "literal"} with {@code "literal".equals(str)} and
+	 * {@code str != "literal"} with {@code !"literal".equals(str)}.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @since 1.3.9
+	 */
+	public static final String WRONG_STRING_COMPARISON_CLEANUP= "cleanup.wrong_string_comparison"; //$NON-NLS-1$
+
+	/**
+	 * Detect {@code ex.printStackTrace()} calls and suggest using a logger.
+	 * <p>
+	 * This is a hint-only cleanup that marks {@code printStackTrace()} calls
+	 * but does not automatically replace them (the logger type varies per project).
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @since 1.3.9
+	 */
+	public static final String PRINT_STACKTRACE_CLEANUP= "cleanup.print_stacktrace"; //$NON-NLS-1$
+
+	/**
+	 * Detect {@code System.out.println()} and {@code System.err.println()} calls
+	 * and suggest using a logger.
+	 * <p>
+	 * This is a hint-only cleanup that marks System.out/err usage
+	 * but does not automatically replace them.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @since 1.3.9
+	 */
+	public static final String SYSTEM_OUT_CLEANUP= "cleanup.system_out"; //$NON-NLS-1$
+
+	/**
+	 * Warn on usage of obsolete collection types ({@code Vector}, {@code Hashtable}, {@code Stack}).
+	 * <p>
+	 * These legacy synchronized collections should typically be replaced with
+	 * {@code ArrayList}, {@code HashMap}, and {@code ArrayDeque} respectively.
+	 * This is a hint-only cleanup.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @since 1.3.9
+	 */
+	public static final String OBSOLETE_COLLECTION_CLEANUP= "cleanup.obsolete_collection"; //$NON-NLS-1$
+
+	/**
+	 * Detect classes that override {@code equals()} without overriding {@code hashCode()}.
+	 * <p>
+	 * This violates the general contract of {@code Object.hashCode()} and can
+	 * cause issues when objects are used in hash-based collections.
+	 * This is a hint-only cleanup.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @since 1.3.9
+	 */
+	public static final String MISSING_HASHCODE_CLEANUP= "cleanup.missing_hashcode"; //$NON-NLS-1$
+
+	/**
+	 * Warn on overridable method calls in constructors.
+	 * <p>
+	 * Calling non-final, non-private, non-static methods from a constructor
+	 * is dangerous because the subclass may not be fully initialized yet.
+	 * This is a hint-only cleanup.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @since 1.3.9
+	 */
+	public static final String OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP= "cleanup.overridable_in_constructor"; //$NON-NLS-1$
 }
