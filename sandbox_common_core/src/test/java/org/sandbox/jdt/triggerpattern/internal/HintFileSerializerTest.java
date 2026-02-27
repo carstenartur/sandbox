@@ -177,4 +177,76 @@ class HintFileSerializerTest {
 	void testSerializeNullThrows() {
 		assertThrows(NullPointerException.class, () -> serializer.serialize(null));
 	}
+
+	@Test
+	void testSerializeSuppressWarnings() {
+		HintFile hintFile = new HintFile();
+		hintFile.addSuppressWarnings("unchecked");
+		hintFile.addSuppressWarnings("deprecation");
+
+		String result = serializer.serialize(hintFile);
+
+		assertTrue(result.contains("<!suppressWarnings: unchecked, deprecation>"));
+	}
+
+	@Test
+	void testSerializeTreeKind() {
+		HintFile hintFile = new HintFile();
+		hintFile.setTreeKindNodeTypes(List.of(
+				org.eclipse.jdt.core.dom.ASTNode.METHOD_DECLARATION));
+
+		String result = serializer.serialize(hintFile);
+
+		assertTrue(result.contains("<!treeKind: METHOD_DECLARATION>"));
+	}
+
+	@Test
+	void testSerializePerRuleId() {
+		HintFile hintFile = new HintFile();
+		Pattern pattern = new Pattern("$x.foo()", PatternKind.METHOD_CALL);
+		RewriteAlternative alt = new RewriteAlternative("$x.bar()", null);
+		TransformationRule rule = new TransformationRule(
+				"my.rule.id", null, pattern, null, List.of(alt), null, null);
+		hintFile.addRule(rule);
+
+		String result = serializer.serialize(hintFile);
+
+		assertTrue(result.contains("@id: my.rule.id"), "Serialized DSL should contain @id annotation");
+	}
+
+	@Test
+	void testSerializePerRuleSeverity() {
+		HintFile hintFile = new HintFile();
+		Pattern pattern = new Pattern("$x.foo()", PatternKind.METHOD_CALL);
+		RewriteAlternative alt = new RewriteAlternative("$x.bar()", null);
+		TransformationRule rule = new TransformationRule(
+				null, null, pattern, null, List.of(alt), null, Severity.ERROR);
+		hintFile.addRule(rule);
+
+		String result = serializer.serialize(hintFile);
+
+		assertTrue(result.contains("@severity: error"), "Serialized DSL should contain @severity annotation");
+	}
+
+	@Test
+	void testSerializerRoundTripWithPerRuleMetadata() throws HintParseException {
+		String dsl = """
+			<!id: test-hint>
+			
+			@id: rule.one
+			@severity: warning
+			$x.foo()
+			=> $x.bar()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(dsl);
+		String serialized = serializer.serialize(hintFile);
+		HintFile reparsed = parser.parse(serialized);
+
+		assertEquals(1, reparsed.getRules().size());
+		TransformationRule rule = reparsed.getRules().get(0);
+		assertEquals("rule.one", rule.getRuleId());
+		assertEquals(Severity.WARNING, rule.getSeverity());
+	}
 }

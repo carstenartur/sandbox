@@ -124,6 +124,10 @@ public class BuiltInGuardsTest {
 		assertTrue(guards.containsKey("paramCount")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("hasReturnType")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("isStringLiteral")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isPublic")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isPrivate")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isProtected")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("throwsException")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -1266,6 +1270,170 @@ public class BuiltInGuardsTest {
 		GuardContext ctx = GuardContext.fromMatch(match, null);
 
 		assertFalse(guard.evaluate(ctx), "Should return false with no args"); //$NON-NLS-1$
+	}
+
+	// --- isPublic / isPrivate / isProtected guard tests ---
+
+	@Test
+	public void testIsPublicGuardOnPublicMethod() {
+		GuardFunction guard = guards.get("isPublic"); //$NON-NLS-1$
+		String code = "class Test { public void doSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "$name"), "public method should match isPublic"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsPublicGuardOnPrivateMethod() {
+		GuardFunction guard = guards.get("isPublic"); //$NON-NLS-1$
+		String code = "class Test { private void doSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(guard.evaluate(ctx, "$name"), "private method should not match isPublic"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsPrivateGuardOnPrivateMethod() {
+		GuardFunction guard = guards.get("isPrivate"); //$NON-NLS-1$
+		String code = "class Test { private void doSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "$name"), "private method should match isPrivate"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsProtectedGuardOnProtectedMethod() {
+		GuardFunction guard = guards.get("isProtected"); //$NON-NLS-1$
+		String code = "class Test { protected void doSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "$name"), "protected method should match isProtected"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsProtectedGuardOnPublicMethod() {
+		GuardFunction guard = guards.get("isProtected"); //$NON-NLS-1$
+		String code = "class Test { public void doSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$name", method.getName()); //$NON-NLS-1$
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(guard.evaluate(ctx, "$name"), "public method should not match isProtected"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testIsPublicGuardZeroArgForm() {
+		GuardFunction guard = guards.get("isPublic"); //$NON-NLS-1$
+		String code = "class Test { public void doSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Match match = new Match(method, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx), "zero-arg isPublic should work on matched node"); //$NON-NLS-1$
+	}
+
+	// --- throwsException guard tests ---
+
+	@Test
+	public void testThrowsExceptionGuardWithMatchingType() {
+		GuardFunction guard = guards.get("throwsException"); //$NON-NLS-1$
+		String code = "class Test { void doSomething() throws Exception { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx, "Exception"), "Should match throws Exception"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testThrowsExceptionGuardWithNonMatchingType() {
+		GuardFunction guard = guards.get("throwsException"); //$NON-NLS-1$
+		String code = "class Test { void doSomething() throws Exception { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(method, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(guard.evaluate(ctx, "IOException"), "Should not match throws IOException"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testThrowsExceptionGuardZeroArgAnyThrows() {
+		GuardFunction guard = guards.get("throwsException"); //$NON-NLS-1$
+		String code = "class Test { void doSomething() throws Exception { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Match match = new Match(method, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(guard.evaluate(ctx), "Zero-arg throwsException should return true when throws is present"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testThrowsExceptionGuardNoThrowsClause() {
+		GuardFunction guard = guards.get("throwsException"); //$NON-NLS-1$
+		String code = "class Test { void doSomething() { } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+
+		Match match = new Match(method, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(guard.evaluate(ctx), "Should return false when no throws clause"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testAllNewTier3GuardsRegistered() {
+		assertTrue(guards.containsKey("isPublic")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isPrivate")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isProtected")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("throwsException")); //$NON-NLS-1$
 	}
 
 	// --- Original helper methods ---

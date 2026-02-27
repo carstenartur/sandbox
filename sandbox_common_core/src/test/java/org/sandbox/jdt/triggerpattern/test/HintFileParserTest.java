@@ -1295,4 +1295,102 @@ public class HintFileParserTest {
 		HintFile hintFile = parser.parse(content);
 		assertTrue(hintFile.getTreeKindNodeTypes().isEmpty(), "Default treeKindNodeTypes should be empty");
 	}
+
+	// --- Per-rule @id: and @severity: annotation tests ---
+
+	@Test
+	public void testPerRuleIdAnnotation() throws HintParseException {
+		String content = """
+			@id: encoding.fileReader
+			new FileReader($path)
+			=> new FileReader($path, StandardCharsets.UTF_8)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals("encoding.fileReader", rule.getRuleId());
+	}
+
+	@Test
+	public void testPerRuleSeverityAnnotation() throws HintParseException {
+		String content = """
+			@severity: error
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(Severity.ERROR, rule.getSeverity());
+	}
+
+	@Test
+	public void testPerRuleIdAndSeverityCombined() throws HintParseException {
+		String content = """
+			@id: collections.emptyList
+			@severity: warning
+			java.util.Collections.EMPTY_LIST
+			=> java.util.Collections.emptyList()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals("collections.emptyList", rule.getRuleId());
+		assertEquals(Severity.WARNING, rule.getSeverity());
+	}
+
+	@Test
+	public void testPerRuleIdWithDescriptionPrefix() throws HintParseException {
+		String content = """
+			@id: my.rule
+			"Replace empty equals":
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals("my.rule", rule.getRuleId());
+		assertEquals("Replace empty equals", rule.getDescription());
+	}
+
+	@Test
+	public void testRuleWithoutIdHasNullRuleId() throws HintParseException {
+		String content = """
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNull(rule.getRuleId());
+		assertNull(rule.getSeverity());
+	}
+
+	@Test
+	public void testInvalidPerRuleSeverity() {
+		String content = """
+			@severity: invalid_level
+			$x.foo()
+			=> $x.bar()
+			;;
+			""";
+
+		assertThrows(HintParseException.class, () -> parser.parse(content));
+	}
 }
