@@ -155,7 +155,7 @@ jobs:
           echo "📊 [View Mining Report](https://carstenartur.github.io/sandbox/mining-report/)" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mining-report-${{ github.run_number }}
