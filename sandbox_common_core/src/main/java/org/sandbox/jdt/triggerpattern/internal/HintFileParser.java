@@ -400,7 +400,7 @@ public final class HintFileParser {
 				try {
 					map.put(field.getName(), field.getInt(null));
 				} catch (IllegalAccessException e) {
-					// skip inaccessible fields
+					LOGGER.log(Level.FINE, "Cannot access ASTNode field: " + field.getName(), e); //$NON-NLS-1$
 				}
 			}
 		}

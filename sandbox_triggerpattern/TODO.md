@@ -43,6 +43,11 @@ See [sandbox_common/TODO.md](../sandbox_common/TODO.md#implementation-status-vs-
 - ✅ **Phase 1.3**: `@SuppressWarnings` integration — `<!suppressWarnings: key>` directive in DSL; `SuppressWarningsChecker` utility; `hasSuppressWarnings()` guard
 - ✅ **Phase 1.4**: Per-hint severity levels — `TransformationRule` now carries per-rule `Severity`; `<!severity:>` directive parsed and available per-rule
 
+### Recently Completed (Tier 2)
+- ✅ **Phase 1.2**: `<!treeKind:>` DSL directive — maps AST node type names to constants; `HintFile.getTreeKindNodeTypes()` for downstream use
+- ✅ **Phase 2.1 (partial)**: Type guards — `hasReturnType()`, `paramCount()` for method-level type disambiguation in JUnit migration
+- ✅ **Phase 2.3 (partial)**: New guards — `hasField()`, `isInLoop()`, `isStringLiteral()` for edge case handling and structural queries
+
 ### In Progress
 - [ ] Additional pattern variations
 

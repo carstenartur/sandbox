@@ -41,6 +41,11 @@
 - ✅ **Phase 1.3**: `@SuppressWarnings` integration — `SuppressWarningsChecker` utility, `hasSuppressWarnings()` guard, `<!suppressWarnings:>` DSL directive
 - ✅ **Phase 1.4**: Per-hint severity levels — `TransformationRule.getSeverity()`, 6-arg constructor with `Severity` parameter
 
+### Recently Completed (Tier 2 — Feature Parity & Beyond)
+- ✅ **Phase 1.2**: `<!treeKind:>` DSL directive — maps AST node type names to constants; `HintFile.getTreeKindNodeTypes()` available for downstream matching
+- ✅ **Phase 2.1 (partial)**: Type guards — `hasReturnType()`, `paramCount()` for method-level disambiguation
+- ✅ **Phase 2.3 (partial)**: New guards — `hasField()`, `isInLoop()`, `isStringLiteral()` for edge case handling
+
 ### Pending
 - [ ] Create dedicated test module for unit testing utilities
 - [ ] Extract additional shared utilities from individual plugins

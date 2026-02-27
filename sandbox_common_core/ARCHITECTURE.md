@@ -52,6 +52,21 @@ standalone tests and CLI tools to use built-in guards without OSGi.
 - `subtypeOf($var, "fqn")` — walks type hierarchy to check subtype relationships
 - `hasSuppressWarnings("key")` — checks if enclosing declaration has `@SuppressWarnings`
 
+**Tier 2 additions (Phase 1.2/2.1/2.3)**:
+- `hasField("name")` — checks if enclosing class has a field with given name
+- `isInLoop()` — checks if matched node is inside a loop (for/while/do/enhanced-for)
+- `paramCount(n)` — checks if enclosing method has exactly n parameters
+- `hasReturnType("type")` — checks if enclosing method return type matches
+- `isStringLiteral($var)` — checks if placeholder is a StringLiteral node
+
+### DSL `<!treeKind:>` Directive (Phase 1.2)
+
+The `HintFileParser` now supports `<!treeKind: METHOD_DECLARATION, IF_STATEMENT>`
+directives. AST node type names are resolved via lazy-initialized reflection on
+`ASTNode` class constants. The resolved node types are stored in
+`HintFile.getTreeKindNodeTypes()` for downstream consumers (e.g., `HintFileFixCore`)
+to use with `TriggerPatternEngine.findMatchesByNodeType()`.
+
 ### SuppressWarningsChecker
 
 Utility class in `internal` package that walks up the AST from a given node,

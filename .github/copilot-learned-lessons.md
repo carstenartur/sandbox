@@ -684,4 +684,41 @@ Also enhanced `isThrowingRunnableType()` to check:
 **Learned**: 2026-02-27
 
 ---
+
+## 14. Adding New BuiltInGuards — Complete Checklist
+
+**Issue**: When adding new guard functions to `BuiltInGuards.registerAll()`, there are THREE things that must be updated:
+
+1. **Register the guard** in `BuiltInGuards.registerAll()` method
+2. **Update the `testAllBuiltInGuardsRegistered` test** in `BuiltInGuardsTest.java`
+3. **Add the guard to `dsl-explanation.md`** in BOTH:
+   - `sandbox_common_core/src/main/resources/dsl-explanation.md`
+   - `sandbox_mining_core/src/main/resources/dsl-explanation.md`
+
+**Why**: The `DslExplanationGuardSyncTest` verifies that all guards in `registerAll()` are documented. The `testAllBuiltInGuardsRegistered` test verifies key guards are present.
+
+**Learned**: 2026-02-27
+
+---
+
+## 15. HintFileParser Lazy Initialization Pattern
+
+**Pattern**: When adding cached data that requires reflection (like the AST node type map for `<!treeKind:>` parsing), use the `volatile` + double-checked locking pattern already established in `HintFileParser`:
+
+```java
+private static volatile Map<String, Integer> cache;
+private static Map<String, Integer> getCache() {
+    if (cache == null) {
+        synchronized (HintFileParser.class) {
+            if (cache == null) {
+                cache = buildCache();
+            }
+        }
+    }
+    return cache;
+}
+```
+
+**Learned**: 2026-02-27
+
 ---
