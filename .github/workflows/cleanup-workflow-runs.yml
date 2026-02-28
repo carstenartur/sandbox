@@ -20,6 +20,11 @@ on:
         required: false
         type: boolean
         default: false
+      max_deletions:
+        description: 'Maximum number of runs to delete per execution (prevents rate limiting)'
+        required: false
+        type: number
+        default: 100
 
 permissions:
   actions: write  # Required to delete workflow runs
@@ -36,11 +41,13 @@ jobs:
         RETAIN_DAYS: ${{ inputs.retain_days || '30' }}
         KEEP_MINIMUM_RUNS: ${{ inputs.keep_minimum_runs || '5' }}
         DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        MAX_DELETIONS: ${{ inputs.max_deletions || '100' }}
       run: |
         set -euo pipefail
         # Strip any decimal suffix (e.g., 30.0 → 30)
         RETAIN_DAYS=${RETAIN_DAYS%.*}
         KEEP_MINIMUM_RUNS=${KEEP_MINIMUM_RUNS%.*}
+        MAX_DELETIONS=${MAX_DELETIONS%.*}
         TOTAL_DELETED=0
         TOTAL_RETAINED=0
         SUMMARY_ROWS=""
@@ -48,8 +55,11 @@ jobs:
         # Cutoff timestamp in seconds since epoch
         CUTOFF=$(date -d "-${RETAIN_DAYS} days" +%s)
 
-        echo "ℹ️  retain_days=${RETAIN_DAYS}  keep_minimum_runs=${KEEP_MINIMUM_RUNS}  dry_run=${DRY_RUN}"
+        echo "ℹ️  retain_days=${RETAIN_DAYS}  keep_minimum_runs=${KEEP_MINIMUM_RUNS}  dry_run=${DRY_RUN}  max_deletions=${MAX_DELETIONS}"
         echo "ℹ️  Cutoff date: $(date -d "-${RETAIN_DAYS} days" --utc +%Y-%m-%dT%H:%M:%SZ)"
+
+        RATE_REMAINING=$(gh api rate_limit --jq '.rate.remaining' 2>/dev/null || echo "unknown")
+        echo "ℹ️  API rate limit remaining: ${RATE_REMAINING}"
 
         # Fetch all workflows (paginated)
         WORKFLOWS=$(gh api "repos/${REPO}/actions/workflows?per_page=100" \
@@ -60,12 +70,11 @@ jobs:
           echo ""
           echo "▶ Processing workflow: ${WF_NAME} (id=${WF_ID})"
 
-          # Collect all completed run IDs and their created_at timestamps,
+          # Collect completed run IDs and their created_at timestamps,
           # newest first (API default ordering is newest-first by created_at)
           RUNS=$(gh api \
             "repos/${REPO}/actions/workflows/${WF_ID}/runs?status=completed&per_page=100" \
-            --paginate \
-            --jq '.workflow_runs[] | "\(.id)\t\(.created_at)"')
+            --jq '.workflow_runs[] | "\(.id)\t\(.created_at)"' || echo "")
 
           # Sanitize workflow name for markdown table (escape pipe characters)
           WF_NAME_SAFE="${WF_NAME//|/\\|}"
@@ -102,8 +111,16 @@ jobs:
             if [ "${DRY_RUN}" = "true" ]; then
               echo "  🔍 [DRY RUN] Would delete run ${RUN_ID} (${RUN_CREATED})"
             else
+              if [ "$(( TOTAL_DELETED + WF_DELETED ))" -ge "${MAX_DELETIONS}" ]; then
+                echo "  ⚠️ Reached maximum deletions (${MAX_DELETIONS}), stopping. Will continue in next run."
+                break
+              fi
               echo "  🗑️  Deleting run ${RUN_ID} (${RUN_CREATED})"
-              gh api --method DELETE "repos/${REPO}/actions/runs/${RUN_ID}"
+              if ! gh api --method DELETE "repos/${REPO}/actions/runs/${RUN_ID}" 2>/dev/null; then
+                echo "    ⚠️ Delete failed (possibly rate-limited), stopping deletions for this workflow"
+                break
+              fi
+              sleep 1
             fi
             WF_DELETED=$((WF_DELETED + 1))
           done <<< "${RUNS}"
@@ -112,6 +129,12 @@ jobs:
           TOTAL_DELETED=$((TOTAL_DELETED + WF_DELETED))
           TOTAL_RETAINED=$((TOTAL_RETAINED + WF_RETAINED))
           SUMMARY_ROWS="${SUMMARY_ROWS}| ${WF_NAME_SAFE} | ${WF_RETAINED} | ${WF_DELETED} |\n"
+
+          if [ "${TOTAL_DELETED}" -ge "${MAX_DELETIONS}" ]; then
+            echo ""
+            echo "⚠️ Reached maximum deletions cap (${MAX_DELETIONS}). Remaining cleanup will happen in the next scheduled run."
+            break
+          fi
         done <<< "${WORKFLOWS}"
 
         echo ""
@@ -129,6 +152,7 @@ jobs:
           echo "| --- | --- |"
           echo "| Retain days | ${RETAIN_DAYS} |"
           echo "| Keep minimum runs | ${KEEP_MINIMUM_RUNS} |"
+          echo "| Max deletions per run | ${MAX_DELETIONS} |"
           echo "| Dry run | ${DRY_RUN} |"
           echo ""
           echo "| Workflow | Retained | Deleted |"
@@ -136,4 +160,8 @@ jobs:
           printf "%b" "${SUMMARY_ROWS}"
           echo ""
           echo "| **Total** | **${TOTAL_RETAINED}** | **${TOTAL_DELETED}** |"
+          if [ "${TOTAL_DELETED}" -ge "${MAX_DELETIONS}" ]; then
+            echo ""
+            echo "> ⚠️ **Deletion cap reached** (${MAX_DELETIONS}). Run the workflow again or wait for the next scheduled run to continue cleanup."
+          fi
         } >> "${GITHUB_STEP_SUMMARY}"
