@@ -1,2 +1,28 @@
+- #870: Embedded Java in `.sandbox-hint` DSL — First-Class Eclipse JDT Integration
+- #776: Auto-Detecting String→Charset Type Changes in the DSL Engine
+- #774: Migration Plan: Hybrid Encoding Cleanup — Imperative + DSL + Annotations
+- #758: Gemini-KI-gestützte Commit-Analyse für die TriggerPattern-DSL
+- #746: FQN-basierte Import-Inferenz (3 Phasen)
+- #743: Transparente und nachvollziehbare Einstellungen für Preferences & Cleanup-Dialog
+- #740: Implizite Import-Ableitung in der TriggerPattern DSL optimieren
+- #732: Refactoring Mining CLI + GitHub Action Workflow für Eclipse-Projekte
+- #730: `sandbox_common` in `sandbox_common_core` (ohne OSGi) und `sandbox_common` (mit OSGi) aufteilen
+- #729: DSL-basierte JUnit-Migrationen als Ersatz für imperative Plugins
+- #727: Implementierungsplan Refactoring-Mining aus Git-Historie
+- #725: Implementiere Editor-Support für .sandbox-hint Dateien
+- #724: Erstelle eine erweiterte Preference Page für .sandbox-hint Verwaltung
+- #723: Implementiere Report-Generierung und Eclipse Problem-View Integration
+- #722: Erstelle Eclipse Extension Points für das TriggerPattern-Framework
+- #721: Refactoring auf strukturelle Qualität
+- #717: **`NodeMatcher` als generische `matchNode()`-Brücke in `AstProcessorBuilder` integrieren**
+- #713: Sandbox Cleanup als wiederverwendbares Tool: CLI-Distribution + Maven Plugin + Docker Image (ein gemeinsamer Runner)
+- #709: Implementierungsplan: `.hint`-Datei-Parser für TriggerPattern Engine
+- #683: "Missing Super Call" Detector via TriggerPattern
+- #676: Sicherheitsmaßnahmen umsetzen
+- #670: Functional Converter
+- #567: Address missing aspects from Eclipse JDT UI SubMonitor migration in sandbox_jface_cleanup
+- #549: TODO: Functional Loop Conversion – Fortschritt & Roadmap Stand 2026-01-31
+- #498: Implement cross-workflow product caching for PR cleanup
+- #453: Architektur: Unified Loop Representation (ULR) – Aktueller Stand & ToDo-Update (2026-01-31)
 - #434: Audit functional converter tests:  Ensure semantic equivalence and remove false positives
 - #229: ✨ Set up Copilot instructions
