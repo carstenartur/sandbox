@@ -49,7 +49,8 @@ public class SandboxHintSourceViewerConfiguration extends SourceViewerConfigurat
 		return new String[] {
 			IDocument.DEFAULT_CONTENT_TYPE,
 			SandboxHintPartitionScanner.COMMENT,
-			SandboxHintPartitionScanner.METADATA
+			SandboxHintPartitionScanner.METADATA,
+			SandboxHintPartitionScanner.JAVA_CODE
 		};
 	}
 
@@ -78,6 +79,12 @@ public class SandboxHintSourceViewerConfiguration extends SourceViewerConfigurat
 				new SingleTokenScanner(new Token(metadataAttr)));
 		reconciler.setDamager(metadataDR, SandboxHintPartitionScanner.METADATA);
 		reconciler.setRepairer(metadataDR, SandboxHintPartitionScanner.METADATA);
+
+		// Embedded Java code – uses Java keyword scanner
+		ITokenScanner javaScanner = new EmbeddedJavaCodeScanner();
+		DefaultDamagerRepairer javaDR = new DefaultDamagerRepairer(javaScanner);
+		reconciler.setDamager(javaDR, SandboxHintPartitionScanner.JAVA_CODE);
+		reconciler.setRepairer(javaDR, SandboxHintPartitionScanner.JAVA_CODE);
 
 		return reconciler;
 	}
