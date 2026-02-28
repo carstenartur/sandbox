@@ -29,6 +29,7 @@ import java.util.logging.Logger;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 
+import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
@@ -50,9 +51,10 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * 
  * <h2>NetBeans compatibility</h2>
  * <ul>
- *   <li>{@code <? ?>} custom Java code blocks are gracefully skipped (with
- *       {@code FINE}-level logging). These blocks contain NetBeans-specific code
- *       that cannot be executed in the Eclipse JDT environment.</li>
+ *   <li>{@code <? ?>} embedded Java code blocks are extracted and stored as
+ *       {@link org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock} entries
+ *       in the {@link HintFile}. These blocks can contain custom guard functions,
+ *       fix functions, imports, or helper methods.</li>
  *   <li>Metadata directives support both {@code <!key: value>} (sandbox format)
  *       and {@code <!key="value">} (NetBeans format).</li>
  * </ul>
@@ -62,7 +64,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * // Line comments
  * /* Block comments * /
  *
- * // NetBeans custom code blocks (skipped)
+ * // Embedded Java code blocks (extracted)
  * &lt;? import java.util.*; ?&gt;
  *
  * &lt;!id: my.rule.id&gt;
@@ -166,7 +168,7 @@ public final class HintFileParser {
 		HintFile hintFile = new HintFile();
 		foreachVariables.clear();
 		mapVariables.clear();
-		List<String> lines = readAndStripComments(reader);
+		List<String> lines = readAndStripComments(reader, hintFile);
 		
 		int i = 0;
 		while (i < lines.size()) {
@@ -203,27 +205,47 @@ public final class HintFileParser {
 	}
 	
 	/**
-	 * Reads all lines from a reader, stripping comments and {@code <? ?>} blocks.
+	 * Reads all lines from a reader, stripping comments and extracting {@code <? ?>} blocks.
 	 * 
-	 * <p>{@code <? ?>} blocks contain custom Java code used by NetBeans hint files.
-	 * These blocks are skipped with a warning log, as the custom code cannot be
-	 * executed in the Eclipse JDT environment.</p>
+	 * <p>{@code <? ?>} blocks contain embedded Java code. Previously these were skipped;
+	 * now they are extracted and stored as {@link EmbeddedJavaBlock} entries in the
+	 * {@link HintFile} for compilation and execution.</p>
 	 */
-	private List<String> readAndStripComments(Reader reader) throws IOException {
+	private List<String> readAndStripComments(Reader reader, HintFile hintFile) throws IOException {
 		List<String> result = new ArrayList<>();
 		boolean inBlockComment = false;
 		boolean inCustomCodeBlock = false;
+		int customCodeStartLine = 0;
+		int customCodeStartOffset = 0;
+		StringBuilder customCodeBuilder = null;
+		int charOffset = 0;
 		
 		try (BufferedReader br = new BufferedReader(reader)) {
 			String rawLine;
+			int lineNumber = 0;
 			while ((rawLine = br.readLine()) != null) {
-				// Handle <? ?> custom code blocks
+				lineNumber++;
+				int lineStartOffset = charOffset;
+				// +1 for the newline character
+				charOffset += rawLine.length() + 1;
+				
+				// Handle <? ?> custom code blocks (continuation)
 				if (inCustomCodeBlock) {
 					if (rawLine.contains("?>")) { //$NON-NLS-1$
-						inCustomCodeBlock = false;
 						int endIdx = rawLine.indexOf("?>"); //$NON-NLS-1$
+						customCodeBuilder.append(rawLine, 0, endIdx);
+						int blockEndOffset = lineStartOffset + endIdx + 2;
+						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(
+								customCodeBuilder.toString(),
+								customCodeStartLine, lineNumber,
+								customCodeStartOffset, blockEndOffset));
+						LOGGER.log(Level.FINE, "Extracted embedded Java block (multi-line, lines {0}-{1})", //$NON-NLS-1$
+								new Object[] { customCodeStartLine, lineNumber });
+						inCustomCodeBlock = false;
+						customCodeBuilder = null;
 						rawLine = rawLine.substring(endIdx + 2);
 					} else {
+						customCodeBuilder.append(rawLine).append('\n');
 						result.add(""); //$NON-NLS-1$
 						continue;
 					}
@@ -238,12 +260,22 @@ public final class HintFileParser {
 					int endIdx = rawLine.indexOf("?>", startIdx + 2); //$NON-NLS-1$
 					if (endIdx >= 0) {
 						// Single-line <? ?> block
-						LOGGER.log(Level.FINE, "Skipping custom code block (single line)"); //$NON-NLS-1$
+						String javaSource = rawLine.substring(startIdx + 2, endIdx);
+						int blockStartOffset = lineStartOffset + startIdx;
+						int blockEndOffset = lineStartOffset + endIdx + 2;
+						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(
+								javaSource, lineNumber, lineNumber,
+								blockStartOffset, blockEndOffset));
+						LOGGER.log(Level.FINE, "Extracted embedded Java block (single line {0})", lineNumber); //$NON-NLS-1$
 						rawLine = rawLine.substring(0, startIdx) + rawLine.substring(endIdx + 2);
 						// Continue loop to check for further blocks on the same line
 					} else {
 						// Multi-line <? ?> block
-						LOGGER.log(Level.FINE, "Skipping custom code block (multi-line)"); //$NON-NLS-1$
+						customCodeStartLine = lineNumber;
+						customCodeStartOffset = lineStartOffset + startIdx;
+						customCodeBuilder = new StringBuilder();
+						customCodeBuilder.append(rawLine.substring(startIdx + 2)).append('\n');
+						LOGGER.log(Level.FINE, "Start of embedded Java block (multi-line, line {0})", lineNumber); //$NON-NLS-1$
 						inCustomCodeBlock = true;
 						rawLine = rawLine.substring(0, startIdx);
 						break;

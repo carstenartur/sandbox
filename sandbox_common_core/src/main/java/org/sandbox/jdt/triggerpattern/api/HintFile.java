@@ -47,6 +47,7 @@ public final class HintFile {
 	private List<String> tags;
 	private final List<TransformationRule> rules;
 	private final List<String> includes;
+	private final List<EmbeddedJavaBlock> embeddedJavaBlocks;
 	private boolean caseInsensitive;
 	private List<String> suppressWarnings;
 	private List<Integer> treeKindNodeTypes;
@@ -58,6 +59,7 @@ public final class HintFile {
 		this.tags = new ArrayList<>();
 		this.rules = new ArrayList<>();
 		this.includes = new ArrayList<>();
+		this.embeddedJavaBlocks = new ArrayList<>();
 		this.severity = Severity.INFO;
 		this.suppressWarnings = new ArrayList<>();
 		this.treeKindNodeTypes = new ArrayList<>();
@@ -220,6 +222,32 @@ public final class HintFile {
 	public void addInclude(String hintFileId) {
 		if (hintFileId != null && !hintFileId.isBlank()) {
 			includes.add(hintFileId.trim());
+		}
+	}
+
+	/**
+	 * Returns the list of embedded Java code blocks.
+	 *
+	 * <p>These blocks were extracted from {@code <? ?>} regions in the hint file.
+	 * They may contain custom guard functions, fix functions, imports, or helper
+	 * methods.</p>
+	 *
+	 * @return unmodifiable list of embedded Java blocks
+	 * @since 1.5.0
+	 */
+	public List<EmbeddedJavaBlock> getEmbeddedJavaBlocks() {
+		return Collections.unmodifiableList(embeddedJavaBlocks);
+	}
+
+	/**
+	 * Adds an embedded Java block.
+	 *
+	 * @param block the embedded Java block to add
+	 * @since 1.5.0
+	 */
+	public void addEmbeddedJavaBlock(EmbeddedJavaBlock block) {
+		if (block != null) {
+			embeddedJavaBlocks.add(block);
 		}
 	}
 
