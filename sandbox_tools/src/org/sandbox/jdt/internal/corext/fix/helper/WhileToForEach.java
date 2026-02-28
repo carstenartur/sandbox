@@ -63,6 +63,7 @@ import org.sandbox.ast.api.expr.SimpleNameExpr;
 import org.sandbox.ast.api.jdt.JDTConverter;
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
+import org.sandbox.jdt.internal.common.LibStandardNames;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseIteratorToForLoopFixCore;
 
@@ -126,7 +127,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 														WhileLoopToChangeHit previousHit= operationsMap
 																.get(whilestatement);
 														if (previousHit != null && (previousHit == invalidHit
-																|| previousHit.nextFound || !method.equals("next"))) { //$NON-NLS-1$
+																|| previousHit.nextFound || !method.equals(LibStandardNames.METHOD_NEXT))) {
 															operationsMap.put(whilestatement, invalidHit);
 															return true;
 														}
@@ -228,7 +229,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 				}
 			} else {
 				MethodInvocationExpr miExpr= JDTConverter.convert(mi);
-				if (miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
+				if (miExpr.isMethodNamed(LibStandardNames.METHOD_ITERATOR)) {
 					ASTNode assignment= ASTNodes.getFirstAncestorOrNull(mi, Assignment.class);
 					if (assignment instanceof Assignment) {
 						Expression leftSide= ((Assignment) assignment).getLeftHandSide();
@@ -253,7 +254,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		Expression exp= whilestatement.getExpression();
 		if (exp instanceof MethodInvocation mi) {
 			MethodInvocationExpr miExpr= JDTConverter.convert(mi);
-			if (miExpr.methodName().filter(name -> name.equals("hasNext")).isPresent()) { //$NON-NLS-1$
+			if (miExpr.methodName().filter(name -> name.equals(LibStandardNames.METHOD_HAS_NEXT)).isPresent()) {
 				return miExpr.receiver()
 						.flatMap(receiver -> receiver.asSimpleName())
 						.flatMap(SimpleNameExpr::resolveVariable)
@@ -280,7 +281,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 			return null;
 		}
 		MethodInvocationExpr miExpr= JDTConverter.convert(mi);
-		if (!miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
+		if (!miExpr.isMethodNamed(LibStandardNames.METHOD_ITERATOR)) {
 			return null;
 		}
 		ITypeBinding iterableAncestor= null;
@@ -325,7 +326,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 									throw new AbortSearchException();
 								}
 								MethodInvocationExpr miExpr= JDTConverter.convert(mi);
-								if (!miExpr.isMethodNamed("iterator") || (dataholder.get(node_a) != null)) { //$NON-NLS-1$
+								if (!miExpr.isMethodNamed(LibStandardNames.METHOD_ITERATOR) || (dataholder.get(node_a) != null)) {
 									dataholder.put(node_a, Invalid);
 									throw new AbortSearchException();
 								}
@@ -373,7 +374,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 									throw new AbortSearchException();
 								}
 								MethodInvocationExpr miExpr= JDTConverter.convert(mi);
-								if (!miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
+								if (!miExpr.isMethodNamed(LibStandardNames.METHOD_ITERATOR)) {
 									dataholder.put(node_a, Invalid);
 									throw new AbortSearchException();
 								}
@@ -395,7 +396,7 @@ public class WhileToForEach extends AbstractTool<WhileLoopToChangeHit> {
 		MethodInvocation mi= ASTNodes.as(exp, MethodInvocation.class);
 		if (mi != null) {
 			MethodInvocationExpr miExpr= JDTConverter.convert(mi);
-			if (miExpr.isMethodNamed("iterator")) { //$NON-NLS-1$
+			if (miExpr.isMethodNamed(LibStandardNames.METHOD_ITERATOR)) {
 				ITypeBinding iterableAncestor= null;
 				IMethodBinding miBinding= mi.resolveMethodBinding();
 				if (miBinding != null) {

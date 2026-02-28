@@ -27,7 +27,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -51,6 +50,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.osgi.framework.Bundle;
 import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.LibStandardNames;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
@@ -171,7 +171,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		// Pass 1: Find beginTask + SubProgressMonitor patterns (chained visitors)
 		AstProcessorBuilder.with(dataholder, nodesprocessed)
 			.processor()
-			.callMethodInvocationVisitor(IProgressMonitor.class, "beginTask", (node, holder) -> { //$NON-NLS-1$
+			.callMethodInvocationVisitor(IProgressMonitor.class, LibStandardNames.METHOD_BEGIN_TASK, (node, holder) -> {
 				if (node.arguments().size() != 2) {
 					return true;
 				}
@@ -237,12 +237,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 			operations.add(fixcore.rewrite(dataholder));
 		}
 		
-		// Pass 2: Find standalone SubProgressMonitor instances using direct ASTVisitor
+		// Pass 2: Find standalone SubProgressMonitor instances using AstProcessorBuilder
 		ReferenceHolder<Integer, MonitorHolder> standaloneHolder = new ReferenceHolder<>();
 		
-		compilationUnit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(ClassInstanceCreation node) {
+		AstProcessorBuilder.with(standaloneHolder, nodesprocessed)
+			.onClassInstanceCreation((node, holder) -> {
 				// Check if this is a SubProgressMonitor construction (use simple name like Pass 1)
 				ITypeBinding binding = node.resolveTypeBinding();
 				if (binding == null || !"SubProgressMonitor".equals(binding.getName())) { //$NON-NLS-1$
@@ -289,7 +288,7 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 					mh.minvname = firstArgName;
 					mh.nodesprocessed = nodesprocessed;
 					mh.subProgressMonitorOnSubMonitor.add(node);
-					standaloneHolder.put(standaloneHolder.size(), mh);
+					holder.put(holder.size(), mh);
 					return true;
 				}
 				
@@ -300,11 +299,11 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 				mh.minvname = varName;
 				mh.nodesprocessed = nodesprocessed;
 				mh.standaloneSubProgressMonitors.add(node);
-				standaloneHolder.put(standaloneHolder.size(), mh);
+				holder.put(holder.size(), mh);
 				
 				return true;
-			}
-		});
+			})
+			.build(compilationUnit);
 		
 		// Add operations for standalone SubProgressMonitor
 		if (!standaloneHolder.isEmpty()) {
@@ -312,106 +311,112 @@ AbstractTool<ReferenceHolder<Integer, JFacePlugin.MonitorHolder>> {
 		}
 		
 		// Pass 3: Find SubProgressMonitor type references for type replacement
+		// Each visitor type must be a separate AstProcessorBuilder call because
+		// chaining multiple onXxx calls creates sequential/scoped visitors via ASTProcessor,
+		// but these visitors need to run independently on the full compilation unit.
 		ReferenceHolder<Integer, MonitorHolder> typeReplacementHolder = new ReferenceHolder<>();
 		MonitorHolder typeHolder = new MonitorHolder();
 		typeHolder.nodesprocessed = nodesprocessed;
 		
-		compilationUnit.accept(new ASTVisitor() {
-			/**
-			 * Helper to check if a Type is SubProgressMonitor
-			 */
-			private boolean isSubProgressMonitorType(org.eclipse.jdt.core.dom.Type type) {
-				if (type == null) {
-					return false;
-				}
-				
-				// First try binding (most reliable)
-				ITypeBinding binding = type.resolveBinding();
-				if (binding != null && !binding.isRecovered()) {
-					return "org.eclipse.core.runtime.SubProgressMonitor".equals(binding.getQualifiedName()); //$NON-NLS-1$
-				}
-				
-				// Fallback: check type name
-				String typeName = getTypeName(type);
-				return "SubProgressMonitor".equals(typeName) || //$NON-NLS-1$
-					   "org.eclipse.core.runtime.SubProgressMonitor".equals(typeName); //$NON-NLS-1$
-			}
-			
-			/**
-			 * Extract type name from Type node
-			 */
-			private String getTypeName(org.eclipse.jdt.core.dom.Type type) {
-				if (type.isSimpleType()) {
-					org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;
-					return simpleType.getName().getFullyQualifiedName();
-				}
-				if (type.isQualifiedType()) {
-					org.eclipse.jdt.core.dom.QualifiedType qualifiedType = (org.eclipse.jdt.core.dom.QualifiedType) type;
-					return qualifiedType.getName().getFullyQualifiedName();
-				}
-				if (type.isNameQualifiedType()) {
-					org.eclipse.jdt.core.dom.NameQualifiedType nameQualifiedType = (org.eclipse.jdt.core.dom.NameQualifiedType) type;
-					return nameQualifiedType.getName().getFullyQualifiedName();
-				}
-				return type.toString();
-			}
-			
-			@Override
-			public boolean visit(org.eclipse.jdt.core.dom.FieldDeclaration node) {
+		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
+			.onFieldDeclaration((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type fieldType = node.getType();
 				if (isSubProgressMonitorType(fieldType)) {
 					logDebug("Found SubProgressMonitor field declaration at position " + node.getStartPosition()); //$NON-NLS-1$
 					typeHolder.typesToReplace.add(fieldType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(org.eclipse.jdt.core.dom.VariableDeclarationStatement node) {
+			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
+			.onVariableDeclarationStatement((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type varType = node.getType();
 				if (isSubProgressMonitorType(varType)) {
 					logDebug("Found SubProgressMonitor variable declaration at position " + node.getStartPosition()); //$NON-NLS-1$
 					typeHolder.typesToReplace.add(varType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(org.eclipse.jdt.core.dom.MethodDeclaration node) {
+			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
+			.onMethodDeclaration((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type returnType = node.getReturnType2();
 				if (isSubProgressMonitorType(returnType)) {
 					logDebug("Found SubProgressMonitor return type at position " + node.getStartPosition()); //$NON-NLS-1$
 					typeHolder.typesToReplace.add(returnType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(org.eclipse.jdt.core.dom.SingleVariableDeclaration node) {
+			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
+			.onSingleVariableDeclaration((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type paramType = node.getType();
 				if (isSubProgressMonitorType(paramType)) {
 					logDebug("Found SubProgressMonitor parameter type at position " + node.getStartPosition()); //$NON-NLS-1$
 					typeHolder.typesToReplace.add(paramType);
 				}
 				return true;
-			}
-			
-			@Override
-			public boolean visit(org.eclipse.jdt.core.dom.CastExpression node) {
+			})
+			.build(compilationUnit);
+		
+		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)
+			.onCastExpression((node, holder) -> {
 				org.eclipse.jdt.core.dom.Type castType = node.getType();
 				if (isSubProgressMonitorType(castType)) {
 					logDebug("Found SubProgressMonitor cast at position " + node.getStartPosition()); //$NON-NLS-1$
 					typeHolder.typesToReplace.add(castType);
 				}
 				return true;
-			}
-		});
+			})
+			.build(compilationUnit);
 		
 		// Add operations for type replacement if any types were found
 		if (!typeHolder.typesToReplace.isEmpty()) {
 			typeReplacementHolder.put(0, typeHolder);
 			operations.add(fixcore.rewrite(typeReplacementHolder));
 		}
+	}
+
+	/**
+	 * Checks if a Type is SubProgressMonitor.
+	 */
+	private static boolean isSubProgressMonitorType(org.eclipse.jdt.core.dom.Type type) {
+		if (type == null) {
+			return false;
+		}
+		
+		// First try binding (most reliable)
+		ITypeBinding binding = type.resolveBinding();
+		if (binding != null && !binding.isRecovered()) {
+			return "org.eclipse.core.runtime.SubProgressMonitor".equals(binding.getQualifiedName()); //$NON-NLS-1$
+		}
+		
+		// Fallback: check type name
+		String typeName = getTypeName(type);
+		return "SubProgressMonitor".equals(typeName) || //$NON-NLS-1$
+			   "org.eclipse.core.runtime.SubProgressMonitor".equals(typeName); //$NON-NLS-1$
+	}
+	
+	/**
+	 * Extracts the type name from a Type node.
+	 */
+	private static String getTypeName(org.eclipse.jdt.core.dom.Type type) {
+		if (type.isSimpleType()) {
+			org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;
+			return simpleType.getName().getFullyQualifiedName();
+		}
+		if (type.isQualifiedType()) {
+			org.eclipse.jdt.core.dom.QualifiedType qualifiedType = (org.eclipse.jdt.core.dom.QualifiedType) type;
+			return qualifiedType.getName().getFullyQualifiedName();
+		}
+		if (type.isNameQualifiedType()) {
+			org.eclipse.jdt.core.dom.NameQualifiedType nameQualifiedType = (org.eclipse.jdt.core.dom.NameQualifiedType) type;
+			return nameQualifiedType.getName().getFullyQualifiedName();
+		}
+		return type.toString();
 	}
 
 	/**

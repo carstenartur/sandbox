@@ -39,7 +39,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -54,6 +53,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -127,16 +127,16 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 		// import is needed)
 		final boolean[] needsFilesImport = { false };
 		for (MethodDeclaration method : parentClass.getMethods()) {
-			method.accept(new ASTVisitor() {
-				@Override
-				public boolean visit(MethodInvocation node) {
+			ReferenceHolder<String, Object> visitHolder = ReferenceHolder.create();
+			AstProcessorBuilder.with(visitHolder)
+				.onMethodInvocation((node, h) -> {
 					if (node.getExpression() == null) {
-						return super.visit(node);
+						return true;
 					}
 
 					String expressionName = node.getExpression().toString();
 					if (!originalName.equals(expressionName)) {
-						return super.visit(node);
+						return true;
 					}
 
 					String methodName = node.getName().getIdentifier();
@@ -246,9 +246,9 @@ public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<
 						rewriter.replace(node, toFileInvocation, group);
 					}
 
-					return super.visit(node);
-				}
-			});
+					return true;
+				})
+				.build(method);
 		}
 
 		// Add Files import only if needed (determined during transformation)

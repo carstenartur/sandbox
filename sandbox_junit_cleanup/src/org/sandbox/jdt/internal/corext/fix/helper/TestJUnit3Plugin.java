@@ -39,7 +39,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -54,6 +53,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -151,9 +151,9 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 	private void rewriteAssertionsAndAssumptions(MethodDeclaration method, ASTRewrite rewriter, AST ast,
 			TextEditGroup group, ImportRewrite importRewriter) {
-		method.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(MethodInvocation node) {
+		ReferenceHolder<String, Object> holder = ReferenceHolder.create();
+		AstProcessorBuilder.with(holder)
+			.onMethodInvocation((node, h) -> {
 				// Check if the method binding can be resolved
 				if (node.resolveMethodBinding() != null) {
 					String fullyQualifiedName = node.resolveMethodBinding().getDeclaringClass().getQualifiedName();
@@ -169,10 +169,9 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 						addImportForAssertion(node.getName().getIdentifier(), importRewriter);
 					}
 				}
-
-				return super.visit(node);
-			}
-		});
+				return true;
+			})
+			.build(method);
 	}
 
 	private void addImportForAssertion(String assertionMethod, ImportRewrite importRewriter) {

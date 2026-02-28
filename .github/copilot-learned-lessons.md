@@ -742,3 +742,38 @@ new FileReader($path)
 **Learned**: 2026-02-27
 
 ---
+
+## 17. AstProcessorBuilder: Chaining is SCOPED, Not Independent
+
+**Pattern**: When chaining multiple `onXxx()` calls on a single `AstProcessorBuilder`, the underlying `ASTProcessor` creates **sequential/scoped** visitors, NOT independent ones. Each subsequent visitor runs only on nodes matched by the previous visitor.
+
+```java
+// WRONG: Visitors are chained — FieldDeclaration only runs inside matched TypeDeclarations
+AstProcessorBuilder.with(dataholder, nodesprocessed)
+    .onTypeDeclaration((node, h) -> { ... })
+    .onFieldDeclaration((node, h) -> { ... })   // Only searches inside TypeDeclaration matches!
+    .build(compilationUnit);
+
+// CORRECT: Each visitor runs independently on the full compilation unit
+AstProcessorBuilder.with(dataholder, nodesprocessed)
+    .onTypeDeclaration((node, h) -> { ... })
+    .build(compilationUnit);
+AstProcessorBuilder.with(dataholder, nodesprocessed)
+    .onFieldDeclaration((node, h) -> { ... })
+    .build(compilationUnit);
+```
+
+**When chaining IS correct**: Use chaining for scoped patterns like "find `beginTask()`, then within the same block find `SubProgressMonitor`":
+```java
+AstProcessorBuilder.with(dataholder, nodesprocessed)
+    .processor()
+    .callMethodInvocationVisitor(IProgressMonitor.class, "beginTask", ..., s -> ASTNodes.getTypedAncestor(s, Block.class))
+    .callClassInstanceCreationVisitor("SubProgressMonitor", ...)
+    .build(compilationUnit);
+```
+
+**Root cause**: `ASTProcessor.process()` recursively calls `process(node, i+1)` inside the matched node's handler, so visitor i+1 walks only the subtree of visitor i's match.
+
+**Learned**: 2026-02-27
+
+---

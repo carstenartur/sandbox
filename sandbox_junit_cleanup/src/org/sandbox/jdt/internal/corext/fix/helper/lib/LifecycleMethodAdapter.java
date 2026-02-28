@@ -19,7 +19,6 @@ import java.util.List;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -35,6 +34,8 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
  * Helper class for adapting JUnit lifecycle methods from JUnit 4 to JUnit 5.
@@ -115,16 +116,16 @@ public final class LifecycleMethodAdapter {
 	 */
 	public static void adaptSuperBeforeCalls(String oldMethodName, String newMethodName, MethodDeclaration method,
 			ASTRewrite rewriter, AST ast, TextEditGroup group) {
-		method.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SuperMethodInvocation node) {
+		ReferenceHolder<String, Object> holder = ReferenceHolder.create();
+		AstProcessorBuilder.with(holder)
+			.onSuperMethodInvocation((node, h) -> {
 				if (oldMethodName.equals(node.getName().getIdentifier())) {
 					rewriter.replace(node.getName(), ast.newSimpleName(newMethodName), group);
 					addContextArgumentIfMissing(node, rewriter, ast, group);
 				}
-				return super.visit(node);
-			}
-		});
+				return true;
+			})
+			.build(method);
 	}
 
 	/**
@@ -253,9 +254,9 @@ public final class LifecycleMethodAdapter {
 	 * @param body the method body to clean
 	 */
 	private static void removeSuperLifecycleCalls(Block body) {
-		body.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SuperMethodInvocation node) {
+		ReferenceHolder<String, Object> holder = ReferenceHolder.create();
+		AstProcessorBuilder.with(holder)
+			.onSuperMethodInvocation((node, h) -> {
 				String methodName = node.getName().getIdentifier();
 				// Remove super calls to lifecycle methods
 				if (METHOD_BEFORE.equals(methodName) || METHOD_AFTER.equals(methodName) ||
@@ -267,9 +268,9 @@ public final class LifecycleMethodAdapter {
 						parent.delete();
 					}
 				}
-				return super.visit(node);
-			}
-		});
+				return true;
+			})
+			.build(body);
 	}
 
 	/**

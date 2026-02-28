@@ -298,4 +298,45 @@ public class LibStandardNames {
 	 * Fully qualified name of java.lang.Double class.
 	 */
 	public static final String JAVA_LANG_DOUBLE = "java.lang.Double"; //$NON-NLS-1$
+	
+	// ========== Iterator API Methods ==========
+	
+	/**
+	 * Method name for {@link java.util.Iterator#next()}
+	 */
+	public static final String METHOD_NEXT = "next"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for {@link java.util.Iterator#hasNext()}
+	 */
+	public static final String METHOD_HAS_NEXT = "hasNext"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for {@link java.util.Collection#iterator()}
+	 */
+	public static final String METHOD_ITERATOR = "iterator"; //$NON-NLS-1$
+	
+	// ========== Common Object Methods ==========
+	
+	/**
+	 * Method name for {@link Object#equals(Object)}
+	 */
+	public static final String METHOD_EQUALS = "equals"; //$NON-NLS-1$
+	
+	/**
+	 * Method name for {@link Object#hashCode()}
+	 */
+	public static final String METHOD_HASHCODE = "hashCode"; //$NON-NLS-1$
+	
+	// ========== Common Utility Methods ==========
+	
+	/**
+	 * Method name for {@link org.eclipse.core.runtime.IProgressMonitor#beginTask(String, int)}
+	 */
+	public static final String METHOD_BEGIN_TASK = "beginTask"; //$NON-NLS-1$
+
+	/**
+	 * Method name for dispose() methods (e.g., Widget.dispose(), Resource.dispose())
+	 */
+	public static final String METHOD_DISPOSE = "dispose"; //$NON-NLS-1$
 }

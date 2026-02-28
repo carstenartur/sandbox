@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.sandbox.jdt.internal.common.LibStandardNames;
 
 /**
  * Side Effect Analyzer - Analyzes whether code replacement is semantically safe
@@ -211,7 +212,7 @@ public class SideEffectAnalyzer {
 			
 			// Known safe String methods
 			if ("trim".equals(methodName) || "length".equals(methodName) || 
-			    "isEmpty".equals(methodName) || "toString".equals(methodName)) {
+			    "isEmpty".equals(methodName) || LibStandardNames.METHOD_TOSTRING.equals(methodName)) {
 				return true;
 			}
 			
