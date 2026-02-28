@@ -27,6 +27,7 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
 import org.eclipse.jface.text.source.ISourceViewer;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -59,10 +60,11 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 	 *
 	 * @since 1.5.0
 	 */
-	private static final String EMBEDDED_JAVA_MARKER_TYPE = "org.sandbox.jdt.triggerpattern.embeddedJavaProblem"; //$NON-NLS-1$
+	private static final String EMBEDDED_JAVA_MARKER_TYPE = "sandbox_common.org.sandbox.jdt.triggerpattern.embeddedJavaProblem"; //$NON-NLS-1$
 
 	private IDocument document;
 	private ISourceViewer sourceViewer;
+	private SandboxHintEditor editor;
 
 	/**
 	 * Sets the source viewer for accessing the editor input.
@@ -71,6 +73,16 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 	 */
 	public void setSourceViewer(ISourceViewer viewer) {
 		this.sourceViewer = viewer;
+	}
+
+	/**
+	 * Sets the editor for triggering folding and outline updates after reconciliation.
+	 *
+	 * @param editor the hint editor
+	 * @since 1.5.0
+	 */
+	public void setEditor(SandboxHintEditor editor) {
+		this.editor = editor;
 	}
 
 	@Override
@@ -116,6 +128,17 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 		if (hintFile != null) {
 			validateEmbeddedJavaBlocks(file, hintFile);
 		}
+
+		// Update folding and outline after reconciliation
+		if (editor != null) {
+			Display display = Display.getDefault();
+			if (display != null && !display.isDisposed()) {
+				display.asyncExec(() -> {
+					editor.updateFolding();
+					editor.updateOutline();
+				});
+			}
+		}
 	}
 
 	/**
@@ -140,7 +163,8 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 
 	/**
 	 * Creates markers for compilation problems in an embedded Java block.
-	 * Maps synthetic class line numbers back to hint file line numbers.
+	 * Maps synthetic class line numbers back to hint file line numbers and
+	 * adjusts character positions by subtracting the synthetic header length.
 	 */
 	private void createEmbeddedJavaMarkers(IFile file, EmbeddedJavaBlock block,
 			CompilationResult result) {
@@ -160,12 +184,21 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 					marker.setAttribute(IMarker.LINE_NUMBER, hintLine);
 				}
 
-				// Map character positions if available
+				// Map character positions: problem offsets are in the synthetic
+				// source which has a header before the embedded code. Subtract
+				// the header length and add the block's start offset plus the
+				// '<?' delimiter length to map back to the hint document.
 				int sourceStart = problem.getSourceStart();
 				int sourceEnd = problem.getSourceEnd();
 				if (sourceStart >= 0 && sourceEnd >= 0) {
-					marker.setAttribute(IMarker.CHAR_START, block.getStartOffset() + sourceStart);
-					marker.setAttribute(IMarker.CHAR_END, block.getStartOffset() + sourceEnd + 1);
+					int headerLength = result.syntheticHeaderLength();
+					int delimiterLength = 2; // length of '<?' delimiter
+					int hintStart = block.getStartOffset() + delimiterLength + (sourceStart - headerLength);
+					int hintEnd = block.getStartOffset() + delimiterLength + (sourceEnd - headerLength) + 1;
+					if (hintStart >= 0 && hintEnd > hintStart) {
+						marker.setAttribute(IMarker.CHAR_START, hintStart);
+						marker.setAttribute(IMarker.CHAR_END, hintEnd);
+					}
 				}
 			} catch (CoreException e) {
 				logError("Failed to create embedded Java marker", e); //$NON-NLS-1$

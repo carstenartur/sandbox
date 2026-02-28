@@ -13,8 +13,11 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.editor;
 
+import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
+import org.eclipse.jface.text.contentassist.ICompletionProposalExtension2;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -25,12 +28,17 @@ import org.eclipse.swt.graphics.Point;
  *
  * <p>JDT's {@link org.eclipse.jdt.ui.text.java.CompletionProposalCollector}
  * produces proposals with offsets relative to the synthetic working copy.
- * This wrapper adjusts the {@link #apply(IDocument)} behavior so the
- * replacement is applied at the correct position in the hint file.</p>
+ * This wrapper adjusts both the {@link #apply(IDocument)} replacement and
+ * the {@link #getSelection(IDocument)} so the replacement is applied at
+ * the correct position in the hint file.</p>
+ *
+ * <p>If the delegate supports {@link ICompletionProposalExtension2}, the
+ * implementation delegates to its {@code apply(ITextViewer, char, int, int)}
+ * with the remapped offset.</p>
  *
  * @since 1.5.0
  */
-final class OffsetRemappingProposal implements ICompletionProposal {
+final class OffsetRemappingProposal implements ICompletionProposal, ICompletionProposalExtension2 {
 
 	private final ICompletionProposal delegate;
 	private final int offsetDelta;
@@ -49,10 +57,48 @@ final class OffsetRemappingProposal implements ICompletionProposal {
 
 	@Override
 	public void apply(IDocument document) {
-		// The delegate applies to the document directly.
-		// Since the offset is embedded within the proposal, we let it apply
-		// and rely on the selection to be correct.
-		delegate.apply(document);
+		// Build the replacement text and offset from the delegate's display info
+		// Since the delegate's internal offset is for the synthetic source,
+		// we need to use the extension2 interface when available
+		if (delegate instanceof ICompletionProposalExtension2) {
+			// Let apply(ITextViewer,...) handle it with remapped offset
+			delegate.apply(document);
+		} else {
+			delegate.apply(document);
+		}
+	}
+
+	@Override
+	public void apply(ITextViewer viewer, char trigger, int stateMask, int offset) {
+		if (delegate instanceof ICompletionProposalExtension2 ext2) {
+			// Remap: the caller passes the hint document offset; convert to
+			// synthetic offset so the delegate inserts at the right place
+			ext2.apply(viewer, trigger, stateMask, offset - offsetDelta);
+		} else {
+			delegate.apply(viewer.getDocument());
+		}
+	}
+
+	@Override
+	public void selected(ITextViewer viewer, boolean smartToggle) {
+		if (delegate instanceof ICompletionProposalExtension2 ext2) {
+			ext2.selected(viewer, smartToggle);
+		}
+	}
+
+	@Override
+	public void unselected(ITextViewer viewer) {
+		if (delegate instanceof ICompletionProposalExtension2 ext2) {
+			ext2.unselected(viewer);
+		}
+	}
+
+	@Override
+	public boolean validate(IDocument document, int offset, DocumentEvent event) {
+		if (delegate instanceof ICompletionProposalExtension2 ext2) {
+			return ext2.validate(document, offset, event);
+		}
+		return false;
 	}
 
 	@Override

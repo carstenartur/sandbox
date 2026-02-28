@@ -183,13 +183,38 @@ public class SandboxHintOutlinePage extends ContentOutlinePage {
 					} else if (SandboxHintPartitionScanner.COMMENT.equals(type)) {
 						// Skip comments in outline
 					} else {
-						// Default content — look for rule separators
+						// Default content — split into individual rules using ';;' separators
 						String text = document.get(offset, length);
-						if (text.contains("=>") || text.contains(";;")) { //$NON-NLS-1$ //$NON-NLS-2$
-							ruleIndex++;
-							String ruleLabel = buildRuleLabel(text, ruleIndex);
-							elements.add(new OutlineElement(
-									ruleLabel, ElementType.RULE, offset, length, List.of()));
+						int start = 0;
+						while (start < text.length()) {
+							int sepIndex = text.indexOf(";;", start); //$NON-NLS-1$
+							int end = sepIndex == -1 ? text.length() : sepIndex;
+
+							int contentStart = start;
+							int contentEnd = end;
+							while (contentStart < contentEnd && Character.isWhitespace(text.charAt(contentStart))) {
+								contentStart++;
+							}
+							while (contentEnd > contentStart && Character.isWhitespace(text.charAt(contentEnd - 1))) {
+								contentEnd--;
+							}
+
+							if (contentStart < contentEnd) {
+								String ruleText = text.substring(contentStart, contentEnd);
+								if (ruleText.contains("=>")) { //$NON-NLS-1$
+									ruleIndex++;
+									String ruleLabel = buildRuleLabel(ruleText, ruleIndex);
+									int ruleOffsetInDocument = offset + contentStart;
+									int ruleLength = contentEnd - contentStart;
+									elements.add(new OutlineElement(
+											ruleLabel, ElementType.RULE, ruleOffsetInDocument, ruleLength, List.of()));
+								}
+							}
+
+							if (sepIndex == -1) {
+								break;
+							}
+							start = sepIndex + 2; // skip past ';;'
 						}
 					}
 				}

@@ -85,10 +85,6 @@ public class SandboxHintBreakpointAdapter implements IToggleBreakpointsTarget {
 
 		// Determine the synthetic class type name from the source locator mappings
 		String typeName = findSyntheticTypeName(file, lineNumber);
-		if (typeName == null) {
-			// Use a placeholder type name based on the file
-			typeName = EmbeddedJavaSourceLocator.SYNTHETIC_PREFIX + sanitize(file.getName());
-		}
 
 		// Create a Java line breakpoint
 		JDIDebugModel.createLineBreakpoint(
@@ -177,12 +173,21 @@ public class SandboxHintBreakpointAdapter implements IToggleBreakpointsTarget {
 	/**
 	 * Attempts to find the synthetic type name for a breakpoint at the given line.
 	 * Looks up registered source mappings from the {@link EmbeddedJavaSourceLocator}.
+	 * Falls back to a stable name derived from the hint filename when no active
+	 * mapping is available yet.
 	 */
-	private static String findSyntheticTypeName(IFile file, int lineNumber) {
-		// Currently returns null to use the placeholder name.
-		// When EmbeddedJavaSourceLocator has active mappings, they will be
-		// queried here to find the exact synthetic class name and mapped line.
-		return null;
+	private String findSyntheticTypeName(IFile file, int lineNumber) {
+		if (file == null) {
+			return null;
+		}
+		// When EmbeddedJavaSourceLocator has active mappings, query them to
+		// find the exact synthetic class name and mapped line.
+		// For now, derive a stable name from the hint file name.
+		String baseName = sanitize(file.getName());
+		if (baseName.isEmpty()) {
+			baseName = "unknown"; //$NON-NLS-1$
+		}
+		return EmbeddedJavaSourceLocator.SYNTHETIC_PREFIX + baseName;
 	}
 
 	/**

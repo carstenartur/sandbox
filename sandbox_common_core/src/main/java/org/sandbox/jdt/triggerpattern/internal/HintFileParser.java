@@ -218,16 +218,50 @@ public final class HintFileParser {
 		int customCodeStartLine = 0;
 		int customCodeStartOffset = 0;
 		StringBuilder customCodeBuilder = null;
-		int charOffset = 0;
-		
+
+		// Read entire content to compute actual line offsets (handles CRLF vs LF)
+		String fullContent;
 		try (BufferedReader br = new BufferedReader(reader)) {
-			String rawLine;
-			int lineNumber = 0;
-			while ((rawLine = br.readLine()) != null) {
-				lineNumber++;
-				int lineStartOffset = charOffset;
-				// +1 for the newline character
-				charOffset += rawLine.length() + 1;
+			StringBuilder contentBuilder = new StringBuilder();
+			char[] buffer = new char[4096];
+			int read;
+			while ((read = br.read(buffer)) != -1) {
+				contentBuilder.append(buffer, 0, read);
+			}
+			fullContent = contentBuilder.toString();
+		}
+
+		// Split into lines preserving delimiter info for offset computation
+		List<String> rawLines = new ArrayList<>();
+		List<Integer> lineStartOffsets = new ArrayList<>();
+		int pos = 0;
+		while (pos <= fullContent.length()) {
+			lineStartOffsets.add(pos);
+			int nextLF = fullContent.indexOf('\n', pos);
+			int nextCR = fullContent.indexOf('\r', pos);
+			int lineEnd;
+			int nextLineStart;
+			if (nextLF == -1 && nextCR == -1) {
+				// Last line without trailing newline
+				rawLines.add(fullContent.substring(pos));
+				break;
+			} else if (nextCR >= 0 && (nextLF == -1 || nextCR < nextLF)) {
+				lineEnd = nextCR;
+				// CRLF or just CR
+				nextLineStart = (nextCR + 1 < fullContent.length() && fullContent.charAt(nextCR + 1) == '\n')
+						? nextCR + 2 : nextCR + 1;
+			} else {
+				lineEnd = nextLF;
+				nextLineStart = nextLF + 1;
+			}
+			rawLines.add(fullContent.substring(pos, lineEnd));
+			pos = nextLineStart;
+		}
+
+		for (int lineIdx = 0; lineIdx < rawLines.size(); lineIdx++) {
+			String rawLine = rawLines.get(lineIdx);
+			int lineNumber = lineIdx + 1;
+			int lineStartOffset = lineStartOffsets.get(lineIdx);
 				
 				// Handle <? ?> custom code blocks (continuation)
 				if (inCustomCodeBlock) {
@@ -317,7 +351,6 @@ public final class HintFileParser {
 				
 				result.add(sb.toString());
 			}
-		}
 		
 		return result;
 	}

@@ -32,7 +32,7 @@ import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.source.SourceViewerConfiguration;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.graphics.RGB;
 
 /**
  * Source viewer configuration for the {@code .sandbox-hint} editor.
@@ -49,6 +49,25 @@ import org.eclipse.swt.widgets.Display;
  * @since 1.3.6
  */
 public class SandboxHintSourceViewerConfiguration extends SourceViewerConfiguration {
+
+	private SandboxHintEditor editor;
+
+	/**
+	 * Creates a source viewer configuration without an editor reference.
+	 */
+	public SandboxHintSourceViewerConfiguration() {
+	}
+
+	/**
+	 * Creates a source viewer configuration with an editor reference
+	 * for wiring reconciler-driven updates (folding, outline).
+	 *
+	 * @param editor the hint editor
+	 * @since 1.5.0
+	 */
+	public SandboxHintSourceViewerConfiguration(SandboxHintEditor editor) {
+		this.editor = editor;
+	}
 
 	@Override
 	public String[] getConfiguredContentTypes(ISourceViewer sourceViewer) {
@@ -70,8 +89,9 @@ public class SandboxHintSourceViewerConfiguration extends SourceViewerConfigurat
 		reconciler.setDamager(codeDR, IDocument.DEFAULT_CONTENT_TYPE);
 		reconciler.setRepairer(codeDR, IDocument.DEFAULT_CONTENT_TYPE);
 
-		// Comments – green italic
-		Color commentColor = new Color(Display.getDefault(), 63, 127, 95);
+		// Comments – green italic (use JDT's shared color manager)
+		Color commentColor = JavaPlugin.getDefault().getJavaTextTools()
+				.getColorManager().getColor(new RGB(63, 127, 95));
 		TextAttribute commentAttr = new TextAttribute(commentColor, null, SWT.ITALIC);
 		DefaultDamagerRepairer commentDR = new DefaultDamagerRepairer(
 				new SingleTokenScanner(new Token(commentAttr)));
@@ -79,7 +99,8 @@ public class SandboxHintSourceViewerConfiguration extends SourceViewerConfigurat
 		reconciler.setRepairer(commentDR, SandboxHintPartitionScanner.COMMENT);
 
 		// Metadata directives – dark blue bold
-		Color metadataColor = new Color(Display.getDefault(), 0, 0, 128);
+		Color metadataColor = JavaPlugin.getDefault().getJavaTextTools()
+				.getColorManager().getColor(new RGB(0, 0, 128));
 		TextAttribute metadataAttr = new TextAttribute(metadataColor, null, SWT.BOLD);
 		DefaultDamagerRepairer metadataDR = new DefaultDamagerRepairer(
 				new SingleTokenScanner(new Token(metadataAttr)));
@@ -119,6 +140,9 @@ public class SandboxHintSourceViewerConfiguration extends SourceViewerConfigurat
 	public IReconciler getReconciler(ISourceViewer sourceViewer) {
 		SandboxHintReconcilingStrategy strategy = new SandboxHintReconcilingStrategy();
 		strategy.setSourceViewer(sourceViewer);
+		if (editor != null) {
+			strategy.setEditor(editor);
+		}
 		MonoReconciler reconciler = new MonoReconciler(strategy, false);
 		reconciler.setDelay(500);
 		return reconciler;

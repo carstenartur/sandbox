@@ -17,6 +17,7 @@ import java.io.IOException;
 
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.console.ConsolePlugin;
@@ -45,15 +46,9 @@ public final class SandboxHintConsole {
 	private static SandboxHintConsole instance;
 
 	private final MessageConsole console;
-	private final Color successColor;
-	private final Color skippedColor;
-	private final Color errorColor;
 
 	private SandboxHintConsole() {
 		console = new MessageConsole(CONSOLE_NAME, null);
-		successColor = new Color(Display.getDefault(), 0, 128, 0);
-		skippedColor = new Color(Display.getDefault(), 160, 128, 0);
-		errorColor = new Color(Display.getDefault(), 192, 0, 0);
 		ConsolePlugin plugin = ConsolePlugin.getDefault();
 		if (plugin != null) {
 			IConsoleManager manager = plugin.getConsoleManager();
@@ -79,7 +74,7 @@ public final class SandboxHintConsole {
 	 * @param message the message to log
 	 */
 	public void logSuccess(String message) {
-		writeColored(message, successColor);
+		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN));
 	}
 
 	/**
@@ -88,7 +83,7 @@ public final class SandboxHintConsole {
 	 * @param message the message to log
 	 */
 	public void logSkipped(String message) {
-		writeColored(message, skippedColor);
+		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_YELLOW));
 	}
 
 	/**
@@ -97,7 +92,7 @@ public final class SandboxHintConsole {
 	 * @param message the message to log
 	 */
 	public void logError(String message) {
-		writeColored(message, errorColor);
+		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_RED));
 	}
 
 	/**

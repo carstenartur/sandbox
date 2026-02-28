@@ -13,10 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.ui;
 
-import org.eclipse.ui.console.ConsolePlugin;
-import org.eclipse.ui.console.IConsole;
 import org.eclipse.ui.console.IConsoleFactory;
-import org.eclipse.ui.console.IConsoleManager;
 
 /**
  * Factory for creating and revealing the {@link SandboxHintConsole}.

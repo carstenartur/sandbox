@@ -78,6 +78,7 @@ public final class EmbeddedJavaCompiler {
 	 * @param lineOffset      the line offset to map synthetic class lines back to hint file lines
 	 * @param syntheticClassName the fully qualified name of the generated synthetic class
 	 * @param lineMappings    source line mappings from hint file to synthetic class
+	 * @param syntheticHeaderLength the character length of the synthetic header before embedded code
 	 */
 	public record CompilationResult(
 			CompilationUnit compilationUnit,
@@ -85,10 +86,11 @@ public final class EmbeddedJavaCompiler {
 			List<MethodDeclaration> guardMethods,
 			int lineOffset,
 			String syntheticClassName,
-			List<SourceLineMapping> lineMappings) {
+			List<SourceLineMapping> lineMappings,
+			int syntheticHeaderLength) {
 
 		/**
-		 * Backwards-compatible constructor without syntheticClassName and lineMappings.
+		 * Backwards-compatible constructor without syntheticClassName, lineMappings, and syntheticHeaderLength.
 		 */
 		public CompilationResult(
 				CompilationUnit compilationUnit,
@@ -96,7 +98,7 @@ public final class EmbeddedJavaCompiler {
 				List<MethodDeclaration> guardMethods,
 				int lineOffset) {
 			this(compilationUnit, problems, guardMethods, lineOffset,
-					"", Collections.emptyList()); //$NON-NLS-1$
+					"", Collections.emptyList(), 0); //$NON-NLS-1$
 		}
 
 		/**
@@ -172,12 +174,13 @@ public final class EmbeddedJavaCompiler {
 		// Build source line mappings for debugging support
 		String syntheticClassName = SYNTHETIC_PACKAGE + "." + className; //$NON-NLS-1$
 		List<SourceLineMapping> lineMappings = buildLineMappings(block, headerLineCount);
+		int headerCharLength = computeSyntheticHeaderLength(ruleId);
 
 		LOGGER.log(Level.FINE, "Compiled embedded Java block: {0} problems, {1} guard methods", //$NON-NLS-1$
 				new Object[] { problems.size(), guardMethods.size() });
 
 		return new CompilationResult(cu, problems, guardMethods, lineOffset,
-				syntheticClassName, lineMappings);
+				syntheticClassName, lineMappings, headerCharLength);
 	}
 
 	/**
@@ -194,6 +197,21 @@ public final class EmbeddedJavaCompiler {
 		}
 		sb.append("}\n"); //$NON-NLS-1$
 		return sb.toString();
+	}
+
+	/**
+	 * Returns the character length of the synthetic class header that is
+	 * prepended before the embedded code. Useful for mapping character
+	 * positions from the synthetic source back to the original embedded code.
+	 *
+	 * @param ruleId the hint file rule ID (used to derive the class name)
+	 * @return the header length in characters
+	 * @since 1.5.0
+	 */
+	public static int computeSyntheticHeaderLength(String ruleId) {
+		String className = CLASS_PREFIX + sanitizeIdentifier(ruleId);
+		String header = "package " + SYNTHETIC_PACKAGE + ";\n\npublic class " + className + " {\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		return header.length();
 	}
 
 	/**
@@ -245,8 +263,8 @@ public final class EmbeddedJavaCompiler {
 	}
 
 	/**
-	 * Checks if a method declaration matches the guard function signature:
-	 * returns boolean and has at least one parameter.
+	 * Checks if a method declaration could serve as a guard function.
+	 * A guard method is any method that returns {@code boolean}.
 	 */
 	private static boolean isGuardMethod(MethodDeclaration method) {
 		if (method.getReturnType2() == null) {

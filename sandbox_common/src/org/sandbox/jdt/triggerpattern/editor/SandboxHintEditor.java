@@ -51,7 +51,7 @@ public class SandboxHintEditor extends TextEditor {
 	private ProjectionSupport projectionSupport;
 
 	public SandboxHintEditor() {
-		setSourceViewerConfiguration(new SandboxHintSourceViewerConfiguration());
+		setSourceViewerConfiguration(new SandboxHintSourceViewerConfiguration(this));
 		setDocumentProvider(new SandboxHintDocumentProvider());
 	}
 
@@ -88,6 +88,18 @@ public class SandboxHintEditor extends TextEditor {
 		ISourceViewer viewer = getSourceViewer();
 		if (viewer instanceof ProjectionViewer projectionViewer) {
 			SandboxHintFoldingProvider.updateFolding(projectionViewer);
+		}
+	}
+
+	/**
+	 * Updates the outline view content.
+	 * Called from the reconciler after document changes.
+	 *
+	 * @since 1.5.0
+	 */
+	public void updateOutline() {
+		if (outlinePage != null) {
+			outlinePage.update();
 		}
 	}
 
