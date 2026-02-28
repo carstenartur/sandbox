@@ -33,8 +33,8 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO: ${{ github.repository }}
-        RETAIN_DAYS: ${{ inputs.retain_days || 30 }}
-        KEEP_MINIMUM_RUNS: ${{ inputs.keep_minimum_runs || 5 }}
+        RETAIN_DAYS: ${{ inputs.retain_days || '30' }}
+        KEEP_MINIMUM_RUNS: ${{ inputs.keep_minimum_runs || '5' }}
         DRY_RUN: ${{ inputs.dry_run || 'false' }}
       run: |
         set -euo pipefail
