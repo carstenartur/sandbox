@@ -249,6 +249,12 @@ jobs:
         # Step 1: Push to a temporary branch to get the commit into GitHub's object store.
         # Temporary branches are not protected, so git push works with GITHUB_TOKEN.
         TEMP_BRANCH="release-temp-${{ inputs.release_version }}"
+
+        # Register cleanup trap so the temp branch is always deleted, even if a later step fails.
+        trap 'git push origin ":refs/heads/${TEMP_BRANCH}" || true' EXIT
+
+        # Ensure reruns are idempotent: delete any existing remote temp branch (ignore errors), then push.
+        git push origin ":refs/heads/${TEMP_BRANCH}" || true
         git push origin "HEAD:refs/heads/${TEMP_BRANCH}"
         echo "Pushed commit to temporary branch ${TEMP_BRANCH}"
 
@@ -259,9 +265,8 @@ jobs:
           -f sha="$COMMIT_SHA"
         echo "Fast-forwarded main branch to $COMMIT_SHA"
 
-        # Step 3: Clean up the temporary branch
-        git push origin --delete "${TEMP_BRANCH}" || true
         echo "Successfully pushed release commit to main"
+        # Trap will clean up the temporary branch on exit.
 
     - name: Dry run - Skip pushing release commit
       if: ${{ inputs.dry_run }}
