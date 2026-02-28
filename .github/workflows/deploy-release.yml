@@ -222,7 +222,9 @@ jobs:
       run: |
         git config user.name 'github-actions[bot]'
         git config user.email 'github-actions[bot]@users.noreply.github.com'
-        git add -A
+        # ':!.github/workflows/' uses Git pathspec magic to exclude workflow files,
+        # ensuring GITHUB_TOKEN can push this commit without being blocked.
+        git add -A -- ':!.github/workflows/'
         git commit -m "Release version ${{ inputs.release_version }}"
 
     # 8. Build and verify
@@ -236,17 +238,16 @@ jobs:
         fi
         xvfb-run --auto-servernum mvn -Pproduct,repo,cli-dist,maven-plugin -T 1C clean verify $TEST_FLAG
 
-    # 8b. Push release commit to remote via GitHub API
+    # 8b. Push release commit to remote
     - name: Push release commit to remote
       if: ${{ !inputs.dry_run }}
       run: |
         set -e
-        COMMIT_SHA=$(git rev-parse HEAD)
-        echo "Pushing release commit $COMMIT_SHA to main branch via GitHub API..."
-        # Use the GitHub API instead of git push to avoid the workflow-file push restriction.
-        gh api "repos/${{ github.repository }}/git/refs/heads/main" \
-          --method PATCH \
-          -f sha="$COMMIT_SHA"
+        echo "Pushing release commit to main branch..."
+        # Use git push directly - this works because the release commit
+        # does not modify .github/workflows/ files (excluded in git add).
+        # GITHUB_TOKEN only blocks pushes that modify workflow files.
+        git push origin HEAD:main
         echo "Successfully pushed release commit to main"
 
     - name: Dry run - Skip pushing release commit
@@ -260,9 +261,9 @@ jobs:
       run: |
         set -e
         COMMIT_SHA=$(git rev-parse HEAD)
-        # Use the GitHub API instead of git push to avoid the workflow-file push restriction.
-        # GITHUB_TOKEN cannot push branches/tags when the commit tree contains .github/workflows/
-        # files, but the REST API uses `contents: write` permission and bypasses this restriction.
+        # Use the GitHub API to create the tag object and reference.
+        # The release commit is already on the remote (pushed via git push in step 8b),
+        # so this API call succeeds because the commit SHA exists in GitHub's object store.
 
         # Create annotated tag object
         TAG_SHA=$(gh api "repos/${{ github.repository }}/git/tags" \
@@ -305,9 +306,9 @@ jobs:
         else
           echo "Creating and pushing maintenance branch: ${BRANCH_NAME}"
           git branch "${BRANCH_NAME}"
-          # Use the GitHub API instead of git push to avoid the workflow-file push restriction.
-          # GITHUB_TOKEN cannot push branches/tags when the commit tree contains .github/workflows/
-          # files, but the REST API uses `contents: write` permission and bypasses this restriction.
+          # Use the GitHub API to create the branch reference.
+          # The release commit is already on the remote (pushed via git push in step 8b),
+          # so this API call succeeds because the commit SHA exists in GitHub's object store.
           gh api "repos/${{ github.repository }}/git/refs" \
             --method POST \
             -f ref="refs/heads/${BRANCH_NAME}" \
@@ -506,7 +507,8 @@ jobs:
         git checkout -b "${NEXT_VERSION_BRANCH}"
         
         # Commit all changes
-        git add -A
+        # ':!.github/workflows/' uses Git pathspec magic to exclude workflow files.
+        git add -A -- ':!.github/workflows/'
         git commit -m "Prepare for next development iteration ${NEXT_VERSION}"
         
         # Push the branch
