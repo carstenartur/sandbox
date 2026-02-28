@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
@@ -127,12 +128,7 @@ public class EmbeddedJavaExecutionLoggerTest {
 	public void testTracesAreUnmodifiable() {
 		logger.logGuardExecution("r1", "g1", Map.of(), true, 1);
 
-		try {
-			logger.getTraces().clear();
-			// If we get here, the list was modifiable - that's unexpected but not fatal
-		} catch (UnsupportedOperationException e) {
-			// Expected - list is unmodifiable
-		}
+		assertThrows(UnsupportedOperationException.class, () -> logger.getTraces().clear());
 
 		// Original traces should still be there
 		assertEquals(1, logger.getTraces().size());
