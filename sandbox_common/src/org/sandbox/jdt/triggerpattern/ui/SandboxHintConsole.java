@@ -128,11 +128,9 @@ public final class SandboxHintConsole {
 	}
 
 	private void writeColored(String message, Color color) {
-		MessageConsoleStream stream = console.newMessageStream();
-		stream.setColor(color);
-		try {
+		try (MessageConsoleStream stream = console.newMessageStream()) {
+			stream.setColor(color);
 			stream.println(message);
-			stream.close();
 		} catch (IOException e) {
 			ILog log = Platform.getLog(SandboxHintConsole.class);
 			log.warn("Failed to write to console", e); //$NON-NLS-1$
