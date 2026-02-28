@@ -6,7 +6,7 @@
 
 	<groupId>org.sandbox</groupId>
 	<artifactId>sandbox-maven-plugin</artifactId>
-	<version>1.2.6-SNAPSHOT</version>
+	<version>1.2.6</version>
 	<packaging>maven-plugin</packaging>
 	<name>Sandbox Cleanup Maven Plugin</name>
 	<description>

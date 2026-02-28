@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: use general type tests
 Bundle-SymbolicName: sandbox_use_general_type_test;singleton:=true
-Bundle-Version: 1.2.6.qualifier
+Bundle-Version: 1.2.6
 Fragment-Host: sandbox_use_general_type
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,

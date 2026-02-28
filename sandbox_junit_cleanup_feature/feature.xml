@@ -2,7 +2,7 @@
 <feature
       id="sandbox_junit_cleanup_feature"
       label="Sandbox junit cleanup feature"
-      version="1.2.6.qualifier"
+      version="1.2.6"
       provider-name="sandbox"
       plugin="sandbox_junit_cleanup"
       os="linux,macosx,win32"
@@ -46,6 +46,6 @@
 
    <plugin
          id="sandbox_junit_cleanup"
-         version="1.2.6.qualifier"/>
+         version="1.2.6"/>
 
 </feature>

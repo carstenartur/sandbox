@@ -2,7 +2,7 @@
 <feature
       id="sandbox_use_general_type_feature"
       label="%featureName"
-      version="1.2.6.qualifier"
+      version="1.2.6"
       provider-name="%providerName">
 
    <description>
