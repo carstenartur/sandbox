@@ -1,0 +1,137 @@
+name: Cleanup Old Workflow Runs
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # Run every Sunday at 3 AM UTC
+  workflow_dispatch:
+    inputs:
+      retain_days:
+        description: 'Delete runs older than this many days'
+        required: false
+        type: number
+        default: 30
+      keep_minimum_runs:
+        description: 'Always keep at least this many recent runs per workflow'
+        required: false
+        type: number
+        default: 5
+      dry_run:
+        description: 'Dry run — log what would be deleted without actually deleting'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  actions: write  # Required to delete workflow runs
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 🧹 Delete old workflow runs
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO: ${{ github.repository }}
+        RETAIN_DAYS: ${{ inputs.retain_days || 30 }}
+        KEEP_MINIMUM_RUNS: ${{ inputs.keep_minimum_runs || 5 }}
+        DRY_RUN: ${{ inputs.dry_run || 'false' }}
+      run: |
+        set -euo pipefail
+
+        TOTAL_DELETED=0
+        TOTAL_RETAINED=0
+        SUMMARY_ROWS=""
+
+        # Cutoff timestamp in seconds since epoch
+        CUTOFF=$(date -d "-${RETAIN_DAYS} days" +%s)
+
+        echo "ℹ️  retain_days=${RETAIN_DAYS}  keep_minimum_runs=${KEEP_MINIMUM_RUNS}  dry_run=${DRY_RUN}"
+        echo "ℹ️  Cutoff date: $(date -d "-${RETAIN_DAYS} days" --utc +%Y-%m-%dT%H:%M:%SZ)"
+
+        # Fetch all workflows (paginated)
+        WORKFLOWS=$(gh api "repos/${REPO}/actions/workflows?per_page=100" \
+          --paginate \
+          --jq '.workflows[] | "\(.id)\t\(.name)"')
+
+        while IFS=$'\t' read -r WF_ID WF_NAME; do
+          echo ""
+          echo "▶ Processing workflow: ${WF_NAME} (id=${WF_ID})"
+
+          # Collect all completed run IDs and their created_at timestamps,
+          # newest first (API default ordering is newest-first by created_at)
+          RUNS=$(gh api \
+            "repos/${REPO}/actions/workflows/${WF_ID}/runs?status=completed&per_page=100" \
+            --paginate \
+            --jq '.workflow_runs[] | "\(.id)\t\(.created_at)"')
+
+          # Sanitize workflow name for markdown table (escape pipe characters)
+          WF_NAME_SAFE="${WF_NAME//|/\\|}"
+
+          if [ -z "${RUNS}" ]; then
+            echo "  ℹ️  No completed runs found."
+            SUMMARY_ROWS="${SUMMARY_ROWS}| ${WF_NAME_SAFE} | 0 | 0 |\n"
+            continue
+          fi
+
+          WF_DELETED=0
+          WF_RETAINED=0
+          RUN_INDEX=0
+
+          while IFS=$'\t' read -r RUN_ID RUN_CREATED; do
+            RUN_INDEX=$((RUN_INDEX + 1))
+
+            # Always keep the most recent KEEP_MINIMUM_RUNS runs
+            if [ "${RUN_INDEX}" -le "${KEEP_MINIMUM_RUNS}" ]; then
+              echo "  ✅ Keeping run ${RUN_ID} (${RUN_CREATED}) — within minimum keep count"
+              WF_RETAINED=$((WF_RETAINED + 1))
+              continue
+            fi
+
+            # Check age
+            RUN_TS=$(date -d "${RUN_CREATED}" +%s)
+            if [ "${RUN_TS}" -ge "${CUTOFF}" ]; then
+              echo "  ✅ Keeping run ${RUN_ID} (${RUN_CREATED}) — within retention period"
+              WF_RETAINED=$((WF_RETAINED + 1))
+              continue
+            fi
+
+            # Delete (or dry-run log)
+            if [ "${DRY_RUN}" = "true" ]; then
+              echo "  🔍 [DRY RUN] Would delete run ${RUN_ID} (${RUN_CREATED})"
+            else
+              echo "  🗑️  Deleting run ${RUN_ID} (${RUN_CREATED})"
+              gh api --method DELETE "repos/${REPO}/actions/runs/${RUN_ID}"
+            fi
+            WF_DELETED=$((WF_DELETED + 1))
+          done <<< "${RUNS}"
+
+          echo "  Summary: deleted=${WF_DELETED}  retained=${WF_RETAINED}"
+          TOTAL_DELETED=$((TOTAL_DELETED + WF_DELETED))
+          TOTAL_RETAINED=$((TOTAL_RETAINED + WF_RETAINED))
+          SUMMARY_ROWS="${SUMMARY_ROWS}| ${WF_NAME_SAFE} | ${WF_RETAINED} | ${WF_DELETED} |\n"
+        done <<< "${WORKFLOWS}"
+
+        echo ""
+        echo "✅ Done. Total deleted: ${TOTAL_DELETED}  Total retained: ${TOTAL_RETAINED}"
+
+        # Write step summary
+        {
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "### 🔍 Workflow Runs Cleanup — Dry Run"
+          else
+            echo "### 🧹 Workflow Runs Cleanup"
+          fi
+          echo ""
+          echo "| Setting | Value |"
+          echo "| --- | --- |"
+          echo "| Retain days | ${RETAIN_DAYS} |"
+          echo "| Keep minimum runs | ${KEEP_MINIMUM_RUNS} |"
+          echo "| Dry run | ${DRY_RUN} |"
+          echo ""
+          echo "| Workflow | Retained | Deleted |"
+          echo "| --- | --- | --- |"
+          printf "%b" "${SUMMARY_ROWS}"
+          echo ""
+          echo "| **Total** | **${TOTAL_RETAINED}** | **${TOTAL_DELETED}** |"
+        } >> "${GITHUB_STEP_SUMMARY}"
