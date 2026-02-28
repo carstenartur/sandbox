@@ -57,15 +57,11 @@ final class OffsetRemappingProposal implements ICompletionProposal, ICompletionP
 
 	@Override
 	public void apply(IDocument document) {
-		// Build the replacement text and offset from the delegate's display info
-		// Since the delegate's internal offset is for the synthetic source,
-		// we need to use the extension2 interface when available
-		if (delegate instanceof ICompletionProposalExtension2) {
-			// Let apply(ITextViewer,...) handle it with remapped offset
-			delegate.apply(document);
-		} else {
-			delegate.apply(document);
-		}
+		// When the content assist framework calls this simple apply() method
+		// (without ICompletionProposalExtension2), the delegate's internal
+		// offset targets the synthetic source. For proper offset handling
+		// use the ICompletionProposalExtension2.apply() variant instead.
+		delegate.apply(document);
 	}
 
 	@Override
