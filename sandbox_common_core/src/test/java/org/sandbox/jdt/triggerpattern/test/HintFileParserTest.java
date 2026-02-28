@@ -1496,4 +1496,128 @@ public class HintFileParserTest {
 
 		assertThrows(HintParseException.class, () -> parser.parse(content));
 	}
+
+	// ---- Phase 1: Embedded Java block extraction tests ----
+
+	@Test
+	public void testParseSingleLineEmbeddedJavaBlock() throws HintParseException {
+		String content = """
+			<? import java.util.*; ?>
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		assertEquals(1, hintFile.getEmbeddedJavaBlocks().size());
+
+		var block = hintFile.getEmbeddedJavaBlocks().get(0);
+		assertEquals(" import java.util.*; ", block.getSource());
+		assertEquals(1, block.getStartLine());
+		assertEquals(1, block.getEndLine());
+		assertEquals(1, block.getLineCount());
+	}
+
+	@Test
+	public void testParseMultiLineEmbeddedJavaBlock() throws HintParseException {
+		String content = """
+			<?
+			public boolean customGuard() {
+			    return true;
+			}
+			?>
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		assertEquals(1, hintFile.getEmbeddedJavaBlocks().size());
+
+		var block = hintFile.getEmbeddedJavaBlocks().get(0);
+		assertTrue(block.getSource().contains("customGuard"));
+		assertEquals(1, block.getStartLine());
+		assertEquals(5, block.getEndLine());
+		assertTrue(block.getLineCount() > 1);
+	}
+
+	@Test
+	public void testParseMultipleEmbeddedJavaBlocks() throws HintParseException {
+		String content = """
+			<? import java.util.*; ?>
+			<?
+			public boolean isValid() { return true; }
+			?>
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		assertEquals(2, hintFile.getEmbeddedJavaBlocks().size());
+
+		var block1 = hintFile.getEmbeddedJavaBlocks().get(0);
+		assertEquals(" import java.util.*; ", block1.getSource());
+
+		var block2 = hintFile.getEmbeddedJavaBlocks().get(1);
+		assertTrue(block2.getSource().contains("isValid"));
+	}
+
+	@Test
+	public void testParseEmbeddedJavaBlockWithMetadata() throws HintParseException {
+		String content = """
+			<!id: test.embedded>
+			<!description: Test with embedded Java>
+			<?
+			public boolean myGuard() { return false; }
+			?>
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals("test.embedded", hintFile.getId());
+		assertEquals(1, hintFile.getRules().size());
+		assertEquals(1, hintFile.getEmbeddedJavaBlocks().size());
+		assertTrue(hintFile.getEmbeddedJavaBlocks().get(0).getSource().contains("myGuard"));
+	}
+
+	@Test
+	public void testParseNoEmbeddedJavaBlocks() throws HintParseException {
+		String content = """
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		assertTrue(hintFile.getEmbeddedJavaBlocks().isEmpty());
+	}
+
+	@Test
+	public void testEmbeddedJavaBlockOffsets() throws HintParseException {
+		String content = """
+			<? code ?>
+			$x.equals($y)
+			=> java.util.Objects.equals($x, $y)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getEmbeddedJavaBlocks().size());
+		var block = hintFile.getEmbeddedJavaBlocks().get(0);
+		assertTrue(block.getStartOffset() >= 0);
+		assertTrue(block.getEndOffset() > block.getStartOffset());
+	}
 }

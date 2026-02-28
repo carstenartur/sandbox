@@ -46,20 +46,30 @@ public class SandboxHintPartitionScanner extends RuleBasedPartitionScanner {
 	public static final String METADATA = "__sandbox_hint_metadata"; //$NON-NLS-1$
 
 	/**
+	 * Content type for embedded Java code ({@code <? ?>}) partitions.
+	 *
+	 * @since 1.5.0
+	 */
+	public static final String JAVA_CODE = "__sandbox_hint_java_code"; //$NON-NLS-1$
+
+	/**
 	 * All partition types produced by this scanner.
 	 */
 	public static final String[] PARTITION_TYPES = {
 		COMMENT,
-		METADATA
+		METADATA,
+		JAVA_CODE
 	};
 
 	public SandboxHintPartitionScanner() {
 		IToken commentToken = new Token(COMMENT);
 		IToken metadataToken = new Token(METADATA);
+		IToken javaCodeToken = new Token(JAVA_CODE);
 
 		IPredicateRule[] rules = {
 			new EndOfLineRule("//", commentToken), //$NON-NLS-1$
 			new MultiLineRule("/*", "*/", commentToken), //$NON-NLS-1$ //$NON-NLS-2$
+			new MultiLineRule("<?", "?>", javaCodeToken), //$NON-NLS-1$ //$NON-NLS-2$
 			new MultiLineRule("<!", ">", metadataToken), //$NON-NLS-1$ //$NON-NLS-2$
 		};
 

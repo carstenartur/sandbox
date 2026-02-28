@@ -34,6 +34,14 @@
    </extension>
    
    <extension
+         id="org.sandbox.jdt.triggerpattern.embeddedJavaProblem"
+         point="org.eclipse.core.resources.markers">
+      <super type="org.eclipse.core.resources.problemmarker"/>
+      <super type="org.eclipse.core.resources.textmarker"/>
+      <persistent value="false"/>
+   </extension>
+   
+   <extension
          point="org.eclipse.core.contenttype.contentTypes">
       <content-type
             id="org.sandbox.jdt.triggerpattern.sandboxHintContentType"
@@ -54,5 +62,13 @@
             default="true"
             contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor">
       </editor>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.console.consoleFactories">
+      <consoleFactory
+            class="org.sandbox.jdt.triggerpattern.ui.SandboxHintConsoleFactory"
+            label="Sandbox Hint Execution">
+      </consoleFactory>
    </extension>
 </plugin>
