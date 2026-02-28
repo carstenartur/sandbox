@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.editor;
 
+import org.eclipse.debug.ui.actions.IToggleBreakpointsTarget;
 import org.eclipse.ui.editors.text.TextEditor;
 
 /**
@@ -23,7 +24,9 @@ import org.eclipse.ui.editors.text.TextEditor;
  * <ul>
  *   <li>Syntax highlighting for comments, metadata, guards, operators, placeholders</li>
  *   <li>Content assist after {@code ::} for guard functions from {@link org.sandbox.jdt.triggerpattern.internal.GuardRegistry}</li>
+ *   <li>JDT-powered content assist inside {@code <? ?>} embedded Java blocks</li>
  *   <li>Validation via {@link org.sandbox.jdt.triggerpattern.internal.HintFileParser} with error markers</li>
+ *   <li>Breakpoint support in embedded Java blocks via {@link SandboxHintBreakpointAdapter}</li>
  * </ul>
  *
  * @since 1.3.6
@@ -38,5 +41,14 @@ public class SandboxHintEditor extends TextEditor {
 	public SandboxHintEditor() {
 		setSourceViewerConfiguration(new SandboxHintSourceViewerConfiguration());
 		setDocumentProvider(new SandboxHintDocumentProvider());
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T> T getAdapter(Class<T> adapter) {
+		if (IToggleBreakpointsTarget.class.equals(adapter)) {
+			return (T) new SandboxHintBreakpointAdapter();
+		}
+		return super.getAdapter(adapter);
 	}
 }

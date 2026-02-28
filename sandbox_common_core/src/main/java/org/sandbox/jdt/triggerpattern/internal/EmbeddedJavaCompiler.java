@@ -57,18 +57,47 @@ public final class EmbeddedJavaCompiler {
 	private static final String CLASS_PREFIX = "HintCode_"; //$NON-NLS-1$
 
 	/**
+	 * A source-to-line mapping entry that maps a line in the hint file to
+	 * the corresponding line in the synthetic generated class.
+	 *
+	 * <p>Used by the debugger to set breakpoints and map stack frames.</p>
+	 *
+	 * @param hintFileLine     the 1-based line number in the {@code .sandbox-hint} file
+	 * @param syntheticClassLine the 1-based line number in the generated synthetic class
+	 * @since 1.5.0
+	 */
+	public record SourceLineMapping(int hintFileLine, int syntheticClassLine) {
+	}
+
+	/**
 	 * Result of compiling an embedded Java block.
 	 *
 	 * @param compilationUnit the parsed AST compilation unit
 	 * @param problems        compilation problems (errors and warnings)
 	 * @param guardMethods    method declarations that match the guard function signature
 	 * @param lineOffset      the line offset to map synthetic class lines back to hint file lines
+	 * @param syntheticClassName the fully qualified name of the generated synthetic class
+	 * @param lineMappings    source line mappings from hint file to synthetic class
 	 */
 	public record CompilationResult(
 			CompilationUnit compilationUnit,
 			List<IProblem> problems,
 			List<MethodDeclaration> guardMethods,
-			int lineOffset) {
+			int lineOffset,
+			String syntheticClassName,
+			List<SourceLineMapping> lineMappings) {
+
+		/**
+		 * Backwards-compatible constructor without syntheticClassName and lineMappings.
+		 */
+		public CompilationResult(
+				CompilationUnit compilationUnit,
+				List<IProblem> problems,
+				List<MethodDeclaration> guardMethods,
+				int lineOffset) {
+			this(compilationUnit, problems, guardMethods, lineOffset,
+					"", Collections.emptyList()); //$NON-NLS-1$
+		}
 
 		/**
 		 * Returns {@code true} if compilation produced no errors.
@@ -77,6 +106,38 @@ public final class EmbeddedJavaCompiler {
 		 */
 		public boolean hasErrors() {
 			return problems.stream().anyMatch(IProblem::isError);
+		}
+
+		/**
+		 * Maps a hint file line to the corresponding synthetic class line.
+		 *
+		 * @param hintLine the 1-based line in the hint file
+		 * @return the synthetic class line, or -1 if not mapped
+		 * @since 1.5.0
+		 */
+		public int toSyntheticLine(int hintLine) {
+			for (SourceLineMapping mapping : lineMappings) {
+				if (mapping.hintFileLine() == hintLine) {
+					return mapping.syntheticClassLine();
+				}
+			}
+			return -1;
+		}
+
+		/**
+		 * Maps a synthetic class line to the corresponding hint file line.
+		 *
+		 * @param syntheticLine the 1-based line in the synthetic class
+		 * @return the hint file line, or -1 if not mapped
+		 * @since 1.5.0
+		 */
+		public int toHintLine(int syntheticLine) {
+			for (SourceLineMapping mapping : lineMappings) {
+				if (mapping.syntheticClassLine() == syntheticLine) {
+					return mapping.hintFileLine();
+				}
+			}
+			return -1;
 		}
 	}
 
@@ -108,10 +169,15 @@ public final class EmbeddedJavaCompiler {
 
 		int lineOffset = block.getStartLine() - headerLineCount - 1;
 
+		// Build source line mappings for debugging support
+		String syntheticClassName = SYNTHETIC_PACKAGE + "." + className; //$NON-NLS-1$
+		List<SourceLineMapping> lineMappings = buildLineMappings(block, headerLineCount);
+
 		LOGGER.log(Level.FINE, "Compiled embedded Java block: {0} problems, {1} guard methods", //$NON-NLS-1$
 				new Object[] { problems.size(), guardMethods.size() });
 
-		return new CompilationResult(cu, problems, guardMethods, lineOffset);
+		return new CompilationResult(cu, problems, guardMethods, lineOffset,
+				syntheticClassName, lineMappings);
 	}
 
 	/**
@@ -224,5 +290,28 @@ public final class EmbeddedJavaCompiler {
 			}
 		}
 		return count;
+	}
+
+	/**
+	 * Builds source-to-line mappings for debugging support.
+	 *
+	 * <p>Maps each line in the embedded Java block to the corresponding line
+	 * in the synthetic class source. The header lines added by {@link #buildSyntheticSource}
+	 * shift the embedded code down, so the mapping accounts for this offset.</p>
+	 *
+	 * @param block           the embedded Java block
+	 * @param headerLineCount the number of header lines in the synthetic source
+	 * @return the line mappings
+	 */
+	private static List<SourceLineMapping> buildLineMappings(EmbeddedJavaBlock block,
+			int headerLineCount) {
+		int lineCount = block.getLineCount();
+		List<SourceLineMapping> mappings = new ArrayList<>(lineCount);
+		for (int i = 0; i < lineCount; i++) {
+			int hintLine = block.getStartLine() + i;
+			int syntheticLine = headerLineCount + 1 + i; // +1 for 1-based indexing
+			mappings.add(new SourceLineMapping(hintLine, syntheticLine));
+		}
+		return Collections.unmodifiableList(mappings);
 	}
 }

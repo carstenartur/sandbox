@@ -15,140 +15,146 @@ package org.sandbox.jdt.triggerpattern.editor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.ui.text.java.CompletionProposalCollector;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.contentassist.CompletionProposal;
+import org.eclipse.jface.text.ITypedRegion;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Content assist processor for embedded Java code ({@code <? ?>}) regions
  * in {@code .sandbox-hint} files.
  *
- * <p>Provides completion proposals for:</p>
- * <ul>
- *   <li>Java keywords ({@code public}, {@code boolean}, {@code return}, etc.)</li>
- *   <li>Common JDT AST types used in guard/fix functions</li>
- *   <li>Guard method signature templates</li>
- * </ul>
+ * <p>Delegates to JDT's {@link CompletionProposalCollector} by creating a
+ * synthetic {@link ICompilationUnit} working copy from the embedded Java source.
+ * This provides full context-aware Java completions including all keywords,
+ * types from the project classpath, methods, fields, and local variables.</p>
+ *
+ * <p>The synthetic compilation unit wraps the embedded code in a class body,
+ * matching the structure used by {@link org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler}.</p>
  *
  * @since 1.5.0
  */
 public class EmbeddedJavaContentAssistProcessor implements IContentAssistProcessor {
 
-	/**
-	 * Java keywords commonly used in embedded guard/fix code.
-	 */
-	private static final String[] JAVA_KEYWORDS = {
-		"abstract", //$NON-NLS-1$
-		"boolean", //$NON-NLS-1$
-		"break", //$NON-NLS-1$
-		"case", //$NON-NLS-1$
-		"catch", //$NON-NLS-1$
-		"class", //$NON-NLS-1$
-		"continue", //$NON-NLS-1$
-		"default", //$NON-NLS-1$
-		"do", //$NON-NLS-1$
-		"else", //$NON-NLS-1$
-		"extends", //$NON-NLS-1$
-		"false", //$NON-NLS-1$
-		"final", //$NON-NLS-1$
-		"finally", //$NON-NLS-1$
-		"for", //$NON-NLS-1$
-		"if", //$NON-NLS-1$
-		"implements", //$NON-NLS-1$
-		"import", //$NON-NLS-1$
-		"instanceof", //$NON-NLS-1$
-		"int", //$NON-NLS-1$
-		"interface", //$NON-NLS-1$
-		"new", //$NON-NLS-1$
-		"null", //$NON-NLS-1$
-		"package", //$NON-NLS-1$
-		"private", //$NON-NLS-1$
-		"protected", //$NON-NLS-1$
-		"public", //$NON-NLS-1$
-		"return", //$NON-NLS-1$
-		"static", //$NON-NLS-1$
-		"super", //$NON-NLS-1$
-		"switch", //$NON-NLS-1$
-		"this", //$NON-NLS-1$
-		"throw", //$NON-NLS-1$
-		"throws", //$NON-NLS-1$
-		"true", //$NON-NLS-1$
-		"try", //$NON-NLS-1$
-		"void", //$NON-NLS-1$
-		"while", //$NON-NLS-1$
-	};
+	private static final Logger LOGGER = Logger.getLogger(EmbeddedJavaContentAssistProcessor.class.getName());
+
+	private static final String SYNTHETIC_PACKAGE = "org.sandbox.generated"; //$NON-NLS-1$
+	private static final String SYNTHETIC_CLASS_NAME = "HintCode_assist"; //$NON-NLS-1$
 
 	/**
-	 * Common JDT AST node types used in guard/fix code.
+	 * Header prepended to the embedded Java source to form a valid compilation unit.
+	 * The offset into this header is used to map completion positions.
 	 */
-	private static final String[][] AST_TYPE_PROPOSALS = {
-		{ "ASTNode", "org.eclipse.jdt.core.dom.ASTNode" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "CompilationUnit", "org.eclipse.jdt.core.dom.CompilationUnit" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "MethodDeclaration", "org.eclipse.jdt.core.dom.MethodDeclaration" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "MethodInvocation", "org.eclipse.jdt.core.dom.MethodInvocation" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "TypeDeclaration", "org.eclipse.jdt.core.dom.TypeDeclaration" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "FieldDeclaration", "org.eclipse.jdt.core.dom.FieldDeclaration" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "VariableDeclarationFragment", "org.eclipse.jdt.core.dom.VariableDeclarationFragment" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "SimpleName", "org.eclipse.jdt.core.dom.SimpleName" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "QualifiedName", "org.eclipse.jdt.core.dom.QualifiedName" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "Expression", "org.eclipse.jdt.core.dom.Expression" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "Statement", "org.eclipse.jdt.core.dom.Statement" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "Block", "org.eclipse.jdt.core.dom.Block" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "ITypeBinding", "org.eclipse.jdt.core.dom.ITypeBinding" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "IMethodBinding", "org.eclipse.jdt.core.dom.IMethodBinding" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "IVariableBinding", "org.eclipse.jdt.core.dom.IVariableBinding" }, //$NON-NLS-1$ //$NON-NLS-2$
-	};
+	private static final String SYNTHETIC_HEADER =
+			"package " + SYNTHETIC_PACKAGE + ";\n" + //$NON-NLS-1$ //$NON-NLS-2$
+			"import org.eclipse.jdt.core.dom.*;\n" + //$NON-NLS-1$
+			"public class " + SYNTHETIC_CLASS_NAME + " {\n"; //$NON-NLS-1$ //$NON-NLS-2$
 
-	/**
-	 * Template proposals for guard/fix method signatures.
-	 */
-	private static final String[][] TEMPLATE_PROPOSALS = {
-		{ "guard method", "public boolean ${name}(ASTNode node) {\n    return true;\n}" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "fix method", "public void ${name}(ASTNode node, ASTRewrite rewrite) {\n    // rewrite logic\n}" }, //$NON-NLS-1$ //$NON-NLS-2$
-	};
+	private static final String SYNTHETIC_FOOTER = "\n}\n"; //$NON-NLS-1$
 
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
 		IDocument document = viewer.getDocument();
-		String prefix = extractPrefix(document, offset);
-		String lowerPrefix = prefix.toLowerCase();
 
-		List<ICompletionProposal> proposals = new ArrayList<>();
-
-		// Java keyword proposals
-		for (String keyword : JAVA_KEYWORDS) {
-			if (keyword.startsWith(lowerPrefix)) {
-				proposals.add(createProposal(keyword, keyword, offset, prefix));
-			}
+		// Extract the embedded Java source from the <? ?> partition
+		String javaSource = extractEmbeddedJavaSource(document, offset);
+		if (javaSource == null) {
+			return new ICompletionProposal[0];
 		}
 
-		// AST type proposals
-		for (String[] entry : AST_TYPE_PROPOSALS) {
-			String typeName = entry[0];
-			String fqn = entry[1];
-			if (typeName.toLowerCase().startsWith(lowerPrefix)) {
-				proposals.add(createProposal(typeName, fqn, offset, prefix));
-			}
+		// Calculate offset within the embedded Java source
+		int partitionStart = getPartitionStart(document, offset);
+		int offsetInEmbedded = offset - partitionStart;
+
+		// Build synthetic compilation unit source
+		String syntheticSource = SYNTHETIC_HEADER + javaSource + SYNTHETIC_FOOTER;
+		int syntheticOffset = SYNTHETIC_HEADER.length() + offsetInEmbedded;
+
+		// Try to get an IJavaProject from the active editor
+		IJavaProject javaProject = getJavaProject();
+		if (javaProject == null) {
+			LOGGER.log(Level.FINE, "No IJavaProject available, cannot provide JDT content assist"); //$NON-NLS-1$
+			return new ICompletionProposal[0];
 		}
 
-		// Template proposals (only when prefix is empty or starts with matching text)
-		if (prefix.isEmpty()) {
-			for (String[] entry : TEMPLATE_PROPOSALS) {
-				String label = entry[0];
-				String template = entry[1];
-				proposals.add(new CompletionProposal(
-						template, offset, 0, template.length(),
-						null, label, null, label));
+		return computeJdtProposals(javaProject, syntheticSource, syntheticOffset,
+				offset, offsetInEmbedded);
+	}
+
+	/**
+	 * Delegates to JDT's code completion engine via a synthetic working copy.
+	 */
+	private ICompletionProposal[] computeJdtProposals(IJavaProject javaProject,
+			String syntheticSource, int syntheticOffset, int documentOffset, int offsetInEmbedded) {
+		ICompilationUnit workingCopy = null;
+		try {
+			// Find or create a source folder for the synthetic unit
+			IPackageFragmentRoot[] roots = javaProject.getPackageFragmentRoots();
+			IPackageFragmentRoot sourceRoot = null;
+			for (IPackageFragmentRoot root : roots) {
+				if (root.getKind() == IPackageFragmentRoot.K_SOURCE) {
+					sourceRoot = root;
+					break;
+				}
+			}
+			if (sourceRoot == null) {
+				LOGGER.log(Level.FINE, "No source root found in project"); //$NON-NLS-1$
+				return new ICompletionProposal[0];
+			}
+
+			IPackageFragment pkg = sourceRoot.getPackageFragment(SYNTHETIC_PACKAGE);
+			ICompilationUnit originalUnit = pkg.getCompilationUnit(SYNTHETIC_CLASS_NAME + ".java"); //$NON-NLS-1$
+			workingCopy = originalUnit.getWorkingCopy(null);
+			workingCopy.getBuffer().setContents(syntheticSource);
+
+			// Collect proposals via JDT's CompletionProposalCollector
+			CompletionProposalCollector collector = new CompletionProposalCollector(workingCopy);
+			collector.setReplacementLength(0);
+
+			workingCopy.codeComplete(syntheticOffset, collector);
+
+			ICompletionProposal[] jdtProposals = collector.getJavaCompletionProposals();
+
+			// Remap proposal offsets from synthetic source back to the hint document
+			int offsetDelta = documentOffset - syntheticOffset;
+			List<ICompletionProposal> remapped = new ArrayList<>(jdtProposals.length);
+			for (ICompletionProposal proposal : jdtProposals) {
+				remapped.add(new OffsetRemappingProposal(proposal, offsetDelta));
+			}
+			return remapped.toArray(new ICompletionProposal[0]);
+
+		} catch (JavaModelException e) {
+			LOGGER.log(Level.WARNING, "JDT code completion failed", e); //$NON-NLS-1$
+			return new ICompletionProposal[0];
+		} finally {
+			if (workingCopy != null) {
+				try {
+					workingCopy.discardWorkingCopy();
+				} catch (JavaModelException e) {
+					LOGGER.log(Level.FINE, "Failed to discard working copy", e); //$NON-NLS-1$
+				}
 			}
 		}
-
-		return proposals.toArray(new ICompletionProposal[0]);
 	}
 
 	@Override
@@ -176,31 +182,65 @@ public class EmbeddedJavaContentAssistProcessor implements IContentAssistProcess
 		return null;
 	}
 
-	private ICompletionProposal createProposal(String replacement, String displayString,
-			int offset, String prefix) {
-		int replacementOffset = offset - prefix.length();
-		int replacementLength = prefix.length();
-		return new CompletionProposal(
-				replacement, replacementOffset, replacementLength,
-				replacement.length(), null, displayString, null, null);
+	/**
+	 * Extracts the full embedded Java source from the {@code <? ?>} partition
+	 * containing the given offset.
+	 */
+	private String extractEmbeddedJavaSource(IDocument document, int offset) {
+		try {
+			ITypedRegion partition = document.getPartition(offset);
+			if (!SandboxHintPartitionScanner.JAVA_CODE.equals(partition.getType())) {
+				return null;
+			}
+			String partitionText = document.get(partition.getOffset(), partition.getLength());
+			// Strip the <? and ?> delimiters
+			if (partitionText.startsWith("<?") && partitionText.endsWith("?>")) { //$NON-NLS-1$ //$NON-NLS-2$
+				return partitionText.substring(2, partitionText.length() - 2);
+			}
+			return partitionText;
+		} catch (BadLocationException e) {
+			return null;
+		}
 	}
 
 	/**
-	 * Extracts the word prefix before the cursor position.
+	 * Returns the start offset of the embedded Java content (after the {@code <?} delimiter).
 	 */
-	private String extractPrefix(IDocument document, int offset) {
+	private int getPartitionStart(IDocument document, int offset) {
 		try {
-			int start = offset;
-			while (start > 0) {
-				char c = document.getChar(start - 1);
-				if (!Character.isLetterOrDigit(c) && c != '_') {
-					break;
-				}
-				start--;
-			}
-			return document.get(start, offset - start);
+			ITypedRegion partition = document.getPartition(offset);
+			String partitionText = document.get(partition.getOffset(), partition.getLength());
+			// Account for the <? delimiter
+			int delimiterLength = partitionText.startsWith("<?") ? 2 : 0; //$NON-NLS-1$
+			return partition.getOffset() + delimiterLength;
 		} catch (BadLocationException e) {
-			return ""; //$NON-NLS-1$
+			return offset;
 		}
+	}
+
+	/**
+	 * Attempts to obtain the {@link IJavaProject} from the active editor.
+	 */
+	private IJavaProject getJavaProject() {
+		try {
+			IEditorPart editor = PlatformUI.getWorkbench()
+					.getActiveWorkbenchWindow()
+					.getActivePage()
+					.getActiveEditor();
+			if (editor == null) {
+				return null;
+			}
+			IEditorInput input = editor.getEditorInput();
+			if (input instanceof IFileEditorInput fileInput) {
+				IFile file = fileInput.getFile();
+				IProject project = file.getProject();
+				if (project.hasNature(JavaCore.NATURE_ID)) {
+					return JavaCore.create(project);
+				}
+			}
+		} catch (Exception e) {
+			LOGGER.log(Level.FINE, "Could not determine Java project", e); //$NON-NLS-1$
+		}
+		return null;
 	}
 }
