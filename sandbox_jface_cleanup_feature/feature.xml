@@ -2,7 +2,7 @@
 <feature
       id="sandbox_jface_cleanup_feature"
       label="Sandbox jface cleanup feature"
-      version="1.2.6.qualifier"
+      version="1.3.0"
       provider-name="sandbox"
       plugin="sandbox_jface_cleanup">
 
@@ -39,6 +39,6 @@
 
    <plugin
          id="sandbox_jface_cleanup"
-         version="1.2.6.qualifier"/>
+         version="1.3.0"/>
 
 </feature>

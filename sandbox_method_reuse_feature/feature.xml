@@ -2,7 +2,7 @@
 <feature
       id="sandbox_method_reuse_feature"
       label="Sandbox method reuse feature"
-      version="1.2.6.qualifier"
+      version="1.3.0"
       provider-name="sandbox"
       plugin="sandbox_method_reuse">
 
@@ -38,6 +38,6 @@
 
    <plugin
          id="sandbox_method_reuse"
-         version="1.2.6.qualifier"/>
+         version="1.3.0"/>
 
 </feature>
