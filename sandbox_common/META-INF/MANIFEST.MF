@@ -31,7 +31,8 @@ Require-Bundle: sandbox_common_core;visibility:=reexport,
  org.eclipse.debug.core,
  org.eclipse.debug.ui,
  org.eclipse.jdt.debug,
- org.eclipse.jdt.launching
+ org.eclipse.jdt.launching,
+ org.eclipse.ui.views
 Automatic-Module-Name: sandbox.common
 Export-Package: org.sandbox.jdt.internal.corext.fix2,
  org.sandbox.jdt.internal.corext.util,

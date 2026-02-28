@@ -19,6 +19,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.contentassist.ContentAssistant;
 import org.eclipse.jface.text.contentassist.IContentAssistant;
+import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.presentation.IPresentationReconciler;
 import org.eclipse.jface.text.presentation.PresentationReconciler;
 import org.eclipse.jface.text.reconciler.IReconciler;
@@ -42,6 +43,7 @@ import org.eclipse.swt.widgets.Display;
  *   <li>Content assist for guard functions after {@code ::} and Java completions in {@code <? ?>} blocks</li>
  *   <li>Background reconciling for validation with error markers</li>
  *   <li>Annotation hover for embedded Java compile errors</li>
+ *   <li>Hyperlink detection for navigating to guard function definitions</li>
  * </ul>
  *
  * @since 1.3.6
@@ -120,5 +122,20 @@ public class SandboxHintSourceViewerConfiguration extends SourceViewerConfigurat
 		MonoReconciler reconciler = new MonoReconciler(strategy, false);
 		reconciler.setDelay(500);
 		return reconciler;
+	}
+
+	@Override
+	public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
+		// Keep default detectors and add the guard function hyperlink detector
+		IHyperlinkDetector[] defaults = super.getHyperlinkDetectors(sourceViewer);
+		IHyperlinkDetector[] result;
+		if (defaults != null) {
+			result = new IHyperlinkDetector[defaults.length + 1];
+			System.arraycopy(defaults, 0, result, 0, defaults.length);
+			result[defaults.length] = new SandboxHintHyperlinkDetector();
+		} else {
+			result = new IHyperlinkDetector[] { new SandboxHintHyperlinkDetector() };
+		}
+		return result;
 	}
 }
