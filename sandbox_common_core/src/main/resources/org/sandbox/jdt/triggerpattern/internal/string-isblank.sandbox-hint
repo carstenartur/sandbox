@@ -1,0 +1,28 @@
+// string-isblank.sandbox-hint — String Blank/Trim Patterns
+// Replaces trim/strip + isEmpty patterns with String.isBlank() (Java 11+)
+
+<!id: string-isblank>
+<!description: Replace trim/strip + isEmpty patterns with String.isBlank()>
+<!severity: info>
+<!minJavaVersion: 11>
+<!tags: modernization, strings, java11>
+
+// $str.trim().isEmpty() → $str.isBlank()
+$str.trim().isEmpty() :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+// $str.trim().length() == 0 → $str.isBlank()
+$str.trim().length() == 0 :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+// $str.strip().isEmpty() → $str.isBlank()
+$str.strip().isEmpty() :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+// "".equals($str.trim()) → $str.isBlank()
+"".equals($str.trim()) :: sourceVersionGE(11)
+=> $str.isBlank()
+;;

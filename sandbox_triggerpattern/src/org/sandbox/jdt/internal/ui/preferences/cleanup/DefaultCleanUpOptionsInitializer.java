@@ -36,5 +36,11 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11, CleanUpOptions.TRUE);
 		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_ENCODING, CleanUpOptions.TRUE);
 		options.setOption(MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.WRONG_STRING_COMPARISON_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.PRINT_STACKTRACE_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.SYSTEM_OUT_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.OBSOLETE_COLLECTION_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.MISSING_HASHCODE_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP, CleanUpOptions.FALSE);
 	}
 }

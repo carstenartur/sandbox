@@ -175,6 +175,16 @@ public final class BuiltInGuards {
 
 		// Throws guard — checks if enclosing method declares a throws clause
 		guards.put("throwsException", BuiltInGuards::evaluateThrowsException); //$NON-NLS-1$
+
+		// Variable kind guards — check if a binding is a parameter or field
+		guards.put("isParameter", BuiltInGuards::evaluateIsParameter); //$NON-NLS-1$
+		guards.put("isField", BuiltInGuards::evaluateIsField); //$NON-NLS-1$
+
+		// Constructor context guard — checks if matched node is inside a constructor
+		guards.put("isInConstructor", BuiltInGuards::evaluateIsInConstructor); //$NON-NLS-1$
+
+		// Method override guard — checks if enclosing class overrides a given method
+		guards.put("classOverrides", BuiltInGuards::evaluateClassOverrides); //$NON-NLS-1$
 	}
 
 	/**
@@ -1796,6 +1806,137 @@ public final class BuiltInGuards {
 				if (targetType.equals(typeName)) {
 					return true;
 				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if a binding is a method parameter.
+	 *
+	 * <p>Uses {@link IVariableBinding#isParameter()} when binding resolution is available.
+	 * Falls back to checking if the AST node is a {@link SingleVariableDeclaration}
+	 * inside a {@link MethodDeclaration}.</p>
+	 *
+	 * Args: [placeholderName]
+	 * @since 1.4.2
+	 */
+	private static boolean evaluateIsParameter(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		IBinding binding = resolveBinding(node);
+		if (binding instanceof IVariableBinding vb) {
+			return vb.isParameter();
+		}
+		// Fallback: check AST structure
+		if (node instanceof SingleVariableDeclaration) {
+			return node.getParent() instanceof MethodDeclaration;
+		}
+		if (node instanceof SimpleName simpleName) {
+			ASTNode parent = simpleName.getParent();
+			if (parent instanceof SingleVariableDeclaration svd) {
+				return svd.getParent() instanceof MethodDeclaration;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if a binding is a field (instance or static).
+	 *
+	 * <p>Uses {@link IVariableBinding#isField()} when binding resolution is available.
+	 * Falls back to checking if the AST node is inside a {@link FieldDeclaration}.</p>
+	 *
+	 * Args: [placeholderName]
+	 * @since 1.4.2
+	 */
+	private static boolean evaluateIsField(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		IBinding binding = resolveBinding(node);
+		if (binding instanceof IVariableBinding vb) {
+			return vb.isField();
+		}
+		// Fallback: check AST structure
+		if (node instanceof FieldDeclaration) {
+			return true;
+		}
+		if (node instanceof VariableDeclarationFragment vdf) {
+			return vdf.getParent() instanceof FieldDeclaration;
+		}
+		if (node instanceof SimpleName simpleName) {
+			ASTNode parent = simpleName.getParent();
+			if (parent instanceof VariableDeclarationFragment vdf) {
+				return vdf.getParent() instanceof FieldDeclaration;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the matched node is inside a constructor.
+	 *
+	 * <p>Walks up the AST from the matched node looking for a
+	 * {@link MethodDeclaration} that {@linkplain MethodDeclaration#isConstructor() is a constructor}.</p>
+	 *
+	 * <p>This guard takes no arguments — it operates on the matched node context.</p>
+	 *
+	 * Args: (none)
+	 * @since 1.4.2
+	 */
+	private static boolean evaluateIsInConstructor(GuardContext ctx, Object... args) {
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		ASTNode current = node;
+		while (current != null) {
+			if (current instanceof MethodDeclaration methodDecl) {
+				return methodDecl.isConstructor();
+			}
+			current = current.getParent();
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the enclosing class overrides a given method name.
+	 *
+	 * <p>Scans the enclosing {@link TypeDeclaration} for a method with the given name.
+	 * This is a structural check — it does not verify that the method actually overrides
+	 * a superclass method (that would require full type hierarchy resolution).</p>
+	 *
+	 * Args: [methodName]
+	 * @since 1.4.2
+	 */
+	private static boolean evaluateClassOverrides(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String methodName = stripQuotes(args[0].toString());
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);
+		if (typeDecl == null) {
+			return false;
+		}
+		for (MethodDeclaration method : typeDecl.getMethods()) {
+			if (methodName.equals(method.getName().getIdentifier())) {
+				return true;
 			}
 		}
 		return false;

@@ -20,22 +20,27 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_B
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_ENCODING;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STREAM_PERFORMANCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_IO_PERFORMANCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_PERFORMANCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_NUMBER_COMPARE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STRING_EQUALS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STRING_ISBLANK;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_ARRAYS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_TOARRAY;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_PROBABLE_BUGS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_MISC;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_DEPRECATIONS;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_CLASSFILE_API;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_SERIALIZATION;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
-import org.eclipse.jdt.ui.cleanup.CleanUpContext;
-import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
-import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
+import org.sandbox.jdt.triggerpattern.eclipse.CleanUpResult;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /**
@@ -51,7 +56,7 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
  *
  * @since 1.3.5
  */
-public class HintFileCleanUpCore extends AbstractCleanUp {
+public class HintFileCleanUpCore extends AbstractSandboxCleanUpCore {
 
 	public HintFileCleanUpCore(final Map<String, String> options) {
 		super(options);
@@ -61,48 +66,25 @@ public class HintFileCleanUpCore extends AbstractCleanUp {
 	}
 
 	@Override
-	public CleanUpRequirements getRequirements() {
-		return new CleanUpRequirements(requireAST(), false, false, null);
-	}
-
-	public boolean requireAST() {
-		return isEnabled(HINTFILE_CLEANUP);
+	protected String getCleanUpKey() {
+		return HINTFILE_CLEANUP;
 	}
 
 	@Override
-	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-		CompilationUnit compilationUnit = context.getAST();
-		if (compilationUnit == null) {
-			return null;
-		}
+	protected String getFixLabel() {
+		return MultiFixMessages.HintFileCleanUpFix_refactor;
+	}
 
-		if (!isEnabled(HINTFILE_CLEANUP)) {
-			return null;
-		}
+	@Override
+	protected String getDescription() {
+		return MultiFixMessages.HintFileCleanUp_description;
+	}
 
-		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
+	@Override
+	protected void detect(CompilationUnit cu, CleanUpResult result) {
 		Set<String> enabledBundles = getEnabledBundles();
-		HintFileFixCore.findOperations(compilationUnit, operations, enabledBundles);
-
-		if (operations.isEmpty()) {
-			return null;
-		}
-
-		CompilationUnitRewriteOperation[] array = operations.toArray(
-				new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
-		return new CompilationUnitRewriteOperationsFixCore(
-				MultiFixMessages.HintFileCleanUpFix_refactor,
-				compilationUnit,
-				array);
-	}
-
-	@Override
-	public String[] getStepDescriptions() {
-		List<String> result = new ArrayList<>();
-		if (isEnabled(HINTFILE_CLEANUP)) {
-			result.add(MultiFixMessages.HintFileCleanUp_description);
-		}
-		return result.toArray(new String[0]);
+		HintFileFixCore.findOperations(cu, result.getOperations(),
+				enabledBundles, result.getFindings());
 	}
 
 	/**
@@ -136,6 +118,45 @@ public class HintFileCleanUpCore extends AbstractCleanUp {
 			// assume5 and annotations5 are part of the JUnit 4→5 migration bundle
 			enabled.add("assume5"); //$NON-NLS-1$
 			enabled.add("annotations5"); //$NON-NLS-1$
+		}
+		if (isEnabled(HINTFILE_BUNDLE_STREAM_PERFORMANCE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STREAM_PERFORMANCE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_IO_PERFORMANCE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_IO_PERFORMANCE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_COLLECTION_PERFORMANCE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTION_PERFORMANCE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_NUMBER_COMPARE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_NUMBER_COMPARE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_STRING_EQUALS)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_EQUALS);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_STRING_ISBLANK)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_ISBLANK);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_ARRAYS)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_ARRAYS);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_COLLECTION_TOARRAY)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTION_TOARRAY);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_PROBABLE_BUGS)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PROBABLE_BUGS);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_MISC)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MISC);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_DEPRECATIONS)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_DEPRECATIONS);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_CLASSFILE_API)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_CLASSFILE_API);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_SERIALIZATION)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_SERIALIZATION);
 		}
 		return enabled;
 	}

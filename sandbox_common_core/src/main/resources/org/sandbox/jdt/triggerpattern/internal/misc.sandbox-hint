@@ -1,0 +1,39 @@
+// misc.sandbox-hint — Miscellaneous Improvements
+// Various code simplification and improvement patterns
+
+<!id: misc>
+<!description: Miscellaneous code improvement patterns>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: simplification, misc>
+
+// $bool ? true : false → $bool
+$bool ? true : false
+=> $bool
+;;
+
+// $bool ? false : true → !$bool
+$bool ? false : true
+=> !$bool
+;;
+
+// $enum.ordinal() == $other.ordinal() → $enum == $other
+// Enums use identity comparison; comparing ordinals is unnecessary
+$enum.ordinal() == $other.ordinal()
+=> $enum == $other
+;;
+
+// Hint-only: redundant toString() on a String
+"Redundant toString() call on a String value":
+$x.toString()
+;;
+
+// Hint-only: redundant String.valueOf() on a String
+"Redundant String.valueOf() on a value that is already a String":
+java.lang.String.valueOf($str)
+;;
+
+// Hint-only: if/return boolean pattern
+"Consider simplifying to: return $cond":
+if ($cond) return true; else return false;
+;;

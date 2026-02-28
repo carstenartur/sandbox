@@ -51,6 +51,7 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.Transform
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
@@ -72,7 +73,9 @@ public class HintFileFixCore {
 	 *
 	 * <p>Loads all registered {@code .sandbox-hint} files from the
 	 * {@link HintFileRegistry}, processes them with {@link BatchTransformationProcessor},
-	 * and creates rewrite operations for each match with a replacement.</p>
+	 * and creates rewrite operations for each match with a replacement.
+	 * Hint-only results (rules without replacement) are silently discarded.
+	 * Use the four-parameter overload to collect hint-only findings.</p>
 	 *
 	 * @param compilationUnit the compilation unit to search
 	 * @param operations the set to add found operations to
@@ -83,6 +86,27 @@ public class HintFileFixCore {
 	public static void findOperations(CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations,
 			Set<String> enabledBundles) {
+		findOperations(compilationUnit, operations, enabledBundles, null);
+	}
+
+	/**
+	 * Finds all hint-file-based cleanup operations for the given compilation unit,
+	 * collecting hint-only results into the provided findings list.
+	 *
+	 * <p>Rules with a replacement produce rewrite operations. Rules without a
+	 * replacement (hint-only) produce {@link HintFinding} entries that can be
+	 * reported as problem markers.</p>
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param operations the set to add found rewrite operations to
+	 * @param enabledBundles set of enabled bundled hint file IDs
+	 * @param findings list to collect hint-only findings into; may be {@code null}
+	 *        to discard hint-only results (backward compatible)
+	 */
+	public static void findOperations(CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperation> operations,
+			Set<String> enabledBundles,
+			List<HintFinding> findings) {
 
 		// Ensure built-in guard functions (sourceVersionGE, etc.) are registered
 		GuardRegistry.getInstance();
@@ -118,6 +142,8 @@ public class HintFileFixCore {
 			for (TransformationResult result : results) {
 				if (result.hasReplacement()) {
 					operations.add(new HintFileRewriteOperation(result));
+				} else if (findings != null) {
+					findings.add(HintFinding.fromTransformationResult(result, compilationUnit));
 				}
 			}
 		}
@@ -454,7 +480,6 @@ public class HintFileFixCore {
 		 * @param rewrite the AST rewriter
 		 * @param cuRewrite the compilation unit rewrite context
 		 * @param group the text edit group
-		 * @since 1.3.9
 		 */
 		@SuppressWarnings("unchecked")
 		private void handleMethodDeclarationRewrite(ASTNode matchedNode, String replacement,

@@ -26,6 +26,18 @@ public class MultiFixMessages extends NLS {
 	public static String ShiftOutOfRangeCleanUpFix_refactor;
 	public static String HintFileCleanUp_description;
 	public static String HintFileCleanUpFix_refactor;
+	public static String WrongStringComparisonCleanUp_description;
+	public static String WrongStringComparisonCleanUpFix_refactor;
+	public static String PrintStackTraceCleanUp_description;
+	public static String PrintStackTraceCleanUpFix_refactor;
+	public static String SystemOutCleanUp_description;
+	public static String SystemOutCleanUpFix_refactor;
+	public static String ObsoleteCollectionCleanUp_description;
+	public static String ObsoleteCollectionCleanUpFix_refactor;
+	public static String MissingHashCodeCleanUp_description;
+	public static String MissingHashCodeCleanUpFix_refactor;
+	public static String OverridableCallInConstructorCleanUp_description;
+	public static String OverridableCallInConstructorCleanUpFix_refactor;
 
 	static {
 		// initialize resource bundle

@@ -52,6 +52,14 @@
 - ✅ **Phase 3.5**: `throwsException("type")` guard — checks method throws clause
 - ✅ **Phase 3.6**: Serializer enhancements — emits ruleId, per-rule severity, suppressWarnings, treeKind
 
+### Recently Completed (Java-coded Cleanups for Complex Analysis)
+- ✅ `WrongStringComparisonCleanUp` — detects `str == "literal"` → replaces with `"literal".equals(str)`
+- ✅ `PrintStackTraceCleanUp` — hint-only: detects `ex.printStackTrace()` calls
+- ✅ `SystemOutCleanUp` — hint-only: detects `System.out/err.println()` calls
+- ✅ `ObsoleteCollectionCleanUp` — hint-only: warns on `Vector`, `Hashtable`, `Stack` usage
+- ✅ `MissingHashCodeCleanUp` — hint-only: detects `equals()` without `hashCode()` override
+- ✅ `OverridableCallInConstructorCleanUp` — hint-only: warns on overridable method calls in constructors
+
 ### Pending
 - [ ] Create dedicated test module for unit testing utilities
 - [ ] Extract additional shared utilities from individual plugins

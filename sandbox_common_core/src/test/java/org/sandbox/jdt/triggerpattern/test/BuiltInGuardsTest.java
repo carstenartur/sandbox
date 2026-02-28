@@ -128,6 +128,10 @@ public class BuiltInGuardsTest {
 		assertTrue(guards.containsKey("isPrivate")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("isProtected")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("throwsException")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isParameter")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isField")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("isInConstructor")); //$NON-NLS-1$
+		assertTrue(guards.containsKey("classOverrides")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -1434,6 +1438,175 @@ public class BuiltInGuardsTest {
 		assertTrue(guards.containsKey("isPrivate")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("isProtected")); //$NON-NLS-1$
 		assertTrue(guards.containsKey("throwsException")); //$NON-NLS-1$
+	}
+
+	// --- Tests for Phase 2 guards ---
+
+	@Test
+	public void testIsParameterWithParameter() {
+		GuardFunction isParameter = guards.get("isParameter"); //$NON-NLS-1$
+		String code = "class Test { void doSomething(String param) { System.out.println(param); } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		// Get the parameter's SimpleName
+		org.eclipse.jdt.core.dom.SingleVariableDeclaration paramDecl =
+				(org.eclipse.jdt.core.dom.SingleVariableDeclaration) method.parameters().get(0);
+		ASTNode paramName = paramDecl.getName();
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", paramName); //$NON-NLS-1$
+		Match match = new Match(paramName, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isParameter.evaluate(ctx, "$x"), //$NON-NLS-1$
+				"Parameter binding should be recognized as parameter"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsParameterWithLocalVariable() {
+		GuardFunction isParameter = guards.get("isParameter"); //$NON-NLS-1$
+		String code = "class Test { void doSomething() { int local = 42; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode localName = findSimpleNameInNode(method, "local"); //$NON-NLS-1$
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", localName); //$NON-NLS-1$
+		Match match = new Match(localName, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isParameter.evaluate(ctx, "$x"), //$NON-NLS-1$
+				"Local variable should not be recognized as parameter"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsParameterInsufficientArgs() {
+		GuardFunction isParameter = guards.get("isParameter"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(isParameter.evaluate(ctx), "Should return false with no args"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsFieldWithField() {
+		GuardFunction isField = guards.get("isField"); //$NON-NLS-1$
+		String code = "class Test { String name = \"test\"; }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		ASTNode fieldName = findSimpleNameInNode(typeDecl, "name"); //$NON-NLS-1$
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", fieldName); //$NON-NLS-1$
+		Match match = new Match(fieldName, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isField.evaluate(ctx, "$x"), //$NON-NLS-1$
+				"Field binding should be recognized as field"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsFieldWithLocalVariable() {
+		GuardFunction isField = guards.get("isField"); //$NON-NLS-1$
+		String code = "class Test { void m() { int local = 42; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode localName = findSimpleNameInNode(method, "local"); //$NON-NLS-1$
+
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", localName); //$NON-NLS-1$
+		Match match = new Match(localName, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isField.evaluate(ctx, "$x"), //$NON-NLS-1$
+				"Local variable should not be recognized as field"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsFieldInsufficientArgs() {
+		GuardFunction isField = guards.get("isField"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(isField.evaluate(ctx), "Should return false with no args"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsInConstructorInsideConstructor() {
+		GuardFunction isInConstructor = guards.get("isInConstructor"); //$NON-NLS-1$
+		String code = "class Test { Test() { int x = 0; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration constructor = typeDecl.getMethods()[0];
+		// Get a node inside the constructor body
+		ASTNode nodeInConstructor = findSimpleNameInNode(constructor, "x"); //$NON-NLS-1$
+
+		Match match = new Match(nodeInConstructor, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(isInConstructor.evaluate(ctx),
+				"Node inside constructor should be detected"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsInConstructorInsideMethod() {
+		GuardFunction isInConstructor = guards.get("isInConstructor"); //$NON-NLS-1$
+		String code = "class Test { void method() { int x = 0; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration method = typeDecl.getMethods()[0];
+		ASTNode nodeInMethod = findSimpleNameInNode(method, "x"); //$NON-NLS-1$
+
+		Match match = new Match(nodeInMethod, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(isInConstructor.evaluate(ctx),
+				"Node inside regular method should not be detected as constructor"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testClassOverridesWithExistingMethod() {
+		GuardFunction classOverrides = guards.get("classOverrides"); //$NON-NLS-1$
+		String code = "class Test { public boolean equals(Object o) { return false; } public int hashCode() { return 0; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration equalsMethod = typeDecl.getMethods()[0];
+
+		Match match = new Match(equalsMethod, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertTrue(classOverrides.evaluate(ctx, "hashCode"), //$NON-NLS-1$
+				"Class should be detected as having hashCode method"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testClassOverridesWithMissingMethod() {
+		GuardFunction classOverrides = guards.get("classOverrides"); //$NON-NLS-1$
+		String code = "class Test { public boolean equals(Object o) { return false; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithBindings(code);
+		TypeDeclaration typeDecl = (TypeDeclaration) cu.types().get(0);
+		MethodDeclaration equalsMethod = typeDecl.getMethods()[0];
+
+		Match match = new Match(equalsMethod, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+
+		assertFalse(classOverrides.evaluate(ctx, "hashCode"), //$NON-NLS-1$
+				"Class should not be detected as having hashCode when it's missing"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testClassOverridesInsufficientArgs() {
+		GuardFunction classOverrides = guards.get("classOverrides"); //$NON-NLS-1$
+		ASTNode dummyNode = createDummyNode();
+		Match match = new Match(dummyNode, new HashMap<>(), 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+
+		assertFalse(classOverrides.evaluate(ctx), "Should return false with no args"); //$NON-NLS-1$
 	}
 
 	// --- Original helper methods ---

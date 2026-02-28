@@ -1,0 +1,19 @@
+// classfile-api.sandbox-hint — Java ClassFile API and Reflection Patterns
+// Identifies deprecated reflection patterns and suggests modern alternatives
+
+<!id: classfile-api>
+<!description: Java reflection and ClassFile API modernization patterns>
+<!severity: info>
+<!minJavaVersion: 9>
+<!tags: modernization, reflection>
+
+// Class.forName($name).newInstance() → use Constructor.newInstance()
+// Class.newInstance() is deprecated since Java 9
+"Class.newInstance() is deprecated since Java 9 — use getDeclaredConstructor().newInstance()":
+java.lang.Class.forName($name).newInstance() :: sourceVersionGE(9)
+;;
+
+// $class.newInstance() → use getDeclaredConstructor().newInstance()
+"Class.newInstance() is deprecated since Java 9 — use getDeclaredConstructor().newInstance()":
+$class.newInstance() :: sourceVersionGE(9)
+;;

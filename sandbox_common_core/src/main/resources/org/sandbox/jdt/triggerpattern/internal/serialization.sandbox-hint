@@ -1,0 +1,18 @@
+// serialization.sandbox-hint — Serialization Best Practices
+// Detects common serialization pitfalls and suggests improvements
+
+<!id: serialization>
+<!description: Serialization best practices and performance patterns>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: serialization, performance>
+
+// Hint-only: ObjectOutputStream wrapping unbuffered FileOutputStream
+"ObjectOutputStream wrapping FileOutputStream — consider adding BufferedOutputStream for performance":
+new java.io.ObjectOutputStream(new java.io.FileOutputStream($f))
+;;
+
+// Hint-only: ObjectInputStream wrapping unbuffered FileInputStream
+"ObjectInputStream wrapping FileInputStream — consider adding BufferedInputStream for performance":
+new java.io.ObjectInputStream(new java.io.FileInputStream($f))
+;;

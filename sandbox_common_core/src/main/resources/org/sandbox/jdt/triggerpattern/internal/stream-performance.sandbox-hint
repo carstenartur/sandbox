@@ -1,0 +1,48 @@
+// stream-performance.sandbox-hint — Stream API Performance
+// Identifies inefficient stream usage patterns and suggests more performant alternatives
+
+<!id: stream-performance>
+<!description: Stream API performance optimization patterns>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: performance, streams>
+
+// $stream.filter($pred).findFirst().isPresent() → $stream.anyMatch($pred)
+$stream.filter($pred).findFirst().isPresent() :: sourceVersionGE(8)
+=> $stream.anyMatch($pred)
+;;
+
+// $stream.filter($pred).findAny().isPresent() → $stream.anyMatch($pred)
+$stream.filter($pred).findAny().isPresent() :: sourceVersionGE(8)
+=> $stream.anyMatch($pred)
+;;
+
+// $stream.filter($pred).count() > 0 → $stream.anyMatch($pred)
+$stream.filter($pred).count() > 0 :: sourceVersionGE(8)
+=> $stream.anyMatch($pred)
+;;
+
+// $stream.filter($pred).count() == 0 → $stream.noneMatch($pred)
+$stream.filter($pred).count() == 0 :: sourceVersionGE(8)
+=> $stream.noneMatch($pred)
+;;
+
+// $collection.stream().forEach($action) → $collection.forEach($action)
+$collection.stream().forEach($action) :: sourceVersionGE(8)
+=> $collection.forEach($action)
+;;
+
+// Hint-only: $stream.sorted() before collect may be unnecessary
+"Unnecessary sort before collect — consider removing sorted() if order does not matter":
+$stream.sorted().collect($collector) :: sourceVersionGE(8)
+;;
+
+// Hint-only: nested flatMap may indicate overly complex pipeline
+"Nested flatMap() calls — consider simplifying the stream pipeline":
+$stream.flatMap($f).flatMap($g) :: sourceVersionGE(8)
+;;
+
+// Hint-only: IntStream.range for array iteration can use Arrays.stream
+"Consider using Arrays.stream($arr) instead of IntStream.range with array indexing":
+java.util.stream.IntStream.range(0, $arr.length).mapToObj($mapper) :: sourceVersionGE(8)
+;;
