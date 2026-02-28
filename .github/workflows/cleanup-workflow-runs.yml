@@ -9,12 +9,12 @@ on:
         description: 'Delete runs older than this many days'
         required: false
         type: number
-        default: 30
+        default: '30'
       keep_minimum_runs:
         description: 'Always keep at least this many recent runs per workflow'
         required: false
         type: number
-        default: 5
+        default: '5'
       dry_run:
         description: 'Dry run — log what would be deleted without actually deleting'
         required: false
