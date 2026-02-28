@@ -93,11 +93,11 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		// Need to explicitly match all three annotation types
 <span class="fc" id="L94">		return List.of(</span>
 				// Match @Ignore (MarkerAnnotation)
-<span class="fc" id="L96">				new Pattern(&quot;@Ignore&quot;, PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),</span>
+<span class="fc" id="L96">				new Pattern(&quot;@Ignore&quot;, PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null),</span>
 				// Match @Ignore(&quot;reason&quot;) (SingleMemberAnnotation)
-<span class="fc" id="L98">				new Pattern(&quot;@Ignore($value)&quot;, PatternKind.ANNOTATION, ORG_JUNIT_IGNORE),</span>
+<span class="fc" id="L98">				new Pattern(&quot;@Ignore($value)&quot;, PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null),</span>
 				// Match @Ignore(value=&quot;reason&quot;) (NormalAnnotation)
-<span class="fc" id="L100">				new Pattern(&quot;@Ignore(value=$value)&quot;, PatternKind.ANNOTATION, ORG_JUNIT_IGNORE));</span>
+<span class="fc" id="L100">				new Pattern(&quot;@Ignore(value=$value)&quot;, PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null));</span>
 	}
 
 	@Override

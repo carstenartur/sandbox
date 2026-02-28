@@ -56,98 +56,98 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 			java.util.Set&lt;CompilationUnitRewriteOperation&gt; operations) {
 		
 		// Pattern 1: &quot;&quot; + $x
-<span class="fc" id="L59">		Pattern emptyPrefixPattern = new Pattern(&quot;\&quot;\&quot; + $x&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L59">		Pattern emptyPrefixPattern = Pattern.of(&quot;\&quot;\&quot; + $x&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L60">		List&lt;Match&gt; emptyPrefixMatches = ENGINE.findMatches(compilationUnit, emptyPrefixPattern);</span>
 <span class="fc bfc" id="L61" title="All 2 branches covered.">		for (Match match : emptyPrefixMatches) {</span>
 <span class="fc" id="L62">			operations.add(new StringValueOfOperation(match, &quot;Empty string prefix&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 2: $x + &quot;&quot;
-<span class="fc" id="L66">		Pattern emptySuffixPattern = new Pattern(&quot;$x + \&quot;\&quot;&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L66">		Pattern emptySuffixPattern = Pattern.of(&quot;$x + \&quot;\&quot;&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L67">		List&lt;Match&gt; emptySuffixMatches = ENGINE.findMatches(compilationUnit, emptySuffixPattern);</span>
 <span class="fc bfc" id="L68" title="All 2 branches covered.">		for (Match match : emptySuffixMatches) {</span>
 <span class="fc" id="L69">			operations.add(new StringValueOfOperation(match, &quot;Empty string suffix&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 3: $str.length() == 0
-<span class="fc" id="L73">		Pattern lengthCheckPattern = new Pattern(&quot;$str.length() == 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L73">		Pattern lengthCheckPattern = Pattern.of(&quot;$str.length() == 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L74">		List&lt;Match&gt; lengthCheckMatches = ENGINE.findMatches(compilationUnit, lengthCheckPattern);</span>
 <span class="fc bfc" id="L75" title="All 2 branches covered.">		for (Match match : lengthCheckMatches) {</span>
 <span class="fc" id="L76">			operations.add(new IsEmptyOperation(match, &quot;String length check&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 4: $str.equals(&quot;&quot;)
-<span class="fc" id="L80">		Pattern equalsEmptyPattern = new Pattern(&quot;$str.equals(\&quot;\&quot;)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L80">		Pattern equalsEmptyPattern = Pattern.of(&quot;$str.equals(\&quot;\&quot;)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L81">		List&lt;Match&gt; equalsEmptyMatches = ENGINE.findMatches(compilationUnit, equalsEmptyPattern);</span>
 <span class="fc bfc" id="L82" title="All 2 branches covered.">		for (Match match : equalsEmptyMatches) {</span>
 <span class="fc" id="L83">			operations.add(new IsEmptyOperation(match, &quot;String equals empty&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 5: $x == true
-<span class="fc" id="L87">		Pattern boolTruePattern = new Pattern(&quot;$x == true&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L87">		Pattern boolTruePattern = Pattern.of(&quot;$x == true&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L88">		List&lt;Match&gt; boolTrueMatches = ENGINE.findMatches(compilationUnit, boolTruePattern);</span>
 <span class="fc bfc" id="L89" title="All 2 branches covered.">		for (Match match : boolTrueMatches) {</span>
 <span class="fc" id="L90">			operations.add(new SimplifyBooleanOperation(match, &quot;Boolean == true&quot;, false)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 6: $x == false
-<span class="fc" id="L94">		Pattern boolFalsePattern = new Pattern(&quot;$x == false&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L94">		Pattern boolFalsePattern = Pattern.of(&quot;$x == false&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L95">		List&lt;Match&gt; boolFalseMatches = ENGINE.findMatches(compilationUnit, boolFalsePattern);</span>
 <span class="fc bfc" id="L96" title="All 2 branches covered.">		for (Match match : boolFalseMatches) {</span>
 <span class="fc" id="L97">			operations.add(new SimplifyBooleanOperation(match, &quot;Boolean == false&quot;, true)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 7: $cond ? true : false
-<span class="fc" id="L101">		Pattern ternaryTrueFalsePattern = new Pattern(&quot;$cond ? true : false&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L101">		Pattern ternaryTrueFalsePattern = Pattern.of(&quot;$cond ? true : false&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L102">		List&lt;Match&gt; ternaryTrueFalseMatches = ENGINE.findMatches(compilationUnit, ternaryTrueFalsePattern);</span>
 <span class="fc bfc" id="L103" title="All 2 branches covered.">		for (Match match : ternaryTrueFalseMatches) {</span>
 <span class="fc" id="L104">			operations.add(new SimplifyTernaryOperation(match, &quot;Ternary true:false&quot;, false)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 8: $cond ? false : true
-<span class="fc" id="L108">		Pattern ternaryFalseTruePattern = new Pattern(&quot;$cond ? false : true&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L108">		Pattern ternaryFalseTruePattern = Pattern.of(&quot;$cond ? false : true&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L109">		List&lt;Match&gt; ternaryFalseTrueMatches = ENGINE.findMatches(compilationUnit, ternaryFalseTruePattern);</span>
 <span class="fc bfc" id="L110" title="All 2 branches covered.">		for (Match match : ternaryFalseTrueMatches) {</span>
 <span class="fc" id="L111">			operations.add(new SimplifyTernaryOperation(match, &quot;Ternary false:true&quot;, true)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 9: $list.size() == 0
-<span class="fc" id="L115">		Pattern collectionSizePattern = new Pattern(&quot;$list.size() == 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L115">		Pattern collectionSizePattern = Pattern.of(&quot;$list.size() == 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L116">		List&lt;Match&gt; collectionSizeMatches = ENGINE.findMatches(compilationUnit, collectionSizePattern);</span>
 <span class="fc bfc" id="L117" title="All 2 branches covered.">		for (Match match : collectionSizeMatches) {</span>
 <span class="fc" id="L118">			operations.add(new CollectionIsEmptyOperation(match, &quot;Collection size check&quot;, &quot;$list&quot;, false)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
 		
 		// Pattern 10: $list.size() &gt; 0
-<span class="fc" id="L122">		Pattern collectionNotEmptyPattern = new Pattern(&quot;$list.size() &gt; 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L122">		Pattern collectionNotEmptyPattern = Pattern.of(&quot;$list.size() &gt; 0&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L123">		List&lt;Match&gt; collectionNotEmptyMatches = ENGINE.findMatches(compilationUnit, collectionNotEmptyPattern);</span>
 <span class="fc bfc" id="L124" title="All 2 branches covered.">		for (Match match : collectionNotEmptyMatches) {</span>
 <span class="fc" id="L125">			operations.add(new CollectionIsEmptyOperation(match, &quot;Collection non-empty check&quot;, &quot;$list&quot;, true)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
 		
 		// Pattern 11: new StringBuilder().append($x).toString()
-<span class="fc" id="L129">		Pattern stringBuilderPattern = new Pattern(&quot;new StringBuilder().append($x).toString()&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L129">		Pattern stringBuilderPattern = Pattern.of(&quot;new StringBuilder().append($x).toString()&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L130">		List&lt;Match&gt; stringBuilderMatches = ENGINE.findMatches(compilationUnit, stringBuilderPattern);</span>
 <span class="fc bfc" id="L131" title="All 2 branches covered.">		for (Match match : stringBuilderMatches) {</span>
 <span class="fc" id="L132">			operations.add(new MethodToStringValueOfOperation(match, &quot;StringBuilder single append&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 12: String.format(&quot;%s&quot;, $x)
-<span class="fc" id="L136">		Pattern stringFormatPattern = new Pattern(&quot;String.format(\&quot;%s\&quot;, $x)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L136">		Pattern stringFormatPattern = Pattern.of(&quot;String.format(\&quot;%s\&quot;, $x)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L137">		List&lt;Match&gt; stringFormatMatches = ENGINE.findMatches(compilationUnit, stringFormatPattern);</span>
 <span class="fc bfc" id="L138" title="All 2 branches covered.">		for (Match match : stringFormatMatches) {</span>
 <span class="fc" id="L139">			operations.add(new MethodToStringValueOfOperation(match, &quot;Redundant String.format&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 13: $x.toString().equals($y)
-<span class="fc" id="L143">		Pattern toStringEqualsPattern = new Pattern(&quot;$x.toString().equals($y)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L143">		Pattern toStringEqualsPattern = Pattern.of(&quot;$x.toString().equals($y)&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L144">		List&lt;Match&gt; toStringEqualsMatches = ENGINE.findMatches(compilationUnit, toStringEqualsPattern);</span>
 <span class="fc bfc" id="L145" title="All 2 branches covered.">		for (Match match : toStringEqualsMatches) {</span>
 <span class="fc" id="L146">			operations.add(new ObjectsEqualsOperation(match, &quot;Null-safe toString equals&quot;)); //$NON-NLS-1$</span>
 		}
 		
 		// Pattern 14: $x != null ? $x : $default
-<span class="fc" id="L150">		Pattern nullCheckTernaryPattern = new Pattern(&quot;$x != null ? $x : $default&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L150">		Pattern nullCheckTernaryPattern = Pattern.of(&quot;$x != null ? $x : $default&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L151">		List&lt;Match&gt; nullCheckTernaryMatches = ENGINE.findMatches(compilationUnit, nullCheckTernaryPattern);</span>
 <span class="fc bfc" id="L152" title="All 2 branches covered.">		for (Match match : nullCheckTernaryMatches) {</span>
 <span class="fc" id="L153">			operations.add(new RequireNonNullElseOperation(match, &quot;Null-check ternary&quot;)); //$NON-NLS-1$</span>

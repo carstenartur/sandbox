@@ -59,7 +59,7 @@ public class PatternCleanupHelper {
 <span class="fc" id="L59">            return null;</span>
         }
 <span class="fc bfc" id="L61" title="All 2 branches covered.">        String qualifiedType = annotation.qualifiedType().isEmpty() ? null : annotation.qualifiedType();</span>
-<span class="fc" id="L62">        return new Pattern(annotation.value(), annotation.kind(), qualifiedType);</span>
+<span class="fc" id="L62">        return new Pattern(annotation.value(), annotation.kind(), null, null, qualifiedType, null, null);</span>
     }
     
     /**

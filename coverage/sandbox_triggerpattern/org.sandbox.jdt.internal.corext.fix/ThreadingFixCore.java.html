@@ -58,7 +58,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 
 		// Pattern 1: $thread.run() -&gt; $thread.start()
 		// Calling Thread.run() directly executes on the current thread instead of starting a new one
-<span class="fc" id="L61">		Pattern threadRunPattern = new Pattern(&quot;$thread.run()&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L61">		Pattern threadRunPattern = Pattern.of(&quot;$thread.run()&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L62">		List&lt;Match&gt; threadRunMatches = ENGINE.findMatches(compilationUnit, threadRunPattern);</span>
 <span class="fc bfc" id="L63" title="All 2 branches covered.">		for (Match match : threadRunMatches) {</span>
 <span class="fc bfc" id="L64" title="All 2 branches covered.">			if (isThreadType(match)) {</span>

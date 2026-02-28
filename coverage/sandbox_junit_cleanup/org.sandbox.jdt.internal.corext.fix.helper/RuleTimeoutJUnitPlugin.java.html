@@ -65,10 +65,10 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 */
 	@Override
 	protected List&lt;Pattern&gt; getPatterns() {
-<span class="fc" id="L68">		return List.of(new Pattern(&quot;@Rule public Timeout $name&quot;, PatternKind.FIELD, ORG_JUNIT_RULES_TIMEOUT),</span>
-<span class="fc" id="L69">				new Pattern(&quot;@ClassRule public Timeout $name&quot;, PatternKind.FIELD, ORG_JUNIT_RULES_TIMEOUT),</span>
+<span class="fc" id="L68">		return List.of(new Pattern(&quot;@Rule public Timeout $name&quot;, PatternKind.FIELD, null, null, ORG_JUNIT_RULES_TIMEOUT, null, null),</span>
+<span class="fc" id="L69">				new Pattern(&quot;@ClassRule public Timeout $name&quot;, PatternKind.FIELD, null, null, ORG_JUNIT_RULES_TIMEOUT, null, null),</span>
 				// Also match static fields for @ClassRule (these may have static modifier)
-<span class="fc" id="L71">				new Pattern(&quot;@ClassRule public static Timeout $name&quot;, PatternKind.FIELD, ORG_JUNIT_RULES_TIMEOUT));</span>
+<span class="fc" id="L71">				new Pattern(&quot;@ClassRule public static Timeout $name&quot;, PatternKind.FIELD, null, null, ORG_JUNIT_RULES_TIMEOUT, null, null));</span>
 	}
 
 	/**

@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.osgi.framework.Bundle;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 
 /**
  * Registry for loading and managing {@code .sandbox-hint} files.
@@ -78,13 +80,13 @@ public final class HintFileRegistry {
 
 	private static final String HINTS_EXTENSION_POINT_ID = &quot;org.sandbox.jdt.triggerpattern.hints&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L81">	private static final HintFileRegistry INSTANCE = new HintFileRegistry();</span>
+<span class="fc" id="L83">	private static final HintFileRegistry INSTANCE = new HintFileRegistry();</span>
 
 	/** Delegate for Eclipse-independent storage and loading. */
-<span class="fc" id="L84">	private final HintFileStore store = new HintFileStore();</span>
+<span class="fc" id="L86">	private final HintFileStore store = new HintFileStore();</span>
 
 	/** Tracks which projects have been scanned for workspace hint files. */
-<span class="fc" id="L87">	private final java.util.Set&lt;String&gt; loadedProjects = ConcurrentHashMap.newKeySet();</span>
+<span class="fc" id="L89">	private final java.util.Set&lt;String&gt; loadedProjects = ConcurrentHashMap.newKeySet();</span>
 
 	/**
 	 * File extension for sandbox hint files (including the dot).
@@ -94,11 +96,11 @@ public final class HintFileRegistry {
 	/**
 	 * File extension for NetBeans-compatible hint files (including the dot).
 	 */
-<span class="fc" id="L97">	private static final String NETBEANS_HINT_FILE_EXTENSION = &quot;.hint&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L99">	private static final String NETBEANS_HINT_FILE_EXTENSION = &quot;.hint&quot;; //$NON-NLS-1$</span>
 
-<span class="fc" id="L99">	private HintFileRegistry() {</span>
+<span class="fc" id="L101">	private HintFileRegistry() {</span>
 		// Singleton
-<span class="fc" id="L101">	}</span>
+<span class="fc" id="L103">	}</span>
 
 	/**
 	 * Returns the singleton instance.
@@ -106,7 +108,7 @@ public final class HintFileRegistry {
 	 * @return the hint file registry
 	 */
 	public static HintFileRegistry getInstance() {
-<span class="fc" id="L109">		return INSTANCE;</span>
+<span class="fc" id="L111">		return INSTANCE;</span>
 	}
 
 	/**
@@ -117,7 +119,7 @@ public final class HintFileRegistry {
 	 * @since 1.2.6
 	 */
 	public HintFileStore getStore() {
-<span class="nc" id="L120">		return store;</span>
+<span class="nc" id="L122">		return store;</span>
 	}
 
 	/**
@@ -128,8 +130,8 @@ public final class HintFileRegistry {
 	 * @throws HintParseException if parsing fails
 	 */
 	public void loadFromString(String id, String content) throws HintParseException {
-<span class="fc" id="L131">		store.loadFromString(id, content);</span>
-<span class="fc" id="L132">	}</span>
+<span class="fc" id="L133">		store.loadFromString(id, content);</span>
+<span class="fc" id="L134">	}</span>
 
 	/**
 	 * Loads and registers a hint file from a reader.
@@ -140,8 +142,8 @@ public final class HintFileRegistry {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public void loadFromReader(String id, Reader reader) throws HintParseException, IOException {
-<span class="nc" id="L143">		store.loadFromReader(id, reader);</span>
-<span class="nc" id="L144">	}</span>
+<span class="nc" id="L145">		store.loadFromReader(id, reader);</span>
+<span class="nc" id="L146">	}</span>
 
 	/**
 	 * Loads and registers a hint file from a classpath resource.
@@ -155,7 +157,7 @@ public final class HintFileRegistry {
 	 */
 	public boolean loadFromClasspath(String id, String resourcePath, ClassLoader classLoader)
 			throws HintParseException, IOException {
-<span class="nc" id="L158">		return store.loadFromClasspath(id, resourcePath, classLoader);</span>
+<span class="nc" id="L160">		return store.loadFromClasspath(id, resourcePath, classLoader);</span>
 	}
 
 	/**
@@ -165,7 +167,7 @@ public final class HintFileRegistry {
 	 * @return the hint file, or {@code null} if not found
 	 */
 	public HintFile getHintFile(String id) {
-<span class="fc" id="L168">		return store.getHintFile(id);</span>
+<span class="fc" id="L170">		return store.getHintFile(id);</span>
 	}
 
 	/**
@@ -174,7 +176,7 @@ public final class HintFileRegistry {
 	 * @return unmodifiable map of ID to hint file
 	 */
 	public Map&lt;String, HintFile&gt; getAllHintFiles() {
-<span class="fc" id="L177">		return store.getAllHintFiles();</span>
+<span class="fc" id="L179">		return store.getAllHintFiles();</span>
 	}
 
 	/**
@@ -183,7 +185,7 @@ public final class HintFileRegistry {
 	 * @return unmodifiable list of hint file IDs
 	 */
 	public List&lt;String&gt; getRegisteredIds() {
-<span class="fc" id="L186">		return store.getRegisteredIds();</span>
+<span class="fc" id="L188">		return store.getRegisteredIds();</span>
 	}
 
 	/**
@@ -193,16 +195,16 @@ public final class HintFileRegistry {
 	 * @return the removed hint file, or {@code null} if not found
 	 */
 	public HintFile unregister(String id) {
-<span class="fc" id="L196">		return store.unregister(id);</span>
+<span class="fc" id="L198">		return store.unregister(id);</span>
 	}
 
 	/**
 	 * Removes all registered hint files.
 	 */
 	public void clear() {
-<span class="fc" id="L203">		store.clear();</span>
-<span class="fc" id="L204">		loadedProjects.clear();</span>
-<span class="fc" id="L205">	}</span>
+<span class="fc" id="L205">		store.clear();</span>
+<span class="fc" id="L206">		loadedProjects.clear();</span>
+<span class="fc" id="L207">	}</span>
 
 	/**
 	 * Resolves include directives for a hint file by collecting all rules
@@ -219,7 +221,7 @@ public final class HintFileRegistry {
 	 * @since 1.3.4
 	 */
 	public List&lt;TransformationRule&gt; resolveIncludes(HintFile hintFile) {
-<span class="fc" id="L222">		return store.resolveIncludes(hintFile);</span>
+<span class="fc" id="L224">		return store.resolveIncludes(hintFile);</span>
 	}
 
 	/**
@@ -228,7 +230,7 @@ public final class HintFileRegistry {
 	 * @return array of bundled library resource names
 	 */
 	public static String[] getBundledLibraryNames() {
-<span class="fc" id="L231">		return HintFileStore.getBundledLibraryNames();</span>
+<span class="fc" id="L233">		return HintFileStore.getBundledLibraryNames();</span>
 	}
 
 	/**
@@ -239,7 +241,7 @@ public final class HintFileRegistry {
 	 * @return list of successfully loaded library IDs
 	 */
 	public List&lt;String&gt; loadBundledLibraries(ClassLoader classLoader) {
-<span class="fc" id="L242">		return store.loadBundledLibraries(classLoader);</span>
+<span class="fc" id="L244">		return store.loadBundledLibraries(classLoader);</span>
 	}
 
 	/**
@@ -255,55 +257,55 @@ public final class HintFileRegistry {
 	 * @since 1.3.6
 	 */
 	public List&lt;String&gt; loadFromExtensions() {
-<span class="fc" id="L258">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L259">		IExtensionRegistry registry = Platform.getExtensionRegistry();</span>
-<span class="fc bfc" id="L260" title="All 2 branches covered.">		if (registry == null) {</span>
-<span class="fc" id="L261">			return loaded;</span>
+<span class="fc" id="L260">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L261">		IExtensionRegistry registry = Platform.getExtensionRegistry();</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">		if (registry == null) {</span>
+<span class="fc" id="L263">			return loaded;</span>
 		}
-<span class="fc" id="L263">		IConfigurationElement[] elements = registry.getConfigurationElementsFor(HINTS_EXTENSION_POINT_ID);</span>
-<span class="fc bfc" id="L264" title="All 2 branches covered.">		for (IConfigurationElement element : elements) {</span>
-<span class="fc bfc" id="L265" title="All 2 branches covered.">			if (!&quot;hintFile&quot;.equals(element.getName())) { //$NON-NLS-1$</span>
-<span class="fc" id="L266">				continue;</span>
+<span class="fc" id="L265">		IConfigurationElement[] elements = registry.getConfigurationElementsFor(HINTS_EXTENSION_POINT_ID);</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">		for (IConfigurationElement element : elements) {</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">			if (!&quot;hintFile&quot;.equals(element.getName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L268">				continue;</span>
 			}
-<span class="fc" id="L268">			String id = element.getAttribute(&quot;id&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L269">			String resource = element.getAttribute(&quot;resource&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L270" title="2 of 4 branches missed.">			if (id == null || resource == null) {</span>
-<span class="nc" id="L271">				continue;</span>
+<span class="fc" id="L270">			String id = element.getAttribute(&quot;id&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L271">			String resource = element.getAttribute(&quot;resource&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L272" title="2 of 4 branches missed.">			if (id == null || resource == null) {</span>
+<span class="nc" id="L273">				continue;</span>
 			}
 			// Check enabled attribute (default: true)
-<span class="fc" id="L274">			String enabledAttr = element.getAttribute(&quot;enabled&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L275" title="3 of 4 branches missed.">			if (enabledAttr != null &amp;&amp; &quot;false&quot;.equalsIgnoreCase(enabledAttr)) { //$NON-NLS-1$</span>
-<span class="nc" id="L276">				continue;</span>
+<span class="fc" id="L276">			String enabledAttr = element.getAttribute(&quot;enabled&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L277" title="3 of 4 branches missed.">			if (enabledAttr != null &amp;&amp; &quot;false&quot;.equalsIgnoreCase(enabledAttr)) { //$NON-NLS-1$</span>
+<span class="nc" id="L278">				continue;</span>
 			}
 			// Skip already loaded hint files
-<span class="fc bfc" id="L279" title="All 2 branches covered.">			if (store.getHintFile(id) != null) {</span>
-<span class="fc" id="L280">				continue;</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">			if (store.getHintFile(id) != null) {</span>
+<span class="fc" id="L282">				continue;</span>
 			}
-<span class="fc" id="L282">			Bundle bundle = Platform.getBundle(element.getContributor().getName());</span>
-<span class="pc bpc" id="L283" title="1 of 2 branches missed.">			if (bundle == null) {</span>
-<span class="nc" id="L284">				continue;</span>
+<span class="fc" id="L284">			Bundle bundle = Platform.getBundle(element.getContributor().getName());</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">			if (bundle == null) {</span>
+<span class="nc" id="L286">				continue;</span>
 			}
 			try {
-<span class="fc" id="L287">				URL resourceUrl = bundle.getResource(resource);</span>
-<span class="pc bpc" id="L288" title="1 of 2 branches missed.">				if (resourceUrl == null) {</span>
-<span class="nc" id="L289">					ILog log = Platform.getLog(HintFileRegistry.class);</span>
-<span class="nc" id="L290">					log.log(Status.warning(</span>
-<span class="nc" id="L291">							&quot;Hint file resource not found: &quot; + resource //$NON-NLS-1$</span>
-<span class="nc" id="L292">									+ &quot; in bundle &quot; + bundle.getSymbolicName())); //$NON-NLS-1$</span>
-<span class="nc" id="L293">					continue;</span>
+<span class="fc" id="L289">				URL resourceUrl = bundle.getResource(resource);</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">				if (resourceUrl == null) {</span>
+<span class="nc" id="L291">					ILog log = Platform.getLog(HintFileRegistry.class);</span>
+<span class="nc" id="L292">					log.log(Status.warning(</span>
+<span class="nc" id="L293">							&quot;Hint file resource not found: &quot; + resource //$NON-NLS-1$</span>
+<span class="nc" id="L294">									+ &quot; in bundle &quot; + bundle.getSymbolicName())); //$NON-NLS-1$</span>
+<span class="nc" id="L295">					continue;</span>
 				}
-<span class="fc" id="L295">				try (InputStream is = resourceUrl.openStream();</span>
-<span class="fc" id="L296">						Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
-<span class="fc" id="L297">					store.loadFromReader(id, reader);</span>
-<span class="fc" id="L298">					loaded.add(id);</span>
+<span class="fc" id="L297">				try (InputStream is = resourceUrl.openStream();</span>
+<span class="fc" id="L298">						Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L299">					store.loadFromReader(id, reader);</span>
+<span class="fc" id="L300">					loaded.add(id);</span>
 				}
-<span class="nc" id="L300">			} catch (HintParseException | IOException e) {</span>
-<span class="nc" id="L301">				ILog log = Platform.getLog(HintFileRegistry.class);</span>
-<span class="nc" id="L302">				log.log(Status.warning(</span>
-<span class="nc" id="L303">						&quot;Failed to load hint file from extension: &quot; + id, e)); //$NON-NLS-1$</span>
+<span class="nc" id="L302">			} catch (HintParseException | IOException e) {</span>
+<span class="nc" id="L303">				ILog log = Platform.getLog(HintFileRegistry.class);</span>
+<span class="nc" id="L304">				log.log(Status.warning(</span>
+<span class="nc" id="L305">						&quot;Failed to load hint file from extension: &quot; + id, e)); //$NON-NLS-1$</span>
 			}
 		}
-<span class="fc" id="L306">		return loaded;</span>
+<span class="fc" id="L308">		return loaded;</span>
 	}
 
 	/**
@@ -322,48 +324,48 @@ public final class HintFileRegistry {
 	 * @since 1.3.6
 	 */
 	public List&lt;String&gt; loadProjectHintFiles(IProject project) {
-<span class="pc bpc" id="L325" title="1 of 4 branches missed.">		if (project == null || !project.isAccessible()) {</span>
-<span class="fc" id="L326">			return Collections.emptyList();</span>
+<span class="pc bpc" id="L327" title="1 of 4 branches missed.">		if (project == null || !project.isAccessible()) {</span>
+<span class="fc" id="L328">			return Collections.emptyList();</span>
 		}
-<span class="fc" id="L328">		String projectKey = project.getName();</span>
-<span class="fc bfc" id="L329" title="All 2 branches covered.">		if (!loadedProjects.add(projectKey)) {</span>
-<span class="fc" id="L330">			return Collections.emptyList(); // Already scanned</span>
+<span class="fc" id="L330">		String projectKey = project.getName();</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">		if (!loadedProjects.add(projectKey)) {</span>
+<span class="fc" id="L332">			return Collections.emptyList(); // Already scanned</span>
 		}
-<span class="fc" id="L332">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L334">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
 		try {
-<span class="fc" id="L334">			project.accept(new IResourceVisitor() {</span>
+<span class="fc" id="L336">			project.accept(new IResourceVisitor() {</span>
 				@Override
 				public boolean visit(IResource resource) throws CoreException {
-<span class="fc bfc" id="L337" title="All 2 branches covered.">					if (resource instanceof IFile file</span>
-<span class="pc bpc" id="L338" title="1 of 2 branches missed.">							&amp;&amp; isHintFile(file.getName())) {</span>
-<span class="nc" id="L339">						String id = &quot;project:&quot; + projectKey + &quot;:&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L340">								+ file.getProjectRelativePath().toString();</span>
-<span class="nc" id="L341">						try (InputStream is = file.getContents();</span>
-<span class="nc" id="L342">								Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
-<span class="nc" id="L343">							store.loadFromReader(id, reader);</span>
-<span class="nc" id="L344">							loaded.add(id);</span>
-<span class="nc" id="L345">						} catch (HintParseException | IOException e) {</span>
-<span class="nc" id="L346">							ILog log = Platform.getLog(HintFileRegistry.class);</span>
-<span class="nc" id="L347">							log.log(Status.warning(</span>
-<span class="nc" id="L348">									&quot;Failed to load hint file: &quot; + file.getFullPath(), e)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">					if (resource instanceof IFile file</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">							&amp;&amp; isHintFile(file.getName())) {</span>
+<span class="nc" id="L341">						String id = &quot;project:&quot; + projectKey + &quot;:&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L342">								+ file.getProjectRelativePath().toString();</span>
+<span class="nc" id="L343">						try (InputStream is = file.getContents();</span>
+<span class="nc" id="L344">								Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="nc" id="L345">							store.loadFromReader(id, reader);</span>
+<span class="nc" id="L346">							loaded.add(id);</span>
+<span class="nc" id="L347">						} catch (HintParseException | IOException e) {</span>
+<span class="nc" id="L348">							ILog log = Platform.getLog(HintFileRegistry.class);</span>
+<span class="nc" id="L349">							log.log(Status.warning(</span>
+<span class="nc" id="L350">									&quot;Failed to load hint file: &quot; + file.getFullPath(), e)); //$NON-NLS-1$</span>
 						}
 					}
 					// Skip output folders and hidden directories
-<span class="fc bfc" id="L352" title="All 2 branches covered.">					if (resource instanceof IContainer container) {</span>
-<span class="fc" id="L353">						String name = container.getName();</span>
-<span class="fc bfc" id="L354" title="All 2 branches covered.">						return !name.startsWith(&quot;.&quot;) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L355" title="All 2 branches covered.">								&amp;&amp; !&quot;bin&quot;.equals(name) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L356" title="1 of 2 branches missed.">								&amp;&amp; !&quot;target&quot;.equals(name); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">					if (resource instanceof IContainer container) {</span>
+<span class="fc" id="L355">						String name = container.getName();</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">						return !name.startsWith(&quot;.&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">								&amp;&amp; !&quot;bin&quot;.equals(name) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L358" title="1 of 2 branches missed.">								&amp;&amp; !&quot;target&quot;.equals(name); //$NON-NLS-1$</span>
 					}
-<span class="fc" id="L358">					return true;</span>
+<span class="fc" id="L360">					return true;</span>
 				}
 			});
-<span class="pc" id="L361">		} catch (CoreException e) {</span>
-<span class="nc" id="L362">			ILog log = Platform.getLog(HintFileRegistry.class);</span>
-<span class="nc" id="L363">			log.log(Status.warning(</span>
-<span class="nc" id="L364">					&quot;Failed to scan project for hint files: &quot; + projectKey, e)); //$NON-NLS-1$</span>
+<span class="pc" id="L363">		} catch (CoreException e) {</span>
+<span class="nc" id="L364">			ILog log = Platform.getLog(HintFileRegistry.class);</span>
+<span class="nc" id="L365">			log.log(Status.warning(</span>
+<span class="nc" id="L366">					&quot;Failed to scan project for hint files: &quot; + projectKey, e)); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L366">		return loaded;</span>
+<span class="fc" id="L368">		return loaded;</span>
 	}
 
 	/**
@@ -377,10 +379,10 @@ public final class HintFileRegistry {
 	 * @since 1.3.6
 	 */
 	public void invalidateProject(IProject project) {
-<span class="pc bpc" id="L380" title="1 of 2 branches missed.">		if (project != null) {</span>
-<span class="nc" id="L381">			loadedProjects.remove(project.getName());</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">		if (project != null) {</span>
+<span class="nc" id="L383">			loadedProjects.remove(project.getName());</span>
 		}
-<span class="fc" id="L383">	}</span>
+<span class="fc" id="L385">	}</span>
 
 	/**
 	 * Checks if a file name has a recognized hint file extension.
@@ -390,7 +392,7 @@ public final class HintFileRegistry {
 	 * @since 1.3.8
 	 */
 	private static boolean isHintFile(String fileName) {
-<span class="pc bpc" id="L393" title="2 of 4 branches missed.">		return fileName.endsWith(HINT_FILE_EXTENSION) || fileName.endsWith(NETBEANS_HINT_FILE_EXTENSION);</span>
+<span class="pc bpc" id="L395" title="2 of 4 branches missed.">		return fileName.endsWith(HINT_FILE_EXTENSION) || fileName.endsWith(NETBEANS_HINT_FILE_EXTENSION);</span>
 	}
 
 	/**
@@ -405,8 +407,8 @@ public final class HintFileRegistry {
 	 * @since 1.2.6
 	 */
 	public void registerInferredRules(HintFile hintFile, String sourceCommit) {
-<span class="fc" id="L408">		store.registerInferredRules(hintFile, sourceCommit);</span>
-<span class="fc" id="L409">	}</span>
+<span class="fc" id="L410">		store.registerInferredRules(hintFile, sourceCommit);</span>
+<span class="fc" id="L411">	}</span>
 
 	/**
 	 * Returns all hint files that were inferred (have the &quot;inferred&quot; tag prefix).
@@ -415,7 +417,7 @@ public final class HintFileRegistry {
 	 * @since 1.2.6
 	 */
 	public List&lt;HintFile&gt; getInferredHintFiles() {
-<span class="fc" id="L418">		return store.getInferredHintFiles();</span>
+<span class="fc" id="L420">		return store.getInferredHintFiles();</span>
 	}
 
 	/**
@@ -426,7 +428,86 @@ public final class HintFileRegistry {
 	 * @since 1.2.6
 	 */
 	public void promoteToManual(String hintFileId) {
-<span class="fc" id="L429">		store.promoteToManual(hintFileId);</span>
-<span class="fc" id="L430">	}</span>
+<span class="fc" id="L431">		store.promoteToManual(hintFileId);</span>
+<span class="fc" id="L432">	}</span>
+
+	/**
+	 * Registers inferred rules from a list of {@link CommitEvaluation} results.
+	 *
+	 * &lt;p&gt;Each evaluation with a valid DSL rule is converted into a
+	 * {@link HintFile} and registered with the tag {@code &quot;ai-inferred&quot;}.
+	 * Evaluations without valid rules are silently skipped.&lt;/p&gt;
+	 *
+	 * @param evaluations the list of commit evaluations from AI inference
+	 * @param source      a label identifying the source of these evaluations
+	 * @return list of IDs of successfully registered hint files
+	 * @since 1.3.2
+	 */
+	public List&lt;String&gt; registerInferredRules(List&lt;CommitEvaluation&gt; evaluations, String source) {
+<span class="nc" id="L447">		return store.registerInferredRules(evaluations, source);</span>
+	}
+
+	/**
+	 * Saves all AI-inferred hint files to the {@code .hints/} directory
+	 * of the given Eclipse project.
+	 *
+	 * &lt;p&gt;Each inferred hint file is serialized and written to
+	 * {@code &lt;project&gt;/.hints/ai-inferred-&lt;id&gt;.sandbox-hint}.
+	 * The project is refreshed after writing so Eclipse picks up the changes.&lt;/p&gt;
+	 *
+	 * @param project the Eclipse project whose {@code .hints/} directory to use
+	 * @return list of paths that were written
+	 * @since 1.3.2
+	 */
+	public List&lt;Path&gt; saveInferredHintFiles(IProject project) {
+<span class="nc bnc" id="L463" title="All 4 branches missed.">		if (project == null || !project.isAccessible()) {</span>
+<span class="nc" id="L464">			return Collections.emptyList();</span>
+		}
+<span class="nc" id="L466">		org.eclipse.core.runtime.IPath location = project.getLocation();</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">		if (location == null) {</span>
+<span class="nc" id="L468">			ILog log = Platform.getLog(HintFileRegistry.class);</span>
+<span class="nc" id="L469">			log.log(Status.warning(</span>
+<span class="nc" id="L470">					&quot;Cannot save inferred hint files: project has no local location: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L471">							+ project.getName()));</span>
+<span class="nc" id="L472">			return Collections.emptyList();</span>
+		}
+		try {
+<span class="nc" id="L475">			Path projectPath = location.toFile().toPath();</span>
+<span class="nc" id="L476">			List&lt;Path&gt; written = store.saveInferredHintFiles(projectPath);</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">			if (!written.isEmpty()) {</span>
+<span class="nc" id="L478">				project.refreshLocal(IProject.DEPTH_INFINITE, null);</span>
+			}
+<span class="nc" id="L480">			return written;</span>
+<span class="nc" id="L481">		} catch (IOException | CoreException e) {</span>
+<span class="nc" id="L482">			ILog log = Platform.getLog(HintFileRegistry.class);</span>
+<span class="nc" id="L483">			log.log(Status.warning(</span>
+<span class="nc" id="L484">					&quot;Failed to save inferred hint files for project: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L485">							+ project.getName(), e));</span>
+<span class="nc" id="L486">			return Collections.emptyList();</span>
+		}
+	}
+
+	/**
+	 * Loads persisted AI-inferred hint files from the {@code .hints/}
+	 * directory of the given Eclipse project.
+	 *
+	 * &lt;p&gt;This should be called on workspace startup to restore previously
+	 * saved inferred rules.&lt;/p&gt;
+	 *
+	 * @param project the Eclipse project to load from
+	 * @return list of IDs of loaded hint files
+	 * @since 1.3.2
+	 */
+	public List&lt;String&gt; loadInferredHintFiles(IProject project) {
+<span class="nc bnc" id="L502" title="All 4 branches missed.">		if (project == null || !project.isAccessible()) {</span>
+<span class="nc" id="L503">			return Collections.emptyList();</span>
+		}
+<span class="nc" id="L505">		org.eclipse.core.runtime.IPath location = project.getLocation();</span>
+<span class="nc bnc" id="L506" title="All 2 branches missed.">		if (location == null) {</span>
+<span class="nc" id="L507">			return Collections.emptyList();</span>
+		}
+<span class="nc" id="L509">		Path projectPath = location.toFile().toPath();</span>
+<span class="nc" id="L510">		return store.loadInferredHintFiles(projectPath);</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

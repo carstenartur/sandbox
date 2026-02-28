@@ -350,7 +350,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 <span class="nc" id="L350">			triggerPattern.value(),</span>
 <span class="nc" id="L351">			triggerPattern.kind(),</span>
 <span class="nc bnc" id="L352" title="All 2 branches missed.">			triggerPattern.id().isEmpty() ? null : triggerPattern.id(),</span>
-<span class="nc" id="L353">			null</span>
+<span class="nc" id="L353">			null, null, null, null</span>
 		);
 		
 <span class="nc" id="L356">		HintDescriptor descriptor = createHintDescriptor(pattern, null, method, providerClass);</span>
@@ -414,7 +414,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 		}
 		
 <span class="nc" id="L416">		PatternKind kind = PatternKind.valueOf(kindStr);</span>
-<span class="nc" id="L417">		Pattern pattern = new Pattern(value, kind, id, displayName);</span>
+<span class="nc" id="L417">		Pattern pattern = new Pattern(value, kind, id, displayName, null, null, null);</span>
 		
 		// Load the class and method
 <span class="nc" id="L420">		Bundle bundle = Platform.getBundle(element.getContributor().getName());</span>

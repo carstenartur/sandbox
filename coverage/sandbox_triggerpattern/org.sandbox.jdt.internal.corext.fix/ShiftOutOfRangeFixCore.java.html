@@ -59,21 +59,21 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 			Set&lt;CompilationUnitRewriteOperation&gt; operations) {
 
 		// Pattern 1: $v &lt;&lt; $c
-<span class="fc" id="L62">		Pattern leftShiftPattern = new Pattern(&quot;$v &lt;&lt; $c&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L62">		Pattern leftShiftPattern = Pattern.of(&quot;$v &lt;&lt; $c&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L63">		List&lt;Match&gt; leftShiftMatches = ENGINE.findMatches(compilationUnit, leftShiftPattern);</span>
 <span class="fc bfc" id="L64" title="All 2 branches covered.">		for (Match match : leftShiftMatches) {</span>
 <span class="fc" id="L65">			addOperationIfOutOfRange(match, operations);</span>
 		}
 
 		// Pattern 2: $v &gt;&gt; $c
-<span class="fc" id="L69">		Pattern rightShiftPattern = new Pattern(&quot;$v &gt;&gt; $c&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L69">		Pattern rightShiftPattern = Pattern.of(&quot;$v &gt;&gt; $c&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L70">		List&lt;Match&gt; rightShiftMatches = ENGINE.findMatches(compilationUnit, rightShiftPattern);</span>
 <span class="fc bfc" id="L71" title="All 2 branches covered.">		for (Match match : rightShiftMatches) {</span>
 <span class="fc" id="L72">			addOperationIfOutOfRange(match, operations);</span>
 		}
 
 		// Pattern 3: $v &gt;&gt;&gt; $c
-<span class="fc" id="L76">		Pattern unsignedRightShiftPattern = new Pattern(&quot;$v &gt;&gt;&gt; $c&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
+<span class="fc" id="L76">		Pattern unsignedRightShiftPattern = Pattern.of(&quot;$v &gt;&gt;&gt; $c&quot;, PatternKind.EXPRESSION); //$NON-NLS-1$</span>
 <span class="fc" id="L77">		List&lt;Match&gt; unsignedRightShiftMatches = ENGINE.findMatches(compilationUnit, unsignedRightShiftPattern);</span>
 <span class="fc bfc" id="L78" title="All 2 branches covered.">		for (Match match : unsignedRightShiftMatches) {</span>
 <span class="fc" id="L79">			addOperationIfOutOfRange(match, operations);</span>
