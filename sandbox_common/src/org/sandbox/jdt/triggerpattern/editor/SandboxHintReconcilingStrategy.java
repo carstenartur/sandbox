@@ -13,12 +13,15 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.editor;
 
+import java.util.List;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
@@ -27,6 +30,10 @@ import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
+import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
+import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler.CompilationResult;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
 
@@ -34,8 +41,9 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
  * Reconciling strategy for {@code .sandbox-hint} files.
  *
  * <p>Validates the document content using {@link HintFileParser} and creates
- * error markers for parse errors. The markers appear as red underlines
- * in the editor and as entries in the Eclipse Problems view.</p>
+ * error markers for parse errors. Also compiles embedded Java ({@code <? ?>})
+ * blocks via {@link EmbeddedJavaCompiler} and maps compilation errors back to
+ * the hint file line numbers.</p>
  *
  * @since 1.3.6
  */
@@ -45,6 +53,13 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 	 * Marker type for hint file parse errors.
 	 */
 	private static final String MARKER_TYPE = "org.eclipse.core.resources.problemmarker"; //$NON-NLS-1$
+
+	/**
+	 * Marker type for embedded Java compilation errors.
+	 *
+	 * @since 1.5.0
+	 */
+	private static final String EMBEDDED_JAVA_MARKER_TYPE = "org.sandbox.jdt.triggerpattern.embeddedJavaProblem"; //$NON-NLS-1$
 
 	private IDocument document;
 	private ISourceViewer sourceViewer;
@@ -82,17 +97,79 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 		// Clear old markers
 		try {
 			file.deleteMarkers(MARKER_TYPE, true, IResource.DEPTH_ZERO);
+			file.deleteMarkers(EMBEDDED_JAVA_MARKER_TYPE, true, IResource.DEPTH_ZERO);
 		} catch (CoreException e) {
 			logError("Failed to clear markers", e); //$NON-NLS-1$
 		}
 
-		// Validate
+		// Validate DSL
 		String content = document.get();
 		HintFileParser parser = new HintFileParser();
+		HintFile hintFile = null;
 		try {
-			parser.parse(content);
+			hintFile = parser.parse(content);
 		} catch (HintParseException e) {
 			createErrorMarker(file, e);
+		}
+
+		// Validate embedded Java blocks
+		if (hintFile != null) {
+			validateEmbeddedJavaBlocks(file, hintFile);
+		}
+	}
+
+	/**
+	 * Compiles each embedded Java block and creates markers for compilation errors.
+	 *
+	 * @since 1.5.0
+	 */
+	private void validateEmbeddedJavaBlocks(IFile file, HintFile hintFile) {
+		List<EmbeddedJavaBlock> blocks = hintFile.getEmbeddedJavaBlocks();
+		String ruleId = hintFile.getId();
+
+		for (EmbeddedJavaBlock block : blocks) {
+			if (block.getSource().isBlank()) {
+				continue;
+			}
+			CompilationResult result = EmbeddedJavaCompiler.compile(block, ruleId);
+			if (result.hasErrors()) {
+				createEmbeddedJavaMarkers(file, block, result);
+			}
+		}
+	}
+
+	/**
+	 * Creates markers for compilation problems in an embedded Java block.
+	 * Maps synthetic class line numbers back to hint file line numbers.
+	 */
+	private void createEmbeddedJavaMarkers(IFile file, EmbeddedJavaBlock block,
+			CompilationResult result) {
+		for (IProblem problem : result.problems()) {
+			if (!problem.isError()) {
+				continue;
+			}
+			try {
+				IMarker marker = file.createMarker(EMBEDDED_JAVA_MARKER_TYPE);
+				marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
+				marker.setAttribute(IMarker.MESSAGE, problem.getMessage());
+
+				// Map synthetic class line back to hint file line
+				int syntheticLine = problem.getSourceLineNumber();
+				int hintLine = syntheticLine + result.lineOffset();
+				if (hintLine > 0) {
+					marker.setAttribute(IMarker.LINE_NUMBER, hintLine);
+				}
+
+				// Map character positions if available
+				int sourceStart = problem.getSourceStart();
+				int sourceEnd = problem.getSourceEnd();
+				if (sourceStart >= 0 && sourceEnd >= 0) {
+					marker.setAttribute(IMarker.CHAR_START, block.getStartOffset() + sourceStart);
+					marker.setAttribute(IMarker.CHAR_END, block.getStartOffset() + sourceEnd + 1);
+				}
+			} catch (CoreException e) {
+				logError("Failed to create embedded Java marker", e); //$NON-NLS-1$
+			}
 		}
 	}
 

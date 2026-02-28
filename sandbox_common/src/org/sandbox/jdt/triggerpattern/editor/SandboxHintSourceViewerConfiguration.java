@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.editor;
 
 import org.eclipse.jdt.internal.ui.JavaPlugin;
+import org.eclipse.jface.text.DefaultAnnotationHover;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.contentassist.ContentAssistant;
@@ -25,6 +26,7 @@ import org.eclipse.jface.text.reconciler.MonoReconciler;
 import org.eclipse.jface.text.rules.DefaultDamagerRepairer;
 import org.eclipse.jface.text.rules.ITokenScanner;
 import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.source.IAnnotationHover;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.source.SourceViewerConfiguration;
 import org.eclipse.swt.SWT;
@@ -37,8 +39,9 @@ import org.eclipse.swt.widgets.Display;
  * <p>Provides:</p>
  * <ul>
  *   <li>Syntax highlighting via a {@link PresentationReconciler}</li>
- *   <li>Content assist for guard functions after {@code ::}</li>
+ *   <li>Content assist for guard functions after {@code ::} and Java completions in {@code <? ?>} blocks</li>
  *   <li>Background reconciling for validation with error markers</li>
+ *   <li>Annotation hover for embedded Java compile errors</li>
  * </ul>
  *
  * @since 1.3.6
@@ -97,9 +100,17 @@ public class SandboxHintSourceViewerConfiguration extends SourceViewerConfigurat
 		assistant.setContentAssistProcessor(
 				new SandboxHintContentAssistProcessor(),
 				IDocument.DEFAULT_CONTENT_TYPE);
+		assistant.setContentAssistProcessor(
+				new EmbeddedJavaContentAssistProcessor(),
+				SandboxHintPartitionScanner.JAVA_CODE);
 		assistant.enableAutoActivation(true);
 		assistant.setAutoActivationDelay(500);
 		return assistant;
+	}
+
+	@Override
+	public IAnnotationHover getAnnotationHover(ISourceViewer sourceViewer) {
+		return new DefaultAnnotationHover();
 	}
 
 	@Override
