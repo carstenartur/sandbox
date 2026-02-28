@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.editor;
 
+import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.contentassist.ContentAssistant;
@@ -80,8 +81,9 @@ public class SandboxHintSourceViewerConfiguration extends SourceViewerConfigurat
 		reconciler.setDamager(metadataDR, SandboxHintPartitionScanner.METADATA);
 		reconciler.setRepairer(metadataDR, SandboxHintPartitionScanner.METADATA);
 
-		// Embedded Java code – uses Java keyword scanner
-		ITokenScanner javaScanner = new EmbeddedJavaCodeScanner();
+		// Embedded Java code – reuses JDT's Java code scanner for full keyword,
+		// string, annotation, and operator highlighting with theme/preference support
+		ITokenScanner javaScanner = JavaPlugin.getDefault().getJavaTextTools().getCodeScanner();
 		DefaultDamagerRepairer javaDR = new DefaultDamagerRepairer(javaScanner);
 		reconciler.setDamager(javaDR, SandboxHintPartitionScanner.JAVA_CODE);
 		reconciler.setRepairer(javaDR, SandboxHintPartitionScanner.JAVA_CODE);
