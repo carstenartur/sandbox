@@ -38,7 +38,9 @@ jobs:
         DRY_RUN: ${{ inputs.dry_run || 'false' }}
       run: |
         set -euo pipefail
-
+        # Strip any decimal suffix (e.g., 30.0 → 30)
+        RETAIN_DAYS=${RETAIN_DAYS%.*}
+        KEEP_MINIMUM_RUNS=${KEEP_MINIMUM_RUNS%.*}
         TOTAL_DELETED=0
         TOTAL_RETAINED=0
         SUMMARY_ROWS=""
