@@ -192,7 +192,9 @@ jobs:
         echo "Setting version to ${{ inputs.release_version }}"
         # Include benchmark and jacoco profiles to update all modules that inherit version from parent
         mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.release_version }} -Pbenchmark,jacoco
-
+        # Update standalone Maven modules not managed by Tycho
+        mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set -DnewVersion=${{ inputs.release_version }} -DgenerateBackupPoms=false
+        mvn -f sandbox-maven-plugin/pom.xml versions:set -DnewVersion=${{ inputs.release_version }} -DgenerateBackupPoms=false
 
 
     # 6. Verify version update - fail if any SNAPSHOT versions remain
@@ -225,7 +227,7 @@ jobs:
           TEST_FLAG="-DskipTests"
           echo "Skipping tests as requested"
         fi
-        xvfb-run --auto-servernum mvn -Pproduct,repo -T 1C clean verify $TEST_FLAG
+        xvfb-run --auto-servernum mvn -Pproduct,repo,cli-dist,maven-plugin -T 1C clean verify $TEST_FLAG
 
     # 9. Create and push Git tag
     - name: Create and push Git tag
@@ -422,6 +424,9 @@ jobs:
         echo "Using Tycho versions plugin ${TYCHO_VERSION}"
         # Include benchmark and jacoco profiles to update all modules that inherit version from parent
         mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${NEXT_VERSION} -Pbenchmark,jacoco
+        # Update standalone Maven modules not managed by Tycho
+        mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set -DnewVersion=${NEXT_VERSION} -DgenerateBackupPoms=false
+        mvn -f sandbox-maven-plugin/pom.xml versions:set -DnewVersion=${NEXT_VERSION} -DgenerateBackupPoms=false
 
 
 
