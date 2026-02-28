@@ -40,7 +40,10 @@ public class EmbeddedJavaSourceLocator extends AbstractSourceLookupParticipant {
 
 	private static final Logger LOGGER = Logger.getLogger(EmbeddedJavaSourceLocator.class.getName());
 
-	private static final String SYNTHETIC_PREFIX = "org.sandbox.generated.HintCode_"; //$NON-NLS-1$
+	/**
+	 * The prefix for synthetic class names generated from hint files.
+	 */
+	static final String SYNTHETIC_PREFIX = "org.sandbox.generated.HintCode_"; //$NON-NLS-1$
 
 	/**
 	 * Maps synthetic class names to their hint file paths and compilation results.
@@ -101,7 +104,7 @@ public class EmbeddedJavaSourceLocator extends AbstractSourceLookupParticipant {
 	public String getSourceName(Object object) {
 		if (object instanceof IStackFrame frame) {
 			try {
-				String typeName = frame.getModelIdentifier();
+				String typeName = frame.getName();
 				if (isSyntheticHintClass(typeName)) {
 					SourceMapping mapping = MAPPINGS.get(typeName);
 					if (mapping != null) {

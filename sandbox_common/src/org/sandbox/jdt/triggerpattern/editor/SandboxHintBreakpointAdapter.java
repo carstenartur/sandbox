@@ -87,7 +87,7 @@ public class SandboxHintBreakpointAdapter implements IToggleBreakpointsTarget {
 		String typeName = findSyntheticTypeName(file, lineNumber);
 		if (typeName == null) {
 			// Use a placeholder type name based on the file
-			typeName = "org.sandbox.generated.HintCode_" + sanitize(file.getName()); //$NON-NLS-1$
+			typeName = EmbeddedJavaSourceLocator.SYNTHETIC_PREFIX + sanitize(file.getName());
 		}
 
 		// Create a Java line breakpoint
