@@ -7,7 +7,7 @@ on:
         description: 'Release version (e.g., 1.2.3) - check current SNAPSHOT version in pom.xml'
         required: true
         type: string
-        default: '1.2.6' # auto-updated by release workflow
+        default: '1.2.6'
       skip_tests:
         description: 'Skip tests during release build'
         required: false
@@ -67,6 +67,13 @@ jobs:
             exit 1
           fi
       
+      - name: Read suggested version from release.properties
+        run: |
+          if [ -f release.properties ]; then
+            SUGGESTED_FROM_FILE=$(grep 'next.release.version' release.properties | cut -d'=' -f2 | tr -d ' ')
+            echo "Suggested release version from release.properties: $SUGGESTED_FROM_FILE"
+          fi
+
       - name: Validate release version input
         run: |
           INPUT_VERSION="${{ github.event.inputs.release_version }}"
@@ -444,7 +451,7 @@ jobs:
         NEXT_RELEASE="${major}.${minor}.${NEXT_PATCH}"
         
         # Update the default release version in deploy-release.yml to the next expected release
-        sed -i "s/default: '[0-9]*\.[0-9]*\.[0-9]*' # auto-updated by release workflow/default: '${NEXT_RELEASE}' # auto-updated by release workflow/" .github/workflows/deploy-release.yml
+        sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" release.properties
         
         # Create a branch for the next development iteration
         NEXT_VERSION_BRANCH="release/prepare-next-${NEXT_VERSION}"
