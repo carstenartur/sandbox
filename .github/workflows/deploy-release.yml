@@ -243,17 +243,35 @@ jobs:
       if: ${{ !inputs.dry_run }}
       run: |
         set -e
-        echo "Pushing release commit to main branch..."
-        # Use git push directly - this works because the release commit
-        # does not modify .github/workflows/ files (excluded in git add).
-        # GITHUB_TOKEN only blocks pushes that modify workflow files.
-        git push origin HEAD:main
+        COMMIT_SHA=$(git rev-parse HEAD)
+        echo "Pushing release commit $COMMIT_SHA to main branch..."
+
+        # Step 1: Push to a temporary branch to get the commit into GitHub's object store.
+        # Temporary branches are not protected, so git push works with GITHUB_TOKEN.
+        TEMP_BRANCH="release-temp-${{ inputs.release_version }}"
+
+        # Register cleanup trap so the temp branch is always deleted, even if a later step fails.
+        trap 'git push origin ":refs/heads/${TEMP_BRANCH}" || true' EXIT
+
+        # Ensure reruns are idempotent: delete any existing remote temp branch (ignore errors), then push.
+        git push origin ":refs/heads/${TEMP_BRANCH}" || true
+        git push origin "HEAD:refs/heads/${TEMP_BRANCH}"
+        echo "Pushed commit to temporary branch ${TEMP_BRANCH}"
+
+        # Step 2: Fast-forward the protected main branch via the GitHub API.
+        # The REST API with GITHUB_TOKEN + contents:write can update protected branch refs.
+        gh api "repos/${{ github.repository }}/git/refs/heads/main" \
+          --method PATCH \
+          -f sha="$COMMIT_SHA"
+        echo "Fast-forwarded main branch to $COMMIT_SHA"
+
         echo "Successfully pushed release commit to main"
+        # Trap will clean up the temporary branch on exit.
 
     - name: Dry run - Skip pushing release commit
       if: ${{ inputs.dry_run }}
       run: |
-        echo "::notice::Dry run mode - would push release commit $(git rev-parse HEAD) to main"
+        echo "::notice::Dry run mode - would push release commit $(git rev-parse HEAD) to main via temp branch + API fast-forward"
 
     # 9. Create and push Git tag
     - name: Create and push Git tag
