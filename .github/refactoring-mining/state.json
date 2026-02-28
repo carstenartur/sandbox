@@ -182,9 +182,9 @@
       "lastModelUsed": "gemini-2.5-flash"
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "1101b9c7ad0261eb1ef559ee70d325f3eaa3ad11",
-      "lastProcessedDate": "2026-02-27T04:22:46.965470559Z",
-      "totalProcessed": 1033,
+      "lastProcessedCommit": "eda21b35f9c2448dc52766f9b2303fc96f610e69",
+      "lastProcessedDate": "2026-02-28T04:02:53.604333372Z",
+      "totalProcessed": 1325,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -251,11 +251,47 @@
           "maxRetries": 3
         },
         {
-          "hash": "8de2e23b6c0ac06f97e94fe84bc220619aee5efa",
-          "message": "Bug 500747 - Always wrap cause if throwing new exception\n\nChange-Id: Ia82f6a6cb84761eadd1e9c5b76b9453b1db7c672\nSigned-of",
-          "diffLines": 166,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-02-27T04:26:22.672847898Z",
+          "hash": "efbb87073d9dbcb7374efd4fcb6785889c57a494",
+          "message": "Fix for bug 496123 Fix for bug 496123 Fix for bug 496123 [9] DOM AST for ModuleDeclaration in module-info.java - convers",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T03:58:43.371591874Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "122497a51cb174b2d7497c5e397e8863b22e637a",
+          "message": "Revert \"Fix for bug 496123 Fix for bug 496123 Fix for bug 496123 [9] DOM AST for ModuleDeclaration in module-info.java -",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T03:58:43.396466572Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "af85a90374c262057daf6363bb015406bf214326",
+          "message": "Fix for bug 496123 Fix for bug 496123 [9] DOM AST for ModuleDeclaration in module-info.java - conversion part",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T03:58:43.418570167Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "28130b72f04a744007c69105ea085ddd296adbc3",
+          "message": "module modifier part of fix for 516731 [9] DOM AST for restricted keywords in ModuleDeclaration",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T04:01:50.959497740Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "12060a89a038be2ae8b77c65d492846c318015e3",
+          "message": "Fix for bug 515875  [1.9] [dom ast] Module Binding for modules - part1",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T04:02:06.291454167Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -273,5 +309,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 11006
+  "globalTotalProcessed": 11298
 }
