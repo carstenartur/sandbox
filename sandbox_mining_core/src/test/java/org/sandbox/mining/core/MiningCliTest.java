@@ -14,6 +14,7 @@
 package org.sandbox.mining.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -163,20 +164,20 @@ class MiningCliTest {
 	void testShouldStopNoLimit() {
 		long startTime = System.currentTimeMillis();
 		// 0 means no limit
-		assertEquals(false, MiningCli.shouldStop(startTime, 0));
+		assertFalse(MiningCli.shouldStop(startTime, 0));
 	}
 
 	@Test
 	void testShouldStopNegativeLimit() {
 		long startTime = System.currentTimeMillis();
-		assertEquals(false, MiningCli.shouldStop(startTime, -1));
+		assertFalse(MiningCli.shouldStop(startTime, -1));
 	}
 
 	@Test
 	void testShouldStopNotElapsed() {
 		long startTime = System.currentTimeMillis();
 		// 60 minutes, just started
-		assertEquals(false, MiningCli.shouldStop(startTime, 60));
+		assertFalse(MiningCli.shouldStop(startTime, 60));
 	}
 
 	@Test
@@ -184,7 +185,7 @@ class MiningCliTest {
 		// Start time in the past (2 hours ago)
 		long startTime = System.currentTimeMillis() - 2 * 60 * 60 * 1000;
 		// 60 minutes limit should have been exceeded
-		assertEquals(true, MiningCli.shouldStop(startTime, 60));
+		assertTrue(MiningCli.shouldStop(startTime, 60));
 	}
 
 	@Test

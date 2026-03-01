@@ -246,10 +246,9 @@ StatisticsCollector stats = new StatisticsCollector();
 ReportAggregator aggregator = new ReportAggregator();
 
 // Enrich prompt with type context if requested
-if (enrichTypeContext) {
-TypeContextEnricher typeEnricher = new TypeContextEnricher();
-promptBuilder.setTypeContext(typeEnricher.enrichFromDiff("")); //$NON-NLS-1$
-}
+// The TypeContextEnricher is initialized here but applied per-batch
+// in processBatch() where the actual diff content is available.
+TypeContextEnricher typeEnricher = enrichTypeContext ? new TypeContextEnricher() : null;
 
 // Collect error feedback from existing evaluations for prompt improvement
 JsonReporter feedbackReader = new JsonReporter();
@@ -296,7 +295,7 @@ repoState.setLastModelUsed(currentModel);
 try {
 processRepositories(config, state, statePath, workDir, batchSize, commitsPerRequest,
 llmClient, promptBuilder, dslContext, categoryManager, validator, stats, aggregator,
-startTimeMs, maxDurationMinutes);
+startTimeMs, maxDurationMinutes, typeEnricher);
 // Always process deferred commits at end of each run
 retryDeferredCommits(state, statePath, workDir, llmClient, promptBuilder,
 dslContext, categoryManager, validator, stats, aggregator, config, retryDeferred);
@@ -364,7 +363,8 @@ Path workDir, int batchSize, int commitsPerRequest,
 LlmClient llmClient, PromptBuilder promptBuilder,
 String dslContext, CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
-long startTimeMs, int maxDurationMinutes) throws IOException, GitAPIException {
+long startTimeMs, int maxDurationMinutes,
+TypeContextEnricher typeEnricher) throws IOException, GitAPIException {
 RepoCloner cloner = new RepoCloner();
 // Dynamic batch size tracking (reduced on truncation)
 int[] dynamicCPR = { commitsPerRequest };
@@ -416,7 +416,7 @@ List<RevCommit> subBatch = batch.subList(i, end);
 processBatch(subBatch, repo, diffExtractor, state, statePath,
 llmClient, promptBuilder, dslContext, categoryManager,
 validator, stats, aggregator, config.getMinDiffLinesPerCommit(),
-config.getMaxDiffLinesPerCommit());
+config.getMaxDiffLinesPerCommit(), typeEnricher);
 if (llmClient.wasLastResponseTruncated() && dynamicCPR[0] > 1) {
 dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);
 miningLog.println("  Reducing commits-per-request to " + dynamicCPR[0] + " after truncated response"); //$NON-NLS-1$
@@ -440,7 +440,8 @@ DiffExtractor diffExtractor, MiningState state, Path statePath,
 LlmClient llmClient, PromptBuilder promptBuilder,
 String dslContext, CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
-int minDiffLines, int maxDiffLines) throws IOException {
+int minDiffLines, int maxDiffLines,
+TypeContextEnricher typeEnricher) throws IOException {
 // Classify commits in original order: track which are skipped vs included
 List<CommitData> commitDataList = new ArrayList<>();
 List<Boolean> isSkipped = new ArrayList<>();
@@ -480,6 +481,17 @@ isSkipped.add(Boolean.FALSE);
 
 List<CommitEvaluation> evaluations = null;
 if (!commitDataList.isEmpty()) {
+// Enrich prompt with Eclipse type context from actual diffs if enabled
+if (typeEnricher != null) {
+StringBuilder combinedDiffs = new StringBuilder();
+for (CommitData cd : commitDataList) {
+combinedDiffs.append(cd.diff()).append('\n');
+}
+String context = typeEnricher.enrichFromDiff(combinedDiffs.toString());
+if (!context.isEmpty()) {
+promptBuilder.setTypeContext(context);
+}
+}
 List<String> hashes = commitDataList.stream().map(CommitData::commitHash).toList();
 List<String> messages = commitDataList.stream().map(CommitData::commitMessage).toList();
 String prompt = promptBuilder.buildBatchPrompt(dslContext,
