@@ -32,5 +32,7 @@ public class LlmPreferenceInitializer extends AbstractPreferenceInitializer {
 		defaults.put(LlmPreferencePage.PREF_MODEL_NAME, ""); //$NON-NLS-1$
 		defaults.putInt(LlmPreferencePage.PREF_MAX_TOKENS, 4096);
 		defaults.put(LlmPreferencePage.PREF_TEMPERATURE, "0.3"); //$NON-NLS-1$
+		defaults.putBoolean(LlmPreferencePage.PREF_WIZARD_AUTO_AI, false);
+		defaults.put(LlmPreferencePage.PREF_WIZARD_DEFAULT_FOLDER, ""); //$NON-NLS-1$
 	}
 }

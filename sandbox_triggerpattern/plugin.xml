@@ -99,6 +99,9 @@
       <command
             id="org.sandbox.jdt.triggerpattern.commands.mineWorkingTree"
             name="Mine DSL Rules from Working Tree" />
+      <command
+            id="org.sandbox.jdt.triggerpattern.commands.newHintFromSelection"
+            name="New Hint File from Selection" />
    </extension>
 
    <extension point="org.eclipse.ui.handlers">
@@ -108,5 +111,57 @@
       <handler
             class="org.sandbox.jdt.internal.ui.handlers.MineWorkingTreeHandler"
             commandId="org.sandbox.jdt.triggerpattern.commands.mineWorkingTree" />
+      <handler
+            class="org.sandbox.jdt.internal.ui.handlers.NewHintFromSelectionHandler"
+            commandId="org.sandbox.jdt.triggerpattern.commands.newHintFromSelection" />
+   </extension>
+
+   <!-- ===== New Wizard ===== -->
+   <extension point="org.eclipse.ui.newWizards">
+      <category
+            id="org.sandbox.jdt.triggerpattern"
+            name="Sandbox TriggerPattern"/>
+      <wizard
+            id="org.sandbox.jdt.triggerpattern.newHintFileWizard"
+            name="Sandbox Hint File"
+            category="org.sandbox.jdt.triggerpattern"
+            class="org.sandbox.jdt.internal.ui.wizard.NewSandboxHintFileWizard">
+         <description>Create a new .sandbox-hint file with transformation rules</description>
+         <selection class="org.eclipse.core.resources.IResource"/>
+      </wizard>
+   </extension>
+
+   <!-- ===== Cheatsheet ===== -->
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.triggerpattern.gettingStarted"
+            name="Getting Started with Sandbox Hint Files"
+            contentFile="cheatsheets/sandbox-hint-getting-started.xml">
+         <description>Learn how to create and use .sandbox-hint files</description>
+      </cheatsheet>
+   </extension>
+
+   <!-- ===== Context Menu ===== -->
+   <extension point="org.eclipse.ui.menus">
+      <menuContribution locationURI="popup:org.eclipse.jdt.ui.CompilationUnitEditor">
+         <menu id="org.sandbox.triggerpattern.menu"
+               label="Sandbox TriggerPattern">
+            <command commandId="org.sandbox.jdt.triggerpattern.commands.newHintFromSelection"
+                     label="New hint file from selection..."
+                     style="push">
+               <visibleWhen>
+                  <with variable="activeEditorId">
+                     <equals value="org.eclipse.jdt.ui.CompilationUnitEditor"/>
+                  </with>
+               </visibleWhen>
+            </command>
+            <command commandId="org.sandbox.jdt.triggerpattern.commands.mineDiff"
+                     label="Mine DSL rule from diff..."
+                     style="push"/>
+            <command commandId="org.sandbox.jdt.triggerpattern.commands.mineWorkingTree"
+                     label="Mine DSL rules from working tree..."
+                     style="push"/>
+         </menu>
+      </menuContribution>
    </extension>
 </plugin>

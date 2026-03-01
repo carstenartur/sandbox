@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2026 Carsten Hammer.
+
+    This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-2.0/
+
+    SPDX-License-Identifier: EPL-2.0
+-->
+<cheatsheet title="Getting Started with Sandbox Hint Files">
+
+   <intro>
+      <description>
+         This cheat sheet guides you through creating and using
+         <b>.sandbox-hint</b> files — a lightweight DSL for
+         defining automated code transformations that run as
+         Eclipse Clean Up actions.
+      </description>
+   </intro>
+
+   <item title="Understand the Concept">
+      <description>
+         A <b>.sandbox-hint</b> file contains one or more
+         <b>transformation rules</b>. Each rule consists of:
+         <br/><br/>
+         • A <b>source pattern</b> that matches Java code
+           (e.g. <b>$x.getBytes("UTF-8")</b>)<br/>
+         • An optional <b>guard</b> that restricts when the rule applies
+           (e.g. <b>sourceVersionGE(11)</b>)<br/>
+         • A <b>replacement</b> that rewrites the matched code
+           (e.g. <b>$x.getBytes(StandardCharsets.UTF_8)</b>)<br/>
+         <br/>
+         Meta-variables like <b>$x</b>, <b>$y</b>, and <b>$before$</b>
+         capture parts of the source code and can be reused in the
+         replacement.
+      </description>
+   </item>
+
+   <item title="Create Your First Hint File" dialog="true">
+      <description>
+         Use the <b>New Sandbox Hint File</b> wizard to create a
+         hint file with metadata and an example rule.
+         <br/><br/>
+         Click <b>Perform</b> to open the wizard, then choose a
+         project and folder, enter an ID and description, and
+         select the <b>Simple transformation rule</b> template.
+      </description>
+      <command
+         serialization="org.eclipse.ui.newWizard(newWizardId=org.sandbox.jdt.triggerpattern.newHintFileWizard)"
+         confirm="false"/>
+   </item>
+
+   <item title="Write a Transformation Rule">
+      <description>
+         Open a <b>.sandbox-hint</b> file in the editor. A rule
+         has the following structure:
+         <br/><br/>
+         <b>source pattern</b> :: <b>guard</b><br/>
+         =&gt; <b>replacement</b><br/>
+         ;;<br/>
+         <br/>
+         <b>Example:</b><br/>
+         <b>$x.getBytes("UTF-8") :: sourceVersionGE(11)</b><br/>
+         <b>=&gt; $x.getBytes(java.nio.charset.StandardCharsets.UTF_8)</b><br/>
+         <b>;;</b><br/>
+         <br/>
+         The editor provides syntax highlighting, content assist
+         (Ctrl+Space), and real-time validation.
+      </description>
+   </item>
+
+   <item title="Test Your Rule" dialog="true">
+      <description>
+         To apply your hint file rules to Java source code:
+         <br/><br/>
+         1. Open a Java file<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Select a custom profile and enable
+            <b>Sandbox TriggerPattern Hints</b><br/>
+         4. Click <b>Finish</b><br/>
+         <br/>
+         Matched code will be transformed according to your rules.
+      </description>
+      <command
+         serialization="org.eclipse.jdt.ui.edit.text.java.clean.up"
+         confirm="false"/>
+   </item>
+
+   <item title="Create a Rule from Existing Code">
+      <description>
+         You can generate a rule directly from selected Java code:
+         <br/><br/>
+         1. Select a Java expression or statement in the editor<br/>
+         2. Press <b>Ctrl+1</b> (Quick Assist)<br/>
+         3. Choose <b>Generate DSL rule</b><br/>
+         <br/>
+         Alternatively, right-click the selection and choose
+         <b>Sandbox TriggerPattern → New hint file from selection…</b>
+         to open the wizard with the selected code pre-filled.
+      </description>
+   </item>
+
+   <item title="Generate Rules with AI">
+      <description>
+         The wizard includes an AI-powered rule generator. On the
+         rule editor page (page 2), click
+         <b>✨ Generate with AI</b> to let an LLM create a
+         transformation rule from your source pattern.
+         <br/><br/>
+         Configure the LLM provider under
+         <b>Preferences → Java → LLM Rule Inference</b>.
+         Supported providers include Gemini, OpenAI, DeepSeek,
+         Qwen, Llama, and Mistral.
+      </description>
+   </item>
+
+   <item title="Add Rules to a Plugin (Optional)">
+      <description>
+         To distribute your rules as a reusable Eclipse plugin:
+         <br/><br/>
+         1. Create a new Plug-in Project
+            (<b>File → New → Plug-in Project</b>)<br/>
+         2. Open the <b>plugin.xml</b> editor<br/>
+         3. Add an extension for
+            <b>org.sandbox.jdt.triggerpattern.hints</b><br/>
+         4. Point the extension to your
+            <b>.sandbox-hint</b> file or implement
+            <b>IHintProvider</b><br/>
+         <br/>
+         This allows other developers to install your rules via
+         the Eclipse Marketplace or a P2 update site.
+      </description>
+   </item>
+
+   <item title="Share Your Rules">
+      <description>
+         Hint files are plain text — you can share them by:
+         <br/><br/>
+         • Committing them to a shared Git repository<br/>
+         • Packaging them in a plugin and publishing to an update site<br/>
+         • Exporting via <b>File → Export → Deployable plug-ins</b><br/>
+         <br/>
+         Congratulations! You now know how to create, test, and
+         share Sandbox Hint Files.
+      </description>
+   </item>
+
+</cheatsheet>
