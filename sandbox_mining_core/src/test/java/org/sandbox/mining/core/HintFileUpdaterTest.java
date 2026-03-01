@@ -117,7 +117,7 @@ class HintFileUpdaterTest {
 				"Summary", "VALID");
 		List<Path> created = updater.writeHintFiles(List.of(eval), tempDir);
 		assertEquals(1, created.size());
-		assertTrue(created.get(0).getFileName().toString().equals("custom-collections.sandbox-hint"));
+		assertEquals("custom-collections.sandbox-hint", created.get(0).getFileName().toString());
 	}
 
 	@Test
