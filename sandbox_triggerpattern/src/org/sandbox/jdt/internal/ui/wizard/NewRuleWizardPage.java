@@ -159,7 +159,8 @@ public class NewRuleWizardPage extends WizardPage {
 		setPageComplete(true);
 
 		// Auto-trigger AI inference after the page is fully rendered
-		if (autoTriggerAi && generateAiButton != null && generateAiButton.isEnabled()) {
+		if (autoTriggerAi && EclipseLlmService.getInstance().isAvailable()
+				&& generateAiButton != null) {
 			Display.getCurrent().asyncExec(this::runAiInference);
 		}
 	}
@@ -428,7 +429,7 @@ public class NewRuleWizardPage extends WizardPage {
 	private void refreshAiAvailability() {
 		boolean nowAvailable = EclipseLlmService.getInstance().isAvailable();
 		if (nowAvailable && generateAiButton == null) {
-			validationLabel.setText("\u2705 AI is now configured \u2014 you can use 'Generate with AI'"); //$NON-NLS-1$
+			validationLabel.setText("\u2705 AI is now configured \u2014 reopen the wizard to use 'Generate with AI'"); //$NON-NLS-1$
 		}
 	}
 
@@ -441,6 +442,8 @@ public class NewRuleWizardPage extends WizardPage {
 			String text = (String) clipboard.getContents(TextTransfer.getInstance());
 			if (text != null && !text.isBlank()) {
 				fillFieldsFromInferredRule(text);
+			} else {
+				validationLabel.setText("\u26A0 Clipboard is empty or contains no text"); //$NON-NLS-1$
 			}
 		} finally {
 			clipboard.dispose();

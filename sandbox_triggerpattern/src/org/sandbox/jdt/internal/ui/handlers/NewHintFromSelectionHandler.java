@@ -94,7 +94,7 @@ public class NewHintFromSelectionHandler extends AbstractHandler {
 				return trimmed;
 			}
 		}
-		return text.trim();
+		return ""; //$NON-NLS-1$
 	}
 
 	/**
