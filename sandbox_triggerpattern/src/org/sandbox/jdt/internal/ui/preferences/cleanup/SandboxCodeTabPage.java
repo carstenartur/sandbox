@@ -49,47 +49,85 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 			CleanUpOptions.TRUE
 	};
 	
-	public static final String ID = "org.sandbox.jdt.ui.cleanup.tabpage.triggerpattern"; //$NON-NLS-1$
+	public static final String ID = "org.eclipse.jdt.ui.cleanup.tabpage.sandbox.trigger"; //$NON-NLS-1$
 	
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {
 		return new AbstractCleanUp[] {
+				// Group 1: Code Transformations
 				new StringSimplificationCleanUp(values),
-				new ThreadingCleanUp(values),
-				new ShiftOutOfRangeCleanUp(values),
-				new HintFileCleanUp(values),
 				new WrongStringComparisonCleanUp(values),
+				new ShiftOutOfRangeCleanUp(values),
+				// Group 2: Threading
+				new ThreadingCleanUp(values),
+				// Group 3: Code Quality Hints
 				new PrintStackTraceCleanUp(values),
 				new SystemOutCleanUp(values),
 				new ObsoleteCollectionCleanUp(values),
 				new MissingHashCodeCleanUp(values),
-				new OverridableCallInConstructorCleanUp(values)
+				new OverridableCallInConstructorCleanUp(values),
+				// Group 4: Declarative Transformations
+				new HintFileCleanUp(values)
 		};
 	}
 	
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-		Group stringGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);
-		final CheckboxPreference stringSimplification = createCheckboxPref(stringGroup, numColumns, 
-				CleanUpMessages.StringSimplificationTabPage_CheckboxName_StringSimplification, 
+		// ── Group 1: Code Transformations ──
+		Group transformGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);
+		final CheckboxPreference stringSimplification = createCheckboxPref(transformGroup, numColumns,
+				CleanUpMessages.StringSimplificationTabPage_CheckboxName_StringSimplification,
 				MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);
-		intent(stringGroup);
+		intent(transformGroup);
+		final CheckboxPreference wrongStringComparison = createCheckboxPref(transformGroup, numColumns,
+				CleanUpMessages.WrongStringComparisonTabPage_CheckboxName,
+				MYCleanUpConstants.WRONG_STRING_COMPARISON_CLEANUP, FALSE_TRUE);
+		intent(transformGroup);
+		final CheckboxPreference shiftOutOfRange = createCheckboxPref(transformGroup, numColumns,
+				CleanUpMessages.ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange,
+				MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, FALSE_TRUE);
+		intent(transformGroup);
 		registerPreference(stringSimplification);
+		registerPreference(wrongStringComparison);
+		registerPreference(shiftOutOfRange);
 
+		// ── Group 2: Threading ──
 		Group threadingGroup = createGroup(numColumns, composite, CleanUpMessages.ThreadingTabPage_GroupName);
-		final CheckboxPreference threading = createCheckboxPref(threadingGroup, numColumns, 
-				CleanUpMessages.ThreadingTabPage_CheckboxName_Threading, 
+		final CheckboxPreference threading = createCheckboxPref(threadingGroup, numColumns,
+				CleanUpMessages.ThreadingTabPage_CheckboxName_Threading,
 				MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP, FALSE_TRUE);
 		intent(threadingGroup);
 		registerPreference(threading);
-    
-		Group shiftGroup = createGroup(numColumns, composite, CleanUpMessages.ShiftOutOfRangeTabPage_GroupName);
-		final CheckboxPreference shiftOutOfRange = createCheckboxPref(shiftGroup, numColumns,
-				CleanUpMessages.ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange,
-				MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, FALSE_TRUE);
-		intent(shiftGroup);
-		registerPreference(shiftOutOfRange);
 
+		// ── Group 3: Code Quality Hints (detection only, no code changes) ──
+		Group hintsGroup = createGroup(numColumns, composite, CleanUpMessages.PrintStackTraceTabPage_GroupName);
+		final CheckboxPreference printStackTrace = createCheckboxPref(hintsGroup, numColumns,
+				CleanUpMessages.PrintStackTraceTabPage_CheckboxName,
+				MYCleanUpConstants.PRINT_STACKTRACE_CLEANUP, FALSE_TRUE);
+		intent(hintsGroup);
+		final CheckboxPreference systemOut = createCheckboxPref(hintsGroup, numColumns,
+				CleanUpMessages.SystemOutTabPage_CheckboxName,
+				MYCleanUpConstants.SYSTEM_OUT_CLEANUP, FALSE_TRUE);
+		intent(hintsGroup);
+		final CheckboxPreference obsoleteCollection = createCheckboxPref(hintsGroup, numColumns,
+				CleanUpMessages.ObsoleteCollectionTabPage_CheckboxName,
+				MYCleanUpConstants.OBSOLETE_COLLECTION_CLEANUP, FALSE_TRUE);
+		intent(hintsGroup);
+		final CheckboxPreference missingHashCode = createCheckboxPref(hintsGroup, numColumns,
+				CleanUpMessages.MissingHashCodeTabPage_CheckboxName,
+				MYCleanUpConstants.MISSING_HASHCODE_CLEANUP, FALSE_TRUE);
+		intent(hintsGroup);
+		final CheckboxPreference overridableInConstructor = createCheckboxPref(hintsGroup, numColumns,
+				CleanUpMessages.OverridableCallInConstructorTabPage_CheckboxName,
+				MYCleanUpConstants.OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP, FALSE_TRUE);
+		intent(hintsGroup);
+		registerPreference(printStackTrace);
+		registerPreference(systemOut);
+		registerPreference(obsoleteCollection);
+		registerPreference(missingHashCode);
+		registerPreference(overridableInConstructor);
+
+		// ── Group 4: Declarative Transformations (.sandbox-hint files) ──
 		Group hintFileGroup = createGroup(numColumns, composite, CleanUpMessages.HintFileTabPage_GroupName);
 		final CheckboxPreference hintFile = createCheckboxPref(hintFileGroup, numColumns,
 				CleanUpMessages.HintFileTabPage_CheckboxName_HintFile,
@@ -184,47 +222,5 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				bundleSerialization
 		});
 		registerPreference(hintFile);
-
-		Group wrongStringGroup = createGroup(numColumns, composite, CleanUpMessages.WrongStringComparisonTabPage_GroupName);
-		final CheckboxPreference wrongStringComparison = createCheckboxPref(wrongStringGroup, numColumns,
-				CleanUpMessages.WrongStringComparisonTabPage_CheckboxName,
-				MYCleanUpConstants.WRONG_STRING_COMPARISON_CLEANUP, FALSE_TRUE);
-		intent(wrongStringGroup);
-		registerPreference(wrongStringComparison);
-
-		Group printStackTraceGroup = createGroup(numColumns, composite, CleanUpMessages.PrintStackTraceTabPage_GroupName);
-		final CheckboxPreference printStackTrace = createCheckboxPref(printStackTraceGroup, numColumns,
-				CleanUpMessages.PrintStackTraceTabPage_CheckboxName,
-				MYCleanUpConstants.PRINT_STACKTRACE_CLEANUP, FALSE_TRUE);
-		intent(printStackTraceGroup);
-		registerPreference(printStackTrace);
-
-		Group systemOutGroup = createGroup(numColumns, composite, CleanUpMessages.SystemOutTabPage_GroupName);
-		final CheckboxPreference systemOut = createCheckboxPref(systemOutGroup, numColumns,
-				CleanUpMessages.SystemOutTabPage_CheckboxName,
-				MYCleanUpConstants.SYSTEM_OUT_CLEANUP, FALSE_TRUE);
-		intent(systemOutGroup);
-		registerPreference(systemOut);
-
-		Group obsoleteCollectionGroup = createGroup(numColumns, composite, CleanUpMessages.ObsoleteCollectionTabPage_GroupName);
-		final CheckboxPreference obsoleteCollection = createCheckboxPref(obsoleteCollectionGroup, numColumns,
-				CleanUpMessages.ObsoleteCollectionTabPage_CheckboxName,
-				MYCleanUpConstants.OBSOLETE_COLLECTION_CLEANUP, FALSE_TRUE);
-		intent(obsoleteCollectionGroup);
-		registerPreference(obsoleteCollection);
-
-		Group missingHashCodeGroup = createGroup(numColumns, composite, CleanUpMessages.MissingHashCodeTabPage_GroupName);
-		final CheckboxPreference missingHashCode = createCheckboxPref(missingHashCodeGroup, numColumns,
-				CleanUpMessages.MissingHashCodeTabPage_CheckboxName,
-				MYCleanUpConstants.MISSING_HASHCODE_CLEANUP, FALSE_TRUE);
-		intent(missingHashCodeGroup);
-		registerPreference(missingHashCode);
-
-		Group overridableGroup = createGroup(numColumns, composite, CleanUpMessages.OverridableCallInConstructorTabPage_GroupName);
-		final CheckboxPreference overridableInConstructor = createCheckboxPref(overridableGroup, numColumns,
-				CleanUpMessages.OverridableCallInConstructorTabPage_CheckboxName,
-				MYCleanUpConstants.OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP, FALSE_TRUE);
-		intent(overridableGroup);
-		registerPreference(overridableInConstructor);
 	}
 }

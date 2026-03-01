@@ -60,8 +60,21 @@ public class MissingHashCodeCleanUpCore extends AbstractSandboxCleanUpCore {
 	@Override
 	public String getPreview() {
 		if (isEnabled(MISSING_HASHCODE_CLEANUP)) {
-			return "// equals() and hashCode() both overridden\n"; //$NON-NLS-1$
+			return """
+				public class Person {
+				    @Override
+				    public boolean equals(Object o) { ... }
+				    @Override
+				    public int hashCode() { ... }
+				}
+				"""; //$NON-NLS-1$
 		}
-		return "// equals() overridden, hashCode() missing\n"; //$NON-NLS-1$
+		return """
+			public class Person {
+			    @Override
+			    public boolean equals(Object o) { ... }
+			    // WARNING: hashCode() is missing!
+			}
+			"""; //$NON-NLS-1$
 	}
 }

@@ -33,7 +33,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 			CleanUpOptions.TRUE
 	};
 
-	public static final String ID= "org.eclipse.jdt.ui.cleanup.tabpage.sandbox"; //$NON-NLS-1$
+	public static final String ID= "org.eclipse.jdt.ui.cleanup.tabpage.sandbox.method"; //$NON-NLS-1$
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {

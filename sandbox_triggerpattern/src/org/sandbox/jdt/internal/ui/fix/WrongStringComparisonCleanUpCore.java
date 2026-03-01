@@ -60,8 +60,18 @@ public class WrongStringComparisonCleanUpCore extends AbstractSandboxCleanUpCore
 	@Override
 	public String getPreview() {
 		if (isEnabled(WRONG_STRING_COMPARISON_CLEANUP)) {
-			return "\"literal\".equals(str)\n"; //$NON-NLS-1$
+			return """
+				if ("admin".equals(role)) {
+				    grant();
+				}
+				boolean isDefault = "default".equals(name);
+				"""; //$NON-NLS-1$
 		}
-		return "str == \"literal\"\n"; //$NON-NLS-1$
+		return """
+			if (role == "admin") {
+			    grant();
+			}
+			boolean isDefault = name == "default";
+			"""; //$NON-NLS-1$
 	}
 }

@@ -95,8 +95,14 @@ public class ShiftOutOfRangeCleanUpCore extends AbstractCleanUp {
 	@Override
 	public String getPreview() {
 		if (isEnabled(SHIFT_OUT_OF_RANGE_CLEANUP)) {
-			return "int shifted = value << 0;\n"; //$NON-NLS-1$
+			return """
+				int mask = 1 << 0;  // was: 1 << 32 (no-op for int)
+				long flag = 1L << 32; // OK for long
+				"""; //$NON-NLS-1$
 		}
-		return "int shifted = value << 32;\n"; //$NON-NLS-1$
+		return """
+			int mask = 1 << 32;  // BUG: equivalent to 1 << 0
+			long flag = 1L << 32; // OK for long
+			"""; //$NON-NLS-1$
 	}
 }
