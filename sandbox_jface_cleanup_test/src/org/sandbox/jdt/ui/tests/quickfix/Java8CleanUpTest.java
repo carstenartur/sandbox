@@ -638,6 +638,7 @@ public class Test {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP_MONITOR);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
@@ -676,6 +677,7 @@ public class Test {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP_MONITOR);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -870,6 +872,7 @@ public class Test {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP_VIEWER_SORTER);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
@@ -925,6 +928,7 @@ public class Test {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
@@ -989,6 +993,7 @@ public class Test {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -1051,6 +1056,7 @@ public class Test {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
+		context.enable(MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 }
