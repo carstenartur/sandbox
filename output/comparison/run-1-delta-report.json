@@ -1,0 +1,424 @@
+{
+  "runId": "run-1",
+  "timestamp": "2026-03-01T10:30:00Z",
+  "description": "First comparison run: Copilot reference analysis of 38 Eclipse Platform 2025 commits",
+  "commitsAnalyzed": 38,
+  "repositories": [
+    "https://github.com/eclipse-platform/eclipse.platform.ui",
+    "https://github.com/eclipse-jdt/eclipse.jdt.ui"
+  ],
+  "summary": {
+    "totalCommits": 38,
+    "relevant": 24,
+    "irrelevant": 14,
+    "greenCommits": 5,
+    "yellowCommits": 8,
+    "redCommits": 11,
+    "notApplicable": 14,
+    "discoveredPatterns": 3,
+    "gapCategories": 4
+  },
+  "evaluations": [
+    {
+      "commitHash": "7bb8891bf4f5268f1fb49e0531bc192672d7ce72",
+      "repo": "eclipse-platform/eclipse.platform.ui",
+      "message": "JDT Clean-up Use String.replace() instead of String.replaceAll() when possible",
+      "trafficLight": "GREEN",
+      "relevant": true,
+      "reusability": 9,
+      "codeImprovement": 6,
+      "implementationEffort": 2,
+      "category": "String API Modernization",
+      "canImplementInCurrentDsl": true,
+      "dslRule": "// String.replaceAll with literal → String.replace\n$str.replaceAll($literal, $replacement) :: sourceVersionGE(9) && isStringLiteral($literal) && !containsRegexChars($literal)\n=> $str.replace($literal, $replacement)\n;;",
+      "dslValidationResult": "VALID",
+      "summary": "Replace String.replaceAll() with String.replace() when the pattern is a literal string without regex metacharacters."
+    },
+    {
+      "commitHash": "b4b98c6eabbd40a29bbeec1375fa862a04b8ad14",
+      "repo": "eclipse-platform/eclipse.platform.ui",
+      "message": "Stop using deprecated Platform.run method — Use SafeRunner.run directly",
+      "trafficLight": "GREEN",
+      "relevant": true,
+      "reusability": 7,
+      "codeImprovement": 5,
+      "implementationEffort": 2,
+      "category": "Eclipse API Migration",
+      "canImplementInCurrentDsl": true,
+      "dslRule": "// Platform.run → SafeRunner.run\norg.eclipse.core.runtime.Platform.run($runnable) :: sourceVersionGE(11)\n=> org.eclipse.core.runtime.SafeRunner.run($runnable)\n;;",
+      "dslValidationResult": "VALID",
+      "summary": "Replace deprecated Platform.run() with SafeRunner.run()."
+    },
+    {
+      "commitHash": "741d08e097fde002bfff10c165a4585efc1a54e5",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Removed unnecessary @SuppressWarnings(\"deprecation\") from jdt.ui",
+      "trafficLight": "GREEN",
+      "relevant": true,
+      "reusability": 7,
+      "codeImprovement": 4,
+      "implementationEffort": 3,
+      "category": "Unnecessary Annotation Removal",
+      "canImplementInCurrentDsl": false,
+      "dslRule": null,
+      "summary": "Remove @SuppressWarnings(\"deprecation\") annotations that no longer suppress any actual deprecation warnings."
+    },
+    {
+      "commitHash": "6c82a8384eb1e8ddafcaea1ef4e939ff3bd78ebd",
+      "repo": "eclipse-platform/eclipse.platform.ui",
+      "message": "Remove unused NLS entry",
+      "trafficLight": "GREEN",
+      "relevant": true,
+      "reusability": 6,
+      "codeImprovement": 3,
+      "implementationEffort": 2,
+      "category": "Dead Code Removal",
+      "canImplementInCurrentDsl": false,
+      "dslRule": null,
+      "summary": "Remove unused NLS entries from message bundles."
+    },
+    {
+      "commitHash": "191a1c771f3a516d61f34d8921c679ede0713cfb",
+      "repo": "eclipse-platform/eclipse.platform.ui",
+      "message": "Remove unused JUnit Rule and TestName imports",
+      "trafficLight": "GREEN",
+      "relevant": true,
+      "reusability": 8,
+      "codeImprovement": 3,
+      "implementationEffort": 1,
+      "category": "Unused Import Removal",
+      "canImplementInCurrentDsl": false,
+      "dslRule": null,
+      "summary": "Remove imports for JUnit 4 Rule/TestName that are no longer used after JUnit 5 migration."
+    },
+    {
+      "commitHash": "343fd57b98addd612e285e10c70be340e784d0b0",
+      "repo": "eclipse-platform/eclipse.platform.ui",
+      "message": "Performance: Cache method calls in loops and optimize string concatenation",
+      "trafficLight": "YELLOW",
+      "relevant": true,
+      "reusability": 8,
+      "codeImprovement": 4,
+      "implementationEffort": 7,
+      "category": "Performance Optimization",
+      "canImplementInCurrentDsl": false,
+      "languageChangeNeeded": "Requires loop body analysis to verify collection is not modified during iteration",
+      "summary": "Cache repeated method calls (like getChildren()) in loop variables."
+    },
+    {
+      "commitHash": "0e238b7c618484e0815dee7c33b70fd9769f6603",
+      "repo": "eclipse-platform/eclipse.platform.ui",
+      "message": "Migrate org.eclipse.ui.tests.navigator from JUnit 4 to JUnit 5",
+      "trafficLight": "YELLOW",
+      "relevant": true,
+      "reusability": 9,
+      "codeImprovement": 7,
+      "implementationEffort": 6,
+      "category": "JUnit Migration",
+      "canImplementInCurrentDsl": false,
+      "languageChangeNeeded": "Full JUnit migration needs lifecycle annotation replacement plus cross-method analysis",
+      "summary": "Migrate entire test suite from JUnit 4 to JUnit 5."
+    },
+    {
+      "commitHash": "37ad17df2f0bf9928ba49fd7ff672a2be98ff816",
+      "repo": "eclipse-platform/eclipse.platform.ui",
+      "message": "Migrate org.eclipse.ui.monitoring.tests from JUnit 4 to JUnit 5",
+      "trafficLight": "YELLOW",
+      "relevant": true,
+      "reusability": 9,
+      "codeImprovement": 7,
+      "implementationEffort": 6,
+      "category": "JUnit Migration",
+      "canImplementInCurrentDsl": false,
+      "languageChangeNeeded": "Full JUnit migration needs lifecycle annotation replacement plus cross-method analysis",
+      "summary": "Migrate monitoring test suite from JUnit 4 to JUnit 5."
+    },
+    {
+      "commitHash": "447e516e5084e093f65fa0fa1a8ed1f42f6c1d8f",
+      "repo": "eclipse-platform/eclipse.platform.ui",
+      "message": "Migrate 5 tests to JUnit 5 using CloseTestWindowsExtension",
+      "trafficLight": "YELLOW",
+      "relevant": true,
+      "reusability": 9,
+      "codeImprovement": 7,
+      "implementationEffort": 5,
+      "category": "JUnit Migration",
+      "canImplementInCurrentDsl": false,
+      "languageChangeNeeded": "Requires Rule-to-Extension conversion pattern",
+      "summary": "Migrate tests using custom CloseTestWindowsExtension for JUnit 5."
+    },
+    {
+      "commitHash": "66872a9531a94069a9ce4eb929c7f6e02401b70d",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Add cleanup to use module imports where possible",
+      "trafficLight": "YELLOW",
+      "relevant": true,
+      "reusability": 8,
+      "codeImprovement": 5,
+      "implementationEffort": 5,
+      "category": "Module Import Modernization",
+      "canImplementInCurrentDsl": false,
+      "languageChangeNeeded": "Needs module-aware import resolution to determine which module to import",
+      "summary": "New JDT cleanup to replace individual type imports with module imports (Java 25+)."
+    },
+    {
+      "commitHash": "46f45bcb2b2ab777b7377d5d43bfa5fb2e706a40",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Enhance convert to switch expressions to include more scenarios",
+      "trafficLight": "YELLOW",
+      "relevant": true,
+      "reusability": 7,
+      "codeImprovement": 6,
+      "implementationEffort": 7,
+      "category": "Switch Expression Modernization",
+      "canImplementInCurrentDsl": false,
+      "languageChangeNeeded": "Needs control flow analysis to verify switch can be converted to expression",
+      "summary": "Enhance existing switch expression conversion to handle non-returning switch statements."
+    },
+    {
+      "commitHash": "ce67be20232fee3f8de7c0fde0875b17b6977077",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Fix cleanup to replace java.specification.version property",
+      "trafficLight": "YELLOW",
+      "relevant": true,
+      "reusability": 6,
+      "codeImprovement": 4,
+      "implementationEffort": 3,
+      "category": "System Properties Constants",
+      "canImplementInCurrentDsl": false,
+      "languageChangeNeeded": "Requires constant lookup for system property name mappings",
+      "summary": "Replace System.getProperty() calls for well-known properties with API constants."
+    },
+    {
+      "commitHash": "90ff95a00fbedd5e7bd5747668cfe1aa606527d4",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Do not offer to add type arguments where diamond operator would do",
+      "trafficLight": "YELLOW",
+      "relevant": true,
+      "reusability": 7,
+      "codeImprovement": 4,
+      "implementationEffort": 4,
+      "category": "Diamond Operator",
+      "canImplementInCurrentDsl": false,
+      "languageChangeNeeded": "Requires type inference analysis to know when diamond is applicable",
+      "summary": "Avoid suggesting explicit type arguments when diamond operator is sufficient."
+    },
+    {
+      "commitHash": "c60b1056bc5156ff056e5050723db49d2f96e5da",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Refactor StringCleanUp to jdt.core.manipulation",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 3,
+      "codeImprovement": 6,
+      "implementationEffort": 9,
+      "category": "Architecture Migration",
+      "canImplementInCurrentDsl": false,
+      "languageChangeNeeded": "Requires cross-module refactoring with extension point and build system changes",
+      "summary": "Move StringCleanUp implementation from jdt.ui to jdt.core.manipulation for jdt.ls reuse."
+    },
+    {
+      "commitHash": "71a69b986988ef8afbc72fa7369b37570dc091e6",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Refactor PatternCleanUp to jdt.core.manipulation",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 3,
+      "codeImprovement": 6,
+      "implementationEffort": 9,
+      "category": "Architecture Migration",
+      "canImplementInCurrentDsl": false,
+      "summary": "Move PatternCleanUp implementation from jdt.ui to jdt.core.manipulation."
+    },
+    {
+      "commitHash": "f68abe2c3e7ea9696c303974b9ce5ae0c79e491e",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Refactor UnimplementedCodeCleanUp to jdt.core.manipulation",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 3,
+      "codeImprovement": 6,
+      "implementationEffort": 9,
+      "category": "Architecture Migration",
+      "canImplementInCurrentDsl": false,
+      "summary": "Move UnimplementedCodeCleanUp from jdt.ui to jdt.core.manipulation."
+    },
+    {
+      "commitHash": "29f35148b2d7207d81606f355319f21a8752f4eb",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Refactor more clean-ups to jdt.core.manipulation",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 3,
+      "codeImprovement": 6,
+      "implementationEffort": 9,
+      "category": "Architecture Migration",
+      "canImplementInCurrentDsl": false,
+      "summary": "Move additional CleanUp implementations from jdt.ui to jdt.core.manipulation."
+    },
+    {
+      "commitHash": "ecb420fa1f6158f5c63e221a01275782407757c7",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Mass refactor of LocalCorrectionsSubProcessor methods to base",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 2,
+      "codeImprovement": 6,
+      "implementationEffort": 8,
+      "category": "Architecture Migration",
+      "canImplementInCurrentDsl": false,
+      "summary": "Extract base methods for LocalCorrectionsSubProcessor to enable jdt.ls reuse."
+    },
+    {
+      "commitHash": "d2abdce788f060f4021a68484867603ebdcb147a",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Refactor TypeParametersCleanUp to jdt.core.manipulation",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 3,
+      "codeImprovement": 6,
+      "implementationEffort": 9,
+      "category": "Architecture Migration",
+      "canImplementInCurrentDsl": false,
+      "summary": "Move TypeParametersCleanUp from jdt.ui to jdt.core.manipulation."
+    },
+    {
+      "commitHash": "3702d32e2985b25dabcc2863a7a3ca67e7a1906c",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Fix Unnecessary Array clean-up to not remove NLS markers",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 4,
+      "codeImprovement": 7,
+      "implementationEffort": 7,
+      "category": "Clean-up Bug Fix",
+      "canImplementInCurrentDsl": false,
+      "summary": "Fix bug where removing unnecessary array creation also removed NLS markers on the same line."
+    },
+    {
+      "commitHash": "52b06dbaa91fa0de595fddc108310a60cbdbded5",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Fix control blocks clean-up to preserve else comments properly",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 3,
+      "codeImprovement": 5,
+      "implementationEffort": 6,
+      "category": "Clean-up Bug Fix",
+      "canImplementInCurrentDsl": false,
+      "summary": "Fix control block clean-up that was removing comments attached to else blocks."
+    },
+    {
+      "commitHash": "73676b064980ea4c046f2dfb12b7418550d3ab3a",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Do not remove lone empty commented return statement in a lambda",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 3,
+      "codeImprovement": 4,
+      "implementationEffort": 5,
+      "category": "Clean-up Bug Fix",
+      "canImplementInCurrentDsl": false,
+      "summary": "Fix clean-up that incorrectly removed a commented-out return in a lambda."
+    },
+    {
+      "commitHash": "f9770112c1ae4f0989b13b02cb44896b764c8f8d",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Highlight deprecation of canonical record constructor",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 4,
+      "codeImprovement": 5,
+      "implementationEffort": 6,
+      "category": "Deprecation Handling",
+      "canImplementInCurrentDsl": false,
+      "summary": "Add deprecation highlighting for record canonical constructors."
+    },
+    {
+      "commitHash": "5f271d36c5ac2a8d8cc4489aaaf163f30b69a8a2",
+      "repo": "eclipse-jdt/eclipse.jdt.ui",
+      "message": "Fix add final for fields cleanup for generic class and lambda",
+      "trafficLight": "RED",
+      "relevant": true,
+      "reusability": 4,
+      "codeImprovement": 5,
+      "implementationEffort": 6,
+      "category": "Clean-up Bug Fix",
+      "canImplementInCurrentDsl": false,
+      "summary": "Fix add-final-for-fields cleanup that failed for generic classes and lambdas."
+    }
+  ],
+  "irrelevantCommits": [
+    {"commitHash": "5fe841fb799c25e1d2037f4d2e805c1c4e842ad4", "reason": "Version bump(s) for 4.39 stream"},
+    {"commitHash": "a5048d72d38be8881e42606ce26f599a28609e88", "reason": "Version bump(s) for 4.39 stream"},
+    {"commitHash": "5f9f768564b7a2aa6b5696ec2afe931cf8b5764b", "reason": "Version bump(s) for 4.39 stream"},
+    {"commitHash": "02a96047dfcefdaaf8b0a1ce05aa89682841baac", "reason": "Version bump(s) for 4.39 stream"},
+    {"commitHash": "40552f3c29a72e5ff1a7bbf9fbeb57e2a9a2506b", "reason": "API removal (addFastView), not a transformation pattern"},
+    {"commitHash": "26ddd0da93aeca1b9b4ad3a56b0d8bae208e3b83", "reason": "Bug fix (remove redundant checks), not reusable pattern"},
+    {"commitHash": "a629637edf1132951fae1a756d11c9311cbd18d8", "reason": "Marking for removal, not a code transformation"},
+    {"commitHash": "19ffef3521fcbe81ef6fc7ae595789d8d0825382", "reason": "Marking for removal, not a code transformation"},
+    {"commitHash": "601b0d30c7ce504b66dbceb24de6b63f89f4a6f5", "reason": "Removing commented-out code, no reusable pattern"},
+    {"commitHash": "4391448be37cc14f290c72bc267255effcc3c5ec", "reason": "Concurrency fix (Phaser→CountDownLatch), not generalizable"},
+    {"commitHash": "c9f1e026dfdd93184ebf76f5f5306b40c70023b2", "reason": "Adding final modifier to field, too simple for DSL rule"},
+    {"commitHash": "c6e9f0f6953da8f0d7762ed070eb1fa7f3cabcad", "reason": "Adding @Deprecated annotations, not a transformation pattern"},
+    {"commitHash": "aede34103616f47826e12d09a2e03d03540c2a6e", "reason": "Java 21 deprecation fixes, project-specific"},
+    {"commitHash": "68255e32f6916597f35a642f07b8155c6ab081c6", "reason": "API removal, not a reusable pattern"}
+  ],
+  "gapAnalysis": {
+    "totalGaps": 4,
+    "categories": {
+      "MISSING_API_CONTEXT": {
+        "count": 1,
+        "description": "Gemini would miss Platform.run → SafeRunner.run without Eclipse API context",
+        "improvement": "Added Platform.run deprecation to eclipse-api-context.md"
+      },
+      "MISSING_DSL_RULE": {
+        "count": 1,
+        "description": "String.replaceAll → String.replace pattern was not in existing hint files",
+        "improvement": "Pattern discovered and added to mining examples"
+      },
+      "MISSING_TYPE_CONTEXT": {
+        "count": 1,
+        "description": "JUnit migration requires knowledge of JUnit 4/5 API correspondence",
+        "improvement": "Added JUnit 4→5 migration patterns to eclipse-api-context.md"
+      },
+      "CATEGORY_MISMATCH": {
+        "count": 1,
+        "description": "Architecture migrations (moving classes between modules) should be RED, not YELLOW",
+        "improvement": "Added Example 5 (RED) to mining-examples.md to clarify"
+      }
+    }
+  },
+  "discoveredRules": [
+    {
+      "id": "string-replace-literal",
+      "description": "Replace String.replaceAll() with String.replace() for literal patterns",
+      "rule": "// String.replaceAll with literal → String.replace\n$str.replaceAll($literal, $replacement) :: sourceVersionGE(9) && isStringLiteral($literal) && !containsRegexChars($literal)\n=> $str.replace($literal, $replacement)\n;;",
+      "source": "7bb8891bf4f5268f1fb49e0531bc192672d7ce72",
+      "category": "String API Modernization"
+    },
+    {
+      "id": "platform-run-to-saferunner",
+      "description": "Replace deprecated Platform.run() with SafeRunner.run()",
+      "rule": "// Platform.run → SafeRunner.run\norg.eclipse.core.runtime.Platform.run($runnable) :: sourceVersionGE(11)\n=> org.eclipse.core.runtime.SafeRunner.run($runnable)\n;;",
+      "source": "b4b98c6eabbd40a29bbeec1375fa862a04b8ad14",
+      "category": "Eclipse API Migration"
+    }
+  ],
+  "improvements": {
+    "promptResources": [
+      "Updated mining-examples.md with 8 real Eclipse 2025 commit examples",
+      "Updated eclipse-api-context.md with Platform.run deprecation and JUnit 4→5 patterns",
+      "Added String.replaceAll→replace pattern as discoverable rule"
+    ],
+    "pipelineChanges": [
+      "Integrated HintFileUpdater into MiningCli pipeline for GREEN+VALID evaluations",
+      "HintFileUpdater writes .sandbox-hint files automatically after mining"
+    ],
+    "nextSteps": [
+      "Run actual Gemini mining on these 38 commits to get LLM results",
+      "Compare Gemini output with this Copilot reference using --comparison-mode",
+      "Iterate: analyze gaps and feed improvements back into prompts"
+    ]
+  }
+}
