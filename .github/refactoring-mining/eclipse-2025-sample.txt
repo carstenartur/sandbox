@@ -1,0 +1,14 @@
+# Sample Eclipse Platform commits from 2025 for comparison analysis
+# These commits are known to contain refactoring-relevant changes
+# Format: one commit hash per line
+# Lines starting with # are comments
+
+# eclipse.jdt.core - Collections modernization
+# (placeholder hashes - replace with actual commit hashes from 2025)
+# abc1234567890abcdef1234567890abcdef123456
+
+# eclipse.platform.ui - Status API migration
+# def4567890abcdef1234567890abcdef12345678
+
+# eclipse.jdt.ui - Try-with-resources
+# 789abcdef0123456789abcdef0123456789abcdef

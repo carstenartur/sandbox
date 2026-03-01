@@ -14,6 +14,8 @@
 package org.sandbox.mining.core;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -26,11 +28,17 @@ import java.util.List;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.sandbox.mining.core.category.CategoryManager;
+import org.sandbox.mining.core.comparison.DeltaReport;
+import org.sandbox.mining.core.comparison.ErrorFeedbackCollector;
+import org.sandbox.mining.core.comparison.ExternalEvaluationImporter;
+import org.sandbox.mining.core.comparison.MiningComparator;
 import org.sandbox.mining.core.config.MiningConfig;
 import org.sandbox.mining.core.config.MiningState;
 import org.sandbox.mining.core.config.MiningState.DeferredCommit;
 import org.sandbox.mining.core.config.MiningState.RepoState;
 import org.sandbox.mining.core.config.RepoEntry;
+import org.sandbox.mining.core.enrichment.TypeContextEnricher;
+import org.sandbox.mining.core.filter.CommitKeywordFilter;
 import org.sandbox.jdt.triggerpattern.internal.DslValidator;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.llm.DslContextCollector;
@@ -43,6 +51,7 @@ import org.sandbox.jdt.triggerpattern.git.DiffExtractor;
 import org.sandbox.jdt.triggerpattern.git.RepoCloner;
 import org.sandbox.mining.core.report.GithubPagesGenerator;
 import org.sandbox.mining.core.report.JsonReporter;
+import org.sandbox.mining.core.report.NetBeansReporter;
 import org.sandbox.mining.core.report.ReportAggregator;
 import org.sandbox.mining.core.report.StatisticsCollector;
 
@@ -66,6 +75,14 @@ private static final String OPT_MAX_FAILURE_DURATION = "--max-failure-duration";
 private static final String OPT_LLM_PROVIDER = "--llm-provider"; //$NON-NLS-1$
 private static final String OPT_RETRY_DEFERRED = "--retry-deferred"; //$NON-NLS-1$
 private static final String OPT_RESET_LEARNED_LIMITS = "--reset-learned-limits"; //$NON-NLS-1$
+private static final String OPT_COMMIT_LIST = "--commit-list"; //$NON-NLS-1$
+private static final String OPT_MAX_DURATION = "--max-duration"; //$NON-NLS-1$
+private static final String OPT_COMPARISON_MODE = "--comparison-mode"; //$NON-NLS-1$
+private static final String OPT_COPILOT_RESULTS = "--copilot-results"; //$NON-NLS-1$
+private static final String OPT_ENRICH_TYPE_CONTEXT = "--enrich-type-context"; //$NON-NLS-1$
+private static final String OPT_KEYWORD_FILTER = "--keyword-filter"; //$NON-NLS-1$
+private static final String OPT_OUTPUT_FORMAT = "--output-format"; //$NON-NLS-1$
+private static final String OPT_STRICT_NETBEANS = "--strict-netbeans"; //$NON-NLS-1$
 
 private static final int DEFAULT_BATCH_SIZE = 500;
 private static final int DEFAULT_COMMITS_PER_REQUEST = 4;
@@ -111,6 +128,14 @@ Path outputDir = Path.of("output"); //$NON-NLS-1$
 String llmProvider = null;
 boolean retryDeferred = false;
 boolean resetLearnedLimits = false;
+Path commitListPath = null;
+int maxDurationMinutes = 0;
+boolean comparisonMode = false;
+Path copilotResultsPath = null;
+boolean enrichTypeContext = false;
+Path keywordFilterPath = null;
+String outputFormat = "json"; //$NON-NLS-1$
+boolean strictNetbeans = false;
 
 for (int i = 0; i < args.length; i++) {
 switch (args[i]) {
@@ -152,6 +177,30 @@ retryDeferred = true;
 break;
 case OPT_RESET_LEARNED_LIMITS:
 resetLearnedLimits = true;
+break;
+case OPT_COMMIT_LIST:
+commitListPath = Path.of(requireArg(args, ++i, OPT_COMMIT_LIST));
+break;
+case OPT_MAX_DURATION:
+maxDurationMinutes = Integer.parseInt(requireArg(args, ++i, OPT_MAX_DURATION));
+break;
+case OPT_COMPARISON_MODE:
+comparisonMode = true;
+break;
+case OPT_COPILOT_RESULTS:
+copilotResultsPath = Path.of(requireArg(args, ++i, OPT_COPILOT_RESULTS));
+break;
+case OPT_ENRICH_TYPE_CONTEXT:
+enrichTypeContext = true;
+break;
+case OPT_KEYWORD_FILTER:
+keywordFilterPath = Path.of(requireArg(args, ++i, OPT_KEYWORD_FILTER));
+break;
+case OPT_OUTPUT_FORMAT:
+outputFormat = requireArg(args, ++i, OPT_OUTPUT_FORMAT);
+break;
+case OPT_STRICT_NETBEANS:
+strictNetbeans = true;
 break;
 default:
 System.err.println("Unknown option: " + args[i]); //$NON-NLS-1$
@@ -243,12 +292,31 @@ jsonReporter.writeStatistics(stats, outputDir);
 GithubPagesGenerator pagesGenerator = new GithubPagesGenerator();
 pagesGenerator.generate(aggregator.getAllEvaluations(), stats, outputDir);
 
+// NetBeans format output
+if ("netbeans".equals(outputFormat) || "both".equals(outputFormat)) { //$NON-NLS-1$ //$NON-NLS-2$
+NetBeansReporter nbReporter = new NetBeansReporter();
+nbReporter.write(aggregator.getAllEvaluations(), outputDir);
+PrintStream nbOut = strictNetbeans ? System.err : System.out;
+nbReporter.printToStream(aggregator.getAllEvaluations(), nbOut);
+}
+
+// Comparison mode
+if (comparisonMode && copilotResultsPath != null) {
+ExternalEvaluationImporter importer = new ExternalEvaluationImporter();
+List<CommitEvaluation> copilotResults = importer.importFromJson(copilotResultsPath);
+MiningComparator comparator = new MiningComparator();
+DeltaReport deltaReport = comparator.compare(aggregator.getAllEvaluations(), copilotResults);
+PrintStream compOut = strictNetbeans ? System.err : System.out;
+compOut.println(deltaReport.format());
+}
+
 state.save(statePath);
 
-System.out.println("=== Mining complete ===");
-System.out.println("Processed: " + stats.getTotalProcessed() + " commits");
-System.out.println("Relevant:  " + stats.getRelevant());
-System.out.println("Output:    " + outputDir.toAbsolutePath());
+PrintStream miningLog = strictNetbeans ? System.err : System.out;
+miningLog.println("=== Mining complete ==="); //$NON-NLS-1$
+miningLog.println("Processed: " + stats.getTotalProcessed() + " commits"); //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("Relevant:  " + stats.getRelevant()); //$NON-NLS-1$
+miningLog.println("Output:    " + outputDir.toAbsolutePath()); //$NON-NLS-1$
 }
 
 private void processRepositories(MiningConfig config, MiningState state, Path statePath,
@@ -529,6 +597,14 @@ System.out.println("  --max-failure-duration <s>   Seconds without a successful 
 System.out.println("  --llm-provider <name>        LLM provider: gemini, openai, deepseek, qwen, llama, or mistral (default: auto-detect)"); //$NON-NLS-1$
 System.out.println("  --retry-deferred             Retry previously deferred commits"); //$NON-NLS-1$
 System.out.println("  --reset-learned-limits       Reset learned diff size limits"); //$NON-NLS-1$
+System.out.println("  --commit-list <path>         Path to file with commit hashes to process (one per line)"); //$NON-NLS-1$
+System.out.println("  --max-duration <minutes>     Maximum run duration in minutes"); //$NON-NLS-1$
+System.out.println("  --comparison-mode            Enable comparison against reference results"); //$NON-NLS-1$
+System.out.println("  --copilot-results <path>     Path to Copilot/reference evaluation results JSON"); //$NON-NLS-1$
+System.out.println("  --enrich-type-context        Add Eclipse type hierarchy context to prompts"); //$NON-NLS-1$
+System.out.println("  --keyword-filter <path>      Path to keyword filter file for commit pre-filtering"); //$NON-NLS-1$
+System.out.println("  --output-format <format>     Output format: json, netbeans, or both (default: json)"); //$NON-NLS-1$
+System.out.println("  --strict-netbeans            Only NetBeans format on stdout, info on stderr"); //$NON-NLS-1$
 }
 
 private static String requireArg(String[] args, int index, String option) {
@@ -626,6 +702,40 @@ System.out.println("    - " + dc.getHash().substring(0, Math.min(7, dc.getHash()
 + ", retry " + dc.getRetryCount() + "/" + dc.getMaxRetries() + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 }
 }
+}
+
+/**
+ * Checks whether the mining run should stop based on elapsed time.
+ *
+ * @param startTimeMs     the start time in milliseconds
+ * @param maxDurationMin  maximum duration in minutes (0 = no limit)
+ * @return true if the run should stop
+ */
+static boolean shouldStop(long startTimeMs, int maxDurationMin) {
+if (maxDurationMin <= 0) {
+return false;
+}
+long elapsed = System.currentTimeMillis() - startTimeMs;
+return elapsed >= (long) maxDurationMin * 60 * 1000;
+}
+
+/**
+ * Reads commit hashes from a file (one per line).
+ * Blank lines and lines starting with {@code #} are ignored.
+ *
+ * @param commitListPath path to the commit list file
+ * @return list of commit hashes
+ * @throws IOException if the file cannot be read
+ */
+static List<String> readCommitList(Path commitListPath) throws IOException {
+List<String> hashes = new ArrayList<>();
+for (String line : Files.readAllLines(commitListPath, StandardCharsets.UTF_8)) {
+String trimmed = line.trim();
+if (!trimmed.isEmpty() && !trimmed.startsWith("#")) { //$NON-NLS-1$
+hashes.add(trimmed);
+}
+}
+return hashes;
 }
 }
 }

@@ -1,0 +1,41 @@
+mining:
+  # Eclipse Platform repositories for 2025 mining
+  # Focus on commits from 2025 for latest refactoring patterns
+  repositories:
+    - url: https://github.com/eclipse-jdt/eclipse.jdt.core
+      branch: master
+      paths:
+        - org.eclipse.jdt.core/dom
+        - org.eclipse.jdt.core.manipulation/src
+
+    - url: https://github.com/eclipse-jdt/eclipse.jdt.ui
+      branch: master
+      paths:
+        - org.eclipse.jdt.ui/ui
+        - org.eclipse.jdt.ui/core extension
+
+    - url: https://github.com/eclipse-platform/eclipse.platform.ui
+      branch: master
+      paths:
+        - bundles/org.eclipse.ui.workbench/eclipseui
+        - bundles/org.eclipse.jface/src
+
+    - url: https://github.com/eclipse-platform/eclipse.platform
+      branch: master
+      paths:
+        - runtime/bundles/org.eclipse.core.runtime
+        - resources/bundles/org.eclipse.core.resources
+
+    - url: https://github.com/eclipse-platform/eclipse.platform.text
+      branch: master
+
+    - url: https://github.com/eclipse-platform/eclipse.platform.debug
+      branch: master
+
+  # Configuration
+  settings:
+    start-date: "2025-01-01"
+    batch-size: 500
+    max-diff-lines-per-commit: 500
+    min-diff-lines-per-commit: 3
+    max-files-per-commit: 50
