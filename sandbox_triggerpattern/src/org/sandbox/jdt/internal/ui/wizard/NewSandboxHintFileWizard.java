@@ -26,10 +26,12 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
@@ -38,8 +40,10 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
+import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.internal.HintFileSerializer;
+import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
  * Wizard for creating new {@code .sandbox-hint} files.
@@ -95,6 +99,13 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 
 		if (initialCodeSnippet != null && !initialCodeSnippet.isBlank()) {
 			rulePage.setInitialSourcePattern(initialCodeSnippet);
+
+			// Auto-trigger AI only if both configured AND available
+			IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(PLUGIN_ID);
+			boolean autoAi = prefs.getBoolean(LlmPreferencePage.PREF_WIZARD_AUTO_AI, false);
+			if (autoAi && EclipseLlmService.getInstance().isAvailable()) {
+				rulePage.setAutoTriggerAi(true);
+			}
 		}
 
 		addPage(filePage);
@@ -108,7 +119,8 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 			return filePage.isPageComplete()
 					&& filePage.getSelectedTemplate() == SandboxHintTemplates.EMPTY;
 		}
-		return filePage.isPageComplete();
+		// On the rule page, require both pages to be complete
+		return filePage.isPageComplete() && rulePage.isPageComplete();
 	}
 
 	@Override
@@ -167,9 +179,9 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 
 		// Open the newly created file in the editor
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IResource resource = root.findMember(IPath.fromOSString(containerPath));
+		IResource resource = root.findMember(new Path(containerPath));
 		if (resource instanceof IContainer container) {
-			IFile file = container.getFile(IPath.fromOSString(fileName));
+			IFile file = container.getFile(new Path(fileName));
 			IWorkbenchPage page = workbench.getActiveWorkbenchWindow().getActivePage();
 			if (page != null) {
 				try {
@@ -187,13 +199,13 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 			IProgressMonitor monitor) throws InvocationTargetException {
 		monitor.beginTask("Creating " + fileName, 2); //$NON-NLS-1$
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IResource resource = root.findMember(IPath.fromOSString(containerPath));
+		IResource resource = root.findMember(new Path(containerPath));
 		if (!(resource instanceof IContainer container) || !resource.exists()) {
 			throw new InvocationTargetException(
 					new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,
 							"Container \"" + containerPath + "\" does not exist."))); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		IFile file = container.getFile(IPath.fromOSString(fileName));
+		IFile file = container.getFile(new Path(fileName));
 		try (InputStream stream = new ByteArrayInputStream(
 				content.getBytes(StandardCharsets.UTF_8))) {
 			if (file.exists()) {

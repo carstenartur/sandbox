@@ -17,6 +17,7 @@ import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
@@ -121,13 +122,13 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 
 		new Label(metadataGroup, SWT.NONE).setText("&Severity:"); //$NON-NLS-1$
 		severityCombo = new Combo(metadataGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
-		severityCombo.setItems("info", "warning", "error", "hint"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		severityCombo.setItems(new String[] { "info", "warning", "error", "hint" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		severityCombo.select(0);
 		severityCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		new Label(metadataGroup, SWT.NONE).setText("Min &Java:"); //$NON-NLS-1$
 		minJavaCombo = new Combo(metadataGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
-		minJavaCombo.setItems("", "11", "17", "21"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		minJavaCombo.setItems(new String[] { "", "11", "17", "21" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		minJavaCombo.select(0);
 		minJavaCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
@@ -168,9 +169,13 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 	}
 
 	/**
-	 * Pre-fills the container path from the workbench selection.
+	 * Pre-fills the container path from the workbench selection and
+	 * always sets a sensible default file name.
 	 */
 	private void initializeFromSelection() {
+		// Always set a default file name
+		fileText.setText("rules" + FILE_EXTENSION); //$NON-NLS-1$
+
 		if (selection == null || selection.isEmpty()) {
 			return;
 		}
@@ -184,7 +189,6 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 			}
 			containerText.setText(container.getFullPath().toString());
 		}
-		fileText.setText("rules" + FILE_EXTENSION); //$NON-NLS-1$
 	}
 
 	private void handleBrowse() {
@@ -208,7 +212,7 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 			return;
 		}
 		IResource resource = ResourcesPlugin.getWorkspace().getRoot()
-				.findMember(IPath.fromOSString(container));
+				.findMember(new Path(container));
 		if (resource == null || !(resource instanceof IContainer) || !resource.isAccessible()) {
 			updateStatus("Container must exist and be accessible"); //$NON-NLS-1$
 			return;

@@ -49,7 +49,10 @@ public class NewHintFromSelectionHandler extends AbstractHandler {
 		}
 
 		NewSandboxHintFileWizard wizard = new NewSandboxHintFileWizard();
-		wizard.setInitialCodeSnippet(textSelection.getText());
+		// Normalize multiline selection: trim and take only the first non-blank line
+		// since the source pattern field is single-line
+		String snippet = normalizeSelection(textSelection.getText());
+		wizard.setInitialCodeSnippet(snippet);
 
 		IStructuredSelection resourceSelection = getResourceSelection(event);
 		wizard.init(PlatformUI.getWorkbench(), resourceSelection);
@@ -73,6 +76,25 @@ public class NewHintFromSelectionHandler extends AbstractHandler {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Normalizes a potentially multiline text selection into a single line
+	 * suitable for the source pattern field. Trims whitespace and takes
+	 * the first non-blank line.
+	 */
+	private static String normalizeSelection(String text) {
+		if (text == null) {
+			return ""; //$NON-NLS-1$
+		}
+		String[] lines = text.split("\\R"); //$NON-NLS-1$
+		for (String line : lines) {
+			String trimmed = line.trim();
+			if (!trimmed.isEmpty()) {
+				return trimmed;
+			}
+		}
+		return text.trim();
 	}
 
 	/**

@@ -165,27 +165,72 @@ public class NewRuleWizardPage extends WizardPage {
 	}
 
 	/**
-	 * Creates the AI generation section with the &ldquo;Generate with AI&rdquo; button.
+	 * Creates the AI / manual-assist section. Shows different UI depending on
+	 * whether the LLM service is configured.
 	 */
 	private void createAiSection(Composite parent) {
-		new Label(parent, SWT.NONE); // spacer for column 1
-		generateAiButton = new Button(parent, SWT.PUSH);
-		generateAiButton.setText("\u2728 Generate with AI"); //$NON-NLS-1$
-		generateAiButton.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
+		// Span 2 columns for the AI/manual section
+		Composite aiComposite = new Composite(parent, SWT.NONE);
+		aiComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		aiComposite.setLayout(new GridLayout(3, false));
 
 		boolean aiAvailable = EclipseLlmService.getInstance().isAvailable();
-		generateAiButton.setEnabled(aiAvailable);
-		if (!aiAvailable) {
-			generateAiButton.setToolTipText(
-					"Configure LLM in Preferences \u2192 Java \u2192 LLM Rule Inference"); //$NON-NLS-1$
-		}
 
-		generateAiButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				runAiInference();
-			}
-		});
+		if (aiAvailable) {
+			// === AI available: Generate button + provider info ===
+			generateAiButton = new Button(aiComposite, SWT.PUSH);
+			generateAiButton.setText("\u2728 Generate with AI"); //$NON-NLS-1$
+			generateAiButton.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					runAiInference();
+				}
+			});
+
+			Label providerInfo = new Label(aiComposite, SWT.NONE);
+			providerInfo.setText(getConfiguredProviderLabel());
+			providerInfo.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
+
+			Button pasteButton = new Button(aiComposite, SWT.PUSH);
+			pasteButton.setText("\u2398 Paste rule from clipboard"); //$NON-NLS-1$
+			pasteButton.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					pasteRuleFromClipboard();
+				}
+			});
+		} else {
+			// === AI NOT available: helpful guidance ===
+			Label infoIcon = new Label(aiComposite, SWT.NONE);
+			infoIcon.setText("\uD83D\uDCA1"); // 💡
+
+			Label infoLabel = new Label(aiComposite, SWT.WRAP);
+			infoLabel.setText("AI generation not configured. " //$NON-NLS-1$
+					+ "You can create rules manually below, " //$NON-NLS-1$
+					+ "use a template from page 1, or paste an existing rule."); //$NON-NLS-1$
+			infoLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+			Composite buttonBar = new Composite(aiComposite, SWT.NONE);
+			buttonBar.setLayout(new RowLayout(SWT.HORIZONTAL));
+
+			Button configureButton = new Button(buttonBar, SWT.PUSH);
+			configureButton.setText("\u2699 Configure LLM..."); //$NON-NLS-1$
+			configureButton.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					openLlmPreferences();
+				}
+			});
+
+			Button pasteButton = new Button(buttonBar, SWT.PUSH);
+			pasteButton.setText("\u2398 Paste rule from clipboard"); //$NON-NLS-1$
+			pasteButton.addSelectionListener(new SelectionAdapter() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					pasteRuleFromClipboard();
+				}
+			});
+		}
 	}
 
 	/**
@@ -227,17 +272,15 @@ public class NewRuleWizardPage extends WizardPage {
 	}
 
 	/**
-	 * Builds a pseudo-diff from a code snippet for the AI engine.
+	 * Builds an additions-only pseudo-diff from a code snippet for the AI engine.
+	 * Aligns with the format used in {@code DslFromSelectionAssistProcessor}.
 	 */
 	private static String buildPseudoDiff(String code) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("--- a/snippet.java\n"); //$NON-NLS-1$
 		sb.append("+++ b/snippet.java\n"); //$NON-NLS-1$
 		String[] lines = code.split("\n", -1); //$NON-NLS-1$
-		sb.append("@@ -1,").append(lines.length).append(" +1,").append(lines.length).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		for (String line : lines) {
-			sb.append('-').append(line).append('\n');
-		}
+		sb.append("@@ -1,0 +1,").append(lines.length).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
 		for (String line : lines) {
 			sb.append('+').append(line).append('\n');
 		}
@@ -299,12 +342,15 @@ public class NewRuleWizardPage extends WizardPage {
 
 	/**
 	 * Rebuilds the preview and validates the DSL snippet.
+	 * Updates the page completion state based on validation result.
 	 */
 	private void updatePreview() {
 		String source = sourcePatternText.getText().trim();
 		if (source.isEmpty()) {
 			previewText.setText(""); //$NON-NLS-1$
 			validationLabel.setText(""); //$NON-NLS-1$
+			setErrorMessage(null);
+			setPageComplete(true);
 			return;
 		}
 
@@ -317,8 +363,12 @@ public class NewRuleWizardPage extends WizardPage {
 		ValidationResult result = validator.validate(fullDsl);
 		if (result.valid()) {
 			validationLabel.setText("\u2705 Valid DSL rule"); //$NON-NLS-1$
+			setErrorMessage(null);
+			setPageComplete(true);
 		} else {
 			validationLabel.setText("\u26A0 " + result.message()); //$NON-NLS-1$
+			setErrorMessage(result.message());
+			setPageComplete(false);
 		}
 	}
 
@@ -344,6 +394,57 @@ public class NewRuleWizardPage extends WizardPage {
 	 */
 	private static String buildFullDslForValidation(String ruleBlock) {
 		return "<!id: _wizard_preview>\n" + ruleBlock + "\n"; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	// --- Helper methods for AI section ---
+
+	/**
+	 * Returns a label like "Gemini &ndash; gemini-2.0-flash" from the current preferences.
+	 */
+	private static String getConfiguredProviderLabel() {
+		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
+		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
+		String model = prefs.get(LlmPreferencePage.PREF_MODEL_NAME, ""); //$NON-NLS-1$
+		if (provider.isBlank()) {
+			return ""; //$NON-NLS-1$
+		}
+		return model.isBlank() ? provider : provider + " \u2013 " + model; //$NON-NLS-1$
+	}
+
+	/**
+	 * Opens the LLM preference page directly, then re-checks AI availability.
+	 */
+	private void openLlmPreferences() {
+		PreferencesUtil.createPreferenceDialogOn(
+				getShell(),
+				"org.sandbox.jdt.triggerpattern.preferences.LlmPreferencePage", //$NON-NLS-1$
+				null, null).open();
+		refreshAiAvailability();
+	}
+
+	/**
+	 * Re-evaluates AI availability after preferences might have changed.
+	 */
+	private void refreshAiAvailability() {
+		boolean nowAvailable = EclipseLlmService.getInstance().isAvailable();
+		if (nowAvailable && generateAiButton == null) {
+			validationLabel.setText("\u2705 AI is now configured \u2014 you can use 'Generate with AI'"); //$NON-NLS-1$
+		}
+	}
+
+	/**
+	 * Pastes a DSL rule from the system clipboard and fills the fields.
+	 */
+	private void pasteRuleFromClipboard() {
+		Clipboard clipboard = new Clipboard(Display.getCurrent());
+		try {
+			String text = (String) clipboard.getContents(TextTransfer.getInstance());
+			if (text != null && !text.isBlank()) {
+				fillFieldsFromInferredRule(text);
+			}
+		} finally {
+			clipboard.dispose();
+		}
 	}
 
 	// --- Public API for the wizard ---
