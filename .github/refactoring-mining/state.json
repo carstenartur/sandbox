@@ -182,9 +182,9 @@
       "lastModelUsed": "gemini-2.5-flash"
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "eda21b35f9c2448dc52766f9b2303fc96f610e69",
-      "lastProcessedDate": "2026-02-28T04:02:53.604333372Z",
-      "totalProcessed": 1325,
+      "lastProcessedCommit": "0f0503fe1276470a08059a4aa7a6964c8af34277",
+      "lastProcessedDate": "2026-03-01T04:30:27.151015846Z",
+      "totalProcessed": 1577,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -294,6 +294,24 @@
           "deferredAt": "2026-02-28T04:02:06.291454167Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "911d33fcf73cf50d25fee7b3e39062c93c0d7abb",
+          "message": "Fix for Bug 518301: [1.9] [dom]Change ModuleStatements to ModuleDirectives  - dom ast part",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-01T04:25:08.548107816Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b4a92afd579d4c65bb42b8e593ce89a80b355f1a",
+          "message": "Bug 518301: [9] [dom] Change ModuleStatements to ModuleDirectives",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-01T04:25:19.942660189Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -309,5 +327,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 11298
+  "globalTotalProcessed": 11550
 }
