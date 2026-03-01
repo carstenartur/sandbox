@@ -116,7 +116,24 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	public String getPreview() {
 		StringBuilder sb = new StringBuilder();
 		EnumSet<UseFunctionalCallFixCore> computeFixSet = computeFixSet();
-		EnumSet.allOf(UseFunctionalCallFixCore.class).forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
+		// Always pad preview to max lines for stable preview height
+		EnumSet<UseFunctionalCallFixCore> all = EnumSet.allOf(UseFunctionalCallFixCore.class);
+		int maxLines = 0;
+		String[] previews = new String[all.size()];
+		int idx = 0;
+		for (UseFunctionalCallFixCore e : all) {
+			String preview = e.getPreview(computeFixSet.contains(e));
+			previews[idx++] = preview;
+			int lines = (int) preview.lines().count();
+			if (lines > maxLines) maxLines = lines;
+		}
+		for (String preview : previews) {
+			int lines = (int) preview.lines().count();
+			sb.append(preview);
+			for (int i = lines; i < maxLines; i++) {
+				sb.append(System.lineSeparator());
+			}
+		}
 		return sb.toString();
 	}
 

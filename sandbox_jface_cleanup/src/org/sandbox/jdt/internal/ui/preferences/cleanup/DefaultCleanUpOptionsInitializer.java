@@ -22,5 +22,8 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.JFACE_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MYCleanUpConstants.JFACE_CLEANUP_MONITOR, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.JFACE_CLEANUP_VIEWER_SORTER, CleanUpOptions.TRUE);
+		options.setOption(MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI, CleanUpOptions.TRUE);
 	}
 }

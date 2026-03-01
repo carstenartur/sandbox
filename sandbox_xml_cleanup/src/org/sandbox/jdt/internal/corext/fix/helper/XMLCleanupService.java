@@ -90,7 +90,13 @@ public class XMLCleanupService {
 			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,
 				"Failed to read file: " + file.getName(), e));
 		}
-		
+
+		// Detect original line ending style
+		String lineEnding = "\n";
+		if (originalContent.contains("\r\n")) {
+			lineEnding = "\r\n";
+		}
+
 		// Transform the file - check for null location
 		org.eclipse.core.runtime.IPath location = file.getLocation();
 		if (location == null) {
@@ -98,7 +104,7 @@ public class XMLCleanupService {
 				"File does not have a physical location: " + file.getName()));
 			return false;
 		}
-		
+
 		Path filePath = location.toFile().toPath();
 		String transformedContent;
 		try {
@@ -107,21 +113,35 @@ public class XMLCleanupService {
 			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,
 				"Failed to transform file: " + file.getName(), e));
 		}
-		
+
+		// Normalize line endings in transformed content to match original
+		if ("\r\n".equals(lineEnding)) {
+			// Convert all lone \n to \r\n (first normalize to \n, then replace)
+			transformedContent = transformedContent.replace("\r\n", "\n").replace("\n", "\r\n");
+		} else {
+			// Normalize to LF only
+			transformedContent = transformedContent.replace("\r\n", "\n");
+		}
+
 		// Only write if content actually changed
 		if (!originalContent.equals(transformedContent)) {
 			byte[] newContent = transformedContent.getBytes(StandardCharsets.UTF_8);
+			int originalBytes = originalContent.getBytes(StandardCharsets.UTF_8).length;
+			int newBytes = newContent.length;
+			int bytesSaved = originalBytes - newBytes;
+			double percentSaved = originalBytes > 0 ? (bytesSaved * 100.0) / originalBytes : 0.0;
+
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(newContent);
-			
 			// Update file (don't force, keep history)
 			file.setContents(inputStream, IResource.KEEP_HISTORY, monitor);
-			
 			// Refresh the resource to sync with filesystem
 			file.refreshLocal(IResource.DEPTH_ZERO, monitor);
-			
+
 			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,
-				"Applied transformation to: " + file.getName()));
-			
+				"Applied transformation to: " + file.getName()
+				+ String.format(" | Size: %d → %d bytes, saved: %d bytes (%.1f%%)",
+					originalBytes, newBytes, bytesSaved, percentSaved)));
+
 			return true;
 		}
 		
@@ -207,19 +227,19 @@ public class XMLCleanupService {
 	 */
 	private boolean isInPDELocation(IFile file) {
 		IResource parent = file.getParent();
-		
+
 		// Check if in project root
 		if (parent instanceof IProject) {
 			return true;
 		}
-		
+
 		// Check if in OSGI-INF or META-INF
 		if (parent instanceof IFolder) {
 			String folderName = parent.getName();
 			if (PDE_DIRECTORIES.contains(folderName)) {
 				return true;
 			}
-			
+
 			// Also check parent's parent (for nested structures)
 			IResource grandParent = parent.getParent();
 			if (grandParent instanceof IFolder) {
@@ -228,7 +248,19 @@ public class XMLCleanupService {
 				}
 			}
 		}
-		
+
+		// NEW: Allow any folder named 'schema' (case-insensitive) at any level
+		IResource current = parent;
+		while (current != null && !(current instanceof IProject)) {
+			if (current instanceof IFolder) {
+				String folderName = current.getName();
+				if (folderName != null && folderName.equalsIgnoreCase("schema")) {
+					return true;
+				}
+			}
+			current = current.getParent();
+		}
+
 		return false;
 	}
 }

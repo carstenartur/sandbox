@@ -162,9 +162,9 @@ public class SchemaTransformationUtils {
 	 * @return normalized content
 	 */
 	private static String normalizeWhitespace(String content) {
-		// Reduce excessive empty lines - keep max 2 consecutive empty lines,
+		// Reduce excessive empty lines - keep max 1 consecutive empty line,
 		// preserving the original line ending style (LF vs CRLF)
-		content = content.replaceAll("(\\r?\\n){3,}", "$1$1");
+		content = content.replaceAll("(\r?\n){2,}", "$1");
 		
 		// Convert leading 4 spaces to tabs (only at line start, not in text content)
 		// This pattern matches lines that start with spaces (after optional newline)

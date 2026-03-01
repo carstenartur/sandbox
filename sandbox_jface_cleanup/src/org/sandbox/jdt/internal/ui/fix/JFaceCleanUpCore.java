@@ -37,6 +37,7 @@ import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 public class JFaceCleanUpCore extends AbstractCleanUp {
 	public JFaceCleanUpCore(final Map<String, String> options) {
@@ -101,10 +102,15 @@ public class JFaceCleanUpCore extends AbstractCleanUp {
 	}
 
 	private EnumSet<JfaceCleanUpFixCore> computeFixSet() {
-		EnumSet<JfaceCleanUpFixCore> fixSet= EnumSet.noneOf(JfaceCleanUpFixCore.class);
-
-		if (isEnabled(JFACE_CLEANUP)) {
-			fixSet= EnumSet.allOf(JfaceCleanUpFixCore.class);
+		EnumSet<JfaceCleanUpFixCore> fixSet = EnumSet.noneOf(JfaceCleanUpFixCore.class);
+		if (isEnabled(MYCleanUpConstants.JFACE_CLEANUP_MONITOR)) {
+			fixSet.add(JfaceCleanUpFixCore.MONITOR);
+		}
+		if (isEnabled(MYCleanUpConstants.JFACE_CLEANUP_VIEWER_SORTER)) {
+			fixSet.add(JfaceCleanUpFixCore.VIEWER_SORTER);
+		}
+		if (isEnabled(MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI)) {
+			fixSet.add(JfaceCleanUpFixCore.IMAGE_DPI);
 		}
 		return fixSet;
 	}

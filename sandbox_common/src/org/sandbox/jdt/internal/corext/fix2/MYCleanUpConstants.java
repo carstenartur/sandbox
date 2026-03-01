@@ -225,6 +225,36 @@ public class MYCleanUpConstants {
 	public static final String JFACE_CLEANUP= "cleanup.jfacecleanup"; //$NON-NLS-1$
 
 	/**
+	 * Enable migration from SubProgressMonitor to SubMonitor (JFace Monitor API modernization).
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String JFACE_CLEANUP_MONITOR = "cleanup.jfacecleanup_monitor"; //$NON-NLS-1$
+
+	/**
+	 * Enable migration from ViewerSorter to ViewerComparator (JFace ViewerSorter API modernization).
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String JFACE_CLEANUP_VIEWER_SORTER = "cleanup.jfacecleanup_viewer_sorter"; //$NON-NLS-1$
+
+	/**
+	 * Enable migration from ImageData to ImageDataProvider for DPI/zoom awareness (JFace Image API modernization).
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 * <p>
+	 * @see CleanUpOptionsCore#TRUE
+	 * @see CleanUpOptionsCore#FALSE
+	 */
+	public static final String JFACE_CLEANUP_IMAGE_DPI = "cleanup.jfacecleanup_image_dpi"; //$NON-NLS-1$
+
+	/**
 	 *
 	 */
 	public static final String USEFUNCTIONALLOOP_CLEANUP= "cleanup.functionalloop"; //$NON-NLS-1$

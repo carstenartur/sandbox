@@ -40,10 +40,20 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
 		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);
-		final CheckboxPreference xmlsimplify= createCheckboxPref(java1d8Group, numColumns,
-				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP,
-				MYCleanUpConstants.JFACE_CLEANUP, FALSE_TRUE);
+		final CheckboxPreference monitorPref = createCheckboxPref(java1d8Group, numColumns,
+			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_MONITOR,
+			MYCleanUpConstants.JFACE_CLEANUP_MONITOR, FALSE_TRUE);
 		intent(java1d8Group);
-		registerPreference(xmlsimplify);
+		final CheckboxPreference viewerSorterPref = createCheckboxPref(java1d8Group, numColumns,
+			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_VIEWER_SORTER,
+			MYCleanUpConstants.JFACE_CLEANUP_VIEWER_SORTER, FALSE_TRUE);
+		intent(java1d8Group);
+		final CheckboxPreference imageDpiPref = createCheckboxPref(java1d8Group, numColumns,
+			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_IMAGE_DPI,
+			MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI, FALSE_TRUE);
+		intent(java1d8Group);
+		registerPreference(monitorPref);
+		registerPreference(viewerSorterPref);
+		registerPreference(imageDpiPref);
 	}
 }
