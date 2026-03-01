@@ -413,9 +413,14 @@ String lastBatchCommit = batch.get(batch.size() - 1).getName();
 // list are silently skipped (state still advances past them)
 List<RevCommit> effectiveBatch = batch;
 if (commitListHashes != null) {
+int beforeSize = batch.size();
 effectiveBatch = batch.stream()
 .filter(c -> commitListHashes.contains(c.getName()))
 .toList();
+if (effectiveBatch.size() < beforeSize) {
+miningLog.println("  Commit-list filter: " + effectiveBatch.size() //$NON-NLS-1$
++ " of " + beforeSize + " commits matched"); //$NON-NLS-1$
+}
 if (effectiveBatch.isEmpty()) {
 // Advance state past skipped commits and continue to next batch
 state.updateLastProcessedCommit(repo.getUrl(), lastBatchCommit);
@@ -483,6 +488,8 @@ int effectiveMaxDiff = repoState.getLearnedMaxDiffLines() > 0
 for (RevCommit commit : commits) {
 // Skip commits that don't match keyword filter (if active)
 if (keywordFilter != null && !keywordFilter.matches(commit.getFullMessage())) {
+miningLog.println("  Skipping commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
++ " (no keyword match)"); //$NON-NLS-1$
 isSkipped.add(Boolean.TRUE);
 continue;
 }
