@@ -23,7 +23,9 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -271,6 +273,14 @@ keywordFilter = new CommitKeywordFilter(keywordFilterPath);
 miningLog.println("Keyword filter loaded: " + keywordFilter.getKeywords().size() + " keywords"); //$NON-NLS-1$ //$NON-NLS-2$
 }
 
+// Read commit list if specified — only these commits will be processed
+Set<String> commitListHashes = null;
+if (commitListPath != null) {
+List<String> hashes = readCommitList(commitListPath);
+commitListHashes = new HashSet<>(hashes);
+miningLog.println("Commit list loaded: " + commitListHashes.size() + " commits to process"); //$NON-NLS-1$ //$NON-NLS-2$
+}
+
 Path workDir = Files.createTempDirectory("mining-core-"); //$NON-NLS-1$
 try (LlmClient llmClient = LlmClientFactory.createFromEnvironment(llmProvider)) {
 llmClient.setMaxFailureDuration(Duration.ofSeconds(maxFailureDurationSeconds));
@@ -295,7 +305,7 @@ repoState.setLastModelUsed(currentModel);
 try {
 processRepositories(config, state, statePath, workDir, batchSize, commitsPerRequest,
 llmClient, promptBuilder, dslContext, categoryManager, validator, stats, aggregator,
-startTimeMs, maxDurationMinutes, typeEnricher);
+startTimeMs, maxDurationMinutes, typeEnricher, keywordFilter, commitListHashes);
 // Always process deferred commits at end of each run
 retryDeferredCommits(state, statePath, workDir, llmClient, promptBuilder,
 dslContext, categoryManager, validator, stats, aggregator, config, retryDeferred);
@@ -364,7 +374,8 @@ LlmClient llmClient, PromptBuilder promptBuilder,
 String dslContext, CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
 long startTimeMs, int maxDurationMinutes,
-TypeContextEnricher typeEnricher) throws IOException, GitAPIException {
+TypeContextEnricher typeEnricher,
+CommitKeywordFilter keywordFilter, Set<String> commitListHashes) throws IOException, GitAPIException {
 RepoCloner cloner = new RepoCloner();
 // Dynamic batch size tracking (reduced on truncation)
 int[] dynamicCPR = { commitsPerRequest };
@@ -395,8 +406,25 @@ config.getMaxDiffLinesPerCommit(), repo.getPaths(),
 config.getMaxFilesPerCommit())) {
 List<RevCommit> batch = walker.nextBatch(lastCommit, config.getStartDate(), batchSize);
 while (!batch.isEmpty()) {
+// Remember the last commit in the unfiltered batch for walker advancement
+String lastBatchCommit = batch.get(batch.size() - 1).getName();
+
+// Filter batch by commit-list if specified — commits not in the
+// list are silently skipped (state still advances past them)
+List<RevCommit> effectiveBatch = batch;
+if (commitListHashes != null) {
+effectiveBatch = batch.stream()
+.filter(c -> commitListHashes.contains(c.getName()))
+.toList();
+if (effectiveBatch.isEmpty()) {
+// Advance state past skipped commits and continue to next batch
+state.updateLastProcessedCommit(repo.getUrl(), lastBatchCommit);
+batch = walker.nextBatch(lastBatchCommit, config.getStartDate(), batchSize);
+continue;
+}
+}
 // Group commits into sub-batches for API calls
-for (int i = 0; i < batch.size(); i += dynamicCPR[0]) {
+for (int i = 0; i < effectiveBatch.size(); i += dynamicCPR[0]) {
 if (shouldStop(startTimeMs, maxDurationMinutes)) {
 miningLog.println("Max duration reached. Stopping batch processing."); //$NON-NLS-1$
 return;
@@ -411,12 +439,12 @@ if (llmClient.isApiUnavailable()) {
 logApiUnavailable(llmClient);
 return;
 }
-int end = Math.min(i + dynamicCPR[0], batch.size());
-List<RevCommit> subBatch = batch.subList(i, end);
+int end = Math.min(i + dynamicCPR[0], effectiveBatch.size());
+List<RevCommit> subBatch = effectiveBatch.subList(i, end);
 processBatch(subBatch, repo, diffExtractor, state, statePath,
 llmClient, promptBuilder, dslContext, categoryManager,
 validator, stats, aggregator, config.getMinDiffLinesPerCommit(),
-config.getMaxDiffLinesPerCommit(), typeEnricher);
+config.getMaxDiffLinesPerCommit(), typeEnricher, keywordFilter);
 if (llmClient.wasLastResponseTruncated() && dynamicCPR[0] > 1) {
 dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);
 miningLog.println("  Reducing commits-per-request to " + dynamicCPR[0] + " after truncated response"); //$NON-NLS-1$
@@ -426,7 +454,7 @@ logApiUnavailable(llmClient);
 return;
 }
 }
-batch = walker.nextBatch(batch.get(batch.size() - 1).getName(),
+batch = walker.nextBatch(lastBatchCommit,
 config.getStartDate(), batchSize);
 }
 }
@@ -441,7 +469,8 @@ LlmClient llmClient, PromptBuilder promptBuilder,
 String dslContext, CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
 int minDiffLines, int maxDiffLines,
-TypeContextEnricher typeEnricher) throws IOException {
+TypeContextEnricher typeEnricher,
+CommitKeywordFilter keywordFilter) throws IOException {
 // Classify commits in original order: track which are skipped vs included
 List<CommitData> commitDataList = new ArrayList<>();
 List<Boolean> isSkipped = new ArrayList<>();
@@ -452,6 +481,11 @@ int effectiveMaxDiff = repoState.getLearnedMaxDiffLines() > 0
 ? repoState.getLearnedMaxDiffLines() : maxDiffLines;
 
 for (RevCommit commit : commits) {
+// Skip commits that don't match keyword filter (if active)
+if (keywordFilter != null && !keywordFilter.matches(commit.getFullMessage())) {
+isSkipped.add(Boolean.TRUE);
+continue;
+}
 String diff = diffExtractor.extractDiff(commit);
 int lineCount = diff.split("\n", -1).length; //$NON-NLS-1$
 if (diff.isBlank()) {
