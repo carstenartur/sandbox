@@ -109,4 +109,29 @@
             class="org.sandbox.jdt.triggerpattern.debug.SandboxHintSourcePathComputer">
       </sourcePathComputer>
    </extension>
+   
+   <!-- Wizard: New Sandbox Hint File -->
+   <extension point="org.eclipse.ui.newWizards">
+      <category
+            id="org.sandbox.jdt.triggerpattern"
+            name="Sandbox TriggerPattern"/>
+      <wizard
+            id="org.sandbox.jdt.triggerpattern.newHintFileWizard"
+            name="Sandbox Hint File"
+            category="org.sandbox.jdt.triggerpattern"
+            class="org.sandbox.jdt.triggerpattern.wizard.NewSandboxHintFileWizard">
+         <description>Create a new .sandbox-hint file with transformation rules</description>
+         <selection class="org.eclipse.core.resources.IResource"/>
+      </wizard>
+   </extension>
+
+   <!-- Cheatsheet: Getting Started with Sandbox Hint Files -->
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.triggerpattern.gettingStarted"
+            name="Getting Started with Sandbox Hint Files"
+            contentFile="cheatsheets/sandbox-hint-getting-started.xml">
+         <description>Learn how to create and use .sandbox-hint files</description>
+      </cheatsheet>
+   </extension>
 </plugin>
