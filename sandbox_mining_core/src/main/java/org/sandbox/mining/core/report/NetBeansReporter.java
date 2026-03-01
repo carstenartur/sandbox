@@ -97,7 +97,7 @@ public class NetBeansReporter {
 				+ summary + " \u2014 " + scores; //$NON-NLS-1$
 	}
 
-	static String severityFromTrafficLight(TrafficLight light) {
+	public static String severityFromTrafficLight(TrafficLight light) {
 		if (light == null) {
 			return "info"; //$NON-NLS-1$
 		}
@@ -109,7 +109,7 @@ public class NetBeansReporter {
 		};
 	}
 
-	static String repoShortName(String url) {
+	public static String repoShortName(String url) {
 		String name = url;
 		if (name.endsWith(".git")) { //$NON-NLS-1$
 			name = name.substring(0, name.length() - 4);

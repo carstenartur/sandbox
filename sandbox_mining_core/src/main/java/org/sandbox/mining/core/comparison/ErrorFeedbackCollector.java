@@ -86,7 +86,7 @@ public class ErrorFeedbackCollector {
 		return Map.copyOf(errorPatterns);
 	}
 
-	static String categorizeError(String error) {
+	public static String categorizeError(String error) {
 		if (error == null) {
 			return "Unknown"; //$NON-NLS-1$
 		}

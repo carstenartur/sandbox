@@ -73,7 +73,7 @@ public class HintFileUpdater {
 		return created;
 	}
 
-	static String sanitizeFileName(String commitHash) {
+	public static String sanitizeFileName(String commitHash) {
 		if (commitHash == null || commitHash.isBlank()) {
 			return "unknown"; //$NON-NLS-1$
 		}
