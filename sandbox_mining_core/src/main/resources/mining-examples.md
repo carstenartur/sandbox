@@ -132,7 +132,7 @@ extension point changes, and build configuration updates.
 
 **Actual diff:** Removed `@SuppressWarnings("deprecation")` annotations from 3 JDT UI
 preference cleanup classes: `CleanUpConfigurationBlock.java`, `CleanUpTabPage.java`,
-`CodeFormatingTabPage.java` (6 line deletions, all annotation-only changes).
+`CodeFormatingTabPage.java` (sic — historical Eclipse class name; 6 line deletions, all annotation-only changes).
 
 **Analysis:** Determining whether a `@SuppressWarnings("deprecation")` is unnecessary
 requires type-resolution analysis — the tool must check whether the annotated code

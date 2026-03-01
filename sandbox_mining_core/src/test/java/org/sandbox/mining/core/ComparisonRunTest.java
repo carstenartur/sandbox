@@ -31,7 +31,7 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 import org.sandbox.mining.core.report.JsonReporter;
 
 /**
- * Integration test that orchestrates the comparison process (Aufgabe 10).
+ * Integration test that orchestrates the comparison process (Task 10 from issue #884).
  *
  * <p>This test is tagged as {@code ManualIntegration} and is excluded from normal CI
  * builds. Run it manually with a valid LLM API key:</p>
