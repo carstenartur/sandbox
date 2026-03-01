@@ -1620,4 +1620,39 @@ public class HintFileParserTest {
 		assertTrue(block.getStartOffset() >= 0);
 		assertTrue(block.getEndOffset() > block.getStartOffset());
 	}
+
+	@Test
+	public void testParseEmbeddedFixFunctionReference() throws HintParseException {
+		String content = """
+			$x.oldMethod()
+			=> <?customFix?>
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(1, rule.alternatives().size());
+		RewriteAlternative alt = rule.alternatives().get(0);
+		assertTrue(alt.isEmbeddedFix(), "Should be an embedded fix reference");
+		assertEquals("customFix", alt.embeddedFixFunctionName());
+	}
+
+	@Test
+	public void testParseNonEmbeddedFixIsNotDetected() throws HintParseException {
+		String content = """
+			$x.oldMethod()
+			=> $x.newMethod()
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertEquals(1, rule.alternatives().size());
+		RewriteAlternative alt = rule.alternatives().get(0);
+		assertFalse(alt.isEmbeddedFix(), "Regular replacement should not be an embedded fix");
+	}
 }

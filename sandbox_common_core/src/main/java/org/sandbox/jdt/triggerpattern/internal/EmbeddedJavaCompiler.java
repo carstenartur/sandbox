@@ -75,6 +75,7 @@ public final class EmbeddedJavaCompiler {
 	 * @param compilationUnit the parsed AST compilation unit
 	 * @param problems        compilation problems (errors and warnings)
 	 * @param guardMethods    method declarations that match the guard function signature
+	 * @param fixMethods      method declarations annotated with {@code @FixFunction}
 	 * @param lineOffset      the line offset to map synthetic class lines back to hint file lines
 	 * @param syntheticClassName the fully qualified name of the generated synthetic class
 	 * @param lineMappings    source line mappings from hint file to synthetic class
@@ -84,21 +85,23 @@ public final class EmbeddedJavaCompiler {
 			CompilationUnit compilationUnit,
 			List<IProblem> problems,
 			List<MethodDeclaration> guardMethods,
+			List<MethodDeclaration> fixMethods,
 			int lineOffset,
 			String syntheticClassName,
 			List<SourceLineMapping> lineMappings,
 			int syntheticHeaderLength) {
 
 		/**
-		 * Backwards-compatible constructor without syntheticClassName, lineMappings, and syntheticHeaderLength.
+		 * Backwards-compatible constructor without fixMethods, syntheticClassName,
+		 * lineMappings, and syntheticHeaderLength.
 		 */
 		public CompilationResult(
 				CompilationUnit compilationUnit,
 				List<IProblem> problems,
 				List<MethodDeclaration> guardMethods,
 				int lineOffset) {
-			this(compilationUnit, problems, guardMethods, lineOffset,
-					"", Collections.emptyList(), 0); //$NON-NLS-1$
+			this(compilationUnit, problems, guardMethods, Collections.emptyList(),
+					lineOffset, "", Collections.emptyList(), 0); //$NON-NLS-1$
 		}
 
 		/**
@@ -168,6 +171,7 @@ public final class EmbeddedJavaCompiler {
 
 		List<IProblem> problems = collectProblems(cu);
 		List<MethodDeclaration> guardMethods = extractGuardMethods(cu);
+		List<MethodDeclaration> fixMethods = extractFixMethods(cu);
 
 		int lineOffset = block.getStartLine() - headerLineCount - 1;
 
@@ -176,10 +180,10 @@ public final class EmbeddedJavaCompiler {
 		List<SourceLineMapping> lineMappings = buildLineMappings(block, headerLineCount);
 		int headerCharLength = computeSyntheticHeaderLength(ruleId);
 
-		LOGGER.log(Level.FINE, "Compiled embedded Java block: {0} problems, {1} guard methods", //$NON-NLS-1$
-				new Object[] { problems.size(), guardMethods.size() });
+		LOGGER.log(Level.FINE, "Compiled embedded Java block: {0} problems, {1} guard methods, {2} fix methods", //$NON-NLS-1$
+				new Object[] { problems.size(), guardMethods.size(), fixMethods.size() });
 
-		return new CompilationResult(cu, problems, guardMethods, lineOffset,
+		return new CompilationResult(cu, problems, guardMethods, fixMethods, lineOffset,
 				syntheticClassName, lineMappings, headerCharLength);
 	}
 
@@ -272,6 +276,70 @@ public final class EmbeddedJavaCompiler {
 		}
 		String returnType = method.getReturnType2().toString();
 		return "boolean".equals(returnType); //$NON-NLS-1$
+	}
+
+	/**
+	 * Extracts method declarations from the compilation unit that are annotated
+	 * with {@code @FixFunction}.
+	 */
+	private static List<MethodDeclaration> extractFixMethods(CompilationUnit cu) {
+		List<MethodDeclaration> fixes = new ArrayList<>();
+		for (Object typeObj : cu.types()) {
+			if (typeObj instanceof TypeDeclaration typeDecl) {
+				for (MethodDeclaration method : typeDecl.getMethods()) {
+					if (isFixMethod(method)) {
+						fixes.add(method);
+					}
+				}
+			}
+		}
+		return fixes;
+	}
+
+	/**
+	 * Checks if a method declaration is annotated with {@code @FixFunction}.
+	 * A fix method must return {@code void} and be annotated with {@code @FixFunction}.
+	 */
+	private static boolean isFixMethod(MethodDeclaration method) {
+		if (method.getReturnType2() == null) {
+			return false;
+		}
+		String returnType = method.getReturnType2().toString();
+		if (!"void".equals(returnType)) { //$NON-NLS-1$
+			return false;
+		}
+		for (Object modifier : method.modifiers()) {
+			if (modifier instanceof org.eclipse.jdt.core.dom.Annotation annotation) {
+				String annotName = annotation.getTypeName().getFullyQualifiedName();
+				if ("FixFunction".equals(annotName) //$NON-NLS-1$
+						|| "org.sandbox.jdt.triggerpattern.api.FixFunction".equals(annotName)) { //$NON-NLS-1$
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Compiles an embedded Java block with optional debug information.
+	 *
+	 * <p>When {@code debugInfo} is {@code true}, the synthetic source is compiled
+	 * with debug information ({@code -g} flag equivalent) for debugger support.</p>
+	 *
+	 * <p><b>Note:</b> The {@code debugInfo} parameter is currently a no-op for
+	 * AST-based parsing. It is provided as a hook for future bytecode compilation
+	 * support (see Phase 6.3 of issue #870).</p>
+	 *
+	 * @param block     the embedded Java block to compile
+	 * @param ruleId    the hint file rule ID
+	 * @param debugInfo whether to include debug information (reserved for future use)
+	 * @return the compilation result
+	 * @since 1.5.0
+	 */
+	public static CompilationResult compile(EmbeddedJavaBlock block, String ruleId, boolean debugInfo) {
+		// TODO: When bytecode compilation is implemented (Phase 6.3),
+		// pass debugInfo to BatchCompiler to generate debug attributes.
+		return compile(block, ruleId);
 	}
 
 	/**

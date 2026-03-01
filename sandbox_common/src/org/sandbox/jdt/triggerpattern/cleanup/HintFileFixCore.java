@@ -48,10 +48,15 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedFixExecutor;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedGuardRegistrar;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler.CompilationResult;
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
@@ -135,6 +140,9 @@ public class HintFileFixCore {
 				continue;
 			}
 
+			// Register guard and fix functions from <? ?> blocks
+			registerEmbeddedFunctions(hintFile, hintFileId);
+
 			List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
 			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 			List<TransformationResult> results = processor.process(compilationUnit);
@@ -214,6 +222,9 @@ public class HintFileFixCore {
 			return;
 		}
 
+		// Register guard and fix functions from <? ?> blocks
+		registerEmbeddedFunctions(hintFile, bundleId);
+
 		List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 		List<TransformationResult> results = processor.process(compilationUnit, compilerOptions);
@@ -257,6 +268,35 @@ public class HintFileFixCore {
 	}
 
 	/**
+	 * Registers guard and fix functions from embedded Java blocks in a hint file.
+	 *
+	 * <p>Compiles each non-blank {@code <? ?>} block and registers its guard
+	 * methods in the {@link GuardRegistry} and fix methods in the
+	 * {@link EmbeddedFixExecutor}.</p>
+	 *
+	 * @param hintFile the hint file containing embedded Java blocks
+	 * @param hintFileId the hint file ID for tracking
+	 * @since 1.5.0
+	 */
+	private static void registerEmbeddedFunctions(HintFile hintFile, String hintFileId) {
+		// Unregister previously registered guards/fixes for this hint file
+		// to avoid stale entries when a hint file is reloaded after editing
+		EmbeddedGuardRegistrar.unregisterGuards(hintFileId);
+		EmbeddedFixExecutor.unregisterFixes(hintFileId);
+
+		for (EmbeddedJavaBlock block : hintFile.getEmbeddedJavaBlocks()) {
+			if (block.getSource().isBlank()) {
+				continue;
+			}
+			CompilationResult compResult = EmbeddedJavaCompiler.compile(block, hintFileId);
+			if (!compResult.hasErrors()) {
+				EmbeddedGuardRegistrar.registerGuards(compResult, hintFileId);
+				EmbeddedFixExecutor.registerFixes(compResult, hintFileId);
+			}
+		}
+	}
+
+	/**
 	 * Generic rewrite operation that replaces matched AST nodes with the
 	 * replacement text from a {@code .sandbox-hint} rule.
 	 *
@@ -285,6 +325,17 @@ public class HintFileFixCore {
 			String replacement = result.replacement();
 
 			if (matchedNode == null || replacement == null) {
+				return;
+			}
+
+			// Check for embedded fix function reference: <?fixName?>
+			// These are dispatched to EmbeddedFixExecutor instead of text-based replacement.
+			// Currently fix functions are stubs (Phase 1.4 MVP) — log and skip rewrite.
+			String fixName = extractEmbeddedFixName(replacement);
+			if (fixName != null) {
+				if (EmbeddedFixExecutor.hasFix(fixName)) {
+					EmbeddedFixExecutor.execute(fixName);
+				}
 				return;
 			}
 
@@ -693,6 +744,36 @@ public class HintFileFixCore {
 				}
 			});
 			return count[0];
+		}
+
+		/**
+		 * Extracts the embedded fix function name from a replacement text ({@code <?fixName?>}).
+		 *
+		 * <p>A valid embedded fix reference has the form {@code <?identifier?>} where
+		 * the identifier has no leading/trailing whitespace and is a valid Java identifier.</p>
+		 *
+		 * @return the fix function name, or {@code null} if the replacement is not a valid fix reference
+		 */
+		private static String extractEmbeddedFixName(String replacement) {
+			if (replacement == null || !replacement.startsWith("<?") || !replacement.endsWith("?>")) { //$NON-NLS-1$ //$NON-NLS-2$
+				return null;
+			}
+			String inner = replacement.substring(2, replacement.length() - 2);
+			String trimmed = inner.trim();
+			if (trimmed.isEmpty() || !inner.equals(trimmed)) {
+				return null;
+			}
+			for (int i = 0; i < trimmed.length(); i++) {
+				char ch = trimmed.charAt(i);
+				if (i == 0) {
+					if (!Character.isJavaIdentifierStart(ch)) {
+						return null;
+					}
+				} else if (!Character.isJavaIdentifierPart(ch)) {
+					return null;
+				}
+			}
+			return trimmed;
 		}
 
 		/**

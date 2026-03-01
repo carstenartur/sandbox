@@ -286,8 +286,9 @@ public final class HintFileParser {
 				}
 				
 				// Check for start of <? ?> block(s) on this line
+				int searchFrom = 0;
 				while (!inBlockComment) {
-					int startIdx = rawLine.indexOf("<?"); //$NON-NLS-1$
+					int startIdx = rawLine.indexOf("<?", searchFrom); //$NON-NLS-1$
 					if (startIdx < 0) {
 						break;
 					}
@@ -295,6 +296,15 @@ public final class HintFileParser {
 					if (endIdx >= 0) {
 						// Single-line <? ?> block
 						String javaSource = rawLine.substring(startIdx + 2, endIdx);
+						// Skip fix function references: <?identifier?> is kept as-is
+						// (a simple Java identifier without whitespace, semicolons, or braces).
+						// These are replacement references like => <?customFix?> and should
+						// NOT be extracted as embedded Java blocks.
+						if (isFixFunctionReference(javaSource)) {
+							// Advance past this ?> and continue scanning for further blocks
+							searchFrom = endIdx + 2;
+							continue;
+						}
 						int blockStartOffset = lineStartOffset + startIdx;
 						int blockEndOffset = lineStartOffset + endIdx + 2;
 						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(
@@ -302,6 +312,7 @@ public final class HintFileParser {
 								blockStartOffset, blockEndOffset));
 						LOGGER.log(Level.FINE, "Extracted embedded Java block (single line {0})", lineNumber); //$NON-NLS-1$
 						rawLine = rawLine.substring(0, startIdx) + rawLine.substring(endIdx + 2);
+						searchFrom = startIdx; // Reset: content at startIdx changed
 						// Continue loop to check for further blocks on the same line
 					} else {
 						// Multi-line <? ?> block
@@ -897,6 +908,19 @@ public final class HintFileParser {
 			GuardSplit altAndGuard = splitGuard(altContent);
 			String replacementPattern = altAndGuard.patternText().trim();
 			GuardExpression altGuard = null;
+			String embeddedFixName = null;
+
+			// Check for embedded fix function reference: => <?fixName?>
+			// Use the same validation as isFixFunctionReference() to distinguish
+			// fix refs (<?identifier?>) from embedded Java blocks (<? code ?>)
+			if (replacementPattern.startsWith("<?") && replacementPattern.endsWith("?>")) { //$NON-NLS-1$ //$NON-NLS-2$
+				String inner = replacementPattern.substring(2, replacementPattern.length() - 2);
+				String trimmedInner = inner.trim();
+				if (!trimmedInner.isEmpty() && inner.equals(trimmedInner)
+						&& isValidJavaIdentifier(trimmedInner)) {
+					embeddedFixName = trimmedInner;
+				}
+			}
 			
 			if (altAndGuard.hasGuard()) {
 				String guardText = altAndGuard.guardText().trim();
@@ -907,7 +931,7 @@ public final class HintFileParser {
 				}
 			}
 			
-			alternatives.add(new RewriteAlternative(replacementPattern, altGuard));
+			alternatives.add(new RewriteAlternative(replacementPattern, altGuard, embeddedFixName));
 			ruleLineIdx++;
 		}
 		
@@ -1063,6 +1087,54 @@ public final class HintFileParser {
 			"void", "int", "long", "short", "byte", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 			"float", "double", "boolean", "char" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	);
+
+	/**
+	 * Checks whether the content inside {@code <? ?>} is a fix function reference
+	 * (a simple Java identifier) rather than actual embedded Java code.
+	 *
+	 * <p>Fix function references like {@code <?customFix?>} contain only a single
+	 * identifier with no leading/trailing whitespace between the delimiters.
+	 * They are used in replacement patterns like {@code => <?customFix?>}.</p>
+	 *
+	 * <p>Note: {@code <? code ?>} (with spaces after {@code <?}) is treated as
+	 * embedded Java code, not a fix function reference.</p>
+	 *
+	 * @param content the text between {@code <?} and {@code ?>}
+	 * @return {@code true} if the content is a fix function reference
+	 */
+	private static boolean isFixFunctionReference(String content) {
+		if (content.isEmpty()) {
+			return false;
+		}
+		// Fix function references must not have leading/trailing whitespace
+		// This distinguishes <?fixName?> from <? code ?> (embedded Java)
+		if (Character.isWhitespace(content.charAt(0))
+				|| Character.isWhitespace(content.charAt(content.length() - 1))) {
+			return false;
+		}
+		return isValidJavaIdentifier(content);
+	}
+
+	/**
+	 * Checks whether the given string is a valid Java identifier.
+	 *
+	 * @param text the text to check
+	 * @return {@code true} if the text is a valid Java identifier
+	 */
+	static boolean isValidJavaIdentifier(String text) {
+		if (text == null || text.isEmpty()) {
+			return false;
+		}
+		if (!Character.isJavaIdentifierStart(text.charAt(0))) {
+			return false;
+		}
+		for (int i = 1; i < text.length(); i++) {
+			if (!Character.isJavaIdentifierPart(text.charAt(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
 	
 	/**
 	 * Exception thrown when parsing a {@code .sandbox-hint} file fails.
