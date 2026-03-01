@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
@@ -91,7 +90,6 @@ public class SandboxHintOrganizeImports {
 	private TextEdit organizeBlockImports(String blockContent, int blockStartOffset) {
 		String[] lines = blockContent.split("\\n"); //$NON-NLS-1$
 		List<String> imports = new ArrayList<>();
-		List<String> nonImports = new ArrayList<>();
 		int importRegionStart = -1;
 		int importRegionEnd = -1;
 		int currentOffset = 0;

@@ -24,7 +24,6 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.compiler.IProblem;
@@ -310,7 +309,7 @@ public final class EmbeddedJavaCompiler {
 			return false;
 		}
 		for (Object modifier : method.modifiers()) {
-			if (modifier instanceof MarkerAnnotation annotation) {
+			if (modifier instanceof org.eclipse.jdt.core.dom.Annotation annotation) {
 				String annotName = annotation.getTypeName().getFullyQualifiedName();
 				if ("FixFunction".equals(annotName) //$NON-NLS-1$
 						|| "org.sandbox.jdt.triggerpattern.api.FixFunction".equals(annotName)) { //$NON-NLS-1$

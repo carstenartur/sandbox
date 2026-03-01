@@ -279,6 +279,11 @@ public class HintFileFixCore {
 	 * @since 1.5.0
 	 */
 	private static void registerEmbeddedFunctions(HintFile hintFile, String hintFileId) {
+		// Unregister previously registered guards/fixes for this hint file
+		// to avoid stale entries when a hint file is reloaded after editing
+		EmbeddedGuardRegistrar.unregisterGuards(hintFileId);
+		EmbeddedFixExecutor.unregisterFixes(hintFileId);
+
 		for (EmbeddedJavaBlock block : hintFile.getEmbeddedJavaBlocks()) {
 			if (block.getSource().isBlank()) {
 				continue;
@@ -320,6 +325,17 @@ public class HintFileFixCore {
 			String replacement = result.replacement();
 
 			if (matchedNode == null || replacement == null) {
+				return;
+			}
+
+			// Check for embedded fix function reference: <?fixName?>
+			// These are dispatched to EmbeddedFixExecutor instead of text-based replacement.
+			// Currently fix functions are stubs (Phase 1.4 MVP) — log and skip rewrite.
+			if (isEmbeddedFixReference(replacement)) {
+				String fixName = replacement.substring(2, replacement.length() - 2).trim();
+				if (EmbeddedFixExecutor.hasFix(fixName)) {
+					EmbeddedFixExecutor.execute(fixName);
+				}
 				return;
 			}
 
@@ -728,6 +744,34 @@ public class HintFileFixCore {
 				}
 			});
 			return count[0];
+		}
+
+		/**
+		 * Checks if the replacement text is an embedded fix function reference ({@code <?fixName?>}).
+		 *
+		 * <p>A valid embedded fix reference has the form {@code <?identifier?>} where
+		 * the identifier has no leading/trailing whitespace and is a valid Java identifier.</p>
+		 */
+		private static boolean isEmbeddedFixReference(String replacement) {
+			if (replacement == null || !replacement.startsWith("<?") || !replacement.endsWith("?>")) { //$NON-NLS-1$ //$NON-NLS-2$
+				return false;
+			}
+			String inner = replacement.substring(2, replacement.length() - 2);
+			String trimmed = inner.trim();
+			if (trimmed.isEmpty() || !inner.equals(trimmed)) {
+				return false;
+			}
+			for (int i = 0; i < trimmed.length(); i++) {
+				char ch = trimmed.charAt(i);
+				if (i == 0) {
+					if (!Character.isJavaIdentifierStart(ch)) {
+						return false;
+					}
+				} else if (!Character.isJavaIdentifierPart(ch)) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 		/**

@@ -286,8 +286,9 @@ public final class HintFileParser {
 				}
 				
 				// Check for start of <? ?> block(s) on this line
+				int searchFrom = 0;
 				while (!inBlockComment) {
-					int startIdx = rawLine.indexOf("<?"); //$NON-NLS-1$
+					int startIdx = rawLine.indexOf("<?", searchFrom); //$NON-NLS-1$
 					if (startIdx < 0) {
 						break;
 					}
@@ -300,7 +301,9 @@ public final class HintFileParser {
 						// These are replacement references like => <?customFix?> and should
 						// NOT be extracted as embedded Java blocks.
 						if (isFixFunctionReference(javaSource)) {
-							break;
+							// Advance past this ?> and continue scanning for further blocks
+							searchFrom = endIdx + 2;
+							continue;
 						}
 						int blockStartOffset = lineStartOffset + startIdx;
 						int blockEndOffset = lineStartOffset + endIdx + 2;
@@ -309,6 +312,7 @@ public final class HintFileParser {
 								blockStartOffset, blockEndOffset));
 						LOGGER.log(Level.FINE, "Extracted embedded Java block (single line {0})", lineNumber); //$NON-NLS-1$
 						rawLine = rawLine.substring(0, startIdx) + rawLine.substring(endIdx + 2);
+						searchFrom = startIdx; // Reset: content at startIdx changed
 						// Continue loop to check for further blocks on the same line
 					} else {
 						// Multi-line <? ?> block
@@ -907,8 +911,29 @@ public final class HintFileParser {
 			String embeddedFixName = null;
 
 			// Check for embedded fix function reference: => <?fixName?>
+			// Use the same validation as isFixFunctionReference() to distinguish
+			// fix refs (<?identifier?>) from embedded Java blocks (<? code ?>)
 			if (replacementPattern.startsWith("<?") && replacementPattern.endsWith("?>")) { //$NON-NLS-1$ //$NON-NLS-2$
-				embeddedFixName = replacementPattern.substring(2, replacementPattern.length() - 2).trim();
+				String inner = replacementPattern.substring(2, replacementPattern.length() - 2);
+				String trimmedInner = inner.trim();
+				if (!trimmedInner.isEmpty() && inner.equals(trimmedInner)) {
+					boolean validIdentifier = true;
+					for (int i = 0; i < trimmedInner.length(); i++) {
+						char ch = trimmedInner.charAt(i);
+						if (i == 0) {
+							if (!Character.isJavaIdentifierStart(ch)) {
+								validIdentifier = false;
+								break;
+							}
+						} else if (!Character.isJavaIdentifierPart(ch)) {
+							validIdentifier = false;
+							break;
+						}
+					}
+					if (validIdentifier) {
+						embeddedFixName = trimmedInner;
+					}
+				}
 			}
 			
 			if (altAndGuard.hasGuard()) {
