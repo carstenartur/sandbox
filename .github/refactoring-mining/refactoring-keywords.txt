@@ -1,0 +1,54 @@
+# Refactoring keywords for commit pre-filtering
+# One keyword per line, case-insensitive matching
+# Lines starting with # are comments
+
+# General refactoring terms
+refactor
+cleanup
+clean up
+modernize
+simplif
+migrate
+
+# Deprecation-related
+deprecat
+replace
+remove.*deprecated
+use.*instead
+switch.*to
+update.*api
+
+# Java language features
+lambda
+stream
+foreach
+var 
+pattern matching
+instanceof
+text block
+record
+sealed
+switch expression
+
+# Encoding / IO
+encoding
+charset
+nio
+try-with-resource
+StandardCharsets
+
+# Collections
+Collections.unmodifiable
+List.of
+List.copyOf
+Map.of
+Set.of
+
+# Eclipse-specific
+IStatus
+Status.error
+Status.warning
+SubMonitor
+Job.create
+Display.syncExec
+Display.asyncExec

@@ -1,0 +1,125 @@
+# Eclipse Platform 2025 Commits for Comparison Analysis
+# Real commits from eclipse.platform.ui and eclipse.jdt.ui (2025)
+# Format: one commit hash per line
+# Lines starting with # are comments
+
+# === eclipse-platform/eclipse.platform.ui ===
+
+# String.replaceAll() → String.replace() (no regex needed)
+7bb8891bf4f5268f1fb49e0531bc192672d7ce72
+
+# Stop using deprecated Platform.run → SafeRunner.run
+b4b98c6eabbd40a29bbeec1375fa862a04b8ad14
+
+# Remove unused and deprecated IHelp internal code
+68255e32f6916597f35a642f07b8155c6ab081c6
+
+# Fix URL deprecation in tests and snippets
+6361505f1e3f5cf762aad275b1fe753b8f3eee3b
+
+# Java 21 deprecation fixes
+aede34103616f47826e12d09a2e03d03540c2a6e
+
+# Remove long deprecated and unused keybinding API
+96b5ffb4e3dc308d677e07d2de6f445a638ea0c0
+
+# Performance: Cache method calls in loops
+343fd57b98addd612e285e10c70be340e784d0b0
+
+# Perform clean code of org.eclipse.ui.workbench
+c9f1e026dfdd93184ebf76f5f5306b40c70023b2
+
+# Perform clean code of org.eclipse.ui.workbench.texteditor
+c6e9f0f6953da8f0d7762ed070eb1fa7f3cabcad
+
+# Migrate org.eclipse.ui.tests.navigator from JUnit 4 to JUnit 5
+0e238b7c618484e0815dee7c33b70fd9769f6603
+
+# Migrate org.eclipse.ui.monitoring.tests from JUnit 4 to JUnit 5
+37ad17df2f0bf9928ba49fd7ff672a2be98ff816
+
+# Migrate 5 tests to JUnit 5 using CloseTestWindowsExtension
+447e516e5084e093f65fa0fa1a8ed1f42f6c1d8f
+
+# Remove unused NLS entry
+6c82a8384eb1e8ddafcaea1ef4e939ff3bd78ebd
+
+# Remove unused JUnit Rule and TestName imports
+191a1c771f3a516d61f34d8921c679ede0713cfb
+
+# Remove commented out code that does not serve as documentation
+601b0d30c7ce504b66dbceb24de6b63f89f4a6f5
+
+# Marks several unused deprecated methods/constants for removal
+a629637edf1132951fae1a756d11c9311cbd18d8
+
+# Marks several unused deprecated methods/constants/classes for removal
+19ffef3521fcbe81ef6fc7ae595789d8d0825382
+
+# Replace Phaser with CountDownLatch for reliable synchronization
+4391448be37cc14f290c72bc267255effcc3c5ec
+
+# Remove IPageLayout.addFastView
+40552f3c29a72e5ff1a7bbf9fbeb57e2a9a2506b
+
+# Remove redundant isCanceled checks
+26ddd0da93aeca1b9b4ad3a56b0d8bae208e3b83
+
+# === eclipse-jdt/eclipse.jdt.ui ===
+
+# Add cleanup to use module imports where possible
+66872a9531a94069a9ce4eb929c7f6e02401b70d
+
+# Enhance convert to switch expressions
+46f45bcb2b2ab777b7377d5d43bfa5fb2e706a40
+
+# Refactor StringCleanUp to jdt.core.manipulation
+c60b1056bc5156ff056e5050723db49d2f96e5da
+
+# Refactor PatternCleanUp to jdt.core.manipulation
+71a69b986988ef8afbc72fa7369b37570dc091e6
+
+# Refactor UnimplementedCodeCleanUp to jdt.core.manipulation
+f68abe2c3e7ea9696c303974b9ce5ae0c79e491e
+
+# Refactor more clean-ups to jdt.core.manipulation
+29f35148b2d7207d81606f355319f21a8752f4eb
+
+# Fix Unnecessary Array clean-up to not remove NLS markers
+3702d32e2985b25dabcc2863a7a3ca67e7a1906c
+
+# Mass refactor of LocalCorrectionsSubProcessor methods to base
+ecb420fa1f6158f5c63e221a01275782407757c7
+
+# Do not offer to add type arguments where diamond operator would do
+90ff95a00fbedd5e7bd5747668cfe1aa606527d4
+
+# Fix cleanup to replace java.specification.version property
+ce67be20232fee3f8de7c0fde0875b17b6977077
+
+# Removed unnecessary @SuppressWarnings("deprecation") from jdt.ui
+741d08e097fde002bfff10c165a4585efc1a54e5
+
+# Fix add import module clean-up to not omit parameterized types
+894941ef42c8cf9c5b9739080d396320ce65c14d
+
+# Refactor TypeParametersCleanUp to jdt.core.manipulation
+d2abdce788f060f4021a68484867603ebdcb147a
+
+# Highlight deprecation of canonical record constructor
+f9770112c1ae4f0989b13b02cb44896b764c8f8d
+
+# Fix control blocks clean-up to preserve else comments properly
+52b06dbaa91fa0de595fddc108310a60cbdbded5
+
+# Do not remove lone empty commented return statement in a lambda
+73676b064980ea4c046f2dfb12b7418550d3ab3a
+
+# Fix add final for fields cleanup for generic class and lambda
+5f271d36c5ac2a8d8cc4489aaaf163f30b69a8a2
+
+# Fix Unnecessary Array cleanup to check for ambiguous varargs methods
+2b89f65d2f4f5909a1e8bd7f8e07b9b0439b68e5
+
+# Add ambiguous type checking for import module
+ad909281ed1a773480419cff8e9c0951eed031d9

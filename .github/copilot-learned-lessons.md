@@ -777,3 +777,34 @@ AstProcessorBuilder.with(dataholder, nodesprocessed)
 **Learned**: 2026-02-27
 
 ---
+
+## 28. Mining Core: Brace Balance in MiningCli.java
+
+**Issue**: When adding new methods at the end of `MiningCli.java`, it's easy to introduce an extra closing brace `}` that causes `"class, interface, enum, or record expected"` compilation errors.
+
+**Root cause**: The file uses a flat indentation style (no leading spaces), making it hard to visually track method/class scope boundaries. The `printDeferredReport` method has deeply nested braces (for loops + if statements), and edits near the end of the file can accidentally omit or duplicate the method-closing brace.
+
+**Fix**: Always count braces with a script before committing:
+```python
+content = open('MiningCli.java').read()
+print(f'Open: {content.count(chr(123))}, Close: {content.count(chr(125))}')
+# Must be equal
+```
+
+**Learned**: 2026-03-01
+
+---
+
+## 29. Mining Core: New Modules Are Plain Maven JARs
+
+**Issue**: `sandbox_mining_core` and `sandbox_common_core` are **standard Maven modules** (not Tycho/Eclipse plugins). They use `maven-compiler-plugin` and don't require Xvfb or Eclipse runtime.
+
+**Key facts**:
+- Tests run with `mvn test -pl sandbox_mining_core` (no xvfb-run needed)
+- Build with `mvn compile -pl sandbox_mining_core -DskipTests`
+- SpotBugs runs during compile phase and must pass
+- They depend on each other: `sandbox_mining_core` → `sandbox_common_core`
+
+**Learned**: 2026-03-01
+
+---

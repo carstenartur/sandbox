@@ -36,13 +36,39 @@ public class PromptBuilder {
 
 	private static final String DSL_EXPLANATION_RESOURCE = "/dsl-explanation.md"; //$NON-NLS-1$
 	private static final String EXISTING_PLUGINS_RESOURCE = "/existing-java-plugins.md"; //$NON-NLS-1$
+	private static final String ECLIPSE_API_CONTEXT_RESOURCE = "/eclipse-api-context.md"; //$NON-NLS-1$
+	private static final String MINING_EXAMPLES_RESOURCE = "/mining-examples.md"; //$NON-NLS-1$
 
 	private String dslExplanation;
 	private String existingPluginsContext;
+	private String eclipseApiContext;
+	private String miningExamples;
+	private String typeContext;
+	private String errorFeedback;
 
 	public PromptBuilder() {
 		this.dslExplanation = loadResource(DSL_EXPLANATION_RESOURCE);
 		this.existingPluginsContext = loadResource(EXISTING_PLUGINS_RESOURCE);
+		this.eclipseApiContext = loadResource(ECLIPSE_API_CONTEXT_RESOURCE);
+		this.miningExamples = loadResource(MINING_EXAMPLES_RESOURCE);
+	}
+
+	/**
+	 * Sets optional type context to include in prompts.
+	 *
+	 * @param typeContext the type context section
+	 */
+	public void setTypeContext(String typeContext) {
+		this.typeContext = typeContext;
+	}
+
+	/**
+	 * Sets optional error feedback to include in prompts.
+	 *
+	 * @param errorFeedback the error feedback section
+	 */
+	public void setErrorFeedback(String errorFeedback) {
+		this.errorFeedback = errorFeedback;
 	}
 
 	/**
@@ -81,6 +107,7 @@ public class PromptBuilder {
 		sb.append(categoriesJson != null ? categoriesJson : "[]").append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
 		appendExistingPluginsSection(sb);
 		appendPreviousResultsSection(sb, previousResults);
+		appendOptionalSections(sb);
 		sb.append("## Commit to Analyze\n\n"); //$NON-NLS-1$
 		sb.append("### Commit Message\n"); //$NON-NLS-1$
 		sb.append(commitMessage).append("\n\n"); //$NON-NLS-1$
@@ -124,6 +151,7 @@ public class PromptBuilder {
 		sb.append(categoriesJson != null ? categoriesJson : "[]").append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
 		appendExistingPluginsSection(sb);
 		appendPreviousResultsSection(sb, previousResults);
+		appendOptionalSections(sb);
 		sb.append("## Commits to Analyze\n\n"); //$NON-NLS-1$
 		for (int i = 0; i < commits.size(); i++) {
 			CommitData cd = commits.get(i);
@@ -157,6 +185,23 @@ public class PromptBuilder {
 			sb.append("acknowledge it with `\"previouslyProposed\": \"<rule summary>\"` and explain "); //$NON-NLS-1$
 			sb.append("how your proposal differs or improves on it.\n\n"); //$NON-NLS-1$
 			sb.append(previousResults).append("\n\n"); //$NON-NLS-1$
+		}
+	}
+
+	private void appendOptionalSections(StringBuilder sb) {
+		if (eclipseApiContext != null && !eclipseApiContext.startsWith("(Resource not available")) { //$NON-NLS-1$
+			sb.append("## Eclipse API Context\n\n"); //$NON-NLS-1$
+			sb.append(eclipseApiContext).append("\n\n"); //$NON-NLS-1$
+		}
+		if (miningExamples != null && !miningExamples.startsWith("(Resource not available")) { //$NON-NLS-1$
+			sb.append("## Mining Examples\n\n"); //$NON-NLS-1$
+			sb.append(miningExamples).append("\n\n"); //$NON-NLS-1$
+		}
+		if (typeContext != null && !typeContext.isBlank()) {
+			sb.append(typeContext);
+		}
+		if (errorFeedback != null && !errorFeedback.isBlank()) {
+			sb.append(errorFeedback);
 		}
 	}
 
