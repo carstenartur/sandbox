@@ -703,6 +703,7 @@ System.out.println("    - " + dc.getHash().substring(0, Math.min(7, dc.getHash()
 }
 }
 }
+}
 
 /**
  * Checks whether the mining run should stop based on elapsed time.
@@ -736,6 +737,5 @@ hashes.add(trimmed);
 }
 }
 return hashes;
-}
 }
 }
