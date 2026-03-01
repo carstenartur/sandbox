@@ -65,6 +65,13 @@ import org.sandbox.mining.core.report.StatisticsCollector;
  */
 public class MiningCli {
 
+/**
+ * Output stream for informational messages.
+ * Default: {@code System.out}. Set to {@code System.err} when {@code --strict-netbeans} is active,
+ * keeping stdout clean for pipe-friendly NetBeans-format output.
+ */
+private PrintStream miningLog = System.out;
+
 private static final String OPT_CONFIG = "--config"; //$NON-NLS-1$
 private static final String OPT_STATE = "--state"; //$NON-NLS-1$
 private static final String OPT_SANDBOX_ROOT = "--sandbox-root"; //$NON-NLS-1$
@@ -216,10 +223,16 @@ if (statePath == null) {
 statePath = sandboxRoot.resolve(".github/refactoring-mining/state.json"); //$NON-NLS-1$
 }
 
-System.out.println("=== Sandbox Mining Core ==="); //$NON-NLS-1$
-System.out.println("Config: " + configPath); //$NON-NLS-1$
-System.out.println("State:  " + statePath); //$NON-NLS-1$
-System.out.println("Output: " + outputDir); //$NON-NLS-1$
+// Use miningLog for all informational output; when --strict-netbeans is set
+// it redirects to stderr so stdout stays clean for pipe-friendly output.
+if (strictNetbeans) {
+miningLog = System.err;
+}
+
+miningLog.println("=== Sandbox Mining Core ==="); //$NON-NLS-1$
+miningLog.println("Config: " + configPath); //$NON-NLS-1$
+miningLog.println("State:  " + statePath); //$NON-NLS-1$
+miningLog.println("Output: " + outputDir); //$NON-NLS-1$
 
 MiningConfig config = MiningConfig.parse(configPath);
 MiningState state = MiningState.load(statePath);
@@ -232,6 +245,33 @@ DslValidator validator = new DslValidator();
 StatisticsCollector stats = new StatisticsCollector();
 ReportAggregator aggregator = new ReportAggregator();
 
+// Enrich prompt with type context if requested
+if (enrichTypeContext) {
+TypeContextEnricher typeEnricher = new TypeContextEnricher();
+promptBuilder.setTypeContext(typeEnricher.enrichFromDiff("")); //$NON-NLS-1$
+}
+
+// Collect error feedback from existing evaluations for prompt improvement
+JsonReporter feedbackReader = new JsonReporter();
+Path existingEvals = outputDir.resolve("evaluations.json"); //$NON-NLS-1$
+List<CommitEvaluation> previousEvals = feedbackReader.loadExistingEvaluations(existingEvals);
+if (!previousEvals.isEmpty()) {
+ErrorFeedbackCollector errorCollector = new ErrorFeedbackCollector();
+errorCollector.collect(previousEvals);
+if (errorCollector.getErrorCount() > 0) {
+promptBuilder.setErrorFeedback(errorCollector.formatFeedback());
+miningLog.println("Loaded " + errorCollector.getErrorCount() //$NON-NLS-1$
++ " error patterns from previous evaluations for prompt feedback"); //$NON-NLS-1$
+}
+}
+
+// Initialize keyword filter if specified
+CommitKeywordFilter keywordFilter = null;
+if (keywordFilterPath != null) {
+keywordFilter = new CommitKeywordFilter(keywordFilterPath);
+miningLog.println("Keyword filter loaded: " + keywordFilter.getKeywords().size() + " keywords"); //$NON-NLS-1$ //$NON-NLS-2$
+}
+
 Path workDir = Files.createTempDirectory("mining-core-"); //$NON-NLS-1$
 try (LlmClient llmClient = LlmClientFactory.createFromEnvironment(llmProvider)) {
 llmClient.setMaxFailureDuration(Duration.ofSeconds(maxFailureDurationSeconds));
@@ -242,7 +282,7 @@ String currentModel = llmClient.getModel();
 if (resetLearnedLimits || (repoState.getLastModelUsed() != null
 && !repoState.getLastModelUsed().equals(currentModel))) {
 if (repoState.getLearnedMaxDiffLines() != -1) {
-System.out.println("Resetting learned diff limit for " + repo.getUrl() //$NON-NLS-1$
+miningLog.println("Resetting learned diff limit for " + repo.getUrl() //$NON-NLS-1$
 + " (was " + repoState.getLearnedMaxDiffLines() + " lines)"); //$NON-NLS-1$ //$NON-NLS-2$
 repoState.setLearnedMaxDiffLines(-1);
 }
@@ -255,7 +295,8 @@ repoState.setLastModelUsed(currentModel);
 }
 try {
 processRepositories(config, state, statePath, workDir, batchSize, commitsPerRequest,
-llmClient, promptBuilder, dslContext, categoryManager, validator, stats, aggregator);
+llmClient, promptBuilder, dslContext, categoryManager, validator, stats, aggregator,
+startTimeMs, maxDurationMinutes);
 // Always process deferred commits at end of each run
 retryDeferredCommits(state, statePath, workDir, llmClient, promptBuilder,
 dslContext, categoryManager, validator, stats, aggregator, config, retryDeferred);
@@ -296,8 +337,9 @@ pagesGenerator.generate(aggregator.getAllEvaluations(), stats, outputDir);
 if ("netbeans".equals(outputFormat) || "both".equals(outputFormat)) { //$NON-NLS-1$ //$NON-NLS-2$
 NetBeansReporter nbReporter = new NetBeansReporter();
 nbReporter.write(aggregator.getAllEvaluations(), outputDir);
-PrintStream nbOut = strictNetbeans ? System.err : System.out;
-nbReporter.printToStream(aggregator.getAllEvaluations(), nbOut);
+// With --strict-netbeans, NetBeans format goes to stdout (pipe-friendly),
+// everything else goes to stderr via miningLog field
+nbReporter.printToStream(aggregator.getAllEvaluations(), System.out);
 }
 
 // Comparison mode
@@ -306,13 +348,11 @@ ExternalEvaluationImporter importer = new ExternalEvaluationImporter();
 List<CommitEvaluation> copilotResults = importer.importFromJson(copilotResultsPath);
 MiningComparator comparator = new MiningComparator();
 DeltaReport deltaReport = comparator.compare(aggregator.getAllEvaluations(), copilotResults);
-PrintStream compOut = strictNetbeans ? System.err : System.out;
-compOut.println(deltaReport.format());
+miningLog.println(deltaReport.format());
 }
 
 state.save(statePath);
 
-PrintStream miningLog = strictNetbeans ? System.err : System.out;
 miningLog.println("=== Mining complete ==="); //$NON-NLS-1$
 miningLog.println("Processed: " + stats.getTotalProcessed() + " commits"); //$NON-NLS-1$ //$NON-NLS-2$
 miningLog.println("Relevant:  " + stats.getRelevant()); //$NON-NLS-1$
@@ -323,14 +363,20 @@ private void processRepositories(MiningConfig config, MiningState state, Path st
 Path workDir, int batchSize, int commitsPerRequest,
 LlmClient llmClient, PromptBuilder promptBuilder,
 String dslContext, CategoryManager categoryManager, DslValidator validator,
-StatisticsCollector stats, ReportAggregator aggregator) throws IOException, GitAPIException {
+StatisticsCollector stats, ReportAggregator aggregator,
+long startTimeMs, int maxDurationMinutes) throws IOException, GitAPIException {
 RepoCloner cloner = new RepoCloner();
 // Dynamic batch size tracking (reduced on truncation)
 int[] dynamicCPR = { commitsPerRequest };
 
 for (RepoEntry repo : config.getRepositories()) {
+if (shouldStop(startTimeMs, maxDurationMinutes)) {
+miningLog.println("Max duration reached (" + maxDurationMinutes //$NON-NLS-1$
++ " minutes). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
+return;
+}
 if (!llmClient.hasRemainingQuota()) {
-System.out.println("Daily API quota exhausted (" + llmClient.getDailyRequestCount() //$NON-NLS-1$
+miningLog.println("Daily API quota exhausted (" + llmClient.getDailyRequestCount() //$NON-NLS-1$
 + " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
 return;
 }
@@ -338,7 +384,7 @@ if (llmClient.isApiUnavailable()) {
 logApiUnavailable(llmClient);
 return;
 }
-System.out.println("Processing: " + repo.getUrl()); //$NON-NLS-1$
+miningLog.println("Processing: " + repo.getUrl()); //$NON-NLS-1$
 Path repoDir = workDir.resolve(repoDirectoryName(repo.getUrl()));
 cloner.cloneRepo(repo.getUrl(), repo.getBranch(), repoDir);
 
@@ -351,8 +397,12 @@ List<RevCommit> batch = walker.nextBatch(lastCommit, config.getStartDate(), batc
 while (!batch.isEmpty()) {
 // Group commits into sub-batches for API calls
 for (int i = 0; i < batch.size(); i += dynamicCPR[0]) {
+if (shouldStop(startTimeMs, maxDurationMinutes)) {
+miningLog.println("Max duration reached. Stopping batch processing."); //$NON-NLS-1$
+return;
+}
 if (!llmClient.hasRemainingQuota()) {
-System.out.println("Daily API quota exhausted (" //$NON-NLS-1$
+miningLog.println("Daily API quota exhausted (" //$NON-NLS-1$
 + llmClient.getDailyRequestCount()
 + " requests used). Stopping. Will resume from current position on next run."); //$NON-NLS-1$
 return;
@@ -369,7 +419,7 @@ validator, stats, aggregator, config.getMinDiffLinesPerCommit(),
 config.getMaxDiffLinesPerCommit());
 if (llmClient.wasLastResponseTruncated() && dynamicCPR[0] > 1) {
 dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);
-System.out.println("  Reducing commits-per-request to " + dynamicCPR[0] + " after truncated response"); //$NON-NLS-1$
+miningLog.println("  Reducing commits-per-request to " + dynamicCPR[0] + " after truncated response"); //$NON-NLS-1$
 }
 if (llmClient.isApiUnavailable()) {
 logApiUnavailable(llmClient);
@@ -381,7 +431,7 @@ config.getStartDate(), batchSize);
 }
 }
 
-System.out.println("  Completed: " + repo.getUrl()); //$NON-NLS-1$
+miningLog.println("  Completed: " + repo.getUrl()); //$NON-NLS-1$
 }
 }
 
@@ -406,11 +456,11 @@ int lineCount = diff.split("\n", -1).length; //$NON-NLS-1$
 if (diff.isBlank()) {
 isSkipped.add(Boolean.TRUE);
 } else if (lineCount < minDiffLines) {
-System.out.println("  Skipping commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
+miningLog.println("  Skipping commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 + " (diff too small: " + lineCount + " lines)"); //$NON-NLS-1$ //$NON-NLS-2$
 isSkipped.add(Boolean.TRUE);
 } else if (lineCount > effectiveMaxDiff) {
-System.out.println("  Deferring commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
+miningLog.println("  Deferring commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 + " (" + lineCount + " lines > limit " + effectiveMaxDiff + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 String shortMsg = commit.getShortMessage();
 String truncatedMsg = shortMsg == null
@@ -442,7 +492,7 @@ int maxDiffInBatch = diffLineCounts.stream().mapToInt(Integer::intValue).max().o
 if (maxDiffInBatch > 0) {
 int newLimit = (int) (maxDiffInBatch * 0.8);
 if (repoState.getLearnedMaxDiffLines() == -1 || newLimit < repoState.getLearnedMaxDiffLines()) {
-System.out.println("  Learning: reducing max diff limit to " + newLimit //$NON-NLS-1$
+miningLog.println("  Learning: reducing max diff limit to " + newLimit //$NON-NLS-1$
 + " lines (was " + (repoState.getLearnedMaxDiffLines() == -1 ? "default" : repoState.getLearnedMaxDiffLines()) + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 repoState.setLearnedMaxDiffLines(newLimit);
 }
@@ -450,12 +500,12 @@ repoState.setLearnedMaxDiffLines(newLimit);
 }
 
 if (evaluations == null || evaluations.size() != commitDataList.size()) {
-System.out.println("  Incomplete batch evaluation for repository " + repo.getUrl() //$NON-NLS-1$
+miningLog.println("  Incomplete batch evaluation for repository " + repo.getUrl() //$NON-NLS-1$
 + " [" + repo.getBranch() + "]" //$NON-NLS-1$ //$NON-NLS-2$
 + "; will retry non-evaluated commits in a future run."); //$NON-NLS-1$
-System.out.println("  Batch contained commits:"); //$NON-NLS-1$
+miningLog.println("  Batch contained commits:"); //$NON-NLS-1$
 for (RevCommit c : commits) {
-System.out.println("    - " + formatCommitInfo(c, repo)); //$NON-NLS-1$
+miningLog.println("    - " + formatCommitInfo(c, repo)); //$NON-NLS-1$
 }
 if (llmClient.isApiUnavailable()) {
 logApiUnavailable(llmClient);
@@ -490,7 +540,7 @@ return;
 // Process all commits in original order so state always advances
 // monotonically and no commit is permanently skipped on failure.
 if (evaluations != null) {
-System.out.println("  Evaluated batch of " + commitDataList.size() + " commits for " //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("  Evaluated batch of " + commitDataList.size() + " commits for " //$NON-NLS-1$ //$NON-NLS-2$
 + repo.getUrl() + " [" + repo.getBranch() + "]:"); //$NON-NLS-1$ //$NON-NLS-2$
 }
 int evalIdx = 0;
@@ -501,7 +551,7 @@ state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
 } else {
 CommitEvaluation evaluation = evaluations != null ? evaluations.get(evalIdx++) : null;
 if (evaluation == null) {
-System.out.println("  Missing evaluation for commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
+miningLog.println("  Missing evaluation for commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 + "; stopping batch to retry remaining commits later."); //$NON-NLS-1$
 break;
 }
@@ -509,7 +559,7 @@ int diffIdx = evalIdx - 1;
 String diffInfo = diffIdx >= 0 && diffIdx < diffLineCounts.size()
 ? " [" + diffLineCounts.get(diffIdx) + " lines]" //$NON-NLS-1$ //$NON-NLS-2$
 : ""; //$NON-NLS-1$
-System.out.println("    - " + formatCommitInfo(commit, repo) + diffInfo + " -> " + evaluation.trafficLight()); //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("    - " + formatCommitInfo(commit, repo) + diffInfo + " -> " + evaluation.trafficLight()); //$NON-NLS-1$ //$NON-NLS-2$
 handleEvaluation(evaluation, commit, repo, validator, categoryManager, stats, aggregator);
 state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
 // Remove from deferred list if it was previously deferred
@@ -531,12 +581,12 @@ if (validation.valid()) {
 validationResult = "VALID"; //$NON-NLS-1$
 } else {
 validationResult = validation.message();
-System.out.println("  Invalid DSL rule for " + formatCommitInfo(commit, repo) //$NON-NLS-1$
+miningLog.println("  Invalid DSL rule for " + formatCommitInfo(commit, repo) //$NON-NLS-1$
 + ": " + validation.message()); //$NON-NLS-1$
 if (Boolean.parseBoolean(System.getenv("GEMINI_DEBUG"))) { //$NON-NLS-1$
-System.out.println("  --- DSL rule begin ---"); //$NON-NLS-1$
-System.out.println(evaluation.dslRule());
-System.out.println("  --- DSL rule end ---"); //$NON-NLS-1$
+miningLog.println("  --- DSL rule begin ---"); //$NON-NLS-1$
+miningLog.println(evaluation.dslRule());
+miningLog.println("  --- DSL rule end ---"); //$NON-NLS-1$
 }
 }
 }
@@ -578,8 +628,8 @@ return commit.getName().substring(0, 7) + " on " + repo.getBranch() //$NON-NLS-1
 + " (" + datetime + ") \"" + title + "\""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 }
 
-private static void logApiUnavailable(LlmClient llmClient) {
-System.out.println("LLM API has been unreachable for over " //$NON-NLS-1$
+private void logApiUnavailable(LlmClient llmClient) {
+miningLog.println("LLM API has been unreachable for over " //$NON-NLS-1$
 + llmClient.getMaxFailureDuration().toMinutes()
 + " minutes. Stopping to avoid wasting CI time. State saved; will resume on next run."); //$NON-NLS-1$
 }
@@ -639,7 +689,7 @@ RepoState repoState = state.getRepoState(repo.getUrl());
 List<DeferredCommit> toRetry = new ArrayList<>(repoState.getDeferredCommits());
 if (toRetry.isEmpty()) continue;
 
-System.out.println("Processing " + toRetry.size() + " deferred commits for " + repo.getUrl()); //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("Processing " + toRetry.size() + " deferred commits for " + repo.getUrl()); //$NON-NLS-1$ //$NON-NLS-2$
 List<DeferredCommit> remaining = new ArrayList<>();
 for (DeferredCommit dc : toRetry) {
 if (!forceRetry && dc.getRetryCount() >= dc.getMaxRetries()) {
@@ -669,19 +719,19 @@ RepoState rs = state.getRepoState(repo.getUrl());
 totalDeferred += rs.getDeferredCommits().size();
 totalPermanentlySkipped += rs.getPermanentlySkipped().size();
 }
-System.out.println("=== Mining Run Summary ==="); //$NON-NLS-1$
-System.out.println("Duration:           " + minutes + "m " + seconds + "s"); //$NON-NLS-1$ //$NON-NLS-2$
-System.out.println("Commits processed:  " + stats.getTotalProcessed()); //$NON-NLS-1$
-System.out.println("Commits deferred:   " + totalDeferred); //$NON-NLS-1$
-System.out.println("Commits permanently skipped: " + totalPermanentlySkipped); //$NON-NLS-1$
-System.out.println("Relevant:           " + stats.getRelevant()); //$NON-NLS-1$
-System.out.println("API calls:          " + llmClient.getDailyRequestCount()); //$NON-NLS-1$
-System.out.println("Model:              " + llmClient.getModel()); //$NON-NLS-1$
+miningLog.println("=== Mining Run Summary ==="); //$NON-NLS-1$
+miningLog.println("Duration:           " + minutes + "m " + seconds + "s"); //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("Commits processed:  " + stats.getTotalProcessed()); //$NON-NLS-1$
+miningLog.println("Commits deferred:   " + totalDeferred); //$NON-NLS-1$
+miningLog.println("Commits permanently skipped: " + totalPermanentlySkipped); //$NON-NLS-1$
+miningLog.println("Relevant:           " + stats.getRelevant()); //$NON-NLS-1$
+miningLog.println("API calls:          " + llmClient.getDailyRequestCount()); //$NON-NLS-1$
+miningLog.println("Model:              " + llmClient.getModel()); //$NON-NLS-1$
 // Learned limits
 for (RepoEntry repo : config.getRepositories()) {
 RepoState rs = state.getRepoState(repo.getUrl());
 if (rs.getLearnedMaxDiffLines() > 0) {
-System.out.println("Learned max diff:   " + rs.getLearnedMaxDiffLines() + " lines (for " + repo.getUrl() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("Learned max diff:   " + rs.getLearnedMaxDiffLines() + " lines (for " + repo.getUrl() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 }
 }
 }
@@ -692,12 +742,12 @@ for (RepoEntry repo : config.getRepositories()) {
 RepoState rs = state.getRepoState(repo.getUrl());
 if (!rs.getDeferredCommits().isEmpty()) {
 if (!hasDeferred) {
-System.out.println("Deferred commits for retry:"); //$NON-NLS-1$
+miningLog.println("Deferred commits for retry:"); //$NON-NLS-1$
 hasDeferred = true;
 }
-System.out.println("  " + repo.getUrl() + ": " + rs.getDeferredCommits().size() + " commits"); //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("  " + repo.getUrl() + ": " + rs.getDeferredCommits().size() + " commits"); //$NON-NLS-1$ //$NON-NLS-2$
 for (DeferredCommit dc : rs.getDeferredCommits()) {
-System.out.println("    - " + dc.getHash().substring(0, Math.min(7, dc.getHash().length())) //$NON-NLS-1$
+miningLog.println("    - " + dc.getHash().substring(0, Math.min(7, dc.getHash().length())) //$NON-NLS-1$
 + " (" + dc.getDiffLines() + " lines, " + dc.getReason() //$NON-NLS-1$ //$NON-NLS-2$
 + ", retry " + dc.getRetryCount() + "/" + dc.getMaxRetries() + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 }

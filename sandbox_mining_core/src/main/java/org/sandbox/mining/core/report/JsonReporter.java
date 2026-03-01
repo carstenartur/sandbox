@@ -86,7 +86,7 @@ public class JsonReporter {
 	 * @param file the evaluations file
 	 * @return list of existing evaluations, empty if file doesn't exist or is invalid
 	 */
-	List<CommitEvaluation> loadExistingEvaluations(Path file) {
+	public List<CommitEvaluation> loadExistingEvaluations(Path file) {
 		if (!Files.exists(file)) {
 			return List.of();
 		}

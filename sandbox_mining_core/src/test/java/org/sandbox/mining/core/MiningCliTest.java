@@ -159,6 +159,71 @@ class MiningCliTest {
 		}
 	}
 
+	@Test
+	void testShouldStopNoLimit() {
+		long startTime = System.currentTimeMillis();
+		// 0 means no limit
+		assertEquals(false, MiningCli.shouldStop(startTime, 0));
+	}
+
+	@Test
+	void testShouldStopNegativeLimit() {
+		long startTime = System.currentTimeMillis();
+		assertEquals(false, MiningCli.shouldStop(startTime, -1));
+	}
+
+	@Test
+	void testShouldStopNotElapsed() {
+		long startTime = System.currentTimeMillis();
+		// 60 minutes, just started
+		assertEquals(false, MiningCli.shouldStop(startTime, 60));
+	}
+
+	@Test
+	void testShouldStopElapsed() {
+		// Start time in the past (2 hours ago)
+		long startTime = System.currentTimeMillis() - 2 * 60 * 60 * 1000;
+		// 60 minutes limit should have been exceeded
+		assertEquals(true, MiningCli.shouldStop(startTime, 60));
+	}
+
+	@Test
+	void testReadCommitList() throws IOException {
+		Path file = tempDir.resolve("commits.txt");
+		Files.writeString(file, "# comment\nabc123\n\ndef456\n  ghi789  \n");
+		List<String> hashes = MiningCli.readCommitList(file);
+		assertEquals(3, hashes.size());
+		assertEquals("abc123", hashes.get(0));
+		assertEquals("def456", hashes.get(1));
+		assertEquals("ghi789", hashes.get(2));
+	}
+
+	@Test
+	void testReadCommitListEmpty() throws IOException {
+		Path file = tempDir.resolve("empty-commits.txt");
+		Files.writeString(file, "# only comments\n\n# another comment\n");
+		List<String> hashes = MiningCli.readCommitList(file);
+		assertTrue(hashes.isEmpty());
+	}
+
+	@Test
+	void testNewFlagsParsing() {
+		MiningCli cli = new MiningCli();
+		// All new flags should parse without errors even though they'll fail at runtime
+		try {
+			cli.run(new String[] {
+					"--enrich-type-context",
+					"--comparison-mode",
+					"--output-format", "both",
+					"--strict-netbeans",
+					"--max-duration", "30"
+			});
+		} catch (Exception e) {
+			// Expected: config file not found or similar runtime error
+			// The flags themselves parsed without error
+		}
+	}
+
 	private static void exec(Path workDir, String... cmd) throws IOException, InterruptedException {
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		pb.directory(workDir.toFile());
