@@ -184,9 +184,14 @@ public class HintFileCleanUpCore extends AbstractSandboxCleanUpCore {
 		boolean cleanup = isEnabled(HINTFILE_CLEANUP);
 		Set<String> enabledBundles = getEnabledBundles();
 		StringBuilder sb = new StringBuilder();
+		boolean firstPreview = true;
 		for (String bundleId : enabledBundles) {
 			for (AbstractPatternCleanupPlugin<?> plugin : DslPluginRegistry.getPluginsForBundle(bundleId)) {
+				if (!firstPreview) {
+					sb.append('\n');
+				}
 				sb.append(plugin.getPreview(cleanup));
+				firstPreview = false;
 			}
 		}
 		if (sb.length() > 0) {

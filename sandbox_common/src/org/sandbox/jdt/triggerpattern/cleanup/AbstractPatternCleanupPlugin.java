@@ -789,6 +789,9 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         for (Pattern pattern : getPatterns()) {
             List<Match> matches = ENGINE.findMatches(compilationUnit, pattern);
             for (Match match : matches) {
+                if (!shouldProcess(match, pattern)) {
+                    continue;
+                }
                 H holder = createHolder(match);
                 if (holder != null) {
                     operations.add(new PluginRewriteOperation<>(this, holder));

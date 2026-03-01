@@ -54,21 +54,33 @@ public final class DslPluginRegistry {
 	 * plugin is silently ignored.</p>
 	 *
 	 * @param plugin the plugin to register; must not be {@code null}
+	 * @throws IllegalArgumentException if {@code plugin} is {@code null}, or if its
+	 *             cleanup ID or bundle ID is {@code null} or empty
 	 */
 	public static synchronized void register(AbstractPatternCleanupPlugin<?> plugin) {
+		if (plugin == null) {
+			throw new IllegalArgumentException("plugin must not be null"); //$NON-NLS-1$
+		}
 		String id = plugin.getCleanupId();
+		if (id == null || id.isEmpty()) {
+			throw new IllegalArgumentException("cleanupId must not be null or empty"); //$NON-NLS-1$
+		}
 		if (BY_CLEANUP_ID.containsKey(id)) {
 			return; // already registered
 		}
-		BY_CLEANUP_ID.put(id, plugin);
 		String bundleId = plugin.getBundleId();
+		if (bundleId == null || bundleId.isEmpty()) {
+			throw new IllegalArgumentException(
+					"bundleId must not be null or empty for cleanupId " + id); //$NON-NLS-1$
+		}
+		BY_CLEANUP_ID.put(id, plugin);
 		BY_BUNDLE_ID.computeIfAbsent(bundleId, k -> new ArrayList<>()).add(plugin);
 	}
 
 	/**
 	 * Returns all registered plugins.
 	 *
-	 * @return an unmodifiable snapshot of all registered plugins (never {@code null})
+	 * @return an unmodifiable view of all registered plugins (never {@code null})
 	 */
 	public static synchronized List<AbstractPatternCleanupPlugin<?>> getAllPlugins() {
 		return Collections.unmodifiableList(new ArrayList<>(BY_CLEANUP_ID.values()));
@@ -78,13 +90,13 @@ public final class DslPluginRegistry {
 	 * Returns all registered plugins whose bundle ID matches {@code bundleId}.
 	 *
 	 * @param bundleId the bundle identifier (e.g., {@code "encoding"})
-	 * @return an unmodifiable list of matching plugins (never {@code null})
+	 * @return an unmodifiable view of matching plugins (never {@code null})
 	 */
 	public static synchronized List<AbstractPatternCleanupPlugin<?>> getPluginsForBundle(String bundleId) {
 		List<AbstractPatternCleanupPlugin<?>> plugins = BY_BUNDLE_ID.get(bundleId);
 		if (plugins == null) {
 			return Collections.emptyList();
 		}
-		return Collections.unmodifiableList(new ArrayList<>(plugins));
+		return Collections.unmodifiableList(plugins);
 	}
 }
