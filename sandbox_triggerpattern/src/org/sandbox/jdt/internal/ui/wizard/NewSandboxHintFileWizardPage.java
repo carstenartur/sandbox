@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.triggerpattern.wizard;
+package org.sandbox.jdt.internal.ui.wizard;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;

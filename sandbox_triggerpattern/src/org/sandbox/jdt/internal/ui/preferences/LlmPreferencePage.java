@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.preferences;
 
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IntegerFieldEditor;
@@ -53,6 +54,14 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 
 	/** Preference key for the temperature value. */
 	public static final String PREF_TEMPERATURE = PREFIX + "temperature"; //$NON-NLS-1$
+
+	private static final String WIZARD_PREFIX = "org.sandbox.jdt.triggerpattern.wizard."; //$NON-NLS-1$
+
+	/** Preference key for auto-running AI inference when the wizard opens from a selection. */
+	public static final String PREF_WIZARD_AUTO_AI = WIZARD_PREFIX + "autoInferOnSelection"; //$NON-NLS-1$
+
+	/** Preference key for the default hint file folder path. */
+	public static final String PREF_WIZARD_DEFAULT_FOLDER = WIZARD_PREFIX + "defaultHintFolder"; //$NON-NLS-1$
 
 	private static final String[][] PROVIDER_ENTRIES = {
 			{ "Gemini", "GEMINI" }, //$NON-NLS-1$ //$NON-NLS-2$
@@ -119,6 +128,17 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 		};
 		temperatureField.setEmptyStringAllowed(false);
 		addField(temperatureField);
+
+		// --- Wizard section ---
+		addField(new BooleanFieldEditor(
+				PREF_WIZARD_AUTO_AI,
+				"Automatically generate rule with AI when opening wizard from selection", //$NON-NLS-1$
+				getFieldEditorParent()));
+
+		addField(new StringFieldEditor(
+				PREF_WIZARD_DEFAULT_FOLDER,
+				"Default hint file &folder:", //$NON-NLS-1$
+				getFieldEditorParent()));
 	}
 
 	@Override

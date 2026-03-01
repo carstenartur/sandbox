@@ -96,8 +96,23 @@
          2. Press <b>Ctrl+1</b> (Quick Assist)<br/>
          3. Choose <b>Generate DSL rule</b><br/>
          <br/>
-         The selected code is generalized into a source pattern
-         with meta-variable placeholders.
+         Alternatively, right-click the selection and choose
+         <b>Sandbox TriggerPattern → New hint file from selection…</b>
+         to open the wizard with the selected code pre-filled.
+      </description>
+   </item>
+
+   <item title="Generate Rules with AI">
+      <description>
+         The wizard includes an AI-powered rule generator. On the
+         rule editor page (page 2), click
+         <b>✨ Generate with AI</b> to let an LLM create a
+         transformation rule from your source pattern.
+         <br/><br/>
+         Configure the LLM provider under
+         <b>Preferences → Java → LLM Rule Inference</b>.
+         Supported providers include Gemini, OpenAI, DeepSeek,
+         Qwen, Llama, and Mistral.
       </description>
    </item>
 

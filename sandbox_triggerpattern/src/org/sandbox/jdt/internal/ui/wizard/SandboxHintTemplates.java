@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.triggerpattern.wizard;
+package org.sandbox.jdt.internal.ui.wizard;
 
 /**
  * Pre-built templates for new {@code .sandbox-hint} files.
@@ -31,7 +31,7 @@ public enum SandboxHintTemplates {
 		}
 	},
 
-	/** A single source-pattern → replacement rule. */
+	/** A single source-pattern &rarr; replacement rule. */
 	SIMPLE("Simple transformation rule") { //$NON-NLS-1$
 		@Override
 		public String getRuleContent() {

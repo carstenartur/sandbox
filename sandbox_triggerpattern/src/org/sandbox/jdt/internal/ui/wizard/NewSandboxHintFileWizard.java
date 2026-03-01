@@ -11,12 +11,14 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.triggerpattern.wizard;
+package org.sandbox.jdt.internal.ui.wizard;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -45,19 +47,23 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileSerializer;
  * <p>The wizard provides two pages:
  * <ol>
  *   <li>{@link NewSandboxHintFileWizardPage} &ndash; container/file name, metadata, and template selection</li>
- *   <li>{@link NewRuleWizardPage} &ndash; optional rule editor with live validation and preview</li>
+ *   <li>{@link NewRuleWizardPage} &ndash; optional rule editor with live validation, preview, and AI generation</li>
  * </ol>
+ *
+ * <p>When opened from a code selection (via {@link #setInitialCodeSnippet(String)}),
+ * the source pattern field on page 2 is pre-filled with the selected code.</p>
  *
  * @since 1.5.0
  */
 public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 
-	private static final String PLUGIN_ID = "sandbox_common"; //$NON-NLS-1$
+	private static final String PLUGIN_ID = "sandbox_triggerpattern"; //$NON-NLS-1$
 
 	private NewSandboxHintFileWizardPage filePage;
 	private NewRuleWizardPage rulePage;
 	private IStructuredSelection selection;
 	private IWorkbench workbench;
+	private String initialCodeSnippet;
 
 	public NewSandboxHintFileWizard() {
 		setWindowTitle("New Sandbox Hint File"); //$NON-NLS-1$
@@ -70,17 +76,34 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		this.selection = selection;
 	}
 
+	/**
+	 * Sets an initial code snippet that will pre-fill the source pattern
+	 * field on the rule editor page. Called by
+	 * {@code NewHintFromSelectionHandler} when the wizard is opened from a
+	 * code selection.
+	 *
+	 * @param code the selected code snippet
+	 */
+	public void setInitialCodeSnippet(String code) {
+		this.initialCodeSnippet = code;
+	}
+
 	@Override
 	public void addPages() {
 		filePage = new NewSandboxHintFileWizardPage(selection);
 		rulePage = new NewRuleWizardPage();
+
+		if (initialCodeSnippet != null && !initialCodeSnippet.isBlank()) {
+			rulePage.setInitialSourcePattern(initialCodeSnippet);
+		}
+
 		addPage(filePage);
 		addPage(rulePage);
 	}
 
 	@Override
 	public boolean canFinish() {
-		// Allow finish from page 1 when template is EMPTY or clipboard
+		// Allow finish from page 1 when template is EMPTY
 		if (getContainer().getCurrentPage() == filePage) {
 			return filePage.isPageComplete()
 					&& filePage.getSelectedTemplate() == SandboxHintTemplates.EMPTY;
@@ -104,7 +127,7 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		}
 		String tagsText = filePage.getTagsText();
 		if (tagsText != null && !tagsText.isBlank()) {
-			java.util.List<String> tags = java.util.Arrays.stream(tagsText.split(",")) //$NON-NLS-1$
+			List<String> tags = Arrays.stream(tagsText.split(",")) //$NON-NLS-1$
 					.map(String::trim)
 					.filter(s -> !s.isEmpty())
 					.toList();
