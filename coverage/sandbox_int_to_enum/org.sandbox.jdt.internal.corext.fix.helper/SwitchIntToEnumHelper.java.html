@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
@@ -46,6 +45,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHolder;
@@ -72,9 +72,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 	public void find(IntToEnumFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 
-<span class="fc" id="L75">		compilationUnit.accept(new ASTVisitor() {</span>
-			@Override
-			public boolean visit(SwitchStatement node) {
+<span class="fc" id="L75">		ReferenceHolder&lt;String, Object&gt; findHolder = ReferenceHolder.create();</span>
+<span class="fc" id="L76">		AstProcessorBuilder.with(findHolder)</span>
+<span class="fc" id="L77">			.onSwitchStatement((node, h) -&gt; {</span>
 <span class="pc bpc" id="L78" title="1 of 2 branches missed.">				if (nodesprocessed.contains(node)) {</span>
 <span class="nc" id="L79">					return true;</span>
 				}
@@ -152,8 +152,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 <span class="fc" id="L152">				nodesprocessed.add(node);</span>
 
 <span class="fc" id="L154">				return true;</span>
-			}
-		});
+			})
+<span class="fc" id="L156">			.build(compilationUnit);</span>
 <span class="fc" id="L157">	}</span>
 
 	/**
@@ -197,9 +197,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 	private static boolean hasReferencesOutsideSwitch(CompilationUnit cu, Set&lt;String&gt; constantNames,
 			SwitchStatement switchStatement) {
 <span class="fc" id="L199">		AtomicBoolean hasExternalRef = new AtomicBoolean(false);</span>
-<span class="fc" id="L200">		cu.accept(new ASTVisitor() {</span>
-			@Override
-			public boolean visit(SimpleName node) {
+<span class="fc" id="L200">		ReferenceHolder&lt;String, Object&gt; refHolder = ReferenceHolder.create();</span>
+<span class="fc" id="L201">		AstProcessorBuilder.with(refHolder)</span>
+<span class="fc" id="L202">			.onSimpleName((node, h) -&gt; {</span>
 <span class="pc bpc" id="L203" title="1 of 2 branches missed.">				if (hasExternalRef.get()) {</span>
 <span class="nc" id="L204">					return false;</span>
 				}
@@ -224,8 +224,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.IntToEnumHelper.IntConstantHol
 				// Reference found outside the switch statement
 <span class="fc" id="L225">				hasExternalRef.set(true);</span>
 <span class="fc" id="L226">				return false;</span>
-			}
-		});
+			})
+<span class="fc" id="L228">			.build(cu);</span>
 <span class="fc" id="L229">		return hasExternalRef.get();</span>
 	}
 

@@ -18,7 +18,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -38,6 +37,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JfaceCleanUpFixCore;
 
@@ -119,87 +119,86 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ImageDataProviderPlugin.ImageDataHol
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
 		
-<span class="fc" id="L122">		compilationUnit.accept(new ASTVisitor() {</span>
-			
-			@Override
-			public boolean visit(ClassInstanceCreation node) {
+<span class="fc" id="L122">		ReferenceHolder&lt;String, Object&gt; findHolder = ReferenceHolder.create();</span>
+<span class="fc" id="L123">		AstProcessorBuilder.with(findHolder)</span>
+<span class="fc" id="L124">			.onClassInstanceCreation((node, h) -&gt; {</span>
 				// Check if this is a new Image(...) creation
-<span class="fc" id="L127">				ITypeBinding typeBinding = node.getType().resolveBinding();</span>
-<span class="pc bpc" id="L128" title="1 of 4 branches missed.">				if (typeBinding == null || !IMAGE.equals(typeBinding.getQualifiedName())) {</span>
-<span class="fc" id="L129">					return true;</span>
+<span class="fc" id="L126">				ITypeBinding typeBinding = node.getType().resolveBinding();</span>
+<span class="pc bpc" id="L127" title="1 of 4 branches missed.">				if (typeBinding == null || !IMAGE.equals(typeBinding.getQualifiedName())) {</span>
+<span class="fc" id="L128">					return true;</span>
 				}
 				
 				// Check if it has exactly 2 arguments
 				@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L134">				List&lt;Expression&gt; arguments = node.arguments();</span>
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">				if (arguments.size() != 2) {</span>
-<span class="nc" id="L136">					return true;</span>
+<span class="fc" id="L133">				List&lt;Expression&gt; arguments = node.arguments();</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">				if (arguments.size() != 2) {</span>
+<span class="nc" id="L135">					return true;</span>
 				}
 				
 				// Check first argument is Device (or subtype)
-<span class="fc" id="L140">				Expression deviceArg = arguments.get(0);</span>
-<span class="fc" id="L141">				ITypeBinding deviceType = deviceArg.resolveTypeBinding();</span>
-<span class="pc bpc" id="L142" title="2 of 4 branches missed.">				if (deviceType == null || !isOfType(deviceType, DEVICE)) {</span>
-<span class="nc" id="L143">					return true;</span>
+<span class="fc" id="L139">				Expression deviceArg = arguments.get(0);</span>
+<span class="fc" id="L140">				ITypeBinding deviceType = deviceArg.resolveTypeBinding();</span>
+<span class="pc bpc" id="L141" title="2 of 4 branches missed.">				if (deviceType == null || !isOfType(deviceType, DEVICE)) {</span>
+<span class="nc" id="L142">					return true;</span>
 				}
 				
 				// Check second argument is ImageData
-<span class="fc" id="L147">				Expression imageDataArg = arguments.get(1);</span>
-<span class="fc" id="L148">				ITypeBinding imageDataType = imageDataArg.resolveTypeBinding();</span>
-<span class="pc bpc" id="L149" title="2 of 4 branches missed.">				if (imageDataType == null || !IMAGE_DATA.equals(imageDataType.getQualifiedName())) {</span>
-<span class="nc" id="L150">					return true;</span>
+<span class="fc" id="L146">				Expression imageDataArg = arguments.get(1);</span>
+<span class="fc" id="L147">				ITypeBinding imageDataType = imageDataArg.resolveTypeBinding();</span>
+<span class="pc bpc" id="L148" title="2 of 4 branches missed.">				if (imageDataType == null || !IMAGE_DATA.equals(imageDataType.getQualifiedName())) {</span>
+<span class="nc" id="L149">					return true;</span>
 				}
 				
 				// Check if imageDataArg is a SimpleName (local variable reference)
-<span class="pc bpc" id="L154" title="1 of 2 branches missed.">				if (!(imageDataArg instanceof SimpleName)) {</span>
-<span class="nc" id="L155">					return true;</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">				if (!(imageDataArg instanceof SimpleName)) {</span>
+<span class="nc" id="L154">					return true;</span>
 				}
 				
-<span class="fc" id="L158">				SimpleName imageDataVar = (SimpleName) imageDataArg;</span>
+<span class="fc" id="L157">				SimpleName imageDataVar = (SimpleName) imageDataArg;</span>
 				
 				// Try to find the variable declaration in the same method/block
-<span class="fc" id="L161">				VariableDeclarationStatement varDecl = findImageDataVarDecl(imageDataVar);</span>
-<span class="fc bfc" id="L162" title="All 2 branches covered.">				if (varDecl == null) {</span>
-<span class="fc" id="L163">					return true;</span>
+<span class="fc" id="L160">				VariableDeclarationStatement varDecl = findImageDataVarDecl(imageDataVar);</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">				if (varDecl == null) {</span>
+<span class="fc" id="L162">					return true;</span>
 				}
 				
 				// Get the initializer expression
-<span class="fc" id="L167">				VariableDeclarationFragment fragment = findFragment(varDecl, imageDataVar);</span>
-<span class="pc bpc" id="L168" title="2 of 4 branches missed.">				if (fragment == null || fragment.getInitializer() == null) {</span>
-<span class="nc" id="L169">					return true;</span>
+<span class="fc" id="L166">				VariableDeclarationFragment fragment = findFragment(varDecl, imageDataVar);</span>
+<span class="pc bpc" id="L167" title="2 of 4 branches missed.">				if (fragment == null || fragment.getInitializer() == null) {</span>
+<span class="nc" id="L168">					return true;</span>
 				}
 				
 				// Skip multi-fragment declarations (e.g., &quot;ImageData a = ..., b = ...;&quot;)
 				// These are too complex to safely transform
 				@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L175">				List&lt;VariableDeclarationFragment&gt; declFragments = varDecl.fragments();</span>
-<span class="fc bfc" id="L176" title="All 2 branches covered.">				if (declFragments.size() != 1) {</span>
-<span class="fc" id="L177">					return true;</span>
+<span class="fc" id="L174">				List&lt;VariableDeclarationFragment&gt; declFragments = varDecl.fragments();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">				if (declFragments.size() != 1) {</span>
+<span class="fc" id="L176">					return true;</span>
 				}
 				
 				// Check that the ImageData variable is referenced exactly once (excluding its declaration)
 				// This ensures it's safe to remove the variable declaration
-<span class="fc" id="L182">				int usageCount = countVariableReferences(imageDataVar);</span>
-<span class="fc bfc" id="L183" title="All 2 branches covered.">				if (usageCount != 1) {</span>
-<span class="fc" id="L184">					return true;</span>
+<span class="fc" id="L181">				int usageCount = countVariableReferences(imageDataVar);</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">				if (usageCount != 1) {</span>
+<span class="fc" id="L183">					return true;</span>
 				}
 				
 				// Create a transformation holder
-<span class="fc" id="L188">				ReferenceHolder&lt;Integer, ImageDataHolder&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L189">				ImageDataHolder holder = new ImageDataHolder();</span>
-<span class="fc" id="L190">				holder.imageCreation = node;</span>
-<span class="fc" id="L191">				holder.imageDataVarDecl = varDecl;</span>
-<span class="fc" id="L192">				holder.imageDataInitializer = fragment.getInitializer();</span>
-<span class="fc" id="L193">				holder.nodesprocessed = nodesprocessed;</span>
-<span class="fc" id="L194">				dataholder.put(0, holder);</span>
+<span class="fc" id="L187">				ReferenceHolder&lt;Integer, ImageDataHolder&gt; dataholder = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L188">				ImageDataHolder holder = new ImageDataHolder();</span>
+<span class="fc" id="L189">				holder.imageCreation = node;</span>
+<span class="fc" id="L190">				holder.imageDataVarDecl = varDecl;</span>
+<span class="fc" id="L191">				holder.imageDataInitializer = fragment.getInitializer();</span>
+<span class="fc" id="L192">				holder.nodesprocessed = nodesprocessed;</span>
+<span class="fc" id="L193">				dataholder.put(0, holder);</span>
 				
 				// Register the operation
-<span class="fc" id="L197">				operations.add(fixcore.rewrite(dataholder));</span>
+<span class="fc" id="L196">				operations.add(fixcore.rewrite(dataholder));</span>
 				
-<span class="fc" id="L199">				return true;</span>
-			}
-		});
-<span class="fc" id="L202">	}</span>
+<span class="fc" id="L198">				return true;</span>
+			})
+<span class="fc" id="L200">			.build(compilationUnit);</span>
+<span class="fc" id="L201">	}</span>
 
 	/**
 	 * Finds the VariableDeclarationStatement for a given variable name in the same method/block.
@@ -209,38 +208,38 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ImageDataProviderPlugin.ImageDataHol
 	 */
 	private VariableDeclarationStatement findImageDataVarDecl(SimpleName varName) {
 		// Navigate up to find the enclosing method or block
-<span class="fc" id="L212">		ASTNode parent = varName.getParent();</span>
-<span class="pc bpc" id="L213" title="2 of 6 branches missed.">		while (parent != null &amp;&amp; !(parent instanceof MethodDeclaration) &amp;&amp; !(parent instanceof Block)) {</span>
-<span class="fc" id="L214">			parent = parent.getParent();</span>
+<span class="fc" id="L211">		ASTNode parent = varName.getParent();</span>
+<span class="pc bpc" id="L212" title="2 of 6 branches missed.">		while (parent != null &amp;&amp; !(parent instanceof MethodDeclaration) &amp;&amp; !(parent instanceof Block)) {</span>
+<span class="fc" id="L213">			parent = parent.getParent();</span>
 		}
 		
-<span class="pc bpc" id="L217" title="1 of 2 branches missed.">		if (parent == null) {</span>
-<span class="nc" id="L218">			return null;</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">		if (parent == null) {</span>
+<span class="nc" id="L217">			return null;</span>
 		}
 		
 		// Search for the variable declaration
-<span class="fc" id="L222">		final VariableDeclarationStatement[] result = new VariableDeclarationStatement[1];</span>
-<span class="fc" id="L223">		final String varIdentifier = varName.getIdentifier();</span>
+<span class="fc" id="L221">		final VariableDeclarationStatement[] result = new VariableDeclarationStatement[1];</span>
+<span class="fc" id="L222">		final String varIdentifier = varName.getIdentifier();</span>
 		
-<span class="fc" id="L225">		parent.accept(new ASTVisitor() {</span>
-			@Override
-			public boolean visit(VariableDeclarationStatement node) {
-<span class="fc" id="L228">				ITypeBinding typeBinding = node.getType().resolveBinding();</span>
-<span class="pc bpc" id="L229" title="1 of 4 branches missed.">				if (typeBinding != null &amp;&amp; IMAGE_DATA.equals(typeBinding.getQualifiedName())) {</span>
+<span class="fc" id="L224">		ReferenceHolder&lt;String, Object&gt; searchHolder = ReferenceHolder.create();</span>
+<span class="fc" id="L225">		AstProcessorBuilder.with(searchHolder)</span>
+<span class="fc" id="L226">			.onVariableDeclarationStatement((node, h) -&gt; {</span>
+<span class="fc" id="L227">				ITypeBinding typeBinding = node.getType().resolveBinding();</span>
+<span class="pc bpc" id="L228" title="1 of 4 branches missed.">				if (typeBinding != null &amp;&amp; IMAGE_DATA.equals(typeBinding.getQualifiedName())) {</span>
 					@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L231">					List&lt;VariableDeclarationFragment&gt; fragments = node.fragments();</span>
-<span class="fc bfc" id="L232" title="All 2 branches covered.">					for (VariableDeclarationFragment fragment : fragments) {</span>
-<span class="fc bfc" id="L233" title="All 2 branches covered.">						if (fragment.getName().getIdentifier().equals(varIdentifier)) {</span>
-<span class="fc" id="L234">							result[0] = node;</span>
-<span class="fc" id="L235">							return false;</span>
+<span class="fc" id="L230">					List&lt;VariableDeclarationFragment&gt; fragments = node.fragments();</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">					for (VariableDeclarationFragment fragment : fragments) {</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">						if (fragment.getName().getIdentifier().equals(varIdentifier)) {</span>
+<span class="fc" id="L233">							result[0] = node;</span>
+<span class="fc" id="L234">							return false;</span>
 						}
 					}
 				}
-<span class="fc" id="L239">				return true;</span>
-			}
-		});
+<span class="fc" id="L238">				return true;</span>
+			})
+<span class="fc" id="L240">			.build(parent);</span>
 		
-<span class="fc" id="L243">		return result[0];</span>
+<span class="fc" id="L242">		return result[0];</span>
 	}
 
 	/**
@@ -252,13 +251,13 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ImageDataProviderPlugin.ImageDataHol
 	 */
 	private VariableDeclarationFragment findFragment(VariableDeclarationStatement varDecl, SimpleName varName) {
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L255">		List&lt;VariableDeclarationFragment&gt; fragments = varDecl.fragments();</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		for (VariableDeclarationFragment fragment : fragments) {</span>
-<span class="pc bpc" id="L257" title="1 of 2 branches missed.">			if (fragment.getName().getIdentifier().equals(varName.getIdentifier())) {</span>
-<span class="fc" id="L258">				return fragment;</span>
+<span class="fc" id="L254">		List&lt;VariableDeclarationFragment&gt; fragments = varDecl.fragments();</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">		for (VariableDeclarationFragment fragment : fragments) {</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">			if (fragment.getName().getIdentifier().equals(varName.getIdentifier())) {</span>
+<span class="fc" id="L257">				return fragment;</span>
 			}
 		}
-<span class="nc" id="L261">		return null;</span>
+<span class="nc" id="L260">		return null;</span>
 	}
 
 	/**
@@ -269,49 +268,49 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ImageDataProviderPlugin.ImageDataHol
 	 */
 	private int countVariableReferences(SimpleName varName) {
 		// Navigate up to find the enclosing method
-<span class="fc" id="L272">		ASTNode parent = varName.getParent();</span>
-<span class="pc bpc" id="L273" title="1 of 4 branches missed.">		while (parent != null &amp;&amp; !(parent instanceof MethodDeclaration)) {</span>
-<span class="fc" id="L274">			parent = parent.getParent();</span>
+<span class="fc" id="L271">		ASTNode parent = varName.getParent();</span>
+<span class="pc bpc" id="L272" title="1 of 4 branches missed.">		while (parent != null &amp;&amp; !(parent instanceof MethodDeclaration)) {</span>
+<span class="fc" id="L273">			parent = parent.getParent();</span>
 		}
 		
-<span class="pc bpc" id="L277" title="1 of 2 branches missed.">		if (parent == null) {</span>
-<span class="nc" id="L278">			return 0;</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">		if (parent == null) {</span>
+<span class="nc" id="L277">			return 0;</span>
 		}
 		
 		// Get the binding of the variable we're looking for
-<span class="fc" id="L282">		final IBinding varBinding = varName.resolveBinding();</span>
-<span class="pc bpc" id="L283" title="1 of 2 branches missed.">		if (varBinding == null) {</span>
-<span class="nc" id="L284">			return 0;</span>
+<span class="fc" id="L281">		final IBinding varBinding = varName.resolveBinding();</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">		if (varBinding == null) {</span>
+<span class="nc" id="L283">			return 0;</span>
 		}
 		
 		// Count references to the variable (excluding the declaration)
-<span class="fc" id="L288">		final int[] count = new int[1];</span>
+<span class="fc" id="L287">		final int[] count = new int[1];</span>
 		
-<span class="fc" id="L290">		parent.accept(new ASTVisitor() {</span>
-			@Override
-			public boolean visit(SimpleName node) {
+<span class="fc" id="L289">		ReferenceHolder&lt;String, Object&gt; countHolder = ReferenceHolder.create();</span>
+<span class="fc" id="L290">		AstProcessorBuilder.with(countHolder)</span>
+<span class="fc" id="L291">			.onSimpleName((node, h) -&gt; {</span>
 				// Check if this node refers to the same variable binding
-<span class="fc" id="L294">				IBinding nodeBinding = node.resolveBinding();</span>
-<span class="pc bpc" id="L295" title="1 of 4 branches missed.">				if (nodeBinding != null &amp;&amp; nodeBinding.equals(varBinding)) {</span>
+<span class="fc" id="L293">				IBinding nodeBinding = node.resolveBinding();</span>
+<span class="pc bpc" id="L294" title="1 of 4 branches missed.">				if (nodeBinding != null &amp;&amp; nodeBinding.equals(varBinding)) {</span>
 					// Check if this is a reference (not the declaration itself)
-<span class="fc" id="L297">					ASTNode nodeParent = node.getParent();</span>
+<span class="fc" id="L296">					ASTNode nodeParent = node.getParent();</span>
 					// Exclude the name in the VariableDeclarationFragment (the declaration)
-<span class="fc bfc" id="L299" title="All 2 branches covered.">					if (nodeParent instanceof VariableDeclarationFragment) {</span>
-<span class="fc" id="L300">						VariableDeclarationFragment fragment = (VariableDeclarationFragment) nodeParent;</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">					if (nodeParent instanceof VariableDeclarationFragment) {</span>
+<span class="fc" id="L299">						VariableDeclarationFragment fragment = (VariableDeclarationFragment) nodeParent;</span>
 						// Only count if it's not the name being declared
-<span class="pc bpc" id="L302" title="1 of 2 branches missed.">						if (!node.equals(fragment.getName())) {</span>
-<span class="nc" id="L303">							count[0]++;</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">						if (!node.equals(fragment.getName())) {</span>
+<span class="nc" id="L302">							count[0]++;</span>
 						}
-<span class="nc" id="L305">					} else {</span>
+<span class="nc" id="L304">					} else {</span>
 						// All other occurrences are references
-<span class="fc" id="L307">						count[0]++;</span>
+<span class="fc" id="L306">						count[0]++;</span>
 					}
 				}
-<span class="fc" id="L310">				return true;</span>
-			}
-		});
+<span class="fc" id="L309">				return true;</span>
+			})
+<span class="fc" id="L311">			.build(parent);</span>
 		
-<span class="fc" id="L314">		return count[0];</span>
+<span class="fc" id="L313">		return count[0];</span>
 	}
 
 	/**
@@ -334,79 +333,79 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ImageDataProviderPlugin.ImageDataHol
 	public void rewrite(JfaceCleanUpFixCore upp, final ReferenceHolder&lt;Integer, ImageDataHolder&gt; hit,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group) {
 		
-<span class="pc bpc" id="L337" title="1 of 2 branches missed.">		if (hit.isEmpty()) {</span>
-<span class="nc" id="L338">			return;</span>
+<span class="pc bpc" id="L336" title="1 of 2 branches missed.">		if (hit.isEmpty()) {</span>
+<span class="nc" id="L337">			return;</span>
 		}
 		
-<span class="fc" id="L341">		ImageDataHolder holder = hit.get(0);</span>
-<span class="pc bpc" id="L342" title="2 of 4 branches missed.">		if (holder == null || holder.imageCreation == null) {</span>
-<span class="nc" id="L343">			return;</span>
+<span class="fc" id="L340">		ImageDataHolder holder = hit.get(0);</span>
+<span class="pc bpc" id="L341" title="2 of 4 branches missed.">		if (holder == null || holder.imageCreation == null) {</span>
+<span class="nc" id="L342">			return;</span>
 		}
 		
-<span class="fc" id="L346">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L347">		AST ast = cuRewrite.getAST();</span>
+<span class="fc" id="L345">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L346">		AST ast = cuRewrite.getAST();</span>
 		
 		// Get the device argument from the original Image creation
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L351">		List&lt;Expression&gt; originalArgs = holder.imageCreation.arguments();</span>
-<span class="fc" id="L352">		Expression deviceArg = originalArgs.get(0);</span>
+<span class="fc" id="L350">		List&lt;Expression&gt; originalArgs = holder.imageCreation.arguments();</span>
+<span class="fc" id="L351">		Expression deviceArg = originalArgs.get(0);</span>
 		
 		// Create lambda: zoom -&gt; { return &lt;imageDataInitializer&gt;; }
-<span class="fc" id="L355">		LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="fc" id="L354">		LambdaExpression lambda = ast.newLambdaExpression();</span>
 		
 		// Lambda parameter: zoom
-<span class="fc" id="L358">		VariableDeclarationFragment zoomParam = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L359">		zoomParam.setName(ast.newSimpleName(&quot;zoom&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L360">		lambda.parameters().add(zoomParam);</span>
+<span class="fc" id="L357">		VariableDeclarationFragment zoomParam = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L358">		zoomParam.setName(ast.newSimpleName(&quot;zoom&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L359">		lambda.parameters().add(zoomParam);</span>
 		
 		// Lambda body: { return &lt;imageDataInitializer&gt;; }
-<span class="fc" id="L363">		Block lambdaBody = ast.newBlock();</span>
-<span class="fc" id="L364">		ReturnStatement returnStmt = ast.newReturnStatement();</span>
-<span class="fc" id="L365">		returnStmt.setExpression((Expression) ASTNode.copySubtree(ast, holder.imageDataInitializer));</span>
-<span class="fc" id="L366">		lambdaBody.statements().add(returnStmt);</span>
-<span class="fc" id="L367">		lambda.setBody(lambdaBody);</span>
+<span class="fc" id="L362">		Block lambdaBody = ast.newBlock();</span>
+<span class="fc" id="L363">		ReturnStatement returnStmt = ast.newReturnStatement();</span>
+<span class="fc" id="L364">		returnStmt.setExpression((Expression) ASTNode.copySubtree(ast, holder.imageDataInitializer));</span>
+<span class="fc" id="L365">		lambdaBody.statements().add(returnStmt);</span>
+<span class="fc" id="L366">		lambda.setBody(lambdaBody);</span>
 		
 		// Create cast: (ImageDataProvider) lambda
-<span class="fc" id="L370">		CastExpression castExpr = ast.newCastExpression();</span>
-<span class="fc" id="L371">		castExpr.setType(ast.newSimpleType(addImport(IMAGE_DATA_PROVIDER, cuRewrite, ast)));</span>
-<span class="fc" id="L372">		castExpr.setExpression(lambda);</span>
+<span class="fc" id="L369">		CastExpression castExpr = ast.newCastExpression();</span>
+<span class="fc" id="L370">		castExpr.setType(ast.newSimpleType(addImport(IMAGE_DATA_PROVIDER, cuRewrite, ast)));</span>
+<span class="fc" id="L371">		castExpr.setExpression(lambda);</span>
 		
 		// Create new Image creation: new Image(device, (ImageDataProvider) lambda)
-<span class="fc" id="L375">		ClassInstanceCreation newImageCreation = ast.newClassInstanceCreation();</span>
-<span class="fc" id="L376">		newImageCreation.setType(ast.newSimpleType(ast.newSimpleName(&quot;Image&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L377">		newImageCreation.arguments().add(ASTNodes.createMoveTarget(rewrite, deviceArg));</span>
-<span class="fc" id="L378">		newImageCreation.arguments().add(castExpr);</span>
+<span class="fc" id="L374">		ClassInstanceCreation newImageCreation = ast.newClassInstanceCreation();</span>
+<span class="fc" id="L375">		newImageCreation.setType(ast.newSimpleType(ast.newSimpleName(&quot;Image&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L376">		newImageCreation.arguments().add(ASTNodes.createMoveTarget(rewrite, deviceArg));</span>
+<span class="fc" id="L377">		newImageCreation.arguments().add(castExpr);</span>
 		
 		// Replace the old Image creation with the new one
-<span class="fc" id="L381">		ASTNodes.replaceButKeepComment(rewrite, holder.imageCreation, newImageCreation, group);</span>
+<span class="fc" id="L380">		ASTNodes.replaceButKeepComment(rewrite, holder.imageCreation, newImageCreation, group);</span>
 		
 		// Remove the ImageData variable declaration if it exists
-<span class="pc bpc" id="L384" title="1 of 2 branches missed.">		if (holder.imageDataVarDecl != null) {</span>
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">		if (holder.imageDataVarDecl != null) {</span>
 			// Check if this is the only fragment in the declaration
 			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L387">			List&lt;VariableDeclarationFragment&gt; fragments = holder.imageDataVarDecl.fragments();</span>
-<span class="pc bpc" id="L388" title="1 of 2 branches missed.">			if (fragments.size() == 1) {</span>
+<span class="fc" id="L386">			List&lt;VariableDeclarationFragment&gt; fragments = holder.imageDataVarDecl.fragments();</span>
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">			if (fragments.size() == 1) {</span>
 				// Remove the entire statement
-<span class="fc" id="L390">				rewrite.remove(holder.imageDataVarDecl, group);</span>
-<span class="fc" id="L391">			} else {</span>
+<span class="fc" id="L389">				rewrite.remove(holder.imageDataVarDecl, group);</span>
+<span class="fc" id="L390">			} else {</span>
 				// Remove only the specific fragment (multiple variables declared)
 				// Find the fragment that matches our imageData variable
-<span class="nc bnc" id="L394" title="All 2 branches missed.">				for (VariableDeclarationFragment fragment : fragments) {</span>
-<span class="nc bnc" id="L395" title="All 2 branches missed.">					if (fragment.getInitializer() == holder.imageDataInitializer) {</span>
-<span class="nc" id="L396">						ListRewrite listRewrite = rewrite.getListRewrite(holder.imageDataVarDecl, </span>
-<span class="nc" id="L397">								VariableDeclarationStatement.FRAGMENTS_PROPERTY);</span>
-<span class="nc" id="L398">						listRewrite.remove(fragment, group);</span>
-<span class="nc" id="L399">						break;</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">				for (VariableDeclarationFragment fragment : fragments) {</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">					if (fragment.getInitializer() == holder.imageDataInitializer) {</span>
+<span class="nc" id="L395">						ListRewrite listRewrite = rewrite.getListRewrite(holder.imageDataVarDecl, </span>
+<span class="nc" id="L396">								VariableDeclarationStatement.FRAGMENTS_PROPERTY);</span>
+<span class="nc" id="L397">						listRewrite.remove(fragment, group);</span>
+<span class="nc" id="L398">						break;</span>
 					}
 				}
 			}
 		}
-<span class="fc" id="L404">	}</span>
+<span class="fc" id="L403">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L408" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
-<span class="nc" id="L409">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">		if (!afterRefactoring) {</span>
+<span class="nc" id="L408">			return &quot;&quot;&quot;</span>
 					import org.eclipse.swt.graphics.Device;
 					import org.eclipse.swt.graphics.Image;
 					import org.eclipse.swt.graphics.ImageData;
@@ -421,7 +420,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ImageDataProviderPlugin.ImageDataHol
 					}
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L424">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L423">		return &quot;&quot;&quot;</span>
 				import org.eclipse.swt.graphics.Device;
 				import org.eclipse.swt.graphics.Image;
 				import org.eclipse.swt.graphics.ImageDataProvider;

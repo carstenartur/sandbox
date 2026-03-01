@@ -539,5 +539,324 @@
 	 * @since 1.3.7
 	 */
 	public static final String HINTFILE_BUNDLE_ID_JUNIT5= &quot;junit5&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code stream-performance.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, Stream API performance optimization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_STREAM_PERFORMANCE= &quot;cleanup.hintfile.bundle.stream-performance&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the stream-performance hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_STREAM_PERFORMANCE= &quot;stream-performance&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code io-performance.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, I/O stream performance rules are applied (e.g., double-buffering detection).
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_IO_PERFORMANCE= &quot;cleanup.hintfile.bundle.io-performance&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the io-performance hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_IO_PERFORMANCE= &quot;io-performance&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code collection-performance.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, collection performance optimization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_COLLECTION_PERFORMANCE= &quot;cleanup.hintfile.bundle.collection-performance&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the collection-performance hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_COLLECTION_PERFORMANCE= &quot;collection-performance&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code number-compare.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, Number.compare() optimization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_NUMBER_COMPARE= &quot;cleanup.hintfile.bundle.number-compare&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the number-compare hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_NUMBER_COMPARE= &quot;number-compare&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code string-equals.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, String equality anti-pattern detection rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_STRING_EQUALS= &quot;cleanup.hintfile.bundle.string-equals&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the string-equals hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_STRING_EQUALS= &quot;string-equals&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code string-isblank.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, String.isBlank() modernization rules are applied (Java 11+).
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_STRING_ISBLANK= &quot;cleanup.hintfile.bundle.string-isblank&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the string-isblank hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_STRING_ISBLANK= &quot;string-isblank&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code arrays.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, array utility modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ARRAYS= &quot;cleanup.hintfile.bundle.arrays&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the arrays hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_ARRAYS= &quot;arrays&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code collection-toarray.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, Collection.toArray() modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_COLLECTION_TOARRAY= &quot;cleanup.hintfile.bundle.collection-toarray&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the collection-toarray hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_COLLECTION_TOARRAY= &quot;collection-toarray&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code probable-bugs.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, probable bug detection rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_PROBABLE_BUGS= &quot;cleanup.hintfile.bundle.probable-bugs&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the probable-bugs hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_PROBABLE_BUGS= &quot;probable-bugs&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code misc.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, miscellaneous code improvement rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_MISC= &quot;cleanup.hintfile.bundle.misc&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the misc hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_MISC= &quot;misc&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code deprecations.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, deprecated API replacement rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_DEPRECATIONS= &quot;cleanup.hintfile.bundle.deprecations&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the deprecations hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_DEPRECATIONS= &quot;deprecations&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code classfile-api.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, Java ClassFile API and reflection modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_CLASSFILE_API= &quot;cleanup.hintfile.bundle.classfile-api&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the classfile-api hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_CLASSFILE_API= &quot;classfile-api&quot;; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code serialization.sandbox-hint} pattern library.
+	 * &lt;p&gt;
+	 * When enabled, serialization best practice rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_SERIALIZATION= &quot;cleanup.hintfile.bundle.serialization&quot;; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the serialization hint file.
+	 * @since 1.3.8
+	 */
+	public static final String HINTFILE_BUNDLE_ID_SERIALIZATION= &quot;serialization&quot;; //$NON-NLS-1$
+
+	// --- Phase 3: Java-coded Cleanups for Complex Analysis ---
+
+	/**
+	 * Detect wrong string comparison using {@code ==} or {@code !=} with string literals.
+	 * &lt;p&gt;
+	 * Replaces {@code str == &quot;literal&quot;} with {@code &quot;literal&quot;.equals(str)} and
+	 * {@code str != &quot;literal&quot;} with {@code !&quot;literal&quot;.equals(str)}.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 */
+	public static final String WRONG_STRING_COMPARISON_CLEANUP= &quot;cleanup.wrong_string_comparison&quot;; //$NON-NLS-1$
+
+	/**
+	 * Detect {@code ex.printStackTrace()} calls and suggest using a logger.
+	 * &lt;p&gt;
+	 * This is a hint-only cleanup that marks {@code printStackTrace()} calls
+	 * but does not automatically replace them (the logger type varies per project).
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 */
+	public static final String PRINT_STACKTRACE_CLEANUP= &quot;cleanup.print_stacktrace&quot;; //$NON-NLS-1$
+
+	/**
+	 * Detect {@code System.out.println()} and {@code System.err.println()} calls
+	 * and suggest using a logger.
+	 * &lt;p&gt;
+	 * This is a hint-only cleanup that marks System.out/err usage
+	 * but does not automatically replace them.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 */
+	public static final String SYSTEM_OUT_CLEANUP= &quot;cleanup.system_out&quot;; //$NON-NLS-1$
+
+	/**
+	 * Warn on usage of obsolete collection types ({@code Vector}, {@code Hashtable}, {@code Stack}).
+	 * &lt;p&gt;
+	 * These legacy synchronized collections should typically be replaced with
+	 * {@code ArrayList}, {@code HashMap}, and {@code ArrayDeque} respectively.
+	 * This is a hint-only cleanup.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 */
+	public static final String OBSOLETE_COLLECTION_CLEANUP= &quot;cleanup.obsolete_collection&quot;; //$NON-NLS-1$
+
+	/**
+	 * Detect classes that override {@code equals()} without overriding {@code hashCode()}.
+	 * &lt;p&gt;
+	 * This violates the general contract of {@code Object.hashCode()} and can
+	 * cause issues when objects are used in hash-based collections.
+	 * This is a hint-only cleanup.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 */
+	public static final String MISSING_HASHCODE_CLEANUP= &quot;cleanup.missing_hashcode&quot;; //$NON-NLS-1$
+
+	/**
+	 * Warn on overridable method calls in constructors.
+	 * &lt;p&gt;
+	 * Calling non-final, non-private, non-static methods from a constructor
+	 * is dangerous because the subclass may not be fully initialized yet.
+	 * This is a hint-only cleanup.
+	 * &lt;p&gt;
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 */
+	public static final String OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP= &quot;cleanup.overridable_in_constructor&quot;; //$NON-NLS-1$
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

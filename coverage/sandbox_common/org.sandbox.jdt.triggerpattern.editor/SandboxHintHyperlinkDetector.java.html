@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHintHyperlinkDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">SandboxHintHyperlinkDetector.java</span></div><h1>SandboxHintHyperlinkDetector.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.editor;
+
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.ITypedRegion;
+import org.eclipse.jface.text.Region;
+import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
+import org.eclipse.jface.text.hyperlink.IHyperlink;
+
+/**
+ * Hyperlink detector for navigating from guard function references in
+ * DSL code to their definitions in embedded Java ({@code &lt;? ?&gt;}) blocks.
+ *
+ * &lt;p&gt;When the user Ctrl+Clicks (or presses F3) on a guard function name
+ * after a {@code ::} separator, this detector searches for a matching
+ * method in the document's {@code &lt;? ?&gt;} blocks and navigates to it.&lt;/p&gt;
+ *
+ * @since 1.5.0
+ */
+<span class="nc" id="L35">public class SandboxHintHyperlinkDetector extends AbstractHyperlinkDetector {</span>
+
+	@Override
+	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region,
+			boolean canShowMultipleHyperlinks) {
+<span class="nc" id="L40">		IDocument document = textViewer.getDocument();</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">		if (document == null) {</span>
+<span class="nc" id="L42">			return null;</span>
+		}
+
+<span class="nc" id="L45">		int offset = region.getOffset();</span>
+
+		try {
+			// Check that we're in the default content type (DSL code)
+<span class="nc" id="L49">			ITypedRegion partition = document.getPartition(offset);</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">			if (!IDocument.DEFAULT_CONTENT_TYPE.equals(partition.getType())) {</span>
+<span class="nc" id="L51">				return null;</span>
+			}
+
+			// Extract the word at the cursor
+<span class="nc" id="L55">			String word = extractWord(document, offset);</span>
+<span class="nc bnc" id="L56" title="All 4 branches missed.">			if (word == null || word.isEmpty()) {</span>
+<span class="nc" id="L57">				return null;</span>
+			}
+
+			// Check if the word is preceded by :: (guard reference)
+<span class="nc" id="L61">			int wordStart = findWordStart(document, offset);</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">			if (!isAfterGuardSeparator(document, wordStart)) {</span>
+<span class="nc" id="L63">				return null;</span>
+			}
+
+			// Search for a method with this name in &lt;? ?&gt; blocks
+<span class="nc" id="L67">			IRegion target = findMethodInJavaBlocks(document, word);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">			if (target == null) {</span>
+<span class="nc" id="L69">				return null;</span>
+			}
+
+<span class="nc" id="L72">			IRegion linkRegion = new Region(wordStart, word.length());</span>
+<span class="nc" id="L73">			return new IHyperlink[] {</span>
+<span class="nc" id="L74">				new GuardFunctionHyperlink(linkRegion, target, word, textViewer)</span>
+			};
+
+<span class="nc" id="L77">		} catch (BadLocationException e) {</span>
+<span class="nc" id="L78">			return null;</span>
+		}
+	}
+
+	private String extractWord(IDocument document, int offset) throws BadLocationException {
+<span class="nc" id="L83">		int start = findWordStart(document, offset);</span>
+<span class="nc" id="L84">		int end = offset;</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">		while (end &lt; document.getLength()) {</span>
+<span class="nc" id="L86">			char c = document.getChar(end);</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">			if (!Character.isLetterOrDigit(c) &amp;&amp; c != '_') {</span>
+<span class="nc" id="L88">				break;</span>
+			}
+<span class="nc" id="L90">			end++;</span>
+		}
+<span class="nc bnc" id="L92" title="All 2 branches missed.">		if (end &gt; start) {</span>
+<span class="nc" id="L93">			return document.get(start, end - start);</span>
+		}
+<span class="nc" id="L95">		return null;</span>
+	}
+
+	private int findWordStart(IDocument document, int offset) throws BadLocationException {
+<span class="nc" id="L99">		int start = offset;</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">		while (start &gt; 0) {</span>
+<span class="nc" id="L101">			char c = document.getChar(start - 1);</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">			if (!Character.isLetterOrDigit(c) &amp;&amp; c != '_') {</span>
+<span class="nc" id="L103">				break;</span>
+			}
+<span class="nc" id="L105">			start--;</span>
+		}
+<span class="nc" id="L107">		return start;</span>
+	}
+
+	private boolean isAfterGuardSeparator(IDocument document, int offset) throws BadLocationException {
+<span class="nc" id="L111">		int pos = offset - 1;</span>
+		// Skip whitespace
+<span class="nc bnc" id="L113" title="All 4 branches missed.">		while (pos &gt;= 0 &amp;&amp; Character.isWhitespace(document.getChar(pos))) {</span>
+<span class="nc" id="L114">			pos--;</span>
+		}
+		// Check for '::'
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		if (pos &gt;= 1</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">				&amp;&amp; document.getChar(pos) == ':'</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">				&amp;&amp; document.getChar(pos - 1) == ':') {</span>
+<span class="nc" id="L120">			return true;</span>
+		}
+<span class="nc" id="L122">		return false;</span>
+	}
+
+	/**
+	 * Searches for a method definition in embedded Java blocks.
+	 */
+	private IRegion findMethodInJavaBlocks(IDocument document, String methodName)
+			throws BadLocationException {
+<span class="nc" id="L130">		ITypedRegion[] partitions = document.computePartitioning(0, document.getLength());</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		for (ITypedRegion partition : partitions) {</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">			if (SandboxHintPartitionScanner.JAVA_CODE.equals(partition.getType())) {</span>
+<span class="nc" id="L133">				String text = document.get(partition.getOffset(), partition.getLength());</span>
+				// Look for the method name followed by (
+<span class="nc" id="L135">				int idx = text.indexOf(methodName + &quot;(&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">				if (idx &gt;= 0) {</span>
+					// Verify it's a method declaration (preceded by a type name)
+<span class="nc" id="L138">					int checkPos = idx - 1;</span>
+<span class="nc bnc" id="L139" title="All 4 branches missed.">					while (checkPos &gt;= 0 &amp;&amp; Character.isWhitespace(text.charAt(checkPos))) {</span>
+<span class="nc" id="L140">						checkPos--;</span>
+					}
+<span class="nc bnc" id="L142" title="All 4 branches missed.">					if (checkPos &gt;= 0 &amp;&amp; (Character.isLetterOrDigit(text.charAt(checkPos))</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">							|| text.charAt(checkPos) == ']')) {</span>
+<span class="nc" id="L144">						return new Region(partition.getOffset() + idx, methodName.length());</span>
+					}
+				}
+			}
+		}
+<span class="nc" id="L149">		return null;</span>
+	}
+
+	/**
+	 * A hyperlink that navigates to a guard function definition.
+	 */
+	private static class GuardFunctionHyperlink implements IHyperlink {
+
+		private final IRegion linkRegion;
+		private final IRegion targetRegion;
+		private final String functionName;
+		private final ITextViewer viewer;
+
+<span class="nc" id="L162">		GuardFunctionHyperlink(IRegion linkRegion, IRegion targetRegion,</span>
+				String functionName, ITextViewer viewer) {
+<span class="nc" id="L164">			this.linkRegion = linkRegion;</span>
+<span class="nc" id="L165">			this.targetRegion = targetRegion;</span>
+<span class="nc" id="L166">			this.functionName = functionName;</span>
+<span class="nc" id="L167">			this.viewer = viewer;</span>
+<span class="nc" id="L168">		}</span>
+
+		@Override
+		public IRegion getHyperlinkRegion() {
+<span class="nc" id="L172">			return linkRegion;</span>
+		}
+
+		@Override
+		public String getTypeLabel() {
+<span class="nc" id="L177">			return &quot;Guard Function&quot;; //$NON-NLS-1$</span>
+		}
+
+		@Override
+		public String getHyperlinkText() {
+<span class="nc" id="L182">			return &quot;Open guard function '&quot; + functionName + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+
+		@Override
+		public void open() {
+<span class="nc" id="L187">			viewer.setSelectedRange(targetRegion.getOffset(), targetRegion.getLength());</span>
+<span class="nc" id="L188">			viewer.revealRange(targetRegion.getOffset(), targetRegion.getLength());</span>
+<span class="nc" id="L189">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -55,7 +55,7 @@ public final class StreamOperationDetector {
 <span class="fc" id="L55">		String methodName = chainedCall.getName().getIdentifier();</span>
 
 		// collection.stream().forEach() is OK — no intermediate ops
-<span class="pc bpc" id="L58" title="1 of 4 branches missed.">		if (&quot;stream&quot;.equals(methodName) || &quot;parallelStream&quot;.equals(methodName)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L58" title="1 of 4 branches missed.">		if (StreamConstants.STREAM_METHOD.equals(methodName) || StreamConstants.PARALLEL_STREAM_METHOD.equals(methodName)) {</span>
 <span class="fc" id="L59">			return false;</span>
 		}
 

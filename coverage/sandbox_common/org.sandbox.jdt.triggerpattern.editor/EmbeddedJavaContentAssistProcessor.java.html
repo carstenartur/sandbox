@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EmbeddedJavaContentAssistProcessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">EmbeddedJavaContentAssistProcessor.java</span></div><h1>EmbeddedJavaContentAssistProcessor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.editor;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.ui.text.java.CompletionProposalCollector;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.ITypedRegion;
+import org.eclipse.jface.text.contentassist.ICompletionProposal;
+import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
+import org.eclipse.jface.text.contentassist.IContextInformation;
+import org.eclipse.jface.text.contentassist.IContextInformationValidator;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.PlatformUI;
+
+/**
+ * Content assist processor for embedded Java code ({@code &lt;? ?&gt;}) regions
+ * in {@code .sandbox-hint} files.
+ *
+ * &lt;p&gt;Delegates to JDT's {@link CompletionProposalCollector} by creating a
+ * synthetic {@link ICompilationUnit} working copy from the embedded Java source.
+ * This provides full context-aware Java completions including all keywords,
+ * types from the project classpath, methods, fields, and local variables.&lt;/p&gt;
+ *
+ * &lt;p&gt;The synthetic compilation unit wraps the embedded code in a class body,
+ * matching the structure used by {@link org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler}.&lt;/p&gt;
+ *
+ * @since 1.5.0
+ */
+<span class="nc" id="L57">public class EmbeddedJavaContentAssistProcessor implements IContentAssistProcessor {</span>
+
+<span class="nc" id="L59">	private static final Logger LOGGER = Logger.getLogger(EmbeddedJavaContentAssistProcessor.class.getName());</span>
+
+	private static final String SYNTHETIC_PACKAGE = &quot;org.sandbox.generated&quot;; //$NON-NLS-1$
+	private static final String SYNTHETIC_CLASS_NAME = &quot;HintCode_assist&quot;; //$NON-NLS-1$
+
+	/**
+	 * Header prepended to the embedded Java source to form a valid compilation unit.
+	 * The offset into this header is used to map completion positions.
+	 */
+	private static final String SYNTHETIC_HEADER =
+			&quot;package &quot; + SYNTHETIC_PACKAGE + &quot;;\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$
+			&quot;import org.eclipse.jdt.core.dom.*;\n&quot; + //$NON-NLS-1$
+			&quot;public class &quot; + SYNTHETIC_CLASS_NAME + &quot; {\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$
+
+<span class="nc" id="L73">	private static final String SYNTHETIC_FOOTER = &quot;\n}\n&quot;; //$NON-NLS-1$</span>
+
+	@Override
+	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
+<span class="nc" id="L77">		IDocument document = viewer.getDocument();</span>
+
+		// Extract the embedded Java source from the &lt;? ?&gt; partition
+<span class="nc" id="L80">		String javaSource = extractEmbeddedJavaSource(document, offset);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">		if (javaSource == null) {</span>
+<span class="nc" id="L82">			return new ICompletionProposal[0];</span>
+		}
+
+		// Calculate offset within the embedded Java source
+<span class="nc" id="L86">		int partitionStart = getPartitionStart(document, offset);</span>
+<span class="nc" id="L87">		int offsetInEmbedded = offset - partitionStart;</span>
+
+		// Build synthetic compilation unit source
+<span class="nc" id="L90">		String syntheticSource = SYNTHETIC_HEADER + javaSource + SYNTHETIC_FOOTER;</span>
+<span class="nc" id="L91">		int syntheticOffset = SYNTHETIC_HEADER.length() + offsetInEmbedded;</span>
+
+		// Try to get an IJavaProject from the active editor
+<span class="nc" id="L94">		IJavaProject javaProject = getJavaProject();</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">		if (javaProject == null) {</span>
+<span class="nc" id="L96">			LOGGER.log(Level.FINE, &quot;No IJavaProject available, cannot provide JDT content assist&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L97">			return new ICompletionProposal[0];</span>
+		}
+
+<span class="nc" id="L100">		return computeJdtProposals(javaProject, syntheticSource, syntheticOffset,</span>
+<span class="nc" id="L101">				offset, offsetInEmbedded);</span>
+	}
+
+	/**
+	 * Delegates to JDT's code completion engine via a synthetic working copy.
+	 */
+	private ICompletionProposal[] computeJdtProposals(IJavaProject javaProject,
+			String syntheticSource, int syntheticOffset, int documentOffset, int offsetInEmbedded) {
+<span class="nc" id="L109">		ICompilationUnit workingCopy = null;</span>
+		try {
+			// Find or create a source folder for the synthetic unit
+<span class="nc" id="L112">			IPackageFragmentRoot[] roots = javaProject.getPackageFragmentRoots();</span>
+<span class="nc" id="L113">			IPackageFragmentRoot sourceRoot = null;</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">			for (IPackageFragmentRoot root : roots) {</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">				if (root.getKind() == IPackageFragmentRoot.K_SOURCE) {</span>
+<span class="nc" id="L116">					sourceRoot = root;</span>
+<span class="nc" id="L117">					break;</span>
+				}
+			}
+<span class="nc bnc" id="L120" title="All 2 branches missed.">			if (sourceRoot == null) {</span>
+<span class="nc" id="L121">				LOGGER.log(Level.FINE, &quot;No source root found in project&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L122">				return new ICompletionProposal[0];</span>
+			}
+
+<span class="nc" id="L125">			IPackageFragment pkg = sourceRoot.getPackageFragment(SYNTHETIC_PACKAGE);</span>
+<span class="nc" id="L126">			ICompilationUnit originalUnit = pkg.getCompilationUnit(SYNTHETIC_CLASS_NAME + &quot;.java&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L127">			workingCopy = originalUnit.getWorkingCopy(null);</span>
+<span class="nc" id="L128">			workingCopy.getBuffer().setContents(syntheticSource);</span>
+
+			// Collect proposals via JDT's CompletionProposalCollector
+<span class="nc" id="L131">			CompletionProposalCollector collector = new CompletionProposalCollector(workingCopy);</span>
+<span class="nc" id="L132">			collector.setReplacementLength(0);</span>
+
+<span class="nc" id="L134">			workingCopy.codeComplete(syntheticOffset, collector);</span>
+
+<span class="nc" id="L136">			ICompletionProposal[] jdtProposals = collector.getJavaCompletionProposals();</span>
+
+			// Remap proposal offsets from synthetic source back to the hint document
+<span class="nc" id="L139">			int offsetDelta = documentOffset - syntheticOffset;</span>
+<span class="nc" id="L140">			List&lt;ICompletionProposal&gt; remapped = new ArrayList&lt;&gt;(jdtProposals.length);</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">			for (ICompletionProposal proposal : jdtProposals) {</span>
+<span class="nc" id="L142">				remapped.add(new OffsetRemappingProposal(proposal, offsetDelta));</span>
+			}
+<span class="nc" id="L144">			return remapped.toArray(new ICompletionProposal[0]);</span>
+
+<span class="nc" id="L146">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L147">			LOGGER.log(Level.WARNING, &quot;JDT code completion failed&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L148">			return new ICompletionProposal[0];</span>
+		} finally {
+<span class="nc bnc" id="L150" title="All 2 branches missed.">			if (workingCopy != null) {</span>
+				try {
+<span class="nc" id="L152">					workingCopy.discardWorkingCopy();</span>
+<span class="nc" id="L153">				} catch (JavaModelException e) {</span>
+<span class="nc" id="L154">					LOGGER.log(Level.FINE, &quot;Failed to discard working copy&quot;, e); //$NON-NLS-1$</span>
+				}
+			}
+		}
+	}
+
+	@Override
+	public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset) {
+<span class="nc" id="L162">		return new IContextInformation[0];</span>
+	}
+
+	@Override
+	public char[] getCompletionProposalAutoActivationCharacters() {
+<span class="nc" id="L167">		return new char[] { '.' };</span>
+	}
+
+	@Override
+	public char[] getContextInformationAutoActivationCharacters() {
+<span class="nc" id="L172">		return null;</span>
+	}
+
+	@Override
+	public String getErrorMessage() {
+<span class="nc" id="L177">		return null;</span>
+	}
+
+	@Override
+	public IContextInformationValidator getContextInformationValidator() {
+<span class="nc" id="L182">		return null;</span>
+	}
+
+	/**
+	 * Extracts the full embedded Java source from the {@code &lt;? ?&gt;} partition
+	 * containing the given offset.
+	 */
+	private String extractEmbeddedJavaSource(IDocument document, int offset) {
+		try {
+<span class="nc" id="L191">			ITypedRegion partition = document.getPartition(offset);</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">			if (!SandboxHintPartitionScanner.JAVA_CODE.equals(partition.getType())) {</span>
+<span class="nc" id="L193">				return null;</span>
+			}
+<span class="nc" id="L195">			String partitionText = document.get(partition.getOffset(), partition.getLength());</span>
+			// Strip the &lt;? and ?&gt; delimiters
+<span class="nc bnc" id="L197" title="All 4 branches missed.">			if (partitionText.startsWith(&quot;&lt;?&quot;) &amp;&amp; partitionText.endsWith(&quot;?&gt;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L198">				return partitionText.substring(2, partitionText.length() - 2);</span>
+			}
+<span class="nc" id="L200">			return partitionText;</span>
+<span class="nc" id="L201">		} catch (BadLocationException e) {</span>
+<span class="nc" id="L202">			return null;</span>
+		}
+	}
+
+	/**
+	 * Returns the start offset of the embedded Java content (after the {@code &lt;?} delimiter).
+	 */
+	private int getPartitionStart(IDocument document, int offset) {
+		try {
+<span class="nc" id="L211">			ITypedRegion partition = document.getPartition(offset);</span>
+<span class="nc" id="L212">			String partitionText = document.get(partition.getOffset(), partition.getLength());</span>
+			// Account for the &lt;? delimiter
+<span class="nc bnc" id="L214" title="All 2 branches missed.">			int delimiterLength = partitionText.startsWith(&quot;&lt;?&quot;) ? 2 : 0; //$NON-NLS-1$</span>
+<span class="nc" id="L215">			return partition.getOffset() + delimiterLength;</span>
+<span class="nc" id="L216">		} catch (BadLocationException e) {</span>
+<span class="nc" id="L217">			return offset;</span>
+		}
+	}
+
+	/**
+	 * Attempts to obtain the {@link IJavaProject} from the active editor.
+	 */
+	private IJavaProject getJavaProject() {
+		try {
+<span class="nc" id="L226">			IEditorPart editor = PlatformUI.getWorkbench()</span>
+<span class="nc" id="L227">					.getActiveWorkbenchWindow()</span>
+<span class="nc" id="L228">					.getActivePage()</span>
+<span class="nc" id="L229">					.getActiveEditor();</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">			if (editor == null) {</span>
+<span class="nc" id="L231">				return null;</span>
+			}
+<span class="nc" id="L233">			IEditorInput input = editor.getEditorInput();</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">			if (input instanceof IFileEditorInput fileInput) {</span>
+<span class="nc" id="L235">				IFile file = fileInput.getFile();</span>
+<span class="nc" id="L236">				IProject project = file.getProject();</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">				if (project.hasNature(JavaCore.NATURE_ID)) {</span>
+<span class="nc" id="L238">					return JavaCore.create(project);</span>
+				}
+			}
+<span class="nc" id="L241">		} catch (Exception e) {</span>
+<span class="nc" id="L242">			LOGGER.log(Level.FINE, &quot;Could not determine Java project&quot;, e); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L244">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SystemOutFixCore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix</a> &gt; <span class="el_source">SystemOutFixCore.java</span></div><h1>SystemOutFixCore.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix;
+
+import java.util.List;
+
+import org.eclipse.core.resources.IMarker;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
+
+/**
+ * Fix core for detecting {@code System.out.println()} and {@code System.err.println()} calls.
+ *
+ * &lt;p&gt;This is a hint-only cleanup that flags direct usage of
+ * {@code System.out}/{@code System.err} for printing.
+ * Findings are reported as problem markers via {@link HintFinding}.&lt;/p&gt;
+ */
+<span class="nc" id="L36">public class SystemOutFixCore {</span>
+
+	/**
+	 * Finds System.out/System.err usage in the compilation unit.
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param findings the list to collect hint-only findings into
+	 */
+	public static void findFindings(CompilationUnit compilationUnit,
+			List&lt;HintFinding&gt; findings) {
+
+<span class="fc" id="L47">		compilationUnit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodInvocation node) {
+<span class="fc" id="L50">				Expression expr = node.getExpression();</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">				if (expr == null) {</span>
+<span class="nc" id="L52">					return true;</span>
+				}
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">				if (isSystemOutOrErr(expr)) {</span>
+<span class="fc" id="L55">					findings.add(new HintFinding(</span>
+<span class="fc" id="L56">							&quot;System.out/err usage \u2014 consider using a logger&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L57">							compilationUnit.getLineNumber(node.getStartPosition()),</span>
+<span class="fc" id="L58">							node.getStartPosition(),</span>
+<span class="fc" id="L59">							node.getStartPosition() + node.getLength(),</span>
+<span class="fc" id="L60">							IMarker.SEVERITY_WARNING));</span>
+				}
+<span class="fc" id="L62">				return true;</span>
+			}
+		});
+<span class="fc" id="L65">	}</span>
+
+	private static boolean isSystemOutOrErr(Expression expr) {
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (expr instanceof QualifiedName qn) {</span>
+<span class="fc" id="L69">			String fullName = qn.getFullyQualifiedName();</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">			if (&quot;System.out&quot;.equals(fullName) || &quot;System.err&quot;.equals(fullName) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">					|| &quot;java.lang.System.out&quot;.equals(fullName) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">					|| &quot;java.lang.System.err&quot;.equals(fullName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L73">				return true;</span>
+			}
+			// Fall through to binding-based check for aliases or static imports
+<span class="nc" id="L76">			IVariableBinding binding = resolveFieldBinding(qn);</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">			if (binding != null) {</span>
+<span class="nc" id="L78">				return isSystemField(binding);</span>
+			}
+		}
+<span class="nc bnc" id="L81" title="All 2 branches missed.">		if (expr instanceof FieldAccess fa) {</span>
+<span class="nc" id="L82">			IVariableBinding binding = fa.resolveFieldBinding();</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">			if (binding != null) {</span>
+<span class="nc" id="L84">				return isSystemField(binding);</span>
+			}
+		}
+<span class="nc bnc" id="L87" title="All 2 branches missed.">		if (expr instanceof Name name) {</span>
+<span class="nc" id="L88">			IVariableBinding binding = resolveFieldBinding(name);</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">			if (binding != null) {</span>
+<span class="nc" id="L90">				return isSystemField(binding);</span>
+			}
+		}
+<span class="nc" id="L93">		return false;</span>
+	}
+
+	private static boolean isSystemField(IVariableBinding binding) {
+<span class="nc" id="L97">		String fieldName = binding.getName();</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">		if (&quot;out&quot;.equals(fieldName) || &quot;err&quot;.equals(fieldName)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">			return binding.getDeclaringClass() != null</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">					&amp;&amp; &quot;java.lang.System&quot;.equals(binding.getDeclaringClass().getQualifiedName()); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L102">		return false;</span>
+	}
+
+	private static IVariableBinding resolveFieldBinding(Name name) {
+<span class="nc bnc" id="L106" title="All 4 branches missed.">		if (name.resolveBinding() instanceof IVariableBinding vb &amp;&amp; vb.isField()) {</span>
+<span class="nc" id="L107">			return vb;</span>
+		}
+<span class="nc" id="L109">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

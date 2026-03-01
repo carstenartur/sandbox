@@ -39,7 +39,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -54,6 +53,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -127,16 +127,16 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
 		// import is needed)
 <span class="fc" id="L128">		final boolean[] needsFilesImport = { false };</span>
 <span class="fc bfc" id="L129" title="All 2 branches covered.">		for (MethodDeclaration method : parentClass.getMethods()) {</span>
-<span class="fc" id="L130">			method.accept(new ASTVisitor() {</span>
-				@Override
-				public boolean visit(MethodInvocation node) {
+<span class="fc" id="L130">			ReferenceHolder&lt;String, Object&gt; visitHolder = ReferenceHolder.create();</span>
+<span class="fc" id="L131">			AstProcessorBuilder.with(visitHolder)</span>
+<span class="fc" id="L132">				.onMethodInvocation((node, h) -&gt; {</span>
 <span class="pc bpc" id="L133" title="1 of 2 branches missed.">					if (node.getExpression() == null) {</span>
-<span class="nc" id="L134">						return super.visit(node);</span>
+<span class="nc" id="L134">						return true;</span>
 					}
 
 <span class="fc" id="L137">					String expressionName = node.getExpression().toString();</span>
 <span class="fc bfc" id="L138" title="All 2 branches covered.">					if (!originalName.equals(expressionName)) {</span>
-<span class="fc" id="L139">						return super.visit(node);</span>
+<span class="fc" id="L139">						return true;</span>
 					}
 
 <span class="fc" id="L142">					String methodName = node.getName().getIdentifier();</span>
@@ -246,9 +246,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
 <span class="fc" id="L246">						rewriter.replace(node, toFileInvocation, group);</span>
 					}
 
-<span class="fc" id="L249">					return super.visit(node);</span>
-				}
-			});
+<span class="fc" id="L249">					return true;</span>
+				})
+<span class="fc" id="L251">				.build(method);</span>
 		}
 
 		// Add Files import only if needed (determined during transformation)

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintFinding.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.eclipse</a> &gt; <span class="el_source">HintFinding.java</span></div><h1>HintFinding.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.eclipse;
+
+import org.eclipse.core.resources.IMarker;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.Severity;
+
+/**
+ * Represents a hint-only finding that should be reported as a problem marker
+ * rather than as a code rewrite operation.
+ *
+ * &lt;p&gt;Hint-only findings detect patterns that should be flagged to the user
+ * (e.g., {@code ex.printStackTrace()}, {@code System.out.println()}) but
+ * cannot or should not be automatically fixed because the correct replacement
+ * depends on project-specific context (e.g., which logger to use).&lt;/p&gt;
+ *
+ * @param message    the marker message shown in the Problems view
+ * @param lineNumber the 1-based line number of the finding
+ * @param charStart  the 0-based character offset of the start of the finding
+ * @param charEnd    the 0-based character offset of the end of the finding
+ * @param severity   the marker severity ({@link IMarker#SEVERITY_WARNING},
+ *                   {@link IMarker#SEVERITY_INFO}, or {@link IMarker#SEVERITY_ERROR})
+ */
+public record HintFinding(
+		String message,
+		int lineNumber,
+		int charStart,
+		int charEnd,
+		int severity) {
+
+	/**
+	 * Creates a {@code HintFinding} from a DSL {@link TransformationResult}.
+	 *
+	 * &lt;p&gt;Maps the DSL {@link Severity} to an {@link IMarker} severity constant
+	 * and uses the result's description or source pattern as the message.&lt;/p&gt;
+	 *
+	 * @param result the transformation result from the DSL engine
+	 * @param cu     the compilation unit (used for line number calculation)
+	 * @return a new {@code HintFinding}
+	 */
+	public static HintFinding fromTransformationResult(TransformationResult result, CompilationUnit cu) {
+<span class="fc" id="L56">		ASTNode node = result.match().getMatchedNode();</span>
+<span class="pc bpc" id="L57" title="2 of 4 branches missed.">		String msg = result.description() != null &amp;&amp; !result.description().isEmpty()</span>
+<span class="fc" id="L58">				? result.description()</span>
+<span class="nc" id="L59">				: &quot;Hint: &quot; + result.rule().sourcePattern().getValue(); //$NON-NLS-1$</span>
+<span class="fc" id="L60">		int markerSeverity = mapSeverity(result.rule().getSeverity());</span>
+<span class="fc" id="L61">		return new HintFinding(</span>
+<span class="fc" id="L62">				msg,</span>
+<span class="fc" id="L63">				cu.getLineNumber(node.getStartPosition()),</span>
+<span class="fc" id="L64">				node.getStartPosition(),</span>
+<span class="fc" id="L65">				node.getStartPosition() + node.getLength(),</span>
+<span class="fc" id="L66">				markerSeverity);</span>
+	}
+
+	/**
+	 * Maps a DSL {@link Severity} to an {@link IMarker} severity constant.
+	 *
+	 * @param severity the DSL severity (may be {@code null})
+	 * @return the corresponding {@link IMarker} severity
+	 */
+	private static int mapSeverity(Severity severity) {
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">		if (severity == null) {</span>
+<span class="fc" id="L77">			return IMarker.SEVERITY_INFO;</span>
+		}
+<span class="nc bnc" id="L79" title="All 3 branches missed.">		return switch (severity) {</span>
+<span class="nc" id="L80">		case ERROR -&gt; IMarker.SEVERITY_ERROR;</span>
+<span class="nc" id="L81">		case WARNING -&gt; IMarker.SEVERITY_WARNING;</span>
+<span class="nc" id="L82">		case INFO, HINT -&gt; IMarker.SEVERITY_INFO;</span>
+		};
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

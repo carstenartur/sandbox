@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -41,6 +40,7 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
@@ -168,11 +168,11 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	private List&lt;ErrorCollectorCall&gt; findErrorCollectorCalls(List&lt;Statement&gt; statements, String fieldName) {
 <span class="fc" id="L169">		List&lt;ErrorCollectorCall&gt; calls = new ArrayList&lt;&gt;();</span>
 
-		// Use ASTVisitor to find all ErrorCollector calls, including nested ones
+		// Use AstProcessorBuilder to find all ErrorCollector calls, including nested ones
 <span class="fc bfc" id="L172" title="All 2 branches covered.">		for (Statement stmt : statements) {</span>
-<span class="fc" id="L173">			stmt.accept(new ASTVisitor() {</span>
-				@Override
-				public boolean visit(MethodInvocation invocation) {
+<span class="fc" id="L173">			ReferenceHolder&lt;String, Object&gt; holder = ReferenceHolder.create();</span>
+<span class="fc" id="L174">			AstProcessorBuilder.with(holder)</span>
+<span class="fc" id="L175">				.onMethodInvocation((invocation, h) -&gt; {</span>
 <span class="fc" id="L176">					Expression expression = invocation.getExpression();</span>
 <span class="fc bfc" id="L177" title="All 2 branches covered.">					if (expression instanceof SimpleName) {</span>
 <span class="fc" id="L178">						SimpleName receiver = (SimpleName) expression;</span>
@@ -188,9 +188,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 							}
 						}
 					}
-<span class="fc" id="L191">					return super.visit(invocation);</span>
-				}
-			});
+<span class="fc" id="L191">					return true;</span>
+				})
+<span class="fc" id="L193">				.build(stmt);</span>
 		}
 
 <span class="fc" id="L196">		return calls;</span>

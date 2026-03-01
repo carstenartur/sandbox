@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.correction.ASTRewriteCorrectionProposal;
 import org.eclipse.swt.graphics.Image;
+import org.sandbox.jdt.internal.common.LibStandardNames;
 import org.sandbox.jdt.triggerpattern.api.BodyConstraint;
 import org.sandbox.jdt.triggerpattern.api.Hint;
 import org.sandbox.jdt.triggerpattern.eclipse.HintContext;
@@ -56,7 +57,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
  * @see org.eclipse.swt.widgets.Widget#dispose()
  * @since 1.2.6
  */
-<span class="nc" id="L59">public class MissingSuperDisposePlugin {</span>
+<span class="nc" id="L60">public class MissingSuperDisposePlugin {</span>
 	
 	/**
 	 * Detects missing super.dispose() call in dispose() method overrides.
@@ -92,48 +93,48 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 		description = &quot;Methods overriding Widget.dispose() should call super.dispose()&quot;
 	)
 	public static IJavaCompletionProposal detectMissingDisposeCall(HintContext ctx) {
-<span class="nc" id="L95">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
+<span class="nc" id="L96">		ASTNode matchedNode = ctx.getMatch().getMatchedNode();</span>
 		
-<span class="nc bnc" id="L97" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodDeclaration)) {</span>
-<span class="nc" id="L98">			return null;</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (!(matchedNode instanceof MethodDeclaration)) {</span>
+<span class="nc" id="L99">			return null;</span>
 		}
 		
-<span class="nc" id="L101">		MethodDeclaration method = (MethodDeclaration) matchedNode;</span>
-<span class="nc" id="L102">		Block body = method.getBody();</span>
+<span class="nc" id="L102">		MethodDeclaration method = (MethodDeclaration) matchedNode;</span>
+<span class="nc" id="L103">		Block body = method.getBody();</span>
 		
 		// Cannot add super call if there's no body (e.g., abstract/interface method)
-<span class="nc bnc" id="L105" title="All 2 branches missed.">		if (body == null) {</span>
-<span class="nc" id="L106">			return null;</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">		if (body == null) {</span>
+<span class="nc" id="L107">			return null;</span>
 		}
 		
 		// For now, we manually check if super.dispose() is called
 		// In the future, this would be handled by the BodyConstraint annotation
-<span class="nc bnc" id="L111" title="All 2 branches missed.">		if (containsSuperDisposeCall(body)) {</span>
-<span class="nc" id="L112">			return null; // Super call already present</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">		if (containsSuperDisposeCall(body)) {</span>
+<span class="nc" id="L113">			return null; // Super call already present</span>
 		}
 		
 		// Create a fix that adds super.dispose() at the end of the method
-<span class="nc" id="L116">		AST ast = ctx.getASTRewrite().getAST();</span>
+<span class="nc" id="L117">		AST ast = ctx.getASTRewrite().getAST();</span>
 		
-<span class="nc" id="L118">		SuperMethodInvocation superCall = ast.newSuperMethodInvocation();</span>
-<span class="nc" id="L119">		superCall.setName(ast.newSimpleName(&quot;dispose&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L119">		SuperMethodInvocation superCall = ast.newSuperMethodInvocation();</span>
+<span class="nc" id="L120">		superCall.setName(ast.newSimpleName(LibStandardNames.METHOD_DISPOSE));</span>
 		
-<span class="nc" id="L121">		ExpressionStatement superCallStmt = ast.newExpressionStatement(superCall);</span>
+<span class="nc" id="L122">		ExpressionStatement superCallStmt = ast.newExpressionStatement(superCall);</span>
 		
 		// Add the super call as the last statement in the method
-<span class="nc" id="L124">		ctx.getASTRewrite().getListRewrite(body, Block.STATEMENTS_PROPERTY)</span>
-<span class="nc" id="L125">			.insertLast(superCallStmt, null);</span>
+<span class="nc" id="L125">		ctx.getASTRewrite().getListRewrite(body, Block.STATEMENTS_PROPERTY)</span>
+<span class="nc" id="L126">			.insertLast(superCallStmt, null);</span>
 		
-<span class="nc" id="L127">		String label = &quot;Add missing super.dispose() call&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L128">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
-<span class="nc" id="L129">			label,</span>
-<span class="nc" id="L130">			ctx.getICompilationUnit(),</span>
-<span class="nc" id="L131">			ctx.getASTRewrite(),</span>
-<span class="nc" id="L132">			10, // relevance</span>
-<span class="nc" id="L133">			(Image) null</span>
+<span class="nc" id="L128">		String label = &quot;Add missing super.dispose() call&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L129">		ASTRewriteCorrectionProposal proposal = new ASTRewriteCorrectionProposal(</span>
+<span class="nc" id="L130">			label,</span>
+<span class="nc" id="L131">			ctx.getICompilationUnit(),</span>
+<span class="nc" id="L132">			ctx.getASTRewrite(),</span>
+<span class="nc" id="L133">			10, // relevance</span>
+<span class="nc" id="L134">			(Image) null</span>
 		);
 		
-<span class="nc" id="L136">		return proposal;</span>
+<span class="nc" id="L137">		return proposal;</span>
 	}
 	
 	/**
@@ -147,24 +148,24 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPattern;
 	 * @return true if super.dispose() is called, false otherwise
 	 */
 	private static boolean containsSuperDisposeCall(Block body) {
-<span class="nc bnc" id="L150" title="All 2 branches missed.">		if (body == null) {</span>
-<span class="nc" id="L151">			return false;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">		if (body == null) {</span>
+<span class="nc" id="L152">			return false;</span>
 		}
 		
 		// Simple check - in production code, this would need to handle nested blocks
-<span class="nc bnc" id="L155" title="All 2 branches missed.">		for (Object stmt : body.statements()) {</span>
-<span class="nc bnc" id="L156" title="All 2 branches missed.">			if (stmt instanceof ExpressionStatement) {</span>
-<span class="nc" id="L157">				ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">				if (exprStmt.getExpression() instanceof SuperMethodInvocation) {</span>
-<span class="nc" id="L159">					SuperMethodInvocation superCall = (SuperMethodInvocation) exprStmt.getExpression();</span>
-<span class="nc bnc" id="L160" title="All 2 branches missed.">					if (&quot;dispose&quot;.equals(superCall.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="nc" id="L161">						return true;</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">		for (Object stmt : body.statements()) {</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">			if (stmt instanceof ExpressionStatement) {</span>
+<span class="nc" id="L158">				ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">				if (exprStmt.getExpression() instanceof SuperMethodInvocation) {</span>
+<span class="nc" id="L160">					SuperMethodInvocation superCall = (SuperMethodInvocation) exprStmt.getExpression();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">					if (LibStandardNames.METHOD_DISPOSE.equals(superCall.getName().getIdentifier())) {</span>
+<span class="nc" id="L162">						return true;</span>
 					}
 				}
 			}
 		}
 		
-<span class="nc" id="L167">		return false;</span>
+<span class="nc" id="L168">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

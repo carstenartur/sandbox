@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -38,6 +37,7 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
+import org.sandbox.jdt.internal.common.AstProcessorBuilder;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
@@ -63,17 +63,17 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 
 		// Visit all type declarations to find classes that have @Test methods
-<span class="fc" id="L66">		compilationUnit.accept(new ASTVisitor() {</span>
-			@Override
-			public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L66">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L67">		AstProcessorBuilder.with(dataHolder, nodesprocessed)</span>
+<span class="fc" id="L68">			.onTypeDeclaration((node, holder) -&gt; {</span>
 				// Check if this class has any @Test methods (including inherited)
 <span class="fc bfc" id="L70" title="All 2 branches covered.">				if (classHasTestMethods(node)) {</span>
 					// Find lost test methods in this class
 <span class="fc" id="L72">					findLostTestMethods(fixcore, node, operations, nodesprocessed);</span>
 				}
 <span class="fc" id="L74">				return true;</span>
-			}
-		});
+			})
+<span class="fc" id="L76">			.build(compilationUnit);</span>
 <span class="fc" id="L77">	}</span>
 
 	/**

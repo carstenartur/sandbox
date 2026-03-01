@@ -13,10 +13,12 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.editor;
 
+import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.contentassist.ContentAssistant;
 import org.eclipse.jface.text.contentassist.IContentAssistant;
+import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.presentation.IPresentationReconciler;
 import org.eclipse.jface.text.presentation.PresentationReconciler;
 import org.eclipse.jface.text.reconciler.IReconciler;
@@ -24,11 +26,13 @@ import org.eclipse.jface.text.reconciler.MonoReconciler;
 import org.eclipse.jface.text.rules.DefaultDamagerRepairer;
 import org.eclipse.jface.text.rules.ITokenScanner;
 import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.source.DefaultAnnotationHover;
+import org.eclipse.jface.text.source.IAnnotationHover;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.source.SourceViewerConfiguration;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.graphics.RGB;
 
 /**
  * Source viewer configuration for the {@code .sandbox-hint} editor.
@@ -36,70 +40,127 @@ import org.eclipse.swt.widgets.Display;
  * &lt;p&gt;Provides:&lt;/p&gt;
  * &lt;ul&gt;
  *   &lt;li&gt;Syntax highlighting via a {@link PresentationReconciler}&lt;/li&gt;
- *   &lt;li&gt;Content assist for guard functions after {@code ::}&lt;/li&gt;
+ *   &lt;li&gt;Content assist for guard functions after {@code ::} and Java completions in {@code &lt;? ?&gt;} blocks&lt;/li&gt;
  *   &lt;li&gt;Background reconciling for validation with error markers&lt;/li&gt;
+ *   &lt;li&gt;Annotation hover for embedded Java compile errors&lt;/li&gt;
+ *   &lt;li&gt;Hyperlink detection for navigating to guard function definitions&lt;/li&gt;
  * &lt;/ul&gt;
  *
  * @since 1.3.6
  */
-<span class="nc" id="L45">public class SandboxHintSourceViewerConfiguration extends SourceViewerConfiguration {</span>
+public class SandboxHintSourceViewerConfiguration extends SourceViewerConfiguration {
+
+	private SandboxHintEditor editor;
+
+	/**
+	 * Creates a source viewer configuration without an editor reference.
+	 */
+<span class="nc" id="L58">	public SandboxHintSourceViewerConfiguration() {</span>
+<span class="nc" id="L59">	}</span>
+
+	/**
+	 * Creates a source viewer configuration with an editor reference
+	 * for wiring reconciler-driven updates (folding, outline).
+	 *
+	 * @param editor the hint editor
+	 * @since 1.5.0
+	 */
+<span class="nc" id="L68">	public SandboxHintSourceViewerConfiguration(SandboxHintEditor editor) {</span>
+<span class="nc" id="L69">		this.editor = editor;</span>
+<span class="nc" id="L70">	}</span>
 
 	@Override
 	public String[] getConfiguredContentTypes(ISourceViewer sourceViewer) {
-<span class="nc" id="L49">		return new String[] {</span>
-<span class="nc" id="L50">			IDocument.DEFAULT_CONTENT_TYPE,</span>
-<span class="nc" id="L51">			SandboxHintPartitionScanner.COMMENT,</span>
-<span class="nc" id="L52">			SandboxHintPartitionScanner.METADATA</span>
+<span class="nc" id="L74">		return new String[] {</span>
+<span class="nc" id="L75">			IDocument.DEFAULT_CONTENT_TYPE,</span>
+<span class="nc" id="L76">			SandboxHintPartitionScanner.COMMENT,</span>
+<span class="nc" id="L77">			SandboxHintPartitionScanner.METADATA,</span>
+<span class="nc" id="L78">			SandboxHintPartitionScanner.JAVA_CODE</span>
 		};
 	}
 
 	@Override
 	public IPresentationReconciler getPresentationReconciler(ISourceViewer sourceViewer) {
-<span class="nc" id="L58">		PresentationReconciler reconciler = new PresentationReconciler();</span>
+<span class="nc" id="L84">		PresentationReconciler reconciler = new PresentationReconciler();</span>
 
 		// Default content (code) – uses the code scanner for keywords
-<span class="nc" id="L61">		ITokenScanner codeScanner = new SandboxHintCodeScanner();</span>
-<span class="nc" id="L62">		DefaultDamagerRepairer codeDR = new DefaultDamagerRepairer(codeScanner);</span>
-<span class="nc" id="L63">		reconciler.setDamager(codeDR, IDocument.DEFAULT_CONTENT_TYPE);</span>
-<span class="nc" id="L64">		reconciler.setRepairer(codeDR, IDocument.DEFAULT_CONTENT_TYPE);</span>
+<span class="nc" id="L87">		ITokenScanner codeScanner = new SandboxHintCodeScanner();</span>
+<span class="nc" id="L88">		DefaultDamagerRepairer codeDR = new DefaultDamagerRepairer(codeScanner);</span>
+<span class="nc" id="L89">		reconciler.setDamager(codeDR, IDocument.DEFAULT_CONTENT_TYPE);</span>
+<span class="nc" id="L90">		reconciler.setRepairer(codeDR, IDocument.DEFAULT_CONTENT_TYPE);</span>
 
-		// Comments – green italic
-<span class="nc" id="L67">		Color commentColor = new Color(Display.getDefault(), 63, 127, 95);</span>
-<span class="nc" id="L68">		TextAttribute commentAttr = new TextAttribute(commentColor, null, SWT.ITALIC);</span>
-<span class="nc" id="L69">		DefaultDamagerRepairer commentDR = new DefaultDamagerRepairer(</span>
-<span class="nc" id="L70">				new SingleTokenScanner(new Token(commentAttr)));</span>
-<span class="nc" id="L71">		reconciler.setDamager(commentDR, SandboxHintPartitionScanner.COMMENT);</span>
-<span class="nc" id="L72">		reconciler.setRepairer(commentDR, SandboxHintPartitionScanner.COMMENT);</span>
+		// Comments – green italic (use JDT's shared color manager)
+<span class="nc" id="L93">		Color commentColor = JavaPlugin.getDefault().getJavaTextTools()</span>
+<span class="nc" id="L94">				.getColorManager().getColor(new RGB(63, 127, 95));</span>
+<span class="nc" id="L95">		TextAttribute commentAttr = new TextAttribute(commentColor, null, SWT.ITALIC);</span>
+<span class="nc" id="L96">		DefaultDamagerRepairer commentDR = new DefaultDamagerRepairer(</span>
+<span class="nc" id="L97">				new SingleTokenScanner(new Token(commentAttr)));</span>
+<span class="nc" id="L98">		reconciler.setDamager(commentDR, SandboxHintPartitionScanner.COMMENT);</span>
+<span class="nc" id="L99">		reconciler.setRepairer(commentDR, SandboxHintPartitionScanner.COMMENT);</span>
 
 		// Metadata directives – dark blue bold
-<span class="nc" id="L75">		Color metadataColor = new Color(Display.getDefault(), 0, 0, 128);</span>
-<span class="nc" id="L76">		TextAttribute metadataAttr = new TextAttribute(metadataColor, null, SWT.BOLD);</span>
-<span class="nc" id="L77">		DefaultDamagerRepairer metadataDR = new DefaultDamagerRepairer(</span>
-<span class="nc" id="L78">				new SingleTokenScanner(new Token(metadataAttr)));</span>
-<span class="nc" id="L79">		reconciler.setDamager(metadataDR, SandboxHintPartitionScanner.METADATA);</span>
-<span class="nc" id="L80">		reconciler.setRepairer(metadataDR, SandboxHintPartitionScanner.METADATA);</span>
+<span class="nc" id="L102">		Color metadataColor = JavaPlugin.getDefault().getJavaTextTools()</span>
+<span class="nc" id="L103">				.getColorManager().getColor(new RGB(0, 0, 128));</span>
+<span class="nc" id="L104">		TextAttribute metadataAttr = new TextAttribute(metadataColor, null, SWT.BOLD);</span>
+<span class="nc" id="L105">		DefaultDamagerRepairer metadataDR = new DefaultDamagerRepairer(</span>
+<span class="nc" id="L106">				new SingleTokenScanner(new Token(metadataAttr)));</span>
+<span class="nc" id="L107">		reconciler.setDamager(metadataDR, SandboxHintPartitionScanner.METADATA);</span>
+<span class="nc" id="L108">		reconciler.setRepairer(metadataDR, SandboxHintPartitionScanner.METADATA);</span>
 
-<span class="nc" id="L82">		return reconciler;</span>
+		// Embedded Java code – reuses JDT's Java code scanner for full keyword,
+		// string, annotation, and operator highlighting with theme/preference support
+<span class="nc" id="L112">		ITokenScanner javaScanner = JavaPlugin.getDefault().getJavaTextTools().getCodeScanner();</span>
+<span class="nc" id="L113">		DefaultDamagerRepairer javaDR = new DefaultDamagerRepairer(javaScanner);</span>
+<span class="nc" id="L114">		reconciler.setDamager(javaDR, SandboxHintPartitionScanner.JAVA_CODE);</span>
+<span class="nc" id="L115">		reconciler.setRepairer(javaDR, SandboxHintPartitionScanner.JAVA_CODE);</span>
+
+<span class="nc" id="L117">		return reconciler;</span>
 	}
 
 	@Override
 	public IContentAssistant getContentAssistant(ISourceViewer sourceViewer) {
-<span class="nc" id="L87">		ContentAssistant assistant = new ContentAssistant();</span>
-<span class="nc" id="L88">		assistant.setContentAssistProcessor(</span>
-<span class="nc" id="L89">				new SandboxHintContentAssistProcessor(),</span>
-<span class="nc" id="L90">				IDocument.DEFAULT_CONTENT_TYPE);</span>
-<span class="nc" id="L91">		assistant.enableAutoActivation(true);</span>
-<span class="nc" id="L92">		assistant.setAutoActivationDelay(500);</span>
-<span class="nc" id="L93">		return assistant;</span>
+<span class="nc" id="L122">		ContentAssistant assistant = new ContentAssistant();</span>
+<span class="nc" id="L123">		assistant.setContentAssistProcessor(</span>
+<span class="nc" id="L124">				new SandboxHintContentAssistProcessor(),</span>
+<span class="nc" id="L125">				IDocument.DEFAULT_CONTENT_TYPE);</span>
+<span class="nc" id="L126">		assistant.setContentAssistProcessor(</span>
+<span class="nc" id="L127">				new EmbeddedJavaContentAssistProcessor(),</span>
+<span class="nc" id="L128">				SandboxHintPartitionScanner.JAVA_CODE);</span>
+<span class="nc" id="L129">		assistant.enableAutoActivation(true);</span>
+<span class="nc" id="L130">		assistant.setAutoActivationDelay(500);</span>
+<span class="nc" id="L131">		return assistant;</span>
+	}
+
+	@Override
+	public IAnnotationHover getAnnotationHover(ISourceViewer sourceViewer) {
+<span class="nc" id="L136">		return new DefaultAnnotationHover();</span>
 	}
 
 	@Override
 	public IReconciler getReconciler(ISourceViewer sourceViewer) {
-<span class="nc" id="L98">		SandboxHintReconcilingStrategy strategy = new SandboxHintReconcilingStrategy();</span>
-<span class="nc" id="L99">		strategy.setSourceViewer(sourceViewer);</span>
-<span class="nc" id="L100">		MonoReconciler reconciler = new MonoReconciler(strategy, false);</span>
-<span class="nc" id="L101">		reconciler.setDelay(500);</span>
-<span class="nc" id="L102">		return reconciler;</span>
+<span class="nc" id="L141">		SandboxHintReconcilingStrategy strategy = new SandboxHintReconcilingStrategy();</span>
+<span class="nc" id="L142">		strategy.setSourceViewer(sourceViewer);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">		if (editor != null) {</span>
+<span class="nc" id="L144">			strategy.setEditor(editor);</span>
+		}
+<span class="nc" id="L146">		MonoReconciler reconciler = new MonoReconciler(strategy, false);</span>
+<span class="nc" id="L147">		reconciler.setDelay(500);</span>
+<span class="nc" id="L148">		return reconciler;</span>
+	}
+
+	@Override
+	public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
+		// Keep default detectors and add the guard function hyperlink detector
+<span class="nc" id="L154">		IHyperlinkDetector[] defaults = super.getHyperlinkDetectors(sourceViewer);</span>
+		IHyperlinkDetector[] result;
+<span class="nc bnc" id="L156" title="All 2 branches missed.">		if (defaults != null) {</span>
+<span class="nc" id="L157">			result = new IHyperlinkDetector[defaults.length + 1];</span>
+<span class="nc" id="L158">			System.arraycopy(defaults, 0, result, 0, defaults.length);</span>
+<span class="nc" id="L159">			result[defaults.length] = new SandboxHintHyperlinkDetector();</span>
+<span class="nc" id="L160">		} else {</span>
+<span class="nc" id="L161">			result = new IHyperlinkDetector[] { new SandboxHintHyperlinkDetector() };</span>
+		}
+<span class="nc" id="L163">		return result;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

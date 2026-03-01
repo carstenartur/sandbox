@@ -177,12 +177,12 @@ public class StreamConcatRefactorer {
 		// Add .collect(Collectors.toList()) terminal operation
 <span class="fc" id="L178">		MethodInvocation collectCall = ast.newMethodInvocation();</span>
 <span class="fc" id="L179">		collectCall.setExpression(concatExpression);</span>
-<span class="fc" id="L180">		collectCall.setName(ast.newSimpleName(&quot;collect&quot;));</span>
+<span class="fc" id="L180">		collectCall.setName(ast.newSimpleName(StreamConstants.COLLECT_METHOD));</span>
 
 		// Collectors.toList() argument
 <span class="fc" id="L183">		MethodInvocation toListCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L184">		toListCall.setExpression(ast.newName(&quot;Collectors&quot;));</span>
-<span class="fc" id="L185">		toListCall.setName(ast.newSimpleName(&quot;toList&quot;));</span>
+<span class="fc" id="L184">		toListCall.setExpression(ast.newName(StreamConstants.COLLECTORS_CLASS_NAME));</span>
+<span class="fc" id="L185">		toListCall.setName(ast.newSimpleName(StreamConstants.TO_LIST_METHOD));</span>
 <span class="fc" id="L186">		collectCall.arguments().add(toListCall);</span>
 
 		// Add necessary imports
@@ -260,7 +260,7 @@ public class StreamConcatRefactorer {
 		}
 
 		// Check if this is the collect call
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		if (&quot;collect&quot;.equals(pipeline.getName().getIdentifier())) {</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		if (StreamConstants.COLLECT_METHOD.equals(pipeline.getName().getIdentifier())) {</span>
 			// Return the expression this collect is called on
 			// e.g., &quot;source.stream().map(...).collect(...)&quot; -&gt; return &quot;source.stream().map(...)&quot;
 <span class="pc bpc" id="L266" title="1 of 2 branches missed.">			if (pipeline.getExpression() instanceof MethodInvocation) {</span>

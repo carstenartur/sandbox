@@ -46,24 +46,34 @@ public class SandboxHintPartitionScanner extends RuleBasedPartitionScanner {
 	public static final String METADATA = &quot;__sandbox_hint_metadata&quot;; //$NON-NLS-1$
 
 	/**
+	 * Content type for embedded Java code ({@code &lt;? ?&gt;}) partitions.
+	 *
+	 * @since 1.5.0
+	 */
+	public static final String JAVA_CODE = &quot;__sandbox_hint_java_code&quot;; //$NON-NLS-1$
+
+	/**
 	 * All partition types produced by this scanner.
 	 */
-<span class="nc" id="L51">	public static final String[] PARTITION_TYPES = {</span>
-<span class="nc" id="L52">		COMMENT,</span>
-<span class="nc" id="L53">		METADATA</span>
-<span class="nc" id="L54">	};</span>
+<span class="nc" id="L58">	public static final String[] PARTITION_TYPES = {</span>
+<span class="nc" id="L59">		COMMENT,</span>
+<span class="nc" id="L60">		METADATA,</span>
+<span class="nc" id="L61">		JAVA_CODE</span>
+<span class="nc" id="L62">	};</span>
 
-<span class="nc" id="L56">	public SandboxHintPartitionScanner() {</span>
-<span class="nc" id="L57">		IToken commentToken = new Token(COMMENT);</span>
-<span class="nc" id="L58">		IToken metadataToken = new Token(METADATA);</span>
+<span class="nc" id="L64">	public SandboxHintPartitionScanner() {</span>
+<span class="nc" id="L65">		IToken commentToken = new Token(COMMENT);</span>
+<span class="nc" id="L66">		IToken metadataToken = new Token(METADATA);</span>
+<span class="nc" id="L67">		IToken javaCodeToken = new Token(JAVA_CODE);</span>
 
-<span class="nc" id="L60">		IPredicateRule[] rules = {</span>
-<span class="nc" id="L61">			new EndOfLineRule(&quot;//&quot;, commentToken), //$NON-NLS-1$</span>
-<span class="nc" id="L62">			new MultiLineRule(&quot;/*&quot;, &quot;*/&quot;, commentToken), //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L63">			new MultiLineRule(&quot;&lt;!&quot;, &quot;&gt;&quot;, metadataToken), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L69">		IPredicateRule[] rules = {</span>
+<span class="nc" id="L70">			new EndOfLineRule(&quot;//&quot;, commentToken), //$NON-NLS-1$</span>
+<span class="nc" id="L71">			new MultiLineRule(&quot;/*&quot;, &quot;*/&quot;, commentToken), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L72">			new MultiLineRule(&quot;&lt;?&quot;, &quot;?&gt;&quot;, javaCodeToken), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L73">			new MultiLineRule(&quot;&lt;!&quot;, &quot;&gt;&quot;, metadataToken), //$NON-NLS-1$ //$NON-NLS-2$</span>
 		};
 
-<span class="nc" id="L66">		setPredicateRules(rules);</span>
-<span class="nc" id="L67">	}</span>
+<span class="nc" id="L76">		setPredicateRules(rules);</span>
+<span class="nc" id="L77">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

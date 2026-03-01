@@ -51,6 +51,7 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.Transform
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
@@ -65,14 +66,16 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
  *
  * @since 1.3.5
  */
-<span class="nc" id="L68">public class HintFileFixCore {</span>
+<span class="nc" id="L69">public class HintFileFixCore {</span>
 
 	/**
 	 * Finds all hint-file-based cleanup operations for the given compilation unit.
 	 *
 	 * &lt;p&gt;Loads all registered {@code .sandbox-hint} files from the
 	 * {@link HintFileRegistry}, processes them with {@link BatchTransformationProcessor},
-	 * and creates rewrite operations for each match with a replacement.&lt;/p&gt;
+	 * and creates rewrite operations for each match with a replacement.
+	 * Hint-only results (rules without replacement) are silently discarded.
+	 * Use the four-parameter overload to collect hint-only findings.&lt;/p&gt;
 	 *
 	 * @param compilationUnit the compilation unit to search
 	 * @param operations the set to add found operations to
@@ -83,45 +86,68 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 	public static void findOperations(CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations,
 			Set&lt;String&gt; enabledBundles) {
+<span class="nc" id="L89">		findOperations(compilationUnit, operations, enabledBundles, null);</span>
+<span class="nc" id="L90">	}</span>
+
+	/**
+	 * Finds all hint-file-based cleanup operations for the given compilation unit,
+	 * collecting hint-only results into the provided findings list.
+	 *
+	 * &lt;p&gt;Rules with a replacement produce rewrite operations. Rules without a
+	 * replacement (hint-only) produce {@link HintFinding} entries that can be
+	 * reported as problem markers.&lt;/p&gt;
+	 *
+	 * @param compilationUnit the compilation unit to search
+	 * @param operations the set to add found rewrite operations to
+	 * @param enabledBundles set of enabled bundled hint file IDs
+	 * @param findings list to collect hint-only findings into; may be {@code null}
+	 *        to discard hint-only results (backward compatible)
+	 */
+	public static void findOperations(CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations,
+			Set&lt;String&gt; enabledBundles,
+			List&lt;HintFinding&gt; findings) {
 
 		// Ensure built-in guard functions (sourceVersionGE, etc.) are registered
-<span class="nc" id="L88">		GuardRegistry.getInstance();</span>
+<span class="nc" id="L112">		GuardRegistry.getInstance();</span>
 
-<span class="nc" id="L90">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
+<span class="nc" id="L114">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
 		// Ensure bundled libraries are loaded
-<span class="nc" id="L92">		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());</span>
+<span class="nc" id="L116">		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());</span>
 		// Load extension-point contributed hint files (encoding, junit5, etc.)
-<span class="nc" id="L94">		registry.loadFromExtensions();</span>
+<span class="nc" id="L118">		registry.loadFromExtensions();</span>
 
 		// Load project-level .sandbox-hint files if available
-<span class="nc bnc" id="L97" title="All 2 branches missed.">		if (compilationUnit.getJavaElement() != null</span>
-<span class="nc bnc" id="L98" title="All 2 branches missed.">				&amp;&amp; compilationUnit.getJavaElement().getJavaProject() != null) {</span>
-<span class="nc" id="L99">			org.eclipse.core.resources.IProject project = compilationUnit.getJavaElement()</span>
-<span class="nc" id="L100">					.getJavaProject().getProject();</span>
-<span class="nc" id="L101">			registry.loadProjectHintFiles(project);</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">		if (compilationUnit.getJavaElement() != null</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">				&amp;&amp; compilationUnit.getJavaElement().getJavaProject() != null) {</span>
+<span class="nc" id="L123">			org.eclipse.core.resources.IProject project = compilationUnit.getJavaElement()</span>
+<span class="nc" id="L124">					.getJavaProject().getProject();</span>
+<span class="nc" id="L125">			registry.loadProjectHintFiles(project);</span>
 		}
 
-<span class="nc bnc" id="L104" title="All 2 branches missed.">		for (Map.Entry&lt;String, HintFile&gt; entry : registry.getAllHintFiles().entrySet()) {</span>
-<span class="nc" id="L105">			String hintFileId = entry.getKey();</span>
-<span class="nc" id="L106">			HintFile hintFile = entry.getValue();</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		for (Map.Entry&lt;String, HintFile&gt; entry : registry.getAllHintFiles().entrySet()) {</span>
+<span class="nc" id="L129">			String hintFileId = entry.getKey();</span>
+<span class="nc" id="L130">			HintFile hintFile = entry.getValue();</span>
 
 			// Filter by enabled bundles (project-level files are always included)
-<span class="nc bnc" id="L109" title="All 4 branches missed.">			if (enabledBundles != null &amp;&amp; !hintFileId.startsWith(&quot;project:&quot;) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L110" title="All 2 branches missed.">					&amp;&amp; !enabledBundles.contains(hintFileId)) {</span>
-<span class="nc" id="L111">				continue;</span>
+<span class="nc bnc" id="L133" title="All 4 branches missed.">			if (enabledBundles != null &amp;&amp; !hintFileId.startsWith(&quot;project:&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">					&amp;&amp; !enabledBundles.contains(hintFileId)) {</span>
+<span class="nc" id="L135">				continue;</span>
 			}
 
-<span class="nc" id="L114">			List&lt;TransformationRule&gt; resolvedRules = registry.resolveIncludes(hintFile);</span>
-<span class="nc" id="L115">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);</span>
-<span class="nc" id="L116">			List&lt;TransformationResult&gt; results = processor.process(compilationUnit);</span>
+<span class="nc" id="L138">			List&lt;TransformationRule&gt; resolvedRules = registry.resolveIncludes(hintFile);</span>
+<span class="nc" id="L139">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);</span>
+<span class="nc" id="L140">			List&lt;TransformationResult&gt; results = processor.process(compilationUnit);</span>
 
-<span class="nc bnc" id="L118" title="All 2 branches missed.">			for (TransformationResult result : results) {</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">				if (result.hasReplacement()) {</span>
-<span class="nc" id="L120">					operations.add(new HintFileRewriteOperation(result));</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">			for (TransformationResult result : results) {</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">				if (result.hasReplacement()) {</span>
+<span class="nc" id="L144">					operations.add(new HintFileRewriteOperation(result));</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">				} else if (findings != null) {</span>
+<span class="nc" id="L146">					findings.add(HintFinding.fromTransformationResult(result, compilationUnit));</span>
 				}
 			}
 		}
-<span class="nc" id="L124">	}</span>
+<span class="nc" id="L150">	}</span>
 
 	/**
 	 * Finds hint-file-based cleanup operations for a specific bundle,
@@ -142,8 +168,8 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 	public static void findOperationsForBundle(CompilationUnit compilationUnit,
 			String bundleId, Set&lt;CompilationUnitRewriteOperation&gt; operations,
 			Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="nc" id="L145">		findOperationsForBundle(compilationUnit, bundleId, operations, nodesprocessed, null);</span>
-<span class="nc" id="L146">	}</span>
+<span class="nc" id="L171">		findOperationsForBundle(compilationUnit, bundleId, operations, nodesprocessed, null);</span>
+<span class="nc" id="L172">	}</span>
 
 	/**
 	 * Finds hint-file-based cleanup operations for a specific bundle,
@@ -167,41 +193,41 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 			Set&lt;ASTNode&gt; nodesprocessed, Map&lt;String, String&gt; compilerOptions) {
 
 		// Ensure built-in guard functions (sourceVersionGE, etc.) are registered
-<span class="fc" id="L170">		GuardRegistry.getInstance();</span>
+<span class="fc" id="L196">		GuardRegistry.getInstance();</span>
 
-<span class="fc" id="L172">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
+<span class="fc" id="L198">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
 		// Ensure bundled libraries are loaded
-<span class="fc" id="L174">		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());</span>
+<span class="fc" id="L200">		registry.loadBundledLibraries(HintFileFixCore.class.getClassLoader());</span>
 		// Load extension-point contributed hint files (encoding, junit5, etc.)
-<span class="fc" id="L176">		registry.loadFromExtensions();</span>
+<span class="fc" id="L202">		registry.loadFromExtensions();</span>
 
 		// Load project-level .sandbox-hint files if available
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (compilationUnit.getJavaElement() != null</span>
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">				&amp;&amp; compilationUnit.getJavaElement().getJavaProject() != null) {</span>
-<span class="fc" id="L181">			org.eclipse.core.resources.IProject project = compilationUnit.getJavaElement()</span>
-<span class="fc" id="L182">					.getJavaProject().getProject();</span>
-<span class="fc" id="L183">			registry.loadProjectHintFiles(project);</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		if (compilationUnit.getJavaElement() != null</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">				&amp;&amp; compilationUnit.getJavaElement().getJavaProject() != null) {</span>
+<span class="fc" id="L207">			org.eclipse.core.resources.IProject project = compilationUnit.getJavaElement()</span>
+<span class="fc" id="L208">					.getJavaProject().getProject();</span>
+<span class="fc" id="L209">			registry.loadProjectHintFiles(project);</span>
 		}
 
-<span class="fc" id="L186">		HintFile hintFile = registry.getHintFile(bundleId);</span>
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">		if (hintFile == null) {</span>
-<span class="nc" id="L188">			return;</span>
+<span class="fc" id="L212">		HintFile hintFile = registry.getHintFile(bundleId);</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">		if (hintFile == null) {</span>
+<span class="nc" id="L214">			return;</span>
 		}
 
-<span class="fc" id="L191">		List&lt;TransformationRule&gt; resolvedRules = registry.resolveIncludes(hintFile);</span>
-<span class="fc" id="L192">		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);</span>
-<span class="fc" id="L193">		List&lt;TransformationResult&gt; results = processor.process(compilationUnit, compilerOptions);</span>
+<span class="fc" id="L217">		List&lt;TransformationRule&gt; resolvedRules = registry.resolveIncludes(hintFile);</span>
+<span class="fc" id="L218">		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);</span>
+<span class="fc" id="L219">		List&lt;TransformationResult&gt; results = processor.process(compilationUnit, compilerOptions);</span>
 
-<span class="fc bfc" id="L195" title="All 2 branches covered.">		for (TransformationResult result : results) {</span>
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">			if (result.hasReplacement()) {</span>
-<span class="fc" id="L197">				ASTNode matchedNode = result.match().getMatchedNode();</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">				if (matchedNode != null) {</span>
-<span class="fc" id="L199">					nodesprocessed.add(matchedNode);</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">		for (TransformationResult result : results) {</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">			if (result.hasReplacement()) {</span>
+<span class="fc" id="L223">				ASTNode matchedNode = result.match().getMatchedNode();</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">				if (matchedNode != null) {</span>
+<span class="fc" id="L225">					nodesprocessed.add(matchedNode);</span>
 				}
-<span class="fc" id="L201">				operations.add(new HintFileRewriteOperation(result));</span>
+<span class="fc" id="L227">				operations.add(new HintFileRewriteOperation(result));</span>
 			}
 		}
-<span class="fc" id="L204">	}</span>
+<span class="fc" id="L230">	}</span>
 
 	/**
 	 * Loads a hint file from a string and finds operations.
@@ -213,22 +239,22 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 	public static void findOperationsFromContent(CompilationUnit compilationUnit,
 			String hintFileContent, Set&lt;CompilationUnitRewriteOperation&gt; operations) {
 		// Ensure built-in guard functions (sourceVersionGE, etc.) are registered
-<span class="nc" id="L216">		GuardRegistry.getInstance();</span>
+<span class="nc" id="L242">		GuardRegistry.getInstance();</span>
 		try {
-<span class="nc" id="L218">			HintFileParser parser = new HintFileParser();</span>
-<span class="nc" id="L219">			HintFile hintFile = parser.parse(hintFileContent);</span>
-<span class="nc" id="L220">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
-<span class="nc" id="L221">			List&lt;TransformationResult&gt; results = processor.process(compilationUnit);</span>
+<span class="nc" id="L244">			HintFileParser parser = new HintFileParser();</span>
+<span class="nc" id="L245">			HintFile hintFile = parser.parse(hintFileContent);</span>
+<span class="nc" id="L246">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
+<span class="nc" id="L247">			List&lt;TransformationResult&gt; results = processor.process(compilationUnit);</span>
 
-<span class="nc bnc" id="L223" title="All 2 branches missed.">			for (TransformationResult result : results) {</span>
-<span class="nc bnc" id="L224" title="All 2 branches missed.">				if (result.hasReplacement()) {</span>
-<span class="nc" id="L225">					operations.add(new HintFileRewriteOperation(result));</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">			for (TransformationResult result : results) {</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">				if (result.hasReplacement()) {</span>
+<span class="nc" id="L251">					operations.add(new HintFileRewriteOperation(result));</span>
 				}
 			}
-<span class="nc" id="L228">		} catch (HintFileParser.HintParseException e) {</span>
+<span class="nc" id="L254">		} catch (HintFileParser.HintParseException e) {</span>
 			// Skip invalid hint files
 		}
-<span class="nc" id="L231">	}</span>
+<span class="nc" id="L257">	}</span>
 
 	/**
 	 * Generic rewrite operation that replaces matched AST nodes with the
@@ -242,58 +268,58 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 
 		private final TransformationResult result;
 
-<span class="fc" id="L245">		public HintFileRewriteOperation(TransformationResult result) {</span>
-<span class="fc" id="L246">			this.result = result;</span>
-<span class="fc" id="L247">		}</span>
+<span class="fc" id="L271">		public HintFileRewriteOperation(TransformationResult result) {</span>
+<span class="fc" id="L272">			this.result = result;</span>
+<span class="fc" id="L273">		}</span>
 
 		@Override
 		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-<span class="fc" id="L251">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L252">			AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="pc bpc" id="L253" title="1 of 2 branches missed.">			String description = result.description() != null</span>
-<span class="nc" id="L254">					? result.description()</span>
-<span class="fc" id="L255">					: &quot;Apply hint file rule&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L256">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L277">			ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L278">			AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">			String description = result.description() != null</span>
+<span class="nc" id="L280">					? result.description()</span>
+<span class="fc" id="L281">					: &quot;Apply hint file rule&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L282">			TextEditGroup group = createTextEditGroup(description, cuRewrite);</span>
 
-<span class="fc" id="L258">			ASTNode matchedNode = result.match().getMatchedNode();</span>
-<span class="fc" id="L259">			String replacement = result.replacement();</span>
+<span class="fc" id="L284">			ASTNode matchedNode = result.match().getMatchedNode();</span>
+<span class="fc" id="L285">			String replacement = result.replacement();</span>
 
-<span class="pc bpc" id="L261" title="2 of 4 branches missed.">			if (matchedNode == null || replacement == null) {</span>
-<span class="nc" id="L262">				return;</span>
+<span class="pc bpc" id="L287" title="2 of 4 branches missed.">			if (matchedNode == null || replacement == null) {</span>
+<span class="nc" id="L288">				return;</span>
 			}
 
 			// Handle import directives
-<span class="pc bpc" id="L266" title="1 of 2 branches missed.">			if (result.hasImportDirective()) {</span>
-<span class="fc" id="L267">				ImportDirective imports = result.importDirective();</span>
-<span class="fc" id="L268">				ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">			if (result.hasImportDirective()) {</span>
+<span class="fc" id="L293">				ImportDirective imports = result.importDirective();</span>
+<span class="fc" id="L294">				ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
 
-<span class="fc bfc" id="L270" title="All 2 branches covered.">				for (String addImport : imports.getAddImports()) {</span>
-<span class="fc" id="L271">					importRewrite.addImport(addImport);</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">				for (String addImport : imports.getAddImports()) {</span>
+<span class="fc" id="L297">					importRewrite.addImport(addImport);</span>
 				}
 				// Use ImportRemover instead of directly calling importRewrite.removeImport().
 				// Direct removal is unsafe because the same type may still be referenced
 				// by other nodes in the compilation unit that are NOT being transformed.
 				// ImportRemover scans the AST and only removes the import when ALL
 				// references to the type are gone (see eclipse-jdt/eclipse.jdt.ui#121).
-<span class="fc bfc" id="L278" title="All 2 branches covered.">				if (!imports.getRemoveImports().isEmpty()) {</span>
-<span class="fc" id="L279">					ImportRemover remover = cuRewrite.getImportRemover();</span>
-<span class="fc" id="L280">					remover.registerRemovedNode(matchedNode);</span>
-<span class="fc" id="L281">					remover.applyRemoves(importRewrite);</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">				if (!imports.getRemoveImports().isEmpty()) {</span>
+<span class="fc" id="L305">					ImportRemover remover = cuRewrite.getImportRemover();</span>
+<span class="fc" id="L306">					remover.registerRemovedNode(matchedNode);</span>
+<span class="fc" id="L307">					remover.applyRemoves(importRewrite);</span>
 				}
-<span class="pc bpc" id="L283" title="1 of 2 branches missed.">				for (String addStatic : imports.getAddStaticImports()) {</span>
-<span class="nc" id="L284">					int lastDot = addStatic.lastIndexOf('.');</span>
-<span class="nc bnc" id="L285" title="All 2 branches missed.">					if (lastDot &gt; 0) {</span>
-<span class="nc" id="L286">						String type = addStatic.substring(0, lastDot);</span>
-<span class="nc" id="L287">						String member = addStatic.substring(lastDot + 1);</span>
-<span class="nc" id="L288">						importRewrite.addStaticImport(type, member, false);</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">				for (String addStatic : imports.getAddStaticImports()) {</span>
+<span class="nc" id="L310">					int lastDot = addStatic.lastIndexOf('.');</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">					if (lastDot &gt; 0) {</span>
+<span class="nc" id="L312">						String type = addStatic.substring(0, lastDot);</span>
+<span class="nc" id="L313">						String member = addStatic.substring(lastDot + 1);</span>
+<span class="nc" id="L314">						importRewrite.addStaticImport(type, member, false);</span>
 					}
 				}
-<span class="pc bpc" id="L291" title="1 of 2 branches missed.">				for (String removeStatic : imports.getRemoveStaticImports()) {</span>
-<span class="nc" id="L292">					int lastDot = removeStatic.lastIndexOf('.');</span>
-<span class="nc bnc" id="L293" title="All 2 branches missed.">					if (lastDot &gt; 0) {</span>
-<span class="nc" id="L294">						String type = removeStatic.substring(0, lastDot);</span>
-<span class="nc" id="L295">						String member = removeStatic.substring(lastDot + 1);</span>
-<span class="nc" id="L296">						importRewrite.removeStaticImport(type + &quot;.&quot; + member); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">				for (String removeStatic : imports.getRemoveStaticImports()) {</span>
+<span class="nc" id="L318">					int lastDot = removeStatic.lastIndexOf('.');</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">					if (lastDot &gt; 0) {</span>
+<span class="nc" id="L320">						String type = removeStatic.substring(0, lastDot);</span>
+<span class="nc" id="L321">						String member = removeStatic.substring(lastDot + 1);</span>
+<span class="nc" id="L322">						importRewrite.removeStaticImport(type + &quot;.&quot; + member); //$NON-NLS-1$</span>
 					}
 				}
 
@@ -301,25 +327,25 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 				// Note: This may execute multiple times for the same imports when multiple
 				// rules match in the same file. ImportRewrite handles duplicate add/remove
 				// operations gracefully, so this is an acceptable tradeoff for simplicity.
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">				for (Map.Entry&lt;String, String&gt; entry : imports.getReplaceStaticImports().entrySet()) {</span>
-<span class="nc" id="L305">					String oldType = entry.getKey();</span>
-<span class="nc" id="L306">					String newType = entry.getValue();</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">				for (Map.Entry&lt;String, String&gt; entry : imports.getReplaceStaticImports().entrySet()) {</span>
+<span class="nc" id="L331">					String oldType = entry.getKey();</span>
+<span class="nc" id="L332">					String newType = entry.getValue();</span>
 					// Find existing static imports from oldType and replace with newType
-<span class="nc" id="L308">					CompilationUnit cu = cuRewrite.getRoot();</span>
-<span class="nc bnc" id="L309" title="All 2 branches missed.">					for (Object importObj : cu.imports()) {</span>
-<span class="nc" id="L310">						org.eclipse.jdt.core.dom.ImportDeclaration importDecl =</span>
-<span class="nc" id="L311">								(org.eclipse.jdt.core.dom.ImportDeclaration) importObj;</span>
-<span class="nc bnc" id="L312" title="All 2 branches missed.">						if (importDecl.isStatic()) {</span>
-<span class="nc" id="L313">							String importName = importDecl.getName().getFullyQualifiedName();</span>
-<span class="nc bnc" id="L314" title="All 4 branches missed.">							if (importDecl.isOnDemand() &amp;&amp; importName.equals(oldType)) {</span>
+<span class="nc" id="L334">					CompilationUnit cu = cuRewrite.getRoot();</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">					for (Object importObj : cu.imports()) {</span>
+<span class="nc" id="L336">						org.eclipse.jdt.core.dom.ImportDeclaration importDecl =</span>
+<span class="nc" id="L337">								(org.eclipse.jdt.core.dom.ImportDeclaration) importObj;</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">						if (importDecl.isStatic()) {</span>
+<span class="nc" id="L339">							String importName = importDecl.getName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L340" title="All 4 branches missed.">							if (importDecl.isOnDemand() &amp;&amp; importName.equals(oldType)) {</span>
 								// Wildcard: import static org.junit.Assert.* → import static org.junit.jupiter.api.Assertions.*
-<span class="nc" id="L316">								importRewrite.removeStaticImport(oldType + &quot;.*&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L317">								importRewrite.addStaticImport(newType, &quot;*&quot;, false); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L318" title="All 2 branches missed.">							} else if (importName.startsWith(oldType + &quot;.&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L342">								importRewrite.removeStaticImport(oldType + &quot;.*&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L343">								importRewrite.addStaticImport(newType, &quot;*&quot;, false); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">							} else if (importName.startsWith(oldType + &quot;.&quot;)) { //$NON-NLS-1$</span>
 								// Specific: import static org.junit.Assert.assertEquals → ...Assertions.assertEquals
-<span class="nc" id="L320">								String member = importName.substring(oldType.length() + 1);</span>
-<span class="nc" id="L321">								importRewrite.removeStaticImport(importName);</span>
-<span class="nc" id="L322">								importRewrite.addStaticImport(newType, member, false);</span>
+<span class="nc" id="L346">								String member = importName.substring(oldType.length() + 1);</span>
+<span class="nc" id="L347">								importRewrite.removeStaticImport(importName);</span>
+<span class="nc" id="L348">								importRewrite.addStaticImport(newType, member, false);</span>
 							}
 						}
 					}
@@ -327,111 +353,111 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 			}
 
 			// Parse replacement as an expression and replace the matched node
-<span class="pc bpc" id="L330" title="1 of 2 branches missed.">			if (matchedNode instanceof Expression) {</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">			if (matchedNode instanceof Expression) {</span>
 				// Shorten FQNs to simple names (imports are already added above)
-<span class="fc" id="L332">				String shortenedReplacement = shortenFqns(replacement, result);</span>
+<span class="fc" id="L358">				String shortenedReplacement = shortenFqns(replacement, result);</span>
 
 				// Try to parse the replacement as an expression
-<span class="fc" id="L335">				org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L336">				parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_EXPRESSION);</span>
-<span class="fc" id="L337">				parser.setSource(shortenedReplacement.toCharArray());</span>
-<span class="fc" id="L338">				ASTNode newNode = parser.createAST(null);</span>
-<span class="pc bpc" id="L339" title="1 of 2 branches missed.">				if (newNode instanceof Expression) {</span>
-<span class="fc" id="L340">					ASTNode copy = ASTNode.copySubtree(ast, newNode);</span>
-<span class="fc" id="L341">					int oldCount = countStringLiterals(matchedNode);</span>
-<span class="fc" id="L342">					int newCount = countStringLiterals(copy);</span>
+<span class="fc" id="L361">				org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L362">				parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_EXPRESSION);</span>
+<span class="fc" id="L363">				parser.setSource(shortenedReplacement.toCharArray());</span>
+<span class="fc" id="L364">				ASTNode newNode = parser.createAST(null);</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">				if (newNode instanceof Expression) {</span>
+<span class="fc" id="L366">					ASTNode copy = ASTNode.copySubtree(ast, newNode);</span>
+<span class="fc" id="L367">					int oldCount = countStringLiterals(matchedNode);</span>
+<span class="fc" id="L368">					int newCount = countStringLiterals(copy);</span>
 
 					// Auto-detect: did we change a String charset argument to a Charset type?
-<span class="fc" id="L345">					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(</span>
-<span class="fc" id="L346">							matchedNode, replacement);</span>
+<span class="fc" id="L371">					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(</span>
+<span class="fc" id="L372">							matchedNode, replacement);</span>
 
 					// Check if the matched node is inside a try body that will be unwrapped
 					// after removing the checked exception. If so, we must handle the
 					// replacement AND the try-unwrap atomically to avoid conflicts between
 					// ASTNodes.replaceAndRemoveNLS (statement-level replacement) and
 					// createMoveTarget (used by simplifyEmptyTryStatement).
-<span class="fc" id="L353">					boolean tryAlreadyHandled = false;</span>
-<span class="pc bpc" id="L354" title="1 of 4 branches missed.">					if (typeChange != null &amp;&amp; oldCount &gt; newCount) {</span>
-<span class="fc" id="L355">						tryAlreadyHandled = replaceAndUnwrapTryIfNeeded(</span>
-<span class="fc" id="L356">								matchedNode, copy, shortenedReplacement,</span>
-<span class="fc" id="L357">								typeChange, rewrite, cuRewrite, group);</span>
+<span class="fc" id="L379">					boolean tryAlreadyHandled = false;</span>
+<span class="pc bpc" id="L380" title="1 of 4 branches missed.">					if (typeChange != null &amp;&amp; oldCount &gt; newCount) {</span>
+<span class="fc" id="L381">						tryAlreadyHandled = replaceAndUnwrapTryIfNeeded(</span>
+<span class="fc" id="L382">								matchedNode, copy, shortenedReplacement,</span>
+<span class="fc" id="L383">								typeChange, rewrite, cuRewrite, group);</span>
 					}
 
-<span class="fc bfc" id="L360" title="All 2 branches covered.">					if (!tryAlreadyHandled) {</span>
-<span class="fc bfc" id="L361" title="All 2 branches covered.">						if (oldCount &gt; newCount) {</span>
+<span class="fc bfc" id="L386" title="All 2 branches covered.">					if (!tryAlreadyHandled) {</span>
+<span class="fc bfc" id="L387" title="All 2 branches covered.">						if (oldCount &gt; newCount) {</span>
 							try {
-<span class="fc" id="L363">								ASTNodes.replaceAndRemoveNLS(rewrite, matchedNode, copy, group, cuRewrite);</span>
-<span class="pc" id="L364">							} catch (CoreException e) {</span>
+<span class="fc" id="L389">								ASTNodes.replaceAndRemoveNLS(rewrite, matchedNode, copy, group, cuRewrite);</span>
+<span class="pc" id="L390">							} catch (CoreException e) {</span>
 								// Fall back to plain replace if NLS removal fails
-<span class="nc" id="L366">								rewrite.replace(matchedNode, copy, group);</span>
+<span class="nc" id="L392">								rewrite.replace(matchedNode, copy, group);</span>
 							}
-<span class="nc" id="L368">						} else {</span>
-<span class="fc" id="L369">							rewrite.replace(matchedNode, copy, group);</span>
+<span class="nc" id="L394">						} else {</span>
+<span class="fc" id="L395">							rewrite.replace(matchedNode, copy, group);</span>
 						}
 
-<span class="fc bfc" id="L372" title="All 2 branches covered.">						if (typeChange != null) {</span>
-<span class="fc" id="L373">							ExceptionCleanupHelper.removeCheckedException(</span>
-<span class="fc" id="L374">									matchedNode,</span>
-<span class="fc" id="L375">									typeChange.exceptionFQN(),</span>
-<span class="fc" id="L376">									typeChange.exceptionSimpleName(),</span>
-<span class="fc" id="L377">									group, rewrite, cuRewrite.getImportRemover());</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">						if (typeChange != null) {</span>
+<span class="fc" id="L399">							ExceptionCleanupHelper.removeCheckedException(</span>
+<span class="fc" id="L400">									matchedNode,</span>
+<span class="fc" id="L401">									typeChange.exceptionFQN(),</span>
+<span class="fc" id="L402">									typeChange.exceptionSimpleName(),</span>
+<span class="fc" id="L403">									group, rewrite, cuRewrite.getImportRemover());</span>
 						}
 					}
 				}
-<span class="pc bnc" id="L381" title="All 2 branches missed.">			} else if (matchedNode instanceof Annotation) {</span>
+<span class="pc bnc" id="L407" title="All 2 branches missed.">			} else if (matchedNode instanceof Annotation) {</span>
 				// Handle annotation replacement (e.g., @Before → @BeforeEach)
-<span class="nc" id="L383">				String annotationName = replacement.trim();</span>
-<span class="nc bnc" id="L384" title="All 2 branches missed.">				if (annotationName.startsWith(&quot;@&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L385">					annotationName = annotationName.substring(1);</span>
+<span class="nc" id="L409">				String annotationName = replacement.trim();</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">				if (annotationName.startsWith(&quot;@&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L411">					annotationName = annotationName.substring(1);</span>
 				}
 				Annotation newAnnotation;
-<span class="nc bnc" id="L388" title="All 2 branches missed.">				if (matchedNode instanceof SingleMemberAnnotation oldSingleMember) {</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">				if (matchedNode instanceof SingleMemberAnnotation oldSingleMember) {</span>
 					// Preserve the value: @Ignore(&quot;reason&quot;) → @Disabled(&quot;reason&quot;)
-<span class="nc" id="L390">					SingleMemberAnnotation newSingleMember = ast.newSingleMemberAnnotation();</span>
-<span class="nc" id="L391">					newSingleMember.setTypeName(ast.newName(annotationName));</span>
-<span class="nc" id="L392">					newSingleMember.setValue((Expression) ASTNode.copySubtree(ast, oldSingleMember.getValue()));</span>
-<span class="nc" id="L393">					newAnnotation = newSingleMember;</span>
-<span class="nc bnc" id="L394" title="All 2 branches missed.">				} else if (matchedNode instanceof NormalAnnotation oldNormal) {</span>
+<span class="nc" id="L416">					SingleMemberAnnotation newSingleMember = ast.newSingleMemberAnnotation();</span>
+<span class="nc" id="L417">					newSingleMember.setTypeName(ast.newName(annotationName));</span>
+<span class="nc" id="L418">					newSingleMember.setValue((Expression) ASTNode.copySubtree(ast, oldSingleMember.getValue()));</span>
+<span class="nc" id="L419">					newAnnotation = newSingleMember;</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">				} else if (matchedNode instanceof NormalAnnotation oldNormal) {</span>
 					// Preserve member-value pairs: @Test(expected=X.class) → @Test(expected=X.class)
-<span class="nc" id="L396">					NormalAnnotation newNormal = ast.newNormalAnnotation();</span>
-<span class="nc" id="L397">					newNormal.setTypeName(ast.newName(annotationName));</span>
-<span class="nc bnc" id="L398" title="All 2 branches missed.">					for (Object obj : oldNormal.values()) {</span>
-<span class="nc" id="L399">						MemberValuePair oldPair = (MemberValuePair) obj;</span>
-<span class="nc" id="L400">						MemberValuePair newPair = ast.newMemberValuePair();</span>
-<span class="nc" id="L401">						newPair.setName(ast.newSimpleName(oldPair.getName().getIdentifier()));</span>
-<span class="nc" id="L402">						newPair.setValue((Expression) ASTNode.copySubtree(ast, oldPair.getValue()));</span>
-<span class="nc" id="L403">						newNormal.values().add(newPair);</span>
+<span class="nc" id="L422">					NormalAnnotation newNormal = ast.newNormalAnnotation();</span>
+<span class="nc" id="L423">					newNormal.setTypeName(ast.newName(annotationName));</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">					for (Object obj : oldNormal.values()) {</span>
+<span class="nc" id="L425">						MemberValuePair oldPair = (MemberValuePair) obj;</span>
+<span class="nc" id="L426">						MemberValuePair newPair = ast.newMemberValuePair();</span>
+<span class="nc" id="L427">						newPair.setName(ast.newSimpleName(oldPair.getName().getIdentifier()));</span>
+<span class="nc" id="L428">						newPair.setValue((Expression) ASTNode.copySubtree(ast, oldPair.getValue()));</span>
+<span class="nc" id="L429">						newNormal.values().add(newPair);</span>
 					}
-<span class="nc" id="L405">					newAnnotation = newNormal;</span>
-<span class="nc" id="L406">				} else {</span>
+<span class="nc" id="L431">					newAnnotation = newNormal;</span>
+<span class="nc" id="L432">				} else {</span>
 					// MarkerAnnotation: @Before → @BeforeEach
-<span class="nc" id="L408">					MarkerAnnotation newMarker = ast.newMarkerAnnotation();</span>
-<span class="nc" id="L409">					newMarker.setTypeName(ast.newName(annotationName));</span>
-<span class="nc" id="L410">					newAnnotation = newMarker;</span>
+<span class="nc" id="L434">					MarkerAnnotation newMarker = ast.newMarkerAnnotation();</span>
+<span class="nc" id="L435">					newMarker.setTypeName(ast.newName(annotationName));</span>
+<span class="nc" id="L436">					newAnnotation = newMarker;</span>
 				}
-<span class="nc" id="L412">				rewrite.replace(matchedNode, newAnnotation, group);</span>
-<span class="nc bnc" id="L413" title="All 2 branches missed.">			} else if (matchedNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {</span>
+<span class="nc" id="L438">				rewrite.replace(matchedNode, newAnnotation, group);</span>
+<span class="nc bnc" id="L439" title="All 2 branches missed.">			} else if (matchedNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration) {</span>
 				// Handle METHOD_DECLARATION → METHOD_DECLARATION rewrite.
 				// When the replacement is also a method declaration (e.g.,
 				// &quot;@Test void $name($params$)&quot;), diff the annotations between
 				// source and replacement patterns and add the missing ones.
-<span class="nc" id="L418">				handleMethodDeclarationRewrite(matchedNode, replacement, ast,</span>
-<span class="nc" id="L419">						rewrite, cuRewrite, group);</span>
+<span class="nc" id="L444">				handleMethodDeclarationRewrite(matchedNode, replacement, ast,</span>
+<span class="nc" id="L445">						rewrite, cuRewrite, group);</span>
 			}
-<span class="fc" id="L421">		}</span>
+<span class="fc" id="L447">		}</span>
 
 		/**
 		 * Returns the simple name of an annotation (without package prefix).
 		 */
 		private static String getAnnotationSimpleName(Annotation annotation) {
-<span class="nc bnc" id="L427" title="All 2 branches missed.">			if (annotation instanceof MarkerAnnotation marker) {</span>
-<span class="nc" id="L428">				return marker.getTypeName().toString();</span>
-<span class="nc bnc" id="L429" title="All 2 branches missed.">			} else if (annotation instanceof SingleMemberAnnotation single) {</span>
-<span class="nc" id="L430">				return single.getTypeName().toString();</span>
-<span class="nc bnc" id="L431" title="All 2 branches missed.">			} else if (annotation instanceof NormalAnnotation normal) {</span>
-<span class="nc" id="L432">				return normal.getTypeName().toString();</span>
+<span class="nc bnc" id="L453" title="All 2 branches missed.">			if (annotation instanceof MarkerAnnotation marker) {</span>
+<span class="nc" id="L454">				return marker.getTypeName().toString();</span>
+<span class="nc bnc" id="L455" title="All 2 branches missed.">			} else if (annotation instanceof SingleMemberAnnotation single) {</span>
+<span class="nc" id="L456">				return single.getTypeName().toString();</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">			} else if (annotation instanceof NormalAnnotation normal) {</span>
+<span class="nc" id="L458">				return normal.getTypeName().toString();</span>
 			}
-<span class="nc" id="L434">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L460">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
 
 		/**
@@ -454,97 +480,96 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 		 * @param rewrite the AST rewriter
 		 * @param cuRewrite the compilation unit rewrite context
 		 * @param group the text edit group
-		 * @since 1.3.9
 		 */
 		@SuppressWarnings(&quot;unchecked&quot;)
 		private void handleMethodDeclarationRewrite(ASTNode matchedNode, String replacement,
 				AST ast, ASTRewrite rewrite, CompilationUnitRewrite cuRewrite,
 				TextEditGroup group) {
-<span class="nc bnc" id="L463" title="All 2 branches missed.">			if (!(matchedNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration methodDecl)) {</span>
-<span class="nc" id="L464">				return;</span>
+<span class="nc bnc" id="L488" title="All 2 branches missed.">			if (!(matchedNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration methodDecl)) {</span>
+<span class="nc" id="L489">				return;</span>
 			}
 
 			// Parse the replacement as a method declaration to extract annotations
-<span class="nc" id="L468">			org.eclipse.jdt.core.dom.MethodDeclaration replacementMethod =</span>
-<span class="nc" id="L469">					parseReplacementAsMethodDeclaration(replacement);</span>
-<span class="nc bnc" id="L470" title="All 2 branches missed.">			if (replacementMethod == null) {</span>
-<span class="nc" id="L471">				return;</span>
+<span class="nc" id="L493">			org.eclipse.jdt.core.dom.MethodDeclaration replacementMethod =</span>
+<span class="nc" id="L494">					parseReplacementAsMethodDeclaration(replacement);</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">			if (replacementMethod == null) {</span>
+<span class="nc" id="L496">				return;</span>
 			}
 
 			// Collect annotation simple names from the replacement method
-<span class="nc" id="L475">			java.util.Set&lt;String&gt; replacementAnnotationNames = new java.util.LinkedHashSet&lt;&gt;();</span>
-<span class="nc" id="L476">			java.util.Map&lt;String, String&gt; annotationFqnMap = new java.util.LinkedHashMap&lt;&gt;();</span>
-<span class="nc bnc" id="L477" title="All 2 branches missed.">			for (Object modifier : replacementMethod.modifiers()) {</span>
-<span class="nc bnc" id="L478" title="All 2 branches missed.">				if (modifier instanceof Annotation ann) {</span>
-<span class="nc" id="L479">					String simpleName = getAnnotationSimpleName(ann);</span>
-<span class="nc" id="L480">					replacementAnnotationNames.add(simpleName);</span>
+<span class="nc" id="L500">			java.util.Set&lt;String&gt; replacementAnnotationNames = new java.util.LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L501">			java.util.Map&lt;String, String&gt; annotationFqnMap = new java.util.LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L502" title="All 2 branches missed.">			for (Object modifier : replacementMethod.modifiers()) {</span>
+<span class="nc bnc" id="L503" title="All 2 branches missed.">				if (modifier instanceof Annotation ann) {</span>
+<span class="nc" id="L504">					String simpleName = getAnnotationSimpleName(ann);</span>
+<span class="nc" id="L505">					replacementAnnotationNames.add(simpleName);</span>
 					// Try to extract FQN from the replacement text for import management
-<span class="nc" id="L482">					String fqn = extractAnnotationFqnFromText(replacement, simpleName);</span>
-<span class="nc bnc" id="L483" title="All 2 branches missed.">					if (fqn != null) {</span>
-<span class="nc" id="L484">						annotationFqnMap.put(simpleName, fqn);</span>
+<span class="nc" id="L507">					String fqn = extractAnnotationFqnFromText(replacement, simpleName);</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">					if (fqn != null) {</span>
+<span class="nc" id="L509">						annotationFqnMap.put(simpleName, fqn);</span>
 					}
 				}
 			}
 
 			// Collect annotation simple names from the source pattern (pattern text, not actual code)
-<span class="nc bnc" id="L490" title="All 2 branches missed.">			String sourcePatternText = result.rule() != null</span>
-<span class="nc" id="L491">					? result.rule().sourcePattern().getValue() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L492">			java.util.Set&lt;String&gt; sourceAnnotationNames = new java.util.LinkedHashSet&lt;&gt;();</span>
-<span class="nc" id="L493">			org.eclipse.jdt.core.dom.MethodDeclaration sourceMethod =</span>
-<span class="nc" id="L494">					parseReplacementAsMethodDeclaration(sourcePatternText);</span>
-<span class="nc bnc" id="L495" title="All 2 branches missed.">			if (sourceMethod != null) {</span>
-<span class="nc bnc" id="L496" title="All 2 branches missed.">				for (Object modifier : sourceMethod.modifiers()) {</span>
-<span class="nc bnc" id="L497" title="All 2 branches missed.">					if (modifier instanceof Annotation ann) {</span>
-<span class="nc" id="L498">						sourceAnnotationNames.add(getAnnotationSimpleName(ann));</span>
+<span class="nc bnc" id="L515" title="All 2 branches missed.">			String sourcePatternText = result.rule() != null</span>
+<span class="nc" id="L516">					? result.rule().sourcePattern().getValue() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L517">			java.util.Set&lt;String&gt; sourceAnnotationNames = new java.util.LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L518">			org.eclipse.jdt.core.dom.MethodDeclaration sourceMethod =</span>
+<span class="nc" id="L519">					parseReplacementAsMethodDeclaration(sourcePatternText);</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">			if (sourceMethod != null) {</span>
+<span class="nc bnc" id="L521" title="All 2 branches missed.">				for (Object modifier : sourceMethod.modifiers()) {</span>
+<span class="nc bnc" id="L522" title="All 2 branches missed.">					if (modifier instanceof Annotation ann) {</span>
+<span class="nc" id="L523">						sourceAnnotationNames.add(getAnnotationSimpleName(ann));</span>
 					}
 				}
 			}
 
 			// Annotations to add = in replacement but not in source pattern
-<span class="nc" id="L504">			java.util.Set&lt;String&gt; annotationsToAdd = new java.util.LinkedHashSet&lt;&gt;(replacementAnnotationNames);</span>
-<span class="nc" id="L505">			annotationsToAdd.removeAll(sourceAnnotationNames);</span>
+<span class="nc" id="L529">			java.util.Set&lt;String&gt; annotationsToAdd = new java.util.LinkedHashSet&lt;&gt;(replacementAnnotationNames);</span>
+<span class="nc" id="L530">			annotationsToAdd.removeAll(sourceAnnotationNames);</span>
 
-<span class="nc bnc" id="L507" title="All 2 branches missed.">			if (annotationsToAdd.isEmpty()) {</span>
-<span class="nc" id="L508">				return;</span>
+<span class="nc bnc" id="L532" title="All 2 branches missed.">			if (annotationsToAdd.isEmpty()) {</span>
+<span class="nc" id="L533">				return;</span>
 			}
 
 			// Collect existing annotation simple names on the actual matched method
-<span class="nc" id="L512">			java.util.Set&lt;String&gt; existingAnnotationNames = new java.util.LinkedHashSet&lt;&gt;();</span>
-<span class="nc bnc" id="L513" title="All 2 branches missed.">			for (Object modifier : methodDecl.modifiers()) {</span>
-<span class="nc bnc" id="L514" title="All 2 branches missed.">				if (modifier instanceof Annotation ann) {</span>
-<span class="nc" id="L515">					existingAnnotationNames.add(getAnnotationSimpleName(ann));</span>
+<span class="nc" id="L537">			java.util.Set&lt;String&gt; existingAnnotationNames = new java.util.LinkedHashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L538" title="All 2 branches missed.">			for (Object modifier : methodDecl.modifiers()) {</span>
+<span class="nc bnc" id="L539" title="All 2 branches missed.">				if (modifier instanceof Annotation ann) {</span>
+<span class="nc" id="L540">					existingAnnotationNames.add(getAnnotationSimpleName(ann));</span>
 				}
 			}
 
 			// Add each missing annotation (idempotent: skip if already present)
-<span class="nc" id="L520">			ListRewrite modifiersRewrite = rewrite.getListRewrite(</span>
-<span class="nc" id="L521">					methodDecl, org.eclipse.jdt.core.dom.MethodDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="nc" id="L522">			ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
-<span class="nc" id="L523">			boolean changed = false;</span>
+<span class="nc" id="L545">			ListRewrite modifiersRewrite = rewrite.getListRewrite(</span>
+<span class="nc" id="L546">					methodDecl, org.eclipse.jdt.core.dom.MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="nc" id="L547">			ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
+<span class="nc" id="L548">			boolean changed = false;</span>
 
-<span class="nc bnc" id="L525" title="All 2 branches missed.">			for (String annotationName : annotationsToAdd) {</span>
-<span class="nc bnc" id="L526" title="All 2 branches missed.">				if (existingAnnotationNames.contains(annotationName)) {</span>
-<span class="nc" id="L527">					continue; // Already present on the actual method — skip</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">			for (String annotationName : annotationsToAdd) {</span>
+<span class="nc bnc" id="L551" title="All 2 branches missed.">				if (existingAnnotationNames.contains(annotationName)) {</span>
+<span class="nc" id="L552">					continue; // Already present on the actual method — skip</span>
 				}
 				// Use createStringPlaceholder so the annotation appears on its own
 				// line above the method declaration (proper formatting).
-<span class="nc" id="L531">				ASTNode newAnnotation = rewrite.createStringPlaceholder(</span>
-<span class="nc" id="L532">						&quot;@&quot; + annotationName + &quot;\n&quot;, ASTNode.MARKER_ANNOTATION); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L533">				modifiersRewrite.insertFirst(newAnnotation, group);</span>
-<span class="nc" id="L534">				changed = true;</span>
+<span class="nc" id="L556">				ASTNode newAnnotation = rewrite.createStringPlaceholder(</span>
+<span class="nc" id="L557">						&quot;@&quot; + annotationName + &quot;\n&quot;, ASTNode.MARKER_ANNOTATION); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L558">				modifiersRewrite.insertFirst(newAnnotation, group);</span>
+<span class="nc" id="L559">				changed = true;</span>
 
 				// Add import for the FQN if available
-<span class="nc" id="L537">				String fqn = annotationFqnMap.get(annotationName);</span>
-<span class="nc bnc" id="L538" title="All 2 branches missed.">				if (fqn != null) {</span>
-<span class="nc" id="L539">					importRewrite.addImport(fqn);</span>
+<span class="nc" id="L562">				String fqn = annotationFqnMap.get(annotationName);</span>
+<span class="nc bnc" id="L563" title="All 2 branches missed.">				if (fqn != null) {</span>
+<span class="nc" id="L564">					importRewrite.addImport(fqn);</span>
 				}
 			}
 
 			// If nothing changed (all annotations already present), skip
-<span class="nc bnc" id="L544" title="All 2 branches missed.">			if (!changed) {</span>
-<span class="nc" id="L545">				return;</span>
+<span class="nc bnc" id="L569" title="All 2 branches missed.">			if (!changed) {</span>
+<span class="nc" id="L570">				return;</span>
 			}
-<span class="nc" id="L547">		}</span>
+<span class="nc" id="L572">		}</span>
 
 		/**
 		 * Parses a string as a method declaration by wrapping it in a class context.
@@ -554,36 +579,36 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 		 */
 		private static org.eclipse.jdt.core.dom.MethodDeclaration parseReplacementAsMethodDeclaration(
 				String methodSnippet) {
-<span class="nc bnc" id="L557" title="All 4 branches missed.">			if (methodSnippet == null || methodSnippet.isBlank()) {</span>
-<span class="nc" id="L558">				return null;</span>
+<span class="nc bnc" id="L582" title="All 4 branches missed.">			if (methodSnippet == null || methodSnippet.isBlank()) {</span>
+<span class="nc" id="L583">				return null;</span>
 			}
-<span class="nc" id="L560">			String normalized = methodSnippet.trim();</span>
+<span class="nc" id="L585">			String normalized = methodSnippet.trim();</span>
 			// Add empty body if not present
-<span class="nc bnc" id="L562" title="All 4 branches missed.">			if (!normalized.endsWith(&quot;}&quot;) &amp;&amp; !normalized.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L563">				normalized = normalized + &quot; {}&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L587" title="All 4 branches missed.">			if (!normalized.endsWith(&quot;}&quot;) &amp;&amp; !normalized.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L588">				normalized = normalized + &quot; {}&quot;; //$NON-NLS-1$</span>
 			}
 			// Handle multi-placeholder parameters for valid Java syntax
-<span class="nc" id="L566">			normalized = normalized.replaceAll(</span>
-<span class="nc" id="L567">					&quot;\\(\\s*\\$([a-zA-Z_][a-zA-Z0-9_]*)\\$\\s*\\)&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L568">					&quot;(Object... \\$$1\\$)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L591">			normalized = normalized.replaceAll(</span>
+<span class="nc" id="L592">					&quot;\\(\\s*\\$([a-zA-Z_][a-zA-Z0-9_]*)\\$\\s*\\)&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L593">					&quot;(Object... \\$$1\\$)&quot;); //$NON-NLS-1$</span>
 			// Handle single placeholders as method names (replace $name with _name for parsing)
 			// We just need the annotations, so the method body doesn't matter
-<span class="nc" id="L571">			String source = &quot;class _Pattern { &quot; + normalized + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L572">			org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser</span>
-<span class="nc" id="L573">					.newParser(AST.getJLSLatest());</span>
-<span class="nc" id="L574">			parser.setSource(source.toCharArray());</span>
-<span class="nc" id="L575">			parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_COMPILATION_UNIT);</span>
-<span class="nc" id="L576">			parser.setCompilerOptions(org.eclipse.jdt.core.JavaCore.getOptions());</span>
-<span class="nc" id="L577">			CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
-<span class="nc bnc" id="L578" title="All 2 branches missed.">			if (cu.types().isEmpty()) {</span>
-<span class="nc" id="L579">				return null;</span>
+<span class="nc" id="L596">			String source = &quot;class _Pattern { &quot; + normalized + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L597">			org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser</span>
+<span class="nc" id="L598">					.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L599">			parser.setSource(source.toCharArray());</span>
+<span class="nc" id="L600">			parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_COMPILATION_UNIT);</span>
+<span class="nc" id="L601">			parser.setCompilerOptions(org.eclipse.jdt.core.JavaCore.getOptions());</span>
+<span class="nc" id="L602">			CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+<span class="nc bnc" id="L603" title="All 2 branches missed.">			if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L604">				return null;</span>
 			}
-<span class="nc" id="L581">			org.eclipse.jdt.core.dom.TypeDeclaration typeDecl =</span>
-<span class="nc" id="L582">					(org.eclipse.jdt.core.dom.TypeDeclaration) cu.types().get(0);</span>
-<span class="nc bnc" id="L583" title="All 2 branches missed.">			if (typeDecl.getMethods().length == 0) {</span>
-<span class="nc" id="L584">				return null;</span>
+<span class="nc" id="L606">			org.eclipse.jdt.core.dom.TypeDeclaration typeDecl =</span>
+<span class="nc" id="L607">					(org.eclipse.jdt.core.dom.TypeDeclaration) cu.types().get(0);</span>
+<span class="nc bnc" id="L608" title="All 2 branches missed.">			if (typeDecl.getMethods().length == 0) {</span>
+<span class="nc" id="L609">				return null;</span>
 			}
-<span class="nc" id="L586">			return typeDecl.getMethods()[0];</span>
+<span class="nc" id="L611">			return typeDecl.getMethods()[0];</span>
 		}
 
 		/**
@@ -597,14 +622,14 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 		 */
 		private static String extractAnnotationFqnFromText(String replacementText, String simpleName) {
 			// Look for @pkg.sub.AnnotationName pattern in the replacement text
-<span class="nc" id="L600">			java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(</span>
-<span class="nc" id="L601">					&quot;@((?:[a-z][a-z0-9_]*\\.)+)&quot; + java.util.regex.Pattern.quote(simpleName) + &quot;\\b&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L602">					.matcher(replacementText);</span>
-<span class="nc bnc" id="L603" title="All 2 branches missed.">			if (matcher.find()) {</span>
+<span class="nc" id="L625">			java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(</span>
+<span class="nc" id="L626">					&quot;@((?:[a-z][a-z0-9_]*\\.)+)&quot; + java.util.regex.Pattern.quote(simpleName) + &quot;\\b&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L627">					.matcher(replacementText);</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">			if (matcher.find()) {</span>
 				// Return the full FQN without @
-<span class="nc" id="L605">				return matcher.group(1) + simpleName;</span>
+<span class="nc" id="L630">				return matcher.group(1) + simpleName;</span>
 			}
-<span class="nc" id="L607">			return null;</span>
+<span class="nc" id="L632">			return null;</span>
 		}
 
 		/**
@@ -622,26 +647,26 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 		 * @return the replacement text with FQNs shortened to simple names
 		 */
 		private static String shortenFqns(String replacement, TransformationResult result) {
-<span class="pc bpc" id="L625" title="1 of 2 branches missed.">			if (!result.hasImportDirective()) {</span>
-<span class="nc" id="L626">				return replacement;</span>
+<span class="pc bpc" id="L650" title="1 of 2 branches missed.">			if (!result.hasImportDirective()) {</span>
+<span class="nc" id="L651">				return replacement;</span>
 			}
-<span class="fc" id="L628">			List&lt;String&gt; addImports = result.importDirective().getAddImports();</span>
-<span class="pc bpc" id="L629" title="1 of 2 branches missed.">			if (addImports.isEmpty()) {</span>
-<span class="nc" id="L630">				return replacement;</span>
+<span class="fc" id="L653">			List&lt;String&gt; addImports = result.importDirective().getAddImports();</span>
+<span class="pc bpc" id="L654" title="1 of 2 branches missed.">			if (addImports.isEmpty()) {</span>
+<span class="nc" id="L655">				return replacement;</span>
 			}
 			// Sort by length (longest first) to avoid partial replacement issues
-<span class="fc" id="L633">			List&lt;String&gt; sorted = new java.util.ArrayList&lt;&gt;(addImports);</span>
-<span class="fc" id="L634">			sorted.sort((a, b) -&gt; Integer.compare(b.length(), a.length()));</span>
+<span class="fc" id="L658">			List&lt;String&gt; sorted = new java.util.ArrayList&lt;&gt;(addImports);</span>
+<span class="fc" id="L659">			sorted.sort((a, b) -&gt; Integer.compare(b.length(), a.length()));</span>
 
-<span class="fc" id="L636">			String shortened = replacement;</span>
-<span class="fc bfc" id="L637" title="All 2 branches covered.">			for (String fqn : sorted) {</span>
-<span class="fc" id="L638">				int lastDot = fqn.lastIndexOf('.');</span>
-<span class="pc bpc" id="L639" title="1 of 2 branches missed.">				if (lastDot &gt; 0) {</span>
-<span class="fc" id="L640">					String simpleName = fqn.substring(lastDot + 1);</span>
-<span class="fc" id="L641">					shortened = shortened.replace(fqn, simpleName);</span>
+<span class="fc" id="L661">			String shortened = replacement;</span>
+<span class="fc bfc" id="L662" title="All 2 branches covered.">			for (String fqn : sorted) {</span>
+<span class="fc" id="L663">				int lastDot = fqn.lastIndexOf('.');</span>
+<span class="pc bpc" id="L664" title="1 of 2 branches missed.">				if (lastDot &gt; 0) {</span>
+<span class="fc" id="L665">					String simpleName = fqn.substring(lastDot + 1);</span>
+<span class="fc" id="L666">					shortened = shortened.replace(fqn, simpleName);</span>
 				}
 			}
-<span class="fc" id="L644">			return shortened;</span>
+<span class="fc" id="L669">			return shortened;</span>
 		}
 
 		/**
@@ -659,22 +684,22 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 		 * @return the number of {@code StringLiteral} nodes found
 		 */
 		private static int countStringLiterals(ASTNode node) {
-<span class="fc" id="L662">			int[] count = { 0 };</span>
-<span class="fc" id="L663">			node.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {</span>
+<span class="fc" id="L687">			int[] count = { 0 };</span>
+<span class="fc" id="L688">			node.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {</span>
 				@Override
 				public boolean visit(StringLiteral literal) {
-<span class="fc" id="L666">					count[0]++;</span>
-<span class="fc" id="L667">					return false;</span>
+<span class="fc" id="L691">					count[0]++;</span>
+<span class="fc" id="L692">					return false;</span>
 				}
 			});
-<span class="fc" id="L670">			return count[0];</span>
+<span class="fc" id="L695">			return count[0];</span>
 		}
 
 		/**
 		 * Pattern matching the LAST NLS comment on a line.
 		 * Adapted from {@code AbstractExplicitEncoding}.
 		 */
-<span class="fc" id="L677">		private static final Pattern LAST_NLS_COMMENT = Pattern.compile(&quot;[ ]*\\/\\/\\$NON-NLS-[0-9]+\\$(?!.*\\/\\/\\$NON-NLS-)&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L702">		private static final Pattern LAST_NLS_COMMENT = Pattern.compile(&quot;[ ]*\\/\\/\\$NON-NLS-[0-9]+\\$(?!.*\\/\\/\\$NON-NLS-)&quot;); //$NON-NLS-1$</span>
 
 		/**
 		 * Checks whether the given statement is directly inside the body of a try statement
@@ -687,34 +712,34 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 		 * &lt;/ul&gt;
 		 */
 		private static boolean isInsideTryBodyWithOnlyTargetExceptionCatch(ASTNode statement, String exceptionSimple) {
-<span class="fc" id="L690">			ASTNode parent = statement.getParent();</span>
-<span class="pc bpc" id="L691" title="1 of 2 branches missed.">			if (!(parent instanceof Block block)) {</span>
-<span class="nc" id="L692">				return false;</span>
+<span class="fc" id="L715">			ASTNode parent = statement.getParent();</span>
+<span class="pc bpc" id="L716" title="1 of 2 branches missed.">			if (!(parent instanceof Block block)) {</span>
+<span class="nc" id="L717">				return false;</span>
 			}
-<span class="fc" id="L694">			ASTNode grandParent = block.getParent();</span>
-<span class="fc bfc" id="L695" title="All 2 branches covered.">			if (!(grandParent instanceof TryStatement tryStatement)) {</span>
-<span class="fc" id="L696">				return false;</span>
+<span class="fc" id="L719">			ASTNode grandParent = block.getParent();</span>
+<span class="fc bfc" id="L720" title="All 2 branches covered.">			if (!(grandParent instanceof TryStatement tryStatement)) {</span>
+<span class="fc" id="L721">				return false;</span>
 			}
-<span class="pc bpc" id="L698" title="1 of 2 branches missed.">			if (tryStatement.getBody() != block) {</span>
-<span class="nc" id="L699">				return false;</span>
+<span class="pc bpc" id="L723" title="1 of 2 branches missed.">			if (tryStatement.getBody() != block) {</span>
+<span class="nc" id="L724">				return false;</span>
 			}
-<span class="fc bfc" id="L701" title="All 2 branches covered.">			if (!tryStatement.resources().isEmpty()) {</span>
-<span class="fc" id="L702">				return false;</span>
+<span class="fc bfc" id="L726" title="All 2 branches covered.">			if (!tryStatement.resources().isEmpty()) {</span>
+<span class="fc" id="L727">				return false;</span>
 			}
-<span class="fc bfc" id="L704" title="All 2 branches covered.">			if (tryStatement.getFinally() != null) {</span>
-<span class="fc" id="L705">				return false;</span>
+<span class="fc bfc" id="L729" title="All 2 branches covered.">			if (tryStatement.getFinally() != null) {</span>
+<span class="fc" id="L730">				return false;</span>
 			}
 			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L708">			List&lt;CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
-<span class="fc bfc" id="L709" title="All 2 branches covered.">			if (catchClauses.size() != 1) {</span>
-<span class="fc" id="L710">				return false;</span>
+<span class="fc" id="L733">			List&lt;CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
+<span class="fc bfc" id="L734" title="All 2 branches covered.">			if (catchClauses.size() != 1) {</span>
+<span class="fc" id="L735">				return false;</span>
 			}
-<span class="fc" id="L712">			CatchClause catchClause = catchClauses.get(0);</span>
-<span class="fc" id="L713">			Type exType = catchClause.getException().getType();</span>
-<span class="fc bfc" id="L714" title="All 2 branches covered.">			if (exType instanceof SimpleType simpleType) {</span>
-<span class="fc" id="L715">				return exceptionSimple.equals(simpleType.getName().toString());</span>
+<span class="fc" id="L737">			CatchClause catchClause = catchClauses.get(0);</span>
+<span class="fc" id="L738">			Type exType = catchClause.getException().getType();</span>
+<span class="fc bfc" id="L739" title="All 2 branches covered.">			if (exType instanceof SimpleType simpleType) {</span>
+<span class="fc" id="L740">				return exceptionSimple.equals(simpleType.getName().toString());</span>
 			}
-<span class="fc" id="L717">			return false;</span>
+<span class="fc" id="L742">			return false;</span>
 		}
 
 		/**
@@ -730,47 +755,47 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 				ASTNode matchedNode, ASTNode copy, String shortenedReplacement,
 				TypeChangeInfo typeChange, ASTRewrite rewrite,
 				CompilationUnitRewrite cuRewrite, TextEditGroup group) {
-<span class="fc" id="L733">			ASTNode st = ASTNodes.getFirstAncestorOrNull(matchedNode, Statement.class);</span>
-<span class="pc bpc" id="L734" title="1 of 4 branches missed.">			if (st == null || !isInsideTryBodyWithOnlyTargetExceptionCatch(st, typeChange.exceptionSimpleName())) {</span>
-<span class="fc" id="L735">				return false;</span>
+<span class="fc" id="L758">			ASTNode st = ASTNodes.getFirstAncestorOrNull(matchedNode, Statement.class);</span>
+<span class="pc bpc" id="L759" title="1 of 4 branches missed.">			if (st == null || !isInsideTryBodyWithOnlyTargetExceptionCatch(st, typeChange.exceptionSimpleName())) {</span>
+<span class="fc" id="L760">				return false;</span>
 			}
-<span class="fc" id="L737">			Block block = (Block) st.getParent();</span>
-<span class="fc" id="L738">			TryStatement tryStatement = (TryStatement) block.getParent();</span>
-<span class="fc" id="L739">			ASTNode tryParent = tryStatement.getParent();</span>
-<span class="pc bpc" id="L740" title="1 of 2 branches missed.">			if (!(tryParent instanceof Block parentBlock)) {</span>
-<span class="nc" id="L741">				return false;</span>
+<span class="fc" id="L762">			Block block = (Block) st.getParent();</span>
+<span class="fc" id="L763">			TryStatement tryStatement = (TryStatement) block.getParent();</span>
+<span class="fc" id="L764">			ASTNode tryParent = tryStatement.getParent();</span>
+<span class="pc bpc" id="L765" title="1 of 2 branches missed.">			if (!(tryParent instanceof Block parentBlock)) {</span>
+<span class="nc" id="L766">				return false;</span>
 			}
 			try {
-<span class="fc" id="L744">				String buffer = cuRewrite.getCu().getBuffer().getContents();</span>
-<span class="fc" id="L745">				CompilationUnit cu = (CompilationUnit) st.getRoot();</span>
-<span class="fc" id="L746">				String matchedSource = buffer.substring(matchedNode.getStartPosition(),</span>
-<span class="fc" id="L747">						matchedNode.getStartPosition() + matchedNode.getLength());</span>
+<span class="fc" id="L769">				String buffer = cuRewrite.getCu().getBuffer().getContents();</span>
+<span class="fc" id="L770">				CompilationUnit cu = (CompilationUnit) st.getRoot();</span>
+<span class="fc" id="L771">				String matchedSource = buffer.substring(matchedNode.getStartPosition(),</span>
+<span class="fc" id="L772">						matchedNode.getStartPosition() + matchedNode.getLength());</span>
 
-<span class="fc" id="L749">				ListRewrite parentListRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
-<span class="fc" id="L750">				List&lt;?&gt; tryStatements = block.statements();</span>
-<span class="fc bfc" id="L751" title="All 2 branches covered.">				for (int i = tryStatements.size() - 1; i &gt;= 0; i--) {</span>
-<span class="fc" id="L752">					ASTNode stmt = (ASTNode) tryStatements.get(i);</span>
-<span class="fc" id="L753">					int stmtStart = cu.getExtendedStartPosition(stmt);</span>
-<span class="fc" id="L754">					int stmtLength = cu.getExtendedLength(stmt);</span>
-<span class="fc" id="L755">					String stmtSource = buffer.substring(stmtStart, stmtStart + stmtLength);</span>
+<span class="fc" id="L774">				ListRewrite parentListRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
+<span class="fc" id="L775">				List&lt;?&gt; tryStatements = block.statements();</span>
+<span class="fc bfc" id="L776" title="All 2 branches covered.">				for (int i = tryStatements.size() - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L777">					ASTNode stmt = (ASTNode) tryStatements.get(i);</span>
+<span class="fc" id="L778">					int stmtStart = cu.getExtendedStartPosition(stmt);</span>
+<span class="fc" id="L779">					int stmtLength = cu.getExtendedLength(stmt);</span>
+<span class="fc" id="L780">					String stmtSource = buffer.substring(stmtStart, stmtStart + stmtLength);</span>
 					// Remove leading whitespace
-<span class="fc" id="L757">					stmtSource = Pattern.compile(&quot;^[ \\t]*&quot;).matcher(stmtSource).replaceAll(&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L758">					stmtSource = Pattern.compile(&quot;\n[ \\t]*&quot;).matcher(stmtSource).replaceAll(&quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L759" title="1 of 2 branches missed.">					if (stmt == st) {</span>
+<span class="fc" id="L782">					stmtSource = Pattern.compile(&quot;^[ \\t]*&quot;).matcher(stmtSource).replaceAll(&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L783">					stmtSource = Pattern.compile(&quot;\n[ \\t]*&quot;).matcher(stmtSource).replaceAll(&quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L784" title="1 of 2 branches missed.">					if (stmt == st) {</span>
 						// Remove last NLS comment and apply the replacement
-<span class="fc" id="L761">						stmtSource = LAST_NLS_COMMENT.matcher(stmtSource).replaceFirst(&quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L762">						stmtSource = stmtSource.replace(matchedSource, shortenedReplacement);</span>
+<span class="fc" id="L786">						stmtSource = LAST_NLS_COMMENT.matcher(stmtSource).replaceFirst(&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L787">						stmtSource = stmtSource.replace(matchedSource, shortenedReplacement);</span>
 					}
-<span class="fc" id="L764">					ASTNode placeholder = rewrite.createStringPlaceholder(stmtSource, stmt.getNodeType());</span>
-<span class="fc" id="L765">					parentListRewrite.insertAfter(placeholder, tryStatement, group);</span>
+<span class="fc" id="L789">					ASTNode placeholder = rewrite.createStringPlaceholder(stmtSource, stmt.getNodeType());</span>
+<span class="fc" id="L790">					parentListRewrite.insertAfter(placeholder, tryStatement, group);</span>
 				}
-<span class="fc" id="L767">				rewrite.remove(tryStatement, group);</span>
+<span class="fc" id="L792">				rewrite.remove(tryStatement, group);</span>
 				// Register removed nodes for import removal
-<span class="fc" id="L769">				cuRewrite.getImportRemover().registerRemovedNode(matchedNode);</span>
-<span class="fc" id="L770">				return true;</span>
-<span class="nc" id="L771">			} catch (JavaModelException e) {</span>
+<span class="fc" id="L794">				cuRewrite.getImportRemover().registerRemovedNode(matchedNode);</span>
+<span class="fc" id="L795">				return true;</span>
+<span class="nc" id="L796">			} catch (JavaModelException e) {</span>
 				// Fall back to separate handling
-<span class="nc" id="L773">				return false;</span>
+<span class="nc" id="L798">				return false;</span>
 			}
 		}
 	}

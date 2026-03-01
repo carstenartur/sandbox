@@ -216,7 +216,7 @@ public final class ExpressionHelper {
 		// Extract collection expression (either collection or collection.stream())
 <span class="fc" id="L217">		Expression collectionExpr = forEach.getExpression();</span>
 <span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if (collectionExpr instanceof MethodInvocation methodInv) {</span>
-<span class="pc bpc" id="L219" title="1 of 2 branches missed.">			if (&quot;stream&quot;.equals(methodInv.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">			if (StreamConstants.STREAM_METHOD.equals(methodInv.getName().getIdentifier())) {</span>
 <span class="fc" id="L220">				collectionExpr = methodInv.getExpression();</span>
 			}
 		}
@@ -268,7 +268,7 @@ public final class ExpressionHelper {
 			Set&lt;ASTNode&gt; nodesprocessed) {
 <span class="fc" id="L269">		ReferenceHolder&lt;Integer, Object&gt; dataHolder = ReferenceHolder.create();</span>
 
-<span class="fc" id="L271">		HelperVisitorFactory.callMethodInvocationVisitor(&quot;forEach&quot;, compilationUnit, dataHolder, nodesprocessed, //$NON-NLS-1$</span>
+<span class="fc" id="L271">		HelperVisitorFactory.callMethodInvocationVisitor(StreamConstants.FOR_EACH_METHOD, compilationUnit, dataHolder, nodesprocessed,</span>
 <span class="fc" id="L272">			(visited, aholder) -&gt; {</span>
 <span class="pc bpc" id="L273" title="1 of 2 branches missed.">				if (visited.arguments().size() != 1) {</span>
 <span class="nc" id="L274">					return false;</span>

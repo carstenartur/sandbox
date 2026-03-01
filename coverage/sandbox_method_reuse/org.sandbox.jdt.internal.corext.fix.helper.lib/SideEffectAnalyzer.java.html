@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.sandbox.jdt.internal.common.LibStandardNames;
 
 /**
  * Side Effect Analyzer - Analyzes whether code replacement is semantically safe
@@ -34,7 +35,7 @@ import org.eclipse.jdt.core.dom.SuperMethodInvocation;
  * This class checks for side effects and ensures that replacing an inline code
  * sequence with a method call preserves the original semantics.
  */
-<span class="nc" id="L37">public class SideEffectAnalyzer {</span>
+<span class="nc" id="L38">public class SideEffectAnalyzer {</span>
 	
 	/**
 	 * Check if a sequence of statements is safe to replace with a method call
@@ -43,53 +44,53 @@ import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 	 * @return true if replacement is safe
 	 */
 	public static boolean isSafeToReplace(List&lt;Statement&gt; statements) {
-<span class="nc bnc" id="L46" title="All 4 branches missed.">		if (statements == null || statements.isEmpty()) {</span>
-<span class="nc" id="L47">			return false;</span>
+<span class="nc bnc" id="L47" title="All 4 branches missed.">		if (statements == null || statements.isEmpty()) {</span>
+<span class="nc" id="L48">			return false;</span>
 		}
 		
 		// Check each statement for problematic patterns
-<span class="nc bnc" id="L51" title="All 2 branches missed.">		for (Statement stmt : statements) {</span>
-<span class="nc bnc" id="L52" title="All 2 branches missed.">			if (!isSafeStatement(stmt)) {</span>
-<span class="nc" id="L53">				return false;</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		for (Statement stmt : statements) {</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">			if (!isSafeStatement(stmt)) {</span>
+<span class="nc" id="L54">				return false;</span>
 			}
 		}
 		
-<span class="nc" id="L57">		return true;</span>
+<span class="nc" id="L58">		return true;</span>
 	}
 	
 	/**
 	 * Check if a single statement is safe
 	 */
 	private static boolean isSafeStatement(Statement stmt) {
-<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (stmt == null) {</span>
-<span class="nc" id="L65">			return false;</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (stmt == null) {</span>
+<span class="nc" id="L66">			return false;</span>
 		}
 		
 		// Check for field modifications
-<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (hasFieldModifications(stmt)) {</span>
-<span class="nc" id="L70">			return false;</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">		if (hasFieldModifications(stmt)) {</span>
+<span class="nc" id="L71">			return false;</span>
 		}
 		
 		// Check for method calls that might have side effects
-<span class="nc bnc" id="L74" title="All 2 branches missed.">		if (hasUnsafeMethodCalls(stmt)) {</span>
-<span class="nc" id="L75">			return false;</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">		if (hasUnsafeMethodCalls(stmt)) {</span>
+<span class="nc" id="L76">			return false;</span>
 		}
 		
 		// Check for complex control flow
-<span class="nc bnc" id="L79" title="All 2 branches missed.">		if (hasComplexControlFlow(stmt)) {</span>
-<span class="nc" id="L80">			return false;</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">		if (hasComplexControlFlow(stmt)) {</span>
+<span class="nc" id="L81">			return false;</span>
 		}
 		
-<span class="nc" id="L83">		return true;</span>
+<span class="nc" id="L84">		return true;</span>
 	}
 	
 	/**
 	 * Check if statement modifies fields (not local variables)
 	 */
 	private static boolean hasFieldModifications(Statement stmt) {
-<span class="nc" id="L90">		FieldModificationVisitor visitor = new FieldModificationVisitor();</span>
-<span class="nc" id="L91">		stmt.accept(visitor);</span>
-<span class="nc" id="L92">		return visitor.hasFieldModification;</span>
+<span class="nc" id="L91">		FieldModificationVisitor visitor = new FieldModificationVisitor();</span>
+<span class="nc" id="L92">		stmt.accept(visitor);</span>
+<span class="nc" id="L93">		return visitor.hasFieldModification;</span>
 	}
 	
 	/**
@@ -99,9 +100,9 @@ import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 	 * String.trim(), but reject most other method calls to be safe.
 	 */
 	private static boolean hasUnsafeMethodCalls(Statement stmt) {
-<span class="nc" id="L102">		UnsafeMethodCallVisitor visitor = new UnsafeMethodCallVisitor();</span>
-<span class="nc" id="L103">		stmt.accept(visitor);</span>
-<span class="nc" id="L104">		return visitor.hasUnsafeCall;</span>
+<span class="nc" id="L103">		UnsafeMethodCallVisitor visitor = new UnsafeMethodCallVisitor();</span>
+<span class="nc" id="L104">		stmt.accept(visitor);</span>
+<span class="nc" id="L105">		return visitor.hasUnsafeCall;</span>
 	}
 	
 	/**
@@ -109,10 +110,10 @@ import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 	 */
 	private static boolean hasComplexControlFlow(Statement stmt) {
 		// Simple check: reject if statement contains certain node types
-<span class="nc" id="L112">		int nodeType = stmt.getNodeType();</span>
+<span class="nc" id="L113">		int nodeType = stmt.getNodeType();</span>
 		
 		// These statement types indicate complex control flow
-<span class="nc bnc" id="L115" title="All 2 branches missed.">		switch (nodeType) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">		switch (nodeType) {</span>
 			case ASTNode.FOR_STATEMENT:
 			case ASTNode.ENHANCED_FOR_STATEMENT:
 			case ASTNode.WHILE_STATEMENT:
@@ -122,102 +123,102 @@ import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 			case ASTNode.SWITCH_STATEMENT:
 			case ASTNode.BREAK_STATEMENT:
 			case ASTNode.CONTINUE_STATEMENT:
-<span class="nc" id="L125">				return true;</span>
+<span class="nc" id="L126">				return true;</span>
 			default:
-<span class="nc" id="L127">				return false;</span>
+<span class="nc" id="L128">				return false;</span>
 		}
 	}
 	
 	/**
 	 * Visitor to detect field modifications
 	 */
-<span class="nc" id="L134">	private static class FieldModificationVisitor extends ASTVisitor {</span>
-<span class="nc" id="L135">		boolean hasFieldModification = false;</span>
+<span class="nc" id="L135">	private static class FieldModificationVisitor extends ASTVisitor {</span>
+<span class="nc" id="L136">		boolean hasFieldModification = false;</span>
 		
 		@Override
 		public boolean visit(Assignment node) {
-<span class="nc" id="L139">			Expression left = node.getLeftHandSide();</span>
-<span class="nc bnc" id="L140" title="All 2 branches missed.">			if (isFieldAccess(left)) {</span>
-<span class="nc" id="L141">				hasFieldModification = true;</span>
-<span class="nc" id="L142">				return false;</span>
+<span class="nc" id="L140">			Expression left = node.getLeftHandSide();</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">			if (isFieldAccess(left)) {</span>
+<span class="nc" id="L142">				hasFieldModification = true;</span>
+<span class="nc" id="L143">				return false;</span>
 			}
-<span class="nc" id="L144">			return true;</span>
+<span class="nc" id="L145">			return true;</span>
 		}
 		
 		@Override
 		public boolean visit(PrefixExpression node) {
 			// Check for ++ and -- on fields
-<span class="nc" id="L150">			PrefixExpression.Operator op = node.getOperator();</span>
-<span class="nc bnc" id="L151" title="All 4 branches missed.">			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">				if (isFieldAccess(node.getOperand())) {</span>
-<span class="nc" id="L153">					hasFieldModification = true;</span>
-<span class="nc" id="L154">					return false;</span>
+<span class="nc" id="L151">			PrefixExpression.Operator op = node.getOperator();</span>
+<span class="nc bnc" id="L152" title="All 4 branches missed.">			if (op == PrefixExpression.Operator.INCREMENT || op == PrefixExpression.Operator.DECREMENT) {</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">				if (isFieldAccess(node.getOperand())) {</span>
+<span class="nc" id="L154">					hasFieldModification = true;</span>
+<span class="nc" id="L155">					return false;</span>
 				}
 			}
-<span class="nc" id="L157">			return true;</span>
+<span class="nc" id="L158">			return true;</span>
 		}
 		
 		@Override
 		public boolean visit(PostfixExpression node) {
 			// Check for ++ and -- on fields
-<span class="nc bnc" id="L163" title="All 2 branches missed.">			if (isFieldAccess(node.getOperand())) {</span>
-<span class="nc" id="L164">				hasFieldModification = true;</span>
-<span class="nc" id="L165">				return false;</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">			if (isFieldAccess(node.getOperand())) {</span>
+<span class="nc" id="L165">				hasFieldModification = true;</span>
+<span class="nc" id="L166">				return false;</span>
 			}
-<span class="nc" id="L167">			return true;</span>
+<span class="nc" id="L168">			return true;</span>
 		}
 		
 		private boolean isFieldAccess(Expression expr) {
-<span class="nc bnc" id="L171" title="All 2 branches missed.">			return expr instanceof FieldAccess || </span>
-<span class="nc bnc" id="L172" title="All 2 branches missed.">			       expr instanceof SuperFieldAccess ||</span>
-<span class="nc bnc" id="L173" title="All 4 branches missed.">			       (expr instanceof QualifiedName &amp;&amp; isFieldReference((QualifiedName) expr));</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">			return expr instanceof FieldAccess || </span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">			       expr instanceof SuperFieldAccess ||</span>
+<span class="nc bnc" id="L174" title="All 4 branches missed.">			       (expr instanceof QualifiedName &amp;&amp; isFieldReference((QualifiedName) expr));</span>
 		}
 		
 		private boolean isFieldReference(QualifiedName name) {
 			// Simple heuristic: qualified names might be field accesses
 			// More sophisticated analysis would use type bindings
-<span class="nc" id="L179">			return true;</span>
+<span class="nc" id="L180">			return true;</span>
 		}
 	}
 	
 	/**
 	 * Visitor to detect potentially unsafe method calls
 	 */
-<span class="nc" id="L186">	private static class UnsafeMethodCallVisitor extends ASTVisitor {</span>
-<span class="nc" id="L187">		boolean hasUnsafeCall = false;</span>
+<span class="nc" id="L187">	private static class UnsafeMethodCallVisitor extends ASTVisitor {</span>
+<span class="nc" id="L188">		boolean hasUnsafeCall = false;</span>
 		
 		@Override
 		public boolean visit(MethodInvocation node) {
 			// Check if this is a known safe method
-<span class="nc bnc" id="L192" title="All 2 branches missed.">			if (!isKnownSafeMethod(node)) {</span>
-<span class="nc" id="L193">				hasUnsafeCall = true;</span>
-<span class="nc" id="L194">				return false;</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">			if (!isKnownSafeMethod(node)) {</span>
+<span class="nc" id="L194">				hasUnsafeCall = true;</span>
+<span class="nc" id="L195">				return false;</span>
 			}
-<span class="nc" id="L196">			return true;</span>
+<span class="nc" id="L197">			return true;</span>
 		}
 		
 		@Override
 		public boolean visit(SuperMethodInvocation node) {
 			// Super method calls might have side effects
-<span class="nc" id="L202">			hasUnsafeCall = true;</span>
-<span class="nc" id="L203">			return false;</span>
+<span class="nc" id="L203">			hasUnsafeCall = true;</span>
+<span class="nc" id="L204">			return false;</span>
 		}
 		
 		/**
 		 * Check if a method is known to be side-effect free
 		 */
 		private boolean isKnownSafeMethod(MethodInvocation node) {
-<span class="nc" id="L210">			String methodName = node.getName().getIdentifier();</span>
+<span class="nc" id="L211">			String methodName = node.getName().getIdentifier();</span>
 			
 			// Known safe String methods
-<span class="nc bnc" id="L213" title="All 4 branches missed.">			if (&quot;trim&quot;.equals(methodName) || &quot;length&quot;.equals(methodName) || </span>
-<span class="nc bnc" id="L214" title="All 4 branches missed.">			    &quot;isEmpty&quot;.equals(methodName) || &quot;toString&quot;.equals(methodName)) {</span>
-<span class="nc" id="L215">				return true;</span>
+<span class="nc bnc" id="L214" title="All 4 branches missed.">			if (&quot;trim&quot;.equals(methodName) || &quot;length&quot;.equals(methodName) || </span>
+<span class="nc bnc" id="L215" title="All 4 branches missed.">			    &quot;isEmpty&quot;.equals(methodName) || LibStandardNames.METHOD_TOSTRING.equals(methodName)) {</span>
+<span class="nc" id="L216">				return true;</span>
 			}
 			
 			// For now, be conservative and reject other methods
 			// A more sophisticated analysis would check method purity
-<span class="nc" id="L220">			return false;</span>
+<span class="nc" id="L221">			return false;</span>
 		}
 	}
 }

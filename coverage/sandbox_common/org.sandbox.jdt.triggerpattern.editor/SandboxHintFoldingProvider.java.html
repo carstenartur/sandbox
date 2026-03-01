@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHintFoldingProvider.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">SandboxHintFoldingProvider.java</span></div><h1>SandboxHintFoldingProvider.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.editor;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.ITypedRegion;
+import org.eclipse.jface.text.Position;
+import org.eclipse.jface.text.source.Annotation;
+import org.eclipse.jface.text.source.projection.ProjectionAnnotation;
+import org.eclipse.jface.text.source.projection.ProjectionAnnotationModel;
+import org.eclipse.jface.text.source.projection.ProjectionViewer;
+
+/**
+ * Provides code folding for {@code .sandbox-hint} files.
+ *
+ * &lt;p&gt;Supports folding of:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;Embedded Java blocks ({@code &lt;? ... ?&gt;})&lt;/li&gt;
+ *   &lt;li&gt;Multi-line comments ({@code /* ... * /})&lt;/li&gt;
+ *   &lt;li&gt;Metadata directive groups&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @since 1.5.0
+ */
+public final class SandboxHintFoldingProvider {
+
+	private SandboxHintFoldingProvider() {
+		// utility class
+	}
+
+	/**
+	 * Updates the folding annotations in the given projection viewer based on
+	 * the document's partitioning.
+	 *
+	 * @param viewer the projection viewer
+	 */
+	public static void updateFolding(ProjectionViewer viewer) {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		if (viewer == null) {</span>
+<span class="nc" id="L58">			return;</span>
+		}
+<span class="nc" id="L60">		ProjectionAnnotationModel model = viewer.getProjectionAnnotationModel();</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		if (model == null) {</span>
+<span class="nc" id="L62">			return;</span>
+		}
+<span class="nc" id="L64">		IDocument document = viewer.getDocument();</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (document == null) {</span>
+<span class="nc" id="L66">			return;</span>
+		}
+
+<span class="nc" id="L69">		List&lt;Position&gt; newPositions = computeFoldingPositions(document);</span>
+
+		// Collect existing annotations for differential update
+<span class="nc" id="L72">		Map&lt;Annotation, Position&gt; deletions = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L73">		Iterator&lt;Annotation&gt; iter = model.getAnnotationIterator();</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">		while (iter.hasNext()) {</span>
+<span class="nc" id="L75">			Annotation annotation = iter.next();</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">			if (annotation instanceof ProjectionAnnotation) {</span>
+<span class="nc" id="L77">				deletions.put(annotation, model.getPosition(annotation));</span>
+			}
+		}
+
+		// Build additions
+<span class="nc" id="L82">		Map&lt;Annotation, Position&gt; additions = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">		for (Position pos : newPositions) {</span>
+<span class="nc" id="L84">			additions.put(new ProjectionAnnotation(), pos);</span>
+		}
+
+<span class="nc" id="L87">		model.modifyAnnotations(</span>
+<span class="nc" id="L88">				deletions.keySet().toArray(new Annotation[0]),</span>
+<span class="nc" id="L89">				additions,</span>
+<span class="nc" id="L90">				null);</span>
+<span class="nc" id="L91">	}</span>
+
+	/**
+	 * Computes the foldable positions from document partitions.
+	 */
+	private static List&lt;Position&gt; computeFoldingPositions(IDocument document) {
+<span class="nc" id="L97">		List&lt;Position&gt; positions = new ArrayList&lt;&gt;();</span>
+		try {
+<span class="nc" id="L99">			ITypedRegion[] partitions = document.computePartitioning(0, document.getLength());</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">			for (ITypedRegion partition : partitions) {</span>
+<span class="nc" id="L101">				String type = partition.getType();</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">				if (SandboxHintPartitionScanner.JAVA_CODE.equals(type)</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">						|| SandboxHintPartitionScanner.COMMENT.equals(type)) {</span>
+					// Only fold regions that span multiple lines
+<span class="nc" id="L105">					int startLine = document.getLineOfOffset(partition.getOffset());</span>
+<span class="nc" id="L106">					int endOffset = partition.getOffset() + partition.getLength();</span>
+<span class="nc" id="L107">					int endLine = document.getLineOfOffset(Math.min(endOffset, document.getLength() - 1));</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">					if (endLine &gt; startLine) {</span>
+<span class="nc" id="L109">						IRegion startLineInfo = document.getLineInformation(startLine);</span>
+<span class="nc" id="L110">						IRegion endLineInfo = document.getLineInformation(endLine);</span>
+<span class="nc" id="L111">						int foldStart = startLineInfo.getOffset();</span>
+<span class="nc" id="L112">						int foldEnd = endLineInfo.getOffset() + endLineInfo.getLength();</span>
+<span class="nc" id="L113">						positions.add(new Position(foldStart, foldEnd - foldStart));</span>
+					}
+				}
+			}
+<span class="nc" id="L117">		} catch (BadLocationException e) {</span>
+			// ignore — return partial results
+		}
+<span class="nc" id="L120">		return positions;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
