@@ -35,12 +35,18 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_B
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_SERIALIZATION;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.sandbox.jdt.triggerpattern.cleanup.AbstractPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.cleanup.DslPluginRegistry;
 import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
 import org.sandbox.jdt.triggerpattern.eclipse.CleanUpResult;
+import org.sandbox.jdt.triggerpattern.encoding.CharsetForNameEncodingPlugin;
+import org.sandbox.jdt.triggerpattern.encoding.StringConstructorEncodingPlugin;
+import org.sandbox.jdt.triggerpattern.encoding.StringGetBytesEncodingPlugin;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /**
@@ -57,6 +63,12 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
  * @since 1.3.5
  */
 public class HintFileCleanUpCore extends AbstractSandboxCleanUpCore {
+
+	static {
+		DslPluginRegistry.register(new CharsetForNameEncodingPlugin());
+		DslPluginRegistry.register(new StringConstructorEncodingPlugin());
+		DslPluginRegistry.register(new StringGetBytesEncodingPlugin());
+	}
 
 	public HintFileCleanUpCore(final Map<String, String> options) {
 		super(options);
@@ -85,6 +97,12 @@ public class HintFileCleanUpCore extends AbstractSandboxCleanUpCore {
 		Set<String> enabledBundles = getEnabledBundles();
 		HintFileFixCore.findOperations(cu, result.getOperations(),
 				enabledBundles, result.getFindings());
+		for (String bundleId : enabledBundles) {
+			List<AbstractPatternCleanupPlugin<?>> plugins = DslPluginRegistry.getPluginsForBundle(bundleId);
+			for (AbstractPatternCleanupPlugin<?> plugin : plugins) {
+				plugin.findOperations(cu, result.getOperations());
+			}
+		}
 	}
 
 	/**
@@ -163,7 +181,18 @@ public class HintFileCleanUpCore extends AbstractSandboxCleanUpCore {
 
 	@Override
 	public String getPreview() {
-		if (isEnabled(HINTFILE_CLEANUP)) {
+		boolean cleanup = isEnabled(HINTFILE_CLEANUP);
+		Set<String> enabledBundles = getEnabledBundles();
+		StringBuilder sb = new StringBuilder();
+		for (String bundleId : enabledBundles) {
+			for (AbstractPatternCleanupPlugin<?> plugin : DslPluginRegistry.getPluginsForBundle(bundleId)) {
+				sb.append(plugin.getPreview(cleanup));
+			}
+		}
+		if (sb.length() > 0) {
+			return sb.toString();
+		}
+		if (cleanup) {
 			return """
 				// After applying .sandbox-hint rules:
 				String s = String.valueOf(value);

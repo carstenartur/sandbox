@@ -15,11 +15,12 @@ package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
-//import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -27,6 +28,9 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
@@ -746,4 +750,76 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * @return a code snippet showing the transformation (formatted as Java source code)
      */
     public abstract String getPreview(boolean afterRefactoring);
+
+    /**
+     * Returns the bundle ID for this plugin, derived from the {@code cleanupId} prefix.
+     *
+     * <p>For example, a {@code cleanupId} of {@code "cleanup.encoding.charset.forname.utf8"}
+     * produces a bundle ID of {@code "encoding"}.</p>
+     *
+     * @return the bundle ID, or an empty string if the cleanupId has no recognisable prefix
+     */
+    public String getBundleId() {
+        String id = getCleanupId();
+        if (id.startsWith("cleanup.")) { //$NON-NLS-1$
+            String rest = id.substring("cleanup.".length()); //$NON-NLS-1$
+            int dot = rest.indexOf('.');
+            if (dot > 0) {
+                return rest.substring(0, dot);
+            }
+            return rest;
+        }
+        return ""; //$NON-NLS-1$
+    }
+
+    /**
+     * Finds all matching nodes in the given compilation unit and adds the
+     * corresponding rewrite operations to {@code operations}.
+     *
+     * <p>This is the public entry point that allows {@link DslPluginRegistry}
+     * consumers (e.g., {@code HintFileCleanUpCore}) to run this plugin against a
+     * compilation unit without needing to call the protected {@link #processRewrite}
+     * method directly.</p>
+     *
+     * @param compilationUnit the compilation unit to analyse
+     * @param operations      the set to receive the discovered rewrite operations
+     */
+    public void findOperations(CompilationUnit compilationUnit,
+            Set<CompilationUnitRewriteOperation> operations) {
+        for (Pattern pattern : getPatterns()) {
+            List<Match> matches = ENGINE.findMatches(compilationUnit, pattern);
+            for (Match match : matches) {
+                H holder = createHolder(match);
+                if (holder != null) {
+                    operations.add(new PluginRewriteOperation<>(this, holder));
+                }
+            }
+        }
+    }
+
+    /**
+     * A {@link CompilationUnitRewriteOperation} that delegates to
+     * {@link AbstractPatternCleanupPlugin#processRewrite}.
+     *
+     * @param <H> the holder type
+     */
+    private static final class PluginRewriteOperation<H> extends CompilationUnitRewriteOperation {
+
+        private final AbstractPatternCleanupPlugin<H> plugin;
+        private final H holder;
+
+        PluginRewriteOperation(AbstractPatternCleanupPlugin<H> plugin, H holder) {
+            this.plugin = plugin;
+            this.holder = holder;
+        }
+
+        @Override
+        public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+            ASTRewrite rewrite = cuRewrite.getASTRewrite();
+            AST ast = cuRewrite.getRoot().getAST();
+            TextEditGroup group = createTextEditGroup(plugin.getDescription(), cuRewrite);
+            ImportRewrite importRewriter = cuRewrite.getImportRewrite();
+            plugin.processRewrite(group, rewrite, ast, importRewriter, holder);
+        }
+    }
 }
