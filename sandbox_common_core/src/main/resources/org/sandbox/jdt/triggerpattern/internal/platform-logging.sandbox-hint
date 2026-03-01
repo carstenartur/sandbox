@@ -1,0 +1,30 @@
+<!id: platform-logging>
+<!description: Modernize Eclipse Platform logging API usage>
+<!severity: info>
+<!minJavaVersion: 11>
+<!tags: eclipse, modernization, logging>
+
+// Platform.getLog(bundle) → ILog.of(bundle)
+org.eclipse.core.runtime.Platform.getLog($bundle)
+=> org.eclipse.core.runtime.ILog.of($bundle)
+;;
+
+// new Status(IStatus.ERROR, pluginId, msg) → Status.error(msg)
+new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.ERROR, $pluginId, $msg)
+=> org.eclipse.core.runtime.Status.error($msg)
+;;
+
+// new Status(IStatus.WARNING, pluginId, msg) → Status.warning(msg)
+new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, $pluginId, $msg)
+=> org.eclipse.core.runtime.Status.warning($msg)
+;;
+
+// new Status(IStatus.INFO, pluginId, msg) → Status.info(msg)
+new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.INFO, $pluginId, $msg)
+=> org.eclipse.core.runtime.Status.info($msg)
+;;
+
+// new Status(IStatus.ERROR, pluginId, msg, exception) → Status.error(msg, exception)
+new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.ERROR, $pluginId, $msg, $ex)
+=> org.eclipse.core.runtime.Status.error($msg, $ex)
+;;

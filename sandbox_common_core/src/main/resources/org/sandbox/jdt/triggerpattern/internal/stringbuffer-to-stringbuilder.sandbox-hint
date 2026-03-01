@@ -1,0 +1,20 @@
+<!id: stringbuffer-to-stringbuilder>
+<!description: Replace StringBuffer with StringBuilder where thread safety is not needed>
+<!severity: info>
+<!minJavaVersion: 5>
+<!tags: performance, modernization>
+
+// new StringBuffer() → new StringBuilder()
+new java.lang.StringBuffer()
+=> new java.lang.StringBuilder()
+;;
+
+// new StringBuffer(capacity) → new StringBuilder(capacity)
+new java.lang.StringBuffer($capacity)
+=> new java.lang.StringBuilder($capacity)
+;;
+
+// new StringBuffer(string) → new StringBuilder(string)
+new java.lang.StringBuffer($str)
+=> new java.lang.StringBuilder($str)
+;;

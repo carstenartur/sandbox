@@ -89,7 +89,15 @@ public final class HintFileStore {
 		"misc.sandbox-hint", //$NON-NLS-1$
 		"deprecations.sandbox-hint", //$NON-NLS-1$
 		"classfile-api.sandbox-hint", //$NON-NLS-1$
-		"serialization.sandbox-hint" //$NON-NLS-1$
+		"serialization.sandbox-hint", //$NON-NLS-1$
+		"stringbuffer-to-stringbuilder.sandbox-hint", //$NON-NLS-1$
+		"platform-logging.sandbox-hint", //$NON-NLS-1$
+		"collections-immutable.sandbox-hint", //$NON-NLS-1$
+		"type-inference.sandbox-hint", //$NON-NLS-1$
+		"try-with-resources.sandbox-hint", //$NON-NLS-1$
+		"string-modernization.sandbox-hint", //$NON-NLS-1$
+		"optional-modernization.sandbox-hint", //$NON-NLS-1$
+		"deprecated-api.sandbox-hint" //$NON-NLS-1$
 	};
 
 	/**

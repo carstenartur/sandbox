@@ -199,6 +199,78 @@ public class BundledLibrariesTest {
 	}
 
 	@Test
+	public void testLoadStringBufferToStringBuilderLibrary() throws Exception {
+		HintFile hintFile = loadBundledLibrary("stringbuffer-to-stringbuilder.sandbox-hint"); //$NON-NLS-1$
+		assertNotNull(hintFile, "stringbuffer-to-stringbuilder library should be loadable"); //$NON-NLS-1$
+		assertEquals("stringbuffer-to-stringbuilder", hintFile.getId()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 3,
+				"stringbuffer-to-stringbuilder library should have at least 3 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testLoadPlatformLoggingLibrary() throws Exception {
+		HintFile hintFile = loadBundledLibrary("platform-logging.sandbox-hint"); //$NON-NLS-1$
+		assertNotNull(hintFile, "platform-logging library should be loadable"); //$NON-NLS-1$
+		assertEquals("platform-logging", hintFile.getId()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 5,
+				"platform-logging library should have at least 5 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testLoadCollectionsImmutableLibrary() throws Exception {
+		HintFile hintFile = loadBundledLibrary("collections-immutable.sandbox-hint"); //$NON-NLS-1$
+		assertNotNull(hintFile, "collections-immutable library should be loadable"); //$NON-NLS-1$
+		assertEquals("collections-immutable", hintFile.getId()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 7,
+				"collections-immutable library should have at least 7 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testLoadTypeInferenceLibrary() throws Exception {
+		HintFile hintFile = loadBundledLibrary("type-inference.sandbox-hint"); //$NON-NLS-1$
+		assertNotNull(hintFile, "type-inference library should be loadable"); //$NON-NLS-1$
+		assertEquals("type-inference", hintFile.getId()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 1,
+				"type-inference library should have at least 1 rule, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testLoadTryWithResourcesLibrary() throws Exception {
+		HintFile hintFile = loadBundledLibrary("try-with-resources.sandbox-hint"); //$NON-NLS-1$
+		assertNotNull(hintFile, "try-with-resources library should be loadable"); //$NON-NLS-1$
+		assertEquals("try-with-resources", hintFile.getId()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 1,
+				"try-with-resources library should have at least 1 rule, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testLoadStringModernizationLibrary() throws Exception {
+		HintFile hintFile = loadBundledLibrary("string-modernization.sandbox-hint"); //$NON-NLS-1$
+		assertNotNull(hintFile, "string-modernization library should be loadable"); //$NON-NLS-1$
+		assertEquals("string-modernization", hintFile.getId()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 3,
+				"string-modernization library should have at least 3 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testLoadOptionalModernizationLibrary() throws Exception {
+		HintFile hintFile = loadBundledLibrary("optional-modernization.sandbox-hint"); //$NON-NLS-1$
+		assertNotNull(hintFile, "optional-modernization library should be loadable"); //$NON-NLS-1$
+		assertEquals("optional-modernization", hintFile.getId()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 2,
+				"optional-modernization library should have at least 2 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testLoadDeprecatedApiLibrary() throws Exception {
+		HintFile hintFile = loadBundledLibrary("deprecated-api.sandbox-hint"); //$NON-NLS-1$
+		assertNotNull(hintFile, "deprecated-api library should be loadable"); //$NON-NLS-1$
+		assertEquals("deprecated-api", hintFile.getId()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 8,
+				"deprecated-api library should have at least 8 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+	}
+
+	@Test
 	public void testAllBundledLibrariesHaveMetadata() throws Exception {
 		for (String name : HintFileRegistry.getBundledLibraryNames()) {
 			HintFile hintFile = loadBundledLibrary(name);
@@ -222,8 +294,8 @@ public class BundledLibrariesTest {
 
 		assertFalse(loaded.isEmpty(),
 				"Should load at least one bundled library"); //$NON-NLS-1$
-		assertEquals(17, loaded.size(),
-				"Should load exactly 17 bundled libraries"); //$NON-NLS-1$
+		assertEquals(25, loaded.size(),
+				"Should load exactly 25 bundled libraries"); //$NON-NLS-1$
 
 		// Verify each loaded library
 		for (String id : loaded) {
@@ -240,8 +312,8 @@ public class BundledLibrariesTest {
 	@Test
 	public void testBundledLibraryCount() {
 		String[] names = HintFileRegistry.getBundledLibraryNames();
-		assertEquals(17, names.length,
-				"Should have exactly 17 bundled libraries"); //$NON-NLS-1$
+		assertEquals(25, names.length,
+				"Should have exactly 25 bundled libraries"); //$NON-NLS-1$
 	}
 
 	// --- Helper methods ---

@@ -574,6 +574,14 @@ The following `.sandbox-hint` files are bundled with the engine:
 | `modernize-java11.sandbox-hint` | 7 | Java 11+ API modernization |
 | `performance.sandbox-hint` | 9 | Performance optimization patterns |
 | `junit3-migration.sandbox-hint` | 5 | JUnit 3 → 5 migration (add annotations to conventionally-named methods, static/non-static) |
+| `stringbuffer-to-stringbuilder.sandbox-hint` | 3 | Replace `StringBuffer` with `StringBuilder` for local variables |
+| `platform-logging.sandbox-hint` | 5 | Modernize Eclipse Platform logging API (`ILog.of()`, `Status.error()`, etc.) |
+| `collections-immutable.sandbox-hint` | 8 | Replace verbose immutable collection creation with Java 9+ factory methods |
+| `type-inference.sandbox-hint` | 1 | Hints for improving type inference usage with `var` (Java 10+) |
+| `try-with-resources.sandbox-hint` | 1 | Suggest try-with-resources for AutoCloseable resources |
+| `string-modernization.sandbox-hint` | 4 | Modernize String API usage (`contains()`, `isEmpty()`, `strip()`) |
+| `optional-modernization.sandbox-hint` | 3 | Modernize Optional API usage (Java 9+) |
+| `deprecated-api.sandbox-hint` | 8 | Replace deprecated wrapper constructors with `valueOf()` factory methods (Java 9+) |
 
 ### Adding Annotations to Method Declarations
 

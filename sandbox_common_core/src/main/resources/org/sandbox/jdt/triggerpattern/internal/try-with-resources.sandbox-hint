@@ -1,0 +1,10 @@
+<!id: try-with-resources>
+<!description: Suggest try-with-resources for AutoCloseable resources>
+<!severity: warning>
+<!minJavaVersion: 7>
+<!tags: resources, safety>
+
+// Hint-only: .close() call suggests possible try-with-resources candidate
+"Consider using try-with-resources for AutoCloseable resource":
+$x.close()
+;;

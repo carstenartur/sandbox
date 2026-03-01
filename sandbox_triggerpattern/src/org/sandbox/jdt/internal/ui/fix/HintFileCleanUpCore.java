@@ -33,6 +33,14 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_B
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_DEPRECATIONS;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_CLASSFILE_API;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_SERIALIZATION;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STRINGBUFFER;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_PLATFORM_LOGGING;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTIONS_IMMUTABLE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_TYPE_INFERENCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_TRY_WITH_RESOURCES;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STRING_MODERNIZATION;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_OPTIONAL_MODERNIZATION;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_DEPRECATED_API;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -175,6 +183,30 @@ public class HintFileCleanUpCore extends AbstractSandboxCleanUpCore {
 		}
 		if (isEnabled(HINTFILE_BUNDLE_SERIALIZATION)) {
 			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_SERIALIZATION);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_STRINGBUFFER)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRINGBUFFER);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_PLATFORM_LOGGING)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PLATFORM_LOGGING);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_COLLECTIONS_IMMUTABLE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTIONS_IMMUTABLE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_TYPE_INFERENCE)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_TYPE_INFERENCE);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_TRY_WITH_RESOURCES)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_TRY_WITH_RESOURCES);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_STRING_MODERNIZATION)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_MODERNIZATION);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_OPTIONAL_MODERNIZATION)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_OPTIONAL_MODERNIZATION);
+		}
+		if (isEnabled(HINTFILE_BUNDLE_DEPRECATED_API)) {
+			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_DEPRECATED_API);
 		}
 		return enabled;
 	}

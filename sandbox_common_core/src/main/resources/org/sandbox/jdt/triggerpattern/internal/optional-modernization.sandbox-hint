@@ -1,0 +1,20 @@
+<!id: optional-modernization>
+<!description: Modernize Optional API usage>
+<!severity: info>
+<!minJavaVersion: 9>
+<!tags: modernization, optional>
+
+// Optional.ofNullable(x).orElse(null) → x
+java.util.Optional.ofNullable($x).orElse(null)
+=> $x
+;;
+
+// Optional.of(x).get() → x (pointless wrapping)
+java.util.Optional.of($x).get()
+=> $x
+;;
+
+// Hint-only: isPresent()/get() → ifPresent() or map()
+"Consider using Optional.ifPresent() or Optional.map() instead of isPresent()/get()":
+$opt.isPresent()
+;;
