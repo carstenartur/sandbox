@@ -42,6 +42,17 @@
    </extension>
    
    <extension
+         id="org.sandbox.jdt.triggerpattern.executionTrace"
+         point="org.eclipse.core.resources.markers">
+      <super type="org.eclipse.core.resources.textmarker"/>
+      <persistent value="false"/>
+      <attribute name="ruleId"/>
+      <attribute name="hintFile"/>
+      <attribute name="replacement"/>
+      <attribute name="timestamp"/>
+   </extension>
+   
+   <extension
          point="org.eclipse.core.contenttype.contentTypes">
       <content-type
             id="org.sandbox.jdt.triggerpattern.sandboxHintContentType"
@@ -70,5 +81,32 @@
             class="org.sandbox.jdt.triggerpattern.ui.SandboxHintConsoleFactory"
             label="Sandbox Hint Execution">
       </consoleFactory>
+   </extension>
+   
+   <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            id="org.sandbox.jdt.triggerpattern.debug.sandboxHintLaunch"
+            name="Sandbox Hint Debug"
+            delegate="org.sandbox.jdt.triggerpattern.debug.SandboxHintLaunchConfigurationType"
+            modes="debug">
+      </launchConfigurationType>
+   </extension>
+   
+   <extension
+         point="org.eclipse.debug.core.sourceLocators">
+      <sourceLocator
+            id="org.sandbox.jdt.triggerpattern.debug.sourceLocator"
+            name="Sandbox Hint Source Locator"
+            class="org.sandbox.jdt.triggerpattern.debug.SandboxHintSourceLocator">
+      </sourceLocator>
+   </extension>
+   
+   <extension
+         point="org.eclipse.debug.core.sourcePathComputers">
+      <sourcePathComputer
+            id="org.sandbox.jdt.triggerpattern.debug.sourcePathComputer"
+            class="org.sandbox.jdt.triggerpattern.debug.SandboxHintSourcePathComputer">
+      </sourcePathComputer>
    </extension>
 </plugin>

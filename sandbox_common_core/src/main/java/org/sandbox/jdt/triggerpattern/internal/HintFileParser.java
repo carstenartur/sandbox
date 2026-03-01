@@ -295,6 +295,13 @@ public final class HintFileParser {
 					if (endIdx >= 0) {
 						// Single-line <? ?> block
 						String javaSource = rawLine.substring(startIdx + 2, endIdx);
+						// Skip fix function references: <?identifier?> is kept as-is
+						// (a simple Java identifier without whitespace, semicolons, or braces).
+						// These are replacement references like => <?customFix?> and should
+						// NOT be extracted as embedded Java blocks.
+						if (isFixFunctionReference(javaSource)) {
+							break;
+						}
 						int blockStartOffset = lineStartOffset + startIdx;
 						int blockEndOffset = lineStartOffset + endIdx + 2;
 						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(
@@ -897,6 +904,12 @@ public final class HintFileParser {
 			GuardSplit altAndGuard = splitGuard(altContent);
 			String replacementPattern = altAndGuard.patternText().trim();
 			GuardExpression altGuard = null;
+			String embeddedFixName = null;
+
+			// Check for embedded fix function reference: => <?fixName?>
+			if (replacementPattern.startsWith("<?") && replacementPattern.endsWith("?>")) { //$NON-NLS-1$ //$NON-NLS-2$
+				embeddedFixName = replacementPattern.substring(2, replacementPattern.length() - 2).trim();
+			}
 			
 			if (altAndGuard.hasGuard()) {
 				String guardText = altAndGuard.guardText().trim();
@@ -907,7 +920,7 @@ public final class HintFileParser {
 				}
 			}
 			
-			alternatives.add(new RewriteAlternative(replacementPattern, altGuard));
+			alternatives.add(new RewriteAlternative(replacementPattern, altGuard, embeddedFixName));
 			ruleLineIdx++;
 		}
 		
@@ -1063,6 +1076,40 @@ public final class HintFileParser {
 			"void", "int", "long", "short", "byte", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 			"float", "double", "boolean", "char" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	);
+
+	/**
+	 * Checks whether the content inside {@code <? ?>} is a fix function reference
+	 * (a simple Java identifier) rather than actual embedded Java code.
+	 *
+	 * <p>Fix function references like {@code <?customFix?>} contain only a single
+	 * identifier with no leading/trailing whitespace between the delimiters.
+	 * They are used in replacement patterns like {@code => <?customFix?>}.</p>
+	 *
+	 * <p>Note: {@code <? code ?>} (with spaces after {@code <?}) is treated as
+	 * embedded Java code, not a fix function reference.</p>
+	 *
+	 * @param content the text between {@code <?} and {@code ?>}
+	 * @return {@code true} if the content is a fix function reference
+	 */
+	private static boolean isFixFunctionReference(String content) {
+		if (content.isEmpty()) {
+			return false;
+		}
+		// Fix function references must not have leading/trailing whitespace
+		// This distinguishes <?fixName?> from <? code ?> (embedded Java)
+		if (Character.isWhitespace(content.charAt(0))
+				|| Character.isWhitespace(content.charAt(content.length() - 1))) {
+			return false;
+		}
+		// Must be a valid Java identifier
+		for (int i = 0; i < content.length(); i++) {
+			char c = content.charAt(i);
+			if (!Character.isJavaIdentifierPart(c)) {
+				return false;
+			}
+		}
+		return Character.isJavaIdentifierStart(content.charAt(0));
+	}
 	
 	/**
 	 * Exception thrown when parsing a {@code .sandbox-hint} file fails.

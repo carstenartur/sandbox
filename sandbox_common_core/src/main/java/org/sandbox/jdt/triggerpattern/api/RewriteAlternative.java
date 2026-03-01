@@ -26,8 +26,19 @@ package org.sandbox.jdt.triggerpattern.api;
  * @param condition the guard condition, or {@code null} for unconditional/otherwise
  * @since 1.3.2
  */
-public record RewriteAlternative(String replacementPattern, GuardExpression condition) {
-	
+public record RewriteAlternative(String replacementPattern, GuardExpression condition,
+		String embeddedFixFunctionName) {
+
+	/**
+	 * Creates a rewrite alternative without an embedded fix function reference.
+	 *
+	 * @param replacementPattern the replacement pattern with placeholders
+	 * @param condition the guard condition, or {@code null} for unconditional/otherwise
+	 */
+	public RewriteAlternative(String replacementPattern, GuardExpression condition) {
+		this(replacementPattern, condition, null);
+	}
+
 	/**
 	 * Creates an unconditional (otherwise) rewrite alternative.
 	 * 
@@ -35,7 +46,7 @@ public record RewriteAlternative(String replacementPattern, GuardExpression cond
 	 * @return an unconditional rewrite alternative
 	 */
 	public static RewriteAlternative otherwise(String replacementPattern) {
-		return new RewriteAlternative(replacementPattern, null);
+		return new RewriteAlternative(replacementPattern, null, null);
 	}
 	
 	/**
@@ -45,5 +56,15 @@ public record RewriteAlternative(String replacementPattern, GuardExpression cond
 	 */
 	public boolean isOtherwise() {
 		return condition == null;
+	}
+
+	/**
+	 * Returns {@code true} if this alternative references an embedded fix function.
+	 *
+	 * @return {@code true} if an embedded fix function name is set
+	 * @since 1.5.0
+	 */
+	public boolean isEmbeddedFix() {
+		return embeddedFixFunctionName != null && !embeddedFixFunctionName.isEmpty();
 	}
 }

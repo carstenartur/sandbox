@@ -48,10 +48,15 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.eclipse.HintFinding;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedFixExecutor;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedGuardRegistrar;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler;
+import org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler.CompilationResult;
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
@@ -135,6 +140,9 @@ public class HintFileFixCore {
 				continue;
 			}
 
+			// Register guard and fix functions from <? ?> blocks
+			registerEmbeddedFunctions(hintFile, hintFileId);
+
 			List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
 			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 			List<TransformationResult> results = processor.process(compilationUnit);
@@ -214,6 +222,9 @@ public class HintFileFixCore {
 			return;
 		}
 
+		// Register guard and fix functions from <? ?> blocks
+		registerEmbeddedFunctions(hintFile, bundleId);
+
 		List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
 		List<TransformationResult> results = processor.process(compilationUnit, compilerOptions);
@@ -253,6 +264,30 @@ public class HintFileFixCore {
 			}
 		} catch (HintFileParser.HintParseException e) {
 			// Skip invalid hint files
+		}
+	}
+
+	/**
+	 * Registers guard and fix functions from embedded Java blocks in a hint file.
+	 *
+	 * <p>Compiles each non-blank {@code <? ?>} block and registers its guard
+	 * methods in the {@link GuardRegistry} and fix methods in the
+	 * {@link EmbeddedFixExecutor}.</p>
+	 *
+	 * @param hintFile the hint file containing embedded Java blocks
+	 * @param hintFileId the hint file ID for tracking
+	 * @since 1.5.0
+	 */
+	private static void registerEmbeddedFunctions(HintFile hintFile, String hintFileId) {
+		for (EmbeddedJavaBlock block : hintFile.getEmbeddedJavaBlocks()) {
+			if (block.getSource().isBlank()) {
+				continue;
+			}
+			CompilationResult compResult = EmbeddedJavaCompiler.compile(block, hintFileId);
+			if (!compResult.hasErrors()) {
+				EmbeddedGuardRegistrar.registerGuards(compResult, hintFileId);
+				EmbeddedFixExecutor.registerFixes(compResult, hintFileId);
+			}
 		}
 	}
 
