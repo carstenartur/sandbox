@@ -125,22 +125,76 @@ extension point changes, and build configuration updates.
 - irrelevantReason: "Bug fix for race condition — no reusable transformation pattern"
 - trafficLight: NOT_APPLICABLE
 
-### Example 8: GREEN — Remove unnecessary @SuppressWarnings("deprecation")
+### Example 8: YELLOW — Remove unnecessary @SuppressWarnings("deprecation")
 
 **Commit:** `741d08e0` from eclipse.jdt.ui
 **Message:** "Removed unnecessary @SuppressWarnings(\"deprecation\") from jdt.ui"
 
-**Analysis:** When a `@SuppressWarnings("deprecation")` annotation refers to code that
-is no longer deprecated (or the annotation is on a method that doesn't use deprecated APIs),
-the annotation can be removed.
+**Actual diff:** Removed `@SuppressWarnings("deprecation")` annotations from 3 JDT UI
+preference cleanup classes: `CleanUpConfigurationBlock.java`, `CleanUpTabPage.java`,
+`CodeFormatingTabPage.java` (6 line deletions, all annotation-only changes).
+
+**Analysis:** Determining whether a `@SuppressWarnings("deprecation")` is unnecessary
+requires type-resolution analysis — the tool must check whether the annotated code
+actually references deprecated APIs. This is beyond current DSL pattern-matching capability.
 
 **Expected evaluation:**
 - relevant: true
-- trafficLight: GREEN
+- trafficLight: YELLOW (NOT GREEN — no DSL rule possible without type resolution)
 - reusability: 7
 - codeImprovement: 4
 - implementationEffort: 3
 - category: "Unnecessary Annotation Removal"
+- languageChangeNeeded: "Requires type-resolution analysis to determine which @SuppressWarnings annotations no longer suppress actual deprecation warnings"
+
+**Why not GREEN:** A GREEN evaluation requires `canImplementInCurrentDsl: true` and a
+valid `dslRule`. This pattern needs semantic analysis (is the referenced API still
+deprecated?) that the DSL cannot express.
+
+### Example 9: YELLOW — Remove unused NLS entry
+
+**Commit:** `6c82a838` from eclipse.platform.ui
+**Message:** "Remove unused NLS entry"
+
+**Actual diff:** Removed unused NLS constant from `WorkbenchMessages.java` and its
+corresponding entry in `messages.properties` (3 line deletions total across 2 files).
+
+**Analysis:** Detecting unused NLS entries requires cross-file reference analysis to
+verify no code references the constant. The DSL operates on single-file patterns
+and cannot determine field usage across compilation units.
+
+**Expected evaluation:**
+- relevant: true
+- trafficLight: YELLOW (NOT GREEN — requires cross-file reference analysis)
+- reusability: 6
+- codeImprovement: 3
+- implementationEffort: 2
+- category: "Dead Code Removal"
+- languageChangeNeeded: "Requires cross-file reference analysis to identify unreferenced NLS message constants"
+
+### Example 10: YELLOW — Remove unused JUnit imports and fields
+
+**Commit:** `191a1c77` from eclipse.platform.ui
+**Message:** "Remove unused JUnit Rule and TestName imports"
+
+**Actual diff:** Removed unused JUnit 4 `TestName` rule imports and `@Rule` field
+declarations from 3 test classes: `PartRenderingEngineTests.java`,
+`TestUnitRegistrationWindows.java`, `TextEditorPluginTest.java`
+(16 line deletions). Also removed debug `println` statements.
+
+**Analysis:** While "remove unused imports" is a well-known cleanup, detecting
+which imports and fields are unreferenced requires usage analysis across the
+compilation unit. Eclipse JDT has built-in cleanups for this, but the DSL
+cannot express reference-counting logic.
+
+**Expected evaluation:**
+- relevant: true
+- trafficLight: YELLOW (NOT GREEN — requires usage analysis)
+- reusability: 8
+- codeImprovement: 3
+- implementationEffort: 1
+- category: "Unused Import Removal"
+- languageChangeNeeded: "Requires usage analysis to determine which imports and field declarations are unreferenced"
 
 ### Common Mistakes to Avoid
 
@@ -161,3 +215,8 @@ the annotation can be removed.
 
 6. **Do NOT confuse "adding @Deprecated" with "removing deprecated usage"** —
    adding annotations to newly-deprecated methods is NOT a refactoring pattern
+
+7. **Do NOT mark commits as GREEN when `canImplementInCurrentDsl` is false** —
+   GREEN means a valid DSL rule exists. If the pattern requires semantic analysis
+   (type resolution, cross-file references, usage counting), it must be YELLOW.
+   GREEN evaluations MUST have `dslRule` set and `dslValidationResult == "VALID"`.
