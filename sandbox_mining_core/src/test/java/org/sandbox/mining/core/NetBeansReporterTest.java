@@ -14,6 +14,7 @@
 package org.sandbox.mining.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -103,6 +104,21 @@ class NetBeansReporterTest {
 	void testRepoShortName() {
 		assertEquals("repo", NetBeansReporter.repoShortName("https://github.com/user/repo.git"));
 		assertEquals("repo", NetBeansReporter.repoShortName("https://github.com/user/repo"));
+	}
+
+	@Test
+	void testNullTrafficLightRendersUnknown() {
+		NetBeansReporter reporter = new NetBeansReporter();
+		CommitEvaluation eval = new CommitEvaluation(
+				"abc1234567890", "Null light", "https://github.com/test/repo",
+				Instant.now(), null, true, null, false, null,
+				4, 3, 2, null,
+				"Category", false, "reason",
+				true, "rule", "file.sandbox-hint",
+				null, null, "summary", null);
+		String line = reporter.format(List.of(eval));
+		assertTrue(line.contains("UNKNOWN"), "Null trafficLight should render as UNKNOWN, got: " + line);
+		assertFalse(line.contains("/null/"), "Should not contain literal 'null' in brackets, got: " + line);
 	}
 
 	private CommitEvaluation createEval(String hash, String message, TrafficLight light) {

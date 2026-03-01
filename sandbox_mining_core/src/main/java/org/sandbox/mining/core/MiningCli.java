@@ -537,6 +537,8 @@ List<CommitEvaluation> evaluations = null;
 if (!commitDataList.isEmpty()) {
 // Enrich prompt with Eclipse type context from actual diffs if enabled
 if (typeEnricher != null) {
+// Clear stale type context from previous batch before enriching
+promptBuilder.setTypeContext(null);
 StringBuilder combinedDiffs = new StringBuilder();
 for (CommitData cd : commitDataList) {
 combinedDiffs.append(cd.diff()).append('\n');

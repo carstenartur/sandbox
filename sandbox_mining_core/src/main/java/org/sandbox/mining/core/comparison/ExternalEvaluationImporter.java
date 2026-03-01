@@ -49,6 +49,10 @@ public class ExternalEvaluationImporter {
 					}
 					@Override
 					public Instant read(JsonReader in) throws IOException {
+						if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
+							in.nextNull();
+							return null;
+						}
 						String s = in.nextString();
 						return s == null ? null : Instant.parse(s);
 					}

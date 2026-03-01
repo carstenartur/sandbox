@@ -89,4 +89,16 @@ class CommitKeywordFilterTest {
 		assertTrue(filter.matches("REFACTOR the module"));
 		assertTrue(filter.matches("Lambda conversion applied"));
 	}
+
+	@Test
+	void testRegexPatternMatching() {
+		CommitKeywordFilter filter = new CommitKeywordFilter();
+		// "use.*instead" should match via regex, not substring
+		assertTrue(filter.matches("Use SafeRunner.run instead of Platform.run"),
+				"'use.*instead' regex should match commit with words between 'use' and 'instead'");
+		assertTrue(filter.matches("remove deprecated API calls"),
+				"'remove.*deprecated' regex should match commit with words between");
+		assertTrue(filter.matches("Switch to new API"),
+				"'switch.*to' regex should match");
+	}
 }

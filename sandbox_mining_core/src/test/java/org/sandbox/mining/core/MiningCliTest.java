@@ -18,7 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -210,7 +212,9 @@ class MiningCliTest {
 	@Test
 	void testNewFlagsParsing() {
 		MiningCli cli = new MiningCli();
-		// All new flags should parse without errors even though they'll fail at runtime
+		ByteArrayOutputStream errStream = new ByteArrayOutputStream();
+		PrintStream oldErr = System.err;
+		System.setErr(new PrintStream(errStream));
 		try {
 			cli.run(new String[] {
 					"--enrich-type-context",
@@ -221,8 +225,12 @@ class MiningCliTest {
 			});
 		} catch (Exception e) {
 			// Expected: config file not found or similar runtime error
-			// The flags themselves parsed without error
+		} finally {
+			System.setErr(oldErr);
 		}
+		String errOutput = errStream.toString();
+		assertFalse(errOutput.contains("Unknown option"), //$NON-NLS-1$
+				"No flags should be reported as unknown, but got: " + errOutput); //$NON-NLS-1$
 	}
 
 	@Test
@@ -232,12 +240,19 @@ class MiningCliTest {
 		Files.writeString(commitList, "abc123\ndef456\n");
 
 		MiningCli cli = new MiningCli();
+		ByteArrayOutputStream errStream = new ByteArrayOutputStream();
+		PrintStream oldErr = System.err;
+		System.setErr(new PrintStream(errStream));
 		try {
 			cli.run(new String[] { "--commit-list", commitList.toString() });
 		} catch (Exception e) {
 			// Expected: config file not found or similar runtime error
-			// The --commit-list flag itself parsed without error
+		} finally {
+			System.setErr(oldErr);
 		}
+		String errOutput = errStream.toString();
+		assertFalse(errOutput.contains("Unknown option"), //$NON-NLS-1$
+				"--commit-list should be recognized, but got: " + errOutput); //$NON-NLS-1$
 	}
 
 	@Test
@@ -247,12 +262,19 @@ class MiningCliTest {
 		Files.writeString(keywordFile, "refactor\ncleanup\n");
 
 		MiningCli cli = new MiningCli();
+		ByteArrayOutputStream errStream = new ByteArrayOutputStream();
+		PrintStream oldErr = System.err;
+		System.setErr(new PrintStream(errStream));
 		try {
 			cli.run(new String[] { "--keyword-filter", keywordFile.toString() });
 		} catch (Exception e) {
 			// Expected: config file not found or similar runtime error
-			// The --keyword-filter flag itself parsed without error
+		} finally {
+			System.setErr(oldErr);
 		}
+		String errOutput = errStream.toString();
+		assertFalse(errOutput.contains("Unknown option"), //$NON-NLS-1$
+				"--keyword-filter should be recognized, but got: " + errOutput); //$NON-NLS-1$
 	}
 
 	@Test
@@ -263,6 +285,9 @@ class MiningCliTest {
 		Files.writeString(keywordFile, "refactor\n");
 
 		MiningCli cli = new MiningCli();
+		ByteArrayOutputStream errStream = new ByteArrayOutputStream();
+		PrintStream oldErr = System.err;
+		System.setErr(new PrintStream(errStream));
 		try {
 			cli.run(new String[] {
 					"--commit-list", commitList.toString(),
@@ -270,8 +295,12 @@ class MiningCliTest {
 			});
 		} catch (Exception e) {
 			// Expected: config file not found or similar runtime error
-			// Both flags parsed without error
+		} finally {
+			System.setErr(oldErr);
 		}
+		String errOutput = errStream.toString();
+		assertFalse(errOutput.contains("Unknown option"), //$NON-NLS-1$
+				"Combined flags should be recognized, but got: " + errOutput); //$NON-NLS-1$
 	}
 
 	private static void exec(Path workDir, String... cmd) throws IOException, InterruptedException {

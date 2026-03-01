@@ -158,4 +158,24 @@ class HintFileUpdaterTest {
 		assertFalse(created.stream().anyMatch(p -> p.getFileName().toString().contains("bbb")),
 				"Should not include the YELLOW commit");
 	}
+
+	@Test
+	void testWriteHintFilesSanitizesPathTraversal() throws IOException {
+		HintFileUpdater updater = new HintFileUpdater(new org.sandbox.jdt.triggerpattern.internal.DslValidator());
+		String dslRule = "// test rule\njava.util.Collections.emptyList() :: sourceVersionGE(9)\n=> java.util.List.of()\n;;\n";
+		// Provide a targetHintFile with path traversal attempt
+		CommitEvaluation eval = new CommitEvaluation(
+				"abc1234def", "Path traversal", "https://github.com/test/repo",
+				Instant.now(), Instant.now(), true, null, false, null,
+				8, 7, 3, TrafficLight.GREEN, "Collections",
+				false, null, true, dslRule, "../../../etc/malicious", null, null,
+				"Summary", "VALID");
+		List<Path> created = updater.writeHintFiles(List.of(eval), tempDir);
+		assertEquals(1, created.size());
+		// The file must be inside the output directory, not outside it
+		assertTrue(created.get(0).startsWith(tempDir),
+				"Hint file must be inside output dir, but was: " + created.get(0));
+		assertFalse(created.get(0).toString().contains(".."),
+				"Hint file path must not contain '..': " + created.get(0));
+	}
 }

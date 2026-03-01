@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * Filters commit messages by refactoring-related keywords.
@@ -60,17 +61,21 @@ public class CommitKeywordFilter {
 	);
 
 	private final List<String> keywords;
+	private final List<Pattern> patterns;
 
 	/**
 	 * Creates a filter with default refactoring keywords.
 	 */
 	public CommitKeywordFilter() {
 		this.keywords = new ArrayList<>(DEFAULT_KEYWORDS);
+		this.patterns = compilePatterns(this.keywords);
 	}
 
 	/**
 	 * Creates a filter with keywords loaded from a file.
 	 * Each line is one keyword (blank lines and # comments are ignored).
+	 * Keywords containing regex metacharacters (e.g. {@code .*}) are treated
+	 * as regex patterns; plain keywords use substring matching.
 	 *
 	 * @param keywordFile path to the keyword file
 	 * @throws IOException if the file cannot be read
@@ -83,10 +88,13 @@ public class CommitKeywordFilter {
 				keywords.add(trimmed.toLowerCase(Locale.ROOT));
 			}
 		}
+		this.patterns = compilePatterns(this.keywords);
 	}
 
 	/**
 	 * Tests whether a commit message matches any keyword.
+	 * Keywords containing regex metacharacters (e.g. {@code .*}) are matched
+	 * as regex patterns; plain keywords use substring matching.
 	 *
 	 * @param commitMessage the commit message
 	 * @return true if at least one keyword matches
@@ -96,7 +104,24 @@ public class CommitKeywordFilter {
 			return false;
 		}
 		String lower = commitMessage.toLowerCase(Locale.ROOT);
-		return keywords.stream().anyMatch(lower::contains);
+		return patterns.stream().anyMatch(p -> p.matcher(lower).find());
+	}
+
+	private static boolean isRegex(String keyword) {
+		return keyword.contains(".*") || keyword.contains(".+") //$NON-NLS-1$ //$NON-NLS-2$
+				|| keyword.contains("[") || keyword.contains("("); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private static List<Pattern> compilePatterns(List<String> keywords) {
+		List<Pattern> result = new ArrayList<>(keywords.size());
+		for (String kw : keywords) {
+			if (isRegex(kw)) {
+				result.add(Pattern.compile(kw, Pattern.CASE_INSENSITIVE));
+			} else {
+				result.add(Pattern.compile(Pattern.quote(kw), Pattern.CASE_INSENSITIVE));
+			}
+		}
+		return result;
 	}
 
 	/**

@@ -108,6 +108,12 @@ public class HintFileUpdater {
 			} else {
 				fileName = sanitizeFileName(eval.commitHash()) + ".sandbox-hint"; //$NON-NLS-1$
 			}
+			// Sanitize to prevent path traversal (targetHintFile may come from LLM output)
+			Path baseName = Path.of(fileName).getFileName();
+			fileName = baseName != null ? baseName.toString() : sanitizeFileName(eval.commitHash()) + ".sandbox-hint"; //$NON-NLS-1$
+			if (fileName.isEmpty() || "..".equals(fileName) || fileName.contains("..")) { //$NON-NLS-1$ //$NON-NLS-2$
+				fileName = sanitizeFileName(eval.commitHash()) + ".sandbox-hint"; //$NON-NLS-1$
+			}
 			Path hintFile = outputDir.resolve(fileName);
 			Files.writeString(hintFile, rule, StandardCharsets.UTF_8);
 			created.add(hintFile);

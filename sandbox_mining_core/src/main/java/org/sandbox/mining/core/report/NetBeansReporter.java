@@ -92,9 +92,17 @@ public class NetBeansReporter {
 		String scores = "R=" + eval.reusability() + "/I=" + eval.codeImprovement() //$NON-NLS-1$ //$NON-NLS-2$
 				+ "/E=" + eval.implementationEffort(); //$NON-NLS-1$
 
+		String trafficLightLabel = trafficLightLabel(eval.trafficLight());
 		return repo + "/" + hash + ":1: " + severity + ": [" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				+ eval.trafficLight() + "/" + category + "] " //$NON-NLS-1$ //$NON-NLS-2$
+				+ trafficLightLabel + "/" + category + "] " //$NON-NLS-1$ //$NON-NLS-2$
 				+ summary + " \u2014 " + scores; //$NON-NLS-1$
+	}
+
+	private static String trafficLightLabel(TrafficLight light) {
+		if (light == null) {
+			return "UNKNOWN"; //$NON-NLS-1$
+		}
+		return light.toString();
 	}
 
 	public static String severityFromTrafficLight(TrafficLight light) {
