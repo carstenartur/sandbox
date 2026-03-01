@@ -17,7 +17,6 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -104,8 +103,8 @@ public class NewHintFromSelectionHandler extends AbstractHandler {
 		IEditorPart editor = HandlerUtil.getActiveEditor(event);
 		if (editor != null) {
 			IEditorInput input = editor.getEditorInput();
-			if (input instanceof IAdaptable adaptable) {
-				IResource resource = adaptable.getAdapter(IResource.class);
+			if (input != null) {
+				IResource resource = input.getAdapter(IResource.class);
 				if (resource != null) {
 					return new StructuredSelection(resource);
 				}
