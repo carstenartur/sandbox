@@ -95,6 +95,16 @@ public final class GuardRegistry {
 	}
 	
 	/**
+	 * Removes a guard function by name.
+	 *
+	 * @param name the guard function name to remove
+	 * @since 1.5.0
+	 */
+	public void unregister(String name) {
+		guards.remove(name);
+	}
+	
+	/**
 	 * Returns the guard function registered under the given name.
 	 * 
 	 * @param name the guard function name

@@ -56,7 +56,7 @@ public class SandboxHintRenameParticipant {
 		String content;
 		try {
 			content = document.get();
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			return null;
 		}
 

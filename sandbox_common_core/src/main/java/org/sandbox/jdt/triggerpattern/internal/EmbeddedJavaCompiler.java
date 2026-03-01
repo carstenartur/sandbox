@@ -327,15 +327,19 @@ public final class EmbeddedJavaCompiler {
 	 * <p>When {@code debugInfo} is {@code true}, the synthetic source is compiled
 	 * with debug information ({@code -g} flag equivalent) for debugger support.</p>
 	 *
+	 * <p><b>Note:</b> The {@code debugInfo} parameter is currently a no-op for
+	 * AST-based parsing. It is provided as a hook for future bytecode compilation
+	 * support (see Phase 6.3 of issue #870).</p>
+	 *
 	 * @param block     the embedded Java block to compile
 	 * @param ruleId    the hint file rule ID
-	 * @param debugInfo whether to include debug information
+	 * @param debugInfo whether to include debug information (reserved for future use)
 	 * @return the compilation result
 	 * @since 1.5.0
 	 */
 	public static CompilationResult compile(EmbeddedJavaBlock block, String ruleId, boolean debugInfo) {
-		// For AST-based parsing, debug info doesn't change the result.
-		// This parameter is provided for future bytecode compilation support.
+		// TODO: When bytecode compilation is implemented (Phase 6.3),
+		// pass debugInfo to BatchCompiler to generate debug attributes.
 		return compile(block, ruleId);
 	}
 

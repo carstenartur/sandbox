@@ -116,10 +116,7 @@ public final class EmbeddedGuardRegistrar {
 
 		GuardRegistry registry = GuardRegistry.getInstance();
 		for (String guardName : guardNames) {
-			// Only remove if it was registered by us (not a built-in)
-			// We can't easily distinguish, but since we skipped built-ins
-			// during registration, these should all be our guards.
-			registry.register(guardName, null); // Remove by setting to null
+			registry.unregister(guardName);
 		}
 
 		LOGGER.log(Level.FINE,

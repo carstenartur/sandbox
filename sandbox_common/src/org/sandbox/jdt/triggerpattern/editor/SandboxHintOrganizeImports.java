@@ -62,7 +62,7 @@ public class SandboxHintOrganizeImports {
 		String content;
 		try {
 			content = document.get();
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			return null;
 		}
 
