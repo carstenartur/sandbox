@@ -98,48 +98,42 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 
 	@Override
 	public String getPreview() {
+		StringBuilder sb= new StringBuilder();
 		if (isEnabled(METHOD_REUSE_CLEANUP)) {
-			return """
-				// Before:
+			sb.append("""
 				void method1() {
-					int x = 0;
-					x++;
-					System.out.println(x);
+				    int x = compute();
+				    System.out.println(x);
 				}
-				
+				// Reuse opportunity detected (warning marker)
+				"""); //$NON-NLS-1$
+		} else {
+			sb.append("""
+				void method1() {
+				    int x = 0; x++;
+				    System.out.println(x);
+				}
 				void method2() {
-					int y = 0;
-					y++;
-					System.out.println(y);
+				    int y = 0; y++;
+				    System.out.println(y);
 				}
-				
-				// After: Method reuse opportunity detected
-				// (warning marker would appear)
-				""";
+				"""); //$NON-NLS-1$
 		}
 		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
-			return """
-				// Before:
-				String formatName(String first, String last) {
-					return first.trim() + " " + last.trim();
+			sb.append("""
+				void printUser(String first, String last) {
+				    String name = formatName(first, last);
+				    System.out.println(name);
 				}
-				
-				void printUser(String firstName, String lastName) {
-					String name = firstName.trim() + " " + lastName.trim();
-					System.out.println(name);
+				"""); //$NON-NLS-1$
+		} else {
+			sb.append("""
+				void printUser(String first, String last) {
+				    String name = first.trim() + " " + last.trim();
+				    System.out.println(name);
 				}
-				
-				// After:
-				String formatName(String first, String last) {
-					return first.trim() + " " + last.trim();
-				}
-				
-				void printUser(String firstName, String lastName) {
-					String name = formatName(firstName, lastName);
-					System.out.println(name);
-				}
-				""";
+				"""); //$NON-NLS-1$
 		}
-		return "";
+		return sb.toString();
 	}
 }

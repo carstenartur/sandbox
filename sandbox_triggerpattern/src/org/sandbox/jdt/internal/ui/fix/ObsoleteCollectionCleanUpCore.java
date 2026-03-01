@@ -60,8 +60,16 @@ public class ObsoleteCollectionCleanUpCore extends AbstractSandboxCleanUpCore {
 	@Override
 	public String getPreview() {
 		if (isEnabled(OBSOLETE_COLLECTION_CLEANUP)) {
-			return "List<String> list = new ArrayList<>();\n"; //$NON-NLS-1$
+			return """
+				List<String> names = new ArrayList<>();
+				Map<String, Integer> scores = new HashMap<>();
+				Deque<Task> tasks = new ArrayDeque<>();
+				"""; //$NON-NLS-1$
 		}
-		return "List<String> list = new Vector<>();\n"; //$NON-NLS-1$
+		return """
+			List<String> names = new Vector<>();
+			Map<String, Integer> scores = new Hashtable<>();
+			Deque<Task> tasks = new Stack<>();
+			"""; //$NON-NLS-1$
 	}
 }

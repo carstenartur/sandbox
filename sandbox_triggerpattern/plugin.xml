@@ -42,10 +42,10 @@
       <cleanUpConfigurationUI 
             class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" 
             cleanUpKind="cleanUp" 
-            name="SandboxCode" />
+            name="Code Patterns (Sandbox)" />
       <cleanUpConfigurationUI 
             class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" 
-            name="SandboxCode (Save Actions)" 
+            name="Code Patterns (Sandbox)" 
             cleanUpKind="saveAction" />
       <cleanUpOptionsInitializer 
             class="org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer" 

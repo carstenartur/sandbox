@@ -60,8 +60,22 @@ public class OverridableCallInConstructorCleanUpCore extends AbstractSandboxClea
 	@Override
 	public String getPreview() {
 		if (isEnabled(OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP)) {
-			return "// Constructor calls only private/final methods\n"; //$NON-NLS-1$
+			return """
+				public class Base {
+				    public Base() {
+				        privateInit(); // OK: private method
+				    }
+				    private void privateInit() { }
+				}
+				"""; //$NON-NLS-1$
 		}
-		return "// Constructor calls overridable method\n"; //$NON-NLS-1$
+		return """
+			public class Base {
+			    public Base() {
+			        init(); // WARNING: overridable method
+			    }
+			    public void init() { }
+			}
+			"""; //$NON-NLS-1$
 	}
 }

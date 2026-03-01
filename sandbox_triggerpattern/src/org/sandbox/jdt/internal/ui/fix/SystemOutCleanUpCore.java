@@ -59,8 +59,14 @@ public class SystemOutCleanUpCore extends AbstractSandboxCleanUpCore {
 	@Override
 	public String getPreview() {
 		if (isEnabled(SYSTEM_OUT_CLEANUP)) {
-			return "logger.info(message);\n"; //$NON-NLS-1$
+			return """
+				logger.info("Processing: " + file);
+				logger.severe("Failed: " + error);
+				"""; //$NON-NLS-1$
 		}
-		return "System.out.println(message);\n"; //$NON-NLS-1$
+		return """
+			System.out.println("Processing: " + file);
+			System.err.println("Failed: " + error);
+			"""; //$NON-NLS-1$
 	}
 }

@@ -98,7 +98,17 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 	public String getPreview() {
 		StringBuilder sb= new StringBuilder();
 		EnumSet<JUnitCleanUpFixCore> computeFixSet= computeFixSet();
-		allOfJunit4().forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
+		boolean first= true;
+		for (JUnitCleanUpFixCore e : allOfJunit4()) {
+			if (!first) {
+				// Add visual separator (comment line) between cleanup sections
+				sb.append("// ─── "); //$NON-NLS-1$
+				sb.append(e.toString());
+				sb.append(" ───").append(System.lineSeparator()); //$NON-NLS-1$
+			}
+			sb.append(e.getPreview(computeFixSet.contains(e)));
+			first= false;
+		}
 		return sb.toString();
 	}
 

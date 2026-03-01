@@ -60,8 +60,20 @@ public class PrintStackTraceCleanUpCore extends AbstractSandboxCleanUpCore {
 	@Override
 	public String getPreview() {
 		if (isEnabled(PRINT_STACKTRACE_CLEANUP)) {
-			return "logger.log(Level.SEVERE, \"Error\", ex);\n"; //$NON-NLS-1$
+			return """
+				try {
+				    parse(input);
+				} catch (IOException ex) {
+				    logger.log(Level.SEVERE, "Parse failed", ex);
+				}
+				"""; //$NON-NLS-1$
 		}
-		return "ex.printStackTrace();\n"; //$NON-NLS-1$
+		return """
+			try {
+			    parse(input);
+			} catch (IOException ex) {
+			    ex.printStackTrace();
+			}
+			"""; //$NON-NLS-1$
 	}
 }
