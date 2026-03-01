@@ -331,8 +331,8 @@ public class HintFileFixCore {
 			// Check for embedded fix function reference: <?fixName?>
 			// These are dispatched to EmbeddedFixExecutor instead of text-based replacement.
 			// Currently fix functions are stubs (Phase 1.4 MVP) — log and skip rewrite.
-			if (isEmbeddedFixReference(replacement)) {
-				String fixName = replacement.substring(2, replacement.length() - 2).trim();
+			String fixName = extractEmbeddedFixName(replacement);
+			if (fixName != null) {
 				if (EmbeddedFixExecutor.hasFix(fixName)) {
 					EmbeddedFixExecutor.execute(fixName);
 				}
@@ -747,31 +747,33 @@ public class HintFileFixCore {
 		}
 
 		/**
-		 * Checks if the replacement text is an embedded fix function reference ({@code <?fixName?>}).
+		 * Extracts the embedded fix function name from a replacement text ({@code <?fixName?>}).
 		 *
 		 * <p>A valid embedded fix reference has the form {@code <?identifier?>} where
 		 * the identifier has no leading/trailing whitespace and is a valid Java identifier.</p>
+		 *
+		 * @return the fix function name, or {@code null} if the replacement is not a valid fix reference
 		 */
-		private static boolean isEmbeddedFixReference(String replacement) {
+		private static String extractEmbeddedFixName(String replacement) {
 			if (replacement == null || !replacement.startsWith("<?") || !replacement.endsWith("?>")) { //$NON-NLS-1$ //$NON-NLS-2$
-				return false;
+				return null;
 			}
 			String inner = replacement.substring(2, replacement.length() - 2);
 			String trimmed = inner.trim();
 			if (trimmed.isEmpty() || !inner.equals(trimmed)) {
-				return false;
+				return null;
 			}
 			for (int i = 0; i < trimmed.length(); i++) {
 				char ch = trimmed.charAt(i);
 				if (i == 0) {
 					if (!Character.isJavaIdentifierStart(ch)) {
-						return false;
+						return null;
 					}
 				} else if (!Character.isJavaIdentifierPart(ch)) {
-					return false;
+					return null;
 				}
 			}
-			return true;
+			return trimmed;
 		}
 
 		/**

@@ -916,23 +916,9 @@ public final class HintFileParser {
 			if (replacementPattern.startsWith("<?") && replacementPattern.endsWith("?>")) { //$NON-NLS-1$ //$NON-NLS-2$
 				String inner = replacementPattern.substring(2, replacementPattern.length() - 2);
 				String trimmedInner = inner.trim();
-				if (!trimmedInner.isEmpty() && inner.equals(trimmedInner)) {
-					boolean validIdentifier = true;
-					for (int i = 0; i < trimmedInner.length(); i++) {
-						char ch = trimmedInner.charAt(i);
-						if (i == 0) {
-							if (!Character.isJavaIdentifierStart(ch)) {
-								validIdentifier = false;
-								break;
-							}
-						} else if (!Character.isJavaIdentifierPart(ch)) {
-							validIdentifier = false;
-							break;
-						}
-					}
-					if (validIdentifier) {
-						embeddedFixName = trimmedInner;
-					}
+				if (!trimmedInner.isEmpty() && inner.equals(trimmedInner)
+						&& isValidJavaIdentifier(trimmedInner)) {
+					embeddedFixName = trimmedInner;
 				}
 			}
 			
@@ -1126,14 +1112,28 @@ public final class HintFileParser {
 				|| Character.isWhitespace(content.charAt(content.length() - 1))) {
 			return false;
 		}
-		// Must be a valid Java identifier
-		for (int i = 0; i < content.length(); i++) {
-			char c = content.charAt(i);
-			if (!Character.isJavaIdentifierPart(c)) {
+		return isValidJavaIdentifier(content);
+	}
+
+	/**
+	 * Checks whether the given string is a valid Java identifier.
+	 *
+	 * @param text the text to check
+	 * @return {@code true} if the text is a valid Java identifier
+	 */
+	static boolean isValidJavaIdentifier(String text) {
+		if (text == null || text.isEmpty()) {
+			return false;
+		}
+		if (!Character.isJavaIdentifierStart(text.charAt(0))) {
+			return false;
+		}
+		for (int i = 1; i < text.length(); i++) {
+			if (!Character.isJavaIdentifierPart(text.charAt(i))) {
 				return false;
 			}
 		}
-		return Character.isJavaIdentifierStart(content.charAt(0));
+		return true;
 	}
 	
 	/**
