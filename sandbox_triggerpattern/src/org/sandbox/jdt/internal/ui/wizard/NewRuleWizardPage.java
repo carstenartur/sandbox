@@ -19,20 +19,27 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.dialogs.PreferencesUtil;
+import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
 import org.sandbox.jdt.triggerpattern.internal.DslValidator;
 import org.sandbox.jdt.triggerpattern.internal.DslValidator.ValidationResult;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
@@ -64,6 +71,7 @@ public class NewRuleWizardPage extends WizardPage {
 	private final DslValidator validator = new DslValidator();
 	private boolean customContentEntered;
 	private String initialSourcePattern;
+	private boolean autoTriggerAi;
 
 	protected NewRuleWizardPage() {
 		super("newRuleWizardPage"); //$NON-NLS-1$
@@ -79,6 +87,16 @@ public class NewRuleWizardPage extends WizardPage {
 	 */
 	public void setInitialSourcePattern(String code) {
 		this.initialSourcePattern = code;
+	}
+
+	/**
+	 * Enables automatic AI inference when the page becomes visible.
+	 * Must be called before the page is created.
+	 *
+	 * @param auto {@code true} to auto-trigger AI inference
+	 */
+	public void setAutoTriggerAi(boolean auto) {
+		this.autoTriggerAi = auto;
 	}
 
 	@Override
@@ -139,6 +157,11 @@ public class NewRuleWizardPage extends WizardPage {
 
 		setControl(container);
 		setPageComplete(true);
+
+		// Auto-trigger AI inference after the page is fully rendered
+		if (autoTriggerAi && generateAiButton != null && generateAiButton.isEnabled()) {
+			Display.getCurrent().asyncExec(this::runAiInference);
+		}
 	}
 
 	/**
