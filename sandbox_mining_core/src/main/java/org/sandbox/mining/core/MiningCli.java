@@ -33,6 +33,7 @@ import org.sandbox.mining.core.category.CategoryManager;
 import org.sandbox.mining.core.comparison.DeltaReport;
 import org.sandbox.mining.core.comparison.ErrorFeedbackCollector;
 import org.sandbox.mining.core.comparison.ExternalEvaluationImporter;
+import org.sandbox.mining.core.comparison.HintFileUpdater;
 import org.sandbox.mining.core.comparison.MiningComparator;
 import org.sandbox.mining.core.config.MiningConfig;
 import org.sandbox.mining.core.config.MiningState;
@@ -341,6 +342,18 @@ jsonReporter.writeStatistics(stats, outputDir);
 
 GithubPagesGenerator pagesGenerator = new GithubPagesGenerator();
 pagesGenerator.generate(aggregator.getAllEvaluations(), stats, outputDir);
+
+// Write .sandbox-hint files for GREEN evaluations with VALID DSL rules
+HintFileUpdater hintUpdater = new HintFileUpdater(validator);
+Path hintOutputDir = sandboxRoot.resolve(
+"sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal"); //$NON-NLS-1$
+List<Path> createdHints = hintUpdater.writeHintFiles(aggregator.getAllEvaluations(), hintOutputDir);
+if (!createdHints.isEmpty()) {
+miningLog.println("Created " + createdHints.size() + " new .sandbox-hint files:"); //$NON-NLS-1$ //$NON-NLS-2$
+for (Path hint : createdHints) {
+miningLog.println("  " + hint); //$NON-NLS-1$
+}
+}
 
 // NetBeans format output
 if ("netbeans".equals(outputFormat) || "both".equals(outputFormat)) { //$NON-NLS-1$ //$NON-NLS-2$

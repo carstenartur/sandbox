@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.sandbox.jdt.triggerpattern.internal.DslValidator;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 
 /**
  * Applies validated DSL rules discovered during gap analysis
@@ -65,6 +66,48 @@ public class HintFileUpdater {
 				continue;
 			}
 			String fileName = sanitizeFileName(gap.commitHash()) + ".sandbox-hint"; //$NON-NLS-1$
+			Path hintFile = outputDir.resolve(fileName);
+			Files.writeString(hintFile, rule, StandardCharsets.UTF_8);
+			created.add(hintFile);
+		}
+
+		return created;
+	}
+
+	/**
+	 * Writes {@code .sandbox-hint} files for evaluations that are GREEN with a
+	 * VALID DSL rule.
+	 *
+	 * @param evaluations all commit evaluations from the mining run
+	 * @param outputDir   directory where hint files will be written
+	 * @return list of paths to newly created hint files
+	 * @throws IOException if file writing fails
+	 */
+	public List<Path> writeHintFiles(List<CommitEvaluation> evaluations, Path outputDir) throws IOException {
+		Files.createDirectories(outputDir);
+		List<Path> created = new ArrayList<>();
+
+		for (CommitEvaluation eval : evaluations) {
+			if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {
+				continue;
+			}
+			if (!"VALID".equals(eval.dslValidationResult())) { //$NON-NLS-1$
+				continue;
+			}
+			String rule = eval.dslRule();
+			if (rule == null || rule.isBlank()) {
+				continue;
+			}
+			// Use targetHintFile if available, otherwise generate from commit hash
+			String fileName;
+			if (eval.targetHintFile() != null && !eval.targetHintFile().isBlank()) {
+				fileName = eval.targetHintFile();
+				if (!fileName.endsWith(".sandbox-hint")) { //$NON-NLS-1$
+					fileName = fileName + ".sandbox-hint"; //$NON-NLS-1$
+				}
+			} else {
+				fileName = sanitizeFileName(eval.commitHash()) + ".sandbox-hint"; //$NON-NLS-1$
+			}
 			Path hintFile = outputDir.resolve(fileName);
 			Files.writeString(hintFile, rule, StandardCharsets.UTF_8);
 			created.add(hintFile);
