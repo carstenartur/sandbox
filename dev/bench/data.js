@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772478943470,
+  "lastUpdate": 1772478995218,
   "repoUrl": "https://github.com/carstenartur/sandbox",
   "entries": {
     "JMH Benchmarks": [
@@ -8860,6 +8860,294 @@ window.BENCHMARK_DATA = {
           {
             "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.wrapperTypeComparison",
             "value": 39.712280172338424,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c3372bcbb8d6ed9e52f2edb0996d8f66c241cbcb",
+          "message": "Bump org.apache.maven.plugins:maven-surefire-plugin from 3.5.4 to 3.5.5 (#895)",
+          "timestamp": "2026-03-02T19:15:33+01:00",
+          "tree_id": "22b48da374383600af27c69d4c2a2d4a61220a50",
+          "url": "https://github.com/carstenartur/sandbox/commit/c3372bcbb8d6ed9e52f2edb0996d8f66c241cbcb"
+        },
+        "date": 1772478972192,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithBindings ( {\"codeSize\":\"small\"} )",
+            "value": 201.22357725737527,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithBindings ( {\"codeSize\":\"medium\"} )",
+            "value": 574.7261839845833,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithBindings ( {\"codeSize\":\"large\"} )",
+            "value": 3488.7781707915224,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithoutBindings ( {\"codeSize\":\"small\"} )",
+            "value": 39.3949034918674,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithoutBindings ( {\"codeSize\":\"medium\"} )",
+            "value": 197.16034211495563,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithoutBindings ( {\"codeSize\":\"large\"} )",
+            "value": 1700.7140566634698,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.buildComplexLoopModel",
+            "value": 0.07281298587464813,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.buildSimpleLoopModel",
+            "value": 0.0159152984785928,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.generateStreamCodeCollect",
+            "value": 0.06443925041954057,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.generateStreamCodeComplex",
+            "value": 0.09751334425740987,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.generateStreamCodeForEach",
+            "value": 0.04870102515530976,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.PatternMatchingBenchmark.detectAssertionsWithASTVisitor",
+            "value": 77.17721516152265,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.PatternMatchingBenchmark.detectAssertionsWithRegex",
+            "value": 39.45550272620831,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.createSimpleMethod",
+            "value": 7.501202102189564,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.newStyleMathMaxCheck",
+            "value": 83.12582540335936,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.oldStyleMathMaxCheck",
+            "value": 0.37431374050826727,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.queryHasSignature",
+            "value": 79.39863027272597,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.queryIsListAdd",
+            "value": 109.13246593593104,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.queryIsMathMax",
+            "value": 79.27794367417161,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.complexNewStyleCheck",
+            "value": 20.928842570747154,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.complexOldStyleCheck",
+            "value": 0.3727438813884992,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.newStyleIsMathMax",
+            "value": 79.0729648748498,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.newStyleModifierChecks",
+            "value": 14.056306625881973,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.newStylePatternDetection",
+            "value": 109.10775988396158,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.oldStyleIsMathMax",
+            "value": 0.37555193699909817,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.oldStyleModifierChecks",
+            "value": 0.37047219153761646,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.oldStylePatternDetection",
+            "value": 0.3747564331720719,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.createParameterizedType",
+            "value": 63.97781915178166,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.createSimpleType",
+            "value": 23.43419147624427,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.newStyleTypeCheck",
+            "value": 20.628246814445085,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.oldStyleTypeCheck",
+            "value": 0.3727498847718171,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsClass",
+            "value": 20.397853687876964,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsCollection",
+            "value": 23.153686981707885,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsNumeric",
+            "value": 0.37280526160689686,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsOptional",
+            "value": 22.7349453687562,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsStream",
+            "value": 21.08848391631998,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.builderAllocation",
+            "value": 23.91793830897455,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.iterateRawStrings",
+            "value": 23.753821226114958,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.iterateTypeInfos",
+            "value": 24.663261679778493,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.rawCollectionCheck",
+            "value": 0.37256321385574137,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.rawTypeComparison",
+            "value": 0.37267898754911355,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.recordAllocation",
+            "value": 3.9547617977052516,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.wrapperCollectionCheck",
+            "value": 23.1333840658526,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.wrapperTypeComparison",
+            "value": 39.92266330201635,
             "unit": "ns/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
