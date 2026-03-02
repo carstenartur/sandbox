@@ -182,9 +182,9 @@
       "lastModelUsed": "gemini-2.5-flash"
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "0f0503fe1276470a08059a4aa7a6964c8af34277",
-      "lastProcessedDate": "2026-03-01T04:30:27.151015846Z",
-      "totalProcessed": 1577,
+      "lastProcessedCommit": "4972ceda4bf841162712401d9d7a17bc60e10887",
+      "lastProcessedDate": "2026-03-02T04:22:16.128996969Z",
+      "totalProcessed": 1873,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -327,5 +327,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 11550
+  "globalTotalProcessed": 11846
 }
