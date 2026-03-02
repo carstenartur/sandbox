@@ -1,10 +1,10 @@
 <!id: type-inference>
-<!description: Hints for improving type inference usage with var>
-<!severity: info>
+<!description: Hints for improving type inference usage with var (Java 10+)>
+<!severity: hint>
 <!minJavaVersion: 10>
 <!tags: modernization, readability>
 
-// Hint-only: suggest var for local variables with obvious type from constructor
-"Consider using 'var' for local variable with obvious type (Java 10+)":
-new $Type($args) :: sourceVersionGE(10)
+// Hint-only: suggest var for local variable declarations with obvious type from constructor
+"Consider using 'var' for local variable type inference (Java 10+)":
+new $Type($args) :: sourceVersionGE(10) && isAssignedToLocalVariable()
 ;;

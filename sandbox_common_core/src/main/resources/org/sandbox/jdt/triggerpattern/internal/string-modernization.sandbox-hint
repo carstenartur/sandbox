@@ -1,7 +1,7 @@
 <!id: string-modernization>
 <!description: Modernize String API usage with newer methods>
 <!severity: info>
-<!minJavaVersion: 5>
+<!minJavaVersion: 8>
 <!tags: modernization, string>
 
 // str.indexOf(str2) != -1 → str.contains(str2)
@@ -14,12 +14,12 @@ $x.indexOf($y) >= 0
 => $x.contains($y)
 ;;
 
-// "".equals(str) → str is empty hint
+// "".equals(str) — hint to use isEmpty() when str is known non-null
 "Consider using isEmpty() instead of equals with empty string":
-"".equals($x)
+"".equals($x) :: isNonNull($x)
 ;;
 
-// Hint-only: strip() vs trim() for Java 11+
+// Hint-only: strip() vs trim() for Java 11+ — only for String type
 "Consider using strip() instead of trim() for Unicode-aware whitespace removal (Java 11+)":
-$x.trim() :: sourceVersionGE(11)
+$x.trim() :: sourceVersionGE(11) && instanceof($x, "java.lang.String")
 ;;

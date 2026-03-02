@@ -1,8 +1,8 @@
 <!id: platform-logging>
-<!description: Modernize Eclipse Platform logging API usage>
+<!description: Modernize Eclipse Platform logging API usage (Eclipse-specific)>
 <!severity: info>
 <!minJavaVersion: 11>
-<!tags: eclipse, modernization, logging>
+<!tags: eclipse, modernization, logging, eclipse-specific>
 
 // Platform.getLog(bundle) → ILog.of(bundle)
 org.eclipse.core.runtime.Platform.getLog($bundle)

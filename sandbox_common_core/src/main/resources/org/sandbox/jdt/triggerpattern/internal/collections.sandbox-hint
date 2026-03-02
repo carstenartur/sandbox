@@ -41,3 +41,8 @@ java.util.Collections.emptySet() :: sourceVersionGE(9)
 java.util.Collections.singleton($x) :: sourceVersionGE(9)
 => java.util.Set.of($x)
 ;;
+
+// Collections.unmodifiableMap(Collections.singletonMap(k,v)) → Map.of(k,v)
+java.util.Collections.unmodifiableMap(java.util.Collections.singletonMap($k, $v)) :: sourceVersionGE(9)
+=> java.util.Map.of($k, $v)
+;;

@@ -826,13 +826,13 @@ public class MYCleanUpConstants {
 	 * Possible values: {TRUE, FALSE}
 	 *
 	 * @see #HINTFILE_CLEANUP
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_STRINGBUFFER= "cleanup.hintfile.bundle.stringbuffer-to-stringbuilder"; //$NON-NLS-1$
 
 	/**
 	 * Bundle ID for the stringbuffer-to-stringbuilder hint file.
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_ID_STRINGBUFFER= "stringbuffer-to-stringbuilder"; //$NON-NLS-1$
 
@@ -845,34 +845,15 @@ public class MYCleanUpConstants {
 	 * Possible values: {TRUE, FALSE}
 	 *
 	 * @see #HINTFILE_CLEANUP
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_PLATFORM_LOGGING= "cleanup.hintfile.bundle.platform-logging"; //$NON-NLS-1$
 
 	/**
 	 * Bundle ID for the platform-logging hint file.
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_ID_PLATFORM_LOGGING= "platform-logging"; //$NON-NLS-1$
-
-	/**
-	 * Enable the {@code collections-immutable.sandbox-hint} pattern library.
-	 * <p>
-	 * When enabled, immutable collection factory method rules are applied (Java 9+).
-	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
-	 * <p>
-	 * Possible values: {TRUE, FALSE}
-	 *
-	 * @see #HINTFILE_CLEANUP
-	 * @since 1.3.9
-	 */
-	public static final String HINTFILE_BUNDLE_COLLECTIONS_IMMUTABLE= "cleanup.hintfile.bundle.collections-immutable"; //$NON-NLS-1$
-
-	/**
-	 * Bundle ID for the collections-immutable hint file.
-	 * @since 1.3.9
-	 */
-	public static final String HINTFILE_BUNDLE_ID_COLLECTIONS_IMMUTABLE= "collections-immutable"; //$NON-NLS-1$
 
 	/**
 	 * Enable the {@code type-inference.sandbox-hint} pattern library.
@@ -883,13 +864,13 @@ public class MYCleanUpConstants {
 	 * Possible values: {TRUE, FALSE}
 	 *
 	 * @see #HINTFILE_CLEANUP
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_TYPE_INFERENCE= "cleanup.hintfile.bundle.type-inference"; //$NON-NLS-1$
 
 	/**
 	 * Bundle ID for the type-inference hint file.
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_ID_TYPE_INFERENCE= "type-inference"; //$NON-NLS-1$
 
@@ -902,13 +883,13 @@ public class MYCleanUpConstants {
 	 * Possible values: {TRUE, FALSE}
 	 *
 	 * @see #HINTFILE_CLEANUP
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_TRY_WITH_RESOURCES= "cleanup.hintfile.bundle.try-with-resources"; //$NON-NLS-1$
 
 	/**
 	 * Bundle ID for the try-with-resources hint file.
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_ID_TRY_WITH_RESOURCES= "try-with-resources"; //$NON-NLS-1$
 
@@ -921,13 +902,13 @@ public class MYCleanUpConstants {
 	 * Possible values: {TRUE, FALSE}
 	 *
 	 * @see #HINTFILE_CLEANUP
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_STRING_MODERNIZATION= "cleanup.hintfile.bundle.string-modernization"; //$NON-NLS-1$
 
 	/**
 	 * Bundle ID for the string-modernization hint file.
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_ID_STRING_MODERNIZATION= "string-modernization"; //$NON-NLS-1$
 
@@ -940,34 +921,15 @@ public class MYCleanUpConstants {
 	 * Possible values: {TRUE, FALSE}
 	 *
 	 * @see #HINTFILE_CLEANUP
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_OPTIONAL_MODERNIZATION= "cleanup.hintfile.bundle.optional-modernization"; //$NON-NLS-1$
 
 	/**
 	 * Bundle ID for the optional-modernization hint file.
-	 * @since 1.3.9
+
 	 */
 	public static final String HINTFILE_BUNDLE_ID_OPTIONAL_MODERNIZATION= "optional-modernization"; //$NON-NLS-1$
-
-	/**
-	 * Enable the {@code deprecated-api.sandbox-hint} pattern library.
-	 * <p>
-	 * When enabled, deprecated Java API replacement rules are applied (Java 9+).
-	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
-	 * <p>
-	 * Possible values: {TRUE, FALSE}
-	 *
-	 * @see #HINTFILE_CLEANUP
-	 * @since 1.3.9
-	 */
-	public static final String HINTFILE_BUNDLE_DEPRECATED_API= "cleanup.hintfile.bundle.deprecated-api"; //$NON-NLS-1$
-
-	/**
-	 * Bundle ID for the deprecated-api hint file.
-	 * @since 1.3.9
-	 */
-	public static final String HINTFILE_BUNDLE_ID_DEPRECATED_API= "deprecated-api"; //$NON-NLS-1$
 
 	// --- Phase 3: Java-coded Cleanups for Complex Analysis ---
 

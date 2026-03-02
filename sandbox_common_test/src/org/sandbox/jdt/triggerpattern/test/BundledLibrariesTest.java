@@ -217,15 +217,6 @@ public class BundledLibrariesTest {
 	}
 
 	@Test
-	public void testLoadCollectionsImmutableLibrary() throws Exception {
-		HintFile hintFile = loadBundledLibrary("collections-immutable.sandbox-hint"); //$NON-NLS-1$
-		assertNotNull(hintFile, "collections-immutable library should be loadable"); //$NON-NLS-1$
-		assertEquals("collections-immutable", hintFile.getId()); //$NON-NLS-1$
-		assertTrue(hintFile.getRules().size() >= 7,
-				"collections-immutable library should have at least 7 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
-	}
-
-	@Test
 	public void testLoadTypeInferenceLibrary() throws Exception {
 		HintFile hintFile = loadBundledLibrary("type-inference.sandbox-hint"); //$NON-NLS-1$
 		assertNotNull(hintFile, "type-inference library should be loadable"); //$NON-NLS-1$
@@ -262,15 +253,6 @@ public class BundledLibrariesTest {
 	}
 
 	@Test
-	public void testLoadDeprecatedApiLibrary() throws Exception {
-		HintFile hintFile = loadBundledLibrary("deprecated-api.sandbox-hint"); //$NON-NLS-1$
-		assertNotNull(hintFile, "deprecated-api library should be loadable"); //$NON-NLS-1$
-		assertEquals("deprecated-api", hintFile.getId()); //$NON-NLS-1$
-		assertTrue(hintFile.getRules().size() >= 8,
-				"deprecated-api library should have at least 8 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
-	}
-
-	@Test
 	public void testAllBundledLibrariesHaveMetadata() throws Exception {
 		for (String name : HintFileRegistry.getBundledLibraryNames()) {
 			HintFile hintFile = loadBundledLibrary(name);
@@ -294,8 +276,8 @@ public class BundledLibrariesTest {
 
 		assertFalse(loaded.isEmpty(),
 				"Should load at least one bundled library"); //$NON-NLS-1$
-		assertEquals(25, loaded.size(),
-				"Should load exactly 25 bundled libraries"); //$NON-NLS-1$
+		assertEquals(23, loaded.size(),
+				"Should load exactly 23 bundled libraries"); //$NON-NLS-1$
 
 		// Verify each loaded library
 		for (String id : loaded) {
@@ -312,8 +294,8 @@ public class BundledLibrariesTest {
 	@Test
 	public void testBundledLibraryCount() {
 		String[] names = HintFileRegistry.getBundledLibraryNames();
-		assertEquals(25, names.length,
-				"Should have exactly 25 bundled libraries"); //$NON-NLS-1$
+		assertEquals(23, names.length,
+				"Should have exactly 23 bundled libraries"); //$NON-NLS-1$
 	}
 
 	// --- Helper methods ---
