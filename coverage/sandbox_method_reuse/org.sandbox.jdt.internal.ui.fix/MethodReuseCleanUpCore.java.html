@@ -98,49 +98,43 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 
 	@Override
 	public String getPreview() {
-<span class="nc bnc" id="L101" title="All 2 branches missed.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
-<span class="nc" id="L102">			return &quot;&quot;&quot;</span>
-				// Before:
+<span class="nc" id="L101">		StringBuilder sb= new StringBuilder();</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
+<span class="nc" id="L103">			sb.append(&quot;&quot;&quot;</span>
 				void method1() {
-					int x = 0;
-					x++;
-					System.out.println(x);
+				    int x = compute();
+				    System.out.println(x);
 				}
-				
+				// Reuse opportunity detected (warning marker)
+				&quot;&quot;&quot;); //$NON-NLS-1$
+<span class="nc" id="L110">		} else {</span>
+<span class="nc" id="L111">			sb.append(&quot;&quot;&quot;</span>
+				void method1() {
+				    int x = 0; x++;
+				    System.out.println(x);
+				}
 				void method2() {
-					int y = 0;
-					y++;
-					System.out.println(y);
+				    int y = 0; y++;
+				    System.out.println(y);
 				}
-				
-				// After: Method reuse opportunity detected
-				// (warning marker would appear)
-				&quot;&quot;&quot;;
+				&quot;&quot;&quot;); //$NON-NLS-1$
 		}
-<span class="nc bnc" id="L120" title="All 2 branches missed.">		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {</span>
-<span class="nc" id="L121">			return &quot;&quot;&quot;</span>
-				// Before:
-				String formatName(String first, String last) {
-					return first.trim() + &quot; &quot; + last.trim();
+<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {</span>
+<span class="nc" id="L123">			sb.append(&quot;&quot;&quot;</span>
+				void printUser(String first, String last) {
+				    String name = formatName(first, last);
+				    System.out.println(name);
 				}
-				
-				void printUser(String firstName, String lastName) {
-					String name = firstName.trim() + &quot; &quot; + lastName.trim();
-					System.out.println(name);
+				&quot;&quot;&quot;); //$NON-NLS-1$
+<span class="nc" id="L129">		} else {</span>
+<span class="nc" id="L130">			sb.append(&quot;&quot;&quot;</span>
+				void printUser(String first, String last) {
+				    String name = first.trim() + &quot; &quot; + last.trim();
+				    System.out.println(name);
 				}
-				
-				// After:
-				String formatName(String first, String last) {
-					return first.trim() + &quot; &quot; + last.trim();
-				}
-				
-				void printUser(String firstName, String lastName) {
-					String name = formatName(firstName, lastName);
-					System.out.println(name);
-				}
-				&quot;&quot;&quot;;
+				&quot;&quot;&quot;); //$NON-NLS-1$
 		}
-<span class="nc" id="L143">		return &quot;&quot;;</span>
+<span class="nc" id="L137">		return sb.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

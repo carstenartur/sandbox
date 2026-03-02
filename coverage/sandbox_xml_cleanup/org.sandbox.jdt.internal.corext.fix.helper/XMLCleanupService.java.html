@@ -90,42 +90,62 @@ import org.eclipse.core.runtime.Status;
 <span class="nc" id="L90">			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,</span>
 <span class="nc" id="L91">				&quot;Failed to read file: &quot; + file.getName(), e));</span>
 		}
-		
-		// Transform the file - check for null location
-<span class="nc" id="L95">		org.eclipse.core.runtime.IPath location = file.getLocation();</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">		if (location == null) {</span>
-<span class="nc" id="L97">			LOG.log(new Status(IStatus.WARNING, PLUGIN_ID,</span>
-<span class="nc" id="L98">				&quot;File does not have a physical location: &quot; + file.getName()));</span>
-<span class="nc" id="L99">			return false;</span>
+
+		// Detect original line ending style
+<span class="nc" id="L95">		String lineEnding = &quot;\n&quot;;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">		if (originalContent.contains(&quot;\r\n&quot;)) {</span>
+<span class="nc" id="L97">			lineEnding = &quot;\r\n&quot;;</span>
 		}
-		
-<span class="nc" id="L102">		Path filePath = location.toFile().toPath();</span>
+
+		// Transform the file - check for null location
+<span class="nc" id="L101">		org.eclipse.core.runtime.IPath location = file.getLocation();</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">		if (location == null) {</span>
+<span class="nc" id="L103">			LOG.log(new Status(IStatus.WARNING, PLUGIN_ID,</span>
+<span class="nc" id="L104">				&quot;File does not have a physical location: &quot; + file.getName()));</span>
+<span class="nc" id="L105">			return false;</span>
+		}
+
+<span class="nc" id="L108">		Path filePath = location.toFile().toPath();</span>
 		String transformedContent;
 		try {
-<span class="nc" id="L105">			transformedContent = SchemaTransformationUtils.transform(filePath, enableIndent);</span>
-<span class="nc" id="L106">		} catch (Exception e) {</span>
-<span class="nc" id="L107">			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,</span>
-<span class="nc" id="L108">				&quot;Failed to transform file: &quot; + file.getName(), e));</span>
+<span class="nc" id="L111">			transformedContent = SchemaTransformationUtils.transform(filePath, enableIndent);</span>
+<span class="nc" id="L112">		} catch (Exception e) {</span>
+<span class="nc" id="L113">			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L114">				&quot;Failed to transform file: &quot; + file.getName(), e));</span>
 		}
-		
+
+		// Normalize line endings in transformed content to match original
+<span class="nc bnc" id="L118" title="All 2 branches missed.">		if (&quot;\r\n&quot;.equals(lineEnding)) {</span>
+			// Convert all lone \n to \r\n (first normalize to \n, then replace)
+<span class="nc" id="L120">			transformedContent = transformedContent.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace(&quot;\n&quot;, &quot;\r\n&quot;);</span>
+<span class="nc" id="L121">		} else {</span>
+			// Normalize to LF only
+<span class="nc" id="L123">			transformedContent = transformedContent.replace(&quot;\r\n&quot;, &quot;\n&quot;);</span>
+		}
+
 		// Only write if content actually changed
-<span class="nc bnc" id="L112" title="All 2 branches missed.">		if (!originalContent.equals(transformedContent)) {</span>
-<span class="nc" id="L113">			byte[] newContent = transformedContent.getBytes(StandardCharsets.UTF_8);</span>
-<span class="nc" id="L114">			ByteArrayInputStream inputStream = new ByteArrayInputStream(newContent);</span>
-			
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (!originalContent.equals(transformedContent)) {</span>
+<span class="nc" id="L128">			byte[] newContent = transformedContent.getBytes(StandardCharsets.UTF_8);</span>
+<span class="nc" id="L129">			int originalBytes = originalContent.getBytes(StandardCharsets.UTF_8).length;</span>
+<span class="nc" id="L130">			int newBytes = newContent.length;</span>
+<span class="nc" id="L131">			int bytesSaved = originalBytes - newBytes;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">			double percentSaved = originalBytes &gt; 0 ? (bytesSaved * 100.0) / originalBytes : 0.0;</span>
+
+<span class="nc" id="L134">			ByteArrayInputStream inputStream = new ByteArrayInputStream(newContent);</span>
 			// Update file (don't force, keep history)
-<span class="nc" id="L117">			file.setContents(inputStream, IResource.KEEP_HISTORY, monitor);</span>
-			
+<span class="nc" id="L136">			file.setContents(inputStream, IResource.KEEP_HISTORY, monitor);</span>
 			// Refresh the resource to sync with filesystem
-<span class="nc" id="L120">			file.refreshLocal(IResource.DEPTH_ZERO, monitor);</span>
-			
-<span class="nc" id="L122">			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
-<span class="nc" id="L123">				&quot;Applied transformation to: &quot; + file.getName()));</span>
-			
-<span class="nc" id="L125">			return true;</span>
+<span class="nc" id="L138">			file.refreshLocal(IResource.DEPTH_ZERO, monitor);</span>
+
+<span class="nc" id="L140">			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
+<span class="nc" id="L141">				&quot;Applied transformation to: &quot; + file.getName()</span>
+<span class="nc" id="L142">				+ String.format(&quot; | Size: %d → %d bytes, saved: %d bytes (%.1f%%)&quot;,</span>
+<span class="nc" id="L143">					originalBytes, newBytes, bytesSaved, percentSaved)));</span>
+
+<span class="nc" id="L145">			return true;</span>
 		}
 		
-<span class="nc" id="L128">		return false;</span>
+<span class="nc" id="L148">		return false;</span>
 	}
 	
 	/**
@@ -137,42 +157,42 @@ import org.eclipse.core.runtime.Status;
 	 * @throws CoreException if resource traversal fails
 	 */
 	public int processProject(IProject project, IProgressMonitor monitor) throws CoreException {
-<span class="nc" id="L140">		final int[] filesProcessed = {0};</span>
+<span class="nc" id="L160">		final int[] filesProcessed = {0};</span>
 		
-<span class="nc" id="L142">		project.accept(new IResourceVisitor() {</span>
+<span class="nc" id="L162">		project.accept(new IResourceVisitor() {</span>
 			@Override
 			public boolean visit(IResource resource) throws CoreException {
-<span class="nc bnc" id="L145" title="All 4 branches missed.">				if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L146">					return false;</span>
+<span class="nc bnc" id="L165" title="All 4 branches missed.">				if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L166">					return false;</span>
 				}
 				
-<span class="nc bnc" id="L149" title="All 2 branches missed.">				if (resource instanceof IFile file) {</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">				if (resource instanceof IFile file) {</span>
 					
-<span class="nc bnc" id="L151" title="All 2 branches missed.">					if (isPDERelevantFile(file)) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">					if (isPDERelevantFile(file)) {</span>
 						try {
-<span class="nc bnc" id="L153" title="All 2 branches missed.">							if (monitor != null) {</span>
-<span class="nc" id="L154">								monitor.subTask(&quot;Processing: &quot; + file.getName());</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">							if (monitor != null) {</span>
+<span class="nc" id="L174">								monitor.subTask(&quot;Processing: &quot; + file.getName());</span>
 							}
 							
-<span class="nc" id="L157">							boolean changed = processFile(file, monitor);</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">							if (changed) {</span>
-<span class="nc" id="L159">								filesProcessed[0]++;</span>
+<span class="nc" id="L177">							boolean changed = processFile(file, monitor);</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">							if (changed) {</span>
+<span class="nc" id="L179">								filesProcessed[0]++;</span>
 							}
 							
-<span class="nc bnc" id="L162" title="All 2 branches missed.">							if (monitor != null) {</span>
-<span class="nc" id="L163">								monitor.worked(1);</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">							if (monitor != null) {</span>
+<span class="nc" id="L183">								monitor.worked(1);</span>
 							}
-<span class="nc" id="L165">						} catch (CoreException e) {</span>
-<span class="nc" id="L166">							LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, </span>
-<span class="nc" id="L167">								&quot;Error processing file: &quot; + file.getName(), e));</span>
+<span class="nc" id="L185">						} catch (CoreException e) {</span>
+<span class="nc" id="L186">							LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, </span>
+<span class="nc" id="L187">								&quot;Error processing file: &quot; + file.getName(), e));</span>
 						}
 					}
 				}
-<span class="nc" id="L171">				return true; // Continue iteration</span>
+<span class="nc" id="L191">				return true; // Continue iteration</span>
 			}
 		});
 		
-<span class="nc" id="L175">		return filesProcessed[0];</span>
+<span class="nc" id="L195">		return filesProcessed[0];</span>
 	}
 	
 	/**
@@ -182,21 +202,21 @@ import org.eclipse.core.runtime.Status;
 	 * @return true if the file should be processed
 	 */
 	public boolean isPDERelevantFile(IFile file) {
-<span class="nc" id="L185">		String fileName = file.getName();</span>
-<span class="nc" id="L186">		String extension = file.getFileExtension();</span>
+<span class="nc" id="L205">		String fileName = file.getName();</span>
+<span class="nc" id="L206">		String extension = file.getFileExtension();</span>
 		
 		// Check if it's a known PDE file name
-<span class="nc bnc" id="L189" title="All 2 branches missed.">		if (PDE_FILE_NAMES.contains(fileName)) {</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">		if (PDE_FILE_NAMES.contains(fileName)) {</span>
 			// Must be in project root, OSGI-INF, or META-INF
-<span class="nc" id="L191">			return isInPDELocation(file);</span>
+<span class="nc" id="L211">			return isInPDELocation(file);</span>
 		}
 		
 		// Check if it's a PDE extension (exsd, xsd)
-<span class="nc bnc" id="L195" title="All 4 branches missed.">		if (extension != null &amp;&amp; PDE_EXTENSIONS.contains(extension)) {</span>
-<span class="nc" id="L196">			return isInPDELocation(file);</span>
+<span class="nc bnc" id="L215" title="All 4 branches missed.">		if (extension != null &amp;&amp; PDE_EXTENSIONS.contains(extension)) {</span>
+<span class="nc" id="L216">			return isInPDELocation(file);</span>
 		}
 		
-<span class="nc" id="L199">		return false;</span>
+<span class="nc" id="L219">		return false;</span>
 	}
 	
 	/**
@@ -206,30 +226,42 @@ import org.eclipse.core.runtime.Status;
 	 * @return true if in root, OSGI-INF, or META-INF
 	 */
 	private boolean isInPDELocation(IFile file) {
-<span class="nc" id="L209">		IResource parent = file.getParent();</span>
-		
+<span class="nc" id="L229">		IResource parent = file.getParent();</span>
+
 		// Check if in project root
-<span class="nc bnc" id="L212" title="All 2 branches missed.">		if (parent instanceof IProject) {</span>
-<span class="nc" id="L213">			return true;</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">		if (parent instanceof IProject) {</span>
+<span class="nc" id="L233">			return true;</span>
 		}
-		
+
 		// Check if in OSGI-INF or META-INF
-<span class="nc bnc" id="L217" title="All 2 branches missed.">		if (parent instanceof IFolder) {</span>
-<span class="nc" id="L218">			String folderName = parent.getName();</span>
-<span class="nc bnc" id="L219" title="All 2 branches missed.">			if (PDE_DIRECTORIES.contains(folderName)) {</span>
-<span class="nc" id="L220">				return true;</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">		if (parent instanceof IFolder) {</span>
+<span class="nc" id="L238">			String folderName = parent.getName();</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">			if (PDE_DIRECTORIES.contains(folderName)) {</span>
+<span class="nc" id="L240">				return true;</span>
 			}
-			
+
 			// Also check parent's parent (for nested structures)
-<span class="nc" id="L224">			IResource grandParent = parent.getParent();</span>
-<span class="nc bnc" id="L225" title="All 2 branches missed.">			if (grandParent instanceof IFolder) {</span>
-<span class="nc bnc" id="L226" title="All 2 branches missed.">				if (PDE_DIRECTORIES.contains(grandParent.getName())) {</span>
-<span class="nc" id="L227">					return true;</span>
+<span class="nc" id="L244">			IResource grandParent = parent.getParent();</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">			if (grandParent instanceof IFolder) {</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">				if (PDE_DIRECTORIES.contains(grandParent.getName())) {</span>
+<span class="nc" id="L247">					return true;</span>
 				}
 			}
 		}
-		
-<span class="nc" id="L232">		return false;</span>
+
+		// NEW: Allow any folder named 'schema' (case-insensitive) at any level
+<span class="nc" id="L253">		IResource current = parent;</span>
+<span class="nc bnc" id="L254" title="All 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof IProject)) {</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">			if (current instanceof IFolder) {</span>
+<span class="nc" id="L256">				String folderName = current.getName();</span>
+<span class="nc bnc" id="L257" title="All 4 branches missed.">				if (folderName != null &amp;&amp; folderName.equalsIgnoreCase(&quot;schema&quot;)) {</span>
+<span class="nc" id="L258">					return true;</span>
+				}
+			}
+<span class="nc" id="L261">			current = current.getParent();</span>
+		}
+
+<span class="nc" id="L264">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>NewSandboxHintFileWizardPage.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.wizard</a> &gt; <span class="el_source">NewSandboxHintFileWizardPage.java</span></div><h1>NewSandboxHintFileWizardPage.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.wizard;
+
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.dialogs.ContainerSelectionDialog;
+
+/**
+ * First wizard page for the New Sandbox Hint File wizard.
+ *
+ * &lt;p&gt;Lets the user choose the target container (project/folder), file name,
+ * metadata (ID, description, severity, min Java version, tags), and a
+ * template.&lt;/p&gt;
+ *
+ * @since 1.5.0
+ */
+public class NewSandboxHintFileWizardPage extends WizardPage {
+
+	private static final String FILE_EXTENSION = &quot;.sandbox-hint&quot;; //$NON-NLS-1$
+
+	private Text containerText;
+	private Text fileText;
+	private Text idText;
+	private Text descriptionText;
+	private Combo severityCombo;
+	private Combo minJavaCombo;
+	private Text tagsText;
+<span class="nc" id="L57">	private SandboxHintTemplates selectedTemplate = SandboxHintTemplates.SIMPLE;</span>
+
+	private final IStructuredSelection selection;
+
+	/**
+	 * Creates the wizard page.
+	 *
+	 * @param selection the current workbench selection
+	 */
+	protected NewSandboxHintFileWizardPage(IStructuredSelection selection) {
+<span class="nc" id="L67">		super(&quot;newSandboxHintFilePage&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L68">		setTitle(&quot;New Sandbox Hint File&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L69">		setDescription(&quot;Create a new .sandbox-hint file with transformation rules&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L70">		this.selection = selection;</span>
+<span class="nc" id="L71">	}</span>
+
+	@Override
+	public void createControl(Composite parent) {
+<span class="nc" id="L75">		Composite container = new Composite(parent, SWT.NONE);</span>
+<span class="nc" id="L76">		GridLayout layout = new GridLayout(3, false);</span>
+<span class="nc" id="L77">		container.setLayout(layout);</span>
+
+<span class="nc" id="L79">		ModifyListener modifyListener = e -&gt; dialogChanged();</span>
+
+		// --- Container selection ---
+<span class="nc" id="L82">		Label containerLabel = new Label(container, SWT.NONE);</span>
+<span class="nc" id="L83">		containerLabel.setText(&quot;&amp;Container:&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L85">		containerText = new Text(container, SWT.BORDER | SWT.SINGLE);</span>
+<span class="nc" id="L86">		containerText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L87">		containerText.addModifyListener(modifyListener);</span>
+
+<span class="nc" id="L89">		Button browseButton = new Button(container, SWT.PUSH);</span>
+<span class="nc" id="L90">		browseButton.setText(&quot;&amp;Browse...&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L91">		browseButton.addSelectionListener(new SelectionAdapter() {</span>
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+<span class="nc" id="L94">				handleBrowse();</span>
+<span class="nc" id="L95">			}</span>
+		});
+
+		// --- File name ---
+<span class="nc" id="L99">		Label fileLabel = new Label(container, SWT.NONE);</span>
+<span class="nc" id="L100">		fileLabel.setText(&quot;&amp;File name:&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L102">		fileText = new Text(container, SWT.BORDER | SWT.SINGLE);</span>
+<span class="nc" id="L103">		fileText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L104">		fileText.addModifyListener(modifyListener);</span>
+<span class="nc" id="L105">		new Label(container, SWT.NONE); // spacer</span>
+
+		// --- Metadata group ---
+<span class="nc" id="L108">		Group metadataGroup = new Group(container, SWT.NONE);</span>
+<span class="nc" id="L109">		metadataGroup.setText(&quot;Metadata&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L110">		metadataGroup.setLayout(new GridLayout(2, false));</span>
+<span class="nc" id="L111">		GridData groupData = new GridData(SWT.FILL, SWT.FILL, true, false, 3, 1);</span>
+<span class="nc" id="L112">		metadataGroup.setLayoutData(groupData);</span>
+
+<span class="nc" id="L114">		new Label(metadataGroup, SWT.NONE).setText(&quot;&amp;ID:&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L115">		idText = new Text(metadataGroup, SWT.BORDER | SWT.SINGLE);</span>
+<span class="nc" id="L116">		idText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L117">		idText.addModifyListener(modifyListener);</span>
+
+<span class="nc" id="L119">		new Label(metadataGroup, SWT.NONE).setText(&quot;D&amp;escription:&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L120">		descriptionText = new Text(metadataGroup, SWT.BORDER | SWT.SINGLE);</span>
+<span class="nc" id="L121">		descriptionText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+
+<span class="nc" id="L123">		new Label(metadataGroup, SWT.NONE).setText(&quot;&amp;Severity:&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L124">		severityCombo = new Combo(metadataGroup, SWT.DROP_DOWN | SWT.READ_ONLY);</span>
+<span class="nc" id="L125">		severityCombo.setItems(new String[] { &quot;info&quot;, &quot;warning&quot;, &quot;error&quot;, &quot;hint&quot; }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc" id="L126">		severityCombo.select(0);</span>
+<span class="nc" id="L127">		severityCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+
+<span class="nc" id="L129">		new Label(metadataGroup, SWT.NONE).setText(&quot;Min &amp;Java:&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L130">		minJavaCombo = new Combo(metadataGroup, SWT.DROP_DOWN | SWT.READ_ONLY);</span>
+<span class="nc" id="L131">		minJavaCombo.setItems(new String[] { &quot;&quot;, &quot;11&quot;, &quot;17&quot;, &quot;21&quot; }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc" id="L132">		minJavaCombo.select(0);</span>
+<span class="nc" id="L133">		minJavaCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+
+<span class="nc" id="L135">		new Label(metadataGroup, SWT.NONE).setText(&quot;&amp;Tags:&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L136">		tagsText = new Text(metadataGroup, SWT.BORDER | SWT.SINGLE);</span>
+<span class="nc" id="L137">		tagsText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L138">		tagsText.setMessage(&quot;encoding, modernization&quot;); //$NON-NLS-1$</span>
+
+		// --- Template group ---
+<span class="nc" id="L141">		Group templateGroup = new Group(container, SWT.NONE);</span>
+<span class="nc" id="L142">		templateGroup.setText(&quot;Template&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L143">		templateGroup.setLayout(new GridLayout(1, false));</span>
+<span class="nc" id="L144">		GridData tplData = new GridData(SWT.FILL, SWT.FILL, true, false, 3, 1);</span>
+<span class="nc" id="L145">		templateGroup.setLayoutData(tplData);</span>
+
+<span class="nc bnc" id="L147" title="All 2 branches missed.">		for (SandboxHintTemplates tpl : SandboxHintTemplates.values()) {</span>
+<span class="nc" id="L148">			Button radio = new Button(templateGroup, SWT.RADIO);</span>
+<span class="nc" id="L149">			radio.setText(tpl.getLabel());</span>
+<span class="nc" id="L150">			radio.setData(tpl);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">			if (tpl == SandboxHintTemplates.SIMPLE) {</span>
+<span class="nc" id="L152">				radio.setSelection(true);</span>
+			}
+<span class="nc" id="L154">			radio.addSelectionListener(new SelectionAdapter() {</span>
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+<span class="nc bnc" id="L157" title="All 2 branches missed.">					if (((Button) e.widget).getSelection()) {</span>
+<span class="nc" id="L158">						selectedTemplate = (SandboxHintTemplates) ((Button) e.widget).getData();</span>
+					}
+<span class="nc" id="L160">				}</span>
+			});
+		}
+
+		// --- Initialize from selection ---
+<span class="nc" id="L165">		initializeFromSelection();</span>
+
+<span class="nc" id="L167">		dialogChanged();</span>
+<span class="nc" id="L168">		setControl(container);</span>
+<span class="nc" id="L169">	}</span>
+
+	/**
+	 * Pre-fills the container path from the workbench selection and
+	 * always sets a sensible default file name.
+	 */
+	private void initializeFromSelection() {
+		// Always set a default file name
+<span class="nc" id="L177">		fileText.setText(&quot;rules&quot; + FILE_EXTENSION); //$NON-NLS-1$</span>
+
+<span class="nc bnc" id="L179" title="All 4 branches missed.">		if (selection == null || selection.isEmpty()) {</span>
+<span class="nc" id="L180">			return;</span>
+		}
+<span class="nc" id="L182">		Object element = selection.getFirstElement();</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">		if (element instanceof IResource resource) {</span>
+			IContainer container;
+<span class="nc bnc" id="L185" title="All 2 branches missed.">			if (resource instanceof IContainer c) {</span>
+<span class="nc" id="L186">				container = c;</span>
+<span class="nc" id="L187">			} else {</span>
+<span class="nc" id="L188">				container = resource.getParent();</span>
+			}
+<span class="nc" id="L190">			containerText.setText(container.getFullPath().toString());</span>
+		}
+<span class="nc" id="L192">	}</span>
+
+	private void handleBrowse() {
+<span class="nc" id="L195">		ContainerSelectionDialog dialog = new ContainerSelectionDialog(</span>
+<span class="nc" id="L196">				getShell(), ResourcesPlugin.getWorkspace().getRoot(), false,</span>
+<span class="nc" id="L197">				&quot;Select the target folder&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">		if (dialog.open() == ContainerSelectionDialog.OK) {</span>
+<span class="nc" id="L199">			Object[] result = dialog.getResult();</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">			if (result.length == 1) {</span>
+<span class="nc" id="L201">				containerText.setText(((IPath) result[0]).toString());</span>
+			}
+		}
+<span class="nc" id="L204">	}</span>
+
+	private void dialogChanged() {
+<span class="nc" id="L207">		String container = containerText.getText();</span>
+<span class="nc" id="L208">		String file = fileText.getText();</span>
+
+<span class="nc bnc" id="L210" title="All 2 branches missed.">		if (container.isEmpty()) {</span>
+<span class="nc" id="L211">			updateStatus(&quot;Container must be specified&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L212">			return;</span>
+		}
+<span class="nc" id="L214">		IResource resource = ResourcesPlugin.getWorkspace().getRoot()</span>
+<span class="nc" id="L215">				.findMember(new Path(container));</span>
+<span class="nc bnc" id="L216" title="All 6 branches missed.">		if (resource == null || !(resource instanceof IContainer) || !resource.isAccessible()) {</span>
+<span class="nc" id="L217">			updateStatus(&quot;Container must exist and be accessible&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L218">			return;</span>
+		}
+<span class="nc bnc" id="L220" title="All 2 branches missed.">		if (file.isEmpty()) {</span>
+<span class="nc" id="L221">			updateStatus(&quot;File name must be specified&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L222">			return;</span>
+		}
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (!file.endsWith(FILE_EXTENSION)) {</span>
+<span class="nc" id="L225">			updateStatus(&quot;File name must end with &quot; + FILE_EXTENSION); //$NON-NLS-1$</span>
+<span class="nc" id="L226">			return;</span>
+		}
+<span class="nc bnc" id="L228" title="All 2 branches missed.">		if (file.replace('\\', '/').indexOf('/') &gt;= 0) {</span>
+<span class="nc" id="L229">			updateStatus(&quot;File name must not contain path separators&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L230">			return;</span>
+		}
+<span class="nc" id="L232">		updateStatus(null);</span>
+<span class="nc" id="L233">	}</span>
+
+	private void updateStatus(String message) {
+<span class="nc" id="L236">		setErrorMessage(message);</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">		setPageComplete(message == null);</span>
+<span class="nc" id="L238">	}</span>
+
+	// --- Public accessors for the wizard ---
+
+	/** Returns the container path entered by the user. */
+	public String getContainerPath() {
+<span class="nc" id="L244">		return containerText.getText();</span>
+	}
+
+	/** Returns the file name entered by the user. */
+	public String getFileName() {
+<span class="nc" id="L249">		return fileText.getText();</span>
+	}
+
+	/** Returns the hint ID entered by the user (may be empty). */
+	public String getHintId() {
+<span class="nc" id="L254">		String text = idText.getText().trim();</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">		return text.isEmpty() ? null : text;</span>
+	}
+
+	/** Returns the description entered by the user (may be empty). */
+	public String getHintDescription() {
+<span class="nc" id="L260">		String text = descriptionText.getText().trim();</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">		return text.isEmpty() ? null : text;</span>
+	}
+
+	/** Returns the selected severity string. */
+	public String getSeverityValue() {
+<span class="nc" id="L266">		return severityCombo.getText();</span>
+	}
+
+	/** Returns the selected minimum Java version, or 0 if none. */
+	public int getMinJavaVersion() {
+<span class="nc" id="L271">		String text = minJavaCombo.getText().trim();</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L273">			return 0;</span>
+		}
+		try {
+<span class="nc" id="L276">			return Integer.parseInt(text);</span>
+<span class="nc" id="L277">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L278">			return 0;</span>
+		}
+	}
+
+	/** Returns the raw tags text (comma-separated). */
+	public String getTagsText() {
+<span class="nc" id="L284">		return tagsText.getText().trim();</span>
+	}
+
+	/** Returns the template selected by the user. */
+	public SandboxHintTemplates getSelectedTemplate() {
+<span class="nc" id="L289">		return selectedTemplate;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

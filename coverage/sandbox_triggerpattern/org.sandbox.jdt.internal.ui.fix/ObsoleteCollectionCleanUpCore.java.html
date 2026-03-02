@@ -60,9 +60,17 @@ public class ObsoleteCollectionCleanUpCore extends AbstractSandboxCleanUpCore {
 	@Override
 	public String getPreview() {
 <span class="nc bnc" id="L62" title="All 2 branches missed.">		if (isEnabled(OBSOLETE_COLLECTION_CLEANUP)) {</span>
-<span class="nc" id="L63">			return &quot;List&lt;String&gt; list = new ArrayList&lt;&gt;();\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L63">			return &quot;&quot;&quot;</span>
+				List&lt;String&gt; names = new ArrayList&lt;&gt;();
+				Map&lt;String, Integer&gt; scores = new HashMap&lt;&gt;();
+				Deque&lt;Task&gt; tasks = new ArrayDeque&lt;&gt;();
+				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L65">		return &quot;List&lt;String&gt; list = new Vector&lt;&gt;();\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L69">		return &quot;&quot;&quot;</span>
+			List&lt;String&gt; names = new Vector&lt;&gt;();
+			Map&lt;String, Integer&gt; scores = new Hashtable&lt;&gt;();
+			Deque&lt;Task&gt; tasks = new Stack&lt;&gt;();
+			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

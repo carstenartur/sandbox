@@ -162,9 +162,9 @@ import javax.xml.transform.stream.StreamSource;
 	 * @return normalized content
 	 */
 	private static String normalizeWhitespace(String content) {
-		// Reduce excessive empty lines - keep max 2 consecutive empty lines,
+		// Reduce excessive empty lines - keep max 1 consecutive empty line,
 		// preserving the original line ending style (LF vs CRLF)
-<span class="fc" id="L167">		content = content.replaceAll(&quot;(\\r?\\n){3,}&quot;, &quot;$1$1&quot;);</span>
+<span class="fc" id="L167">		content = content.replaceAll(&quot;(\r?\n){2,}&quot;, &quot;$1&quot;);</span>
 		
 		// Convert leading 4 spaces to tabs (only at line start, not in text content)
 		// This pattern matches lines that start with spaces (after optional newline)

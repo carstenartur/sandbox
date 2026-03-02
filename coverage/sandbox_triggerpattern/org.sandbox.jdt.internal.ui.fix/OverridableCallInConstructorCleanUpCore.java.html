@@ -60,9 +60,23 @@ public class OverridableCallInConstructorCleanUpCore extends AbstractSandboxClea
 	@Override
 	public String getPreview() {
 <span class="nc bnc" id="L62" title="All 2 branches missed.">		if (isEnabled(OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP)) {</span>
-<span class="nc" id="L63">			return &quot;// Constructor calls only private/final methods\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L63">			return &quot;&quot;&quot;</span>
+				public class Base {
+				    public Base() {
+				        privateInit(); // OK: private method
+				    }
+				    private void privateInit() { }
+				}
+				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L65">		return &quot;// Constructor calls overridable method\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L72">		return &quot;&quot;&quot;</span>
+			public class Base {
+			    public Base() {
+			        init(); // WARNING: overridable method
+			    }
+			    public void init() { }
+			}
+			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -147,16 +147,16 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&
 <span class="pc bpc" id="L147" title="1 of 2 branches missed.">		if (type == null) {</span>
 <span class="nc" id="L148">			return null;</span>
 		}
-<span class="fc bfc" id="L150" title="All 2 branches covered.">		if (type.isSimpleType()) {</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (type.isSimpleType()) {</span>
 <span class="fc" id="L151">			return ((org.eclipse.jdt.core.dom.SimpleType) type).getName().getFullyQualifiedName();</span>
 		}
-<span class="pc bpc" id="L153" title="1 of 2 branches missed.">		if (type.isQualifiedType()) {</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">		if (type.isQualifiedType()) {</span>
 <span class="nc" id="L154">			return ((org.eclipse.jdt.core.dom.QualifiedType) type).getName().getFullyQualifiedName();</span>
 		}
-<span class="pc bpc" id="L156" title="1 of 2 branches missed.">		if (type.isNameQualifiedType()) {</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">		if (type.isNameQualifiedType()) {</span>
 <span class="nc" id="L157">			return ((org.eclipse.jdt.core.dom.NameQualifiedType) type).getName().getFullyQualifiedName();</span>
 		}
-<span class="fc" id="L159">		return type.toString();</span>
+<span class="nc" id="L159">		return type.toString();</span>
 	}
 
 	/**
@@ -384,7 +384,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&
 <span class="fc" id="L384">			.onTypeDeclaration((node, h) -&gt; {</span>
 				// Check extends clause
 <span class="fc" id="L386">				Type superclassType = node.getSuperclassType();</span>
-<span class="fc bfc" id="L387" title="All 4 branches covered.">				if (superclassType != null &amp;&amp; isViewerSorterType(superclassType)) {</span>
+<span class="pc bpc" id="L387" title="1 of 4 branches missed.">				if (superclassType != null &amp;&amp; isViewerSorterType(superclassType)) {</span>
 <span class="fc" id="L388">					holder.typesToReplace.add(superclassType);</span>
 				}
 <span class="fc" id="L390">				return true;</span>
@@ -394,7 +394,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&
 <span class="fc" id="L394">		AstProcessorBuilder.with(dataholder, nodesprocessed)</span>
 <span class="fc" id="L395">			.onFieldDeclaration((node, h) -&gt; {</span>
 <span class="fc" id="L396">				Type fieldType = node.getType();</span>
-<span class="pc bpc" id="L397" title="1 of 4 branches missed.">				if (fieldType != null &amp;&amp; isViewerSorterType(fieldType)) {</span>
+<span class="pc bpc" id="L397" title="2 of 4 branches missed.">				if (fieldType != null &amp;&amp; isViewerSorterType(fieldType)) {</span>
 <span class="fc" id="L398">					holder.typesToReplace.add(fieldType);</span>
 				}
 <span class="fc" id="L400">				return true;</span>
@@ -404,7 +404,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&
 <span class="fc" id="L404">		AstProcessorBuilder.with(dataholder, nodesprocessed)</span>
 <span class="fc" id="L405">			.onVariableDeclarationStatement((node, h) -&gt; {</span>
 <span class="fc" id="L406">				Type variableType = node.getType();</span>
-<span class="pc bpc" id="L407" title="1 of 4 branches missed.">				if (variableType != null &amp;&amp; isViewerSorterType(variableType)) {</span>
+<span class="pc bpc" id="L407" title="2 of 4 branches missed.">				if (variableType != null &amp;&amp; isViewerSorterType(variableType)) {</span>
 <span class="fc" id="L408">					holder.typesToReplace.add(variableType);</span>
 				}
 <span class="fc" id="L410">				return true;</span>
@@ -436,7 +436,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&
 <span class="fc" id="L436">		AstProcessorBuilder.with(dataholder, nodesprocessed)</span>
 <span class="fc" id="L437">			.onClassInstanceCreation((node, h) -&gt; {</span>
 <span class="fc" id="L438">				Type instanceType = node.getType();</span>
-<span class="pc bpc" id="L439" title="1 of 4 branches missed.">				if (instanceType != null &amp;&amp; isViewerSorterType(instanceType)) {</span>
+<span class="pc bpc" id="L439" title="2 of 4 branches missed.">				if (instanceType != null &amp;&amp; isViewerSorterType(instanceType)) {</span>
 <span class="fc" id="L440">					holder.typesToReplace.add(instanceType);</span>
 				}
 <span class="fc" id="L442">				return true;</span>
@@ -446,7 +446,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&
 <span class="fc" id="L446">		AstProcessorBuilder.with(dataholder, nodesprocessed)</span>
 <span class="fc" id="L447">			.onCastExpression((node, h) -&gt; {</span>
 <span class="fc" id="L448">				Type castType = node.getType();</span>
-<span class="pc bpc" id="L449" title="1 of 4 branches missed.">				if (castType != null &amp;&amp; isViewerSorterType(castType)) {</span>
+<span class="pc bpc" id="L449" title="2 of 4 branches missed.">				if (castType != null &amp;&amp; isViewerSorterType(castType)) {</span>
 <span class="fc" id="L450">					holder.typesToReplace.add(castType);</span>
 				}
 <span class="fc" id="L452">				return true;</span>
@@ -458,7 +458,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&
 <span class="fc" id="L458">				SimpleName methodName = node.getName();</span>
 <span class="pc bpc" id="L459" title="1 of 2 branches missed.">				if (methodName != null) {</span>
 <span class="fc" id="L460">					String name = methodName.getIdentifier();</span>
-<span class="fc bfc" id="L461" title="All 4 branches covered.">					if (&quot;getSorter&quot;.equals(name) || &quot;setSorter&quot;.equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L461" title="1 of 4 branches missed.">					if (&quot;getSorter&quot;.equals(name) || &quot;setSorter&quot;.equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 						// Check if this is a JFace viewer method - first try binding, then fallback to name-based check
 <span class="fc" id="L463">						IMethodBinding methodBinding = node.resolveMethodBinding();</span>
 <span class="pc bpc" id="L464" title="2 of 4 branches missed.">						if (isJFaceViewerSorterMethod(methodBinding) || isJFaceViewerSorterMethodByName(node)) {</span>
@@ -471,7 +471,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, ViewerSorterPlugin.SorterHolder&gt;&
 <span class="fc" id="L471">			.build(compilationUnit);</span>
 		
 		// If we found anything to replace, register the operation
-<span class="pc bpc" id="L474" title="1 of 4 branches missed.">		if (!holder.typesToReplace.isEmpty() || !holder.methodNamesToReplace.isEmpty()) {</span>
+<span class="pc bpc" id="L474" title="3 of 4 branches missed.">		if (!holder.typesToReplace.isEmpty() || !holder.methodNamesToReplace.isEmpty()) {</span>
 <span class="fc" id="L475">			operations.add(fixcore.rewrite(dataholder));</span>
 		}
 <span class="fc" id="L477">	}</span>

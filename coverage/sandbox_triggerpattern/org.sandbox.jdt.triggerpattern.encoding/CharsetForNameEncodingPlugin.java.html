@@ -47,7 +47,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.AbstractPatternCleanupPlugin;
 @RewriteRule(replaceWith = &quot;StandardCharsets.UTF_8&quot;, removeImports = {}, // Don't remove Charset - might be used
 																			// elsewhere
 		addImports = { &quot;java.nio.charset.StandardCharsets&quot; })
-<span class="nc" id="L50">public class CharsetForNameEncodingPlugin extends AbstractPatternCleanupPlugin&lt;EncodingHolder&gt; {</span>
+<span class="fc" id="L50">public class CharsetForNameEncodingPlugin extends AbstractPatternCleanupPlugin&lt;EncodingHolder&gt; {</span>
 
 	@Override
 	protected EncodingHolder createHolder(Match match) {

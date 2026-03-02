@@ -60,9 +60,19 @@ public class WrongStringComparisonCleanUpCore extends AbstractSandboxCleanUpCore
 	@Override
 	public String getPreview() {
 <span class="nc bnc" id="L62" title="All 2 branches missed.">		if (isEnabled(WRONG_STRING_COMPARISON_CLEANUP)) {</span>
-<span class="nc" id="L63">			return &quot;\&quot;literal\&quot;.equals(str)\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L63">			return &quot;&quot;&quot;</span>
+				if (&quot;admin&quot;.equals(role)) {
+				    grant();
+				}
+				boolean isDefault = &quot;default&quot;.equals(name);
+				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L65">		return &quot;str == \&quot;literal\&quot;\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L70">		return &quot;&quot;&quot;</span>
+			if (role == &quot;admin&quot;) {
+			    grant();
+			}
+			boolean isDefault = name == &quot;default&quot;;
+			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

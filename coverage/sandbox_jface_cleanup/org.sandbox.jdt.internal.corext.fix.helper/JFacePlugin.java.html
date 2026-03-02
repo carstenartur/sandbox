@@ -244,8 +244,8 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 <span class="fc" id="L244">			.onClassInstanceCreation((node, holder) -&gt; {</span>
 				// Check if this is a SubProgressMonitor construction (use simple name like Pass 1)
 <span class="fc" id="L246">				ITypeBinding binding = node.resolveTypeBinding();</span>
-<span class="pc bpc" id="L247" title="1 of 4 branches missed.">				if (binding == null || !&quot;SubProgressMonitor&quot;.equals(binding.getName())) { //$NON-NLS-1$</span>
-<span class="fc" id="L248">					return true;</span>
+<span class="pc bpc" id="L247" title="2 of 4 branches missed.">				if (binding == null || !&quot;SubProgressMonitor&quot;.equals(binding.getName())) { //$NON-NLS-1$</span>
+<span class="nc" id="L248">					return true;</span>
 				}
 				
 				// Skip nodes already associated with beginTask from pass 1
@@ -321,7 +321,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 <span class="fc" id="L321">		AstProcessorBuilder.with(typeReplacementHolder, nodesprocessed)</span>
 <span class="fc" id="L322">			.onFieldDeclaration((node, holder) -&gt; {</span>
 <span class="fc" id="L323">				org.eclipse.jdt.core.dom.Type fieldType = node.getType();</span>
-<span class="fc bfc" id="L324" title="All 2 branches covered.">				if (isSubProgressMonitorType(fieldType)) {</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">				if (isSubProgressMonitorType(fieldType)) {</span>
 <span class="fc" id="L325">					logDebug(&quot;Found SubProgressMonitor field declaration at position &quot; + node.getStartPosition()); //$NON-NLS-1$</span>
 <span class="fc" id="L326">					typeHolder.typesToReplace.add(fieldType);</span>
 				}

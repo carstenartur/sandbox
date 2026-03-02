@@ -95,9 +95,15 @@ public class ShiftOutOfRangeCleanUpCore extends AbstractCleanUp {
 	@Override
 	public String getPreview() {
 <span class="nc bnc" id="L97" title="All 2 branches missed.">		if (isEnabled(SHIFT_OUT_OF_RANGE_CLEANUP)) {</span>
-<span class="nc" id="L98">			return &quot;int shifted = value &lt;&lt; 0;\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L98">			return &quot;&quot;&quot;</span>
+				int mask = 1 &lt;&lt; 0;  // was: 1 &lt;&lt; 32 (no-op for int)
+				long flag = 1L &lt;&lt; 32; // OK for long
+				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L100">		return &quot;int shifted = value &lt;&lt; 32;\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L103">		return &quot;&quot;&quot;</span>
+			int mask = 1 &lt;&lt; 32;  // BUG: equivalent to 1 &lt;&lt; 0
+			long flag = 1L &lt;&lt; 32; // OK for long
+			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

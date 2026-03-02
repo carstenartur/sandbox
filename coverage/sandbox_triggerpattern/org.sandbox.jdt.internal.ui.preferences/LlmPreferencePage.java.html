@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.preferences;
 
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IntegerFieldEditor;
@@ -54,76 +55,95 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 	/** Preference key for the temperature value. */
 	public static final String PREF_TEMPERATURE = PREFIX + &quot;temperature&quot;; //$NON-NLS-1$
 
-<span class="nc" id="L57">	private static final String[][] PROVIDER_ENTRIES = {</span>
-<span class="nc" id="L58">			{ &quot;Gemini&quot;, &quot;GEMINI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L59">			{ &quot;OpenAI&quot;, &quot;OPENAI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L60">			{ &quot;DeepSeek&quot;, &quot;DEEPSEEK&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L61">			{ &quot;Qwen&quot;, &quot;QWEN&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L62">			{ &quot;Llama&quot;, &quot;LLAMA&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L63">			{ &quot;Mistral&quot;, &quot;MISTRAL&quot; } //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L64">	};</span>
+	private static final String WIZARD_PREFIX = &quot;org.sandbox.jdt.triggerpattern.wizard.&quot;; //$NON-NLS-1$
+
+	/** Preference key for auto-running AI inference when the wizard opens from a selection. */
+	public static final String PREF_WIZARD_AUTO_AI = WIZARD_PREFIX + &quot;autoInferOnSelection&quot;; //$NON-NLS-1$
+
+	/** Preference key for the default hint file folder path. */
+	public static final String PREF_WIZARD_DEFAULT_FOLDER = WIZARD_PREFIX + &quot;defaultHintFolder&quot;; //$NON-NLS-1$
+
+<span class="nc" id="L66">	private static final String[][] PROVIDER_ENTRIES = {</span>
+<span class="nc" id="L67">			{ &quot;Gemini&quot;, &quot;GEMINI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L68">			{ &quot;OpenAI&quot;, &quot;OPENAI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L69">			{ &quot;DeepSeek&quot;, &quot;DEEPSEEK&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L70">			{ &quot;Qwen&quot;, &quot;QWEN&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L71">			{ &quot;Llama&quot;, &quot;LLAMA&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L72">			{ &quot;Mistral&quot;, &quot;MISTRAL&quot; } //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L73">	};</span>
 
 	/**
 	 * Creates a new LLM preference page with GRID layout.
 	 */
 	public LlmPreferencePage() {
-<span class="nc" id="L70">		super(GRID);</span>
-<span class="nc" id="L71">		setPreferenceStore(new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID));</span>
-<span class="nc" id="L72">		setDescription(&quot;Configure LLM settings for AI-powered rule inference.\n&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L79">		super(GRID);</span>
+<span class="nc" id="L80">		setPreferenceStore(new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID));</span>
+<span class="nc" id="L81">		setDescription(&quot;Configure LLM settings for AI-powered rule inference.\n&quot; //$NON-NLS-1$</span>
 				+ &quot;Leave API Key empty to fall back to environment variables.&quot;); //$NON-NLS-1$
-<span class="nc" id="L74">	}</span>
+<span class="nc" id="L83">	}</span>
 
 	@Override
 	public void createFieldEditors() {
-<span class="nc" id="L78">		addField(new ComboFieldEditor(</span>
-<span class="nc" id="L79">				PREF_PROVIDER,</span>
-<span class="nc" id="L80">				&quot;&amp;Provider:&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L81">				PROVIDER_ENTRIES,</span>
-<span class="nc" id="L82">				getFieldEditorParent()));</span>
+<span class="nc" id="L87">		addField(new ComboFieldEditor(</span>
+<span class="nc" id="L88">				PREF_PROVIDER,</span>
+<span class="nc" id="L89">				&quot;&amp;Provider:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L90">				PROVIDER_ENTRIES,</span>
+<span class="nc" id="L91">				getFieldEditorParent()));</span>
 
-<span class="nc" id="L84">		addField(new StringFieldEditor(</span>
-<span class="nc" id="L85">				PREF_API_KEY,</span>
-<span class="nc" id="L86">				&quot;&amp;API Key:&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L87">				getFieldEditorParent()));</span>
+<span class="nc" id="L93">		addField(new StringFieldEditor(</span>
+<span class="nc" id="L94">				PREF_API_KEY,</span>
+<span class="nc" id="L95">				&quot;&amp;API Key:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L96">				getFieldEditorParent()));</span>
 
-<span class="nc" id="L89">		addField(new StringFieldEditor(</span>
-<span class="nc" id="L90">				PREF_MODEL_NAME,</span>
-<span class="nc" id="L91">				&quot;&amp;Model name:&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L92">				getFieldEditorParent()));</span>
+<span class="nc" id="L98">		addField(new StringFieldEditor(</span>
+<span class="nc" id="L99">				PREF_MODEL_NAME,</span>
+<span class="nc" id="L100">				&quot;&amp;Model name:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L101">				getFieldEditorParent()));</span>
 
-<span class="nc" id="L94">		IntegerFieldEditor maxTokensField = new IntegerFieldEditor(</span>
-<span class="nc" id="L95">				PREF_MAX_TOKENS,</span>
-<span class="nc" id="L96">				&quot;Max &amp;tokens:&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L97">				getFieldEditorParent());</span>
-<span class="nc" id="L98">		maxTokensField.setValidRange(1, 128000);</span>
-<span class="nc" id="L99">		addField(maxTokensField);</span>
+<span class="nc" id="L103">		IntegerFieldEditor maxTokensField = new IntegerFieldEditor(</span>
+<span class="nc" id="L104">				PREF_MAX_TOKENS,</span>
+<span class="nc" id="L105">				&quot;Max &amp;tokens:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L106">				getFieldEditorParent());</span>
+<span class="nc" id="L107">		maxTokensField.setValidRange(1, 128000);</span>
+<span class="nc" id="L108">		addField(maxTokensField);</span>
 
-<span class="nc" id="L101">		StringFieldEditor temperatureField = new StringFieldEditor(</span>
-<span class="nc" id="L102">				PREF_TEMPERATURE,</span>
-<span class="nc" id="L103">				&quot;T&amp;emperature (0.0\u20131.0):&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L104">				getFieldEditorParent()) {</span>
+<span class="nc" id="L110">		StringFieldEditor temperatureField = new StringFieldEditor(</span>
+<span class="nc" id="L111">				PREF_TEMPERATURE,</span>
+<span class="nc" id="L112">				&quot;T&amp;emperature (0.0\u20131.0):&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L113">				getFieldEditorParent()) {</span>
 			@Override
 			protected boolean doCheckState() {
 				try {
-<span class="nc" id="L108">					double value = Double.parseDouble(getStringValue().trim());</span>
-<span class="nc bnc" id="L109" title="All 4 branches missed.">					if (value &lt; 0.0 || value &gt; 1.0) {</span>
-<span class="nc" id="L110">						setErrorMessage(&quot;Temperature must be between 0.0 and 1.0&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L111">						return false;</span>
+<span class="nc" id="L117">					double value = Double.parseDouble(getStringValue().trim());</span>
+<span class="nc bnc" id="L118" title="All 4 branches missed.">					if (value &lt; 0.0 || value &gt; 1.0) {</span>
+<span class="nc" id="L119">						setErrorMessage(&quot;Temperature must be between 0.0 and 1.0&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L120">						return false;</span>
 					}
-<span class="nc" id="L113">				} catch (NumberFormatException e) {</span>
-<span class="nc" id="L114">					setErrorMessage(&quot;Temperature must be a valid decimal number&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L115">					return false;</span>
+<span class="nc" id="L122">				} catch (NumberFormatException e) {</span>
+<span class="nc" id="L123">					setErrorMessage(&quot;Temperature must be a valid decimal number&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L124">					return false;</span>
 				}
-<span class="nc" id="L117">				return true;</span>
+<span class="nc" id="L126">				return true;</span>
 			}
 		};
-<span class="nc" id="L120">		temperatureField.setEmptyStringAllowed(false);</span>
-<span class="nc" id="L121">		addField(temperatureField);</span>
-<span class="nc" id="L122">	}</span>
+<span class="nc" id="L129">		temperatureField.setEmptyStringAllowed(false);</span>
+<span class="nc" id="L130">		addField(temperatureField);</span>
+
+		// --- Wizard section ---
+<span class="nc" id="L133">		addField(new BooleanFieldEditor(</span>
+<span class="nc" id="L134">				PREF_WIZARD_AUTO_AI,</span>
+<span class="nc" id="L135">				&quot;Automatically generate rule with AI when opening wizard from selection&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L136">				getFieldEditorParent()));</span>
+
+<span class="nc" id="L138">		addField(new StringFieldEditor(</span>
+<span class="nc" id="L139">				PREF_WIZARD_DEFAULT_FOLDER,</span>
+<span class="nc" id="L140">				&quot;Default hint file &amp;folder:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L141">				getFieldEditorParent()));</span>
+<span class="nc" id="L142">	}</span>
 
 	@Override
 	public void init(IWorkbench workbench) {
 		// Defaults are set by LlmPreferenceInitializer
-<span class="nc" id="L127">	}</span>
+<span class="nc" id="L147">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

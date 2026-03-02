@@ -33,7 +33,7 @@ import org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp;
 <span class="nc" id="L33">			CleanUpOptions.TRUE</span>
 	};
 
-<span class="nc" id="L36">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L36">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.functional&quot;; //$NON-NLS-1$</span>
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
@@ -44,62 +44,37 @@ import org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp;
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-<span class="nc" id="L47">		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);</span>
-<span class="nc" id="L48">		final CheckboxPreference functional_call= createCheckboxPref(java1d8Group, numColumns, CleanUpMessages.JavaFeatureTabPage_CheckboxName_FunctionalCall, MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L49">		intent(java1d8Group);</span>
-		
-		// Add radio buttons for target format selection
-<span class="nc" id="L52">		final RadioPreference streamFormat = createRadioPref(java1d8Group, 1, </span>
-<span class="nc" id="L53">			CleanUpMessages.JavaFeatureTabPage_TargetFormat_Stream, </span>
-<span class="nc" id="L54">			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_STREAM, FALSE_TRUE);</span>
-<span class="nc" id="L55">		final RadioPreference forLoopFormat = createRadioPref(java1d8Group, 1, </span>
-<span class="nc" id="L56">			CleanUpMessages.JavaFeatureTabPage_TargetFormat_ForLoop, </span>
-<span class="nc" id="L57">			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR, FALSE_TRUE);</span>
-<span class="nc" id="L58">		final RadioPreference whileLoopFormat = createRadioPref(java1d8Group, 1, </span>
-<span class="nc" id="L59">			CleanUpMessages.JavaFeatureTabPage_TargetFormat_WhileLoop, </span>
-<span class="nc" id="L60">			MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE, FALSE_TRUE);</span>
-<span class="nc" id="L61">		registerSlavePreference(functional_call, new RadioPreference[] { streamFormat, forLoopFormat, whileLoopFormat });</span>
-		
-<span class="nc" id="L63">		registerPreference(functional_call);</span>
-		
-		// Bidirectional Loop Conversion (Phase 9)
-<span class="nc" id="L66">		Group loopConversionGroup = createGroup(numColumns, composite, CleanUpMessages.LoopConversion_GroupName);</span>
-		
+		// Unified Loop Conversion Group
+<span class="nc" id="L48">		Group loopConversionGroup = createGroup(numColumns, composite, CleanUpMessages.LoopConversion_GroupName);</span>
+
 		// Master checkbox to enable loop conversions
-<span class="nc" id="L69">		final CheckboxPreference loopConversionEnabled = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L70">			CleanUpMessages.LoopConversion_Enable, MYCleanUpConstants.LOOP_CONVERSION_ENABLED, FALSE_TRUE);</span>
-<span class="nc" id="L71">		intent(loopConversionGroup);</span>
-		
-		// Target format combo
-		// Note: ComboPreference is created but not registered as a slave (it remains independently enabled)
-<span class="nc" id="L75">		createComboPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L76">			CleanUpMessages.LoopConversion_TargetFormat,</span>
-<span class="nc" id="L77">			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,</span>
-<span class="nc" id="L78">			new String[] {</span>
-<span class="nc" id="L79">				CleanUpMessages.LoopConversion_TargetFormat_Stream,</span>
-<span class="nc" id="L80">				CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor,</span>
-<span class="nc" id="L81">				CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile</span>
-			},
-<span class="nc" id="L83">			new String[] { &quot;stream&quot;, &quot;enhanced_for&quot;, &quot;iterator_while&quot; });</span>
-		
+<span class="nc" id="L51">		final CheckboxPreference loopConversionEnabled = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L52">			CleanUpMessages.LoopConversion_Enable, MYCleanUpConstants.LOOP_CONVERSION_ENABLED, FALSE_TRUE);</span>
+<span class="nc" id="L53">		intent(loopConversionGroup);</span>
+
+		// Target format combo box (for string-valued preference)
+<span class="nc" id="L56">		final ComboPreference targetFormatCombo = createComboPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L57">			CleanUpMessages.LoopConversion_TargetFormat_Stream, // Use existing label</span>
+<span class="nc" id="L58">			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,</span>
+<span class="nc" id="L59">			new String[] {&quot;stream&quot;, &quot;enhanced_for&quot;, &quot;iterator_while&quot;},</span>
+<span class="nc" id="L60">			new String[] {CleanUpMessages.LoopConversion_TargetFormat_Stream, CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor, CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile});</span>
+
 		// Source format checkboxes
-<span class="nc" id="L86">		final CheckboxPreference fromEnhancedFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L87">			CleanUpMessages.LoopConversion_From_EnhancedFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR, FALSE_TRUE);</span>
-<span class="nc" id="L88">		final CheckboxPreference fromIteratorWhile = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L89">			CleanUpMessages.LoopConversion_From_IteratorWhile, MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE, FALSE_TRUE);</span>
-<span class="nc" id="L90">		final CheckboxPreference fromStream = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L91">			CleanUpMessages.LoopConversion_From_Stream, MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM, FALSE_TRUE);</span>
-<span class="nc" id="L92">		final CheckboxPreference fromClassicFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L93">			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);</span>
-		
+<span class="nc" id="L63">		final CheckboxPreference fromEnhancedFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L64">			CleanUpMessages.LoopConversion_From_EnhancedFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR, FALSE_TRUE);</span>
+<span class="nc" id="L65">		final CheckboxPreference fromIteratorWhile = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L66">			CleanUpMessages.LoopConversion_From_IteratorWhile, MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE, FALSE_TRUE);</span>
+<span class="nc" id="L67">		final CheckboxPreference fromStream = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L68">			CleanUpMessages.LoopConversion_From_Stream, MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM, FALSE_TRUE);</span>
+<span class="nc" id="L69">		final CheckboxPreference fromClassicFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="nc" id="L70">			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);</span>
+
 		// Register dependencies: enable/disable based on master checkbox
-		// Note: registerSlavePreference only supports specific preference types (CheckboxPreference, RadioPreference)
-		// ComboPreference is created but not registered as a slave (it remains independently enabled)
-<span class="nc" id="L98">		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {</span>
-<span class="nc" id="L99">			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor</span>
+<span class="nc" id="L73">		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {</span>
+<span class="nc" id="L74">			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor</span>
 		});
-		
-<span class="nc" id="L102">		registerPreference(loopConversionEnabled);</span>
-<span class="nc" id="L103">	}</span>
+
+<span class="nc" id="L77">		registerPreference(loopConversionEnabled);</span>
+<span class="nc" id="L78">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

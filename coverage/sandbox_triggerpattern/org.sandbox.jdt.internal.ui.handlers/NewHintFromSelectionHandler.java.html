@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>NewHintFromSelectionHandler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.handlers</a> &gt; <span class="el_source">NewHintFromSelectionHandler.java</span></div><h1>NewHintFromSelectionHandler.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.handlers;
+
+import org.eclipse.core.commands.AbstractHandler;
+import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.jface.text.ITextSelection;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.texteditor.ITextEditor;
+import org.sandbox.jdt.internal.ui.wizard.NewSandboxHintFileWizard;
+
+/**
+ * Eclipse command handler that opens the {@link NewSandboxHintFileWizard}
+ * with the current text selection pre-filled as source pattern.
+ *
+ * &lt;p&gt;This handler is triggered from the context menu in the Java editor
+ * (Sandbox TriggerPattern &amp;rarr; New hint file from selection&amp;hellip;).&lt;/p&gt;
+ *
+ * @since 1.5.0
+ */
+<span class="nc" id="L41">public class NewHintFromSelectionHandler extends AbstractHandler {</span>
+
+	@Override
+	public Object execute(ExecutionEvent event) throws ExecutionException {
+<span class="nc" id="L45">		ITextSelection textSelection = getTextSelection(event);</span>
+<span class="nc bnc" id="L46" title="All 4 branches missed.">		if (textSelection == null || textSelection.getLength() == 0) {</span>
+<span class="nc" id="L47">			return null;</span>
+		}
+
+<span class="nc" id="L50">		NewSandboxHintFileWizard wizard = new NewSandboxHintFileWizard();</span>
+		// Normalize multiline selection: trim and take only the first non-blank line
+		// since the source pattern field is single-line
+<span class="nc" id="L53">		String snippet = normalizeSelection(textSelection.getText());</span>
+<span class="nc" id="L54">		wizard.setInitialCodeSnippet(snippet);</span>
+
+<span class="nc" id="L56">		IStructuredSelection resourceSelection = getResourceSelection(event);</span>
+<span class="nc" id="L57">		wizard.init(PlatformUI.getWorkbench(), resourceSelection);</span>
+
+<span class="nc" id="L59">		WizardDialog dialog = new WizardDialog(</span>
+<span class="nc" id="L60">				HandlerUtil.getActiveShell(event), wizard);</span>
+<span class="nc" id="L61">		dialog.open();</span>
+
+<span class="nc" id="L63">		return null;</span>
+	}
+
+	/**
+	 * Extracts the current text selection from the active editor.
+	 */
+	private static ITextSelection getTextSelection(ExecutionEvent event) {
+<span class="nc" id="L70">		IEditorPart editor = HandlerUtil.getActiveEditor(event);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">		if (editor instanceof ITextEditor textEditor) {</span>
+<span class="nc" id="L72">			ISelection sel = textEditor.getSelectionProvider().getSelection();</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">			if (sel instanceof ITextSelection textSel) {</span>
+<span class="nc" id="L74">				return textSel;</span>
+			}
+		}
+<span class="nc" id="L77">		return null;</span>
+	}
+
+	/**
+	 * Normalizes a potentially multiline text selection into a single line
+	 * suitable for the source pattern field. Trims whitespace and takes
+	 * the first non-blank line.
+	 */
+	private static String normalizeSelection(String text) {
+<span class="nc bnc" id="L86" title="All 2 branches missed.">		if (text == null) {</span>
+<span class="nc" id="L87">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L89">		String[] lines = text.split(&quot;\\R&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">		for (String line : lines) {</span>
+<span class="nc" id="L91">			String trimmed = line.trim();</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">			if (!trimmed.isEmpty()) {</span>
+<span class="nc" id="L93">				return trimmed;</span>
+			}
+		}
+<span class="nc" id="L96">		return &quot;&quot;; //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Builds a structured selection from the resource of the active editor.
+	 */
+	private static IStructuredSelection getResourceSelection(ExecutionEvent event) {
+<span class="nc" id="L103">		IEditorPart editor = HandlerUtil.getActiveEditor(event);</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">		if (editor != null) {</span>
+<span class="nc" id="L105">			IEditorInput input = editor.getEditorInput();</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">			if (input != null) {</span>
+<span class="nc" id="L107">				IResource resource = input.getAdapter(IResource.class);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">				if (resource != null) {</span>
+<span class="nc" id="L109">					return new StructuredSelection(resource);</span>
+				}
+			}
+		}
+<span class="nc" id="L113">		return StructuredSelection.EMPTY;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHintTemplates.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.wizard</a> &gt; <span class="el_source">SandboxHintTemplates.java</span></div><h1>SandboxHintTemplates.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.wizard;
+
+/**
+ * Pre-built templates for new {@code .sandbox-hint} files.
+ *
+ * &lt;p&gt;Each template provides a label for the wizard UI and a method to generate
+ * rule content that is appended after the metadata block.&lt;/p&gt;
+ *
+ * @since 1.5.0
+ */
+<span class="nc" id="L24">public enum SandboxHintTemplates {</span>
+
+<span class="nc" id="L26">	/** Metadata-only file without rules. */</span>
+<span class="nc" id="L27">	EMPTY(&quot;Empty file (metadata only)&quot;) { //$NON-NLS-1$</span>
+		@Override
+		public String getRuleContent() {
+<span class="nc" id="L30">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+	},
+
+<span class="nc" id="L34">	/** A single source-pattern &amp;rarr; replacement rule. */</span>
+<span class="nc" id="L35">	SIMPLE(&quot;Simple transformation rule&quot;) { //$NON-NLS-1$</span>
+		@Override
+		public String getRuleContent() {
+<span class="nc" id="L38">			return &quot;&quot;&quot;</span>
+
+				$x.getBytes(&quot;UTF-8&quot;)
+				=&gt; $x.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+				;;
+				&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+	},
+
+<span class="nc" id="L47">	/** Detection-only rule without a replacement. */</span>
+<span class="nc" id="L48">	HINT_ONLY(&quot;Hint-only rule (detection without fix)&quot;) { //$NON-NLS-1$</span>
+		@Override
+		public String getRuleContent() {
+<span class="nc" id="L51">			return &quot;&quot;&quot;</span>
+
+				$x.toString()
+				;;
+				&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+	},
+
+<span class="nc" id="L59">	/** File skeleton with two example rules. */</span>
+<span class="nc" id="L60">	MULTI(&quot;Multi-rule file&quot;) { //$NON-NLS-1$</span>
+		@Override
+		public String getRuleContent() {
+<span class="nc" id="L63">			return &quot;&quot;&quot;</span>
+
+				$x.getBytes(&quot;UTF-8&quot;)
+				=&gt; $x.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+				;;
+
+				new String($bytes, &quot;UTF-8&quot;)
+				=&gt; new String($bytes, java.nio.charset.StandardCharsets.UTF_8)
+				;;
+				&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+	};
+
+	private final String label;
+
+<span class="nc" id="L78">	SandboxHintTemplates(String label) {</span>
+<span class="nc" id="L79">		this.label = label;</span>
+<span class="nc" id="L80">	}</span>
+
+	/**
+	 * Returns the human-readable label shown in the wizard radio group.
+	 *
+	 * @return the label
+	 */
+	public String getLabel() {
+<span class="nc" id="L88">		return label;</span>
+	}
+
+	/**
+	 * Returns the rule body text to append after the metadata header. An empty
+	 * string means no rules are generated.
+	 *
+	 * @return the rule DSL text (may be empty, never {@code null})
+	 */
+	public abstract String getRuleContent();
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

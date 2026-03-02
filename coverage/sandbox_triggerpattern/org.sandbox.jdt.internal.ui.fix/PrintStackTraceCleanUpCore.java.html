@@ -60,9 +60,21 @@ public class PrintStackTraceCleanUpCore extends AbstractSandboxCleanUpCore {
 	@Override
 	public String getPreview() {
 <span class="nc bnc" id="L62" title="All 2 branches missed.">		if (isEnabled(PRINT_STACKTRACE_CLEANUP)) {</span>
-<span class="nc" id="L63">			return &quot;logger.log(Level.SEVERE, \&quot;Error\&quot;, ex);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L63">			return &quot;&quot;&quot;</span>
+				try {
+				    parse(input);
+				} catch (IOException ex) {
+				    logger.log(Level.SEVERE, &quot;Parse failed&quot;, ex);
+				}
+				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L65">		return &quot;ex.printStackTrace();\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L71">		return &quot;&quot;&quot;</span>
+			try {
+			    parse(input);
+			} catch (IOException ex) {
+			    ex.printStackTrace();
+			}
+			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

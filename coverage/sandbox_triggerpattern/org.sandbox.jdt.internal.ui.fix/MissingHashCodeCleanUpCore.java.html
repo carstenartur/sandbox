@@ -60,9 +60,22 @@ public class MissingHashCodeCleanUpCore extends AbstractSandboxCleanUpCore {
 	@Override
 	public String getPreview() {
 <span class="nc bnc" id="L62" title="All 2 branches missed.">		if (isEnabled(MISSING_HASHCODE_CLEANUP)) {</span>
-<span class="nc" id="L63">			return &quot;// equals() and hashCode() both overridden\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L63">			return &quot;&quot;&quot;</span>
+				public class Person {
+				    @Override
+				    public boolean equals(Object o) { ... }
+				    @Override
+				    public int hashCode() { ... }
+				}
+				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L65">		return &quot;// equals() overridden, hashCode() missing\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L72">		return &quot;&quot;&quot;</span>
+			public class Person {
+			    @Override
+			    public boolean equals(Object o) { ... }
+			    // WARNING: hashCode() is missing!
+			}
+			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -59,9 +59,15 @@ public class SystemOutCleanUpCore extends AbstractSandboxCleanUpCore {
 	@Override
 	public String getPreview() {
 <span class="nc bnc" id="L61" title="All 2 branches missed.">		if (isEnabled(SYSTEM_OUT_CLEANUP)) {</span>
-<span class="nc" id="L62">			return &quot;logger.info(message);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L62">			return &quot;&quot;&quot;</span>
+				logger.info(&quot;Processing: &quot; + file);
+				logger.severe(&quot;Failed: &quot; + error);
+				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L64">		return &quot;System.out.println(message);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L67">		return &quot;&quot;&quot;</span>
+			System.out.println(&quot;Processing: &quot; + file);
+			System.err.println(&quot;Failed: &quot; + error);
+			&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
