@@ -9,12 +9,13 @@ java.util.Optional.ofNullable($x).orElse(null)
 => $x
 ;;
 
-// Optional.of(x).get() → x (pointless wrapping)
+// Hint-only: Optional.of(x).get() is pointless wrapping but removing it changes null-check semantics
+"Optional.of(x).get() unnecessarily wraps a value; consider using the value directly after ensuring it is non-null":
 java.util.Optional.of($x).get()
-=> $x
 ;;
 
-// Hint-only: isPresent()/get() → ifPresent() or map() — narrowed to Optional type
-"Consider using Optional.ifPresent() or Optional.map() instead of isPresent()/get()":
+// Hint-only: isPresent() checks → consider using ifPresent() or map()
+// Narrowed to Optional type to reduce false positives
+"Consider using Optional.ifPresent() or Optional.map() instead of manual isPresent() checks":
 $opt.isPresent() :: instanceof($opt, "java.util.Optional")
 ;;
