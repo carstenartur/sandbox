@@ -116,8 +116,5 @@ public class IncrementalIndexer {
 	 */
 	private void processCommit(RevCommit commit) {
 		// Phase 1b: Connect to CommitIndexer and BlobIndexer
-		LOG.info("Git Database Index: Processing commit " //$NON-NLS-1$
-				+ commit.abbreviate(7).name() + " - " //$NON-NLS-1$
-				+ commit.getShortMessage());
 	}
 }
