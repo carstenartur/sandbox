@@ -29,6 +29,8 @@
 		<module>sandbox_mining_core</module>
 		<module>sandbox-ast-api</module>
 		<module>sandbox-ast-api-jdt</module>
+		<module>sandbox-jgit-storage-hibernate</module>
+		<module>sandbox-jgit-server-webapp</module>
 		<module>sandbox_target</module>
 		<module>sandbox_cleanup_application</module>
 		<module>sandbox_cleanup_application_feature</module>
@@ -620,6 +622,16 @@
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_use_general_type_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox-jgit-storage-hibernate</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox-jgit-server-webapp</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

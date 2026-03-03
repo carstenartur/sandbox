@@ -1,0 +1,27 @@
+# === Build Stage ===
+FROM eclipse-temurin:21-jdk AS builder
+WORKDIR /build
+COPY . .
+RUN chmod +x mvnw 2>/dev/null || true
+RUN mvn -pl org.eclipse.jgit.server.webapp \
+    -am package -DskipTests -Dmaven.javadoc.skip=true \
+    -B -q || \
+    ./mvnw -pl org.eclipse.jgit.server.webapp \
+    -am package -DskipTests -Dmaven.javadoc.skip=true \
+    -B -q
+
+# === Runtime Stage ===
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+
+COPY --from=builder /build/org.eclipse.jgit.server.webapp/target/jgit-server.jar .
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s \
+  CMD curl -sf http://localhost:8080/api/health || exit 1
+
+EXPOSE 8080 8443
+
+ENTRYPOINT ["java", \
+  "-Xms256m", "-Xmx1g", \
+  "-jar", "jgit-server.jar"]

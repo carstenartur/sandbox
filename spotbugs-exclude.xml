@@ -56,4 +56,16 @@
     <Bug pattern="CT_CONSTRUCTOR_THROW"/>
     <Class name="org.sandbox.jdt.internal.corext.fix.helper.PreconditionsChecker"/>
   </Match>
+  <Match>
+    <!-- EQ_DOESNT_OVERRIDE_EQUALS is expected for Lucene TokenFilter/Tokenizer subclasses.
+         AttributeSource.equals() is not a semantic equality method in Lucene. -->
+    <Bug pattern="EQ_DOESNT_OVERRIDE_EQUALS"/>
+    <Class name="~org\.eclipse\.jgit\.storage\.hibernate\.search\.Ecj.*"/>
+  </Match>
+  <Match>
+    <!-- SE_BAD_FIELD is expected for servlet classes with non-serializable fields.
+         These servlets are used with embedded Jetty and never serialized in practice. -->
+    <Bug pattern="SE_BAD_FIELD"/>
+    <Class name="~org\.eclipse\.jgit\.server\..*"/>
+  </Match>
 </FindBugsFilter>
