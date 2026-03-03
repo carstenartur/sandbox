@@ -113,7 +113,7 @@
    <extension
          point="org.eclipse.ui.menus">
       <menuContribution
-            locationURI="menu:org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView">
+            locationURI="toolbar:org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView">
          <command
                commandId="org.sandbox.jdt.internal.ui.search.gitindex.commands.indexRepository"
                label="Index Repository"
