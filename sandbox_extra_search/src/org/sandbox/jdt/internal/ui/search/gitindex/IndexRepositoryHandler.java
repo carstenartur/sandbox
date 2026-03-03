@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -42,7 +41,7 @@ public class IndexRepositoryHandler extends AbstractHandler {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				RepositoryIndexService service= new RepositoryIndexService();
-				Collection<File> gitDirs= RepositoryCache.INSTANCE.getAllRepositories();
+				Collection<File> gitDirs= EGitRepositoryTracker.getAllRepositoryDirs();
 				monitor.beginTask("Indexing repositories", gitDirs.size()); //$NON-NLS-1$
 				for (File gitDir : gitDirs) {
 					if (monitor.isCanceled()) {
