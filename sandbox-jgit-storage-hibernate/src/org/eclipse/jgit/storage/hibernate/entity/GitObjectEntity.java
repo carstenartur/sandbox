@@ -15,7 +15,9 @@ package org.eclipse.jgit.storage.hibernate.entity;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
@@ -25,7 +27,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 /**
@@ -50,8 +51,8 @@ public class GitObjectEntity {
 	@Column(name = "object_size", nullable = false)
 	private long objectSize;
 
-	@Lob
-	@Column(name = "data", nullable = false, length = Integer.MAX_VALUE)
+	@JdbcTypeCode(SqlTypes.LONG32VARBINARY)
+	@Column(name = "data", nullable = false)
 	@Basic(fetch = FetchType.LAZY)
 	private byte[] data;
 
