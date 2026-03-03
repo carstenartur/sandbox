@@ -399,7 +399,9 @@ public class JGitServerApplication {
 				try {
 					maxCmdBytes = Long.parseLong(envVal);
 				} catch (NumberFormatException e) {
-					// keep default
+					LOG.log(Level.WARNING,
+							"Invalid JGIT_RECEIVE_MAX_COMMAND_BYTES value: {0}, using default 50 MiB", //$NON-NLS-1$
+							envVal);
 				}
 			}
 			rp.setMaxCommandBytes(maxCmdBytes);

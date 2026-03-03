@@ -247,9 +247,15 @@ public class BlobIndexer {
 	/**
 	 * Pre-load the set of already-indexed blob OIDs for this repository.
 	 * <p>
+	 * Deduplicates on blob OID alone so that the same content is only indexed
+	 * once regardless of how many commits reference it. The
+	 * {@code commitObjectId} stored in the resulting {@link JavaBlobIndex}
+	 * represents the first commit where the blob was encountered.
+	 * </p>
+	 * <p>
 	 * This avoids one query per blob during indexing. For repositories with
-	 * very large numbers of indexed blobs, this set may consume
-	 * significant memory (approximately 80 bytes per entry).
+	 * very large numbers of indexed blobs, this set may consume significant
+	 * memory.
 	 * </p>
 	 *
 	 * @return set of blob OID hex strings already in the index
