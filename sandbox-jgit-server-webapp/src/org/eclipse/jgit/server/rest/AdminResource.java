@@ -114,10 +114,12 @@ public class AdminResource extends HttpServlet {
 	/**
 	 * Check if the request is authorized for admin operations.
 	 * <p>
-	 * When {@code JGIT_ADMIN_TOKEN} is set, the request must include an
-	 * {@code Authorization: Bearer <token>} header matching that value.
-	 * When the variable is not set, all requests are allowed (development
-	 * mode).
+	 * The {@code JGIT_ADMIN_TOKEN} environment variable must be set to a
+	 * non-empty value; all admin access is denied when the variable is absent
+	 * or empty.  Requests must include an
+	 * {@code Authorization: Bearer <token>} header whose value matches that
+	 * variable.
+	 * </p>
 	 *
 	 * @param req
 	 *            the HTTP request
@@ -126,7 +128,9 @@ public class AdminResource extends HttpServlet {
 	private static boolean isAuthorized(HttpServletRequest req) {
 		String expectedToken = System.getenv("JGIT_ADMIN_TOKEN"); //$NON-NLS-1$
 		if (expectedToken == null || expectedToken.isEmpty()) {
-			return true; // No token configured — allow all (dev mode)
+			LOG.log(Level.WARNING,
+					"Admin access denied: JGIT_ADMIN_TOKEN is not set"); //$NON-NLS-1$
+			return false;
 		}
 		String authHeader = req.getHeader("Authorization"); //$NON-NLS-1$
 		if (authHeader == null

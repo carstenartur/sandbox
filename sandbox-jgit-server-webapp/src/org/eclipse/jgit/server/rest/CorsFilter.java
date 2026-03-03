@@ -31,10 +31,17 @@ import jakarta.servlet.http.HttpServletResponse;
  * The allowed origins are passed at construction time (typically from the
  * {@code JGIT_CORS_ORIGINS} environment variable).
  * </p>
+ * <p>
+ * If the value is {@code "*"}, a wildcard is sent. Otherwise the request's
+ * {@code Origin} header is echoed back only when it matches one of the
+ * comma-separated entries in the allowed-origins list.
+ * </p>
  */
 public class CorsFilter implements Filter {
 
-	private final String allowedOrigins;
+	private final String[] allowedOrigins;
+
+	private final boolean wildcard;
 
 	/**
 	 * Create a CORS filter.
@@ -43,7 +50,14 @@ public class CorsFilter implements Filter {
 	 *            comma-separated list of allowed origins, or {@code "*"}
 	 */
 	public CorsFilter(String allowedOrigins) {
-		this.allowedOrigins = allowedOrigins;
+		String trimmed = allowedOrigins == null ? "" : allowedOrigins.trim(); //$NON-NLS-1$
+		if ("*".equals(trimmed)) { //$NON-NLS-1$
+			this.wildcard = true;
+			this.allowedOrigins = new String[0];
+		} else {
+			this.wildcard = false;
+			this.allowedOrigins = trimmed.split("\\s*,\\s*"); //$NON-NLS-1$
+		}
 	}
 
 	@Override
@@ -54,22 +68,43 @@ public class CorsFilter implements Filter {
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response,
 			FilterChain chain) throws IOException, ServletException {
-		if (response instanceof HttpServletResponse httpResp) {
-			httpResp.setHeader("Access-Control-Allow-Origin", //$NON-NLS-1$
-					allowedOrigins);
-			httpResp.setHeader("Access-Control-Allow-Methods", //$NON-NLS-1$
-					"GET, POST, OPTIONS"); //$NON-NLS-1$
-			httpResp.setHeader("Access-Control-Allow-Headers", //$NON-NLS-1$
-					"Content-Type, Authorization"); //$NON-NLS-1$
-			httpResp.setHeader("Access-Control-Max-Age", "3600"); //$NON-NLS-1$ //$NON-NLS-2$
+		if (response instanceof HttpServletResponse httpResp
+				&& request instanceof HttpServletRequest httpReq) {
+			String rawOrigin = httpReq.getHeader("Origin"); //$NON-NLS-1$
+			// Strip CR/LF to prevent header injection before echoing back
+			String origin = rawOrigin != null
+					? rawOrigin.replace("\r", "").replace("\n", "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					: null;
+			boolean originAllowed = origin != null && isAllowed(origin);
+			if (wildcard) {
+				httpResp.setHeader("Access-Control-Allow-Origin", "*"); //$NON-NLS-1$ //$NON-NLS-2$
+			} else if (originAllowed) {
+				httpResp.setHeader("Access-Control-Allow-Origin", origin); //$NON-NLS-1$
+				httpResp.setHeader("Vary", "Origin"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			if (wildcard || originAllowed) {
+				httpResp.setHeader("Access-Control-Allow-Methods", //$NON-NLS-1$
+						"GET, POST, OPTIONS"); //$NON-NLS-1$
+				httpResp.setHeader("Access-Control-Allow-Headers", //$NON-NLS-1$
+						"Content-Type, Authorization"); //$NON-NLS-1$
+				httpResp.setHeader("Access-Control-Max-Age", "3600"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
 
-			if (request instanceof HttpServletRequest httpReq
-					&& "OPTIONS".equals(httpReq.getMethod())) { //$NON-NLS-1$
+			if ("OPTIONS".equals(httpReq.getMethod())) { //$NON-NLS-1$
 				httpResp.setStatus(HttpServletResponse.SC_OK);
 				return;
 			}
 		}
 		chain.doFilter(request, response);
+	}
+
+	private boolean isAllowed(String origin) {
+		for (String allowed : allowedOrigins) {
+			if (allowed.equals(origin)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override

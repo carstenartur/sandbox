@@ -101,6 +101,14 @@ public class HibernateRepositoryBuilder extends
 
 	@Override
 	public HibernateRepository build() throws IOException {
+		if (sessionFactoryProvider == null) {
+			throw new IllegalArgumentException(
+					"sessionFactoryProvider must be set before calling build()"); //$NON-NLS-1$
+		}
+		if (repositoryName == null || repositoryName.isEmpty()) {
+			throw new IllegalArgumentException(
+					"repositoryName must be set before calling build()"); //$NON-NLS-1$
+		}
 		return new HibernateRepository(this);
 	}
 }

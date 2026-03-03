@@ -63,9 +63,9 @@
     <Class name="~org\.eclipse\.jgit\.storage\.hibernate\.search\.Ecj.*"/>
   </Match>
   <Match>
-    <!-- SE_BAD_FIELD is expected for servlet classes with non-serializable fields.
+    <!-- SE_BAD_FIELD is expected for servlet/resource classes with non-serializable fields.
          These servlets are used with embedded Jetty and never serialized in practice. -->
     <Bug pattern="SE_BAD_FIELD"/>
-    <Class name="~org\.eclipse\.jgit\.server\..*"/>
+    <Class name="~org\.eclipse\.jgit\.server\.rest\.\w+Resource"/>
   </Match>
 </FindBugsFilter>

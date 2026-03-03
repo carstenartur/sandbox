@@ -166,6 +166,10 @@ public class HibernateObjDatabase extends DfsObjDatabase {
 	@Override
 	protected ReadableChannel openFile(DfsPackDescription desc, PackExt ext)
 			throws FileNotFoundException, IOException {
+		// TODO: For large repositories, consider streaming the BLOB directly
+		// from the database rather than materialising it fully in memory here.
+		// The current approach loads the entire pack/idx data into a byte[]
+		// which can cause high memory usage for large pack files.
 		try (Session session = sessionFactory.openSession()) {
 			GitPackEntity entity = session.createQuery(
 					"FROM GitPackEntity p WHERE p.repositoryName = :repo AND p.packName = :name AND p.packExtension = :ext", //$NON-NLS-1$

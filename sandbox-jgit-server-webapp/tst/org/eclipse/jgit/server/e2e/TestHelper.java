@@ -138,7 +138,7 @@ class TestHelper {
 		try (Connection conn = DriverManager.getConnection(jdbcUrl, user,
 				password)) {
 			try (PreparedStatement ps = conn.prepareStatement(
-					"SELECT COUNT(*) FROM git_object " //$NON-NLS-1$
+					"SELECT COUNT(*) FROM git_objects " //$NON-NLS-1$
 							+ "WHERE repository_name = ? AND object_type = ?")) { //$NON-NLS-1$
 				ps.setString(1, repoName);
 				ps.setInt(2, objectType);

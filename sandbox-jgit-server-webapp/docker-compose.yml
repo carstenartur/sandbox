@@ -40,7 +40,7 @@ services:
   jgit-server:
     build:
       context: ..
-      dockerfile: org.eclipse.jgit.server.webapp/Dockerfile.jgit
+      dockerfile: sandbox-jgit-server-webapp/Dockerfile.jgit
     depends_on:
       mssql:
         condition: service_healthy
