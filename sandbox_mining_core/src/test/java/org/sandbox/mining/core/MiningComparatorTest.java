@@ -105,7 +105,7 @@ class MiningComparatorTest {
 	}
 
 	@Test
-	void testCategorizeDslErrorXmlDetectedAsDslSyntax() {
+	void testDslErrorXmlDetectedAsDslSyntax() {
 		// Verify XML syntax errors are categorized via the comparison flow
 		CommitEvaluation mining = createEval("hash1", true, TrafficLight.GREEN,
 				"<trigger>rule</trigger>", "Found <trigger> XML tag", "Cat1");
@@ -118,7 +118,7 @@ class MiningComparatorTest {
 	}
 
 	@Test
-	void testCategorizeDslErrorGuardDetectedAsGuardWissen() {
+	void testDslErrorGuardDetectedAsGuardWissen() {
 		CommitEvaluation mining = createEval("hash1", true, TrafficLight.GREEN,
 				"rule with isType()", "isType() is not supported", "Cat1");
 		CommitEvaluation ref = createEval("hash1", true, TrafficLight.GREEN,
@@ -130,7 +130,7 @@ class MiningComparatorTest {
 	}
 
 	@Test
-	void testCategorizeDslErrorUnknownAsInvalidDslRule() {
+	void testDslErrorUnknownAsInvalidDslRule() {
 		CommitEvaluation mining = createEval("hash1", true, TrafficLight.GREEN,
 				"bad rule", "some other error", "Cat1");
 		CommitEvaluation ref = createEval("hash1", true, TrafficLight.GREEN,

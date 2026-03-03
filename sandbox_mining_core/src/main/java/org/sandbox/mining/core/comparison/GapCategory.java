@@ -83,7 +83,7 @@ public enum GapCategory {
 			case TYP_KONTEXT -> "Add type information to eclipse-api-context.md"; //$NON-NLS-1$
 			case API_VERSION -> "Add Java version context to eclipse-api-context.md"; //$NON-NLS-1$
 			case GUARD_WISSEN -> "Add guard examples to dsl-explanation.md"; //$NON-NLS-1$
-			case DSL_SYNTAX -> "Add negative examples to dsl-explanation.md showing what NOT to generate"; //$NON-NLS-1$
+			case DSL_SYNTAX -> "Add negative examples to dsl-explanation.md"; //$NON-NLS-1$
 			case GENERALISIERUNG -> "Add generalization examples to mining-examples.md"; //$NON-NLS-1$
 			case DUPLIKAT_ERKENNUNG -> "Improve existing .sandbox-hint descriptions for better matching"; //$NON-NLS-1$
 			case KONTEXT_NUTZUNG -> "Extend PromptBuilder context sections"; //$NON-NLS-1$

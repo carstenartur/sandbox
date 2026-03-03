@@ -149,8 +149,9 @@ public class DeltaReport {
 			sb.append("### ").append(entry.getKey()) //$NON-NLS-1$
 					.append(" (").append(entry.getValue().size()).append(")\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
 			for (GapEntry gap : entry.getValue()) {
-				String shortHash = gap.commitHash().substring(0,
-						Math.min(7, gap.commitHash().length()));
+				String shortHash = gap.commitHash() != null
+					? gap.commitHash().substring(0, Math.min(7, gap.commitHash().length()))
+					: "???????"; //$NON-NLS-1$
 				sb.append("- **").append(shortHash).append("**"); //$NON-NLS-1$ //$NON-NLS-2$
 				if (gap.suggestion() != null) {
 					sb.append(": ").append(gap.suggestion()); //$NON-NLS-1$
