@@ -204,12 +204,17 @@ Current implementation is tightly coupled to Eclipse JDT search. Consider:
 
 ## Git Database Index — Phase Plan
 
-### Phase 1b: Dependency Bundling
-- [ ] Evaluate Hibernate bundling vs. lightweight JDBC+Lucene approach
+### Phase 1b: HSQLDB Embedded + Dependency Bundling
 - [ ] Add HSQLDB JAR to `lib/` and update `Bundle-ClassPath`
 - [ ] Add Hibernate ORM + Hibernate Search JARs to `lib/`
+- [ ] Add Jakarta Persistence API JARs to `lib/`
 - [ ] Resolve OSGi classloading conflicts with Eclipse Platform
-- [ ] Wire `IncrementalIndexer.processCommit()` to `CommitIndexer` + `BlobIndexer`
+- [ ] Wire `EmbeddedSearchService.initialize()` to `HibernateSessionFactoryProvider(props)`
+- [ ] Wire `EmbeddedSearchService` to `GitDatabaseQueryService(sessionFactory)`
+- [ ] Connect `IncrementalIndexer.processCommit()` to `CommitIndexer` + `BlobIndexer`
+- [ ] Configure `DriverManagerConnectionProviderImpl` (no HikariCP for embedded mode)
+- [ ] Verify HSQLDB `file:` mode persistence across Eclipse restarts
+- [ ] Add `EmbeddedSearchService.shutdown()` call to plugin stop lifecycle
 
 ### Phase 2: EGit Integration
 - [ ] Implement full `IResourceChangeListener` with .git/refs and .git/objects filtering
