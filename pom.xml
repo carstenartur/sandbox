@@ -79,6 +79,8 @@
 		<module>sandbox_use_general_type</module>
 		<module>sandbox_use_general_type_feature</module>
 		<module>sandbox_use_general_type_test</module>
+		<module>sandbox_jgit_db</module>
+		<module>sandbox_jgit_db_feature</module>
 		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to
 		profiles below -->
 	</modules>
