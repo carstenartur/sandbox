@@ -182,9 +182,9 @@
       "lastModelUsed": "gemini-2.5-flash"
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "4972ceda4bf841162712401d9d7a17bc60e10887",
-      "lastProcessedDate": "2026-03-02T04:22:16.128996969Z",
-      "totalProcessed": 1873,
+      "lastProcessedCommit": "6373b82afa49b788930f634c152d22a5233860ad",
+      "lastProcessedDate": "2026-03-03T04:22:01.152723957Z",
+      "totalProcessed": 2209,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -312,6 +312,15 @@
           "deferredAt": "2026-03-01T04:25:19.942660189Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "867c2e5b22ec99c6d56015365d4fef3c3a7038e9",
+          "message": "Fix warning about deprecated AST10 level.\n\nChange-Id: I23b54277a5acabab580adff76e29f26432a2fd0e\nSigned-off-by: Jay Artha",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-03-03T04:20:16.993849973Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -327,5 +336,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 11846
+  "globalTotalProcessed": 12182
 }
