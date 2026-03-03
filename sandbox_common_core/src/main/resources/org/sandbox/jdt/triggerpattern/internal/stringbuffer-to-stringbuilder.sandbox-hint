@@ -1,0 +1,20 @@
+<!id: stringbuffer-to-stringbuilder>
+<!description: Replace StringBuffer with StringBuilder for local variables (thread safety not needed)>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: performance, modernization>
+
+// new StringBuffer() → new StringBuilder() — only for local variable initializers
+new java.lang.StringBuffer() :: isAssignedToLocalVariable()
+=> new java.lang.StringBuilder()
+;;
+
+// new StringBuffer(capacity) → new StringBuilder(capacity)
+new java.lang.StringBuffer($capacity) :: isAssignedToLocalVariable()
+=> new java.lang.StringBuilder($capacity)
+;;
+
+// new StringBuffer(string) → new StringBuilder(string)
+new java.lang.StringBuffer($str) :: isAssignedToLocalVariable()
+=> new java.lang.StringBuilder($str)
+;;

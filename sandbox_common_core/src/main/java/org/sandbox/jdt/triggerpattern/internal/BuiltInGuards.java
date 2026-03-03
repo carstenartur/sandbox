@@ -179,6 +179,13 @@ public final class BuiltInGuards {
 		// Variable kind guards — check if a binding is a parameter or field
 		guards.put("isParameter", BuiltInGuards::evaluateIsParameter); //$NON-NLS-1$
 		guards.put("isField", BuiltInGuards::evaluateIsField); //$NON-NLS-1$
+		guards.put("isLocalVariable", BuiltInGuards::evaluateIsLocalVariable); //$NON-NLS-1$
+
+		// Assignment context guards — check if matched expression is in a local variable initializer
+		guards.put("isAssignedToLocalVariable", BuiltInGuards::evaluateIsAssignedToLocalVariable); //$NON-NLS-1$
+
+		// Type hierarchy guard — checks if a variable's type implements AutoCloseable
+		guards.put("isAutoCloseable", BuiltInGuards::evaluateIsAutoCloseable); //$NON-NLS-1$
 
 		// Constructor context guard — checks if matched node is inside a constructor
 		guards.put("isInConstructor", BuiltInGuards::evaluateIsInConstructor); //$NON-NLS-1$
@@ -1940,5 +1947,125 @@ public final class BuiltInGuards {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Checks if a binding is a local variable (not a field and not a parameter).
+	 *
+	 * <p>Uses {@link IVariableBinding#isField()} and {@link IVariableBinding#isParameter()}
+	 * when binding resolution is available. Falls back to AST structure by checking
+	 * whether the node is inside a {@link VariableDeclarationStatement}.</p>
+	 *
+	 * Args: [placeholderName]
+	 */
+	private static boolean evaluateIsLocalVariable(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		IBinding binding = resolveBinding(node);
+		if (binding instanceof IVariableBinding vb) {
+			return !vb.isField() && !vb.isParameter();
+		}
+		// Fallback: walk up AST and check for VariableDeclarationStatement
+		ASTNode current = node;
+		while (current != null) {
+			if (current instanceof VariableDeclarationStatement) {
+				return true;
+			}
+			if (current instanceof FieldDeclaration
+					|| current instanceof MethodDeclaration) {
+				return false;
+			}
+			current = current.getParent();
+		}
+		return false;
+	}
+
+	/**
+	 * Checks if the matched expression is the initializer of a local variable declaration.
+	 *
+	 * <p>Returns {@code true} when the matched node appears as the initializer expression
+	 * of a {@link VariableDeclarationFragment} whose parent is a
+	 * {@link VariableDeclarationStatement} (not a {@link FieldDeclaration}).
+	 * This guard takes no arguments — it operates on the matched node context.</p>
+	 *
+	 * <p>Use this guard when a rule applies only to local variable initializers, for
+	 * example when suggesting {@code var} or when replacing a type that is thread-safe
+	 * only as a local variable.</p>
+	 *
+	 * Args: (none)
+	 */
+	private static boolean evaluateIsAssignedToLocalVariable(GuardContext ctx, Object... args) {
+		ASTNode node = ctx.getMatchedNode();
+		if (node == null) {
+			return false;
+		}
+		// The matched node must be the initializer of a VariableDeclarationFragment
+		ASTNode parent = node.getParent();
+		if (!(parent instanceof VariableDeclarationFragment vdf)) {
+			return false;
+		}
+		// The initializer of the fragment must be our node
+		if (vdf.getInitializer() != node) {
+			return false;
+		}
+		// The fragment's parent must be a VariableDeclarationStatement (local), not FieldDeclaration
+		return vdf.getParent() instanceof VariableDeclarationStatement;
+	}
+
+	/**
+	 * Checks if the type of the bound placeholder implements {@link java.lang.AutoCloseable}.
+	 *
+	 * <p>Uses the type binding of the bound expression when resolution is available.
+	 * Walks the superinterface hierarchy to find {@code java.lang.AutoCloseable}.
+	 * Falls back to {@code true} (conservative) when binding resolution is not available,
+	 * so the rule still fires and lets the user decide.</p>
+	 *
+	 * Args: [placeholderName]
+	 */
+	private static boolean evaluateIsAutoCloseable(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+		if (!(node instanceof Expression expr)) {
+			return false;
+		}
+		ITypeBinding typeBinding = expr.resolveTypeBinding();
+		if (typeBinding == null) {
+			// Cannot resolve — allow the rule to fire conservatively
+			return true;
+		}
+		return implementsAutoCloseable(typeBinding);
+	}
+
+	/**
+	 * Returns {@code true} if the given type binding implements {@code java.lang.AutoCloseable}.
+	 */
+	private static boolean implementsAutoCloseable(ITypeBinding typeBinding) {
+		if (typeBinding == null) {
+			return false;
+		}
+		String qualifiedName = typeBinding.getQualifiedName();
+		if ("java.lang.AutoCloseable".equals(qualifiedName) //$NON-NLS-1$
+				|| "java.io.Closeable".equals(qualifiedName)) { //$NON-NLS-1$
+			return true;
+		}
+		for (ITypeBinding iface : typeBinding.getInterfaces()) {
+			if (implementsAutoCloseable(iface)) {
+				return true;
+			}
+		}
+		ITypeBinding superClass = typeBinding.getSuperclass();
+		return implementsAutoCloseable(superClass);
 	}
 }

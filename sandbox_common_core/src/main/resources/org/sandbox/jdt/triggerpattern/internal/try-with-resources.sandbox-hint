@@ -1,0 +1,10 @@
+<!id: try-with-resources>
+<!description: Suggest try-with-resources for AutoCloseable resources>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: resources, safety>
+
+// Hint-only: .close() on an AutoCloseable local variable not already in try-with-resources
+"Consider using try-with-resources for AutoCloseable resource":
+$x.close() :: isAutoCloseable($x) && !isInTryWithResourceBlock($x) && isLocalVariable($x)
+;;

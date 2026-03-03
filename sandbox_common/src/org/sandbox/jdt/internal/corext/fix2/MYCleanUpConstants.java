@@ -817,6 +817,120 @@ public class MYCleanUpConstants {
 	 */
 	public static final String HINTFILE_BUNDLE_ID_SERIALIZATION= "serialization"; //$NON-NLS-1$
 
+	/**
+	 * Enable the {@code stringbuffer-to-stringbuilder.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, StringBuffer to StringBuilder replacement rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+
+	 */
+	public static final String HINTFILE_BUNDLE_STRINGBUFFER= "cleanup.hintfile.bundle.stringbuffer-to-stringbuilder"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the stringbuffer-to-stringbuilder hint file.
+
+	 */
+	public static final String HINTFILE_BUNDLE_ID_STRINGBUFFER= "stringbuffer-to-stringbuilder"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code platform-logging.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, Eclipse Platform logging API modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+
+	 */
+	public static final String HINTFILE_BUNDLE_PLATFORM_LOGGING= "cleanup.hintfile.bundle.platform-logging"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the platform-logging hint file.
+
+	 */
+	public static final String HINTFILE_BUNDLE_ID_PLATFORM_LOGGING= "platform-logging"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code type-inference.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, type inference improvement hints are applied (Java 10+).
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+
+	 */
+	public static final String HINTFILE_BUNDLE_TYPE_INFERENCE= "cleanup.hintfile.bundle.type-inference"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the type-inference hint file.
+
+	 */
+	public static final String HINTFILE_BUNDLE_ID_TYPE_INFERENCE= "type-inference"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code try-with-resources.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, try-with-resources usage hints are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+
+	 */
+	public static final String HINTFILE_BUNDLE_TRY_WITH_RESOURCES= "cleanup.hintfile.bundle.try-with-resources"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the try-with-resources hint file.
+
+	 */
+	public static final String HINTFILE_BUNDLE_ID_TRY_WITH_RESOURCES= "try-with-resources"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code string-modernization.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, String API modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+
+	 */
+	public static final String HINTFILE_BUNDLE_STRING_MODERNIZATION= "cleanup.hintfile.bundle.string-modernization"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the string-modernization hint file.
+
+	 */
+	public static final String HINTFILE_BUNDLE_ID_STRING_MODERNIZATION= "string-modernization"; //$NON-NLS-1$
+
+	/**
+	 * Enable the {@code optional-modernization.sandbox-hint} pattern library.
+	 * <p>
+	 * When enabled, Optional API modernization rules are applied.
+	 * Only effective when {@link #HINTFILE_CLEANUP} is also enabled.
+	 * <p>
+	 * Possible values: {TRUE, FALSE}
+	 *
+	 * @see #HINTFILE_CLEANUP
+
+	 */
+	public static final String HINTFILE_BUNDLE_OPTIONAL_MODERNIZATION= "cleanup.hintfile.bundle.optional-modernization"; //$NON-NLS-1$
+
+	/**
+	 * Bundle ID for the optional-modernization hint file.
+
+	 */
+	public static final String HINTFILE_BUNDLE_ID_OPTIONAL_MODERNIZATION= "optional-modernization"; //$NON-NLS-1$
+
 	// --- Phase 3: Java-coded Cleanups for Complex Analysis ---
 
 	/**
