@@ -1,56 +1,63 @@
 {
-  "totalProcessed": 20,
-  "relevant": 9,
-  "irrelevant": 11,
+  "totalProcessed": 23,
+  "relevant": 5,
+  "irrelevant": 18,
   "duplicates": 0,
   "green": 3,
   "yellow": 0,
-  "red": 6,
+  "red": 2,
   "irrelevantReasons": {
-    "This commit fixes an internal bug in the Eclipse JDT AST rewrite engine related to code formatting, specifically an extra space being added after a \u0027requires\u0027 statement. This is an infrastructure fix for the formatter/rewriter component itself, not a pattern in user-written Java code that can be generalized into a TriggerPattern DSL rule.": 1,
-    "This commit introduces new API methods (getModule) to interfaces (IPackageBinding, ITypeBinding) and provides their concrete implementations. This is a structural API change and addition of new functionality (related to Java modules), not a transformation of existing client code usage patterns. The TriggerPattern DSL is designed for pattern matching and replacing existing code, not for defining new interface methods or their implementations.": 1,
-    "This commit adds internal constants (JLS10, JLS10_INTERNAL) to the Eclipse JDT AST API to support Java SE 10. It\u0027s an infrastructure update to the compiler itself, not a transformation or refactoring pattern applicable to user Java code, and therefore cannot be expressed as a TriggerPattern DSL rule.": 1,
-    "The commit updates Javadoc `@since` tag and an internal version constant in Eclipse JDT\u0027s AST definition. This is an internal metadata change, not a reusable code transformation pattern for user code.": 1,
-    "The commit only updates Javadoc comments to clarify API usage for module-info.java files. It does not introduce a code transformation or fix a code logic bug that could be generalized into a DSL rule.": 1,
-    "This commit adds documentation (Javadoc comments) only. It does not involve any code transformations that can be generalized into a TriggerPattern DSL rule for refactoring existing Java code.": 1,
-    "The commit primarily consists of Javadoc updates and a highly specific internal error handling change (adding a try-catch block). Neither of these can be generalized into a reusable code transformation pattern for the TriggerPattern DSL, as the DSL does not support inserting complex control flow like try-catch blocks, and documentation changes are not actionable transformations.": 1,
-    "This commit adds internal API support for Java 10\u0027s \u0027var\u0027 keyword within the Eclipse JDT DOM (AST) model, including version checks and Javadoc updates. It is a change to the AST parser/model itself, not a transformation rule for user Java code.": 1,
-    "This commit only updates copyright years and adds legal disclaimers in file headers. It does not involve any code transformation patterns relevant for DSL mining.": 1,
-    "The commit only changes a Javadoc `@since` tag within a comment, which is a documentation update and not a code transformation pattern suitable for the TriggerPattern DSL. The DSL is designed for transforming executable Java code, not metadata within comments.": 1,
-    "The commit involves correcting Javadoc \u0027@since\u0027 tags and adding a multi-line legal notice comment. These are documentation/metadata changes and not code transformations that the TriggerPattern DSL can address.": 1
+    "This commit is a bug fix in the Eclipse JDT DOM tooling itself, addressing incorrect type binding resolution for the \u0027var\u0027 keyword with array initializers. It modifies the internal AST conversion and binding resolution logic, and does not represent a code transformation pattern applicable to user code.": 1,
+    "This commit involves removing specific multi-line comments and updating `@since` tags and copyright years in internal JDT source files. These are not generalizable Java code transformations that the TriggerPattern DSL can address. The DSL operates on AST nodes, not raw comments or non-code metadata.": 1,
+    "This is a merge commit that introduces internal changes to the Eclipse JDT AST (Abstract Syntax Tree) implementation to support Java 10 features like \u0027var\u0027. Changes include updating AST level constants (JLS9 to JLS10), modifying internal `ASTParser` usage, and adjusting how AST visitors and binding resolvers handle new language constructs. These are architectural changes within the compiler\u0027s representation of Java code, not user-level code transformations that can be generalized into a DSL rule.": 1,
+    "The commit is a Javadoc documentation update, not a code transformation pattern that modifies the executable logic or structure of the code. The TriggerPattern DSL is designed for code refactoring and modernization, not for documentation changes.": 1,
+    "Documentation update (Javadoc) only; no actual code transformation or refactoring pattern.": 1,
+    "This commit is an internal change to the Eclipse JDT DOM (AST and binding resolution) to support Java 10\u0027s \u0027var\u0027 keyword. It modifies how the AST is constructed and type bindings are resolved for \u0027var\u0027 declarations, rather than providing a code transformation pattern for user code. It adds internal API (`SimpleName.setVar`) and logic for binding resolution, which is not applicable to source code refactorings via TriggerPattern DSL.": 1,
+    "This commit modifies internal AST conversion logic within the Eclipse JDT parser for handling \u0027var\u0027 type inference (Java 10+). It is not a code transformation applicable to user-written source code and therefore falls outside the scope of TriggerPattern DSL mining.": 1,
+    "This commit refactors an internal API method (`setVar` on `SimpleName`) by changing its visibility from public to package-private. It is an internal API change within the Eclipse JDT DOM and does not represent a reusable code transformation pattern for user-written source code.": 1,
+    "This commit modifies internal JDT DOM AST construction and binding logic related to the \u0027var\u0027 keyword in Java 10+. It is an internal fix to how the AST represents and interprets Java code, not a source-to-source transformation that a developer would apply via a quick fix or cleanup. Therefore, it is not applicable for TriggerPattern DSL mining.": 1,
+    "This commit is a revert of internal AST conversion logic within the Eclipse JDT compiler. It modifies how the tooling processes Java code (specifically \u0027var\u0027 keyword handling in AST nodes), not how user-written Java code is transformed from one pattern to another.": 1,
+    "This commit addresses an internal bug in the Eclipse JDT AST parser and scanner related to the \u0027var\u0027 keyword and Java compliance levels. It modifies the internal behavior of the IDE/compiler, not user-written Java code, so it is not a candidate for a DSL transformation rule.": 1,
+    "This commit adds internal support for Java 11 to the Eclipse JDT AST (Abstract Syntax Tree) API, including a new JLS level and an internal `unsupportedBelow11()` guard. This is an infrastructure change to the parser/AST representation within JDT itself, not a transformation applied to user-written Java code.": 1,
+    "This commit only updates a `@since` tag in Javadoc within the Eclipse JDT API. This is a metadata change specific to the JDT\u0027s own versioning, not a generalizable code transformation or refactoring pattern applicable to user code.": 1,
+    "Internal API change related to compiler/AST infrastructure, not a user-facing code transformation pattern. It modifies how compliance levels are determined within the JDT core.": 1,
+    "The commit removes specific multi-line comments/disclaimers from source files. The TriggerPattern DSL is designed for Java code transformations (AST node matching and replacement), not for matching and removing arbitrary comments or text content from source files. The DSL parser strips comments before rule evaluation, meaning they cannot be targeted by rules.": 1,
+    "This commit removes \u0027BETA_JAVA11\u0027 from Javadoc @since tags. This is a documentation/metadata cleanup, signifying that the Java 11 support is no longer in beta, rather than a code transformation that would apply to user code. It does not represent a recurring code pattern that needs refactoring.": 1,
+    "This is a merge commit with associated Javadoc updates (removing \u0027BETA_JAVA11\u0027 from @since tags). It does not represent a functional code transformation that can be generalized into a reusable DSL rule for user code.": 1,
+    "This commit adjusts an internal Javadoc `@since` tag for the `JLS11` constant, changing it from `3.15` to `3.16`. This is a metadata change related to versioning within the Eclipse JDT project itself, not a functional code transformation applicable to user code.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 20,
-      "relevant": 9,
+      "totalProcessed": 23,
+      "relevant": 5,
       "green": 3,
       "yellow": 0,
-      "red": 6
+      "red": 2
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-02",
-      "processed": 20,
-      "relevant": 9
+      "date": "2026-03-03",
+      "processed": 23,
+      "relevant": 5
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-02T04:16:17.312Z",
-    "completedAt": "2026-03-02T04:22:16.712108402Z",
-    "durationSeconds": 359,
+    "startedAt": "2026-03-03T04:16:00.670Z",
+    "completedAt": "2026-03-03T04:22:01.715508462Z",
+    "durationSeconds": 361,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 32,
+    "deferredCommits": 33,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-02T04:18:00.925891524Z",
-    "latestEvaluation": "2026-03-02T04:22:16.128625297Z",
-    "earliestCommitDate": "2017-10-26T21:35:04Z",
-    "latestCommitDate": "2018-02-19T07:02:33Z"
+    "earliestEvaluation": "2026-03-03T04:17:22.370995749Z",
+    "latestEvaluation": "2026-03-03T04:22:01.152251658Z",
+    "earliestCommitDate": "2018-03-14T09:50:41Z",
+    "latestCommitDate": "2018-09-26T11:23:16Z"
   }
 }
