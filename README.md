@@ -30,6 +30,8 @@ This project provides:
 - **Eclipse Product Build**: A complete Eclipse product with bundled features
 - **P2 Update Site**: Installable plugins via Eclipse update mechanism
 - **Test Infrastructure**: JUnit 5-based tests for all cleanup implementations
+- **Refactoring Mining Infrastructure**: AI-assisted commit analysis, DSL rule inference from Git diffs, standalone CLI and Eclipse-integrated mining tools
+- **Standalone Tooling**: Maven plugin, CLI distributions, Docker packaging, JGit storage backend, and web interface modules
 
 
 All plugins are work-in-progress and intended for experimentation and learning.
@@ -291,6 +293,56 @@ Experimental Eclipse cleanup plugin for converting integer constants to Java enu
 ### Fluent AST API JDT Bridge (`sandbox-ast-api-jdt`)
 
 Bridge module between Eclipse JDT AST nodes and the sandbox-ast-api fluent types. Provides `JDTConverter` for converting JDT expressions, statements, and bindings to fluent wrapper types. Enables sandbox plugins to use the fluent API without changing their existing JDT-based infrastructure.
+
+---
+
+### Common Core (`sandbox_common_core`)
+
+Eclipse-independent common core module. A plain Maven JAR (no OSGi/Eclipse dependencies beyond JDT Core) containing HelperVisitor API, TriggerPattern engine, pattern matching, guard expressions, hint file parsing (HintFileStore, BuiltInGuards), and LambdaASTVisitor. Enables standalone usage, fast testing without Xvfb, and CLI tool development. Existing Eclipse plugins continue to depend on `sandbox_common` which re-exports this module with `visibility:=reexport`.
+
+📖 **Full Documentation**: [Module README](sandbox_common_core/README.md)
+
+---
+
+### Test Commons (`sandbox_test_commons`)
+
+Shared test infrastructure providing base classes (`AbstractCleanUpTest`, `AbstractQuickFixTest`), AST test helpers, mock objects (`MockCompilationUnit`, `MockIFile`, `MockIProject`), workspace setup utilities, and JUnit 5 integration. Used by all `sandbox_*_test` modules for consistent test patterns.
+
+📖 **Full Documentation**: [Module README](sandbox_test_commons/README.md)
+
+---
+
+### Refactoring Mining Core (`sandbox_mining_core`)
+
+AI-assisted commit analysis engine for inferring DSL rules from Git diffs. Provides LLM-based rule inference (supports multiple providers), state management with deferred commits, keyword filtering, comparison mode, and automatic HintFile generation. Core library used by the mining CLI.
+
+---
+
+### Refactoring Mining CLI (`sandbox_mining_cli`)
+
+Standalone CLI tool for refactoring mining: clones Git repositories, scans source code against `.sandbox-hint` rules, and generates JSON/Markdown reports.
+
+---
+
+### JGit Storage Backend (`sandbox-jgit-storage-hibernate`)
+
+Hibernate/Lucene-based JGit storage backend for persistent Git object storage.
+
+---
+
+### JGit Server WebApp (`sandbox-jgit-server-webapp`)
+
+REST API server for JGit operations, providing web-based access to Git repositories.
+
+---
+
+### Additional Tools
+
+The following directories provide supplementary tooling and distribution packaging:
+
+- **`sandbox-maven-plugin`** — Maven plugin with goals for running Sandbox cleanups in CI/CD pipelines
+- **`sandbox_cleanup_cli_dist`** — Distribution packaging for the cleanup CLI
+- **`sandbox_cleanup_docker`** — Docker container for the cleanup CLI
 
 ---
 
