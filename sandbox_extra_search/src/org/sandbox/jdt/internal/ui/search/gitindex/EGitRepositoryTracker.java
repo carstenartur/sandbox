@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.ui.search.gitindex;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
@@ -101,7 +102,12 @@ public class EGitRepositoryTracker implements IResourceChangeListener {
 	 * @return collection of .git directories
 	 */
 	public Collection<File> getAllRepositoryDirs() {
-		return RepositoryCache.INSTANCE.getAllRepositories();
+		try {
+			return RepositoryCache.INSTANCE.getAllRepositories();
+		} catch (Exception e) {
+			LOG.error("Failed to get EGit repositories", e); //$NON-NLS-1$
+			return Collections.emptyList();
+		}
 	}
 
 	/**
