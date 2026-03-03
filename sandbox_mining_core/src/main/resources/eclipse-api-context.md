@@ -35,7 +35,7 @@ taggedText.replace("&amp;", "&#038;");  // faster, no regex
 Old (deprecated in Java 20):
 ```java
 import java.net.URL;
-URL url = new URL("https://example.com");  // @Deprecated(since="20")
+URL url = new URL("https://example.com");  // deprecated since Java 20
 ```
 New (URI-based alternatives):
 ```java

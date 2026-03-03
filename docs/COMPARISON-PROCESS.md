@@ -245,7 +245,8 @@ Each comparison run should be documented by appending to this file:
 - Run with actual Gemini API key to get real LLM results for comparison
 - Focus on YELLOW commits: several (URL deprecation, system properties) might become
   GREEN with DSL extensions (exception-aware guards, system property mapping)
-- Consider adding a `throwsException` or `exceptionType` guard to handle
-  URL→URI replacement safely
+- Consider using the existing `throwsException` guard to handle URL→URI
+  replacement safely (e.g., only apply when the method already declares
+  `throws MalformedURLException`)
 - JUnit migration commits (3 duplicates) could benefit from per-annotation DSL rules
   even if the full migration is YELLOW
