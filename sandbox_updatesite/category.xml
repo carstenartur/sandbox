@@ -45,9 +45,6 @@
    <feature id="sandbox_use_general_type_feature">
       <category name="Sandbox"/>
    </feature>
-   <feature id="sandbox_jgit_db_feature">
-      <category name="Sandbox"/>
-   </feature>
    <category-def name="Sandbox" label="Sandbox - Eclipse JDT Cleanups and Tools">
       <description>
          Sandbox features for Eclipse JDT cleanups and development tools. 
