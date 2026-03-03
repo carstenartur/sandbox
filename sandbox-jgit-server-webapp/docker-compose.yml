@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # --- MSSQL Server ---
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-JGit_Str0ng!Pass}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+      - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # --- Elasticsearch (Hibernate Search Backend) ---
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: curl -sf http://localhost:9200/_cluster/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # --- JGit Application Server ---
+  jgit-server:
+    build:
+      context: ..
+      dockerfile: sandbox-jgit-server-webapp/Dockerfile.jgit
+    depends_on:
+      mssql:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      # Hibernate / MSSQL
+      JGIT_DB_URL: "jdbc:sqlserver://mssql:1433;databaseName=jgit;encrypt=false;trustServerCertificate=true"
+      JGIT_DB_USER: "sa"
+      JGIT_DB_PASSWORD: "${MSSQL_SA_PASSWORD:-JGit_Str0ng!Pass}"
+      JGIT_DB_DIALECT: "org.hibernate.dialect.SQLServerDialect"
+      JGIT_DB_DRIVER: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+      # Hibernate Search / Elasticsearch
+      JGIT_SEARCH_BACKEND: "elasticsearch"
+      JGIT_SEARCH_HOSTS: "http://elasticsearch:9200"
+      # App
+      JGIT_DEFAULT_REPOS: "test-repo,demo-repo"
+      JGIT_REST_PORT: "8080"
+      JGIT_GIT_PORT: "8443"
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - jgit-cache:/app/cache
+
+volumes:
+  mssql-data:
+  es-data:
+  jgit-cache:
