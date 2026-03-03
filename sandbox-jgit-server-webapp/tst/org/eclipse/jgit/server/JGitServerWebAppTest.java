@@ -141,7 +141,7 @@ public class JGitServerWebAppTest {
 		assertEquals(200, conn.getResponseCode());
 		String body = readBody(conn);
 		assertTrue(body.contains("\"status\":\"UP\"")); //$NON-NLS-1$
-		assertTrue(body.contains("\"database\":\"connected\"")); //$NON-NLS-1$
+		assertTrue(body.contains("\"database\":{\"status\":\"UP\"}")); //$NON-NLS-1$
 	}
 
 	/**

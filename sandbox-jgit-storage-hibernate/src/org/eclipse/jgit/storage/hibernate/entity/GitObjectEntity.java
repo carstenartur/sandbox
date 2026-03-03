@@ -15,6 +15,8 @@ package org.eclipse.jgit.storage.hibernate.entity;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.Nationalized;
+
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,6 +55,7 @@ public class GitObjectEntity {
 	@Basic(fetch = FetchType.LAZY)
 	private byte[] data;
 
+	@Nationalized
 	@Column(name = "repository_name", nullable = false, length = 255)
 	private String repositoryName;
 

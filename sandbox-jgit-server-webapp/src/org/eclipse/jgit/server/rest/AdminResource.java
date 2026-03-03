@@ -15,6 +15,8 @@ package org.eclipse.jgit.server.rest;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -57,6 +59,16 @@ public class AdminResource extends HttpServlet {
 		resp.setContentType("application/json"); //$NON-NLS-1$
 		resp.setCharacterEncoding("UTF-8"); //$NON-NLS-1$
 
+		if (!isAuthorized(req)) {
+			resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+			resp.setHeader("WWW-Authenticate", //$NON-NLS-1$
+					"Bearer realm=\"admin\""); //$NON-NLS-1$
+			try (PrintWriter w = resp.getWriter()) {
+				w.write("{\"error\":\"Unauthorized. Set JGIT_ADMIN_TOKEN and pass as Bearer token.\"}"); //$NON-NLS-1$
+			}
+			return;
+		}
+
 		String pathInfo = req.getPathInfo();
 		if (pathInfo == null) {
 			pathInfo = "/"; //$NON-NLS-1$
@@ -97,5 +109,34 @@ public class AdminResource extends HttpServlet {
 				w.write("{\"error\":\"Re-indexing failed\"}"); //$NON-NLS-1$
 			}
 		}
+	}
+
+	/**
+	 * Check if the request is authorized for admin operations.
+	 * <p>
+	 * When {@code JGIT_ADMIN_TOKEN} is set, the request must include an
+	 * {@code Authorization: Bearer <token>} header matching that value.
+	 * When the variable is not set, all requests are allowed (development
+	 * mode).
+	 *
+	 * @param req
+	 *            the HTTP request
+	 * @return {@code true} if the request is authorized
+	 */
+	private static boolean isAuthorized(HttpServletRequest req) {
+		String expectedToken = System.getenv("JGIT_ADMIN_TOKEN"); //$NON-NLS-1$
+		if (expectedToken == null || expectedToken.isEmpty()) {
+			return true; // No token configured — allow all (dev mode)
+		}
+		String authHeader = req.getHeader("Authorization"); //$NON-NLS-1$
+		if (authHeader == null
+				|| !authHeader.startsWith("Bearer ")) { //$NON-NLS-1$
+			return false;
+		}
+		String token = authHeader
+				.substring("Bearer ".length()).trim(); //$NON-NLS-1$
+		return MessageDigest.isEqual(
+				expectedToken.getBytes(StandardCharsets.UTF_8),
+				token.getBytes(StandardCharsets.UTF_8));
 	}
 }

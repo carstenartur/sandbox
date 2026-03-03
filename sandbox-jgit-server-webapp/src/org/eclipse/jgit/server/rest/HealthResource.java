@@ -17,7 +17,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.search.mapper.orm.Search;
+import org.hibernate.search.mapper.orm.session.SearchSession;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,29 +57,89 @@ public class HealthResource extends HttpServlet {
 		resp.setContentType("application/json"); //$NON-NLS-1$
 		resp.setCharacterEncoding("UTF-8"); //$NON-NLS-1$
 
-		boolean dbHealthy = checkDatabase();
+		boolean dbOk = false;
+		boolean searchOk = false;
+		String dbError = null;
+		String searchError = null;
 
-		if (dbHealthy) {
-			resp.setStatus(HttpServletResponse.SC_OK);
-		} else {
-			resp.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+		// Check database connectivity
+		try (Session session = provider.getSessionFactory().openSession()) {
+			session.createNativeQuery("SELECT 1", Integer.class) //$NON-NLS-1$
+					.uniqueResult();
+			dbOk = true;
+		} catch (Exception e) {
+			dbError = e.getMessage();
 		}
 
+		// Check search backend
+		try (Session session = provider.getSessionFactory().openSession()) {
+			SearchSession searchSession = Search.session(session);
+			searchSession.search(GitCommitIndex.class)
+					.where(f -> f.matchAll())
+					.fetch(0, 0);
+			searchOk = true;
+		} catch (Exception e) {
+			searchError = e.getMessage();
+		}
+
+		boolean allOk = dbOk && searchOk;
+		resp.setStatus(allOk ? HttpServletResponse.SC_OK
+				: HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+
 		try (PrintWriter w = resp.getWriter()) {
-			w.write("{\"status\":\"" //$NON-NLS-1$
-					+ (dbHealthy ? "UP" : "DOWN") //$NON-NLS-1$ //$NON-NLS-2$
-					+ "\",\"database\":\"" //$NON-NLS-1$
-					+ (dbHealthy ? "connected" : "disconnected") //$NON-NLS-1$ //$NON-NLS-2$
-					+ "\"}"); //$NON-NLS-1$
+			StringBuilder json = new StringBuilder();
+			json.append("{\"status\":\""); //$NON-NLS-1$
+			json.append(allOk ? "UP" : "DOWN"); //$NON-NLS-1$ //$NON-NLS-2$
+			json.append("\",\"database\":{\"status\":\""); //$NON-NLS-1$
+			json.append(dbOk ? "UP" : "DOWN"); //$NON-NLS-1$ //$NON-NLS-2$
+			json.append("\""); //$NON-NLS-1$
+			if (dbError != null) {
+				json.append(",\"error\":\""); //$NON-NLS-1$
+				json.append(escapeJson(dbError));
+				json.append("\""); //$NON-NLS-1$
+			}
+			json.append("},\"search\":{\"status\":\""); //$NON-NLS-1$
+			json.append(searchOk ? "UP" : "DOWN"); //$NON-NLS-1$ //$NON-NLS-2$
+			json.append("\""); //$NON-NLS-1$
+			if (searchError != null) {
+				json.append(",\"error\":\""); //$NON-NLS-1$
+				json.append(escapeJson(searchError));
+				json.append("\""); //$NON-NLS-1$
+			}
+			json.append("}}"); //$NON-NLS-1$
+			w.write(json.toString());
 		}
 	}
 
-	private boolean checkDatabase() {
-		try {
-			SessionFactory sf = provider.getSessionFactory();
-			return sf != null && sf.isOpen();
-		} catch (Exception e) {
-			return false;
+	private static String escapeJson(String s) {
+		StringBuilder sb = new StringBuilder(s.length());
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			switch (c) {
+			case '"':
+				sb.append("\\\""); //$NON-NLS-1$
+				break;
+			case '\\':
+				sb.append("\\\\"); //$NON-NLS-1$
+				break;
+			case '\n':
+				sb.append("\\n"); //$NON-NLS-1$
+				break;
+			case '\r':
+				sb.append("\\r"); //$NON-NLS-1$
+				break;
+			case '\t':
+				sb.append("\\t"); //$NON-NLS-1$
+				break;
+			default:
+				if (c < 0x20) {
+					sb.append(String.format("\\u%04x", (int) c)); //$NON-NLS-1$
+				} else {
+					sb.append(c);
+				}
+				break;
+			}
 		}
+		return sb.toString();
 	}
 }

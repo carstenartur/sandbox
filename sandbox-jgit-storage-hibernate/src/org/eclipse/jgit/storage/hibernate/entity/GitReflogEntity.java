@@ -15,27 +15,38 @@ package org.eclipse.jgit.storage.hibernate.entity;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.Nationalized;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 /**
  * Entity representing a Git reflog entry stored in the database.
  */
 @Entity
-@Table(name = "git_reflog")
+@Table(name = "git_reflog", indexes = {
+		@Index(name = "idx_reflog_repo", columnList = "repository_name"),
+		@Index(name = "idx_reflog_repo_ref", columnList = "repository_name, ref_name") })
 public class GitReflogEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@Version
+	@Column(name = "version")
+	private Long version;
+
 	@Column(name = "repository_name", nullable = false)
 	private String repositoryName;
 
+	@Nationalized
 	@Column(name = "ref_name", nullable = false)
 	private String refName;
 
@@ -45,15 +56,18 @@ public class GitReflogEntity {
 	@Column(name = "new_id", length = 40)
 	private String newId;
 
+	@Nationalized
 	@Column(name = "who_name")
 	private String whoName;
 
+	@Nationalized
 	@Column(name = "who_email")
 	private String whoEmail;
 
 	@Column(name = "who_when", nullable = false)
 	private Instant when;
 
+	@Nationalized
 	@Column(name = "message", length = 2048)
 	private String message;
 
@@ -78,6 +92,25 @@ public class GitReflogEntity {
 	 */
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	/**
+	 * Get the optimistic locking version.
+	 *
+	 * @return the version
+	 */
+	public Long getVersion() {
+		return version;
+	}
+
+	/**
+	 * Set the optimistic locking version.
+	 *
+	 * @param version
+	 *            the version
+	 */
+	public void setVersion(Long version) {
+		this.version = version;
 	}
 
 	/**

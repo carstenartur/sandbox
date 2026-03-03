@@ -20,6 +20,7 @@ import org.eclipse.jgit.storage.hibernate.entity.GitObjectEntity;
 import org.eclipse.jgit.storage.hibernate.entity.GitPackEntity;
 import org.eclipse.jgit.storage.hibernate.entity.GitRefEntity;
 import org.eclipse.jgit.storage.hibernate.entity.GitReflogEntity;
+import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
 import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -37,20 +38,63 @@ public class HibernateSessionFactoryProvider {
 	 *
 	 * @param properties
 	 *            Hibernate configuration properties including connection URL,
-	 *            driver, dialect, etc. Hibernate Search defaults to an
-	 *            in-memory Lucene backend if not configured explicitly.
+	 *            driver, dialect, etc. Hibernate Search defaults to a
+	 *            local-filesystem Lucene backend if not configured explicitly.
+	 *            Set {@code hibernate.search.backend.directory.type} to
+	 *            {@code local-heap} for in-memory indexes (suitable for
+	 *            testing only).
 	 */
 	public HibernateSessionFactoryProvider(Properties properties) {
 		Configuration cfg = new Configuration();
 		cfg.addProperties(properties);
-		// Default Hibernate Search to in-memory Lucene backend
+		// Default Hibernate Search to Lucene backend
 		if (!properties.containsKey("hibernate.search.backend.type")) { //$NON-NLS-1$
 			cfg.setProperty("hibernate.search.backend.type", "lucene"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		if (!properties
 				.containsKey("hibernate.search.backend.directory.type")) { //$NON-NLS-1$
 			cfg.setProperty("hibernate.search.backend.directory.type", //$NON-NLS-1$
-					"local-heap"); //$NON-NLS-1$
+					"local-filesystem"); //$NON-NLS-1$
+		}
+		if (!properties
+				.containsKey("hibernate.search.backend.directory.root") //$NON-NLS-1$
+				&& "local-filesystem".equals(cfg.getProperties().get( //$NON-NLS-1$
+						"hibernate.search.backend.directory.type"))) { //$NON-NLS-1$
+			String root = System.getenv("JGIT_SEARCH_INDEX_DIR"); //$NON-NLS-1$
+			if (root == null || root.isEmpty()) {
+				root = "jgit-search-index"; //$NON-NLS-1$
+			}
+			cfg.setProperty("hibernate.search.backend.directory.root", //$NON-NLS-1$
+					root);
+		}
+		// Default to HikariCP connection pool if not explicitly configured
+		if (!properties.containsKey("hibernate.connection.provider_class")) { //$NON-NLS-1$
+			cfg.setProperty("hibernate.connection.provider_class", //$NON-NLS-1$
+					"org.hibernate.hikaricp.internal.HikariCPConnectionProvider"); //$NON-NLS-1$
+		}
+		if (!properties.containsKey("hibernate.hikari.minimumIdle")) { //$NON-NLS-1$
+			cfg.setProperty("hibernate.hikari.minimumIdle", "5"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		if (!properties.containsKey("hibernate.hikari.maximumPoolSize")) { //$NON-NLS-1$
+			cfg.setProperty("hibernate.hikari.maximumPoolSize", "20"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		if (!properties.containsKey("hibernate.hikari.idleTimeout")) { //$NON-NLS-1$
+			cfg.setProperty("hibernate.hikari.idleTimeout", "300000"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		if (!properties.containsKey("hibernate.hikari.connectionTimeout")) { //$NON-NLS-1$
+			cfg.setProperty("hibernate.hikari.connectionTimeout", "20000"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		if (!properties.containsKey("hibernate.hikari.maxLifetime")) { //$NON-NLS-1$
+			cfg.setProperty("hibernate.hikari.maxLifetime", "1200000"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		// Default to second-level cache with Caffeine/JCache
+		if (!properties.containsKey("hibernate.cache.use_second_level_cache")) { //$NON-NLS-1$
+			cfg.setProperty("hibernate.cache.use_second_level_cache", //$NON-NLS-1$
+					"true"); //$NON-NLS-1$
+		}
+		if (!properties.containsKey("hibernate.cache.region.factory_class")) { //$NON-NLS-1$
+			cfg.setProperty("hibernate.cache.region.factory_class", //$NON-NLS-1$
+					"jcache"); //$NON-NLS-1$
 		}
 		if (!properties
 				.containsKey("hibernate.search.backend.analysis.configurer")) { //$NON-NLS-1$
@@ -63,6 +107,7 @@ public class HibernateSessionFactoryProvider {
 		cfg.addAnnotatedClass(GitReflogEntity.class);
 		cfg.addAnnotatedClass(GitCommitIndex.class);
 		cfg.addAnnotatedClass(JavaBlobIndex.class);
+		cfg.addAnnotatedClass(FilePathHistory.class);
 		this.sessionFactory = cfg.buildSessionFactory();
 	}
 

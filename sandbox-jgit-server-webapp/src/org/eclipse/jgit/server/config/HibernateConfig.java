@@ -13,6 +13,10 @@
  *******************************************************************************/
 package org.eclipse.jgit.server.config;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,6 +32,9 @@ import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider
  * <li>{@code JGIT_DB_URL} — JDBC connection URL</li>
  * <li>{@code JGIT_DB_USER} — database username</li>
  * <li>{@code JGIT_DB_PASSWORD} — database password</li>
+ * <li>{@code JGIT_DB_PASSWORD_FILE} — path to a file containing the
+ * database password (Docker secrets pattern). Takes precedence over
+ * {@code JGIT_DB_PASSWORD}.</li>
  * <li>{@code JGIT_DB_DIALECT} — Hibernate dialect class name</li>
  * <li>{@code JGIT_DB_DRIVER} — JDBC driver class name (optional)</li>
  * <li>{@code JGIT_DB_DDL_AUTO} — Hibernate DDL auto strategy (default:
@@ -79,7 +86,7 @@ public class HibernateConfig {
 		String url = getEnvOrDefault("JGIT_DB_URL", //$NON-NLS-1$
 				"jdbc:h2:mem:jgit;DB_CLOSE_DELAY=-1"); //$NON-NLS-1$
 		String user = getEnvOrDefault("JGIT_DB_USER", "sa"); //$NON-NLS-1$ //$NON-NLS-2$
-		String password = getEnvOrDefault("JGIT_DB_PASSWORD", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		String password = readPasswordFromFileOrEnv();
 		String dialect = getEnvOrDefault("JGIT_DB_DIALECT", //$NON-NLS-1$
 				"org.hibernate.dialect.H2Dialect"); //$NON-NLS-1$
 		String driver = System.getenv("JGIT_DB_DRIVER"); //$NON-NLS-1$
@@ -108,5 +115,39 @@ public class HibernateConfig {
 	private static String getEnvOrDefault(String name, String defaultValue) {
 		String val = System.getenv(name);
 		return (val != null && !val.isEmpty()) ? val : defaultValue;
+	}
+
+	/**
+	 * Read the database password from a file (Docker secrets pattern) or fall
+	 * back to the environment variable.
+	 * <p>
+	 * If {@code JGIT_DB_PASSWORD_FILE} is set and the file exists, the
+	 * password is read from the file (leading/trailing whitespace stripped).
+	 * Otherwise, {@code JGIT_DB_PASSWORD} is used.
+	 *
+	 * @return the database password, or empty string if not configured
+	 */
+	private static String readPasswordFromFileOrEnv() {
+		String passwordFile = System.getenv("JGIT_DB_PASSWORD_FILE"); //$NON-NLS-1$
+		if (passwordFile != null && !passwordFile.isEmpty()) {
+			try {
+				Path path = Path.of(passwordFile);
+				long size = Files.size(path);
+				if (size > 4096) {
+					LOG.log(Level.WARNING,
+							"Password file too large ({0} bytes), ignoring: {1}", //$NON-NLS-1$
+							new Object[] { Long.toString(size),
+									passwordFile });
+				} else {
+					return Files.readString(path,
+							StandardCharsets.UTF_8).trim();
+				}
+			} catch (IOException e) {
+				LOG.log(Level.WARNING,
+						"Failed to read password from file: {0}", //$NON-NLS-1$
+						passwordFile);
+			}
+		}
+		return getEnvOrDefault("JGIT_DB_PASSWORD", ""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }

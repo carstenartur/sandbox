@@ -86,5 +86,20 @@ public class JavaSourceAnalysisConfigurer implements LuceneAnalysisConfigurer {
 				.param("preserveOriginal", "1") //$NON-NLS-1$ //$NON-NLS-2$
 				.tokenFilter("lowercase") //$NON-NLS-1$
 				.tokenFilter("stop"); //$NON-NLS-1$
+
+		// XML content analyzer
+		context.analyzer("xmlContent").custom() //$NON-NLS-1$
+				.tokenizer("standard") //$NON-NLS-1$
+				.tokenFilter("wordDelimiterGraph") //$NON-NLS-1$
+				.param("splitOnCaseChange", "1") //$NON-NLS-1$ //$NON-NLS-2$
+				.tokenFilter("lowercase"); //$NON-NLS-1$
+
+		// Maven coordinate analyzer
+		context.analyzer("mavenCoordinate").custom() //$NON-NLS-1$
+				.tokenizer("keyword") //$NON-NLS-1$
+				.tokenFilter("patternReplace") //$NON-NLS-1$
+				.param("pattern", ":") //$NON-NLS-1$ //$NON-NLS-2$
+				.param("replacement", " ") //$NON-NLS-1$ //$NON-NLS-2$
+				.tokenFilter("lowercase"); //$NON-NLS-1$
 	}
 }

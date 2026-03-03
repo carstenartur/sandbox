@@ -57,7 +57,10 @@ public class IndexMigrationService {
 		LOG.log(Level.INFO, "Starting full re-index of all entities"); //$NON-NLS-1$
 		try (Session session = sessionFactory.openSession()) {
 			SearchSession searchSession = Search.session(session);
-			MassIndexer indexer = searchSession.massIndexer();
+			MassIndexer indexer = searchSession.massIndexer()
+					.threadsToLoadObjects(4)
+					.batchSizeToLoadObjects(25)
+					.typesToIndexInParallel(2);
 			indexer.startAndWait();
 		}
 		LOG.log(Level.INFO, "Full re-index completed"); //$NON-NLS-1$
@@ -77,7 +80,9 @@ public class IndexMigrationService {
 				entityClass.getSimpleName());
 		try (Session session = sessionFactory.openSession()) {
 			SearchSession searchSession = Search.session(session);
-			MassIndexer indexer = searchSession.massIndexer(entityClass);
+			MassIndexer indexer = searchSession.massIndexer(entityClass)
+					.threadsToLoadObjects(4)
+					.batchSizeToLoadObjects(25);
 			indexer.startAndWait();
 		}
 		LOG.log(Level.INFO, "Re-index of {0} completed", //$NON-NLS-1$

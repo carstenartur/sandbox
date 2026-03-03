@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
 import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
 import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
 import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
@@ -60,6 +61,12 @@ public class SearchResource extends HttpServlet {
 
 	private final Gson gson = new Gson();
 
+	private static final int MAX_QUERY_LENGTH = 1000;
+
+	private static final int MAX_LIMIT = 100;
+
+	private static final int DEFAULT_LIMIT = 20;
+
 	/**
 	 * Create a search endpoint.
 	 *
@@ -84,7 +91,7 @@ public class SearchResource extends HttpServlet {
 		String repo = req.getParameter("repo"); //$NON-NLS-1$
 		String query = req.getParameter("q"); //$NON-NLS-1$
 		int offset = parseIntParam(req, "offset", 0); //$NON-NLS-1$
-		int limit = parseIntParam(req, "limit", 20); //$NON-NLS-1$
+		int limit = parseIntParam(req, "limit", DEFAULT_LIMIT); //$NON-NLS-1$
 
 		if (repo == null || repo.isEmpty() || query == null
 				|| query.isEmpty()) {
@@ -94,6 +101,31 @@ public class SearchResource extends HttpServlet {
 			}
 			return;
 		}
+
+		// Input validation: limit query length to prevent abuse
+		if (query.length() > MAX_QUERY_LENGTH) {
+			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			try (PrintWriter w = resp.getWriter()) {
+				w.write("{\"error\":\"Query too long (max " //$NON-NLS-1$
+						+ MAX_QUERY_LENGTH + " characters)\"}"); //$NON-NLS-1$
+			}
+			return;
+		}
+
+		// Enforce pagination limits
+		if (offset < 0) {
+			offset = 0;
+		}
+		if (limit < 1) {
+			limit = DEFAULT_LIMIT;
+		}
+		if (limit > MAX_LIMIT) {
+			limit = MAX_LIMIT;
+		}
+
+		// Sanitize repo and query parameters
+		repo = sanitizeInput(repo);
+		query = sanitizeInput(query);
 
 		try {
 			GitDatabaseQueryService queryService = new GitDatabaseQueryService(
@@ -106,8 +138,15 @@ public class SearchResource extends HttpServlet {
 				handlePathSearch(queryService, repo, query, offset,
 						limit, resp);
 			} else if (pathInfo.startsWith("/types")) { //$NON-NLS-1$
-				handleTypeSearch(queryService, repo, query, offset,
-						limit, resp);
+				String module = req.getParameter("module"); //$NON-NLS-1$
+				if (module != null && !module.isEmpty()) {
+					module = sanitizeInput(module);
+					handleTypeSearchWithModule(queryService, repo, query,
+							module, offset, limit, resp);
+				} else {
+					handleTypeSearch(queryService, repo, query, offset,
+							limit, resp);
+				}
 			} else if (pathInfo.startsWith("/symbols")) { //$NON-NLS-1$
 				handleSymbolSearch(queryService, repo, query, offset,
 						limit, resp);
@@ -117,6 +156,38 @@ public class SearchResource extends HttpServlet {
 			} else if (pathInfo.startsWith("/source")) { //$NON-NLS-1$
 				handleSourceSearch(queryService, repo, query, offset,
 						limit, resp);
+			} else if (pathInfo.startsWith("/annotations")) { //$NON-NLS-1$
+				handleAnnotationSearch(queryService, repo, query, offset,
+						limit, resp);
+			} else if (pathInfo.startsWith("/docs")) { //$NON-NLS-1$
+				handleSearch(queryService, repo, query, offset, limit,
+						resp, "docs"); //$NON-NLS-1$
+			} else if (pathInfo.startsWith("/references")) { //$NON-NLS-1$
+				handleSearch(queryService, repo, query, offset, limit,
+						resp, "references"); //$NON-NLS-1$
+			} else if (pathInfo.startsWith("/strings")) { //$NON-NLS-1$
+				handleSearch(queryService, repo, query, offset, limit,
+						resp, "strings"); //$NON-NLS-1$
+			} else if (pathInfo.startsWith("/filepaths")) { //$NON-NLS-1$
+				handleFilePathSearch(queryService, repo, query, offset,
+						limit, resp);
+			} else if (pathInfo.startsWith("/filehistory")) { //$NON-NLS-1$
+				String path = req.getParameter("path"); //$NON-NLS-1$
+				if (path != null && !path.isEmpty()) {
+					path = sanitizeInput(path);
+					handleFileHistory(queryService, repo, path, offset,
+							limit, resp);
+				} else {
+					handleFilePathSearch(queryService, repo, query,
+							offset, limit, resp);
+				}
+			} else if (pathInfo.startsWith("/fqn")) { //$NON-NLS-1$
+				String fqnFileType = req.getParameter("fileType"); //$NON-NLS-1$
+				if (fqnFileType != null) {
+					fqnFileType = sanitizeInput(fqnFileType);
+				}
+				handleFqnSearch(queryService, repo, query, fqnFileType,
+						offset, limit, resp);
 			} else {
 				// Default: search commits
 				handleCommitSearch(queryService, repo, query, offset,
@@ -194,6 +265,24 @@ public class SearchResource extends HttpServlet {
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
 	}
 
+	private void handleTypeSearchWithModule(
+			GitDatabaseQueryService queryService, String repo,
+			String query, String module, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+		List<JavaBlobIndex> results = queryService
+				.searchByTypeWithModule(repo, query, module, offset, limit);
+		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
+	}
+
+	private void handleAnnotationSearch(
+			GitDatabaseQueryService queryService, String repo,
+			String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+		List<JavaBlobIndex> results = queryService
+				.searchByAnnotation(repo, query, offset, limit);
+		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
+	}
+
 	private void handleSymbolSearch(GitDatabaseQueryService queryService,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
@@ -216,6 +305,87 @@ public class SearchResource extends HttpServlet {
 		List<JavaBlobIndex> results = queryService
 				.searchSourceContent(repo, query, offset, limit);
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
+	}
+
+	private void handleSearch(GitDatabaseQueryService service,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp, String type) throws IOException {
+		List<JavaBlobIndex> results;
+		switch (type) {
+		case "docs": //$NON-NLS-1$
+			results = service.searchByDocumentation(repo, query,
+					offset, limit);
+			break;
+		case "references": //$NON-NLS-1$
+			results = service.searchByReferencedType(repo, query,
+					offset, limit);
+			break;
+		case "strings": //$NON-NLS-1$
+			results = service.searchByStringLiteral(repo, query,
+					offset, limit);
+			break;
+		default:
+			results = List.of();
+			break;
+		}
+		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
+	}
+
+	private void handleFilePathSearch(GitDatabaseQueryService queryService,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+		List<FilePathHistory> results = queryService
+				.searchFilePath(repo, query, offset, limit);
+		writeFilePathResponse(results, repo, query, offset, limit, resp);
+	}
+
+	private void handleFileHistory(GitDatabaseQueryService queryService,
+			String repo, String path, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+		List<FilePathHistory> results = queryService
+				.getFileHistory(repo, path, offset, limit);
+		writeFilePathResponse(results, repo, path, offset, limit, resp);
+	}
+
+	private void handleFqnSearch(GitDatabaseQueryService queryService,
+			String repo, String query, String fileType, int offset,
+			int limit, HttpServletResponse resp) throws IOException {
+		List<JavaBlobIndex> results = queryService
+				.searchFqnAcrossTypes(repo, query, fileType, offset, limit);
+		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
+	}
+
+	private void writeFilePathResponse(List<FilePathHistory> results,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+		JsonObject response = new JsonObject();
+		response.addProperty("query", query); //$NON-NLS-1$
+		response.addProperty("repository", repo); //$NON-NLS-1$
+		response.addProperty("offset", offset); //$NON-NLS-1$
+		response.addProperty("limit", limit); //$NON-NLS-1$
+		response.addProperty("totalResults", results.size()); //$NON-NLS-1$
+
+		JsonArray items = new JsonArray();
+		for (FilePathHistory fph : results) {
+			JsonObject item = new JsonObject();
+			item.addProperty("commitObjectId", //$NON-NLS-1$
+					fph.getCommitObjectId());
+			item.addProperty("filePath", fph.getFilePath()); //$NON-NLS-1$
+			item.addProperty("blobObjectId", //$NON-NLS-1$
+					fph.getBlobObjectId());
+			item.addProperty("fileType", fph.getFileType()); //$NON-NLS-1$
+			if (fph.getCommitTime() != null) {
+				item.addProperty("commitTime", //$NON-NLS-1$
+						fph.getCommitTime().toString());
+			}
+			items.add(item);
+		}
+		response.add("results", items); //$NON-NLS-1$
+
+		resp.setStatus(HttpServletResponse.SC_OK);
+		try (PrintWriter w = resp.getWriter()) {
+			w.write(gson.toJson(response));
+		}
 	}
 
 	private void writeJavaBlobResponse(List<JavaBlobIndex> results,
@@ -269,5 +439,20 @@ public class SearchResource extends HttpServlet {
 		} catch (NumberFormatException e) {
 			return defaultValue;
 		}
+	}
+
+	/**
+	 * Sanitize user input by stripping control characters.
+	 *
+	 * @param input
+	 *            the raw input string
+	 * @return the sanitized string
+	 */
+	private static String sanitizeInput(String input) {
+		if (input == null) {
+			return null;
+		}
+		// Strip control characters except common whitespace
+		return input.replaceAll("[\\p{Cntrl}&&[^\t\n\r]]", ""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }

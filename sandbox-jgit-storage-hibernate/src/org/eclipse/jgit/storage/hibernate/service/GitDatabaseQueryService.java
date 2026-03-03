@@ -24,6 +24,7 @@ import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
 import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
 import org.eclipse.jgit.storage.hibernate.entity.GitObjectEntity;
 import org.eclipse.jgit.storage.hibernate.entity.GitRefEntity;
@@ -549,6 +550,76 @@ public class GitDatabaseQueryService {
 	}
 
 	/**
+	 * Search blobs by annotation names.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the annotation search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List<JavaBlobIndex> searchByAnnotation(String repo,
+			String query, int offset, int limit) {
+		try (Session session = sessionFactory.openSession()) {
+			SearchSession searchSession = Search.session(session);
+			return searchSession.search(JavaBlobIndex.class)
+					.where(f -> f.bool()
+							.must(f.match()
+									.field("repositoryName") //$NON-NLS-1$
+									.matching(repo))
+							.must(f.match()
+									.field("annotations") //$NON-NLS-1$
+									.matching(query)))
+					.fetchHits(offset, limit);
+		}
+	}
+
+	/**
+	 * Search blobs by type with optional module/project filter.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the type search query
+	 * @param module
+	 *            optional module/project name filter (may be null)
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List<JavaBlobIndex> searchByTypeWithModule(String repo,
+			String query, String module, int offset, int limit) {
+		try (Session session = sessionFactory.openSession()) {
+			SearchSession searchSession = Search.session(session);
+			return searchSession.search(JavaBlobIndex.class)
+					.where(f -> {
+						var bool = f.bool()
+								.must(f.match()
+										.field("repositoryName") //$NON-NLS-1$
+										.matching(repo))
+								.must(f.match()
+										.fields("simpleClassName", //$NON-NLS-1$
+												"declaredTypes", //$NON-NLS-1$
+												"fullyQualifiedNames") //$NON-NLS-1$
+										.matching(query));
+						if (module != null && !module.isEmpty()) {
+							bool = bool.must(f.match()
+									.field("projectName") //$NON-NLS-1$
+									.matching(module));
+						}
+						return bool;
+					})
+					.fetchHits(offset, limit);
+		}
+	}
+
+	/**
 	 * Full-text search across Java source snippets.
 	 *
 	 * @param repoName
@@ -586,6 +657,189 @@ public class GitDatabaseQueryService {
 							.must(f.match().field("sourceSnippet") //$NON-NLS-1$
 									.matching(query)))
 					.fetch(offset, limit).hits();
+		}
+	}
+
+	/**
+	 * Search blobs by type documentation (Javadoc).
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the documentation search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List<JavaBlobIndex> searchByDocumentation(String repo,
+			String query, int offset, int limit) {
+		try (Session session = sessionFactory.openSession()) {
+			SearchSession searchSession = Search.session(session);
+			return searchSession.search(JavaBlobIndex.class)
+					.where(f -> f.bool()
+							.must(f.match()
+									.field("repositoryName") //$NON-NLS-1$
+									.matching(repo))
+							.must(f.match()
+									.field("typeDocumentation") //$NON-NLS-1$
+									.matching(query)))
+					.fetchHits(offset, limit);
+		}
+	}
+
+	/**
+	 * Search blobs by referenced type.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the referenced type search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List<JavaBlobIndex> searchByReferencedType(String repo,
+			String query, int offset, int limit) {
+		try (Session session = sessionFactory.openSession()) {
+			SearchSession searchSession = Search.session(session);
+			return searchSession.search(JavaBlobIndex.class)
+					.where(f -> f.bool()
+							.must(f.match()
+									.field("repositoryName") //$NON-NLS-1$
+									.matching(repo))
+							.must(f.match()
+									.field("referencedTypes") //$NON-NLS-1$
+									.matching(query)))
+					.fetchHits(offset, limit);
+		}
+	}
+
+	/**
+	 * Search blobs by string literals.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the string literal search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List<JavaBlobIndex> searchByStringLiteral(String repo,
+			String query, int offset, int limit) {
+		try (Session session = sessionFactory.openSession()) {
+			SearchSession searchSession = Search.session(session);
+			return searchSession.search(JavaBlobIndex.class)
+					.where(f -> f.bool()
+							.must(f.match()
+									.field("repositoryName") //$NON-NLS-1$
+									.matching(repo))
+							.must(f.match()
+									.field("stringLiterals") //$NON-NLS-1$
+									.matching(query)))
+					.fetchHits(offset, limit);
+		}
+	}
+
+	/**
+	 * Search file paths across all commits.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param pathQuery
+	 *            the file path search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching file path history entries
+	 */
+	public List<FilePathHistory> searchFilePath(String repo,
+			String pathQuery, int offset, int limit) {
+		try (Session session = sessionFactory.openSession()) {
+			SearchSession searchSession = Search.session(session);
+			return searchSession.search(FilePathHistory.class)
+					.where(f -> f.bool()
+							.must(f.match()
+									.field("repositoryName") //$NON-NLS-1$
+									.matching(repo))
+							.must(f.match()
+									.field("filePath") //$NON-NLS-1$
+									.matching(pathQuery)))
+					.fetchHits(offset, limit);
+		}
+	}
+
+	/**
+	 * Get the history of a specific file across commits.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param exactPath
+	 *            the exact file path
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return file path history entries ordered by commit time
+	 */
+	public List<FilePathHistory> getFileHistory(String repo,
+			String exactPath, int offset, int limit) {
+		try (Session session = sessionFactory.openSession()) {
+			return session.createQuery(
+					"FROM FilePathHistory f WHERE f.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND f.filePath = :path ORDER BY f.commitTime DESC", //$NON-NLS-1$
+					FilePathHistory.class)
+					.setParameter("repo", repo) //$NON-NLS-1$
+					.setParameter("path", exactPath) //$NON-NLS-1$
+					.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
+		}
+	}
+
+	/**
+	 * Search fully qualified names across all file types.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param fqnQuery
+	 *            the FQN search query
+	 * @param fileType
+	 *            optional file type filter (may be null)
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List<JavaBlobIndex> searchFqnAcrossTypes(String repo,
+			String fqnQuery, String fileType, int offset, int limit) {
+		try (Session session = sessionFactory.openSession()) {
+			SearchSession searchSession = Search.session(session);
+			return searchSession.search(JavaBlobIndex.class)
+					.where(f -> {
+						var bool = f.bool()
+								.must(f.match()
+										.field("repositoryName") //$NON-NLS-1$
+										.matching(repo))
+								.must(f.match()
+										.field("fullyQualifiedNames") //$NON-NLS-1$
+										.matching(fqnQuery));
+						if (fileType != null && !fileType.isEmpty()) {
+							bool = bool.must(f.match()
+									.field("fileType") //$NON-NLS-1$
+									.matching(fileType));
+						}
+						return bool;
+					})
+					.fetchHits(offset, limit);
 		}
 	}
 

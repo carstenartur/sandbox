@@ -18,17 +18,20 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jgit.http.server.GitServlet;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.server.config.HibernateConfig;
 import org.eclipse.jgit.server.config.RepositoryManagerConfig;
 import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.eclipse.jgit.server.rest.AnalyticsResource;
+import org.eclipse.jgit.server.rest.CorsFilter;
 import org.eclipse.jgit.server.rest.HealthResource;
 import org.eclipse.jgit.server.rest.RepositoryResource;
 import org.eclipse.jgit.server.rest.SearchResource;
@@ -122,6 +125,16 @@ public class JGitServerApplication {
 		restContext.setContextPath("/api"); //$NON-NLS-1$
 		restContext.setVirtualHosts(List.of("@rest")); //$NON-NLS-1$
 
+		// CORS filter
+		String corsOrigins = System.getenv("JGIT_CORS_ORIGINS"); //$NON-NLS-1$
+		if (corsOrigins != null && !corsOrigins.isEmpty()) {
+			restContext.addFilter(
+					new FilterHolder(new CorsFilter(corsOrigins)),
+					"/*", //$NON-NLS-1$
+					java.util.EnumSet
+							.allOf(jakarta.servlet.DispatcherType.class));
+		}
+
 		restContext.addServlet(new ServletHolder("health", //$NON-NLS-1$
 				new HealthResource(sessionFactoryProvider)), "/health"); //$NON-NLS-1$
 		restContext.addServlet(
@@ -149,12 +162,46 @@ public class JGitServerApplication {
 				"/*"); //$NON-NLS-1$
 
 		contexts.addHandler(restContext);
+
+		// Also serve /api/v1/* for forward-compatible API versioning
+		ServletContextHandler v1Context = new ServletContextHandler(
+				ServletContextHandler.SESSIONS);
+		v1Context.setContextPath("/api/v1"); //$NON-NLS-1$
+		v1Context.setVirtualHosts(List.of("@rest")); //$NON-NLS-1$
+		if (corsOrigins != null && !corsOrigins.isEmpty()) {
+			v1Context.addFilter(
+					new FilterHolder(new CorsFilter(corsOrigins)),
+					"/*", //$NON-NLS-1$
+					java.util.EnumSet
+							.allOf(jakarta.servlet.DispatcherType.class));
+		}
+		v1Context.addServlet(new ServletHolder("health", //$NON-NLS-1$
+				new HealthResource(sessionFactoryProvider)), "/health"); //$NON-NLS-1$
+		v1Context.addServlet(
+				new ServletHolder("repos", //$NON-NLS-1$
+						new RepositoryResource(sessionFactoryProvider,
+								repositoryResolver)),
+				"/repos/*"); //$NON-NLS-1$
+		v1Context.addServlet(
+				new ServletHolder("search", //$NON-NLS-1$
+						new SearchResource(sessionFactoryProvider)),
+				"/search/*"); //$NON-NLS-1$
+		v1Context.addServlet(
+				new ServletHolder("analytics", //$NON-NLS-1$
+						new AnalyticsResource(sessionFactoryProvider)),
+				"/analytics/*"); //$NON-NLS-1$
+		contexts.addHandler(v1Context);
+
 		contexts.addHandler(gitContext);
-		server.setHandler(contexts);
+		GzipHandler gzip = new GzipHandler();
+		gzip.setHandler(contexts);
+		server.setHandler(gzip);
 
 		server.start();
 		LOG.log(Level.INFO, "JGit Server started"); //$NON-NLS-1$
 		LOG.log(Level.INFO, "  REST API: http://0.0.0.0:{0}/api/", //$NON-NLS-1$
+				Integer.toString(restPort));
+		LOG.log(Level.INFO, "  REST API v1: http://0.0.0.0:{0}/api/v1/", //$NON-NLS-1$
 				Integer.toString(restPort));
 		LOG.log(Level.INFO,
 				"  Git HTTP: http://0.0.0.0:{0}/git/", //$NON-NLS-1$
@@ -234,7 +281,9 @@ public class JGitServerApplication {
 
 		contexts.addHandler(restContext);
 		contexts.addHandler(gitContext);
-		server.setHandler(contexts);
+		GzipHandler gzip = new GzipHandler();
+		gzip.setHandler(contexts);
+		server.setHandler(gzip);
 
 		server.start();
 		LOG.log(Level.INFO, "JGit Server started (test mode)"); //$NON-NLS-1$

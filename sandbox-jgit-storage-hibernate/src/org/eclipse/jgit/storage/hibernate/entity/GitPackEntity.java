@@ -22,6 +22,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
@@ -29,7 +30,9 @@ import jakarta.persistence.Table;
  * Entity representing a Git pack file stored in the database.
  */
 @Entity
-@Table(name = "git_packs")
+@Table(name = "git_packs", indexes = {
+		@Index(name = "idx_pack_repo", columnList = "repository_name"),
+		@Index(name = "idx_pack_repo_name", columnList = "repository_name, pack_name") })
 public class GitPackEntity {
 
 	@Id

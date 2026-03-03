@@ -50,6 +50,13 @@
 			<version>${project.version}</version>
 		</dependency>
 
+		<!-- Eclipse JDT Core needed by FileTypeStrategyRegistry at runtime -->
+		<dependency>
+			<groupId>org.eclipse.jdt</groupId>
+			<artifactId>org.eclipse.jdt.core</artifactId>
+			<version>3.44.0</version>
+		</dependency>
+
 		<!-- Hibernate ORM -->
 		<dependency>
 			<groupId>org.hibernate.orm</groupId>
