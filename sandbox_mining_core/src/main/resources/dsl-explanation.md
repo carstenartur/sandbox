@@ -99,6 +99,35 @@ $s.getBytes(java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
 
 This expands into two rules: one for `"UTF-8"` → `UTF_8` and one for `"ISO-8859-1"` → `ISO_8859_1`.
 
+### Map Expansion
+
+The `<!map>` directive is a more general version of `<!foreach>` that uses `=>` separators
+and `#{}` placeholders. It enables finite-set transformations like enum-constant mappings
+and deprecated-API replacement tables.
+
+**Syntax:**
+```
+<!map MAPNAME: "key1" => "val1", "key2" => "val2", ...>
+```
+
+**Usage in rules:** `#{MAPNAME}` expands to the key, `#{MAPNAME_VALUE}` expands to the value.
+
+**Example (deprecated API replacements):**
+```
+<!map booleanMethods: "true" => "Boolean.TRUE", "false" => "Boolean.FALSE">
+
+new java.lang.Boolean(#{booleanMethods})
+=> #{booleanMethods_VALUE}
+;;
+```
+
+This expands into two rules: one for `true` → `Boolean.TRUE` and one for `false` → `Boolean.FALSE`.
+
+**Difference from `<!foreach>`:**
+- `<!foreach>` uses `->` and `${VAR}` / `${VAR_CONSTANT}` placeholders
+- `<!map>` uses `=>` and `#{MAP}` / `#{MAP_VALUE}` placeholders
+- Both are functionally equivalent; `<!map>` is preferred for new rules as it reads more naturally
+
 ### Per-Rule Annotations
 
 Rules within a hint file can have per-rule metadata annotations placed **before** the source pattern:
@@ -257,6 +286,10 @@ You can use these functions in `:: guard` expressions:
 | `isPrivate($var)` | True if the binding has the `private` access modifier. Also supports zero-arg form on matched node. |
 | `isProtected($var)` | True if the binding has the `protected` access modifier. Also supports zero-arg form on matched node. |
 | `throwsException("type")` | True if the enclosing method declares a `throws` clause matching the given type. Zero-arg form returns true if any throws clause is present. |
+| `isParameter($var)` | True if the bound placeholder is a method parameter. Uses `IVariableBinding.isParameter()` when available, falls back to AST structure. |
+| `isField($var)` | True if the bound placeholder is a field (instance or static). Uses `IVariableBinding.isField()` when available, falls back to AST structure. |
+| `isInConstructor()` | True if the matched node is inside a constructor. Walks up the AST looking for a `MethodDeclaration` that `isConstructor()`. |
+| `classOverrides("methodName")` | True if the enclosing class declares a method with the given name. Useful for detecting missing `hashCode()` when `equals()` is overridden. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Common Mistakes
