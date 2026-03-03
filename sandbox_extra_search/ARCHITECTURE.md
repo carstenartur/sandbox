@@ -292,6 +292,58 @@ This architecture document relates to:
 - Export search results to CSV/report format
 - Search history and saved searches
 
+## Git Database Index Integration
+
+### Overview
+
+The plugin now includes a "Git Database Index" feature that runs alongside EGit,
+providing DB-backed Java analysis capabilities. This extends the search functionality
+with Git commit and Java source code analysis.
+
+### Data Flow
+
+```
+EGit commit/pull → IResourceChangeListener → IncrementalIndexer → DB
+                                            → BlobIndexer       → DB
+                                                                    ↓
+Eclipse View ← GitDatabaseQueryService ← Hibernate Search ← DB
+```
+
+### New Components (gitindex package)
+
+| Class | Responsibility |
+|---|---|
+| `EGitRepositoryTracker` | IResourceChangeListener tracking .git changes |
+| `RepositoryIndexService` | Orchestrates commit + blob indexing |
+| `IncrementalIndexer` | RevWalk from last indexed commit to HEAD |
+| `GitSearchView` | Full-text search (commits, types, paths, annotations) |
+| `JavaTypeHistoryView` | Type change history across commits |
+| `CommitAnalyticsView` | Author statistics and commit analytics |
+| `IndexRepositoryHandler` | Manual index command handler |
+| `ReindexAllHandler` | Full reindex command handler |
+
+### Why Not Modify EGit
+
+- EGit creates repositories via `RepositoryCache.open()` → always `FileRepository`
+- No extension point for repository providers in EGit
+- `HibernateRepository` extends `DfsRepository` — different class hierarchy
+- **→ Parallel index approach: listen to EGit events, mirror data to DB**
+
+### Relationship to sandbox-jgit-storage-hibernate
+
+The existing `sandbox-jgit-storage-hibernate` module contains Hibernate-based
+storage (entities, services, indexers). Phase 1b will connect the indexer to
+those services once OSGi bundling is resolved.
+
+### Phase Plan
+
+1. **Phase 1** (current): Module structure, EGit listener, views skeleton
+2. **Phase 1b**: Bundle Hibernate + HSQLDB, connect to storage-hibernate services
+3. **Phase 2**: Full EGit integration with incremental indexing
+4. **Phase 3**: Live data from database in Eclipse Views
+5. **Phase 4**: Java-specific queries (type history, annotation changes, etc.)
+6. **Phase 5**: Mining integration, context menu extensions
+
 ## Documentation Requirements
 
 ### Feature Properties
