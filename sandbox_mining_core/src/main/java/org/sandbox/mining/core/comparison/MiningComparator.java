@@ -106,10 +106,33 @@ public class MiningComparator {
 		} else if (miningHasRule && mining.dslValidationResult() != null
 				&& !"VALID".equals(mining.dslValidationResult()) //$NON-NLS-1$
 				&& refHasRule) {
+			GapCategory detailedCategory = categorizeDslError(mining.dslValidationResult());
 			report.addGap(new GapEntry(ref.commitHash(),
-					GapCategory.INVALID_DSL_RULE,
+					detailedCategory,
 					mining.dslValidationResult(), ref.dslRule(),
 					"Mining produced invalid DSL rule")); //$NON-NLS-1$
 		}
+	}
+
+	/**
+	 * Categorizes a DSL validation error into a fine-grained gap category.
+	 *
+	 * @param validationResult the DSL validation error message
+	 * @return the most specific gap category for this error
+	 */
+	static GapCategory categorizeDslError(String validationResult) {
+		if (validationResult == null) {
+			return GapCategory.INVALID_DSL_RULE;
+		}
+		String lower = validationResult.toLowerCase();
+		if (lower.contains("xml") || lower.contains("<trigger") //$NON-NLS-1$ //$NON-NLS-2$
+				|| lower.contains("<import") || lower.contains("syntax") //$NON-NLS-1$ //$NON-NLS-2$
+				|| lower.contains("parse")) { //$NON-NLS-1$
+			return GapCategory.DSL_SYNTAX;
+		}
+		if (lower.contains("istype") || lower.contains("guard")) { //$NON-NLS-1$ //$NON-NLS-2$
+			return GapCategory.GUARD_WISSEN;
+		}
+		return GapCategory.INVALID_DSL_RULE;
 	}
 }

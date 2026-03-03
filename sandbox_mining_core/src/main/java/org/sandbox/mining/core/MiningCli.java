@@ -371,6 +371,9 @@ List<CommitEvaluation> copilotResults = importer.importFromJson(copilotResultsPa
 MiningComparator comparator = new MiningComparator();
 DeltaReport deltaReport = comparator.compare(aggregator.getAllEvaluations(), copilotResults);
 miningLog.println(deltaReport.format());
+deltaReport.writeToFiles(outputDir);
+miningLog.println("Delta report written to " + outputDir.resolve("delta-report.json")); //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("Delta report written to " + outputDir.resolve("delta-report.md")); //$NON-NLS-1$ //$NON-NLS-2$
 }
 
 state.save(statePath);

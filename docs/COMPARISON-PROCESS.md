@@ -122,10 +122,68 @@ java -jar sandbox-mining-core.jar \
 |-------|---------|
 | `ExternalEvaluationImporter` | Imports reference evaluations from JSON |
 | `MiningComparator` | Compares mining vs reference results |
-| `DeltaReport` | Holds comparison gaps with formatting |
-| `GapCategory` / `GapEntry` | Gap classification |
+| `DeltaReport` | Holds comparison gaps with formatting (JSON, Markdown) |
+| `GapCategory` / `GapEntry` | Gap classification with actionable suggestions |
 | `HintFileUpdater` | Creates .sandbox-hint files from valid rules |
 | `ErrorFeedbackCollector` | Collects LLM error patterns for feedback |
 | `TypeContextEnricher` | Adds Eclipse type hierarchy to prompts |
 | `CommitKeywordFilter` | Pre-filters commits by keywords |
 | `NetBeansReporter` | Compiler-warning-style output format |
+
+## Gap Categories
+
+### Coarse-Grained (Programmatic Comparison)
+
+| Category | Description |
+|----------|-------------|
+| `MISSED_RELEVANT` | Gemini missed a relevant commit |
+| `WRONG_TRAFFIC_LIGHT` | Gemini assigned wrong traffic light color |
+| `MISSING_DSL_RULE` | Reference produced a DSL rule where Gemini did not |
+| `INVALID_DSL_RULE` | Gemini produced an invalid DSL rule |
+| `CATEGORY_MISMATCH` | Disagreement on transformation category |
+| `MISSING_API_CONTEXT` | Gemini lacks Eclipse API context |
+| `MISSING_TYPE_CONTEXT` | Gemini lacks type hierarchy info |
+
+### Fine-Grained (Iterative Improvement)
+
+| Category | Action |
+|----------|--------|
+| `TYP_KONTEXT` | Add type information to `eclipse-api-context.md` |
+| `API_VERSION` | Add Java version context to `eclipse-api-context.md` |
+| `GUARD_WISSEN` | Add guard examples to `dsl-explanation.md` |
+| `DSL_SYNTAX` | Add negative examples to `dsl-explanation.md` |
+| `GENERALISIERUNG` | Add generalization examples to `mining-examples.md` |
+| `DUPLIKAT_ERKENNUNG` | Improve existing `.sandbox-hint` descriptions |
+| `KONTEXT_NUTZUNG` | Extend `PromptBuilder` context sections |
+
+## Delta Report Output
+
+The comparison mode now writes two files to the output directory:
+
+- **`delta-report.json`** — Machine-readable gap data with summary and details
+- **`delta-report.md`** — Human-readable Markdown with gap distribution table and actionable suggestions
+
+## Run Documentation Template
+
+Each comparison run should be documented by appending to this file:
+
+```markdown
+### Run N — [DATE]
+
+**Commits analyzed:** [count]
+**Gap distribution:**
+- TYP_KONTEXT: X
+- DSL_SYNTAX: Y
+- ...
+
+**Key findings:**
+- [What was the most common gap?]
+- [What specific API knowledge was missing?]
+- [What DSL mistakes did Gemini repeat?]
+
+**Improvements applied:**
+- [List of files changed and what was added]
+
+**Recommendations for next run:**
+- [Focus areas for next iteration]
+```
