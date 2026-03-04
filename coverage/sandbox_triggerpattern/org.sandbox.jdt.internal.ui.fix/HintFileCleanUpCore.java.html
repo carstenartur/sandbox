@@ -33,6 +33,12 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_B
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_DEPRECATIONS;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_CLASSFILE_API;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_SERIALIZATION;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STRINGBUFFER;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_PLATFORM_LOGGING;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_TYPE_INFERENCE;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_TRY_WITH_RESOURCES;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_STRING_MODERNIZATION;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.HINTFILE_BUNDLE_OPTIONAL_MODERNIZATION;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -65,45 +71,45 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 public class HintFileCleanUpCore extends AbstractSandboxCleanUpCore {
 
 	static {
-<span class="fc" id="L68">		DslPluginRegistry.register(new CharsetForNameEncodingPlugin());</span>
-<span class="fc" id="L69">		DslPluginRegistry.register(new StringConstructorEncodingPlugin());</span>
-<span class="fc" id="L70">		DslPluginRegistry.register(new StringGetBytesEncodingPlugin());</span>
-<span class="fc" id="L71">	}</span>
+<span class="fc" id="L74">		DslPluginRegistry.register(new CharsetForNameEncodingPlugin());</span>
+<span class="fc" id="L75">		DslPluginRegistry.register(new StringConstructorEncodingPlugin());</span>
+<span class="fc" id="L76">		DslPluginRegistry.register(new StringGetBytesEncodingPlugin());</span>
+<span class="fc" id="L77">	}</span>
 
 	public HintFileCleanUpCore(final Map&lt;String, String&gt; options) {
-<span class="nc" id="L74">		super(options);</span>
-<span class="nc" id="L75">	}</span>
+<span class="nc" id="L80">		super(options);</span>
+<span class="nc" id="L81">	}</span>
 
-<span class="fc" id="L77">	public HintFileCleanUpCore() {</span>
-<span class="fc" id="L78">	}</span>
+<span class="fc" id="L83">	public HintFileCleanUpCore() {</span>
+<span class="fc" id="L84">	}</span>
 
 	@Override
 	protected String getCleanUpKey() {
-<span class="fc" id="L82">		return HINTFILE_CLEANUP;</span>
+<span class="fc" id="L88">		return HINTFILE_CLEANUP;</span>
 	}
 
 	@Override
 	protected String getFixLabel() {
-<span class="nc" id="L87">		return MultiFixMessages.HintFileCleanUpFix_refactor;</span>
+<span class="nc" id="L93">		return MultiFixMessages.HintFileCleanUpFix_refactor;</span>
 	}
 
 	@Override
 	protected String getDescription() {
-<span class="nc" id="L92">		return MultiFixMessages.HintFileCleanUp_description;</span>
+<span class="nc" id="L98">		return MultiFixMessages.HintFileCleanUp_description;</span>
 	}
 
 	@Override
 	protected void detect(CompilationUnit cu, CleanUpResult result) {
-<span class="nc" id="L97">		Set&lt;String&gt; enabledBundles = getEnabledBundles();</span>
-<span class="nc" id="L98">		HintFileFixCore.findOperations(cu, result.getOperations(),</span>
-<span class="nc" id="L99">				enabledBundles, result.getFindings());</span>
-<span class="nc bnc" id="L100" title="All 2 branches missed.">		for (String bundleId : enabledBundles) {</span>
-<span class="nc" id="L101">			List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt; plugins = DslPluginRegistry.getPluginsForBundle(bundleId);</span>
-<span class="nc bnc" id="L102" title="All 2 branches missed.">			for (AbstractPatternCleanupPlugin&lt;?&gt; plugin : plugins) {</span>
-<span class="nc" id="L103">				plugin.findOperations(cu, result.getOperations());</span>
+<span class="nc" id="L103">		Set&lt;String&gt; enabledBundles = getEnabledBundles();</span>
+<span class="nc" id="L104">		HintFileFixCore.findOperations(cu, result.getOperations(),</span>
+<span class="nc" id="L105">				enabledBundles, result.getFindings());</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">		for (String bundleId : enabledBundles) {</span>
+<span class="nc" id="L107">			List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt; plugins = DslPluginRegistry.getPluginsForBundle(bundleId);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">			for (AbstractPatternCleanupPlugin&lt;?&gt; plugin : plugins) {</span>
+<span class="nc" id="L109">				plugin.findOperations(cu, result.getOperations());</span>
 			}
 		}
-<span class="nc" id="L106">	}</span>
+<span class="nc" id="L112">	}</span>
 
 	/**
 	 * Returns the set of enabled bundled hint file IDs based on the current options.
@@ -115,96 +121,114 @@ public class HintFileCleanUpCore extends AbstractSandboxCleanUpCore {
 	 * @return set of enabled bundle IDs (never {@code null})
 	 */
 	private Set&lt;String&gt; getEnabledBundles() {
-<span class="nc" id="L118">		Set&lt;String&gt; enabled = new LinkedHashSet&lt;&gt;();</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_COLLECTIONS)) {</span>
-<span class="nc" id="L120">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTIONS);</span>
+<span class="nc" id="L124">		Set&lt;String&gt; enabled = new LinkedHashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_COLLECTIONS)) {</span>
+<span class="nc" id="L126">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTIONS);</span>
 		}
-<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_PERFORMANCE)) {</span>
-<span class="nc" id="L123">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PERFORMANCE);</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_PERFORMANCE)) {</span>
+<span class="nc" id="L129">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PERFORMANCE);</span>
 		}
-<span class="nc bnc" id="L125" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA9)) {</span>
-<span class="nc" id="L126">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MODERNIZE_JAVA9);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA9)) {</span>
+<span class="nc" id="L132">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MODERNIZE_JAVA9);</span>
 		}
-<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA11)) {</span>
-<span class="nc" id="L129">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MODERNIZE_JAVA11);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_MODERNIZE_JAVA11)) {</span>
+<span class="nc" id="L135">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MODERNIZE_JAVA11);</span>
 		}
-<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_ENCODING)) {</span>
-<span class="nc" id="L132">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_ENCODING);</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_ENCODING)) {</span>
+<span class="nc" id="L138">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_ENCODING);</span>
 		}
-<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_JUNIT5)) {</span>
-<span class="nc" id="L135">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_JUNIT5);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_JUNIT5)) {</span>
+<span class="nc" id="L141">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_JUNIT5);</span>
 			// assume5 and annotations5 are part of the JUnit 4→5 migration bundle
-<span class="nc" id="L137">			enabled.add(&quot;assume5&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L138">			enabled.add(&quot;annotations5&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L143">			enabled.add(&quot;assume5&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L144">			enabled.add(&quot;annotations5&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L140" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_STREAM_PERFORMANCE)) {</span>
-<span class="nc" id="L141">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STREAM_PERFORMANCE);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_STREAM_PERFORMANCE)) {</span>
+<span class="nc" id="L147">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STREAM_PERFORMANCE);</span>
 		}
-<span class="nc bnc" id="L143" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_IO_PERFORMANCE)) {</span>
-<span class="nc" id="L144">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_IO_PERFORMANCE);</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_IO_PERFORMANCE)) {</span>
+<span class="nc" id="L150">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_IO_PERFORMANCE);</span>
 		}
-<span class="nc bnc" id="L146" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_COLLECTION_PERFORMANCE)) {</span>
-<span class="nc" id="L147">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTION_PERFORMANCE);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_COLLECTION_PERFORMANCE)) {</span>
+<span class="nc" id="L153">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTION_PERFORMANCE);</span>
 		}
-<span class="nc bnc" id="L149" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_NUMBER_COMPARE)) {</span>
-<span class="nc" id="L150">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_NUMBER_COMPARE);</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_NUMBER_COMPARE)) {</span>
+<span class="nc" id="L156">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_NUMBER_COMPARE);</span>
 		}
-<span class="nc bnc" id="L152" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_STRING_EQUALS)) {</span>
-<span class="nc" id="L153">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_EQUALS);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_STRING_EQUALS)) {</span>
+<span class="nc" id="L159">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_EQUALS);</span>
 		}
-<span class="nc bnc" id="L155" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_STRING_ISBLANK)) {</span>
-<span class="nc" id="L156">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_ISBLANK);</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_STRING_ISBLANK)) {</span>
+<span class="nc" id="L162">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_ISBLANK);</span>
 		}
-<span class="nc bnc" id="L158" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_ARRAYS)) {</span>
-<span class="nc" id="L159">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_ARRAYS);</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_ARRAYS)) {</span>
+<span class="nc" id="L165">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_ARRAYS);</span>
 		}
-<span class="nc bnc" id="L161" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_COLLECTION_TOARRAY)) {</span>
-<span class="nc" id="L162">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTION_TOARRAY);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_COLLECTION_TOARRAY)) {</span>
+<span class="nc" id="L168">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_COLLECTION_TOARRAY);</span>
 		}
-<span class="nc bnc" id="L164" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_PROBABLE_BUGS)) {</span>
-<span class="nc" id="L165">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PROBABLE_BUGS);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_PROBABLE_BUGS)) {</span>
+<span class="nc" id="L171">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PROBABLE_BUGS);</span>
 		}
-<span class="nc bnc" id="L167" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_MISC)) {</span>
-<span class="nc" id="L168">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MISC);</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_MISC)) {</span>
+<span class="nc" id="L174">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_MISC);</span>
 		}
-<span class="nc bnc" id="L170" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_DEPRECATIONS)) {</span>
-<span class="nc" id="L171">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_DEPRECATIONS);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_DEPRECATIONS)) {</span>
+<span class="nc" id="L177">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_DEPRECATIONS);</span>
 		}
-<span class="nc bnc" id="L173" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_CLASSFILE_API)) {</span>
-<span class="nc" id="L174">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_CLASSFILE_API);</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_CLASSFILE_API)) {</span>
+<span class="nc" id="L180">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_CLASSFILE_API);</span>
 		}
-<span class="nc bnc" id="L176" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_SERIALIZATION)) {</span>
-<span class="nc" id="L177">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_SERIALIZATION);</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_SERIALIZATION)) {</span>
+<span class="nc" id="L183">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_SERIALIZATION);</span>
 		}
-<span class="nc" id="L179">		return enabled;</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_STRINGBUFFER)) {</span>
+<span class="nc" id="L186">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRINGBUFFER);</span>
+		}
+<span class="nc bnc" id="L188" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_PLATFORM_LOGGING)) {</span>
+<span class="nc" id="L189">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_PLATFORM_LOGGING);</span>
+		}
+<span class="nc bnc" id="L191" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_TYPE_INFERENCE)) {</span>
+<span class="nc" id="L192">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_TYPE_INFERENCE);</span>
+		}
+<span class="nc bnc" id="L194" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_TRY_WITH_RESOURCES)) {</span>
+<span class="nc" id="L195">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_TRY_WITH_RESOURCES);</span>
+		}
+<span class="nc bnc" id="L197" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_STRING_MODERNIZATION)) {</span>
+<span class="nc" id="L198">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_STRING_MODERNIZATION);</span>
+		}
+<span class="nc bnc" id="L200" title="All 2 branches missed.">		if (isEnabled(HINTFILE_BUNDLE_OPTIONAL_MODERNIZATION)) {</span>
+<span class="nc" id="L201">			enabled.add(MYCleanUpConstants.HINTFILE_BUNDLE_ID_OPTIONAL_MODERNIZATION);</span>
+		}
+<span class="nc" id="L203">		return enabled;</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="nc" id="L184">		boolean cleanup = isEnabled(HINTFILE_CLEANUP);</span>
-<span class="nc" id="L185">		Set&lt;String&gt; enabledBundles = getEnabledBundles();</span>
-<span class="nc" id="L186">		StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L187">		boolean firstPreview = true;</span>
-<span class="nc bnc" id="L188" title="All 2 branches missed.">		for (String bundleId : enabledBundles) {</span>
-<span class="nc bnc" id="L189" title="All 2 branches missed.">			for (AbstractPatternCleanupPlugin&lt;?&gt; plugin : DslPluginRegistry.getPluginsForBundle(bundleId)) {</span>
-<span class="nc bnc" id="L190" title="All 2 branches missed.">				if (!firstPreview) {</span>
-<span class="nc" id="L191">					sb.append('\n');</span>
+<span class="nc" id="L208">		boolean cleanup = isEnabled(HINTFILE_CLEANUP);</span>
+<span class="nc" id="L209">		Set&lt;String&gt; enabledBundles = getEnabledBundles();</span>
+<span class="nc" id="L210">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L211">		boolean firstPreview = true;</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">		for (String bundleId : enabledBundles) {</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">			for (AbstractPatternCleanupPlugin&lt;?&gt; plugin : DslPluginRegistry.getPluginsForBundle(bundleId)) {</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">				if (!firstPreview) {</span>
+<span class="nc" id="L215">					sb.append('\n');</span>
 				}
-<span class="nc" id="L193">				sb.append(plugin.getPreview(cleanup));</span>
-<span class="nc" id="L194">				firstPreview = false;</span>
+<span class="nc" id="L217">				sb.append(plugin.getPreview(cleanup));</span>
+<span class="nc" id="L218">				firstPreview = false;</span>
 			}
 		}
-<span class="nc bnc" id="L197" title="All 2 branches missed.">		if (sb.length() &gt; 0) {</span>
-<span class="nc" id="L198">			return sb.toString();</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">		if (sb.length() &gt; 0) {</span>
+<span class="nc" id="L222">			return sb.toString();</span>
 		}
-<span class="nc bnc" id="L200" title="All 2 branches missed.">		if (cleanup) {</span>
-<span class="nc" id="L201">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (cleanup) {</span>
+<span class="nc" id="L225">			return &quot;&quot;&quot;</span>
 				// After applying .sandbox-hint rules:
 				String s = String.valueOf(value);
 				boolean empty = list.isEmpty();
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L207">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L231">		return &quot;&quot;&quot;</span>
 			// Before applying .sandbox-hint rules:
 			String s = &quot;&quot; + value;
 			boolean empty = list.size() == 0;

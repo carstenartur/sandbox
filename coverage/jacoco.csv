@@ -432,7 +432,7 @@ sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,Overrida
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,MultiFixMessages,0,4,0,0,0,2,0,1,0,1
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,ThreadingCleanUp,0,11,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,SystemOutCleanUp,0,11,0,0,0,4,0,2,0,2
-sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,HintFileCleanUpCore,277,18,52,0,69,7,32,3,6,3
+sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,HintFileCleanUpCore,325,18,64,0,81,7,38,3,6,3
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,SystemOutCleanUpCore,16,10,2,0,7,5,5,3,4,3
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,MissingHashCodeCleanUp,0,11,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.fix,PrintStackTraceCleanUp,0,11,0,0,0,4,0,2,0,2
