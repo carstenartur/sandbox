@@ -125,7 +125,7 @@ public class BlobIndexer {
 			throws IOException {
 		LOG.log(Level.INFO, "Starting blob indexing for commit {0} in {1}", //$NON-NLS-1$
 				new Object[] { commitId.name(), repositoryName });
-		Set<String> alreadyIndexed = loadIndexedKeys(commitId.name());
+		Set<String> alreadyIndexed = loadIndexedBlobOids();
 		List<JavaBlobIndex> batch = new ArrayList<>();
 		List<FilePathHistory> historyBatch = new ArrayList<>();
 		int count = 0;
@@ -176,8 +176,7 @@ public class BlobIndexer {
 						continue;
 					}
 					String blobOid = tw.getObjectId(0).name();
-					String indexKey = blobIndexKey(blobOid, commitId.name());
-					if (alreadyIndexed.contains(indexKey)) {
+					if (alreadyIndexed.contains(blobOid)) {
 						continue;
 					}
 					byte[] bytes = loader.getBytes();
@@ -196,7 +195,7 @@ public class BlobIndexer {
 							blobOid, commitId.name(), commitAuthor,
 							commitDate);
 					batch.add(idx);
-					alreadyIndexed.add(indexKey);
+					alreadyIndexed.add(blobOid);
 					count++;
 					if (batch.size() >= batchSize) {
 						persistBatch(batch);
@@ -246,46 +245,29 @@ public class BlobIndexer {
 	}
 
 	/**
-	 * Build the composite deduplication key used to track indexed blobs.
-	 *
-	 * @param blobOid
-	 *            the blob object ID hex string
-	 * @param commitOid
-	 *            the commit object ID hex string
-	 * @return composite key {@code "blobOid:commitOid"}
-	 */
-	private static String blobIndexKey(String blobOid, String commitOid) {
-		return blobOid + ":" + commitOid; //$NON-NLS-1$
-	}
-
-	/**
-	 * Pre-load the set of already-indexed {@code (blobObjectId:commitObjectId)}
-	 * keys for the given commit.
+	 * Pre-load the set of already-indexed blob OIDs for this repository.
 	 * <p>
-	 * Uses a composite key so that the same blob content appearing in different
-	 * commits produces a separate index entry per commit (with the correct
-	 * {@code commitObjectId}), while still avoiding duplicate work within a
-	 * single invocation.
+	 * Deduplicates on blob OID alone so that the same content is only indexed
+	 * once regardless of how many commits reference it. The
+	 * {@code commitObjectId} stored in the resulting {@link JavaBlobIndex}
+	 * represents the first commit where the blob was encountered.
+	 * </p>
+	 * <p>
+	 * This avoids one query per blob during indexing. For repositories with
+	 * very large numbers of indexed blobs, this set may consume significant
+	 * memory.
 	 * </p>
 	 *
-	 * @param commitOid
-	 *            hex string of the commit being indexed
-	 * @return set of {@code "blobOid:commitOid"} strings already in the index
-	 *         for this commit
+	 * @return set of blob OID hex strings already in the index
 	 */
-	private Set<String> loadIndexedKeys(String commitOid) {
+	private Set<String> loadIndexedBlobOids() {
 		try (Session session = sessionFactory.openSession()) {
-			List<String> blobOids = session.createQuery(
-					"SELECT j.blobObjectId FROM JavaBlobIndex j WHERE j.repositoryName = :repo AND j.commitObjectId = :commit", //$NON-NLS-1$
+			List<String> oids = session.createQuery(
+					"SELECT j.blobObjectId FROM JavaBlobIndex j WHERE j.repositoryName = :repo", //$NON-NLS-1$
 					String.class)
 					.setParameter("repo", repositoryName) //$NON-NLS-1$
-					.setParameter("commit", commitOid) //$NON-NLS-1$
 					.getResultList();
-			Set<String> keys = new HashSet<>();
-			for (String blobOid : blobOids) {
-				keys.add(blobIndexKey(blobOid, commitOid));
-			}
-			return keys;
+			return new HashSet<>(oids);
 		}
 	}
 

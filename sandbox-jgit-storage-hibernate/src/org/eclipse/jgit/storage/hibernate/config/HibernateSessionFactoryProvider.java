@@ -87,6 +87,13 @@ public class HibernateSessionFactoryProvider {
 		if (!properties.containsKey("hibernate.hikari.maxLifetime")) { //$NON-NLS-1$
 			cfg.setProperty("hibernate.hikari.maxLifetime", "1200000"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
+		// Keep connections open for the full transaction — required for
+		// PostgreSQL LOB access through HikariCP
+		if (!properties.containsKey(
+				"hibernate.connection.handling_mode")) { //$NON-NLS-1$
+			cfg.setProperty("hibernate.connection.handling_mode", //$NON-NLS-1$
+					"DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION"); //$NON-NLS-1$
+		}
 		// Default to second-level cache with Caffeine/JCache
 		if (!properties.containsKey("hibernate.cache.use_second_level_cache")) { //$NON-NLS-1$
 			cfg.setProperty("hibernate.cache.use_second_level_cache", //$NON-NLS-1$

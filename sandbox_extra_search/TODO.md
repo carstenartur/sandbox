@@ -202,6 +202,46 @@ Current implementation is tightly coupled to Eclipse JDT search. Consider:
 - Support for alternative search implementations
 - Pluggable search providers
 
+## Git Database Index — Phase Plan
+
+### Phase 1b: HSQLDB Embedded + Dependency Bundling
+- [ ] Add HSQLDB JAR to `lib/` and update `Bundle-ClassPath`
+- [ ] Add Hibernate ORM + Hibernate Search JARs to `lib/`
+- [ ] Add Jakarta Persistence API JARs to `lib/`
+- [ ] Resolve OSGi classloading conflicts with Eclipse Platform
+- [ ] Wire `EmbeddedSearchService.initialize()` to `HibernateSessionFactoryProvider(props)`
+- [ ] Wire `EmbeddedSearchService` to `GitDatabaseQueryService(sessionFactory)`
+- [ ] Connect `IncrementalIndexer.processCommit()` to `CommitIndexer` + `BlobIndexer`
+- [ ] Configure `DriverManagerConnectionProviderImpl` (no HikariCP for embedded mode)
+- [ ] Verify HSQLDB `file:` mode persistence across Eclipse restarts
+- [ ] Add `EmbeddedSearchService.shutdown()` call to plugin stop lifecycle
+
+### Phase 2: EGit Integration
+- [ ] Implement full `IResourceChangeListener` with .git/refs and .git/objects filtering
+- [ ] Add `RepositoryProvider` connection detection
+- [ ] Persist last indexed commit SHA per repository in database
+- [ ] Add automatic indexing on EGit commit/pull/push events
+- [ ] Add `IProgressMonitor` support for background indexing jobs
+
+### Phase 3: Eclipse Views
+- [ ] Connect `GitSearchView` to `GitDatabaseQueryService.searchCommitMessages()`
+- [ ] Connect `JavaTypeHistoryView` to `GitDatabaseQueryService.getFileHistory()`
+- [ ] Connect `CommitAnalyticsView` to `GitDatabaseQueryService.getAuthorStatistics()`
+- [ ] Add search result double-click navigation to source
+- [ ] Add sorting and filtering to table viewers
+- [ ] Add view icons
+
+### Phase 4: Java-specific Queries
+- [ ] "Who replaced `instanceof` with switch-pattern?" — full-text search with EcjTokenizer
+- [ ] "All classes extending AbstractCleanUp" — `JavaBlobIndex.extendsTypes` query
+- [ ] "Which commits added @Deprecated annotations?" — annotation diff query
+- [ ] Cross-repository: "In which repos is ObjectId defined?"
+
+### Phase 5: Advanced Integration
+- [ ] Context menu extensions in Package Explorer
+- [ ] Connection to `sandbox_mining_core` for refactoring pattern detection
+- [ ] Enhanced preferences with database location chooser
+
 ## Performance Optimization
 
 ### Indexing Strategy

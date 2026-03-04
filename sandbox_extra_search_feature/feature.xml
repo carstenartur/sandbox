@@ -33,6 +33,9 @@
       <import plugin="org.eclipse.ui.workbench"/>
       <import plugin="org.eclipse.search"/>
       <import plugin="org.eclipse.e4.core.services"/>
+      <import plugin="org.eclipse.egit.core"/>
+      <import plugin="org.eclipse.jgit"/>
+      <import plugin="org.eclipse.core.jobs"/>
    </requires>
 
    <plugin

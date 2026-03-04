@@ -51,4 +51,87 @@
          </action>
          </actionSet>
       </extension>
+<!-- =========================================================================== -->
+<!-- Git Database Index Views                                                    -->
+<!-- =========================================================================== -->
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            id="org.sandbox.jdt.internal.ui.search.gitindex"
+            name="Git Database Index">
+      </category>
+      <view
+            name="Git Database Search"
+            category="org.sandbox.jdt.internal.ui.search.gitindex"
+            class="org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView"
+            id="org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView">
+      </view>
+      <view
+            name="Java Type History"
+            category="org.sandbox.jdt.internal.ui.search.gitindex"
+            class="org.sandbox.jdt.internal.ui.search.gitindex.JavaTypeHistoryView"
+            id="org.sandbox.jdt.internal.ui.search.gitindex.JavaTypeHistoryView">
+      </view>
+      <view
+            name="Commit Analytics"
+            category="org.sandbox.jdt.internal.ui.search.gitindex"
+            class="org.sandbox.jdt.internal.ui.search.gitindex.CommitAnalyticsView"
+            id="org.sandbox.jdt.internal.ui.search.gitindex.CommitAnalyticsView">
+      </view>
+   </extension>
+<!-- =========================================================================== -->
+<!-- Git Database Index Commands                                                 -->
+<!-- =========================================================================== -->
+   <extension
+         point="org.eclipse.ui.commands">
+      <category
+            id="org.sandbox.jdt.internal.ui.search.gitindex.commands"
+            name="Git Database Index">
+      </category>
+      <command
+            id="org.sandbox.jdt.internal.ui.search.gitindex.commands.indexRepository"
+            name="Index Repository"
+            categoryId="org.sandbox.jdt.internal.ui.search.gitindex.commands">
+      </command>
+      <command
+            id="org.sandbox.jdt.internal.ui.search.gitindex.commands.reindexAll"
+            name="Reindex All Repositories"
+            categoryId="org.sandbox.jdt.internal.ui.search.gitindex.commands">
+      </command>
+   </extension>
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            commandId="org.sandbox.jdt.internal.ui.search.gitindex.commands.indexRepository"
+            class="org.sandbox.jdt.internal.ui.search.gitindex.IndexRepositoryHandler">
+      </handler>
+      <handler
+            commandId="org.sandbox.jdt.internal.ui.search.gitindex.commands.reindexAll"
+            class="org.sandbox.jdt.internal.ui.search.gitindex.ReindexAllHandler">
+      </handler>
+   </extension>
+   <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            locationURI="toolbar:org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView">
+         <command
+               commandId="org.sandbox.jdt.internal.ui.search.gitindex.commands.indexRepository"
+               label="Index Repository"
+               style="push">
+         </command>
+         <command
+               commandId="org.sandbox.jdt.internal.ui.search.gitindex.commands.reindexAll"
+               label="Reindex All"
+               style="push">
+         </command>
+      </menuContribution>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <viewShortcut
+               id="org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView"/>
+      </perspectiveExtension>
+   </extension>
 </plugin>
