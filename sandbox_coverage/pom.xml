@@ -213,7 +213,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_mining_core</artifactId>
+			<artifactId>sandbox-mining-core</artifactId>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
