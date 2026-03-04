@@ -236,7 +236,7 @@ jobs:
           TEST_FLAG="-DskipTests"
           echo "Skipping tests as requested"
         fi
-        xvfb-run --auto-servernum mvn -Pproduct,repo,cli-dist,maven-plugin -T 1C clean verify $TEST_FLAG
+        xvfb-run --auto-servernum mvn -Pproduct,repo,cli-dist,maven-plugin,benchmark -T 1C clean verify $TEST_FLAG
 
     # 8b. Push release commit to remote
     - name: Push release commit to remote
