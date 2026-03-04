@@ -182,9 +182,9 @@
       "lastModelUsed": "gemini-2.5-flash"
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "6373b82afa49b788930f634c152d22a5233860ad",
-      "lastProcessedDate": "2026-03-03T04:22:01.152723957Z",
-      "totalProcessed": 2209,
+      "lastProcessedCommit": "c2f11d440e0b03622c02e3ad0a7d86fbd46a3ee4",
+      "lastProcessedDate": "2026-03-04T04:16:10.141818750Z",
+      "totalProcessed": 2505,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -321,6 +321,15 @@
           "deferredAt": "2026-03-03T04:20:16.993849973Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "8a1071fd0c22ca461a7868b29e9af8a866b80cd2",
+          "message": "Bug 542558 - [12][dom ast] DOM AST Support for Switch Expressions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-04T04:13:19.716763782Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -336,5 +345,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 12182
+  "globalTotalProcessed": 12478
 }
