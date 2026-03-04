@@ -306,7 +306,7 @@ Eclipse-independent common core module. A plain Maven JAR with no Eclipse Platfo
 
 ### Test Commons (`sandbox_test_commons`)
 
-Shared test infrastructure providing base classes (`AbstractCleanUpTest`, `AbstractQuickFixTest`), AST test helpers, mock objects (`MockCompilationUnit`, `MockIFile`, `MockIProject`), workspace setup utilities, and JUnit 5 integration. Used by all `sandbox_*_test` modules for consistent test patterns.
+Shared JUnit 5 test infrastructure for Eclipse JDT–based tests. Provides the `AbstractEclipseJava` JUnit 5 extension and version-specific subclasses (for example, `EclipseJava17`) under `org.sandbox.jdt.ui.tests.quickfix.rules` to configure Eclipse/Java environments for tests. Consumed by other `sandbox_*_test` modules to ensure consistent setup of the Eclipse Java tooling across different Java versions.
 
 📖 **Full Documentation**: [Module README](sandbox_test_commons/README.md)
 
