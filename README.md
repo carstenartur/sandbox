@@ -314,7 +314,7 @@ Shared JUnit 5 test infrastructure for Eclipse JDT–based tests. Provides the `
 
 ### Refactoring Mining Core (`sandbox_mining_core`)
 
-AI-assisted commit analysis engine for inferring DSL rules from Git diffs. Provides LLM-based rule inference (supports multiple providers), state management with deferred commits, keyword filtering, comparison mode, and automatic HintFile generation. Core library used by the mining CLI.
+AI-assisted commit analysis engine for inferring DSL rules from Git diffs. Provides LLM-based rule inference (supports multiple providers), state management with deferred commits, keyword filtering, comparison mode, and automatic HintFile generation.
 
 ---
 
