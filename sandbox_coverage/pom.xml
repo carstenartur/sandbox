@@ -208,7 +208,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
-			<artifactId>sandbox_mining_cli</artifactId>
+			<artifactId>sandbox-mining-cli</artifactId>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
