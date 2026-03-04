@@ -298,7 +298,7 @@ Bridge module between Eclipse JDT AST nodes and the sandbox-ast-api fluent types
 
 ### Common Core (`sandbox_common_core`)
 
-Eclipse-independent common core module. A plain Maven JAR (no OSGi/Eclipse dependencies beyond JDT Core) containing HelperVisitor API, TriggerPattern engine, pattern matching, guard expressions, hint file parsing (HintFileStore, BuiltInGuards), and LambdaASTVisitor. Enables standalone usage, fast testing without Xvfb, and CLI tool development. Existing Eclipse plugins continue to depend on `sandbox_common` which re-exports this module with `visibility:=reexport`.
+Eclipse-independent common core module. A plain Maven JAR with no Eclipse Platform/UI dependencies (relies on JDT Core plus non-Eclipse libraries such as JGit, Gson, and SLF4J) containing HelperVisitor API, TriggerPattern engine, pattern matching, guard expressions, hint file parsing (HintFileStore, BuiltInGuards), and LambdaASTVisitor. Enables standalone usage, fast testing without Xvfb, and CLI tool development. Existing Eclipse plugins continue to depend on `sandbox_common` which re-exports this module with `visibility:=reexport`.
 
 📖 **Full Documentation**: [Module README](sandbox_common_core/README.md)
 
