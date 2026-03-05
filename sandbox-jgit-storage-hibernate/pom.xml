@@ -133,6 +133,7 @@
 
 	<build>
 		<sourceDirectory>src</sourceDirectory>
+		<testSourceDirectory>tst</testSourceDirectory>
 
 		<plugins>
 			<plugin>
