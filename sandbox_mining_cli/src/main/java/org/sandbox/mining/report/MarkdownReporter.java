@@ -18,8 +18,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.sandbox.mining.report.MiningReport.MatchEntry;
 
@@ -35,13 +37,36 @@ public class MarkdownReporter {
 	 * @return the Markdown content
 	 */
 	public String generate(MiningReport report) {
+		return generate(report, null);
+	}
+
+	/**
+	 * Generates a delta-aware Markdown report string. When a previous report
+	 * is provided, the summary table includes "New" and "Known" columns, and
+	 * the details section highlights only matches that were not present in the
+	 * previous report.
+	 *
+	 * @param report         the current mining report
+	 * @param previousReport the previous report for delta computation, or {@code null}
+	 * @return the Markdown content
+	 */
+	public String generate(MiningReport report, MiningReport previousReport) {
+		Set<String> knownMatchKeys = previousReport != null ? buildMatchKeys(previousReport) : Set.of();
+
 		StringBuilder sb = new StringBuilder();
 		sb.append("# Refactoring Mining Report — ").append(LocalDate.now()).append("\n\n");
 
 		// Summary table
-		sb.append("## Summary\n");
-		sb.append("| Eclipse Project | Files | Matches | Rules |\n");
-		sb.append("|----------------|-------|---------|-------|\n");
+		boolean hasDelta = !knownMatchKeys.isEmpty();
+		if (hasDelta) {
+			sb.append("## Summary\n");
+			sb.append("| Eclipse Project | Files | Matches | New | Known | Rules |\n");
+			sb.append("|----------------|-------|---------|-----|-------|-------|\n");
+		} else {
+			sb.append("## Summary\n");
+			sb.append("| Eclipse Project | Files | Matches | Rules |\n");
+			sb.append("|----------------|-------|---------|-------|\n");
+		}
 
 		Map<String, Integer> fileCounts = report.getFileCounts();
 		Map<String, List<MatchEntry>> byRepo = report.getMatchesByRepo();
@@ -53,18 +78,36 @@ public class MarkdownReporter {
 			List<MatchEntry> repoMatches = byRepo.getOrDefault(repoName, List.of());
 			long rules = report.getDistinctRuleCount(repoName);
 			String marker = errors.containsKey(repoName) ? " ⚠️" : "";
-			sb.append("| ").append(repoName).append(marker).append(" | ").append(files).append(" | ").append(repoMatches.size())
-					.append(" | ").append(rules).append(" |\n");
+			if (hasDelta) {
+				long newCount = repoMatches.stream().filter(m -> !knownMatchKeys.contains(matchKey(m))).count();
+				long knownCount = repoMatches.size() - newCount;
+				sb.append("| ").append(repoName).append(marker).append(" | ").append(files).append(" | ")
+						.append(repoMatches.size()).append(" | ").append(newCount).append(" | ")
+						.append(knownCount).append(" | ").append(rules).append(" |\n");
+			} else {
+				sb.append("| ").append(repoName).append(marker).append(" | ").append(files).append(" | ").append(repoMatches.size())
+						.append(" | ").append(rules).append(" |\n");
+			}
 		}
 
-		// Details
+		// Details — when a previous report exists, highlight new matches
 		sb.append("\n## Details\n");
+		if (hasDelta) {
+			sb.append("_Only **new** matches since the last run are shown below._\n\n");
+		}
 		for (Map.Entry<String, List<MatchEntry>> repoEntry : byRepo.entrySet()) {
+			List<MatchEntry> repoMatches = repoEntry.getValue();
+			List<MatchEntry> displayMatches = hasDelta
+					? repoMatches.stream().filter(m -> !knownMatchKeys.contains(matchKey(m))).toList()
+					: repoMatches;
+			if (displayMatches.isEmpty()) {
+				continue;
+			}
 			sb.append("### ").append(repoEntry.getKey()).append("\n");
 
 			// Group by hint file and rule
 			Map<String, Map<String, List<MatchEntry>>> byHintAndRule = new java.util.LinkedHashMap<>();
-			for (MatchEntry match : repoEntry.getValue()) {
+			for (MatchEntry match : displayMatches) {
 				byHintAndRule.computeIfAbsent(match.hintFile(), k -> new java.util.LinkedHashMap<>())
 						.computeIfAbsent(match.ruleName(), k -> new java.util.ArrayList<>()).add(match);
 			}
@@ -125,5 +168,23 @@ public class MarkdownReporter {
 			return cleaned;
 		}
 		return cleaned.substring(0, maxLen - 3) + "...";
+	}
+
+	/**
+	 * Builds a set of match keys from a report for delta comparison.
+	 */
+	private static Set<String> buildMatchKeys(MiningReport report) {
+		Set<String> keys = new HashSet<>();
+		for (MatchEntry m : report.getMatches()) {
+			keys.add(matchKey(m));
+		}
+		return keys;
+	}
+
+	/**
+	 * Creates a unique key for a match entry based on repo, file, line, and rule.
+	 */
+	private static String matchKey(MatchEntry m) {
+		return m.repoName() + "\0" + m.hintFile() + "\0" + m.ruleName() + "\0" + m.filePath() + ":" + m.line();
 	}
 }

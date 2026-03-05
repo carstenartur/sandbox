@@ -35,6 +35,7 @@ import org.sandbox.mining.core.comparison.ErrorFeedbackCollector;
 import org.sandbox.mining.core.comparison.ExternalEvaluationImporter;
 import org.sandbox.mining.core.comparison.HintFileUpdater;
 import org.sandbox.mining.core.comparison.MiningComparator;
+import org.sandbox.mining.core.config.KnownRulesStore;
 import org.sandbox.mining.core.config.MiningConfig;
 import org.sandbox.mining.core.config.MiningState;
 import org.sandbox.mining.core.config.MiningState.DeferredCommit;
@@ -74,6 +75,12 @@ public class MiningCli {
  * keeping stdout clean for pipe-friendly NetBeans-format output.
  */
 private PrintStream miningLog = System.out;
+
+/**
+ * Known rules context for LLM prompts, formatted by {@link KnownRulesStore}.
+ * Populated in {@link #run(String[])} and consumed in {@link #processBatch}.
+ */
+private String knownRulesContext = ""; //$NON-NLS-1$
 
 private static final String OPT_CONFIG = "--config"; //$NON-NLS-1$
 private static final String OPT_STATE = "--state"; //$NON-NLS-1$
@@ -267,6 +274,14 @@ miningLog.println("Loaded " + errorCollector.getErrorCount() //$NON-NLS-1$
 }
 }
 
+// Load known rules and provide them as LLM context to avoid duplicates
+Path knownRulesPath = outputDir.resolve("known-rules.json"); //$NON-NLS-1$
+KnownRulesStore knownRules = KnownRulesStore.load(knownRulesPath);
+knownRulesContext = knownRules.formatForPrompt();
+if (!knownRulesContext.isEmpty()) {
+miningLog.println("Loaded " + knownRules.size() + " known rules as LLM context"); //$NON-NLS-1$ //$NON-NLS-2$
+}
+
 // Initialize keyword filter if specified
 CommitKeywordFilter keywordFilter = null;
 if (keywordFilterPath != null) {
@@ -371,6 +386,15 @@ List<CommitEvaluation> copilotResults = importer.importFromJson(copilotResultsPa
 MiningComparator comparator = new MiningComparator();
 DeltaReport deltaReport = comparator.compare(aggregator.getAllEvaluations(), copilotResults);
 miningLog.println(deltaReport.format());
+}
+
+// Register GREEN+VALID evaluations in known-rules.json
+// Run number is not tracked in MiningState; use globalTotalProcessed as proxy
+int newKnownRules = knownRules.registerFromEvaluations(
+aggregator.getAllEvaluations(), state.getGlobalTotalProcessed());
+if (newKnownRules > 0) {
+knownRules.save(knownRulesPath);
+miningLog.println("Registered " + newKnownRules + " new known rules (total: " + knownRules.size() + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 }
 
 state.save(statePath);
@@ -550,8 +574,9 @@ promptBuilder.setTypeContext(context);
 }
 List<String> hashes = commitDataList.stream().map(CommitData::commitHash).toList();
 List<String> messages = commitDataList.stream().map(CommitData::commitMessage).toList();
+String previousResults = knownRulesContext.isEmpty() ? null : knownRulesContext;
 String prompt = promptBuilder.buildBatchPrompt(dslContext,
-categoryManager.getCategoriesJson(), commitDataList);
+categoryManager.getCategoriesJson(), commitDataList, previousResults);
 evaluations = llmClient.evaluateBatch(prompt, hashes, messages, repo.getUrl());
 
 // Learn from truncation

@@ -67,4 +67,60 @@ class MarkdownReporterTest {
 		assertTrue(markdown.contains("`Error with **bold**"));
 		assertFalse(markdown.contains("\nand newlines`"));
 	}
+
+	@Test
+	void testDeltaReportShowsNewAndKnownColumns() {
+		var previousReport = new MiningReport();
+		previousReport.addFileCount("repo1", 10);
+		previousReport.addMatch("repo1", "collections", "use-isEmpty", "Foo.java", 10, "x.size() == 0", "x.isEmpty()");
+
+		var currentReport = new MiningReport();
+		currentReport.addFileCount("repo1", 15);
+		currentReport.addMatch("repo1", "collections", "use-isEmpty", "Foo.java", 10, "x.size() == 0", "x.isEmpty()");
+		currentReport.addMatch("repo1", "collections", "use-isEmpty", "Bar.java", 20, "y.size() == 0", "y.isEmpty()");
+
+		var reporter = new MarkdownReporter();
+		String markdown = reporter.generate(currentReport, previousReport);
+
+		// Delta summary should include New and Known columns
+		assertTrue(markdown.contains("| New | Known |"));
+		// 1 new match (Bar.java:20), 1 known match (Foo.java:10)
+		assertTrue(markdown.contains("| 1 | 1 |"));
+		// Details should only show the new match
+		assertTrue(markdown.contains("Bar.java:20"));
+		assertFalse(markdown.contains("Foo.java:10"));
+		assertTrue(markdown.contains("Only **new** matches"));
+	}
+
+	@Test
+	void testDeltaReportWithNullPreviousReport() {
+		var report = new MiningReport();
+		report.addFileCount("repo1", 10);
+		report.addMatch("repo1", "collections", "use-isEmpty", "Foo.java", 10, "x.size() == 0", "x.isEmpty()");
+
+		var reporter = new MarkdownReporter();
+		String markdown = reporter.generate(report, null);
+
+		// Should behave like the original non-delta report
+		assertTrue(markdown.contains("Foo.java:10"));
+		assertFalse(markdown.contains("| New |"));
+		assertFalse(markdown.contains("Only **new** matches"));
+	}
+
+	@Test
+	void testDeltaReportAllKnown() {
+		var previousReport = new MiningReport();
+		previousReport.addFileCount("repo1", 10);
+		previousReport.addMatch("repo1", "collections", "use-isEmpty", "Foo.java", 10, "x.size() == 0", "x.isEmpty()");
+
+		var currentReport = new MiningReport();
+		currentReport.addFileCount("repo1", 10);
+		currentReport.addMatch("repo1", "collections", "use-isEmpty", "Foo.java", 10, "x.size() == 0", "x.isEmpty()");
+
+		var reporter = new MarkdownReporter();
+		String markdown = reporter.generate(currentReport, previousReport);
+
+		// All matches are known, details section should be empty
+		assertTrue(markdown.contains("| 0 | 1 |"));
+	}
 }
