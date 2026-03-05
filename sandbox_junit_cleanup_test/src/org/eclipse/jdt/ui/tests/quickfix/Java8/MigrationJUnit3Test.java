@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2025 Carsten Hammer and others.
+ * Copyright (c) 2026 Carsten Hammer and others.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -111,7 +111,6 @@ public class MigrationJUnit3Test {
 
 				public class MyTest {
 				    @BeforeEach
-				    @Override
 				    protected void setUp() throws Exception {
 				        // init resources
 				    }
@@ -151,7 +150,6 @@ public class MigrationJUnit3Test {
 
 				public class MyTest {
 				    @AfterEach
-				    @Override
 				    protected void tearDown() throws Exception {
 				        // cleanup resources
 				    }

@@ -19,11 +19,13 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -191,19 +193,39 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 	}
 
 	private boolean isSetupMethod(MethodDeclaration method) {
-		return "setUp".equals(method.getName().getIdentifier()) && method.parameters().isEmpty();
+		return "setUp".equals(method.getName().getIdentifier()) && method.parameters().isEmpty()
+				&& isVoidReturnType(method);
 	}
 
 	private boolean isTeardownMethod(MethodDeclaration method) {
-		return "tearDown".equals(method.getName().getIdentifier()) && method.parameters().isEmpty();
+		return "tearDown".equals(method.getName().getIdentifier()) && method.parameters().isEmpty()
+				&& isVoidReturnType(method);
+	}
+
+	private boolean isVoidReturnType(MethodDeclaration method) {
+		Type returnType = method.getReturnType2();
+		return returnType != null && returnType.isPrimitiveType()
+				&& PrimitiveType.VOID.equals(((PrimitiveType) returnType).getPrimitiveTypeCode());
 	}
 
 	private void convertToAnnotation(MethodDeclaration method, String annotation, ImportRewrite importRewrite,
 			ASTRewrite rewrite, AST ast, TextEditGroup group) {
 		ListRewrite modifiers = rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+		// Remove @Override since the superclass (TestCase) is being removed
+		removeOverrideAnnotation(method, rewrite, group);
 		MarkerAnnotation newMarkerAnnotation = AnnotationUtils.createMarkerAnnotation(ast, annotation);
 		modifiers.insertFirst(newMarkerAnnotation, group);
 		importRewrite.addImport("org.junit.jupiter.api." + annotation);
+	}
+
+	private void removeOverrideAnnotation(MethodDeclaration method, ASTRewrite rewrite, TextEditGroup group) {
+		for (Object modifier : method.modifiers()) {
+			if (modifier instanceof Annotation annotation
+					&& "Override".equals(annotation.getTypeName().getFullyQualifiedName())) {
+				rewrite.remove(annotation, group);
+				break;
+			}
+		}
 	}
 
 	private void addAnnotationToMethod(MethodDeclaration method, String annotation, ImportRewrite importRewrite,

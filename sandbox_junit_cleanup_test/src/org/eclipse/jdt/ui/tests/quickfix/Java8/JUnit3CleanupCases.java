@@ -92,13 +92,11 @@ import org.junit.jupiter.api.Test;
 public class MyTest {
 
     @BeforeEach
-    @Override
     protected void setUp() throws Exception {
         // Setup
     }
 
     @AfterEach
-    @Override
     protected void tearDown() throws Exception {
         // Cleanup
     }
