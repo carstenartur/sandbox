@@ -68,6 +68,10 @@ public class BlobIndexData {
 
 	private java.time.Instant commitDate;
 
+	private float[] semanticEmbedding;
+
+	private boolean hasEmbedding;
+
 	/**
 	 * Get the file type identifier.
 	 *
@@ -503,5 +507,43 @@ public class BlobIndexData {
 	 */
 	public void setCommitDate(java.time.Instant commitDate) {
 		this.commitDate = commitDate;
+	}
+
+	/**
+	 * Get the semantic embedding vector.
+	 *
+	 * @return the embedding, or {@code null} if not computed
+	 */
+	public float[] getSemanticEmbedding() {
+		return semanticEmbedding;
+	}
+
+	/**
+	 * Set the semantic embedding vector.
+	 *
+	 * @param semanticEmbedding
+	 *            the embedding vector
+	 */
+	public void setSemanticEmbedding(float[] semanticEmbedding) {
+		this.semanticEmbedding = semanticEmbedding;
+	}
+
+	/**
+	 * Check if a semantic embedding has been computed.
+	 *
+	 * @return {@code true} if an embedding is available
+	 */
+	public boolean isHasEmbedding() {
+		return hasEmbedding;
+	}
+
+	/**
+	 * Set whether a semantic embedding has been computed.
+	 *
+	 * @param hasEmbedding
+	 *            {@code true} if an embedding is available
+	 */
+	public void setHasEmbedding(boolean hasEmbedding) {
+		this.hasEmbedding = hasEmbedding;
 	}
 }

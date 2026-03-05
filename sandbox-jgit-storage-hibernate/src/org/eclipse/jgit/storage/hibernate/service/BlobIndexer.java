@@ -31,6 +31,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
 import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
 import org.eclipse.jgit.storage.hibernate.search.BlobIndexData;
+import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
 import org.eclipse.jgit.storage.hibernate.search.FileTypeStrategy;
 import org.eclipse.jgit.storage.hibernate.search.FileTypeStrategyRegistry;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -75,6 +76,8 @@ public class BlobIndexer {
 
 	private final int batchSize;
 
+	private final EmbeddingService embeddingService;
+
 	/**
 	 * Create a new blob indexer with default settings.
 	 *
@@ -86,7 +89,7 @@ public class BlobIndexer {
 	public BlobIndexer(SessionFactory sessionFactory,
 			String repositoryName) {
 		this(sessionFactory, repositoryName, getMaxBlobSizeFromEnv(),
-				getBatchSizeFromEnv());
+				getBatchSizeFromEnv(), new EmbeddingService());
 	}
 
 	/**
@@ -103,11 +106,33 @@ public class BlobIndexer {
 	 */
 	public BlobIndexer(SessionFactory sessionFactory,
 			String repositoryName, int maxBlobSize, int batchSize) {
+		this(sessionFactory, repositoryName, maxBlobSize, batchSize,
+				new EmbeddingService());
+	}
+
+	/**
+	 * Create a new blob indexer with custom settings and embedding service.
+	 *
+	 * @param sessionFactory
+	 *            the Hibernate session factory
+	 * @param repositoryName
+	 *            the repository name for partitioning
+	 * @param maxBlobSize
+	 *            the maximum blob size in bytes to index
+	 * @param batchSize
+	 *            number of entities to persist per transaction batch
+	 * @param embeddingService
+	 *            the embedding service for semantic vector generation
+	 */
+	public BlobIndexer(SessionFactory sessionFactory,
+			String repositoryName, int maxBlobSize, int batchSize,
+			EmbeddingService embeddingService) {
 		this.sessionFactory = sessionFactory;
 		this.repositoryName = repositoryName;
 		this.strategyRegistry = new FileTypeStrategyRegistry();
 		this.maxBlobSize = maxBlobSize;
 		this.batchSize = batchSize;
+		this.embeddingService = embeddingService;
 	}
 
 	/**
@@ -375,6 +400,23 @@ public class BlobIndexer {
 		idx.setHasMainMethod(data.isHasMainMethod());
 		idx.setCommitAuthor(commitAuthor);
 		idx.setCommitDate(commitDate);
+		// Generate semantic embedding if service is available
+		try {
+			String embeddingText = EmbeddingService.buildEmbeddingText(
+					data.getSimpleClassName(),
+					data.getTypeDocumentation(),
+					data.getMethodSignatures(),
+					data.getPackageOrNamespace());
+			float[] embedding = embeddingService.embed(embeddingText);
+			if (embedding != null) {
+				idx.setSemanticEmbedding(embedding);
+				idx.setHasEmbedding(true);
+			}
+		} catch (Exception e) {
+			LOG.log(Level.FINE,
+					"Embedding generation failed for blob {0}", //$NON-NLS-1$
+					blobOid);
+		}
 		return idx;
 	}
 }

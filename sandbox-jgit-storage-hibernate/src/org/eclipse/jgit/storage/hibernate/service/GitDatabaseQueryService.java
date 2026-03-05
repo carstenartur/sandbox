@@ -30,6 +30,8 @@ import org.eclipse.jgit.storage.hibernate.entity.GitObjectEntity;
 import org.eclipse.jgit.storage.hibernate.entity.GitRefEntity;
 import org.eclipse.jgit.storage.hibernate.entity.GitReflogEntity;
 import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
+import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
+import org.eclipse.jgit.storage.hibernate.search.RankFusionUtil;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -48,6 +50,8 @@ public class GitDatabaseQueryService {
 
 	private final SessionFactory sessionFactory;
 
+	private EmbeddingService embeddingService;
+
 	/**
 	 * Create a new query service.
 	 *
@@ -56,6 +60,16 @@ public class GitDatabaseQueryService {
 	 */
 	public GitDatabaseQueryService(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
+	}
+
+	/**
+	 * Set the embedding service for semantic search.
+	 *
+	 * @param embeddingService
+	 *            the embedding service
+	 */
+	public void setEmbeddingService(EmbeddingService embeddingService) {
+		this.embeddingService = embeddingService;
 	}
 
 	/**
@@ -840,6 +854,130 @@ public class GitDatabaseQueryService {
 						return bool;
 					})
 					.fetchHits(offset, limit);
+		}
+	}
+
+	// --- Semantic search methods ---
+
+	/**
+	 * Semantic search: find code by natural language description.
+	 * <p>
+	 * Uses vector similarity (cosine) on pre-computed embeddings. Requires
+	 * the embedding service to be configured via
+	 * {@link #setEmbeddingService(EmbeddingService)}.
+	 * </p>
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param queryText
+	 *            natural language query (e.g., "HTTP client with retry")
+	 * @param topK
+	 *            number of results
+	 * @return matching Java blob index entries ranked by semantic similarity
+	 */
+	public List<JavaBlobIndex> semanticSearch(String repoName,
+			String queryText, int topK) {
+		if (embeddingService == null || !embeddingService.isAvailable()) {
+			return List.of();
+		}
+		float[] queryVector = embeddingService.embed(queryText);
+		if (queryVector == null) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			SearchSession searchSession = Search.session(session);
+			return searchSession.search(JavaBlobIndex.class)
+					.where(f -> f.bool()
+							.must(f.match()
+									.field("repositoryName") //$NON-NLS-1$
+									.matching(repoName))
+							.must(f.knn(topK)
+									.field("semanticEmbedding") //$NON-NLS-1$
+									.matching(queryVector)))
+					.fetchHits(topK);
+		}
+	}
+
+	/**
+	 * Hybrid search: combines full-text and semantic search.
+	 * <p>
+	 * Returns the union of both result sets, re-ranked using Reciprocal Rank
+	 * Fusion (RRF). Falls back to full-text only search if the embedding
+	 * service is not available.
+	 * </p>
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param queryText
+	 *            natural language or keyword query
+	 * @param topK
+	 *            number of results
+	 * @return fused results ordered by combined relevance score
+	 */
+	public List<JavaBlobIndex> hybridSearch(String repoName,
+			String queryText, int topK) {
+		List<JavaBlobIndex> fulltextResults = searchSourceContent(
+				repoName, queryText, 0, topK);
+
+		List<JavaBlobIndex> semanticResults = semanticSearch(repoName,
+				queryText, topK);
+
+		if (semanticResults.isEmpty()) {
+			return fulltextResults;
+		}
+
+		return RankFusionUtil.reciprocalRankFusion(semanticResults,
+				fulltextResults, topK);
+	}
+
+	/**
+	 * Find semantically similar code to a given blob.
+	 * <p>
+	 * Uses the embedding of the source blob to find nearest neighbors in the
+	 * vector space. Returns an empty list if the source blob has no embedding
+	 * or the embedding service is not available.
+	 * </p>
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param blobObjectId
+	 *            the blob object ID of the source file
+	 * @param topK
+	 *            number of similar results to return
+	 * @return similar Java blob index entries ranked by vector similarity
+	 */
+	public List<JavaBlobIndex> findSimilarCode(String repoName,
+			String blobObjectId, int topK) {
+		try (Session session = sessionFactory.openSession()) {
+			JavaBlobIndex source = session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND j.blobObjectId = :blobOid " //$NON-NLS-1$
+							+ "AND j.hasEmbedding = true", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("blobOid", blobObjectId) //$NON-NLS-1$
+					.setMaxResults(1)
+					.uniqueResult();
+			if (source == null
+					|| source.getSemanticEmbedding() == null) {
+				return List.of();
+			}
+			float[] sourceVector = source.getSemanticEmbedding();
+			SearchSession searchSession = Search.session(session);
+			return searchSession.search(JavaBlobIndex.class)
+					.where(f -> f.bool()
+							.must(f.match()
+									.field("repositoryName") //$NON-NLS-1$
+									.matching(repoName))
+							.must(f.knn(topK + 1)
+									.field("semanticEmbedding") //$NON-NLS-1$
+									.matching(sourceVector)))
+					.fetchHits(topK + 1)
+					.stream()
+					.filter(r -> !blobObjectId
+							.equals(r.getBlobObjectId()))
+					.limit(topK)
+					.toList();
 		}
 	}
 
