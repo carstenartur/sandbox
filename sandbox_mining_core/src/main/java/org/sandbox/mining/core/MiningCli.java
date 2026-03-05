@@ -389,7 +389,9 @@ miningLog.println(deltaReport.format());
 }
 
 // Register GREEN+VALID evaluations in known-rules.json
-int newKnownRules = knownRules.registerFromEvaluations(aggregator.getAllEvaluations(), 0);
+// Run number is not tracked in MiningState; use globalTotalProcessed as proxy
+int newKnownRules = knownRules.registerFromEvaluations(
+aggregator.getAllEvaluations(), state.getGlobalTotalProcessed());
 if (newKnownRules > 0) {
 knownRules.save(knownRulesPath);
 miningLog.println("Registered " + newKnownRules + " new known rules (total: " + knownRules.size() + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$

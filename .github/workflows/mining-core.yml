@@ -148,7 +148,8 @@ jobs:
                        and e.get('relevant', False)
                        and e.get('commitHash','') not in known_commits
                        and e.get('dslRule')]
-          for e in new_green[:5]:  # Limit to 5 issues per run
+          # Limit to 5 issues per run to avoid issue spam during catch-up phases
+          for e in new_green[:5]:
               print(json.dumps({
                   'summary': e.get('summary','Unknown'),
                   'category': e.get('category','Unknown'),
@@ -169,14 +170,14 @@ jobs:
               continue
             fi
             gh issue create \
-              --title "🟢 Neue DSL-Regel: $CATEGORY — $SUMMARY" \
-              --body "## DSL Regel
+              --title "🟢 New DSL Rule: $CATEGORY — $SUMMARY" \
+              --body "## DSL Rule
           \`\`\`
           $DSL_RULE
           \`\`\`
-          ## Zieldatei
+          ## Target File
           $TARGET
-          ## Quelle
+          ## Source
           Commit: $COMMIT
           Mining Run: #${{ github.run_number }}" \
               --label "dsl-rule,green,automated" 2>/dev/null || echo "Could not create issue for: $SUMMARY"

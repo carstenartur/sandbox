@@ -159,7 +159,11 @@ public class KnownRulesStore {
 		if (parent != null) {
 			Files.createDirectories(parent);
 		}
-		Path tmpFile = path.resolveSibling(path.getFileName() + ".tmp"); //$NON-NLS-1$
+		Path fileName = path.getFileName();
+		if (fileName == null) {
+			throw new IOException("Cannot save known rules to a root path"); //$NON-NLS-1$
+		}
+		Path tmpFile = path.resolveSibling(fileName + ".tmp"); //$NON-NLS-1$
 		String json = GSON.toJson(data);
 		Files.writeString(tmpFile, json, StandardCharsets.UTF_8);
 		Files.move(tmpFile, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);

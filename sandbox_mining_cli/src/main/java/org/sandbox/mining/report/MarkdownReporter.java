@@ -185,6 +185,6 @@ public class MarkdownReporter {
 	 * Creates a unique key for a match entry based on repo, file, line, and rule.
 	 */
 	private static String matchKey(MatchEntry m) {
-		return m.repoName() + "|" + m.hintFile() + "|" + m.ruleName() + "|" + m.filePath() + ":" + m.line();
+		return m.repoName() + "\0" + m.hintFile() + "\0" + m.ruleName() + "\0" + m.filePath() + ":" + m.line();
 	}
 }
