@@ -887,13 +887,12 @@ public class GitDatabaseQueryService {
 		try (Session session = sessionFactory.openSession()) {
 			SearchSession searchSession = Search.session(session);
 			return searchSession.search(JavaBlobIndex.class)
-					.where(f -> f.bool()
-							.must(f.match()
+					.where(f -> f.knn(topK)
+							.field("semanticEmbedding") //$NON-NLS-1$
+							.matching(queryVector)
+							.filter(f.match()
 									.field("repositoryName") //$NON-NLS-1$
-									.matching(repoName))
-							.must(f.knn(topK)
-									.field("semanticEmbedding") //$NON-NLS-1$
-									.matching(queryVector)))
+									.matching(repoName)))
 					.fetchHits(topK);
 		}
 	}
@@ -965,13 +964,12 @@ public class GitDatabaseQueryService {
 			float[] sourceVector = source.getSemanticEmbedding();
 			SearchSession searchSession = Search.session(session);
 			return searchSession.search(JavaBlobIndex.class)
-					.where(f -> f.bool()
-							.must(f.match()
+					.where(f -> f.knn(topK + 1)
+							.field("semanticEmbedding") //$NON-NLS-1$
+							.matching(sourceVector)
+							.filter(f.match()
 									.field("repositoryName") //$NON-NLS-1$
-									.matching(repoName))
-							.must(f.knn(topK + 1)
-									.field("semanticEmbedding") //$NON-NLS-1$
-									.matching(sourceVector)))
+									.matching(repoName)))
 					.fetchHits(topK + 1)
 					.stream()
 					.filter(r -> !blobObjectId

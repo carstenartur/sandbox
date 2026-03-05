@@ -79,18 +79,24 @@ public class EmbeddingBackfillService {
 		}
 		int totalUpdated = 0;
 		List<JavaBlobIndex> batch;
-		do {
+		while (true) {
 			batch = fetchBatch(sessionFactory, batchSize);
 			if (batch.isEmpty()) {
 				break;
 			}
 			int updated = processBatch(sessionFactory, embeddingService,
 					batch);
+			if (updated == 0) {
+				LOG.log(Level.WARNING,
+						"No entries updated in last backfill batch — " //$NON-NLS-1$
+								+ "terminating to avoid potential infinite loop"); //$NON-NLS-1$
+				break;
+			}
 			totalUpdated += updated;
 			LOG.log(Level.INFO,
 					"Backfill progress: {0} entries updated so far", //$NON-NLS-1$
 					Integer.valueOf(totalUpdated));
-		} while (!batch.isEmpty());
+		}
 		LOG.log(Level.INFO,
 				"Backfill complete: {0} entries updated", //$NON-NLS-1$
 				Integer.valueOf(totalUpdated));

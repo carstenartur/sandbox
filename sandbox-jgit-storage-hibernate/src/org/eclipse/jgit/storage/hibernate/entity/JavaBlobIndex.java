@@ -15,6 +15,7 @@ package org.eclipse.jgit.storage.hibernate.entity;
 
 import java.time.Instant;
 
+import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
 import org.hibernate.annotations.Nationalized;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.VectorSimilarity;
@@ -25,11 +26,13 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.VectorField;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 /**
@@ -180,8 +183,11 @@ public class JavaBlobIndex {
 	@Column(name = "commit_date")
 	private Instant commitDate;
 
-	@VectorField(dimension = 384, searchable = Searchable.YES,
+	@VectorField(dimension = EmbeddingService.EMBEDDING_DIMENSION,
+			searchable = Searchable.YES,
 			vectorSimilarity = VectorSimilarity.COSINE)
+	@Lob
+	@Convert(converter = FloatArrayConverter.class)
 	@Column(name = "semantic_embedding")
 	private float[] semanticEmbedding;
 
