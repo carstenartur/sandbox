@@ -42,7 +42,7 @@ public class MigrationJUnit3Test {
 		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT3_CONTAINER_PATH);
 	}
 
-	private void enableJUnit3Cleanup() {
+	private void enableJUnit3Cleanup() throws CoreException {
 		context.enable(MYCleanUpConstants.JUNIT3_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST);
 	}
