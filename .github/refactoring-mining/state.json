@@ -182,9 +182,9 @@
       "lastModelUsed": "gemini-2.5-flash"
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "c2f11d440e0b03622c02e3ad0a7d86fbd46a3ee4",
-      "lastProcessedDate": "2026-03-04T04:16:10.141818750Z",
-      "totalProcessed": 2505,
+      "lastProcessedCommit": "7de69591e80b72920a966cbff7aa9092885e0dbb",
+      "lastProcessedDate": "2026-03-05T04:19:42.913420853Z",
+      "totalProcessed": 2713,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -330,6 +330,33 @@
           "deferredAt": "2026-03-04T04:13:19.716763782Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "896cb38596980efacd9f1a3858de3d5249bab258",
+          "message": "Merge branch \u0027BETA_JAVA_12\u0027 to master for 4.12 builds",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-05T04:15:59.831183857Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "008ef1f94c166e1cb14f1cb24614e365aac0586e",
+          "message": "Bug 549106 - [dom] Impact of preview enabled flag on DOM AST",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-05T04:19:13.290951692Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a3466b0f64e8842e5ed6a3a28165da341fb76cc0",
+          "message": "Merge remote-tracking branch \u0027origin/BETA_JAVA13\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-05T04:19:26.325050231Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -345,5 +372,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 12478
+  "globalTotalProcessed": 12686
 }
