@@ -63,7 +63,7 @@ public class OpenSemanticSearchPageAction implements IWorkbenchWindowActionDeleg
 		fWindow= null;
 	}
 
-	private void beep() {
+	protected void beep() {
 		try {
 			IWorkbenchWindow activeWorkbenchWindow= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 			if (activeWorkbenchWindow == null) {

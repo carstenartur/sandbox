@@ -143,9 +143,13 @@ public class GitSearchView extends ViewPart {
 				results= queryService.searchBySymbol("", query); //$NON-NLS-1$
 				break;
 			case 6: // Semantic
+				// Note: result count for semantic search is fixed at 10 in this view.
+				// Use SemanticCodeSearchPage for configurable result counts.
 				results= queryService.semanticSearch("", query, 10); //$NON-NLS-1$
 				break;
 			case 7: // Hybrid
+				// Note: result count for hybrid search is fixed at 10 in this view.
+				// Use SemanticCodeSearchPage for configurable result counts.
 				results= queryService.hybridSearch("", query, 10); //$NON-NLS-1$
 				break;
 			default: // Commits

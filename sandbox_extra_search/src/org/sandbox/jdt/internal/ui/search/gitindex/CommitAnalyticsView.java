@@ -29,6 +29,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.part.ViewPart;
+import org.sandbox.jdt.internal.ui.search.Messages;
 
 /**
  * Eclipse view displaying commit analytics and author statistics for Git
@@ -106,13 +107,14 @@ public class CommitAnalyticsView extends ViewPart {
 		String repoName= repositoryCombo.getText().trim();
 		GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
 		if (queryService == null) {
-			statsLabel.setText("Service not initialized. Please wait for the database to start."); //$NON-NLS-1$
+			statsLabel.setText(Messages.CommitAnalyticsView_ServiceNotInitialized);
 			authorTableViewer.setInput(new Object[0]);
 			return;
 		}
 		List<AuthorStats> authors= queryService.getAuthorStatistics(repoName);
 		authorTableViewer.setInput(authors);
-		statsLabel.setText("Showing " + authors.size() + " authors for repository: " + repoName); //$NON-NLS-1$ //$NON-NLS-2$
+		statsLabel.setText(Messages.bind(Messages.CommitAnalyticsView_ShowingAuthors,
+				new Object[] {Integer.valueOf(authors.size()), repoName}));
 	}
 
 	@Override

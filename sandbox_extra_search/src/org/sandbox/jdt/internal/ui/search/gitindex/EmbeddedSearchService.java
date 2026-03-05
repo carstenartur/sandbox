@@ -117,10 +117,10 @@ public class EmbeddedSearchService {
 			queryService= new GitDatabaseQueryService(provider.getSessionFactory());
 			embeddingService= new EmbeddingService();
 			queryService.setEmbeddingService(embeddingService);
+			initialized= true;
 		} catch (Exception e) {
 			LOG.error("Git Database Index: Failed to initialize Hibernate/HSQLDB: " + e.getMessage(), e); //$NON-NLS-1$
 		}
-		initialized= true;
 	}
 
 	/**

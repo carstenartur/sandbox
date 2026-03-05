@@ -74,27 +74,38 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 
 	@Override
 	public IStatus run(IProgressMonitor monitor) {
-		GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
-		if (queryService == null) {
-			return Status.error("Semantic search service is not available. " //$NON-NLS-1$
-					+ "Please ensure the database is initialized."); //$NON-NLS-1$
+		monitor.beginTask(getLabel(), IProgressMonitor.UNKNOWN);
+		try {
+			if (monitor.isCanceled()) {
+				return Status.CANCEL_STATUS;
+			}
+			GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
+			if (queryService == null) {
+				return Status.error("Semantic search service is not available. " //$NON-NLS-1$
+						+ "Please ensure the database is initialized."); //$NON-NLS-1$
+			}
+			List<JavaBlobIndex> hits;
+			switch (mode) {
+				case HYBRID:
+					hits= queryService.hybridSearch(repoName, queryText, maxResults);
+					break;
+				case SIMILAR:
+					// queryText is treated as a blob object ID for similar code search
+					hits= queryService.findSimilarCode(repoName, queryText, maxResults);
+					break;
+				case SEMANTIC:
+				default:
+					hits= queryService.semanticSearch(repoName, queryText, maxResults);
+					break;
+			}
+			if (monitor.isCanceled()) {
+				return Status.CANCEL_STATUS;
+			}
+			result.setMatches(hits);
+			return Status.OK_STATUS;
+		} finally {
+			monitor.done();
 		}
-		List<JavaBlobIndex> hits;
-		switch (mode) {
-			case HYBRID:
-				hits= queryService.hybridSearch(repoName, queryText, maxResults);
-				break;
-			case SIMILAR:
-				// queryText is treated as a blob object ID for similar code search
-				hits= queryService.findSimilarCode(repoName, queryText, maxResults);
-				break;
-			case SEMANTIC:
-			default:
-				hits= queryService.semanticSearch(repoName, queryText, maxResults);
-				break;
-		}
-		result.setMatches(hits);
-		return Status.OK_STATUS;
 	}
 
 	@Override
