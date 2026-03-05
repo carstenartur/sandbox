@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Type;
@@ -142,7 +143,13 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 						reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);
 
 						// Update qualifier (e.g., Assert.assertEquals -> Assertions.assertEquals)
-						rewriter.set(node.getExpression(), SimpleName.IDENTIFIER_PROPERTY, "Assertions", group);
+						if (node.getExpression() != null) {
+							rewriter.set(node.getExpression(), SimpleName.IDENTIFIER_PROPERTY, "Assertions", group);
+						} else {
+							// Unqualified call (e.g., inherited from TestCase) - add qualifier
+							rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY,
+									ast.newSimpleName("Assertions"), group);
+						}
 
 						// Update imports
 						addImportForAssertion(node.getName().getIdentifier(), importRewriter);
@@ -163,6 +170,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 		case "assertFalse":
 		case "assertNull":
 		case "assertNotNull":
+		case "fail":
 			importToAdd = ORG_JUNIT_JUPITER_API_ASSERTIONS;
 			break;
 		case "assumeTrue":
@@ -183,13 +191,11 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 	}
 
 	private boolean isSetupMethod(MethodDeclaration method) {
-		return "setUp".equals(method.getName().getIdentifier()) && method.parameters().isEmpty()
-				&& method.getReturnType2() == null;
+		return "setUp".equals(method.getName().getIdentifier()) && method.parameters().isEmpty();
 	}
 
 	private boolean isTeardownMethod(MethodDeclaration method) {
-		return "tearDown".equals(method.getName().getIdentifier()) && method.parameters().isEmpty()
-				&& method.getReturnType2() == null;
+		return "tearDown".equals(method.getName().getIdentifier()) && method.parameters().isEmpty();
 	}
 
 	private void convertToAnnotation(MethodDeclaration method, String annotation, ImportRewrite importRewrite,

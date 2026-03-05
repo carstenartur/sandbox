@@ -21,146 +21,150 @@ package org.eclipse.jdt.ui.tests.quickfix.Java8;
  */
 
 enum JUnit3CleanupCases{
-		Junit3Case(
+		MinimalCase(
 				"""
 package test;
 
-import junit.framework.Test;
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
 public class MyTest extends TestCase {
 
-    public MyTest(String name) {
-        super(name);
+    protected void setUp() {
     }
+
+    public void testSomething() {
+        assertEquals("msg", 1, 1);
+    }
+}
+				""", //$NON-NLS-1$
+				"""
+package test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+
+    @BeforeEach
+    protected void setUp() {
+    }
+
+    @Test
+    public void testSomething() {
+        Assertions.assertEquals(1, 1, "msg");
+    }
+}
+				""" //$NON-NLS-1$
+				),
+		SetUpTearDownCase(
+				"""
+package test;
+
+import junit.framework.TestCase;
+
+public class MyTest extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
-        // Setup vor jedem Test
+        // Setup
     }
 
     @Override
     protected void tearDown() throws Exception {
-        // Aufräumen nach jedem Test
+        // Cleanup
     }
 
-    public static Test suite() {
-        TestSuite suite = new TestSuite();
-        suite.addTest(new MyTest("testBasicAssertions"));
-        suite.addTest(new MyTest("testArrayAssertions"));
-        suite.addTest(new MyTest("testWithAssume"));
-        suite.addTest(new MyTest("testAssertThat"));
-        suite.addTest(new MyTest("testEqualityWithDelta"));
-        suite.addTest(new MyTest("testFail"));
-        return suite;
+    public void testFirst() {
     }
 
-    public void testBasicAssertions() {
+    public void testSecond() {
+    }
+}
+				""", //$NON-NLS-1$
+				"""
+package test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+
+    @BeforeEach
+    @Override
+    protected void setUp() throws Exception {
+        // Setup
+    }
+
+    @AfterEach
+    @Override
+    protected void tearDown() throws Exception {
+        // Cleanup
+    }
+
+    @Test
+    public void testFirst() {
+    }
+
+    @Test
+    public void testSecond() {
+    }
+}
+				""" //$NON-NLS-1$
+				),
+		AssertionsCase(
+				"""
+package test;
+
+import junit.framework.TestCase;
+
+public class MyTest extends TestCase {
+
+    protected void setUp() {
+    }
+
+    public void testAssertions() {
         assertEquals("Values should match", 42, 42);
-        assertTrue("Condition should be true", true);
-        assertFalse("Condition should be false", false);
+        assertTrue("Should be true", true);
+        assertFalse("Should be false", false);
         assertNull("Should be null", null);
         assertNotNull("Should not be null", new Object());
     }
 
-    public void testArrayAssertions() {
-        int[] expected = {1, 2, 3};
-        int[] actual = {1, 2, 3};
-        assertEquals("Arrays should match", expected.length, actual.length);
-        for (int i = 0; i < expected.length; i++) {
-            assertEquals("Array element mismatch at index " + i, expected[i], actual[i]);
-        }
-    }
-
-    public void testWithAssume() {
-//        assumeTrue("Precondition failed", true);
-//        assumeFalse("Precondition not met", false);
-    }
-
-    public void testAssertThat() {
-        assertEquals("Value should match", 42, 42); // Ersatz für assertThat in JUnit 3
-    }
-
-    public void testEqualityWithDelta() {
-        assertEquals("Floating point equality with delta", 0.1 + 0.2, 0.3, 0.0001);
-    }
-
     public void testFail() {
-        fail("This test should fail with a message.");
+        fail("This test should fail");
     }
 }
-				
-				"""
-				,
+				""", //$NON-NLS-1$
 				"""
 package test;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.jupiter.api.Assumptions.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.junit.jupiter.api.*;
-
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class MyTest {
 
     @BeforeEach
-    public void setUp() throws Exception {
-        // Setup vor jedem Test
-    }
-
-    @AfterEach
-    public void tearDown() throws Exception {
-        // Aufräumen nach jedem Test
+    protected void setUp() {
     }
 
     @Test
-    @Order(1)
-    public void testBasicAssertions() {
-        assertEquals(42, 42, "Values should match");
-        assertTrue(true, "Condition should be true");
-        assertFalse(false, "Condition should be false");
-        assertNull(null, "Should be null");
-        assertNotNull(new Object(), "Should not be null");
+    public void testAssertions() {
+        Assertions.assertEquals(42, 42, "Values should match");
+        Assertions.assertTrue(true, "Should be true");
+        Assertions.assertFalse(false, "Should be false");
+        Assertions.assertNull(null, "Should be null");
+        Assertions.assertNotNull(new Object(), "Should not be null");
     }
 
     @Test
-    @Order(2)
-    public void testArrayAssertions() {
-        int[] expected = {1, 2, 3};
-        int[] actual = {1, 2, 3};
-        assertArrayEquals(expected, actual, "Arrays should match");
-    }
-
-    @Test
-    @Order(3)
-    public void testWithAssume() {
-        assumeTrue(true, "Precondition failed");
-        assumeFalse(false, "Precondition not met");
-    }
-
-    @Test
-    @Order(4)
-    public void testAssertThat() {
-        assertThat("Value should match", 42, is(42));
-    }
-
-    @Test
-    @Order(5)
-    public void testEqualityWithDelta() {
-        assertEquals(0.3, 0.1 + 0.2, 0.0001, "Floating point equality with delta");
-    }
-
-    @Test
-    @Order(6)
     public void testFail() {
-        fail("This test should fail with a message.");
+        Assertions.fail("This test should fail");
     }
 }
-				
-				"""
+				""" //$NON-NLS-1$
 				); //$NON-NLS-1$
 
 		String given;

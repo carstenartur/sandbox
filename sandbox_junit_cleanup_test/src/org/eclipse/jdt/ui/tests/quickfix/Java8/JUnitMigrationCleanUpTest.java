@@ -39,7 +39,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -94,7 +93,6 @@ public class JUnitMigrationCleanUpTest {
 		context4junit4.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 	
-	@Disabled
 	@ParameterizedTest
 	@EnumSource(JUnit3CleanupCases.class)
 	public void testJUnit3CleanupParametrized(JUnit3CleanupCases test) throws CoreException {
