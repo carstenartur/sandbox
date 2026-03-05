@@ -95,6 +95,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/refactoring-mining/state.json
+          # Include known-rules.json if it was created/updated
+          if [ -f docs/mining-report/known-rules.json ]; then
+            git add docs/mining-report/known-rules.json
+          fi
           if git diff --cached --quiet; then
             echo "No state changes to commit."
             echo "state_updated=false" >> "$GITHUB_OUTPUT"
@@ -112,9 +116,71 @@ jobs:
             exit 1
           fi
           git add .github/refactoring-mining/state.json
-          git commit -m "mining: Update state $(date +%Y-%m-%d)"
+          if [ -f docs/mining-report/known-rules.json ]; then
+            git add docs/mining-report/known-rules.json
+          fi
+          git commit -m "mining: Update state + known rules $(date +%Y-%m-%d)"
           git push origin "$BRANCH" --force
           echo "state_updated=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create Issues for new GREEN findings
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EVALS_FILE="docs/mining-report/evaluations.json"
+          KNOWN_FILE="docs/mining-report/known-rules.json"
+          if [ ! -f "$EVALS_FILE" ]; then
+            echo "No evaluations file found; skipping issue creation."
+            exit 0
+          fi
+          # Extract GREEN+VALID evaluations not yet in known-rules.json
+          python3 -c "
+          import json, sys
+          evals = json.load(open('$EVALS_FILE'))
+          known_commits = set()
+          if __import__('os').path.exists('$KNOWN_FILE'):
+              known = json.load(open('$KNOWN_FILE'))
+              known_commits = {r.get('sourceCommit','') for r in known.get('rules',[])}
+          new_green = [e for e in evals
+                       if e.get('trafficLight') == 'GREEN'
+                       and e.get('dslValidationResult') == 'VALID'
+                       and e.get('relevant', False)
+                       and e.get('commitHash','') not in known_commits
+                       and e.get('dslRule')]
+          for e in new_green[:5]:  # Limit to 5 issues per run
+              print(json.dumps({
+                  'summary': e.get('summary','Unknown'),
+                  'category': e.get('category','Unknown'),
+                  'dslRule': e.get('dslRule',''),
+                  'targetHintFile': e.get('targetHintFile',''),
+                  'commitHash': e.get('commitHash','')
+              }))
+          " 2>/dev/null | while IFS= read -r line; do
+            SUMMARY=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['summary'])")
+            CATEGORY=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['category'])")
+            DSL_RULE=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['dslRule'])")
+            TARGET=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['targetHintFile'])")
+            COMMIT=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['commitHash'])")
+            # Check if issue already exists
+            EXISTING=$(gh issue list --search "🟢 $CATEGORY — $SUMMARY" --json number -q '.[0].number' 2>/dev/null || true)
+            if [ -n "$EXISTING" ]; then
+              echo "Issue already exists for: $SUMMARY (#$EXISTING)"
+              continue
+            fi
+            gh issue create \
+              --title "🟢 Neue DSL-Regel: $CATEGORY — $SUMMARY" \
+              --body "## DSL Regel
+          \`\`\`
+          $DSL_RULE
+          \`\`\`
+          ## Zieldatei
+          $TARGET
+          ## Quelle
+          Commit: $COMMIT
+          Mining Run: #${{ github.run_number }}" \
+              --label "dsl-rule,green,automated" 2>/dev/null || echo "Could not create issue for: $SUMMARY"
+          done
 
       - name: Auto-merge state update
         if: steps.commit_state.outputs.state_updated == 'true'
