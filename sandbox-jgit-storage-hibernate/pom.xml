@@ -106,6 +106,23 @@
 			<version>3.1.8</version>
 		</dependency>
 
+		<!-- Deep Java Library (DJL) — local sentence embedding, no cloud API -->
+		<dependency>
+			<groupId>ai.djl</groupId>
+			<artifactId>api</artifactId>
+			<version>0.31.1</version>
+		</dependency>
+		<dependency>
+			<groupId>ai.djl.huggingface</groupId>
+			<artifactId>tokenizers</artifactId>
+			<version>0.31.1</version>
+		</dependency>
+		<dependency>
+			<groupId>ai.djl.onnxruntime</groupId>
+			<artifactId>onnxruntime-engine</artifactId>
+			<version>0.31.1</version>
+		</dependency>
+
 		<!-- JUnit 5 for testing -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
@@ -116,6 +133,7 @@
 
 	<build>
 		<sourceDirectory>src</sourceDirectory>
+		<testSourceDirectory>tst</testSourceDirectory>
 
 		<plugins>
 			<plugin>

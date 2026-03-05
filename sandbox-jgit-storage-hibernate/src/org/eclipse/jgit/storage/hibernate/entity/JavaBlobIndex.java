@@ -15,18 +15,24 @@ package org.eclipse.jgit.storage.hibernate.entity;
 
 import java.time.Instant;
 
+import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.VectorSimilarity;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.VectorField;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 /**
@@ -176,6 +182,18 @@ public class JavaBlobIndex {
 	@GenericField
 	@Column(name = "commit_date")
 	private Instant commitDate;
+
+	@VectorField(dimension = EmbeddingService.EMBEDDING_DIMENSION,
+			searchable = Searchable.YES,
+			vectorSimilarity = VectorSimilarity.COSINE)
+	@Lob
+	@Convert(converter = FloatArrayConverter.class)
+	@Column(name = "semantic_embedding")
+	private float[] semanticEmbedding;
+
+	@GenericField
+	@Column(name = "has_embedding")
+	private boolean hasEmbedding;
 
 	/** Default constructor for JPA. */
 	public JavaBlobIndex() {
@@ -711,5 +729,43 @@ public class JavaBlobIndex {
 	 */
 	public void setCommitDate(Instant commitDate) {
 		this.commitDate = commitDate;
+	}
+
+	/**
+	 * Get the semantic embedding vector.
+	 *
+	 * @return the 384-dimensional embedding, or {@code null} if not computed
+	 */
+	public float[] getSemanticEmbedding() {
+		return semanticEmbedding;
+	}
+
+	/**
+	 * Set the semantic embedding vector.
+	 *
+	 * @param semanticEmbedding
+	 *            the 384-dimensional embedding
+	 */
+	public void setSemanticEmbedding(float[] semanticEmbedding) {
+		this.semanticEmbedding = semanticEmbedding;
+	}
+
+	/**
+	 * Check if a semantic embedding has been computed for this blob.
+	 *
+	 * @return {@code true} if an embedding is available
+	 */
+	public boolean isHasEmbedding() {
+		return hasEmbedding;
+	}
+
+	/**
+	 * Set whether a semantic embedding has been computed.
+	 *
+	 * @param hasEmbedding
+	 *            {@code true} if an embedding is available
+	 */
+	public void setHasEmbedding(boolean hasEmbedding) {
+		this.hasEmbedding = hasEmbedding;
 	}
 }

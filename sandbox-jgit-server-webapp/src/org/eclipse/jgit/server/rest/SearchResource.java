@@ -23,6 +23,7 @@ import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider
 import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
 import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
 import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
+import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
 import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 
 import com.google.gson.Gson;
@@ -48,6 +49,12 @@ import jakarta.servlet.http.HttpServletResponse;
  * by supertype</li>
  * <li>{@code GET /api/search/source?repo=...&amp;q=...} — full-text
  * search across source snippets</li>
+ * <li>{@code GET /api/search/semantic?repo=...&amp;q=...} — semantic
+ * (vector) search using sentence embeddings</li>
+ * <li>{@code GET /api/search/hybrid?repo=...&amp;q=...} — combined
+ * full-text + semantic search with rank fusion</li>
+ * <li>{@code GET /api/search/similar?repo=...&amp;blobId=...} — find
+ * semantically similar code to a given blob</li>
  * </ul>
  */
 public class SearchResource extends HttpServlet {
@@ -58,6 +65,8 @@ public class SearchResource extends HttpServlet {
 			.getLogger(SearchResource.class.getName());
 
 	private final HibernateSessionFactoryProvider provider;
+
+	private final EmbeddingService embeddingService;
 
 	private final Gson gson = new Gson();
 
@@ -75,6 +84,7 @@ public class SearchResource extends HttpServlet {
 	 */
 	public SearchResource(HibernateSessionFactoryProvider provider) {
 		this.provider = provider;
+		this.embeddingService = new EmbeddingService();
 	}
 
 	@Override
@@ -130,6 +140,7 @@ public class SearchResource extends HttpServlet {
 		try {
 			GitDatabaseQueryService queryService = new GitDatabaseQueryService(
 					provider.getSessionFactory());
+			queryService.setEmbeddingService(embeddingService);
 
 			if (pathInfo.startsWith("/commits")) { //$NON-NLS-1$
 				handleCommitSearch(queryService, repo, query, offset,
@@ -188,12 +199,31 @@ public class SearchResource extends HttpServlet {
 				}
 				handleFqnSearch(queryService, repo, query, fqnFileType,
 						offset, limit, resp);
+			} else if (pathInfo.startsWith("/semantic")) { //$NON-NLS-1$
+				handleSemanticSearch(queryService, repo, query, limit,
+						resp);
+			} else if (pathInfo.startsWith("/hybrid")) { //$NON-NLS-1$
+				handleHybridSearch(queryService, repo, query, limit,
+						resp);
+			} else if (pathInfo.startsWith("/similar")) { //$NON-NLS-1$
+				String blobId = req.getParameter("blobId"); //$NON-NLS-1$
+				if (blobId == null || blobId.isEmpty()) {
+					resp.setStatus(
+							HttpServletResponse.SC_BAD_REQUEST);
+					try (PrintWriter w = resp.getWriter()) {
+						w.write("{\"error\":\"Parameter 'blobId' is required for similar search\"}"); //$NON-NLS-1$
+					}
+				} else {
+					blobId = sanitizeInput(blobId);
+					handleSimilarSearch(queryService, repo, blobId,
+							limit, resp);
+				}
 			} else {
 				// Default: search commits
 				handleCommitSearch(queryService, repo, query, offset,
 						limit, resp);
 			}
-		} catch (Exception e) {
+		} catch (RuntimeException | IOException e) {
 			LOG.log(Level.WARNING, "Search error", e); //$NON-NLS-1$
 			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 			try (PrintWriter w = resp.getWriter()) {
@@ -353,6 +383,33 @@ public class SearchResource extends HttpServlet {
 		List<JavaBlobIndex> results = queryService
 				.searchFqnAcrossTypes(repo, query, fileType, offset, limit);
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
+	}
+
+	private void handleSemanticSearch(
+			GitDatabaseQueryService queryService, String repo,
+			String query, int topK, HttpServletResponse resp)
+			throws IOException {
+		List<JavaBlobIndex> results = queryService.semanticSearch(repo,
+				query, topK);
+		writeJavaBlobResponse(results, repo, query, 0, topK, resp);
+	}
+
+	private void handleHybridSearch(
+			GitDatabaseQueryService queryService, String repo,
+			String query, int topK, HttpServletResponse resp)
+			throws IOException {
+		List<JavaBlobIndex> results = queryService.hybridSearch(repo,
+				query, topK);
+		writeJavaBlobResponse(results, repo, query, 0, topK, resp);
+	}
+
+	private void handleSimilarSearch(
+			GitDatabaseQueryService queryService, String repo,
+			String blobId, int topK, HttpServletResponse resp)
+			throws IOException {
+		List<JavaBlobIndex> results = queryService.findSimilarCode(repo,
+				blobId, topK);
+		writeJavaBlobResponse(results, repo, blobId, 0, topK, resp);
 	}
 
 	private void writeFilePathResponse(List<FilePathHistory> results,
