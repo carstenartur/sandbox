@@ -18,6 +18,9 @@ import java.util.Properties;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
+import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 
 /**
  * Singleton service that manages the embedded HSQLDB database and Lucene index
@@ -67,6 +70,12 @@ public class EmbeddedSearchService {
 
 	private boolean initialized;
 
+	private HibernateSessionFactoryProvider provider;
+
+	private GitDatabaseQueryService queryService;
+
+	private EmbeddingService embeddingService;
+
 	private EmbeddedSearchService() {
 		// singleton
 	}
@@ -103,9 +112,14 @@ public class EmbeddedSearchService {
 		Properties props= buildHsqldbProperties(stateLocation);
 		LOG.info("Git Database Index: HSQLDB embedded configured at " //$NON-NLS-1$
 				+ props.getProperty("hibernate.connection.url")); //$NON-NLS-1$
-		// Phase 1b: Uncomment when sandbox-jgit-storage-hibernate is bundled
-		// provider = new HibernateSessionFactoryProvider(props);
-		// queryService = new GitDatabaseQueryService(provider.getSessionFactory());
+		try {
+			provider= new HibernateSessionFactoryProvider(props);
+			queryService= new GitDatabaseQueryService(provider.getSessionFactory());
+			embeddingService= new EmbeddingService();
+			queryService.setEmbeddingService(embeddingService);
+		} catch (Exception e) {
+			LOG.error("Git Database Index: Failed to initialize Hibernate/HSQLDB: " + e.getMessage(), e); //$NON-NLS-1$
+		}
 		initialized= true;
 	}
 
@@ -166,8 +180,41 @@ public class EmbeddedSearchService {
 		if (!initialized) {
 			return;
 		}
-		// Phase 1b: provider.close();
+		if (provider != null) {
+			provider.close();
+			provider= null;
+		}
+		queryService= null;
+		embeddingService= null;
 		initialized= false;
 		LOG.info("Git Database Index: Embedded search service shut down"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Returns the query service, or {@code null} if not initialized.
+	 *
+	 * @return the {@link GitDatabaseQueryService}, or {@code null}
+	 */
+	public GitDatabaseQueryService getQueryService() {
+		return queryService;
+	}
+
+	/**
+	 * Returns the embedding service, or {@code null} if not initialized.
+	 *
+	 * @return the {@link EmbeddingService}, or {@code null}
+	 */
+	public EmbeddingService getEmbeddingService() {
+		return embeddingService;
+	}
+
+	/**
+	 * Returns the Hibernate session factory provider, or {@code null} if not
+	 * initialized.
+	 *
+	 * @return the {@link HibernateSessionFactoryProvider}, or {@code null}
+	 */
+	public HibernateSessionFactoryProvider getProvider() {
+		return provider;
 	}
 }

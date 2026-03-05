@@ -13,10 +13,13 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.search.gitindex;
 
+import java.util.List;
+
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -73,7 +76,9 @@ public class GitSearchView extends ViewPart {
 				"Paths", //$NON-NLS-1$
 				"Annotations", //$NON-NLS-1$
 				"Methods", //$NON-NLS-1$
-				"Fields" //$NON-NLS-1$
+				"Fields", //$NON-NLS-1$
+				"Semantic", //$NON-NLS-1$
+				"Hybrid" //$NON-NLS-1$
 		);
 		searchTypeCombo.select(0);
 
@@ -114,7 +119,40 @@ public class GitSearchView extends ViewPart {
 	}
 
 	private void performSearch() {
-		// Phase 3: Connect to GitDatabaseQueryService
+		String query= searchText.getText().trim();
+		if (query.isEmpty()) {
+			return;
+		}
+		GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
+		if (queryService == null) {
+			tableViewer.setInput(new Object[0]);
+			return;
+		}
+		int searchType= searchTypeCombo.getSelectionIndex();
+		List<?> results;
+		switch (searchType) {
+			case 1: // Java Types
+				results= queryService.searchByType("", query); //$NON-NLS-1$
+				break;
+			case 2: // Paths
+				results= queryService.searchByChangedPath("", query); //$NON-NLS-1$
+				break;
+			case 3: // Annotations
+			case 4: // Methods
+			case 5: // Fields
+				results= queryService.searchBySymbol("", query); //$NON-NLS-1$
+				break;
+			case 6: // Semantic
+				results= queryService.semanticSearch("", query, 10); //$NON-NLS-1$
+				break;
+			case 7: // Hybrid
+				results= queryService.hybridSearch("", query, 10); //$NON-NLS-1$
+				break;
+			default: // Commits
+				results= queryService.searchCommitMessages("", query); //$NON-NLS-1$
+				break;
+		}
+		tableViewer.setInput(results);
 	}
 
 	@Override

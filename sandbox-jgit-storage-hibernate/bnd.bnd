@@ -1,0 +1,10 @@
+Bundle-SymbolicName: sandbox-jgit-storage-hibernate
+Bundle-Version: ${version_cleanup;${project.version}}
+Bundle-Name: Sandbox JGit Storage Hibernate
+
+Export-Package: org.eclipse.jgit.storage.hibernate.config,\
+ org.eclipse.jgit.storage.hibernate.entity,\
+ org.eclipse.jgit.storage.hibernate.search,\
+ org.eclipse.jgit.storage.hibernate.service
+
+Import-Package: *

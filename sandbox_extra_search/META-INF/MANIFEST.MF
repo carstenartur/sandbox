@@ -24,4 +24,5 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.e4.core.services,
  org.eclipse.egit.core,
  org.eclipse.jgit,
- org.eclipse.core.jobs
+ org.eclipse.core.jobs,
+ sandbox-jgit-storage-hibernate

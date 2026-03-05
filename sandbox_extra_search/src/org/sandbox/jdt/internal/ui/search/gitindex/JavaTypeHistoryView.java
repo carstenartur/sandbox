@@ -13,10 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.search.gitindex;
 
+import java.util.List;
+
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
+import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -92,7 +96,17 @@ public class JavaTypeHistoryView extends ViewPart {
 	}
 
 	private void performSearch() {
-		// Phase 3: Connect to GitDatabaseQueryService.getFileHistory()
+		String typeName= typeNameText.getText().trim();
+		if (typeName.isEmpty()) {
+			return;
+		}
+		GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
+		if (queryService == null) {
+			tableViewer.setInput(new Object[0]);
+			return;
+		}
+		List<FilePathHistory> results= queryService.getFileHistory("", typeName, 0, 50); //$NON-NLS-1$
+		tableViewer.setInput(results);
 	}
 
 	@Override

@@ -16,6 +16,14 @@
             sizeHint="460,160"
             id="org.eclipse.jdt.ui.TestSearchPage">
       </page>
+      <page
+            showScopeSection="false"
+            label="Semantic Code Search"
+            icon="$nl$/icons/full/obj16/sandbox.png"
+            class="org.sandbox.jdt.internal.ui.search.SemanticCodeSearchPage"
+            sizeHint="460,200"
+            id="org.sandbox.jdt.ui.SemanticCodeSearchPage">
+      </page>
    </extension>
    <extension
          point="org.eclipse.ui.actionSets">
@@ -48,6 +56,13 @@
                class="org.sandbox.jdt.internal.ui.search.OpenUpdateSearchPageAction"
                menubarPath="org.eclipse.search.menu/dialogGroup"
                id="org.eclipse.jdt.ui.actions.OpenUpdateSearchPage">
+         </action>
+         <action
+               label="Semantic Code Search..."
+               icon="$nl$/icons/full/obj16/sandbox.png"
+               class="org.sandbox.jdt.internal.ui.search.OpenSemanticSearchPageAction"
+               menubarPath="org.eclipse.search.menu/dialogGroup"
+               id="org.sandbox.jdt.ui.actions.OpenSemanticSearchPage">
          </action>
          </actionSet>
       </extension>

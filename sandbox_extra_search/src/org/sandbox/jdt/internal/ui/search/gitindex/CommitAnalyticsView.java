@@ -13,10 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.search.gitindex;
 
+import java.util.List;
+
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
+import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService.AuthorStats;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -99,7 +103,16 @@ public class CommitAnalyticsView extends ViewPart {
 	}
 
 	private void refreshAnalytics() {
-		// Phase 3: Connect to GitDatabaseQueryService.getAuthorStatistics()
+		String repoName= repositoryCombo.getText().trim();
+		GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
+		if (queryService == null) {
+			statsLabel.setText("Service not initialized. Please wait for the database to start."); //$NON-NLS-1$
+			authorTableViewer.setInput(new Object[0]);
+			return;
+		}
+		List<AuthorStats> authors= queryService.getAuthorStatistics(repoName);
+		authorTableViewer.setInput(authors);
+		statsLabel.setText("Showing " + authors.size() + " authors for repository: " + repoName); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@Override
