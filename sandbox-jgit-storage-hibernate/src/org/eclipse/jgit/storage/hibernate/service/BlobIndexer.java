@@ -414,8 +414,8 @@ public class BlobIndexer {
 			}
 		} catch (Exception e) {
 			LOG.log(Level.FINE,
-					"Embedding generation failed for blob {0}", //$NON-NLS-1$
-					blobOid);
+					"Embedding generation failed for blob {0}: {1}", //$NON-NLS-1$
+					new Object[] { blobOid, e.getMessage() });
 		}
 		return idx;
 	}

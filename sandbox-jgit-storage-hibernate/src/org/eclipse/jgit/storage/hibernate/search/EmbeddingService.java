@@ -254,6 +254,15 @@ public class EmbeddingService {
 		}
 	}
 
+	/**
+	 * Truncate text to approximate the model's token limit.
+	 * <p>
+	 * Uses a simple character-based approximation (~4 characters per token
+	 * for English text). This may over- or under-estimate for non-English
+	 * text or code with many special characters. The model itself handles
+	 * actual tokenization and will truncate at its internal token limit.
+	 * </p>
+	 */
 	private static String truncateToTokenLimit(String text) {
 		// Simple character-based approximation: ~4 chars per token for English
 		int maxChars = MAX_TOKEN_LENGTH * 4;

@@ -169,7 +169,10 @@ public class EmbeddingBackfillService {
 			try {
 				return Integer.parseInt(val);
 			} catch (NumberFormatException e) {
-				// ignore
+				LOG.log(Level.WARNING,
+						"Invalid JGIT_EMBEDDING_BATCH_SIZE value: {0} — using default {1}", //$NON-NLS-1$
+						new Object[] { val,
+								Integer.valueOf(DEFAULT_BATCH_SIZE) });
 			}
 		}
 		return DEFAULT_BATCH_SIZE;
