@@ -250,3 +250,82 @@ Each comparison run should be documented by appending to this file:
   `throws MalformedURLException`)
 - JUnit migration commits (3 duplicates) could benefit from per-annotation DSL rules
   even if the full migration is YELLOW
+
+### Run 2 — 2026-03-06
+
+**Commits analyzed:** 39 (same set from `eclipse-2025-sample.txt`)
+**Repositories:** eclipse-platform/eclipse.platform.ui, eclipse-jdt/eclipse.jdt.ui
+**Reference:** Copilot Coding Agent evaluation (updated from Run 1; no Gemini results — no API key)
+
+**Gap distribution (identified in Run 2 analysis):**
+- DSL_SYNTAX: 1 (dsl-explanation.md still had 7 missing guards + semantic safety section)
+- MISSING_DSL_RULE: 2 (no hint files existed for validated GREEN rules)
+- GENERALISIERUNG: 4 (missing examples for concurrency, cleanup bug fix subtypes, deprecation handling)
+- CATEGORY_MISMATCH: 3 (cleanup bug fixes not properly distinguished from enhancements)
+- MISSING_API_CONTEXT: 2 (system properties constants, concurrency patterns)
+
+**Key findings:**
+- **Most critical gap:** DSL_SYNTAX — the mining core's `dsl-explanation.md` was still
+  146 lines shorter than the `sandbox_common_core` version, missing 7 guards
+  (`isLocalVariable`, `isAssignedToLocalVariable`, `isAutoCloseable`, enhanced
+  `genericTypeIs`, `argsCount`, `isResourceVariable`) and the entire "Semantic Safety
+  Rules" section. This means Gemini would not know about scope-safe transformations
+  (thread safety, null semantics, var restrictions).
+- **Validated GREEN rules had no hint files:** The 2 GREEN rules from Run 1 referenced
+  `string-performance.sandbox-hint` and `eclipse-api-deprecations.sandbox-hint` but
+  neither file existed. This means Gemini's validated output was not being fed back
+  into the system for deduplication.
+- **DSL rule quality:** The String.replaceAll rule used a non-existent guard
+  `containsRegexChars()` — corrected to `!isRegexp()`. The Platform.run rule had
+  an unnecessary `sourceVersionGE(11)` guard — removed per source version guidance.
+- **Missing classification guidance:** 9 out of 14 RED commits are cleanup bug fixes,
+  but the mining examples only had 1 example of this pattern. Added 3 more examples
+  to ensure Gemini distinguishes bug fixes from new patterns.
+
+**Improvements applied:**
+1. **`sandbox_mining_core/src/main/resources/dsl-explanation.md`** — Full sync with
+   `sandbox_common_core` version: files now identical (713 lines each). Added embedded
+   Java code blocks documentation, 7 missing guards, semantic safety rules section
+   (thread safety, null semantics, var scope, close() guards, hint selectivity,
+   library deduplication), and 4 additional invalid construct entries.
+   *Gap: DSL_SYNTAX — Gemini would not know about scope-safe transformation guards*
+
+2. **`sandbox_common_core/.../eclipse-api-deprecations.sandbox-hint`** — Created new
+   hint file for Eclipse Platform deprecated API rules (Platform.run → SafeRunner.run).
+   *Gap: MISSING_DSL_RULE — validated GREEN rule had no corresponding hint file*
+
+3. **`sandbox_common_core/.../string-modernization.sandbox-hint`** — Added
+   String.replaceAll → String.replace rule using correct `isStringLiteral` and
+   `!isRegexp` guards.
+   *Gap: MISSING_DSL_RULE — validated GREEN rule not in any hint file*
+
+4. **`sandbox_mining_core/src/main/resources/mining-examples.md`** — Added 4 new examples:
+   - Example 15: NOT_APPLICABLE — Concurrency refactoring (Phaser → CountDownLatch)
+   - Example 16: RED — Cleanup bug fix (system properties version check)
+   - Example 17: RED — Quick-fix context bug (diamond operator)
+   - Example 18: RED — Deprecation highlighting fix (record constructors)
+   Added 2 new "Common Mistakes" entries (#11-#12) distinguishing concurrency patterns
+   and cleanup bug fixes from enhancements.
+   *Gap: GENERALISIERUNG + CATEGORY_MISMATCH — Gemini lacked examples for these patterns*
+
+5. **`sandbox_mining_core/src/main/resources/eclipse-api-context.md`** — Added:
+   - Cleanup Bug Fixes vs. New Patterns classification guide with commit examples
+   - Concurrency and Synchronization Patterns section
+   - System Properties Constants (Java 10+) section
+   *Gap: MISSING_API_CONTEXT + CATEGORY_MISMATCH — Gemini needs explicit guidance*
+
+6. **`output/run-1/copilot-evaluations.json`** — Fixed DSL rule quality:
+   - String.replaceAll: changed `containsRegexChars()` to `!isRegexp()` (correct guard)
+   - Platform.run: removed unnecessary `sourceVersionGE(11)` guard
+   - Fixed targetHintFile from `string-performance.sandbox-hint` to
+     `string-modernization.sandbox-hint` (correct existing file)
+   *Gap: INVALID_DSL_RULE — reference evaluations used non-existent guards*
+
+**Recommendations for next run:**
+- Run with actual Gemini API key to validate that the improved prompt context
+  leads to better DSL rules and fewer hallucinated guard names
+- Focus on YELLOW→GREEN promotion for URL deprecation pattern using
+  `throwsException("java.net.MalformedURLException")` guard
+- Consider adding a `containsRegexChars` guard alias for `isRegexp` to avoid
+  confusion in future mining runs
+- Test whether the semantic safety rules section reduces over-broad rule proposals

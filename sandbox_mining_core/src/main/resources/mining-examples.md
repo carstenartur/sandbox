@@ -22,7 +22,7 @@ it should be replaced with `replace()` which avoids regex compilation overhead.
 **DSL rule:**
 ```
 // String.replaceAll with literal → String.replace
-$str.replaceAll($literal, $replacement) :: sourceVersionGE(9) && isStringLiteral($literal) && !containsRegexChars($literal)
+$str.replaceAll($literal, $replacement) :: isStringLiteral($literal) && !isRegexp($literal)
 => $str.replace($literal, $replacement)
 ;;
 ```
@@ -46,7 +46,7 @@ Direct call replacement with import change.
 **DSL rule:**
 ```
 // Platform.run → SafeRunner.run
-org.eclipse.core.runtime.Platform.run($runnable) :: sourceVersionGE(11)
+org.eclipse.core.runtime.Platform.run($runnable)
 => org.eclipse.core.runtime.SafeRunner.run($runnable)
 ;;
 ```
