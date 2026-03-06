@@ -846,12 +846,18 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * formatting changes in refactoring output.
 	 * <p>
 	 * This method:
+	 * </p>
 	 * <ul>
 	 * <li>Normalizes line endings to {@code \n}</li>
+	 * <li>Converts leading tabs to 4 spaces (handles mixed tab/space indentation)</li>
 	 * <li>Trims trailing whitespace from each line</li>
 	 * <li>Collapses multiple consecutive blank lines into a single blank line</li>
-	 * <li>Trims leading and trailing blank lines from the whole string</li>
+	 * <li>Strips leading and trailing whitespace from the whole string</li>
 	 * </ul>
+	 * <p>
+	 * <b>Limitation:</b> This method normalizes all leading whitespace on every line,
+	 * which may alter significant whitespace inside Java text blocks. Use the standard
+	 * {@link #assertRefactoringResultAsExpected} for tests involving text block content.
 	 * </p>
 	 *
 	 * @param s the string to normalize, may be {@code null}
@@ -863,10 +869,28 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 		final String normalized = normalizeLineEndings(s);
 		return Arrays.stream(normalized.split("\n", -1)) //$NON-NLS-1$
-				.map(line -> line.stripTrailing())
+				.map(line -> normalizeIndentation(line).stripTrailing())
 				.collect(Collectors.joining("\n")) //$NON-NLS-1$
 				.replaceAll("\n{3,}", "\n\n") //$NON-NLS-1$ //$NON-NLS-2$
 				.strip();
+	}
+
+	/**
+	 * Normalizes indentation by replacing leading tabs with 4 spaces each.
+	 *
+	 * @param line the line to normalize
+	 * @return the line with tabs replaced by spaces in leading whitespace
+	 */
+	private static String normalizeIndentation(final String line) {
+		int i = 0;
+		while (i < line.length() && (line.charAt(i) == ' ' || line.charAt(i) == '\t')) {
+			i++;
+		}
+		if (i == 0) {
+			return line;
+		}
+		final String leading = line.substring(0, i).replace("\t", "    "); //$NON-NLS-1$ //$NON-NLS-2$
+		return leading + line.substring(i);
 	}
 
 	/**
@@ -874,8 +898,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * and normalizing whitespace differences.
 	 * <p>
 	 * Unlike {@link #assertEqualStringsIgnoreOrder}, this method normalizes
-	 * whitespace (trailing spaces, multiple blank lines, leading/trailing blanks)
-	 * before comparison, making tests robust against unrelated formatting changes.
+	 * whitespace (leading tabs to spaces, trailing spaces, multiple blank lines,
+	 * leading/trailing blanks) before comparison, making tests robust against
+	 * unrelated formatting changes from the refactoring engine.
 	 * </p>
 	 *
 	 * @param actuals the actual strings
