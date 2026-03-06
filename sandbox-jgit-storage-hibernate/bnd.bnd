@@ -7,4 +7,9 @@ Export-Package: org.eclipse.jgit.storage.hibernate.config,\
  org.eclipse.jgit.storage.hibernate.search,\
  org.eclipse.jgit.storage.hibernate.service
 
-Import-Package: *
+Import-Package: ai.djl.*;resolution:=optional,\
+ jakarta.*;resolution:=optional,\
+ org.apache.lucene.*;resolution:=optional,\
+ org.hibernate.*;resolution:=optional,\
+ org.hsqldb.*;resolution:=optional,\
+ *
