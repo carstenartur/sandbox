@@ -171,7 +171,11 @@
       ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
-      "lastModelUsed": "gemini-2.5-flash"
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
     },
     "https://github.com/carstenartur/sandbox": {
       "totalProcessed": 0,
@@ -179,12 +183,16 @@
       "deferredCommits": [],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
-      "lastModelUsed": "gemini-2.5-flash"
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "e84704bd5cce8b8b1123ebe325b4ebba7f60d80f",
-      "lastProcessedDate": "2026-03-06T04:16:49.320867814Z",
-      "totalProcessed": 2881,
+      "lastProcessedCommit": "4314d0ca19d28e8749c2fc2ac2a43b5da7d5128d",
+      "lastProcessedDate": "2026-03-06T23:36:15.497214439Z",
+      "totalProcessed": 3013,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -379,7 +387,13 @@
       ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
-      "lastModelUsed": "gemini-2.5-flash"
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {
+        "JDT AST Infrastructure": 2
+      },
+      "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
       "totalProcessed": 0,
@@ -387,8 +401,48 @@
       "deferredCommits": [],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
-      "lastModelUsed": "gemini-2.5-flash"
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
+    },
+    "https://github.com/eclipse-platform/eclipse.platform": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
+    },
+    "https://github.com/eclipse-platform/eclipse.platform.text": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
+    },
+    "https://github.com/eclipse-platform/eclipse.platform.debug": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 12854
+  "globalTotalProcessed": 12986
 }
