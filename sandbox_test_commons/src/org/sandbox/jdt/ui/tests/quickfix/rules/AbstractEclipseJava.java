@@ -857,17 +857,16 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param s the string to normalize, may be {@code null}
 	 * @return the normalized string, or {@code null} if input was {@code null}
 	 */
-	static String normalizeWhitespace(final String s) {
+	private static String normalizeWhitespace(final String s) {
 		if (s == null) {
 			return null;
 		}
 		final String normalized = normalizeLineEndings(s);
-		final String result = Arrays.stream(normalized.split("\n", -1)) //$NON-NLS-1$
+		return Arrays.stream(normalized.split("\n", -1)) //$NON-NLS-1$
 				.map(line -> line.stripTrailing())
 				.collect(Collectors.joining("\n")) //$NON-NLS-1$
 				.replaceAll("\n{3,}", "\n\n") //$NON-NLS-1$ //$NON-NLS-2$
 				.strip();
-		return result;
 	}
 
 	/**
