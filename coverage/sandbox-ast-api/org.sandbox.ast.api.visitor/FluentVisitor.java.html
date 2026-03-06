@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>FluentVisitor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-ast-api</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.ast.api.visitor</a> &gt; <span class="el_source">FluentVisitor.java</span></div><h1>FluentVisitor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.ast.api.visitor;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+import org.sandbox.ast.api.core.ASTWrapper;
+import org.sandbox.ast.api.expr.ASTExpr;
+import org.sandbox.ast.api.expr.CastExpr;
+import org.sandbox.ast.api.expr.FieldAccessExpr;
+import org.sandbox.ast.api.expr.InfixExpr;
+import org.sandbox.ast.api.expr.MethodInvocationExpr;
+import org.sandbox.ast.api.expr.SimpleNameExpr;
+import org.sandbox.ast.api.stmt.ASTStmt;
+import org.sandbox.ast.api.stmt.EnhancedForStmt;
+import org.sandbox.ast.api.stmt.ForLoopStmt;
+import org.sandbox.ast.api.stmt.IfStmt;
+import org.sandbox.ast.api.stmt.WhileLoopStmt;
+
+/**
+ * Fluent, type-safe visitor builder for AST traversal and pattern matching.
+ * Provides a declarative API for handling different AST node types without
+ * verbose instanceof checks and casts.
+ *
+ * &lt;p&gt;Example usage:&lt;/p&gt;
+ * &lt;pre&gt;
+ * FluentVisitor visitor = FluentVisitor.builder()
+ *     .onMethodInvocation(mi -&amp;gt; {
+ *         System.out.println(&quot;Found method call: &quot; + mi.methodName());
+ *     })
+ *     .onSimpleName(sn -&amp;gt; {
+ *         System.out.println(&quot;Found name: &quot; + sn.identifier());
+ *     })
+ *     .build();
+ *
+ * visitor.visit(expression);
+ * &lt;/pre&gt;
+ *
+ * &lt;p&gt;With predicates:&lt;/p&gt;
+ * &lt;pre&gt;
+ * FluentVisitor visitor = FluentVisitor.builder()
+ *     .onMethodInvocation()
+ *         .when(mi -&amp;gt; mi.methodName().equals(Optional.of(&quot;add&quot;)))
+ *         .then(mi -&amp;gt; System.out.println(&quot;Found add call&quot;))
+ *     .onSimpleName()
+ *         .filter(sn -&amp;gt; sn.identifier().startsWith(&quot;test&quot;))
+ *         .then(sn -&amp;gt; System.out.println(&quot;Found test name&quot;))
+ *     .build();
+ * &lt;/pre&gt;
+ */
+		public interface FluentVisitor {
+
+			/**
+ * Visits a single AST node.
+ *
+ * @param node the node to visit
+ */
+			void visit(ASTWrapper node);
+
+			/**
+ * Visits multiple AST nodes.
+ *
+ * @param nodes the nodes to visit
+ */
+			default void visitAll(List&lt;? extends ASTWrapper&gt; nodes) {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">				if (nodes != null) {</span>
+<span class="fc" id="L82">					nodes.forEach(this::visit);</span>
+				}
+<span class="fc" id="L84">			}</span>
+
+			/**
+ * Combines this visitor with another visitor.
+ * Both visitors will be invoked for each node.
+ *
+ * @param other the other visitor
+ * @return a combined visitor
+ */
+			default FluentVisitor andThen(FluentVisitor other) {
+<span class="fc" id="L94">				return node -&gt; {</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">					if (node == null) {</span>
+<span class="nc" id="L96">						return;</span>
+					}
+<span class="fc" id="L98">					this.visit(node);</span>
+<span class="fc" id="L99">					other.visit(node);</span>
+<span class="fc" id="L100">				};</span>
+			}
+
+			/**
+ * Creates a new fluent visitor builder.
+ *
+ * @return a new builder instance
+ */
+			static Builder builder() {
+<span class="fc" id="L109">				return new Builder();</span>
+			}
+
+			/**
+ * Builder for creating fluent visitors with type-safe pattern matching.
+ */
+<span class="fc" id="L115">			class Builder {</span>
+<span class="fc" id="L116">				private final List&lt;Consumer&lt;ASTWrapper&gt;&gt; handlers = new ArrayList&lt;&gt;();</span>
+
+				/**
+ * Registers a handler for method invocation expressions.
+ *
+ * @param handler the handler to invoke for each method invocation
+ * @return this builder
+ */
+				public Builder onMethodInvocation(Consumer&lt;MethodInvocationExpr&gt; handler) {
+<span class="fc" id="L125">					handlers.add(node -&gt; {</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="fc" id="L127">							expr.asMethodInvocation().ifPresent(handler);</span>
+						}
+<span class="fc" id="L129">					});</span>
+<span class="fc" id="L130">					return this;</span>
+				}
+
+				/**
+ * Starts a predicate-based handler for method invocations.
+ *
+ * @return a conditional handler builder
+ */
+				public ConditionalHandler&lt;MethodInvocationExpr&gt; onMethodInvocation() {
+<span class="fc" id="L139">					return new ConditionalHandler&lt;&gt;(this, node -&gt; {</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="fc" id="L141">							return expr.asMethodInvocation();</span>
+						}
+<span class="nc" id="L143">						return Optional.empty();</span>
+					});
+				}
+
+				/**
+ * Registers a handler for simple name expressions.
+ *
+ * @param handler the handler to invoke for each simple name
+ * @return this builder
+ */
+				public Builder onSimpleName(Consumer&lt;SimpleNameExpr&gt; handler) {
+<span class="fc" id="L154">					handlers.add(node -&gt; {</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="fc" id="L156">							expr.asSimpleName().ifPresent(handler);</span>
+						}
+<span class="fc" id="L158">					});</span>
+<span class="fc" id="L159">					return this;</span>
+				}
+
+				/**
+ * Starts a predicate-based handler for simple names.
+ *
+ * @return a conditional handler builder
+ */
+				public ConditionalHandler&lt;SimpleNameExpr&gt; onSimpleName() {
+<span class="fc" id="L168">					return new ConditionalHandler&lt;&gt;(this, node -&gt; {</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="fc" id="L170">							return expr.asSimpleName();</span>
+						}
+<span class="nc" id="L172">						return Optional.empty();</span>
+					});
+				}
+
+				/**
+ * Registers a handler for field access expressions.
+ *
+ * @param handler the handler to invoke for each field access
+ * @return this builder
+ */
+				public Builder onFieldAccess(Consumer&lt;FieldAccessExpr&gt; handler) {
+<span class="fc" id="L183">					handlers.add(node -&gt; {</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="fc" id="L185">							expr.asFieldAccess().ifPresent(handler);</span>
+						}
+<span class="fc" id="L187">					});</span>
+<span class="fc" id="L188">					return this;</span>
+				}
+
+				/**
+ * Starts a predicate-based handler for field access.
+ *
+ * @return a conditional handler builder
+ */
+				public ConditionalHandler&lt;FieldAccessExpr&gt; onFieldAccess() {
+<span class="nc" id="L197">					return new ConditionalHandler&lt;&gt;(this, node -&gt; {</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="nc" id="L199">							return expr.asFieldAccess();</span>
+						}
+<span class="nc" id="L201">						return Optional.empty();</span>
+					});
+				}
+
+				/**
+ * Registers a handler for cast expressions.
+ *
+ * @param handler the handler to invoke for each cast
+ * @return this builder
+ */
+				public Builder onCast(Consumer&lt;CastExpr&gt; handler) {
+<span class="nc" id="L212">					handlers.add(node -&gt; {</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="nc" id="L214">							expr.asCast().ifPresent(handler);</span>
+						}
+<span class="nc" id="L216">					});</span>
+<span class="nc" id="L217">					return this;</span>
+				}
+
+				/**
+ * Starts a predicate-based handler for casts.
+ *
+ * @return a conditional handler builder
+ */
+				public ConditionalHandler&lt;CastExpr&gt; onCast() {
+<span class="nc" id="L226">					return new ConditionalHandler&lt;&gt;(this, node -&gt; {</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="nc" id="L228">							return expr.asCast();</span>
+						}
+<span class="nc" id="L230">						return Optional.empty();</span>
+					});
+				}
+
+				/**
+ * Registers a handler for infix expressions.
+ *
+ * @param handler the handler to invoke for each infix expression
+ * @return this builder
+ */
+				public Builder onInfix(Consumer&lt;InfixExpr&gt; handler) {
+<span class="fc" id="L241">					handlers.add(node -&gt; {</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="fc" id="L243">							expr.asInfix().ifPresent(handler);</span>
+						}
+<span class="fc" id="L245">					});</span>
+<span class="fc" id="L246">					return this;</span>
+				}
+
+				/**
+ * Starts a predicate-based handler for infix expressions.
+ *
+ * @return a conditional handler builder
+ */
+				public ConditionalHandler&lt;InfixExpr&gt; onInfix() {
+<span class="fc" id="L255">					return new ConditionalHandler&lt;&gt;(this, node -&gt; {</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">						if (node instanceof ASTExpr expr) {</span>
+<span class="fc" id="L257">							return expr.asInfix();</span>
+						}
+<span class="nc" id="L259">						return Optional.empty();</span>
+					});
+				}
+
+				/**
+ * Registers a handler for any expression type.
+ *
+ * @param handler the handler to invoke for each expression
+ * @return this builder
+ */
+				public Builder onExpression(Consumer&lt;ASTExpr&gt; handler) {
+<span class="fc" id="L270">					handlers.add(node -&gt; {</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">						if (node instanceof ASTExpr expr) {</span>
+<span class="fc" id="L272">							handler.accept(expr);</span>
+						}
+<span class="fc" id="L274">					});</span>
+<span class="fc" id="L275">					return this;</span>
+				}
+
+				/**
+ * Registers a handler for enhanced for statements.
+ *
+ * @param handler the handler to invoke for each enhanced for
+ * @return this builder
+ */
+				public Builder onEnhancedFor(Consumer&lt;EnhancedForStmt&gt; handler) {
+<span class="fc" id="L285">					handlers.add(node -&gt; {</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">						if (node instanceof ASTStmt stmt) {</span>
+<span class="fc" id="L287">							stmt.asEnhancedFor().ifPresent(handler);</span>
+						}
+<span class="fc" id="L289">					});</span>
+<span class="fc" id="L290">					return this;</span>
+				}
+
+				/**
+ * Starts a predicate-based handler for enhanced for statements.
+ *
+ * @return a conditional handler builder
+ */
+				public ConditionalHandler&lt;EnhancedForStmt&gt; onEnhancedFor() {
+<span class="nc" id="L299">					return new ConditionalHandler&lt;&gt;(this, node -&gt; {</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">						if (node instanceof ASTStmt stmt) {</span>
+<span class="nc" id="L301">							return stmt.asEnhancedFor();</span>
+						}
+<span class="nc" id="L303">						return Optional.empty();</span>
+					});
+				}
+
+				/**
+ * Registers a handler for while loop statements.
+ *
+ * @param handler the handler to invoke for each while loop
+ * @return this builder
+ */
+				public Builder onWhileLoop(Consumer&lt;WhileLoopStmt&gt; handler) {
+<span class="fc" id="L314">					handlers.add(node -&gt; {</span>
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">						if (node instanceof ASTStmt stmt) {</span>
+<span class="fc" id="L316">							stmt.asWhileLoop().ifPresent(handler);</span>
+						}
+<span class="fc" id="L318">					});</span>
+<span class="fc" id="L319">					return this;</span>
+				}
+
+				/**
+ * Starts a predicate-based handler for while loops.
+ *
+ * @return a conditional handler builder
+ */
+				public ConditionalHandler&lt;WhileLoopStmt&gt; onWhileLoop() {
+<span class="nc" id="L328">					return new ConditionalHandler&lt;&gt;(this, node -&gt; {</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">						if (node instanceof ASTStmt stmt) {</span>
+<span class="nc" id="L330">							return stmt.asWhileLoop();</span>
+						}
+<span class="nc" id="L332">						return Optional.empty();</span>
+					});
+				}
+
+				/**
+ * Registers a handler for for loop statements.
+ *
+ * @param handler the handler to invoke for each for loop
+ * @return this builder
+ */
+				public Builder onForLoop(Consumer&lt;ForLoopStmt&gt; handler) {
+<span class="fc" id="L343">					handlers.add(node -&gt; {</span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">						if (node instanceof ASTStmt stmt) {</span>
+<span class="fc" id="L345">							stmt.asForLoop().ifPresent(handler);</span>
+						}
+<span class="fc" id="L347">					});</span>
+<span class="fc" id="L348">					return this;</span>
+				}
+
+				/**
+ * Starts a predicate-based handler for for loops.
+ *
+ * @return a conditional handler builder
+ */
+				public ConditionalHandler&lt;ForLoopStmt&gt; onForLoop() {
+<span class="nc" id="L357">					return new ConditionalHandler&lt;&gt;(this, node -&gt; {</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">						if (node instanceof ASTStmt stmt) {</span>
+<span class="nc" id="L359">							return stmt.asForLoop();</span>
+						}
+<span class="nc" id="L361">						return Optional.empty();</span>
+					});
+				}
+
+				/**
+ * Registers a handler for if statements.
+ *
+ * @param handler the handler to invoke for each if statement
+ * @return this builder
+ */
+				public Builder onIfStatement(Consumer&lt;IfStmt&gt; handler) {
+<span class="fc" id="L372">					handlers.add(node -&gt; {</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">						if (node instanceof ASTStmt stmt) {</span>
+<span class="fc" id="L374">							stmt.asIfStatement().ifPresent(handler);</span>
+						}
+<span class="fc" id="L376">					});</span>
+<span class="fc" id="L377">					return this;</span>
+				}
+
+				/**
+ * Starts a predicate-based handler for if statements.
+ *
+ * @return a conditional handler builder
+ */
+				public ConditionalHandler&lt;IfStmt&gt; onIfStatement() {
+<span class="nc" id="L386">					return new ConditionalHandler&lt;&gt;(this, node -&gt; {</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">						if (node instanceof ASTStmt stmt) {</span>
+<span class="nc" id="L388">							return stmt.asIfStatement();</span>
+						}
+<span class="nc" id="L390">						return Optional.empty();</span>
+					});
+				}
+
+				/**
+ * Registers a handler for any statement type.
+ *
+ * @param handler the handler to invoke for each statement
+ * @return this builder
+ */
+				public Builder onStatement(Consumer&lt;ASTStmt&gt; handler) {
+<span class="fc" id="L401">					handlers.add(node -&gt; {</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">						if (node instanceof ASTStmt stmt) {</span>
+<span class="fc" id="L403">							handler.accept(stmt);</span>
+						}
+<span class="fc" id="L405">					});</span>
+<span class="fc" id="L406">					return this;</span>
+				}
+
+				/**
+ * Registers a handler for any AST node.
+ *
+ * @param handler the handler to invoke for each node
+ * @return this builder
+ */
+				public Builder onAny(Consumer&lt;ASTWrapper&gt; handler) {
+<span class="fc" id="L416">					handlers.add(handler);</span>
+<span class="fc" id="L417">					return this;</span>
+				}
+
+				/**
+ * Builds the fluent visitor.
+ *
+ * @return a new fluent visitor instance
+ */
+				public FluentVisitor build() {
+					// Create immutable copy of handlers
+<span class="fc" id="L427">					List&lt;Consumer&lt;ASTWrapper&gt;&gt; handlersCopy = List.copyOf(handlers);</span>
+<span class="fc" id="L428">					return node -&gt; {</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">						if (node != null) {</span>
+<span class="fc" id="L430">							handlersCopy.forEach(handler -&gt; handler.accept(node));</span>
+						}
+<span class="fc" id="L432">					};</span>
+				}
+			}
+
+			/**
+ * Builder for conditional handlers with predicate filtering.
+ *
+ * @param &lt;T&gt; the node type being handled
+ */
+			class ConditionalHandler&lt;T&gt; {
+				private final Builder builder;
+				private final java.util.function.Function&lt;ASTWrapper, Optional&lt;T&gt;&gt; extractor;
+<span class="fc" id="L444">				private Predicate&lt;T&gt; predicate = t -&gt; true;</span>
+
+<span class="fc" id="L446">				ConditionalHandler(Builder builder, java.util.function.Function&lt;ASTWrapper, Optional&lt;T&gt;&gt; extractor) {</span>
+<span class="fc" id="L447">					this.builder = builder;</span>
+<span class="fc" id="L448">					this.extractor = extractor;</span>
+<span class="fc" id="L449">				}</span>
+
+				/**
+ * Adds a condition that must be satisfied for the handler to execute.
+ *
+ * @param condition the condition to check
+ * @return this conditional handler
+ */
+				public ConditionalHandler&lt;T&gt; when(Predicate&lt;T&gt; condition) {
+<span class="fc" id="L458">					this.predicate = this.predicate.and(condition);</span>
+<span class="fc" id="L459">					return this;</span>
+				}
+
+				/**
+ * Alias for {@link #when(Predicate)}.
+ *
+ * @param condition the condition to check
+ * @return this conditional handler
+ */
+				public ConditionalHandler&lt;T&gt; filter(Predicate&lt;T&gt; condition) {
+<span class="fc" id="L469">					return when(condition);</span>
+				}
+
+				/**
+ * Registers the handler action and returns to the builder.
+ *
+ * @param handler the handler to invoke when conditions are met
+ * @return the parent builder
+ */
+				public Builder then(Consumer&lt;T&gt; handler) {
+<span class="fc" id="L479">					builder.handlers.add(node -&gt; {</span>
+<span class="fc" id="L480">						extractor.apply(node)</span>
+<span class="fc" id="L481">						.filter(predicate)</span>
+<span class="fc" id="L482">						.ifPresent(handler);</span>
+<span class="fc" id="L483">					});</span>
+<span class="fc" id="L484">					return builder;</span>
+				}
+			}
+		}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

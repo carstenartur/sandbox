@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EnhancedForStmt.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-ast-api</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.ast.api.stmt</a> &gt; <span class="el_source">EnhancedForStmt.java</span></div><h1>EnhancedForStmt.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.ast.api.stmt;
+
+import java.util.Optional;
+
+import org.sandbox.ast.api.expr.ASTExpr;
+import org.sandbox.ast.api.info.VariableInfo;
+
+/**
+ * Immutable record representing an enhanced for statement (for-each loop).
+ * Provides fluent access to the iteration parameter, iterable expression, and body.
+ * 
+ * &lt;p&gt;Example usage:&lt;/p&gt;
+ * &lt;pre&gt;
+ * // Old style:
+ * if (node instanceof EnhancedForStatement) {
+ *     EnhancedForStatement efs = (EnhancedForStatement) node;
+ *     Expression iterable = efs.getExpression();
+ *     if (iterable instanceof SimpleName) {
+ *         // ...
+ *     }
+ * }
+ * 
+ * // New style:
+ * stmt.asEnhancedFor()
+ *     .flatMap(EnhancedForStmt::iterable)
+ *     .filter(expr -&amp;gt; expr.hasType(&quot;java.util.List&quot;))
+ *     .ifPresent(list -&amp;gt; { });
+ * &lt;/pre&gt;
+ */
+public record EnhancedForStmt(
+	Optional&lt;VariableInfo&gt; parameter,
+	Optional&lt;ASTExpr&gt; iterable,
+	Optional&lt;ASTStmt&gt; body
+) implements ASTStmt {
+	
+	/**
+	 * Creates an EnhancedForStmt record.
+	 * 
+	 * @param parameter the loop variable
+	 * @param iterable the expression to iterate over
+	 * @param body the loop body statement
+	 */
+<span class="fc" id="L56">	public EnhancedForStmt {</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">		parameter = parameter == null ? Optional.empty() : parameter;</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">		iterable = iterable == null ? Optional.empty() : iterable;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		body = body == null ? Optional.empty() : body;</span>
+<span class="fc" id="L60">	}</span>
+	
+	/**
+	 * Checks if this loop has a parameter.
+	 * 
+	 * @return true if parameter is present
+	 */
+	public boolean hasParameter() {
+<span class="fc" id="L68">		return parameter.isPresent();</span>
+	}
+	
+	/**
+	 * Checks if this loop has an iterable expression.
+	 * 
+	 * @return true if iterable is present
+	 */
+	public boolean hasIterable() {
+<span class="fc" id="L77">		return iterable.isPresent();</span>
+	}
+	
+	/**
+	 * Checks if this loop has a body statement.
+	 * 
+	 * @return true if body is present
+	 */
+	public boolean hasBody() {
+<span class="fc" id="L86">		return body.isPresent();</span>
+	}
+	
+	/**
+	 * Checks if the iterable has a specific type.
+	 * 
+	 * @param qualifiedTypeName the fully qualified type name
+	 * @return true if iterable has this type
+	 */
+	public boolean iterableHasType(String qualifiedTypeName) {
+<span class="fc" id="L96">		return iterable.flatMap(ASTExpr::type)</span>
+<span class="fc" id="L97">		               .map(t -&gt; t.is(qualifiedTypeName))</span>
+<span class="fc" id="L98">		               .orElse(false);</span>
+	}
+	
+	/**
+	 * Checks if the parameter has a specific type.
+	 * 
+	 * @param qualifiedTypeName the fully qualified type name
+	 * @return true if parameter has this type
+	 */
+	public boolean parameterHasType(String qualifiedTypeName) {
+<span class="fc" id="L108">		return parameter.map(p -&gt; p.hasType(qualifiedTypeName))</span>
+<span class="fc" id="L109">		                .orElse(false);</span>
+	}
+	
+	/**
+	 * Gets the parameter name if available.
+	 * 
+	 * @return the parameter name, or empty if not available
+	 */
+	public Optional&lt;String&gt; parameterName() {
+<span class="fc" id="L118">		return parameter.map(VariableInfo::name);</span>
+	}
+	
+	/**
+	 * Builder for creating EnhancedForStmt instances.
+	 */
+<span class="fc" id="L124">	public static class Builder {</span>
+<span class="fc" id="L125">		private Optional&lt;VariableInfo&gt; parameter = Optional.empty();</span>
+<span class="fc" id="L126">		private Optional&lt;ASTExpr&gt; iterable = Optional.empty();</span>
+<span class="fc" id="L127">		private Optional&lt;ASTStmt&gt; body = Optional.empty();</span>
+		
+		/**
+		 * Sets the parameter.
+		 * 
+		 * @param parameter the loop variable
+		 * @return this builder
+		 */
+		public Builder parameter(VariableInfo parameter) {
+<span class="fc" id="L136">			this.parameter = Optional.ofNullable(parameter);</span>
+<span class="fc" id="L137">			return this;</span>
+		}
+		
+		/**
+		 * Sets the iterable expression.
+		 * 
+		 * @param iterable the expression to iterate over
+		 * @return this builder
+		 */
+		public Builder iterable(ASTExpr iterable) {
+<span class="fc" id="L147">			this.iterable = Optional.ofNullable(iterable);</span>
+<span class="fc" id="L148">			return this;</span>
+		}
+		
+		/**
+		 * Sets the body statement.
+		 * 
+		 * @param body the loop body
+		 * @return this builder
+		 */
+		public Builder body(ASTStmt body) {
+<span class="fc" id="L158">			this.body = Optional.ofNullable(body);</span>
+<span class="fc" id="L159">			return this;</span>
+		}
+		
+		/**
+		 * Builds the EnhancedForStmt.
+		 * 
+		 * @return the enhanced for statement
+		 */
+		public EnhancedForStmt build() {
+<span class="fc" id="L168">			return new EnhancedForStmt(parameter, iterable, body);</span>
+		}
+	}
+	
+	/**
+	 * Creates a new builder.
+	 * 
+	 * @return a new builder
+	 */
+	public static Builder builder() {
+<span class="fc" id="L178">		return new Builder();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

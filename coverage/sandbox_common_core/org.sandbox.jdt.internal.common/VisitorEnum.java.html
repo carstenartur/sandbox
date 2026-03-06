@@ -1,0 +1,724 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>VisitorEnum.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">VisitorEnum.java</span></div><h1>VisitorEnum.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.internal.common;
+
+/*-
+ * #%L
+ * Sandbox common
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+
+/**
+ * Enumeration of AST visitor types corresponding to Eclipse JDT AST node types.
+ * Each enum value represents a specific type of AST node that can be visited during AST traversal.
+ * This enum provides a type-safe way to identify and process different AST node types.
+ * 
+ * &lt;p&gt;Each visitor enum value corresponds to a constant defined in {@link org.eclipse.jdt.core.dom.ASTNode}.&lt;/p&gt;
+ *
+ * @author chammer
+ * @since 1.15
+ */
+<span class="fc" id="L42">public enum VisitorEnum {</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.AnnotationTypeDeclaration} nodes.
+	 * Represents annotation type declarations (e.g., {@code @interface MyAnnotation}).
+	 */
+<span class="fc" id="L48">	AnnotationTypeDeclaration(ASTNode.ANNOTATION_TYPE_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.AnnotationTypeMemberDeclaration} nodes.
+	 * Represents members of annotation type declarations.
+	 */
+<span class="fc" id="L54">	AnnotationTypeMemberDeclaration(ASTNode.ANNOTATION_TYPE_MEMBER_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.AnonymousClassDeclaration} nodes.
+	 * Represents anonymous class declarations.
+	 */
+<span class="fc" id="L60">	AnonymousClassDeclaration(ASTNode.ANONYMOUS_CLASS_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ArrayAccess} nodes.
+	 * Represents array element access expressions (e.g., {@code array[i]}).
+	 */
+<span class="fc" id="L66">	ArrayAccess(ASTNode.ARRAY_ACCESS),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ArrayCreation} nodes.
+	 * Represents array creation expressions (e.g., {@code new int[10]}).
+	 */
+<span class="fc" id="L72">	ArrayCreation(ASTNode.ARRAY_CREATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ArrayInitializer} nodes.
+	 * Represents array initializer expressions (e.g., {@code {1, 2, 3}}).
+	 */
+<span class="fc" id="L78">	ArrayInitializer(ASTNode.ARRAY_INITIALIZER),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ArrayType} nodes.
+	 * Represents array type references (e.g., {@code int[]}).
+	 */
+<span class="fc" id="L84">	ArrayType(ASTNode.ARRAY_TYPE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.AssertStatement} nodes.
+	 * Represents assert statements (e.g., {@code assert condition : message;}).
+	 */
+<span class="fc" id="L90">	AssertStatement(ASTNode.ASSERT_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.Assignment} nodes.
+	 * Represents assignment expressions (e.g., {@code x = 5}, {@code x += 1}).
+	 */
+<span class="fc" id="L96">	Assignment(ASTNode.ASSIGNMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.Block} nodes.
+	 * Represents block statements delimited by braces.
+	 */
+<span class="fc" id="L102">	Block(ASTNode.BLOCK),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.BlockComment} nodes.
+	 * Represents block comments ({@code /* ... * /}).
+	 */
+<span class="fc" id="L108">	BlockComment(ASTNode.BLOCK_COMMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.BooleanLiteral} nodes.
+	 * Represents boolean literal values ({@code true} or {@code false}).
+	 */
+<span class="fc" id="L114">	BooleanLiteral(ASTNode.BOOLEAN_LITERAL),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.BreakStatement} nodes.
+	 * Represents break statements in loops and switch blocks.
+	 */
+<span class="fc" id="L120">	BreakStatement(ASTNode.BREAK_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.CastExpression} nodes.
+	 * Represents type cast expressions (e.g., {@code (String) obj}).
+	 */
+<span class="fc" id="L126">	CastExpression(ASTNode.CAST_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.CatchClause} nodes.
+	 * Represents catch clauses in try statements.
+	 */
+<span class="fc" id="L132">	CatchClause(ASTNode.CATCH_CLAUSE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.CharacterLiteral} nodes.
+	 * Represents character literal values (e.g., {@code 'a'}).
+	 */
+<span class="fc" id="L138">	CharacterLiteral(ASTNode.CHARACTER_LITERAL),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ClassInstanceCreation} nodes.
+	 * Represents constructor calls (e.g., {@code new ArrayList&lt;&gt;()}).
+	 */
+<span class="fc" id="L144">	ClassInstanceCreation(ASTNode.CLASS_INSTANCE_CREATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.CompilationUnit} nodes.
+	 * Represents the root of a Java source file.
+	 */
+<span class="fc" id="L150">	CompilationUnit(ASTNode.COMPILATION_UNIT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ConditionalExpression} nodes.
+	 * Represents ternary expressions (e.g., {@code condition ? a : b}).
+	 */
+<span class="fc" id="L156">	ConditionalExpression(ASTNode.CONDITIONAL_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ConstructorInvocation} nodes.
+	 * Represents {@code this(...)} constructor calls.
+	 */
+<span class="fc" id="L162">	ConstructorInvocation(ASTNode.CONSTRUCTOR_INVOCATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ContinueStatement} nodes.
+	 * Represents continue statements in loops.
+	 */
+<span class="fc" id="L168">	ContinueStatement(ASTNode.CONTINUE_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.CreationReference} nodes.
+	 * Represents constructor method references (e.g., {@code ArrayList::new}).
+	 */
+<span class="fc" id="L174">	CreationReference(ASTNode.CREATION_REFERENCE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.Dimension} nodes.
+	 * Represents extra dimensions in variable declarations.
+	 */
+<span class="fc" id="L180">	Dimension(ASTNode.DIMENSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.DoStatement} nodes.
+	 * Represents do-while loops.
+	 */
+<span class="fc" id="L186">	DoStatement(ASTNode.DO_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.EmptyStatement} nodes.
+	 * Represents empty statements (standalone semicolons).
+	 */
+<span class="fc" id="L192">	EmptyStatement(ASTNode.EMPTY_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.EnhancedForStatement} nodes.
+	 * Represents enhanced for-each loops (e.g., {@code for (Item i : items)}).
+	 */
+<span class="fc" id="L198">	EnhancedForStatement(ASTNode.ENHANCED_FOR_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.EnumConstantDeclaration} nodes.
+	 * Represents enum constant declarations.
+	 */
+<span class="fc" id="L204">	EnumConstantDeclaration(ASTNode.ENUM_CONSTANT_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.EnumDeclaration} nodes.
+	 * Represents enum type declarations.
+	 */
+<span class="fc" id="L210">	EnumDeclaration(ASTNode.ENUM_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ExportsDirective} nodes.
+	 * Represents module exports directives.
+	 */
+<span class="fc" id="L216">	ExportsDirective(ASTNode.EXPORTS_DIRECTIVE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ExpressionMethodReference} nodes.
+	 * Represents expression-based method references (e.g., {@code str::length}).
+	 */
+<span class="fc" id="L222">	ExpressionMethodReference(ASTNode.EXPRESSION_METHOD_REFERENCE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ExpressionStatement} nodes.
+	 * Represents expression statements (expressions used as statements).
+	 */
+<span class="fc" id="L228">	ExpressionStatement(ASTNode.EXPRESSION_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.FieldAccess} nodes.
+	 * Represents field access expressions (e.g., {@code obj.field}).
+	 */
+<span class="fc" id="L234">	FieldAccess(ASTNode.FIELD_ACCESS),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.FieldDeclaration} nodes.
+	 * Represents field declarations in a type body.
+	 */
+<span class="fc" id="L240">	FieldDeclaration(ASTNode.FIELD_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ForStatement} nodes.
+	 * Represents classic for loops.
+	 */
+<span class="fc" id="L246">	ForStatement(ASTNode.FOR_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.IfStatement} nodes.
+	 * Represents if statements with optional else branches.
+	 */
+<span class="fc" id="L252">	IfStatement(ASTNode.IF_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ImportDeclaration} nodes.
+	 * Represents import declarations.
+	 */
+<span class="fc" id="L258">	ImportDeclaration(ASTNode.IMPORT_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.InfixExpression} nodes.
+	 * Represents binary infix expressions (e.g., {@code a + b}, {@code x == y}).
+	 */
+<span class="fc" id="L264">	InfixExpression(ASTNode.INFIX_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.Initializer} nodes.
+	 * Represents static and instance initializer blocks.
+	 */
+<span class="fc" id="L270">	Initializer(ASTNode.INITIALIZER),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.InstanceofExpression} nodes.
+	 * Represents instanceof type tests.
+	 */
+<span class="fc" id="L276">	InstanceofExpression(ASTNode.INSTANCEOF_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.IntersectionType} nodes.
+	 * Represents intersection types in casts (e.g., {@code (Serializable &amp; Comparable)}).
+	 */
+<span class="fc" id="L282">	IntersectionType(ASTNode.INTERSECTION_TYPE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.Javadoc} nodes.
+	 * Represents Javadoc comments.
+	 */
+<span class="fc" id="L288">	Javadoc(ASTNode.JAVADOC),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.LabeledStatement} nodes.
+	 * Represents labeled statements.
+	 */
+<span class="fc" id="L294">	LabeledStatement(ASTNode.LABELED_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.LambdaExpression} nodes.
+	 * Represents lambda expressions (e.g., {@code (x) -&gt; x + 1}).
+	 */
+<span class="fc" id="L300">	LambdaExpression(ASTNode.LAMBDA_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.LineComment} nodes.
+	 * Represents single-line comments ({@code // ...}).
+	 */
+<span class="fc" id="L306">	LineComment(ASTNode.LINE_COMMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.MarkerAnnotation} nodes.
+	 * Represents marker annotations without parameters (e.g., {@code @Override}).
+	 */
+<span class="fc" id="L312">	MarkerAnnotation(ASTNode.MARKER_ANNOTATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.MemberRef} nodes.
+	 * Represents member references in Javadoc comments.
+	 */
+<span class="fc" id="L318">	MemberRef(ASTNode.MEMBER_REF),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.MemberValuePair} nodes.
+	 * Represents name-value pairs in normal annotations.
+	 */
+<span class="fc" id="L324">	MemberValuePair(ASTNode.MEMBER_VALUE_PAIR),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.MethodRef} nodes.
+	 * Represents method references in Javadoc comments.
+	 */
+<span class="fc" id="L330">	MethodRef(ASTNode.METHOD_REF),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.MethodRefParameter} nodes.
+	 * Represents parameters in Javadoc method references.
+	 */
+<span class="fc" id="L336">	MethodRefParameter(ASTNode.METHOD_REF_PARAMETER),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.MethodDeclaration} nodes.
+	 * Represents method and constructor declarations.
+	 */
+<span class="fc" id="L342">	MethodDeclaration(ASTNode.METHOD_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.MethodInvocation} nodes.
+	 * Represents method call expressions (e.g., {@code obj.method(args)}).
+	 */
+<span class="fc" id="L348">	MethodInvocation(ASTNode.METHOD_INVOCATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.Modifier} nodes.
+	 * Represents Java modifiers (e.g., {@code public}, {@code static}, {@code final}).
+	 */
+<span class="fc" id="L354">	Modifier(ASTNode.MODIFIER),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ModuleDeclaration} nodes.
+	 * Represents module declarations (Java 9+).
+	 */
+<span class="fc" id="L360">	ModuleDeclaration(ASTNode.MODULE_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ModuleModifier} nodes.
+	 * Represents module modifiers.
+	 */
+<span class="fc" id="L366">	ModuleModifier(ASTNode.MODULE_MODIFIER),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.NameQualifiedType} nodes.
+	 * Represents name-qualified type references.
+	 */
+<span class="fc" id="L372">	NameQualifiedType(ASTNode.NAME_QUALIFIED_TYPE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.NormalAnnotation} nodes.
+	 * Represents annotations with named parameters (e.g., {@code @Test(timeout=100)}).
+	 */
+<span class="fc" id="L378">	NormalAnnotation(ASTNode.NORMAL_ANNOTATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.NullLiteral} nodes.
+	 * Represents the null literal ({@code null}).
+	 */
+<span class="fc" id="L384">	NullLiteral(ASTNode.NULL_LITERAL),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.NumberLiteral} nodes.
+	 * Represents numeric literal values (e.g., {@code 42}, {@code 3.14}).
+	 */
+<span class="fc" id="L390">	NumberLiteral(ASTNode.NUMBER_LITERAL),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.OpensDirective} nodes.
+	 * Represents module opens directives.
+	 */
+<span class="fc" id="L396">	OpensDirective(ASTNode.OPENS_DIRECTIVE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.PackageDeclaration} nodes.
+	 * Represents package declarations.
+	 */
+<span class="fc" id="L402">	PackageDeclaration(ASTNode.PACKAGE_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ParameterizedType} nodes.
+	 * Represents parameterized type references (e.g., {@code List&lt;String&gt;}).
+	 */
+<span class="fc" id="L408">	ParameterizedType(ASTNode.PARAMETERIZED_TYPE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ParenthesizedExpression} nodes.
+	 * Represents parenthesized expressions (e.g., {@code (a + b)}).
+	 */
+<span class="fc" id="L414">	ParenthesizedExpression(ASTNode.PARENTHESIZED_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.PatternInstanceofExpression} nodes.
+	 * Represents pattern matching instanceof (Java 16+, e.g., {@code obj instanceof String s}).
+	 */
+<span class="fc" id="L420">	PatternInstanceofExpression(ASTNode.PATTERN_INSTANCEOF_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.PostfixExpression} nodes.
+	 * Represents postfix expressions (e.g., {@code i++}, {@code i--}).
+	 */
+<span class="fc" id="L426">	PostfixExpression(ASTNode.POSTFIX_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.PrefixExpression} nodes.
+	 * Represents prefix expressions (e.g., {@code ++i}, {@code !flag}).
+	 */
+<span class="fc" id="L432">	PrefixExpression(ASTNode.PREFIX_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ProvidesDirective} nodes.
+	 * Represents module provides directives.
+	 */
+<span class="fc" id="L438">	ProvidesDirective(ASTNode.PROVIDES_DIRECTIVE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.PrimitiveType} nodes.
+	 * Represents primitive type references (e.g., {@code int}, {@code boolean}).
+	 */
+<span class="fc" id="L444">	PrimitiveType(ASTNode.PRIMITIVE_TYPE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.QualifiedName} nodes.
+	 * Represents qualified name references (e.g., {@code java.lang.String}).
+	 */
+<span class="fc" id="L450">	QualifiedName(ASTNode.QUALIFIED_NAME),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.QualifiedType} nodes.
+	 * Represents qualified type references.
+	 */
+<span class="fc" id="L456">	QualifiedType(ASTNode.QUALIFIED_TYPE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ModuleQualifiedName} nodes.
+	 * Represents module-qualified name references.
+	 */
+<span class="fc" id="L462">	ModuleQualifiedName(ASTNode.MODULE_QUALIFIED_NAME),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.RequiresDirective} nodes.
+	 * Represents module requires directives.
+	 */
+<span class="fc" id="L468">	RequiresDirective(ASTNode.REQUIRES_DIRECTIVE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.RecordDeclaration} nodes.
+	 * Represents record type declarations (Java 16+).
+	 */
+<span class="fc" id="L474">	RecordDeclaration(ASTNode.RECORD_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ReturnStatement} nodes.
+	 * Represents return statements.
+	 */
+<span class="fc" id="L480">	ReturnStatement(ASTNode.RETURN_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SimpleName} nodes.
+	 * Represents simple (unqualified) name references.
+	 */
+<span class="fc" id="L486">	SimpleName(ASTNode.SIMPLE_NAME),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SimpleType} nodes.
+	 * Represents simple type references.
+	 */
+<span class="fc" id="L492">	SimpleType(ASTNode.SIMPLE_TYPE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SingleMemberAnnotation} nodes.
+	 * Represents annotations with a single value (e.g., {@code @SuppressWarnings(&quot;unchecked&quot;)}).
+	 */
+<span class="fc" id="L498">	SingleMemberAnnotation(ASTNode.SINGLE_MEMBER_ANNOTATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SingleVariableDeclaration} nodes.
+	 * Represents single variable declarations (e.g., method parameters).
+	 */
+<span class="fc" id="L504">	SingleVariableDeclaration(ASTNode.SINGLE_VARIABLE_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.StringLiteral} nodes.
+	 * Represents string literal values (e.g., {@code &quot;hello&quot;}).
+	 */
+<span class="fc" id="L510">	StringLiteral(ASTNode.STRING_LITERAL),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SuperConstructorInvocation} nodes.
+	 * Represents {@code super(...)} constructor calls.
+	 */
+<span class="fc" id="L516">	SuperConstructorInvocation(ASTNode.SUPER_CONSTRUCTOR_INVOCATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SuperFieldAccess} nodes.
+	 * Represents {@code super.field} access expressions.
+	 */
+<span class="fc" id="L522">	SuperFieldAccess(ASTNode.SUPER_FIELD_ACCESS),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SuperMethodInvocation} nodes.
+	 * Represents {@code super.method()} call expressions.
+	 */
+<span class="fc" id="L528">	SuperMethodInvocation(ASTNode.SUPER_METHOD_INVOCATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SuperMethodReference} nodes.
+	 * Represents {@code super::method} references.
+	 */
+<span class="fc" id="L534">	SuperMethodReference(ASTNode.SUPER_METHOD_REFERENCE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SwitchCase} nodes.
+	 * Represents case labels in switch statements/expressions.
+	 */
+<span class="fc" id="L540">	SwitchCase(ASTNode.SWITCH_CASE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SwitchExpression} nodes.
+	 * Represents switch expressions (Java 14+).
+	 */
+<span class="fc" id="L546">	SwitchExpression(ASTNode.SWITCH_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SwitchStatement} nodes.
+	 * Represents switch statements.
+	 */
+<span class="fc" id="L552">	SwitchStatement(ASTNode.SWITCH_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.SynchronizedStatement} nodes.
+	 * Represents synchronized blocks.
+	 */
+<span class="fc" id="L558">	SynchronizedStatement(ASTNode.SYNCHRONIZED_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.TagElement} nodes.
+	 * Represents tag elements in Javadoc comments.
+	 */
+<span class="fc" id="L564">	TagElement(ASTNode.TAG_ELEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.TextBlock} nodes.
+	 * Represents text blocks (Java 15+, triple-quoted strings).
+	 */
+<span class="fc" id="L570">	TextBlock(ASTNode.TEXT_BLOCK),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.TextElement} nodes.
+	 * Represents text elements in Javadoc comments.
+	 */
+<span class="fc" id="L576">	TextElement(ASTNode.TEXT_ELEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ThisExpression} nodes.
+	 * Represents {@code this} expressions.
+	 */
+<span class="fc" id="L582">	ThisExpression(ASTNode.THIS_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.ThrowStatement} nodes.
+	 * Represents throw statements.
+	 */
+<span class="fc" id="L588">	ThrowStatement(ASTNode.THROW_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.TryStatement} nodes.
+	 * Represents try-catch-finally statements.
+	 */
+<span class="fc" id="L594">	TryStatement(ASTNode.TRY_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.TypeDeclaration} nodes.
+	 * Represents class and interface declarations.
+	 */
+<span class="fc" id="L600">	TypeDeclaration(ASTNode.TYPE_DECLARATION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.TypeDeclarationStatement} nodes.
+	 * Represents local type declarations within method bodies.
+	 */
+<span class="fc" id="L606">	TypeDeclarationStatement(ASTNode.TYPE_DECLARATION_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.TypeLiteral} nodes.
+	 * Represents type literal expressions (e.g., {@code String.class}).
+	 */
+<span class="fc" id="L612">	TypeLiteral(ASTNode.TYPE_LITERAL),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.TypeMethodReference} nodes.
+	 * Represents type-based method references (e.g., {@code String::valueOf}).
+	 */
+<span class="fc" id="L618">	TypeMethodReference(ASTNode.TYPE_METHOD_REFERENCE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.TypeParameter} nodes.
+	 * Represents type parameter declarations in generic types/methods.
+	 */
+<span class="fc" id="L624">	TypeParameter(ASTNode.TYPE_PARAMETER),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.UnionType} nodes.
+	 * Represents union types in multi-catch clauses (e.g., {@code IOException | SQLException}).
+	 */
+<span class="fc" id="L630">	UnionType(ASTNode.UNION_TYPE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.UsesDirective} nodes.
+	 * Represents module uses directives.
+	 */
+<span class="fc" id="L636">	UsesDirective(ASTNode.USES_DIRECTIVE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.VariableDeclarationExpression} nodes.
+	 * Represents variable declarations in for-loop initializers.
+	 */
+<span class="fc" id="L642">	VariableDeclarationExpression(ASTNode.VARIABLE_DECLARATION_EXPRESSION),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.VariableDeclarationStatement} nodes.
+	 * Represents local variable declaration statements.
+	 */
+<span class="fc" id="L648">	VariableDeclarationStatement(ASTNode.VARIABLE_DECLARATION_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.VariableDeclarationFragment} nodes.
+	 * Represents individual variable declaration fragments within a declaration.
+	 */
+<span class="fc" id="L654">	VariableDeclarationFragment(ASTNode.VARIABLE_DECLARATION_FRAGMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.WhileStatement} nodes.
+	 * Represents while loops.
+	 */
+<span class="fc" id="L660">	WhileStatement(ASTNode.WHILE_STATEMENT),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.WildcardType} nodes.
+	 * Represents wildcard type references (e.g., {@code ?}, {@code ? extends Number}).
+	 */
+<span class="fc" id="L666">	WildcardType(ASTNode.WILDCARD_TYPE),</span>
+
+	/**
+	 * Visitor for {@link org.eclipse.jdt.core.dom.YieldStatement} nodes.
+	 * Represents yield statements in switch expressions (Java 14+).
+	 */
+<span class="fc" id="L672">	YieldStatement(ASTNode.YIELD_STATEMENT);</span>
+
+	private final int nodetype;
+
+<span class="fc" id="L676">	VisitorEnum(int nodetype) {</span>
+<span class="fc" id="L677">		this.nodetype = nodetype;</span>
+<span class="fc" id="L678">	}</span>
+
+	/**
+	 * Returns the ASTNode type constant for this visitor enum value.
+	 *
+	 * @return the ASTNode type constant (e.g., {@link ASTNode#METHOD_INVOCATION})
+	 */
+	public int getValue() {
+<span class="fc" id="L686">		return nodetype;</span>
+	}
+
+	/**
+	 * Returns a stream of all VisitorEnum values.
+	 *
+	 * @return a sequential stream of all enum values
+	 */
+	public static Stream&lt;VisitorEnum&gt; stream() {
+<span class="fc" id="L695">		return Stream.of(VisitorEnum.values());</span>
+	}
+
+	/**
+	 * Lookup map from ASTNode type constant to VisitorEnum value for O(1) reverse lookups.
+	 */
+<span class="fc" id="L701">	private static final Map&lt;Integer, VisitorEnum&gt; values = Arrays.stream(values())</span>
+<span class="fc" id="L702">			.collect(Collectors.toMap(VisitorEnum::getValue, Function.identity()));</span>
+
+	/**
+	 * Returns the VisitorEnum value for the given ASTNode type constant.
+	 *
+	 * @param nodetype the ASTNode type constant (e.g., {@link ASTNode#METHOD_INVOCATION})
+	 * @return the corresponding VisitorEnum value, or {@code null} if not found
+	 */
+	public static VisitorEnum fromNodetype(final int nodetype) {
+<span class="fc" id="L711">		return values.get(nodetype);</span>
+	}
+
+	/**
+	 * Returns the VisitorEnum value corresponding to the type of the given AST node.
+	 *
+	 * @param node the AST node to look up
+	 * @return the corresponding VisitorEnum value, or {@code null} if not found
+	 */
+	public static VisitorEnum fromNode(ASTNode node) {
+<span class="fc" id="L721">		return fromNodetype(node.getNodeType());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ScoredMarkdownReporter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.nullability</a> &gt; <span class="el_source">ScoredMarkdownReporter.java</span></div><h1>ScoredMarkdownReporter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.nullability;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Generates a severity-grouped Markdown report from scored match entries.
+ *
+ * &lt;p&gt;The report groups matches by severity level (WARNING, CLEANUP, QUICKASSIST,
+ * INFO, IGNORE) and sorts them by descending {@code trivialChange} within each
+ * group.&lt;/p&gt;
+ *
+ * @since 1.2.6
+ */
+<span class="fc" id="L34">public class ScoredMarkdownReporter {</span>
+
+<span class="fc" id="L36">	private static final Map&lt;MatchSeverity, String&gt; SEVERITY_HEADERS = new EnumMap&lt;&gt;(MatchSeverity.class);</span>
+	static {
+<span class="fc" id="L38">		SEVERITY_HEADERS.put(MatchSeverity.WARNING, &quot;\u26a0\ufe0f Warnings&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L39">		SEVERITY_HEADERS.put(MatchSeverity.CLEANUP, &quot;\ud83d\udd27 Cleanup&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L40">		SEVERITY_HEADERS.put(MatchSeverity.QUICKASSIST, &quot;\ud83d\udca1 QuickAssist&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L41">		SEVERITY_HEADERS.put(MatchSeverity.INFO, &quot;\u2139\ufe0f Info&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L42">		SEVERITY_HEADERS.put(MatchSeverity.IGNORE, &quot;\ud83d\udeab Ignored&quot;); //$NON-NLS-1$</span>
+	}
+
+<span class="fc" id="L45">	private static final Map&lt;MatchSeverity, String&gt; SEVERITY_DESCRIPTIONS = new EnumMap&lt;&gt;(MatchSeverity.class);</span>
+	static {
+<span class="fc" id="L47">		SEVERITY_DESCRIPTIONS.put(MatchSeverity.WARNING,</span>
+				&quot;These locations have a high risk of NullPointerException:&quot;); //$NON-NLS-1$
+<span class="fc" id="L49">		SEVERITY_DESCRIPTIONS.put(MatchSeverity.CLEANUP,</span>
+				&quot;Recommended changes, null safety unclear:&quot;); //$NON-NLS-1$
+<span class="fc" id="L51">		SEVERITY_DESCRIPTIONS.put(MatchSeverity.QUICKASSIST,</span>
+				&quot;Optional, developer should decide:&quot;); //$NON-NLS-1$
+<span class="fc" id="L53">		SEVERITY_DESCRIPTIONS.put(MatchSeverity.INFO,</span>
+				&quot;Probably safe locations, for information only:&quot;); //$NON-NLS-1$
+<span class="fc" id="L55">		SEVERITY_DESCRIPTIONS.put(MatchSeverity.IGNORE,</span>
+				&quot;Provably non-null, no change required:&quot;); //$NON-NLS-1$
+<span class="fc" id="L57">	}</span>
+
+	/**
+	 * Generates a Markdown report from scored entries.
+	 *
+	 * @param entries the scored match entries
+	 * @return the Markdown content
+	 */
+	public String generate(List&lt;ScoredMatchEntry&gt; entries) {
+<span class="fc" id="L66">		Objects.requireNonNull(entries, &quot;entries&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L67">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L68">		sb.append(&quot;# Refactoring Mining Report \u2014 &quot;).append(LocalDate.now()).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+		// Group by severity
+<span class="fc" id="L71">		Map&lt;MatchSeverity, List&lt;ScoredMatchEntry&gt;&gt; bySeverity = groupBySeverity(entries);</span>
+
+		// Summary
+<span class="fc" id="L74">		sb.append(&quot;## Summary\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L75">		sb.append(&quot;| Severity | Count |\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L76">		sb.append(&quot;|----------|-------|\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (MatchSeverity sev : MatchSeverity.values()) {</span>
+<span class="fc" id="L78">			List&lt;ScoredMatchEntry&gt; group = bySeverity.getOrDefault(sev, List.of());</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">			if (!group.isEmpty()) {</span>
+<span class="fc" id="L80">				sb.append(&quot;| &quot;).append(SEVERITY_HEADERS.get(sev)) //$NON-NLS-1$</span>
+<span class="fc" id="L81">						.append(&quot; | &quot;).append(group.size()).append(&quot; |\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+		}
+<span class="fc" id="L84">		sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+
+		// Reverse order: WARNING first (highest severity), IGNORE last
+<span class="fc" id="L87">		MatchSeverity[] displayOrder = {</span>
+				MatchSeverity.WARNING, MatchSeverity.CLEANUP,
+				MatchSeverity.QUICKASSIST, MatchSeverity.INFO, MatchSeverity.IGNORE };
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (MatchSeverity sev : displayOrder) {</span>
+<span class="fc" id="L92">			List&lt;ScoredMatchEntry&gt; group = bySeverity.getOrDefault(sev, List.of());</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">			if (group.isEmpty()) {</span>
+<span class="fc" id="L94">				continue;</span>
+			}
+
+<span class="fc" id="L97">			sb.append(&quot;## &quot;).append(SEVERITY_HEADERS.get(sev)) //$NON-NLS-1$</span>
+<span class="fc" id="L98">					.append(&quot; \u2014 &quot;).append(group.size()).append(&quot; Matches\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L99">			sb.append(SEVERITY_DESCRIPTIONS.get(sev)).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
+
+<span class="fc bfc" id="L101" title="All 2 branches covered.">			if (sev == MatchSeverity.IGNORE) {</span>
+				// For IGNORE, show a compact summary
+<span class="fc" id="L103">				appendIgnoredSummary(sb, group);</span>
+			} else {
+				// Sort by trivialChange descending
+<span class="fc" id="L106">				List&lt;ScoredMatchEntry&gt; sorted = new ArrayList&lt;&gt;(group);</span>
+<span class="fc" id="L107">				sorted.sort(Comparator.comparingInt(</span>
+<span class="pc" id="L108">						(ScoredMatchEntry e) -&gt; e.score().trivialChange()).reversed());</span>
+
+<span class="fc bfc" id="L110" title="All 2 branches covered.">				for (ScoredMatchEntry entry : sorted) {</span>
+<span class="fc" id="L111">					sb.append(&quot;- `&quot;).append(entry.file()).append(&quot;:&quot;).append(entry.line()) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L112">							.append(&quot;` \u2014 `&quot;).append(truncate(entry.matchedCode(), 80)) //$NON-NLS-1$</span>
+<span class="fc" id="L113">							.append(&quot;` \u2014 &quot;).append(entry.score().reason()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">					if (entry.suggestedReplacement() != null) {</span>
+<span class="fc" id="L115">						sb.append(&quot; \u2192 `&quot;).append(truncate(entry.suggestedReplacement(), 60)).append(&quot;`&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+					}
+<span class="fc" id="L117">					sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L118">				}</span>
+			}
+<span class="fc" id="L120">			sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L123">		return sb.toString();</span>
+	}
+
+	private void appendIgnoredSummary(StringBuilder sb, List&lt;ScoredMatchEntry&gt; group) {
+		// Group by reason category for compact display
+<span class="fc" id="L128">		Map&lt;String, Integer&gt; reasonCounts = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		for (ScoredMatchEntry entry : group) {</span>
+<span class="fc" id="L130">			String key = summarizeReason(entry.score().reason());</span>
+<span class="fc" id="L131">			reasonCounts.merge(key, 1, Integer::sum);</span>
+<span class="fc" id="L132">		}</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		for (Map.Entry&lt;String, Integer&gt; entry : reasonCounts.entrySet()) {</span>
+<span class="fc" id="L134">			sb.append(&quot;- &quot;).append(entry.getKey()).append(&quot;: &quot;).append(entry.getValue()).append(&quot;x\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L135">		}</span>
+<span class="fc" id="L136">	}</span>
+
+	private String summarizeReason(String reason) {
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		if (reason.contains(&quot;toString_never_null&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L140">			return &quot;StringBuilder/StringBuffer.toString()&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L142" title="All 2 branches missed.">		if (reason.contains(&quot;enum&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L143">			return &quot;Enum.toString()&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L145" title="All 2 branches missed.">		if (reason.contains(&quot;this&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L146">			return &quot;this.toString()&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L148" title="All 2 branches missed.">		if (reason.contains(&quot;primitive&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L149">			return &quot;Primitive type&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L151" title="All 4 branches missed.">		if (reason.contains(&quot;parsed_node_valid&quot;) || reason.contains(&quot;structural_child&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L152">			return &quot;AST-Node.toString()&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L154" title="All 2 branches missed.">		if (reason.contains(&quot;factory_never_null&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L155">			return &quot;Factory method (java.time, etc.)&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L157" title="All 2 branches missed.">		if (reason.contains(&quot;new&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L158">			return &quot;'new' expression&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L160" title="All 2 branches missed.">		if (reason.contains(&quot;null guard&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L161">			return &quot;Inside null guard&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L163">		return reason;</span>
+	}
+
+	private Map&lt;MatchSeverity, List&lt;ScoredMatchEntry&gt;&gt; groupBySeverity(List&lt;ScoredMatchEntry&gt; entries) {
+<span class="fc" id="L167">		Map&lt;MatchSeverity, List&lt;ScoredMatchEntry&gt;&gt; result = new EnumMap&lt;&gt;(MatchSeverity.class);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">		for (ScoredMatchEntry entry : entries) {</span>
+<span class="fc" id="L169">			result.computeIfAbsent(entry.score().severity(), k -&gt; new ArrayList&lt;&gt;()).add(entry);</span>
+<span class="fc" id="L170">		}</span>
+<span class="fc" id="L171">		return result;</span>
+	}
+
+	private static String truncate(String s, int maxLen) {
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">		if (s == null) {</span>
+<span class="nc" id="L176">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L178">		String cleaned = s.replace(&quot;\n&quot;, &quot; &quot;).replace(&quot;\r&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (cleaned.length() &lt;= maxLen) {</span>
+<span class="fc" id="L180">			return cleaned;</span>
+		}
+<span class="nc" id="L182">		return cleaned.substring(0, maxLen - 3) + &quot;...&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

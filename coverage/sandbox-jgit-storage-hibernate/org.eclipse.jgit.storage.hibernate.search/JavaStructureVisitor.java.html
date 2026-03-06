@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JavaStructureVisitor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.search</a> &gt; <span class="el_source">JavaStructureVisitor.java</span></div><h1>JavaStructureVisitor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.search;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
+import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
+import org.eclipse.jdt.core.dom.EnumDeclaration;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+/**
+ * An {@link ASTVisitor} that collects structural metadata from Java source
+ * files.
+ * &lt;p&gt;
+ * Extracts declared types, methods, fields, supertypes, and interfaces from
+ * the AST. Fully qualified names are constructed using the package name and
+ * an import map for best-effort resolution of simple type references.
+ * &lt;/p&gt;
+ */
+public class JavaStructureVisitor extends ASTVisitor {
+
+	private static final int MAX_DOC_LENGTH = 2000;
+
+	private static final int MIN_STRING_LITERAL_LENGTH = 3;
+
+	private final Map&lt;String, String&gt; importMap;
+
+	private final String packageName;
+
+<span class="fc" id="L58">	private final List&lt;String&gt; types = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L60">	private final List&lt;String&gt; fqns = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L62">	private final List&lt;String&gt; methods = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L64">	private final List&lt;String&gt; fields = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L66">	private final List&lt;String&gt; superTypes = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L68">	private final List&lt;String&gt; interfaces = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L70">	private final List&lt;String&gt; annotationNames = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L72">	private final List&lt;String&gt; methodSignatures = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L74">	private final List&lt;String&gt; referencedTypes = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L76">	private final List&lt;String&gt; stringLiterals = new ArrayList&lt;&gt;();</span>
+
+	private boolean hasMainMethod;
+
+<span class="fc" id="L80">	private String typeDocumentation = &quot;&quot;; //$NON-NLS-1$</span>
+
+<span class="fc" id="L82">	private String typeKind = &quot;&quot;; //$NON-NLS-1$</span>
+
+<span class="fc" id="L84">	private String visibility = &quot;&quot;; //$NON-NLS-1$</span>
+
+	/**
+	 * Create a new visitor.
+	 *
+	 * @param importMap
+	 *            mapping from simple names to fully qualified names
+	 * @param packageName
+	 *            the package name for FQN construction
+	 */
+	public JavaStructureVisitor(Map&lt;String, String&gt; importMap,
+<span class="fc" id="L95">			String packageName) {</span>
+<span class="fc" id="L96">		this.importMap = importMap;</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		this.packageName = packageName != null ? packageName : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L98">	}</span>
+
+	@Override
+	public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L102">		String name = node.getName().getIdentifier();</span>
+<span class="fc" id="L103">		types.add(name);</span>
+<span class="fc" id="L104">		fqns.add(buildFQN(name));</span>
+
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		if (node.getSuperclassType() != null) {</span>
+<span class="nc" id="L107">			superTypes.add(resolveTypeName(node.getSuperclassType()));</span>
+		}
+
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		for (Object iface : node.superInterfaceTypes()) {</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">			if (iface instanceof Type) {</span>
+<span class="nc" id="L112">				interfaces.add(resolveTypeName((Type) iface));</span>
+			}
+<span class="nc" id="L114">		}</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		if (typeKind.isEmpty()) {</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">			typeKind = node.isInterface() ? &quot;interface&quot; : &quot;class&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L117">			visibility = extractVisibility(node.getModifiers());</span>
+		}
+		// Capture Javadoc of the primary type
+<span class="pc bpc" id="L120" title="2 of 4 branches missed.">		if (typeDocumentation.isEmpty() &amp;&amp; node.getJavadoc() != null) {</span>
+<span class="nc" id="L121">			typeDocumentation = truncateDoc(</span>
+<span class="nc" id="L122">					node.getJavadoc().toString(), MAX_DOC_LENGTH);</span>
+		}
+<span class="fc" id="L124">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(EnumDeclaration node) {
+<span class="nc" id="L129">		String name = node.getName().getIdentifier();</span>
+<span class="nc" id="L130">		types.add(name);</span>
+<span class="nc" id="L131">		fqns.add(buildFQN(name));</span>
+
+<span class="nc bnc" id="L133" title="All 2 branches missed.">		for (Object constant : node.enumConstants()) {</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">			if (constant instanceof EnumConstantDeclaration ecd) {</span>
+<span class="nc" id="L135">				fields.add(ecd.getName().getIdentifier());</span>
+			}
+<span class="nc" id="L137">		}</span>
+
+<span class="nc bnc" id="L139" title="All 2 branches missed.">		for (Object iface : node.superInterfaceTypes()) {</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">			if (iface instanceof Type) {</span>
+<span class="nc" id="L141">				interfaces.add(resolveTypeName((Type) iface));</span>
+			}
+<span class="nc" id="L143">		}</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">		if (typeKind.isEmpty()) {</span>
+<span class="nc" id="L145">			typeKind = &quot;enum&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L146">			visibility = extractVisibility(node.getModifiers());</span>
+		}
+<span class="nc" id="L148">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(AnnotationTypeDeclaration node) {
+<span class="nc" id="L153">		String name = node.getName().getIdentifier();</span>
+<span class="nc" id="L154">		types.add(name);</span>
+<span class="nc" id="L155">		fqns.add(buildFQN(name));</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">		if (typeKind.isEmpty()) {</span>
+<span class="nc" id="L157">			typeKind = &quot;annotation&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L158">			visibility = extractVisibility(node.getModifiers());</span>
+		}
+<span class="nc" id="L160">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MarkerAnnotation node) {
+<span class="nc" id="L165">		annotationNames.add(resolveAnnotationName(</span>
+<span class="nc" id="L166">				node.getTypeName().getFullyQualifiedName()));</span>
+<span class="nc" id="L167">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(NormalAnnotation node) {
+<span class="nc" id="L172">		annotationNames.add(resolveAnnotationName(</span>
+<span class="nc" id="L173">				node.getTypeName().getFullyQualifiedName()));</span>
+<span class="nc" id="L174">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(SingleMemberAnnotation node) {
+<span class="nc" id="L179">		annotationNames.add(resolveAnnotationName(</span>
+<span class="nc" id="L180">				node.getTypeName().getFullyQualifiedName()));</span>
+<span class="nc" id="L181">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(MethodDeclaration node) {
+<span class="fc" id="L186">		String methodName = node.getName().getIdentifier();</span>
+<span class="fc" id="L187">		methods.add(methodName);</span>
+
+		// Build method signature: methodName(ParamType1,ParamType2)
+<span class="fc" id="L190">		StringBuilder sig = new StringBuilder();</span>
+<span class="fc" id="L191">		sig.append(methodName);</span>
+<span class="fc" id="L192">		sig.append('(');</span>
+<span class="fc" id="L193">		boolean first = true;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">		for (Object param : node.parameters()) {</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">			if (param instanceof SingleVariableDeclaration svd) {</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">				if (!first) {</span>
+<span class="nc" id="L197">					sig.append(',');</span>
+				}
+<span class="fc" id="L199">				String typeName = resolveTypeName(svd.getType());</span>
+<span class="fc" id="L200">				sig.append(typeName);</span>
+<span class="fc" id="L201">				referencedTypes.add(typeName);</span>
+<span class="fc" id="L202">				first = false;</span>
+			}
+<span class="fc" id="L204">		}</span>
+<span class="fc" id="L205">		sig.append(')');</span>
+<span class="fc" id="L206">		methodSignatures.add(sig.toString());</span>
+
+		// Return type
+<span class="fc" id="L209">		Type returnType = node.getReturnType2();</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">		if (returnType != null) {</span>
+<span class="fc" id="L211">			referencedTypes.add(resolveTypeName(returnType));</span>
+		}
+
+		// Detect main method
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		if (&quot;main&quot;.equals(methodName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">				&amp;&amp; Modifier.isPublic(node.getModifiers())</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">				&amp;&amp; Modifier.isStatic(node.getModifiers())</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">				&amp;&amp; node.parameters().size() == 1) {</span>
+<span class="fc" id="L219">			hasMainMethod = true;</span>
+		}
+
+<span class="fc" id="L222">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(FieldDeclaration node) {
+<span class="nc bnc" id="L227" title="All 2 branches missed.">		for (Object fragment : node.fragments()) {</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">			if (fragment instanceof VariableDeclarationFragment vdf) {</span>
+<span class="nc" id="L229">				fields.add(vdf.getName().getIdentifier());</span>
+			}
+<span class="nc" id="L231">		}</span>
+		// Collect field type as referenced type
+<span class="nc bnc" id="L233" title="All 2 branches missed.">		if (node.getType() != null) {</span>
+<span class="nc" id="L234">			referencedTypes.add(resolveTypeName(node.getType()));</span>
+		}
+<span class="nc" id="L236">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(CatchClause node) {
+<span class="nc bnc" id="L241" title="All 2 branches missed.">		if (node.getException() != null</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">				&amp;&amp; node.getException().getType() != null) {</span>
+<span class="nc" id="L243">			referencedTypes.add(</span>
+<span class="nc" id="L244">					resolveTypeName(node.getException().getType()));</span>
+		}
+<span class="nc" id="L246">		return true;</span>
+	}
+
+	@Override
+	public boolean visit(StringLiteral node) {
+<span class="fc" id="L251">		String value = node.getLiteralValue();</span>
+<span class="pc bpc" id="L252" title="2 of 4 branches missed.">		if (value != null &amp;&amp; value.length() &gt; MIN_STRING_LITERAL_LENGTH) {</span>
+<span class="fc" id="L253">			stringLiterals.add(value);</span>
+		}
+<span class="fc" id="L255">		return true;</span>
+	}
+
+	/**
+	 * Get the newline-separated list of declared type names.
+	 *
+	 * @return declared types
+	 */
+	public String getTypes() {
+<span class="fc" id="L264">		return String.join(&quot;\n&quot;, types); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Get the newline-separated list of fully qualified names.
+	 *
+	 * @return fully qualified names
+	 */
+	public String getFQNs() {
+<span class="fc" id="L273">		return String.join(&quot;\n&quot;, fqns); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Get the newline-separated list of declared methods.
+	 *
+	 * @return declared methods
+	 */
+	public String getMethods() {
+<span class="fc" id="L282">		return String.join(&quot;\n&quot;, methods); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Get the newline-separated list of declared fields.
+	 *
+	 * @return declared fields
+	 */
+	public String getFields() {
+<span class="fc" id="L291">		return String.join(&quot;\n&quot;, fields); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Get the newline-separated list of supertypes.
+	 *
+	 * @return supertypes
+	 */
+	public String getSuperTypes() {
+<span class="fc" id="L300">		return String.join(&quot;\n&quot;, superTypes); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Get the newline-separated list of implemented interfaces.
+	 *
+	 * @return implemented interfaces
+	 */
+	public String getInterfaces() {
+<span class="fc" id="L309">		return String.join(&quot;\n&quot;, interfaces); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Get the newline-separated list of annotation names.
+	 *
+	 * @return annotations
+	 */
+	public String getAnnotations() {
+<span class="fc" id="L318">		return String.join(&quot;\n&quot;, annotationNames); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Get the type kind (class, interface, enum, annotation).
+	 *
+	 * @return the type kind
+	 */
+	public String getTypeKind() {
+<span class="fc" id="L327">		return typeKind;</span>
+	}
+
+	/**
+	 * Get the visibility modifier string.
+	 *
+	 * @return the visibility
+	 */
+	public String getVisibility() {
+<span class="fc" id="L336">		return visibility;</span>
+	}
+
+	private String buildFQN(String simpleName) {
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">		if (packageName.isEmpty()) {</span>
+<span class="nc" id="L341">			return simpleName;</span>
+		}
+<span class="fc" id="L343">		return packageName + &quot;.&quot; + simpleName; //$NON-NLS-1$</span>
+	}
+
+	private String resolveTypeName(Type type) {
+		String simpleName;
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">		if (type instanceof SimpleType simpleType) {</span>
+<span class="nc" id="L349">			simpleName = simpleType.getName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">		} else if (type instanceof ParameterizedType paramType) {</span>
+			// For List&lt;String&gt;, extract just &quot;List&quot;
+<span class="nc" id="L352">			return resolveTypeName(paramType.getType());</span>
+		} else {
+<span class="fc" id="L354">			simpleName = type.toString();</span>
+		}
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">		if (importMap.containsKey(simpleName)) {</span>
+<span class="nc" id="L357">			return importMap.get(simpleName);</span>
+		}
+		// Best effort: assume same package
+<span class="fc" id="L360">		return buildFQN(simpleName);</span>
+	}
+
+	private String resolveAnnotationName(String simpleName) {
+<span class="nc bnc" id="L364" title="All 2 branches missed.">		if (importMap.containsKey(simpleName)) {</span>
+<span class="nc" id="L365">			return importMap.get(simpleName);</span>
+		}
+<span class="nc" id="L367">		return simpleName;</span>
+	}
+
+	private static String extractVisibility(int modifiers) {
+<span class="fc" id="L371">		StringBuilder sb = new StringBuilder();</span>
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">		if (Modifier.isPublic(modifiers)) {</span>
+<span class="fc" id="L373">			sb.append(&quot;public&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">		} else if (Modifier.isProtected(modifiers)) {</span>
+<span class="nc" id="L375">			sb.append(&quot;protected&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L376" title="All 2 branches missed.">		} else if (Modifier.isPrivate(modifiers)) {</span>
+<span class="nc" id="L377">			sb.append(&quot;private&quot;); //$NON-NLS-1$</span>
+		} else {
+<span class="nc" id="L379">			sb.append(&quot;package&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">		if (Modifier.isAbstract(modifiers)) {</span>
+<span class="nc" id="L382">			sb.append(&quot; abstract&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">		if (Modifier.isFinal(modifiers)) {</span>
+<span class="nc" id="L385">			sb.append(&quot; final&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L387">		return sb.toString().trim();</span>
+	}
+
+	private static String truncateDoc(String doc, int maxLen) {
+<span class="nc bnc" id="L391" title="All 2 branches missed.">		if (doc == null) {</span>
+<span class="nc" id="L392">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+		// Strip leading/trailing whitespace and comment markers
+<span class="nc" id="L395">		String clean = doc.replaceAll(&quot;/\\*\\*|\\*/|\\*&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">		if (clean.length() &gt; maxLen) {</span>
+<span class="nc" id="L397">			return clean.substring(0, maxLen);</span>
+		}
+<span class="nc" id="L399">		return clean;</span>
+	}
+
+	/**
+	 * Get the newline-separated list of method signatures.
+	 *
+	 * @return method signatures
+	 */
+	public String getMethodSignatures() {
+<span class="fc" id="L408">		return String.join(&quot;\n&quot;, methodSignatures); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Get the newline-separated list of referenced types.
+	 *
+	 * @return referenced types
+	 */
+	public String getReferencedTypes() {
+<span class="fc" id="L417">		return String.join(&quot;\n&quot;, referencedTypes); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Get the newline-separated list of string literals.
+	 *
+	 * @return string literals
+	 */
+	public String getStringLiterals() {
+<span class="fc" id="L426">		return String.join(&quot;\n&quot;, stringLiterals); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Check if a main method was detected.
+	 *
+	 * @return true if a main method was found
+	 */
+	public boolean hasMainMethod() {
+<span class="fc" id="L435">		return hasMainMethod;</span>
+	}
+
+	/**
+	 * Get the type documentation (Javadoc).
+	 *
+	 * @return the type documentation
+	 */
+	public String getTypeDocumentation() {
+<span class="fc" id="L444">		return typeDocumentation;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

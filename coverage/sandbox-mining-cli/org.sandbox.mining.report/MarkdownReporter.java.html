@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MarkdownReporter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-cli</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.report</a> &gt; <span class="el_source">MarkdownReporter.java</span></div><h1>MarkdownReporter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.report;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.sandbox.mining.report.MiningReport.MatchEntry;
+
+/**
+ * Generates a Markdown report from mining results.
+ */
+<span class="fc" id="L31">public class MarkdownReporter {</span>
+
+	/**
+	 * Generates a Markdown report string from the given mining report.
+	 *
+	 * @param report the mining report
+	 * @return the Markdown content
+	 */
+	public String generate(MiningReport report) {
+<span class="fc" id="L40">		return generate(report, null);</span>
+	}
+
+	/**
+	 * Generates a delta-aware Markdown report string. When a previous report
+	 * is provided, the summary table includes &quot;New&quot; and &quot;Known&quot; columns, and
+	 * the details section highlights only matches that were not present in the
+	 * previous report.
+	 *
+	 * @param report         the current mining report
+	 * @param previousReport the previous report for delta computation, or {@code null}
+	 * @return the Markdown content
+	 */
+	public String generate(MiningReport report, MiningReport previousReport) {
+<span class="fc bfc" id="L54" title="All 2 branches covered.">		Set&lt;String&gt; knownMatchKeys = previousReport != null ? buildMatchKeys(previousReport) : Set.of();</span>
+
+<span class="fc" id="L56">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L57">		sb.append(&quot;# Refactoring Mining Report — &quot;).append(LocalDate.now()).append(&quot;\n\n&quot;);</span>
+
+		// Summary table
+<span class="fc bfc" id="L60" title="All 2 branches covered.">		boolean hasDelta = !knownMatchKeys.isEmpty();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		if (hasDelta) {</span>
+<span class="fc" id="L62">			sb.append(&quot;## Summary\n&quot;);</span>
+<span class="fc" id="L63">			sb.append(&quot;| Eclipse Project | Files | Matches | New | Known | Rules |\n&quot;);</span>
+<span class="fc" id="L64">			sb.append(&quot;|----------------|-------|---------|-----|-------|-------|\n&quot;);</span>
+		} else {
+<span class="fc" id="L66">			sb.append(&quot;## Summary\n&quot;);</span>
+<span class="fc" id="L67">			sb.append(&quot;| Eclipse Project | Files | Matches | Rules |\n&quot;);</span>
+<span class="fc" id="L68">			sb.append(&quot;|----------------|-------|---------|-------|\n&quot;);</span>
+		}
+
+<span class="fc" id="L71">		Map&lt;String, Integer&gt; fileCounts = report.getFileCounts();</span>
+<span class="fc" id="L72">		Map&lt;String, List&lt;MatchEntry&gt;&gt; byRepo = report.getMatchesByRepo();</span>
+<span class="fc" id="L73">		Map&lt;String, String&gt; errors = report.getErrors();</span>
+
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		for (Map.Entry&lt;String, Integer&gt; entry : fileCounts.entrySet()) {</span>
+<span class="fc" id="L76">			String repoName = entry.getKey();</span>
+<span class="fc" id="L77">			int files = entry.getValue();</span>
+<span class="fc" id="L78">			List&lt;MatchEntry&gt; repoMatches = byRepo.getOrDefault(repoName, List.of());</span>
+<span class="fc" id="L79">			long rules = report.getDistinctRuleCount(repoName);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">			String marker = errors.containsKey(repoName) ? &quot; ⚠️&quot; : &quot;&quot;;</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">			if (hasDelta) {</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">				long newCount = repoMatches.stream().filter(m -&gt; !knownMatchKeys.contains(matchKey(m))).count();</span>
+<span class="fc" id="L83">				long knownCount = repoMatches.size() - newCount;</span>
+<span class="fc" id="L84">				sb.append(&quot;| &quot;).append(repoName).append(marker).append(&quot; | &quot;).append(files).append(&quot; | &quot;)</span>
+<span class="fc" id="L85">						.append(repoMatches.size()).append(&quot; | &quot;).append(newCount).append(&quot; | &quot;)</span>
+<span class="fc" id="L86">						.append(knownCount).append(&quot; | &quot;).append(rules).append(&quot; |\n&quot;);</span>
+<span class="fc" id="L87">			} else {</span>
+<span class="fc" id="L88">				sb.append(&quot;| &quot;).append(repoName).append(marker).append(&quot; | &quot;).append(files).append(&quot; | &quot;).append(repoMatches.size())</span>
+<span class="fc" id="L89">						.append(&quot; | &quot;).append(rules).append(&quot; |\n&quot;);</span>
+			}
+<span class="fc" id="L91">		}</span>
+
+		// Details — when a previous report exists, highlight new matches
+<span class="fc" id="L94">		sb.append(&quot;\n## Details\n&quot;);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		if (hasDelta) {</span>
+<span class="fc" id="L96">			sb.append(&quot;_Only **new** matches since the last run are shown below._\n\n&quot;);</span>
+		}
+<span class="fc bfc" id="L98" title="All 2 branches covered.">		for (Map.Entry&lt;String, List&lt;MatchEntry&gt;&gt; repoEntry : byRepo.entrySet()) {</span>
+<span class="fc" id="L99">			List&lt;MatchEntry&gt; repoMatches = repoEntry.getValue();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">			List&lt;MatchEntry&gt; displayMatches = hasDelta</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">					? repoMatches.stream().filter(m -&gt; !knownMatchKeys.contains(matchKey(m))).toList()</span>
+<span class="fc" id="L102">					: repoMatches;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">			if (displayMatches.isEmpty()) {</span>
+<span class="fc" id="L104">				continue;</span>
+			}
+<span class="fc" id="L106">			sb.append(&quot;### &quot;).append(repoEntry.getKey()).append(&quot;\n&quot;);</span>
+
+			// Group by hint file and rule
+<span class="fc" id="L109">			Map&lt;String, Map&lt;String, List&lt;MatchEntry&gt;&gt;&gt; byHintAndRule = new java.util.LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">			for (MatchEntry match : displayMatches) {</span>
+<span class="fc" id="L111">				byHintAndRule.computeIfAbsent(match.hintFile(), k -&gt; new java.util.LinkedHashMap&lt;&gt;())</span>
+<span class="fc" id="L112">						.computeIfAbsent(match.ruleName(), k -&gt; new java.util.ArrayList&lt;&gt;()).add(match);</span>
+<span class="fc" id="L113">			}</span>
+
+<span class="fc bfc" id="L115" title="All 2 branches covered.">			for (Map.Entry&lt;String, Map&lt;String, List&lt;MatchEntry&gt;&gt;&gt; hintEntry : byHintAndRule.entrySet()) {</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">				for (Map.Entry&lt;String, List&lt;MatchEntry&gt;&gt; ruleEntry : hintEntry.getValue().entrySet()) {</span>
+<span class="fc" id="L117">					sb.append(&quot;#### Rule: `&quot;).append(hintEntry.getKey()).append(&quot;` → `&quot;).append(ruleEntry.getKey())</span>
+<span class="fc" id="L118">							.append(&quot;`\n&quot;);</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">					for (MatchEntry match : ruleEntry.getValue()) {</span>
+<span class="fc" id="L120">						sb.append(&quot;- `&quot;).append(match.filePath()).append(&quot;:&quot;).append(match.line()).append(&quot;` — `&quot;)</span>
+<span class="fc" id="L121">								.append(truncate(match.matchedCode(), 80)).append(&quot;`&quot;);</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">						if (match.suggestedReplacement() != null) {</span>
+<span class="fc" id="L123">							sb.append(&quot; → `&quot;).append(truncate(match.suggestedReplacement(), 80)).append(&quot;`&quot;);</span>
+						}
+<span class="fc" id="L125">						sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L126">					}</span>
+<span class="fc" id="L127">					sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L128">				}</span>
+<span class="fc" id="L129">			}</span>
+<span class="fc" id="L130">		}</span>
+
+<span class="fc bfc" id="L132" title="All 2 branches covered.">		if (!report.hasMatches()) {</span>
+<span class="fc" id="L133">			sb.append(&quot;No matches found.\n&quot;);</span>
+		}
+
+		// Errors section
+<span class="fc bfc" id="L137" title="All 2 branches covered.">		if (report.hasErrors()) {</span>
+<span class="fc" id="L138">			sb.append(&quot;\n## Errors\n&quot;);</span>
+<span class="fc" id="L139">			sb.append(&quot;The following repositories encountered errors during scanning:\n\n&quot;);</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">			for (Map.Entry&lt;String, String&gt; error : report.getErrors().entrySet()) {</span>
+<span class="fc" id="L141">				sb.append(&quot;- **&quot;).append(error.getKey()).append(&quot;**: `&quot;).append(truncate(error.getValue(), 200))</span>
+<span class="fc" id="L142">						.append(&quot;`\n&quot;);</span>
+<span class="fc" id="L143">			}</span>
+		}
+
+<span class="fc" id="L146">		return sb.toString();</span>
+	}
+
+	/**
+	 * Writes the Markdown report to a file.
+	 *
+	 * @param report    the mining report
+	 * @param outputDir the output directory
+	 * @throws IOException if file writing fails
+	 */
+	public void write(MiningReport report, Path outputDir) throws IOException {
+<span class="nc" id="L157">		Files.createDirectories(outputDir);</span>
+<span class="nc" id="L158">		String content = generate(report);</span>
+<span class="nc" id="L159">		Files.writeString(outputDir.resolve(&quot;report.md&quot;), content, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L160">	}</span>
+
+	private static String truncate(String s, int maxLen) {
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		if (s == null) {</span>
+<span class="nc" id="L164">			return &quot;&quot;;</span>
+		}
+<span class="fc" id="L166">		String cleaned = s.replace(&quot;\n&quot;, &quot; &quot;).replace(&quot;\r&quot;, &quot;&quot;);</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">		if (cleaned.length() &lt;= maxLen) {</span>
+<span class="fc" id="L168">			return cleaned;</span>
+		}
+<span class="nc" id="L170">		return cleaned.substring(0, maxLen - 3) + &quot;...&quot;;</span>
+	}
+
+	/**
+	 * Builds a set of match keys from a report for delta comparison.
+	 */
+	private static Set&lt;String&gt; buildMatchKeys(MiningReport report) {
+<span class="fc" id="L177">		Set&lt;String&gt; keys = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">		for (MatchEntry m : report.getMatches()) {</span>
+<span class="fc" id="L179">			keys.add(matchKey(m));</span>
+<span class="fc" id="L180">		}</span>
+<span class="fc" id="L181">		return keys;</span>
+	}
+
+	/**
+	 * Creates a unique key for a match entry based on repo, file, line, and rule.
+	 */
+	private static String matchKey(MatchEntry m) {
+<span class="fc" id="L188">		return m.repoName() + &quot;\0&quot; + m.hintFile() + &quot;\0&quot; + m.ruleName() + &quot;\0&quot; + m.filePath() + &quot;:&quot; + m.line();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

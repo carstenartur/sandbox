@@ -1,0 +1,772 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JavaBlobIndex.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.entity</a> &gt; <span class="el_source">JavaBlobIndex.java</span></div><h1>JavaBlobIndex.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.entity;
+
+import java.time.Instant;
+
+import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
+import org.hibernate.annotations.Nationalized;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.VectorSimilarity;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.VectorField;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
+
+/**
+ * Entity for indexing structural metadata extracted from Java source blobs.
+ * &lt;p&gt;
+ * Fields are populated by parsing {@code .java} files with JDT's AST parser
+ * (without bindings). This enables searching by type name, method name, field
+ * name, fully qualified name, and inheritance relationships without requiring
+ * a full classpath.
+ * &lt;/p&gt;
+ */
+@Indexed
+@Entity
+@Table(name = &quot;java_blob_index&quot;, indexes = {
+		@Index(name = &quot;idx_blob_repo&quot;, columnList = &quot;repository_name&quot;),
+		@Index(name = &quot;idx_blob_blob_oid&quot;, columnList = &quot;blob_object_id&quot;),
+		@Index(name = &quot;idx_blob_commit_oid&quot;, columnList = &quot;commit_object_id&quot;),
+		@Index(name = &quot;idx_blob_repo_commit&quot;, columnList = &quot;repository_name, commit_object_id&quot;) })
+public class JavaBlobIndex {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@KeywordField
+	@Column(name = &quot;repository_name&quot;, nullable = false)
+	private String repositoryName;
+
+	@KeywordField
+	@Column(name = &quot;blob_object_id&quot;, length = 40, nullable = false)
+	private String blobObjectId;
+
+	@KeywordField
+	@Column(name = &quot;commit_object_id&quot;, length = 40, nullable = false)
+	private String commitObjectId;
+
+	@KeywordField
+	@Column(name = &quot;file_type&quot;, length = 32)
+	private String fileType;
+
+	@FullTextField(analyzer = &quot;javaPath&quot;)
+	@Nationalized
+	@Column(name = &quot;file_path&quot;, length = 1024)
+	private String filePath;
+
+	@Nationalized
+	@KeywordField
+	@Column(name = &quot;package_name&quot;, length = 512)
+	private String packageName;
+
+	@FullTextField(analyzer = &quot;dotQualifiedName&quot;)
+	@Nationalized
+	@Column(name = &quot;declared_types&quot;, length = 65535)
+	private String declaredTypes;
+
+	@FullTextField(analyzer = &quot;dotQualifiedName&quot;)
+	@Nationalized
+	@Column(name = &quot;fully_qualified_names&quot;, length = 65535)
+	private String fullyQualifiedNames;
+
+	@FullTextField(analyzer = &quot;javaIdentifier&quot;)
+	@Nationalized
+	@Column(name = &quot;declared_methods&quot;, length = 65535)
+	private String declaredMethods;
+
+	@FullTextField(analyzer = &quot;javaIdentifier&quot;)
+	@Nationalized
+	@Column(name = &quot;declared_fields&quot;, length = 65535)
+	private String declaredFields;
+
+	@FullTextField(analyzer = &quot;dotQualifiedName&quot;)
+	@Nationalized
+	@Column(name = &quot;extends_types&quot;, length = 65535)
+	private String extendsTypes;
+
+	@FullTextField(analyzer = &quot;dotQualifiedName&quot;)
+	@Nationalized
+	@Column(name = &quot;implements_types&quot;, length = 65535)
+	private String implementsTypes;
+
+	@FullTextField(analyzer = &quot;dotQualifiedName&quot;)
+	@Nationalized
+	@Column(name = &quot;import_statements&quot;, length = 65535)
+	private String importStatements;
+
+	@FullTextField(analyzer = &quot;javaSourceEcj&quot;)
+	@Nationalized
+	@Column(name = &quot;source_snippet&quot;, length = 65535)
+	private String sourceSnippet;
+
+	@KeywordField
+	@Nationalized
+	@Column(name = &quot;project_name&quot;, length = 512)
+	private String projectName;
+
+	@FullTextField(analyzer = &quot;javaIdentifier&quot;)
+	@Nationalized
+	@Column(name = &quot;simple_class_name&quot;, length = 512)
+	private String simpleClassName;
+
+	@KeywordField
+	@Column(name = &quot;type_kind&quot;, length = 32)
+	private String typeKind;
+
+	@KeywordField
+	@Column(name = &quot;visibility&quot;, length = 64)
+	private String visibility;
+
+	@FullTextField(analyzer = &quot;dotQualifiedName&quot;)
+	@Nationalized
+	@Column(name = &quot;annotations&quot;, length = 65535)
+	private String annotations;
+
+	@GenericField
+	@Column(name = &quot;line_count&quot;)
+	private int lineCount;
+
+	@FullTextField(analyzer = &quot;commitMessage&quot;)
+	@Nationalized
+	@Column(name = &quot;type_documentation&quot;, length = 2000)
+	private String typeDocumentation;
+
+	@FullTextField(analyzer = &quot;javaIdentifier&quot;)
+	@Nationalized
+	@Column(name = &quot;method_signatures&quot;, length = 65535)
+	private String methodSignatures;
+
+	@FullTextField(analyzer = &quot;dotQualifiedName&quot;)
+	@Nationalized
+	@Column(name = &quot;referenced_types&quot;, length = 65535)
+	private String referencedTypes;
+
+	@FullTextField(analyzer = &quot;genericContent&quot;)
+	@Nationalized
+	@Column(name = &quot;string_literals&quot;, length = 65535)
+	private String stringLiterals;
+
+	@GenericField
+	@Column(name = &quot;has_main_method&quot;)
+	private boolean hasMainMethod;
+
+	@KeywordField
+	@Nationalized
+	@Column(name = &quot;commit_author&quot;)
+	private String commitAuthor;
+
+	@GenericField
+	@Column(name = &quot;commit_date&quot;)
+	private Instant commitDate;
+
+	@VectorField(dimension = EmbeddingService.EMBEDDING_DIMENSION,
+			searchable = Searchable.YES,
+			vectorSimilarity = VectorSimilarity.COSINE)
+	@Lob
+	@Convert(converter = FloatArrayConverter.class)
+	@Column(name = &quot;semantic_embedding&quot;)
+	private float[] semanticEmbedding;
+
+	@GenericField
+	@Column(name = &quot;has_embedding&quot;)
+	private boolean hasEmbedding;
+
+	/** Default constructor for JPA. */
+<span class="fc" id="L199">	public JavaBlobIndex() {</span>
+<span class="fc" id="L200">	}</span>
+
+	/**
+	 * Get the primary key.
+	 *
+	 * @return the id
+	 */
+	public Long getId() {
+<span class="fc" id="L208">		return id;</span>
+	}
+
+	/**
+	 * Set the primary key.
+	 *
+	 * @param id
+	 *            the id
+	 */
+	public void setId(Long id) {
+<span class="fc" id="L218">		this.id = id;</span>
+<span class="fc" id="L219">	}</span>
+
+	/**
+	 * Get the repository name.
+	 *
+	 * @return the repositoryName
+	 */
+	public String getRepositoryName() {
+<span class="nc" id="L227">		return repositoryName;</span>
+	}
+
+	/**
+	 * Set the repository name.
+	 *
+	 * @param repositoryName
+	 *            the repository name
+	 */
+	public void setRepositoryName(String repositoryName) {
+<span class="fc" id="L237">		this.repositoryName = repositoryName;</span>
+<span class="fc" id="L238">	}</span>
+
+	/**
+	 * Get the blob SHA-1.
+	 *
+	 * @return the blobObjectId
+	 */
+	public String getBlobObjectId() {
+<span class="fc" id="L246">		return blobObjectId;</span>
+	}
+
+	/**
+	 * Set the blob SHA-1.
+	 *
+	 * @param blobObjectId
+	 *            the SHA-1 hex string
+	 */
+	public void setBlobObjectId(String blobObjectId) {
+<span class="fc" id="L256">		this.blobObjectId = blobObjectId;</span>
+<span class="fc" id="L257">	}</span>
+
+	/**
+	 * Get the commit SHA-1 that introduced this blob.
+	 *
+	 * @return the commitObjectId
+	 */
+	public String getCommitObjectId() {
+<span class="fc" id="L265">		return commitObjectId;</span>
+	}
+
+	/**
+	 * Set the commit SHA-1.
+	 *
+	 * @param commitObjectId
+	 *            the SHA-1 hex string
+	 */
+	public void setCommitObjectId(String commitObjectId) {
+<span class="fc" id="L275">		this.commitObjectId = commitObjectId;</span>
+<span class="fc" id="L276">	}</span>
+
+	/**
+	 * Get the file type (e.g., &quot;java&quot;, &quot;xml&quot;, &quot;properties&quot;).
+	 *
+	 * @return the fileType
+	 */
+	public String getFileType() {
+<span class="nc" id="L284">		return fileType;</span>
+	}
+
+	/**
+	 * Set the file type.
+	 *
+	 * @param fileType
+	 *            the file type identifier
+	 */
+	public void setFileType(String fileType) {
+<span class="fc" id="L294">		this.fileType = fileType;</span>
+<span class="fc" id="L295">	}</span>
+
+	/**
+	 * Get the file path within the repository.
+	 *
+	 * @return the filePath
+	 */
+	public String getFilePath() {
+<span class="fc" id="L303">		return filePath;</span>
+	}
+
+	/**
+	 * Set the file path.
+	 *
+	 * @param filePath
+	 *            the relative path
+	 */
+	public void setFilePath(String filePath) {
+<span class="fc" id="L313">		this.filePath = filePath;</span>
+<span class="fc" id="L314">	}</span>
+
+	/**
+	 * Get the package name.
+	 *
+	 * @return the packageName
+	 */
+	public String getPackageName() {
+<span class="fc" id="L322">		return packageName;</span>
+	}
+
+	/**
+	 * Set the package name.
+	 *
+	 * @param packageName
+	 *            the Java package name
+	 */
+	public void setPackageName(String packageName) {
+<span class="fc" id="L332">		this.packageName = packageName;</span>
+<span class="fc" id="L333">	}</span>
+
+	/**
+	 * Get the newline-separated declared type names.
+	 *
+	 * @return the declaredTypes
+	 */
+	public String getDeclaredTypes() {
+<span class="fc" id="L341">		return declaredTypes;</span>
+	}
+
+	/**
+	 * Set the newline-separated declared type names.
+	 *
+	 * @param declaredTypes
+	 *            newline-separated type names
+	 */
+	public void setDeclaredTypes(String declaredTypes) {
+<span class="fc" id="L351">		this.declaredTypes = declaredTypes;</span>
+<span class="fc" id="L352">	}</span>
+
+	/**
+	 * Get the newline-separated fully qualified names.
+	 *
+	 * @return the fullyQualifiedNames
+	 */
+	public String getFullyQualifiedNames() {
+<span class="fc" id="L360">		return fullyQualifiedNames;</span>
+	}
+
+	/**
+	 * Set the newline-separated fully qualified names.
+	 *
+	 * @param fullyQualifiedNames
+	 *            newline-separated FQNs
+	 */
+	public void setFullyQualifiedNames(String fullyQualifiedNames) {
+<span class="fc" id="L370">		this.fullyQualifiedNames = fullyQualifiedNames;</span>
+<span class="fc" id="L371">	}</span>
+
+	/**
+	 * Get the newline-separated declared method names.
+	 *
+	 * @return the declaredMethods
+	 */
+	public String getDeclaredMethods() {
+<span class="fc" id="L379">		return declaredMethods;</span>
+	}
+
+	/**
+	 * Set the newline-separated declared method names.
+	 *
+	 * @param declaredMethods
+	 *            newline-separated method names
+	 */
+	public void setDeclaredMethods(String declaredMethods) {
+<span class="fc" id="L389">		this.declaredMethods = declaredMethods;</span>
+<span class="fc" id="L390">	}</span>
+
+	/**
+	 * Get the newline-separated declared field names.
+	 *
+	 * @return the declaredFields
+	 */
+	public String getDeclaredFields() {
+<span class="fc" id="L398">		return declaredFields;</span>
+	}
+
+	/**
+	 * Set the newline-separated declared field names.
+	 *
+	 * @param declaredFields
+	 *            newline-separated field names
+	 */
+	public void setDeclaredFields(String declaredFields) {
+<span class="fc" id="L408">		this.declaredFields = declaredFields;</span>
+<span class="fc" id="L409">	}</span>
+
+	/**
+	 * Get the newline-separated supertypes.
+	 *
+	 * @return the extendsTypes
+	 */
+	public String getExtendsTypes() {
+<span class="fc" id="L417">		return extendsTypes;</span>
+	}
+
+	/**
+	 * Set the newline-separated supertypes.
+	 *
+	 * @param extendsTypes
+	 *            newline-separated type names
+	 */
+	public void setExtendsTypes(String extendsTypes) {
+<span class="fc" id="L427">		this.extendsTypes = extendsTypes;</span>
+<span class="fc" id="L428">	}</span>
+
+	/**
+	 * Get the newline-separated implemented interfaces.
+	 *
+	 * @return the implementsTypes
+	 */
+	public String getImplementsTypes() {
+<span class="fc" id="L436">		return implementsTypes;</span>
+	}
+
+	/**
+	 * Set the newline-separated implemented interfaces.
+	 *
+	 * @param implementsTypes
+	 *            newline-separated type names
+	 */
+	public void setImplementsTypes(String implementsTypes) {
+<span class="fc" id="L446">		this.implementsTypes = implementsTypes;</span>
+<span class="fc" id="L447">	}</span>
+
+	/**
+	 * Get the newline-separated import statements.
+	 *
+	 * @return the importStatements
+	 */
+	public String getImportStatements() {
+<span class="nc" id="L455">		return importStatements;</span>
+	}
+
+	/**
+	 * Set the newline-separated import statements.
+	 *
+	 * @param importStatements
+	 *            newline-separated imports
+	 */
+	public void setImportStatements(String importStatements) {
+<span class="fc" id="L465">		this.importStatements = importStatements;</span>
+<span class="fc" id="L466">	}</span>
+
+	/**
+	 * Get the source code snippet (first 64KB).
+	 *
+	 * @return the sourceSnippet
+	 */
+	public String getSourceSnippet() {
+<span class="nc" id="L474">		return sourceSnippet;</span>
+	}
+
+	/**
+	 * Set the source code snippet.
+	 *
+	 * @param sourceSnippet
+	 *            the source text
+	 */
+	public void setSourceSnippet(String sourceSnippet) {
+<span class="fc" id="L484">		this.sourceSnippet = sourceSnippet;</span>
+<span class="fc" id="L485">	}</span>
+
+	/**
+	 * Get the project name.
+	 *
+	 * @return the projectName
+	 */
+	public String getProjectName() {
+<span class="nc" id="L493">		return projectName;</span>
+	}
+
+	/**
+	 * Set the project name.
+	 *
+	 * @param projectName
+	 *            the project name
+	 */
+	public void setProjectName(String projectName) {
+<span class="fc" id="L503">		this.projectName = projectName;</span>
+<span class="fc" id="L504">	}</span>
+
+	/**
+	 * Get the simple class name.
+	 *
+	 * @return the simpleClassName
+	 */
+	public String getSimpleClassName() {
+<span class="nc" id="L512">		return simpleClassName;</span>
+	}
+
+	/**
+	 * Set the simple class name.
+	 *
+	 * @param simpleClassName
+	 *            the simple class name
+	 */
+	public void setSimpleClassName(String simpleClassName) {
+<span class="fc" id="L522">		this.simpleClassName = simpleClassName;</span>
+<span class="fc" id="L523">	}</span>
+
+	/**
+	 * Get the type kind (class, interface, enum, annotation).
+	 *
+	 * @return the typeKind
+	 */
+	public String getTypeKind() {
+<span class="nc" id="L531">		return typeKind;</span>
+	}
+
+	/**
+	 * Set the type kind.
+	 *
+	 * @param typeKind
+	 *            the type kind
+	 */
+	public void setTypeKind(String typeKind) {
+<span class="fc" id="L541">		this.typeKind = typeKind;</span>
+<span class="fc" id="L542">	}</span>
+
+	/**
+	 * Get the visibility modifier string.
+	 *
+	 * @return the visibility
+	 */
+	public String getVisibility() {
+<span class="nc" id="L550">		return visibility;</span>
+	}
+
+	/**
+	 * Set the visibility modifier string.
+	 *
+	 * @param visibility
+	 *            the visibility
+	 */
+	public void setVisibility(String visibility) {
+<span class="fc" id="L560">		this.visibility = visibility;</span>
+<span class="fc" id="L561">	}</span>
+
+	/**
+	 * Get the newline-separated annotation names.
+	 *
+	 * @return the annotations
+	 */
+	public String getAnnotations() {
+<span class="nc" id="L569">		return annotations;</span>
+	}
+
+	/**
+	 * Set the newline-separated annotation names.
+	 *
+	 * @param annotations
+	 *            newline-separated annotation names
+	 */
+	public void setAnnotations(String annotations) {
+<span class="fc" id="L579">		this.annotations = annotations;</span>
+<span class="fc" id="L580">	}</span>
+
+	/**
+	 * Get the line count.
+	 *
+	 * @return the lineCount
+	 */
+	public int getLineCount() {
+<span class="nc" id="L588">		return lineCount;</span>
+	}
+
+	/**
+	 * Set the line count.
+	 *
+	 * @param lineCount
+	 *            the line count
+	 */
+	public void setLineCount(int lineCount) {
+<span class="fc" id="L598">		this.lineCount = lineCount;</span>
+<span class="fc" id="L599">	}</span>
+
+	/**
+	 * Get the type documentation (Javadoc on primary type).
+	 *
+	 * @return the typeDocumentation
+	 */
+	public String getTypeDocumentation() {
+<span class="nc" id="L607">		return typeDocumentation;</span>
+	}
+
+	/**
+	 * Set the type documentation.
+	 *
+	 * @param typeDocumentation
+	 *            the type documentation, truncated to 2000 chars
+	 */
+	public void setTypeDocumentation(String typeDocumentation) {
+<span class="fc" id="L617">		this.typeDocumentation = typeDocumentation;</span>
+<span class="fc" id="L618">	}</span>
+
+	/**
+	 * Get the newline-separated method signatures.
+	 *
+	 * @return the methodSignatures
+	 */
+	public String getMethodSignatures() {
+<span class="nc" id="L626">		return methodSignatures;</span>
+	}
+
+	/**
+	 * Set the newline-separated method signatures.
+	 *
+	 * @param methodSignatures
+	 *            newline-separated method signatures
+	 */
+	public void setMethodSignatures(String methodSignatures) {
+<span class="fc" id="L636">		this.methodSignatures = methodSignatures;</span>
+<span class="fc" id="L637">	}</span>
+
+	/**
+	 * Get the newline-separated referenced types.
+	 *
+	 * @return the referencedTypes
+	 */
+	public String getReferencedTypes() {
+<span class="nc" id="L645">		return referencedTypes;</span>
+	}
+
+	/**
+	 * Set the newline-separated referenced types.
+	 *
+	 * @param referencedTypes
+	 *            newline-separated referenced type names
+	 */
+	public void setReferencedTypes(String referencedTypes) {
+<span class="fc" id="L655">		this.referencedTypes = referencedTypes;</span>
+<span class="fc" id="L656">	}</span>
+
+	/**
+	 * Get the newline-separated string literals.
+	 *
+	 * @return the stringLiterals
+	 */
+	public String getStringLiterals() {
+<span class="nc" id="L664">		return stringLiterals;</span>
+	}
+
+	/**
+	 * Set the newline-separated string literals.
+	 *
+	 * @param stringLiterals
+	 *            newline-separated string literal values
+	 */
+	public void setStringLiterals(String stringLiterals) {
+<span class="fc" id="L674">		this.stringLiterals = stringLiterals;</span>
+<span class="fc" id="L675">	}</span>
+
+	/**
+	 * Check if a main method was detected.
+	 *
+	 * @return true if a main method was found
+	 */
+	public boolean isHasMainMethod() {
+<span class="nc" id="L683">		return hasMainMethod;</span>
+	}
+
+	/**
+	 * Set whether a main method was detected.
+	 *
+	 * @param hasMainMethod
+	 *            true if a main method was found
+	 */
+	public void setHasMainMethod(boolean hasMainMethod) {
+<span class="fc" id="L693">		this.hasMainMethod = hasMainMethod;</span>
+<span class="fc" id="L694">	}</span>
+
+	/**
+	 * Get the commit author name.
+	 *
+	 * @return the commitAuthor
+	 */
+	public String getCommitAuthor() {
+<span class="nc" id="L702">		return commitAuthor;</span>
+	}
+
+	/**
+	 * Set the commit author name.
+	 *
+	 * @param commitAuthor
+	 *            the commit author
+	 */
+	public void setCommitAuthor(String commitAuthor) {
+<span class="fc" id="L712">		this.commitAuthor = commitAuthor;</span>
+<span class="fc" id="L713">	}</span>
+
+	/**
+	 * Get the commit date.
+	 *
+	 * @return the commitDate
+	 */
+	public Instant getCommitDate() {
+<span class="nc" id="L721">		return commitDate;</span>
+	}
+
+	/**
+	 * Set the commit date.
+	 *
+	 * @param commitDate
+	 *            the commit date
+	 */
+	public void setCommitDate(Instant commitDate) {
+<span class="fc" id="L731">		this.commitDate = commitDate;</span>
+<span class="fc" id="L732">	}</span>
+
+	/**
+	 * Get the semantic embedding vector.
+	 *
+	 * @return the 384-dimensional embedding, or {@code null} if not computed
+	 */
+	public float[] getSemanticEmbedding() {
+<span class="nc" id="L740">		return semanticEmbedding;</span>
+	}
+
+	/**
+	 * Set the semantic embedding vector.
+	 *
+	 * @param semanticEmbedding
+	 *            the 384-dimensional embedding
+	 */
+	public void setSemanticEmbedding(float[] semanticEmbedding) {
+<span class="nc" id="L750">		this.semanticEmbedding = semanticEmbedding;</span>
+<span class="nc" id="L751">	}</span>
+
+	/**
+	 * Check if a semantic embedding has been computed for this blob.
+	 *
+	 * @return {@code true} if an embedding is available
+	 */
+	public boolean isHasEmbedding() {
+<span class="nc" id="L759">		return hasEmbedding;</span>
+	}
+
+	/**
+	 * Set whether a semantic embedding has been computed.
+	 *
+	 * @param hasEmbedding
+	 *            {@code true} if an embedding is available
+	 */
+	public void setHasEmbedding(boolean hasEmbedding) {
+<span class="nc" id="L769">		this.hasEmbedding = hasEmbedding;</span>
+<span class="nc" id="L770">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

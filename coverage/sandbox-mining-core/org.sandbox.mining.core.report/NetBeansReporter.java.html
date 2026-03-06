@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>NetBeansReporter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.report</a> &gt; <span class="el_source">NetBeansReporter.java</span></div><h1>NetBeansReporter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.report;
+
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
+
+/**
+ * Formats evaluations in NetBeans/compiler-warning format.
+ *
+ * &lt;p&gt;One line per evaluation:
+ * {@code REPO/COMMIT:1: SEVERITY: [TRAFFIC_LIGHT/CATEGORY] SUMMARY — scores}&lt;/p&gt;
+ *
+ * &lt;p&gt;This format is compatible with IDE error parsers and can be piped
+ * through grep, sort, or other Unix tools.&lt;/p&gt;
+ */
+<span class="fc" id="L35">public class NetBeansReporter {</span>
+
+	private static final String EVALUATIONS_TXT = &quot;evaluations.txt&quot;; //$NON-NLS-1$
+
+	/**
+	 * Formats a list of evaluations in NetBeans format.
+	 *
+	 * @param evaluations the evaluations to format
+	 * @return formatted string with one line per evaluation
+	 */
+	public String format(List&lt;CommitEvaluation&gt; evaluations) {
+<span class="fc" id="L46">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
+<span class="fc" id="L48">			sb.append(formatLine(eval)).append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L49">		}</span>
+<span class="fc" id="L50">		return sb.toString();</span>
+	}
+
+	/**
+	 * Writes the formatted evaluations to a file.
+	 *
+	 * @param evaluations the evaluations to write
+	 * @param outputDir   the output directory
+	 * @throws IOException if file writing fails
+	 */
+	public void write(List&lt;CommitEvaluation&gt; evaluations, Path outputDir) throws IOException {
+<span class="fc" id="L61">		Files.createDirectories(outputDir);</span>
+<span class="fc" id="L62">		String content = format(evaluations);</span>
+<span class="fc" id="L63">		Files.writeString(outputDir.resolve(EVALUATIONS_TXT), content, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L64">	}</span>
+
+	/**
+	 * Prints the formatted evaluations to the given print stream.
+	 *
+	 * @param evaluations the evaluations to print
+	 * @param out         the output stream (typically System.out)
+	 */
+	public void printToStream(List&lt;CommitEvaluation&gt; evaluations, PrintStream out) {
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
+<span class="fc" id="L74">			out.println(formatLine(eval));</span>
+<span class="fc" id="L75">		}</span>
+<span class="fc" id="L76">	}</span>
+
+	/**
+	 * Formats a single evaluation as a NetBeans-style line.
+	 *
+	 * @param eval the evaluation
+	 * @return formatted line
+	 */
+	String formatLine(CommitEvaluation eval) {
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		String repo = eval.repoUrl() != null ? repoShortName(eval.repoUrl()) : &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">		String hash = eval.commitHash() != null</span>
+<span class="fc" id="L87">				? eval.commitHash().substring(0, Math.min(7, eval.commitHash().length()))</span>
+<span class="pc" id="L88">				: &quot;???????&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L89">		String severity = severityFromTrafficLight(eval.trafficLight());</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		String category = eval.category() != null ? eval.category() : &quot;uncategorized&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">		String summary = eval.summary() != null ? eval.summary() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L92">		String scores = &quot;R=&quot; + eval.reusability() + &quot;/I=&quot; + eval.codeImprovement() //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L93">				+ &quot;/E=&quot; + eval.implementationEffort(); //$NON-NLS-1$</span>
+
+<span class="fc" id="L95">		String trafficLightLabel = trafficLightLabel(eval.trafficLight());</span>
+<span class="fc" id="L96">		return repo + &quot;/&quot; + hash + &quot;:1: &quot; + severity + &quot;: [&quot; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+				+ trafficLightLabel + &quot;/&quot; + category + &quot;] &quot; //$NON-NLS-1$ //$NON-NLS-2$
+				+ summary + &quot; \u2014 &quot; + scores; //$NON-NLS-1$
+	}
+
+	private static String trafficLightLabel(TrafficLight light) {
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		if (light == null) {</span>
+<span class="fc" id="L103">			return &quot;UNKNOWN&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L105">		return light.toString();</span>
+	}
+
+	public static String severityFromTrafficLight(TrafficLight light) {
+<span class="fc bfc" id="L109" title="All 2 branches covered.">		if (light == null) {</span>
+<span class="fc" id="L110">			return &quot;info&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L112" title="All 4 branches covered.">		return switch (light) {</span>
+<span class="fc" id="L113">			case GREEN -&gt; &quot;warning&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L114">			case YELLOW -&gt; &quot;info&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L115">			case RED -&gt; &quot;info&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L116">			case NOT_APPLICABLE -&gt; &quot;info&quot;; //$NON-NLS-1$</span>
+		};
+	}
+
+	public static String repoShortName(String url) {
+<span class="fc" id="L121">		String name = url;</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		if (name.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L123">			name = name.substring(0, name.length() - 4);</span>
+		}
+<span class="fc" id="L125">		int lastSlash = name.lastIndexOf('/');</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		if (lastSlash &gt;= 0) {</span>
+<span class="fc" id="L127">			name = name.substring(lastSlash + 1);</span>
+		}
+<span class="fc" id="L129">		return name;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

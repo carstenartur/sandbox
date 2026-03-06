@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AiRuleInferenceEngine.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.llm</a> &gt; <span class="el_source">AiRuleInferenceEngine.java</span></div><h1>AiRuleInferenceEngine.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.llm;
+
+import java.io.IOException;
+import java.util.Optional;
+
+import org.sandbox.jdt.triggerpattern.internal.DslValidator;
+
+/**
+ * AI-powered rule inference engine that uses an LLM to generate
+ * TriggerPattern DSL rules from before/after code pairs or unified diffs.
+ *
+ * &lt;p&gt;This engine is Eclipse-independent and can be used from both the
+ * CLI ({@code sandbox_mining_core}) and Eclipse plugins
+ * ({@code sandbox_triggerpattern}).&lt;/p&gt;
+ *
+ * &lt;p&gt;The engine composes:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link PromptBuilder} — constructs the LLM prompt with DSL context&lt;/li&gt;
+ *   &lt;li&gt;{@link LlmClient} — sends the prompt to the AI and parses the response&lt;/li&gt;
+ *   &lt;li&gt;{@link DslValidator} — validates the generated DSL rule&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Usage:&lt;/p&gt;
+ * &lt;pre&gt;
+ * try (LlmClient client = LlmClientFactory.createFromEnvironment(null)) {
+ *     AiRuleInferenceEngine engine = new AiRuleInferenceEngine(client);
+ *     Optional&amp;lt;CommitEvaluation&amp;gt; result = engine.inferRule(before, after);
+ *     result.ifPresent(eval -&amp;gt; System.out.println(eval.dslRule()));
+ * }
+ * &lt;/pre&gt;
+ *
+ * @since 1.2.6
+ */
+public class AiRuleInferenceEngine {
+
+	private final LlmClient llmClient;
+	private final PromptBuilder promptBuilder;
+	private final DslValidator validator;
+
+	/**
+	 * Creates an engine with the given LLM client.
+	 *
+	 * @param llmClient the LLM client to use for inference
+	 */
+	public AiRuleInferenceEngine(LlmClient llmClient) {
+<span class="fc" id="L59">		this(llmClient, new PromptBuilder(), new DslValidator());</span>
+<span class="fc" id="L60">	}</span>
+
+	/**
+	 * Creates an engine with explicit dependencies (useful for testing).
+	 *
+	 * @param llmClient     the LLM client
+	 * @param promptBuilder the prompt builder
+	 * @param validator     the DSL validator
+	 */
+	public AiRuleInferenceEngine(LlmClient llmClient, PromptBuilder promptBuilder,
+<span class="fc" id="L70">			DslValidator validator) {</span>
+<span class="fc" id="L71">		this.llmClient = llmClient;</span>
+<span class="fc" id="L72">		this.promptBuilder = promptBuilder;</span>
+<span class="fc" id="L73">		this.validator = validator;</span>
+<span class="fc" id="L74">	}</span>
+
+	/**
+	 * Infers a DSL rule from before/after code snippets.
+	 *
+	 * &lt;p&gt;Constructs a unified diff from the two snippets, builds an LLM prompt,
+	 * sends it for evaluation, and validates the resulting DSL rule.&lt;/p&gt;
+	 *
+	 * @param codeBefore the original code
+	 * @param codeAfter  the modified code
+	 * @return an evaluation with a validated DSL rule, or empty if inference failed
+	 */
+	public Optional&lt;CommitEvaluation&gt; inferRule(String codeBefore, String codeAfter) {
+<span class="fc bfc" id="L87" title="All 4 branches covered.">		if (codeBefore == null || codeAfter == null) {</span>
+<span class="fc" id="L88">			return Optional.empty();</span>
+		}
+<span class="fc" id="L90">		String diff = buildSimpleDiff(codeBefore, codeAfter);</span>
+<span class="fc" id="L91">		return inferRuleFromDiff(diff);</span>
+	}
+
+	/**
+	 * Infers a DSL rule from a unified diff string.
+	 *
+	 * &lt;p&gt;Builds an LLM prompt from the diff, sends it for evaluation,
+	 * and validates the resulting DSL rule.&lt;/p&gt;
+	 *
+	 * @param unifiedDiff the unified diff
+	 * @return an evaluation with a validated DSL rule, or empty if inference failed
+	 */
+	public Optional&lt;CommitEvaluation&gt; inferRuleFromDiff(String unifiedDiff) {
+<span class="fc bfc" id="L104" title="All 4 branches covered.">		if (unifiedDiff == null || unifiedDiff.isBlank()) {</span>
+<span class="fc" id="L105">			return Optional.empty();</span>
+		}
+<span class="fc bfc" id="L107" title="All 4 branches covered.">		if (!llmClient.hasRemainingQuota() || llmClient.isApiUnavailable()) {</span>
+<span class="fc" id="L108">			return Optional.empty();</span>
+		}
+
+<span class="fc" id="L111">		String prompt = promptBuilder.buildPrompt(</span>
+				null, // no existing DSL context needed for ad-hoc inference
+				&quot;[]&quot;, //$NON-NLS-1$
+				unifiedDiff,
+				&quot;Infer DSL rule from code change&quot;); //$NON-NLS-1$
+
+		try {
+<span class="fc" id="L118">			CommitEvaluation evaluation = llmClient.evaluate(</span>
+					prompt,
+					&quot;inline&quot;, //$NON-NLS-1$
+					&quot;AI rule inference&quot;, //$NON-NLS-1$
+					&quot;local&quot;); //$NON-NLS-1$
+
+<span class="fc bfc" id="L124" title="All 2 branches covered.">			if (evaluation == null) {</span>
+<span class="fc" id="L125">				return Optional.empty();</span>
+			}
+
+<span class="fc" id="L128">			return validateAndEnrich(evaluation);</span>
+<span class="fc" id="L129">		} catch (IOException e) {</span>
+<span class="fc" id="L130">			return Optional.empty();</span>
+		}
+	}
+
+	/**
+	 * Validates the DSL rule in the evaluation and returns an enriched copy
+	 * with the validation result set. Always returns the evaluation (even if
+	 * DSL validation fails), so callers can inspect the validation message.
+	 *
+	 * @param evaluation the raw evaluation from the LLM
+	 * @return the enriched evaluation with {@code dslValidationResult} populated
+	 */
+	private Optional&lt;CommitEvaluation&gt; validateAndEnrich(CommitEvaluation evaluation) {
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (!evaluation.relevant()) {</span>
+<span class="fc" id="L144">			return Optional.of(evaluation);</span>
+		}
+
+<span class="fc" id="L147">		String dslRule = evaluation.dslRule();</span>
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">		if (dslRule == null || dslRule.isBlank()) {</span>
+<span class="fc" id="L149">			return Optional.of(evaluation);</span>
+		}
+
+<span class="fc" id="L152">		DslValidator.ValidationResult validation = validator.validate(dslRule);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">		String validationResult = validation.valid() ? &quot;VALID&quot; : validation.message(); //$NON-NLS-1$</span>
+
+<span class="fc" id="L155">		CommitEvaluation enriched = new CommitEvaluation(</span>
+<span class="fc" id="L156">				evaluation.commitHash(), evaluation.commitMessage(), evaluation.repoUrl(),</span>
+<span class="fc" id="L157">				evaluation.evaluatedAt(), evaluation.commitDate(), evaluation.relevant(), evaluation.irrelevantReason(),</span>
+<span class="fc" id="L158">				evaluation.isDuplicate(), evaluation.duplicateOf(),</span>
+<span class="fc" id="L159">				evaluation.reusability(), evaluation.codeImprovement(),</span>
+<span class="fc" id="L160">				evaluation.implementationEffort(),</span>
+<span class="fc" id="L161">				evaluation.trafficLight(), evaluation.category(), evaluation.isNewCategory(),</span>
+<span class="fc" id="L162">				evaluation.categoryReason(), evaluation.canImplementInCurrentDsl(),</span>
+<span class="fc" id="L163">				evaluation.dslRule(), evaluation.targetHintFile(),</span>
+<span class="fc" id="L164">				evaluation.languageChangeNeeded(), evaluation.dslRuleAfterChange(),</span>
+<span class="fc" id="L165">				evaluation.summary(), validationResult);</span>
+
+<span class="fc" id="L167">		return Optional.of(enriched);</span>
+	}
+
+	/**
+	 * Builds a simple unified diff from before/after code.
+	 *
+	 * @param before the original code
+	 * @param after  the modified code
+	 * @return a unified diff string
+	 */
+	static String buildSimpleDiff(String before, String after) {
+<span class="fc" id="L178">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L179">		sb.append(&quot;--- a/snippet.java\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L180">		sb.append(&quot;+++ b/snippet.java\n&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L182">		String[] beforeLines = before.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="fc" id="L183">		String[] afterLines = after.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+
+<span class="fc" id="L185">		sb.append(&quot;@@ -1,&quot;).append(beforeLines.length); //$NON-NLS-1$</span>
+<span class="fc" id="L186">		sb.append(&quot; +1,&quot;).append(afterLines.length).append(&quot; @@\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+<span class="fc bfc" id="L188" title="All 2 branches covered.">		for (String line : beforeLines) {</span>
+<span class="fc" id="L189">			sb.append('-').append(line).append('\n');</span>
+		}
+<span class="fc bfc" id="L191" title="All 2 branches covered.">		for (String line : afterLines) {</span>
+<span class="fc" id="L192">			sb.append('+').append(line).append('\n');</span>
+		}
+<span class="fc" id="L194">		return sb.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

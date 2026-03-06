@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SearchResource.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.rest</a> &gt; <span class="el_source">SearchResource.java</span></div><h1>SearchResource.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.server.rest;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
+import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
+import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
+import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
+import org.eclipse.jgit.storage.hibernate.service.ApiChangeEntry;
+import org.eclipse.jgit.storage.hibernate.service.ApiDiffResult;
+import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ * REST endpoint for full-text search over Git commit data and Java source.
+ * &lt;ul&gt;
+ * &lt;li&gt;{@code GET /api/search/commits?repo=...&amp;amp;q=...} — search commit
+ * messages&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/search/paths?repo=...&amp;amp;q=...} — search changed
+ * paths&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/search/types?repo=...&amp;amp;q=...} — search Java
+ * types by name or FQN&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/search/symbols?repo=...&amp;amp;q=...} — search methods
+ * and fields&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/search/hierarchy?repo=...&amp;amp;q=...} — find types
+ * by supertype&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/search/source?repo=...&amp;amp;q=...} — full-text
+ * search across source snippets&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/search/semantic?repo=...&amp;amp;q=...} — semantic
+ * (vector) search using sentence embeddings&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/search/hybrid?repo=...&amp;amp;q=...} — combined
+ * full-text + semantic search with rank fusion&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/search/similar?repo=...&amp;amp;blobId=...} — find
+ * semantically similar code to a given blob&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+public class SearchResource extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L67">	private static final Logger LOG = Logger</span>
+<span class="fc" id="L68">			.getLogger(SearchResource.class.getName());</span>
+
+	private final HibernateSessionFactoryProvider provider;
+
+	private final EmbeddingService embeddingService;
+
+<span class="fc" id="L74">	private final Gson gson = new Gson();</span>
+
+	private static final int MAX_QUERY_LENGTH = 1000;
+
+	private static final int MAX_LIMIT = 100;
+
+	private static final int DEFAULT_LIMIT = 20;
+
+	/**
+	 * Create a search endpoint.
+	 *
+	 * @param provider
+	 *            the session factory provider
+	 */
+<span class="fc" id="L88">	public SearchResource(HibernateSessionFactoryProvider provider) {</span>
+<span class="fc" id="L89">		this.provider = provider;</span>
+<span class="fc" id="L90">		this.embeddingService = new EmbeddingService();</span>
+<span class="fc" id="L91">	}</span>
+
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+			throws IOException {
+<span class="fc" id="L96">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L97">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L99">		String pathInfo = req.getPathInfo();</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (pathInfo == null) {</span>
+<span class="nc" id="L101">			pathInfo = &quot;/&quot;; //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L104">		String repo = req.getParameter(&quot;repo&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L105">		String query = req.getParameter(&quot;q&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L106">		int offset = parseIntParam(req, &quot;offset&quot;, 0); //$NON-NLS-1$</span>
+<span class="fc" id="L107">		int limit = parseIntParam(req, &quot;limit&quot;, DEFAULT_LIMIT); //$NON-NLS-1$</span>
+
+		// Paths that only need 'repo' (no 'q' required)
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		boolean repoOnly = pathInfo.startsWith(&quot;/migration/deprecated&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">				|| pathInfo.startsWith(&quot;/deprecation-timeline&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">				|| pathInfo.startsWith(&quot;/analytics/authors&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">				|| pathInfo.startsWith(&quot;/analytics/monster-classes&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				|| pathInfo.startsWith(&quot;/analytics/dead-code&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">				|| pathInfo.startsWith(&quot;/analytics/test-ratio&quot;); //$NON-NLS-1$</span>
+
+		// Paths that need 'repo', 'commitA', 'commitB'
+<span class="fc" id="L118">		boolean commitDiff = pathInfo.startsWith(&quot;/api-diff&quot;); //$NON-NLS-1$</span>
+
+<span class="pc bpc" id="L120" title="1 of 4 branches missed.">		if (repo == null || repo.isEmpty()) {</span>
+<span class="fc" id="L121">			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);</span>
+<span class="fc" id="L122">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L123">				w.write(&quot;{\&quot;error\&quot;:\&quot;Parameter 'repo' is required\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L125">			return;</span>
+		}
+
+<span class="pc bpc" id="L128" title="3 of 6 branches missed.">		if (!repoOnly &amp;&amp; !commitDiff</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">				&amp;&amp; (query == null || query.isEmpty())) {</span>
+<span class="nc" id="L130">			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);</span>
+<span class="nc" id="L131">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L132">				w.write(&quot;{\&quot;error\&quot;:\&quot;Parameters 'repo' and 'q' are required\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L134">			return;</span>
+		}
+
+		// Input validation: limit query length to prevent abuse
+<span class="pc bpc" id="L138" title="2 of 4 branches missed.">		if (query != null &amp;&amp; query.length() &gt; MAX_QUERY_LENGTH) {</span>
+<span class="nc" id="L139">			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);</span>
+<span class="nc" id="L140">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L141">				w.write(&quot;{\&quot;error\&quot;:\&quot;Query too long (max &quot; //$NON-NLS-1$</span>
+						+ MAX_QUERY_LENGTH + &quot; characters)\&quot;}&quot;); //$NON-NLS-1$
+			}
+<span class="nc" id="L144">			return;</span>
+		}
+
+		// Enforce pagination limits
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">		if (offset &lt; 0) {</span>
+<span class="nc" id="L149">			offset = 0;</span>
+		}
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (limit &lt; 1) {</span>
+<span class="nc" id="L152">			limit = DEFAULT_LIMIT;</span>
+		}
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">		if (limit &gt; MAX_LIMIT) {</span>
+<span class="nc" id="L155">			limit = MAX_LIMIT;</span>
+		}
+
+		// Sanitize repo and query parameters
+<span class="fc" id="L159">		repo = sanitizeInput(repo);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">		if (query != null) {</span>
+<span class="fc" id="L161">			query = sanitizeInput(query);</span>
+		}
+
+		try {
+<span class="fc" id="L165">			GitDatabaseQueryService queryService = new GitDatabaseQueryService(</span>
+<span class="fc" id="L166">					provider.getSessionFactory());</span>
+<span class="fc" id="L167">			queryService.setEmbeddingService(embeddingService);</span>
+
+<span class="fc bfc" id="L169" title="All 2 branches covered.">			if (pathInfo.startsWith(&quot;/commits&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L170">				handleCommitSearch(queryService, repo, query, offset,</span>
+						limit, resp);
+<span class="fc bfc" id="L172" title="All 2 branches covered.">			} else if (pathInfo.startsWith(&quot;/paths&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L173">				handlePathSearch(queryService, repo, query, offset,</span>
+						limit, resp);
+<span class="fc bfc" id="L175" title="All 2 branches covered.">			} else if (pathInfo.startsWith(&quot;/types&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L176">				String module = req.getParameter(&quot;module&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L177" title="3 of 4 branches missed.">				if (module != null &amp;&amp; !module.isEmpty()) {</span>
+<span class="nc" id="L178">					module = sanitizeInput(module);</span>
+<span class="nc" id="L179">					handleTypeSearchWithModule(queryService, repo, query,</span>
+							module, offset, limit, resp);
+				} else {
+<span class="fc" id="L182">					handleTypeSearch(queryService, repo, query, offset,</span>
+							limit, resp);
+				}
+<span class="fc bfc" id="L185" title="All 2 branches covered.">			} else if (pathInfo.startsWith(&quot;/symbols&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L186">				handleSymbolSearch(queryService, repo, query, offset,</span>
+						limit, resp);
+<span class="fc bfc" id="L188" title="All 2 branches covered.">			} else if (pathInfo.startsWith(&quot;/hierarchy&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L189">				handleHierarchySearch(queryService, repo, query, offset,</span>
+						limit, resp);
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/source&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L192">				handleSourceSearch(queryService, repo, query, offset,</span>
+						limit, resp);
+<span class="nc bnc" id="L194" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/annotations&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L195">				handleAnnotationSearch(queryService, repo, query, offset,</span>
+						limit, resp);
+<span class="nc bnc" id="L197" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/docs&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L198">				handleSearch(queryService, repo, query, offset, limit,</span>
+						resp, &quot;docs&quot;); //$NON-NLS-1$
+<span class="nc bnc" id="L200" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/references&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L201">				handleSearch(queryService, repo, query, offset, limit,</span>
+						resp, &quot;references&quot;); //$NON-NLS-1$
+<span class="nc bnc" id="L203" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/strings&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L204">				handleSearch(queryService, repo, query, offset, limit,</span>
+						resp, &quot;strings&quot;); //$NON-NLS-1$
+<span class="nc bnc" id="L206" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/filepaths&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L207">				handleFilePathSearch(queryService, repo, query, offset,</span>
+						limit, resp);
+<span class="nc bnc" id="L209" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/filehistory&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L210">				String path = req.getParameter(&quot;path&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L211" title="All 4 branches missed.">				if (path != null &amp;&amp; !path.isEmpty()) {</span>
+<span class="nc" id="L212">					path = sanitizeInput(path);</span>
+<span class="nc" id="L213">					handleFileHistory(queryService, repo, path, offset,</span>
+							limit, resp);
+				} else {
+<span class="nc" id="L216">					handleFilePathSearch(queryService, repo, query,</span>
+							offset, limit, resp);
+				}
+<span class="nc bnc" id="L219" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/fqn&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L220">				String fqnFileType = req.getParameter(&quot;fileType&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">				if (fqnFileType != null) {</span>
+<span class="nc" id="L222">					fqnFileType = sanitizeInput(fqnFileType);</span>
+				}
+<span class="nc" id="L224">				handleFqnSearch(queryService, repo, query, fqnFileType,</span>
+						offset, limit, resp);
+<span class="nc bnc" id="L226" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/semantic&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L227">				handleSemanticSearch(queryService, repo, query, limit,</span>
+						resp);
+<span class="nc bnc" id="L229" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/hybrid&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L230">				handleHybridSearch(queryService, repo, query, limit,</span>
+						resp);
+<span class="nc bnc" id="L232" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/similar&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L233">				String blobId = req.getParameter(&quot;blobId&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L234" title="All 4 branches missed.">				if (blobId == null || blobId.isEmpty()) {</span>
+<span class="nc" id="L235">					resp.setStatus(</span>
+							HttpServletResponse.SC_BAD_REQUEST);
+<span class="nc" id="L237">					try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L238">						w.write(&quot;{\&quot;error\&quot;:\&quot;Parameter 'blobId' is required for similar search\&quot;}&quot;); //$NON-NLS-1$</span>
+					}
+				} else {
+<span class="nc" id="L241">					blobId = sanitizeInput(blobId);</span>
+<span class="nc" id="L242">					handleSimilarSearch(queryService, repo, blobId,</span>
+							limit, resp);
+				}
+<span class="nc bnc" id="L245" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/migration/summary&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L246">				handleMigrationImpactSummary(queryService, repo, query,</span>
+						resp);
+<span class="nc bnc" id="L248" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/migration/deprecated&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L249">				handleDeprecatedApiUsage(queryService, repo, offset,</span>
+						limit, resp);
+<span class="nc bnc" id="L251" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/migration&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L252">				handleMigrationImpact(queryService, repo, query, offset,</span>
+						limit, resp);
+<span class="nc bnc" id="L254" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/api-diff/public&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L255">				handlePublicApiChanges(queryService, repo, req, resp);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/api-diff&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L257">				handleApiDiff(queryService, repo, req, resp);</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/deprecation-timeline&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L259">				handleDeprecationTimeline(queryService, repo, offset,</span>
+						limit, resp);
+<span class="nc bnc" id="L261" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/analytics/authors&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L262">				handleAuthorTypeStatistics(queryService, repo, resp);</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/analytics/complexity&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L264">				handleCodeComplexityTrend(queryService, repo, query,</span>
+						resp);
+<span class="nc bnc" id="L266" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/analytics/monster-classes&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L267">				int threshold = parseIntParam(req, &quot;threshold&quot;, 500); //$NON-NLS-1$</span>
+<span class="nc" id="L268">				handleMonsterClasses(queryService, repo, threshold,</span>
+						offset, limit, resp);
+<span class="nc bnc" id="L270" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/analytics/dead-code&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L271">				handleDeadCodeCandidates(queryService, repo, offset,</span>
+						limit, resp);
+<span class="nc bnc" id="L273" title="All 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/analytics/test-ratio&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L274">				handleTestCoverageProxy(queryService, repo, resp);</span>
+			} else {
+				// Default: search commits
+<span class="nc" id="L277">				handleCommitSearch(queryService, repo, query, offset,</span>
+						limit, resp);
+			}
+<span class="nc" id="L280">		} catch (RuntimeException | IOException e) {</span>
+<span class="nc" id="L281">			LOG.log(Level.WARNING, &quot;Search error&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L282">			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);</span>
+<span class="nc" id="L283">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L284">				w.write(&quot;{\&quot;error\&quot;:\&quot;Search failed\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L286">		}</span>
+<span class="fc" id="L287">	}</span>
+
+	private void handleCommitSearch(GitDatabaseQueryService queryService,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="fc" id="L292">		List&lt;GitCommitIndex&gt; results = queryService</span>
+<span class="fc" id="L293">				.searchCommitMessages(repo, query, offset, limit);</span>
+
+<span class="fc" id="L295">		JsonObject response = new JsonObject();</span>
+<span class="fc" id="L296">		response.addProperty(&quot;query&quot;, query); //$NON-NLS-1$</span>
+<span class="fc" id="L297">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="fc" id="L298">		response.addProperty(&quot;totalResults&quot;, results.size()); //$NON-NLS-1$</span>
+
+<span class="fc" id="L300">		JsonArray items = new JsonArray();</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">		for (GitCommitIndex ci : results) {</span>
+<span class="fc" id="L302">			JsonObject item = new JsonObject();</span>
+<span class="fc" id="L303">			item.addProperty(&quot;objectId&quot;, ci.getObjectId()); //$NON-NLS-1$</span>
+<span class="fc" id="L304">			item.addProperty(&quot;message&quot;, ci.getCommitMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L305">			item.addProperty(&quot;author&quot;, ci.getAuthorName()); //$NON-NLS-1$</span>
+<span class="fc" id="L306">			item.addProperty(&quot;authorEmail&quot;, ci.getAuthorEmail()); //$NON-NLS-1$</span>
+<span class="fc" id="L307">			items.add(item);</span>
+<span class="fc" id="L308">		}</span>
+<span class="fc" id="L309">		response.add(&quot;results&quot;, items); //$NON-NLS-1$</span>
+
+<span class="fc" id="L311">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L312">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L313">			w.write(gson.toJson(response));</span>
+		}
+<span class="fc" id="L315">	}</span>
+
+	private void handlePathSearch(GitDatabaseQueryService queryService,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="fc" id="L320">		List&lt;GitCommitIndex&gt; results = queryService</span>
+<span class="fc" id="L321">				.searchByChangedPath(repo, query, offset, limit);</span>
+
+<span class="fc" id="L323">		JsonObject response = new JsonObject();</span>
+<span class="fc" id="L324">		response.addProperty(&quot;query&quot;, query); //$NON-NLS-1$</span>
+<span class="fc" id="L325">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="fc" id="L326">		response.addProperty(&quot;totalResults&quot;, results.size()); //$NON-NLS-1$</span>
+
+<span class="fc" id="L328">		JsonArray items = new JsonArray();</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">		for (GitCommitIndex ci : results) {</span>
+<span class="fc" id="L330">			JsonObject item = new JsonObject();</span>
+<span class="fc" id="L331">			item.addProperty(&quot;objectId&quot;, ci.getObjectId()); //$NON-NLS-1$</span>
+<span class="fc" id="L332">			item.addProperty(&quot;message&quot;, ci.getCommitMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L333">			item.addProperty(&quot;changedPaths&quot;, ci.getChangedPaths()); //$NON-NLS-1$</span>
+<span class="fc" id="L334">			items.add(item);</span>
+<span class="fc" id="L335">		}</span>
+<span class="fc" id="L336">		response.add(&quot;results&quot;, items); //$NON-NLS-1$</span>
+
+<span class="fc" id="L338">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L339">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L340">			w.write(gson.toJson(response));</span>
+		}
+<span class="fc" id="L342">	}</span>
+
+	private void handleTypeSearch(GitDatabaseQueryService queryService,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="fc" id="L347">		List&lt;JavaBlobIndex&gt; results = queryService.searchByType(repo,</span>
+				query, offset, limit);
+<span class="fc" id="L349">		writeJavaBlobResponse(results, repo, query, offset, limit, resp);</span>
+<span class="fc" id="L350">	}</span>
+
+	private void handleTypeSearchWithModule(
+			GitDatabaseQueryService queryService, String repo,
+			String query, String module, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L356">		List&lt;JavaBlobIndex&gt; results = queryService</span>
+<span class="nc" id="L357">				.searchByTypeWithModule(repo, query, module, offset, limit);</span>
+<span class="nc" id="L358">		writeJavaBlobResponse(results, repo, query, offset, limit, resp);</span>
+<span class="nc" id="L359">	}</span>
+
+	private void handleAnnotationSearch(
+			GitDatabaseQueryService queryService, String repo,
+			String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L365">		List&lt;JavaBlobIndex&gt; results = queryService</span>
+<span class="nc" id="L366">				.searchByAnnotation(repo, query, offset, limit);</span>
+<span class="nc" id="L367">		writeJavaBlobResponse(results, repo, query, offset, limit, resp);</span>
+<span class="nc" id="L368">	}</span>
+
+	private void handleSymbolSearch(GitDatabaseQueryService queryService,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="fc" id="L373">		List&lt;JavaBlobIndex&gt; results = queryService.searchBySymbol(repo,</span>
+				query, offset, limit);
+<span class="fc" id="L375">		writeJavaBlobResponse(results, repo, query, offset, limit, resp);</span>
+<span class="fc" id="L376">	}</span>
+
+	private void handleHierarchySearch(GitDatabaseQueryService queryService,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="fc" id="L381">		List&lt;JavaBlobIndex&gt; results = queryService.searchByHierarchy(repo,</span>
+				query, offset, limit);
+<span class="fc" id="L383">		writeJavaBlobResponse(results, repo, query, offset, limit, resp);</span>
+<span class="fc" id="L384">	}</span>
+
+	private void handleSourceSearch(GitDatabaseQueryService queryService,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="fc" id="L389">		List&lt;JavaBlobIndex&gt; results = queryService</span>
+<span class="fc" id="L390">				.searchSourceContent(repo, query, offset, limit);</span>
+<span class="fc" id="L391">		writeJavaBlobResponse(results, repo, query, offset, limit, resp);</span>
+<span class="fc" id="L392">	}</span>
+
+	private void handleSearch(GitDatabaseQueryService service,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp, String type) throws IOException {
+		List&lt;JavaBlobIndex&gt; results;
+<span class="nc bnc" id="L398" title="All 4 branches missed.">		switch (type) {</span>
+		case &quot;docs&quot;: //$NON-NLS-1$
+<span class="nc" id="L400">			results = service.searchByDocumentation(repo, query,</span>
+					offset, limit);
+<span class="nc" id="L402">			break;</span>
+		case &quot;references&quot;: //$NON-NLS-1$
+<span class="nc" id="L404">			results = service.searchByReferencedType(repo, query,</span>
+					offset, limit);
+<span class="nc" id="L406">			break;</span>
+		case &quot;strings&quot;: //$NON-NLS-1$
+<span class="nc" id="L408">			results = service.searchByStringLiteral(repo, query,</span>
+					offset, limit);
+<span class="nc" id="L410">			break;</span>
+		default:
+<span class="nc" id="L412">			results = List.of();</span>
+			break;
+		}
+<span class="nc" id="L415">		writeJavaBlobResponse(results, repo, query, offset, limit, resp);</span>
+<span class="nc" id="L416">	}</span>
+
+	private void handleFilePathSearch(GitDatabaseQueryService queryService,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L421">		List&lt;FilePathHistory&gt; results = queryService</span>
+<span class="nc" id="L422">				.searchFilePath(repo, query, offset, limit);</span>
+<span class="nc" id="L423">		writeFilePathResponse(results, repo, query, offset, limit, resp);</span>
+<span class="nc" id="L424">	}</span>
+
+	private void handleFileHistory(GitDatabaseQueryService queryService,
+			String repo, String path, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L429">		List&lt;FilePathHistory&gt; results = queryService</span>
+<span class="nc" id="L430">				.getFileHistory(repo, path, offset, limit);</span>
+<span class="nc" id="L431">		writeFilePathResponse(results, repo, path, offset, limit, resp);</span>
+<span class="nc" id="L432">	}</span>
+
+	private void handleFqnSearch(GitDatabaseQueryService queryService,
+			String repo, String query, String fileType, int offset,
+			int limit, HttpServletResponse resp) throws IOException {
+<span class="nc" id="L437">		List&lt;JavaBlobIndex&gt; results = queryService</span>
+<span class="nc" id="L438">				.searchFqnAcrossTypes(repo, query, fileType, offset, limit);</span>
+<span class="nc" id="L439">		writeJavaBlobResponse(results, repo, query, offset, limit, resp);</span>
+<span class="nc" id="L440">	}</span>
+
+	private void handleSemanticSearch(
+			GitDatabaseQueryService queryService, String repo,
+			String query, int topK, HttpServletResponse resp)
+			throws IOException {
+<span class="nc" id="L446">		List&lt;JavaBlobIndex&gt; results = queryService.semanticSearch(repo,</span>
+				query, topK);
+<span class="nc" id="L448">		writeJavaBlobResponse(results, repo, query, 0, topK, resp);</span>
+<span class="nc" id="L449">	}</span>
+
+	private void handleHybridSearch(
+			GitDatabaseQueryService queryService, String repo,
+			String query, int topK, HttpServletResponse resp)
+			throws IOException {
+<span class="nc" id="L455">		List&lt;JavaBlobIndex&gt; results = queryService.hybridSearch(repo,</span>
+				query, topK);
+<span class="nc" id="L457">		writeJavaBlobResponse(results, repo, query, 0, topK, resp);</span>
+<span class="nc" id="L458">	}</span>
+
+	private void handleSimilarSearch(
+			GitDatabaseQueryService queryService, String repo,
+			String blobId, int topK, HttpServletResponse resp)
+			throws IOException {
+<span class="nc" id="L464">		List&lt;JavaBlobIndex&gt; results = queryService.findSimilarCode(repo,</span>
+				blobId, topK);
+<span class="nc" id="L466">		writeJavaBlobResponse(results, repo, blobId, 0, topK, resp);</span>
+<span class="nc" id="L467">	}</span>
+
+	private void handleMigrationImpact(GitDatabaseQueryService queryService,
+			String repo, String importPrefix, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L472">		List&lt;JavaBlobIndex&gt; results = queryService.getMigrationImpact(</span>
+				repo, importPrefix, offset, limit);
+<span class="nc" id="L474">		writeJavaBlobResponse(results, repo, importPrefix, offset, limit,</span>
+				resp);
+<span class="nc" id="L476">	}</span>
+
+	private void handleMigrationImpactSummary(
+			GitDatabaseQueryService queryService, String repo,
+			String importPrefix, HttpServletResponse resp)
+			throws IOException {
+<span class="nc" id="L482">		Map&lt;String, Object&gt; summary = queryService</span>
+<span class="nc" id="L483">				.getMigrationImpactSummary(repo, importPrefix);</span>
+<span class="nc" id="L484">		JsonObject response = new JsonObject();</span>
+<span class="nc" id="L485">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="nc" id="L486">		response.addProperty(&quot;importPrefix&quot;, importPrefix); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">		for (Map.Entry&lt;String, Object&gt; entry : summary.entrySet()) {</span>
+<span class="nc" id="L488">			Object val = entry.getValue();</span>
+<span class="nc bnc" id="L489" title="All 2 branches missed.">			if (val instanceof Number) {</span>
+<span class="nc" id="L490">				response.addProperty(entry.getKey(),</span>
+<span class="nc" id="L491">						((Number) val).longValue());</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">			} else if (val != null) {</span>
+<span class="nc" id="L493">				response.addProperty(entry.getKey(), val.toString());</span>
+			} else {
+<span class="nc" id="L495">				response.add(entry.getKey(), null);</span>
+			}
+<span class="nc" id="L497">		}</span>
+<span class="nc" id="L498">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L499">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L500">			w.write(gson.toJson(response));</span>
+		}
+<span class="nc" id="L502">	}</span>
+
+	private void handleDeprecatedApiUsage(
+			GitDatabaseQueryService queryService, String repo,
+			int offset, int limit, HttpServletResponse resp)
+			throws IOException {
+<span class="nc" id="L508">		List&lt;JavaBlobIndex&gt; results = queryService.getDeprecatedApiUsage(</span>
+				repo, offset, limit);
+<span class="nc" id="L510">		writeJavaBlobResponse(results, repo, &quot;Deprecated&quot;, offset, limit, //$NON-NLS-1$</span>
+				resp);
+<span class="nc" id="L512">	}</span>
+
+	private void handleApiDiff(GitDatabaseQueryService queryService,
+			String repo, HttpServletRequest req,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L517">		String commitA = req.getParameter(&quot;commitA&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L518">		String commitB = req.getParameter(&quot;commitB&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L519" title="All 6 branches missed.">		if (commitA == null || commitA.isEmpty() || commitB == null</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">				|| commitB.isEmpty()) {</span>
+<span class="nc" id="L521">			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);</span>
+<span class="nc" id="L522">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L523">				w.write(&quot;{\&quot;error\&quot;:\&quot;Parameters 'commitA' and 'commitB' are required\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L525">			return;</span>
+		}
+<span class="nc" id="L527">		commitA = sanitizeInput(commitA);</span>
+<span class="nc" id="L528">		commitB = sanitizeInput(commitB);</span>
+<span class="nc" id="L529">		ApiDiffResult diff = queryService.getApiDiff(repo, commitA,</span>
+				commitB);
+<span class="nc" id="L531">		writeApiDiffResponse(diff, resp);</span>
+<span class="nc" id="L532">	}</span>
+
+	private void handlePublicApiChanges(GitDatabaseQueryService queryService,
+			String repo, HttpServletRequest req,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L537">		String commitA = req.getParameter(&quot;commitA&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L538">		String commitB = req.getParameter(&quot;commitB&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L539" title="All 6 branches missed.">		if (commitA == null || commitA.isEmpty() || commitB == null</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">				|| commitB.isEmpty()) {</span>
+<span class="nc" id="L541">			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);</span>
+<span class="nc" id="L542">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L543">				w.write(&quot;{\&quot;error\&quot;:\&quot;Parameters 'commitA' and 'commitB' are required\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L545">			return;</span>
+		}
+<span class="nc" id="L547">		commitA = sanitizeInput(commitA);</span>
+<span class="nc" id="L548">		commitB = sanitizeInput(commitB);</span>
+<span class="nc" id="L549">		ApiDiffResult diff = queryService.getPublicApiChanges(repo,</span>
+				commitA, commitB);
+<span class="nc" id="L551">		writeApiDiffResponse(diff, resp);</span>
+<span class="nc" id="L552">	}</span>
+
+	private void handleDeprecationTimeline(
+			GitDatabaseQueryService queryService, String repo,
+			int offset, int limit, HttpServletResponse resp)
+			throws IOException {
+<span class="nc" id="L558">		List&lt;JavaBlobIndex&gt; results = queryService.getDeprecationTimeline(</span>
+				repo, offset, limit);
+<span class="nc" id="L560">		writeJavaBlobResponse(results, repo, &quot;deprecation-timeline&quot;, //$NON-NLS-1$</span>
+				offset, limit, resp);
+<span class="nc" id="L562">	}</span>
+
+	private void handleAuthorTypeStatistics(
+			GitDatabaseQueryService queryService, String repo,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L567">		List&lt;Object[]&gt; rows = queryService.getAuthorTypeStatistics(repo);</span>
+<span class="nc" id="L568">		JsonObject response = new JsonObject();</span>
+<span class="nc" id="L569">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="nc" id="L570">		response.addProperty(&quot;totalResults&quot;, rows.size()); //$NON-NLS-1$</span>
+<span class="nc" id="L571">		JsonArray items = new JsonArray();</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">		for (Object[] row : rows) {</span>
+<span class="nc" id="L573">			JsonObject item = new JsonObject();</span>
+<span class="nc" id="L574">			item.addProperty(&quot;author&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">					row[0] != null ? row[0].toString() : null);</span>
+<span class="nc" id="L576">			item.addProperty(&quot;typeKind&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">					row[1] != null ? row[1].toString() : null);</span>
+<span class="nc" id="L578">			item.addProperty(&quot;count&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L579" title="All 2 branches missed.">					row[2] != null ? ((Number) row[2]).longValue() : 0L);</span>
+<span class="nc" id="L580">			items.add(item);</span>
+<span class="nc" id="L581">		}</span>
+<span class="nc" id="L582">		response.add(&quot;results&quot;, items); //$NON-NLS-1$</span>
+<span class="nc" id="L583">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L584">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L585">			w.write(gson.toJson(response));</span>
+		}
+<span class="nc" id="L587">	}</span>
+
+	private void handleCodeComplexityTrend(
+			GitDatabaseQueryService queryService, String repo,
+			String packagePrefix, HttpServletResponse resp)
+			throws IOException {
+<span class="nc" id="L593">		List&lt;Object[]&gt; rows = queryService.getCodeComplexityTrend(repo,</span>
+				packagePrefix);
+<span class="nc" id="L595">		JsonObject response = new JsonObject();</span>
+<span class="nc" id="L596">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="nc" id="L597">		response.addProperty(&quot;packagePrefix&quot;, packagePrefix); //$NON-NLS-1$</span>
+<span class="nc" id="L598">		response.addProperty(&quot;totalResults&quot;, rows.size()); //$NON-NLS-1$</span>
+<span class="nc" id="L599">		JsonArray items = new JsonArray();</span>
+<span class="nc bnc" id="L600" title="All 2 branches missed.">		for (Object[] row : rows) {</span>
+<span class="nc" id="L601">			JsonObject item = new JsonObject();</span>
+<span class="nc" id="L602">			item.addProperty(&quot;commitDate&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L603" title="All 2 branches missed.">					row[0] != null ? row[0].toString() : null);</span>
+<span class="nc" id="L604">			item.addProperty(&quot;avgLineCount&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L605" title="All 2 branches missed.">					row[1] != null ? ((Number) row[1]).doubleValue() : 0.0);</span>
+<span class="nc" id="L606">			items.add(item);</span>
+<span class="nc" id="L607">		}</span>
+<span class="nc" id="L608">		response.add(&quot;results&quot;, items); //$NON-NLS-1$</span>
+<span class="nc" id="L609">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L610">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L611">			w.write(gson.toJson(response));</span>
+		}
+<span class="nc" id="L613">	}</span>
+
+	private void handleMonsterClasses(GitDatabaseQueryService queryService,
+			String repo, int threshold, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L618">		List&lt;JavaBlobIndex&gt; results = queryService.getMonsterClasses(repo,</span>
+				threshold, offset, limit);
+<span class="nc" id="L620">		writeJavaBlobResponse(results, repo,</span>
+				&quot;lineCount&gt;=&quot; + threshold, offset, limit, resp); //$NON-NLS-1$
+<span class="nc" id="L622">	}</span>
+
+	private void handleDeadCodeCandidates(
+			GitDatabaseQueryService queryService, String repo,
+			int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L628">		List&lt;JavaBlobIndex&gt; results = queryService</span>
+<span class="nc" id="L629">				.getDeadCodeCandidates(repo, offset, limit);</span>
+<span class="nc" id="L630">		writeJavaBlobResponse(results, repo, &quot;dead-code&quot;, offset, //$NON-NLS-1$</span>
+				limit, resp);
+<span class="nc" id="L632">	}</span>
+
+	private void handleTestCoverageProxy(
+			GitDatabaseQueryService queryService, String repo,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L637">		List&lt;Object[]&gt; rows = queryService.getTestCoverageProxy(repo);</span>
+<span class="nc" id="L638">		JsonObject response = new JsonObject();</span>
+<span class="nc" id="L639">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="nc" id="L640">		response.addProperty(&quot;totalResults&quot;, rows.size()); //$NON-NLS-1$</span>
+<span class="nc" id="L641">		JsonArray items = new JsonArray();</span>
+<span class="nc bnc" id="L642" title="All 2 branches missed.">		for (Object[] row : rows) {</span>
+<span class="nc" id="L643">			JsonObject item = new JsonObject();</span>
+<span class="nc" id="L644">			item.addProperty(&quot;packageName&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L645" title="All 2 branches missed.">					row[0] != null ? row[0].toString() : null);</span>
+<span class="nc" id="L646">			item.addProperty(&quot;testTypeCount&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">					row[1] != null ? ((Number) row[1]).longValue() : 0L);</span>
+<span class="nc" id="L648">			item.addProperty(&quot;totalTypeCount&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L649" title="All 2 branches missed.">					row[2] != null ? ((Number) row[2]).longValue() : 0L);</span>
+<span class="nc" id="L650">			items.add(item);</span>
+<span class="nc" id="L651">		}</span>
+<span class="nc" id="L652">		response.add(&quot;results&quot;, items); //$NON-NLS-1$</span>
+<span class="nc" id="L653">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L654">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L655">			w.write(gson.toJson(response));</span>
+		}
+<span class="nc" id="L657">	}</span>
+
+	private void writeApiDiffResponse(ApiDiffResult diff,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L661">		JsonObject response = new JsonObject();</span>
+
+<span class="nc" id="L663">		JsonArray added = new JsonArray();</span>
+<span class="nc bnc" id="L664" title="All 2 branches missed.">		for (JavaBlobIndex jbi : diff.getAddedFiles()) {</span>
+<span class="nc" id="L665">			added.add(toJsonObject(jbi));</span>
+<span class="nc" id="L666">		}</span>
+<span class="nc" id="L667">		response.add(&quot;addedFiles&quot;, added); //$NON-NLS-1$</span>
+
+<span class="nc" id="L669">		JsonArray removed = new JsonArray();</span>
+<span class="nc bnc" id="L670" title="All 2 branches missed.">		for (JavaBlobIndex jbi : diff.getRemovedFiles()) {</span>
+<span class="nc" id="L671">			removed.add(toJsonObject(jbi));</span>
+<span class="nc" id="L672">		}</span>
+<span class="nc" id="L673">		response.add(&quot;removedFiles&quot;, removed); //$NON-NLS-1$</span>
+
+<span class="nc" id="L675">		JsonArray changed = new JsonArray();</span>
+<span class="nc bnc" id="L676" title="All 2 branches missed.">		for (ApiChangeEntry ce : diff.getChangedFiles()) {</span>
+<span class="nc" id="L677">			JsonObject item = new JsonObject();</span>
+<span class="nc" id="L678">			item.add(&quot;before&quot;, toJsonObject(ce.getBefore())); //$NON-NLS-1$</span>
+<span class="nc" id="L679">			item.add(&quot;after&quot;, toJsonObject(ce.getAfter())); //$NON-NLS-1$</span>
+<span class="nc" id="L680">			item.addProperty(&quot;changeDescription&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L681">					ce.getChangeDescription());</span>
+<span class="nc" id="L682">			changed.add(item);</span>
+<span class="nc" id="L683">		}</span>
+<span class="nc" id="L684">		response.add(&quot;changedFiles&quot;, changed); //$NON-NLS-1$</span>
+
+<span class="nc" id="L686">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L687">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L688">			w.write(gson.toJson(response));</span>
+		}
+<span class="nc" id="L690">	}</span>
+
+	private static JsonObject toJsonObject(JavaBlobIndex jbi) {
+<span class="nc bnc" id="L693" title="All 2 branches missed.">		if (jbi == null) {</span>
+<span class="nc" id="L694">			return new JsonObject();</span>
+		}
+<span class="nc" id="L696">		JsonObject item = new JsonObject();</span>
+<span class="nc" id="L697">		item.addProperty(&quot;blobObjectId&quot;, jbi.getBlobObjectId()); //$NON-NLS-1$</span>
+<span class="nc" id="L698">		item.addProperty(&quot;commitObjectId&quot;, jbi.getCommitObjectId()); //$NON-NLS-1$</span>
+<span class="nc" id="L699">		item.addProperty(&quot;filePath&quot;, jbi.getFilePath()); //$NON-NLS-1$</span>
+<span class="nc" id="L700">		item.addProperty(&quot;packageName&quot;, jbi.getPackageName()); //$NON-NLS-1$</span>
+<span class="nc" id="L701">		item.addProperty(&quot;declaredTypes&quot;, jbi.getDeclaredTypes()); //$NON-NLS-1$</span>
+<span class="nc" id="L702">		item.addProperty(&quot;fullyQualifiedNames&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L703">				jbi.getFullyQualifiedNames());</span>
+<span class="nc" id="L704">		item.addProperty(&quot;declaredMethods&quot;, jbi.getDeclaredMethods()); //$NON-NLS-1$</span>
+<span class="nc" id="L705">		item.addProperty(&quot;visibility&quot;, jbi.getVisibility()); //$NON-NLS-1$</span>
+<span class="nc" id="L706">		return item;</span>
+	}
+
+	private void writeFilePathResponse(List&lt;FilePathHistory&gt; results,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="nc" id="L712">		JsonObject response = new JsonObject();</span>
+<span class="nc" id="L713">		response.addProperty(&quot;query&quot;, query); //$NON-NLS-1$</span>
+<span class="nc" id="L714">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="nc" id="L715">		response.addProperty(&quot;offset&quot;, offset); //$NON-NLS-1$</span>
+<span class="nc" id="L716">		response.addProperty(&quot;limit&quot;, limit); //$NON-NLS-1$</span>
+<span class="nc" id="L717">		response.addProperty(&quot;totalResults&quot;, results.size()); //$NON-NLS-1$</span>
+
+<span class="nc" id="L719">		JsonArray items = new JsonArray();</span>
+<span class="nc bnc" id="L720" title="All 2 branches missed.">		for (FilePathHistory fph : results) {</span>
+<span class="nc" id="L721">			JsonObject item = new JsonObject();</span>
+<span class="nc" id="L722">			item.addProperty(&quot;commitObjectId&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L723">					fph.getCommitObjectId());</span>
+<span class="nc" id="L724">			item.addProperty(&quot;filePath&quot;, fph.getFilePath()); //$NON-NLS-1$</span>
+<span class="nc" id="L725">			item.addProperty(&quot;blobObjectId&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L726">					fph.getBlobObjectId());</span>
+<span class="nc" id="L727">			item.addProperty(&quot;fileType&quot;, fph.getFileType()); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L728" title="All 2 branches missed.">			if (fph.getCommitTime() != null) {</span>
+<span class="nc" id="L729">				item.addProperty(&quot;commitTime&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L730">						fph.getCommitTime().toString());</span>
+			}
+<span class="nc" id="L732">			items.add(item);</span>
+<span class="nc" id="L733">		}</span>
+<span class="nc" id="L734">		response.add(&quot;results&quot;, items); //$NON-NLS-1$</span>
+
+<span class="nc" id="L736">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L737">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L738">			w.write(gson.toJson(response));</span>
+		}
+<span class="nc" id="L740">	}</span>
+
+	private void writeJavaBlobResponse(List&lt;JavaBlobIndex&gt; results,
+			String repo, String query, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+<span class="fc" id="L745">		JsonObject response = new JsonObject();</span>
+<span class="fc" id="L746">		response.addProperty(&quot;query&quot;, query); //$NON-NLS-1$</span>
+<span class="fc" id="L747">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="fc" id="L748">		response.addProperty(&quot;offset&quot;, offset); //$NON-NLS-1$</span>
+<span class="fc" id="L749">		response.addProperty(&quot;limit&quot;, limit); //$NON-NLS-1$</span>
+<span class="fc" id="L750">		response.addProperty(&quot;totalResults&quot;, results.size()); //$NON-NLS-1$</span>
+
+<span class="fc" id="L752">		JsonArray items = new JsonArray();</span>
+<span class="fc bfc" id="L753" title="All 2 branches covered.">		for (JavaBlobIndex jbi : results) {</span>
+<span class="fc" id="L754">			JsonObject item = new JsonObject();</span>
+<span class="fc" id="L755">			item.addProperty(&quot;blobObjectId&quot;, jbi.getBlobObjectId()); //$NON-NLS-1$</span>
+<span class="fc" id="L756">			item.addProperty(&quot;commitObjectId&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L757">					jbi.getCommitObjectId());</span>
+<span class="fc" id="L758">			item.addProperty(&quot;filePath&quot;, jbi.getFilePath()); //$NON-NLS-1$</span>
+<span class="fc" id="L759">			item.addProperty(&quot;packageName&quot;, jbi.getPackageName()); //$NON-NLS-1$</span>
+<span class="fc" id="L760">			item.addProperty(&quot;declaredTypes&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L761">					jbi.getDeclaredTypes());</span>
+<span class="fc" id="L762">			item.addProperty(&quot;fullyQualifiedNames&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L763">					jbi.getFullyQualifiedNames());</span>
+<span class="fc" id="L764">			item.addProperty(&quot;declaredMethods&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L765">					jbi.getDeclaredMethods());</span>
+<span class="fc" id="L766">			item.addProperty(&quot;declaredFields&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L767">					jbi.getDeclaredFields());</span>
+<span class="fc" id="L768">			item.addProperty(&quot;extendsTypes&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L769">					jbi.getExtendsTypes());</span>
+<span class="fc" id="L770">			item.addProperty(&quot;implementsTypes&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L771">					jbi.getImplementsTypes());</span>
+<span class="fc" id="L772">			items.add(item);</span>
+<span class="fc" id="L773">		}</span>
+<span class="fc" id="L774">		response.add(&quot;results&quot;, items); //$NON-NLS-1$</span>
+
+<span class="fc" id="L776">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L777">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L778">			w.write(gson.toJson(response));</span>
+		}
+<span class="fc" id="L780">	}</span>
+
+	private static int parseIntParam(HttpServletRequest req,
+			String paramName, int defaultValue) {
+<span class="fc" id="L784">		String value = req.getParameter(paramName);</span>
+<span class="pc bpc" id="L785" title="3 of 4 branches missed.">		if (value == null || value.isEmpty()) {</span>
+<span class="fc" id="L786">			return defaultValue;</span>
+		}
+		try {
+<span class="nc" id="L789">			return Integer.parseInt(value);</span>
+<span class="nc" id="L790">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L791">			return defaultValue;</span>
+		}
+	}
+
+	/**
+	 * Sanitize user input by stripping control characters.
+	 *
+	 * @param input
+	 *            the raw input string
+	 * @return the sanitized string
+	 */
+	private static String sanitizeInput(String input) {
+<span class="pc bpc" id="L803" title="1 of 2 branches missed.">		if (input == null) {</span>
+<span class="nc" id="L804">			return null;</span>
+		}
+		// Strip control characters except common whitespace
+<span class="fc" id="L807">		return input.replaceAll(&quot;[\\p{Cntrl}&amp;&amp;[^\t\n\r]]&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

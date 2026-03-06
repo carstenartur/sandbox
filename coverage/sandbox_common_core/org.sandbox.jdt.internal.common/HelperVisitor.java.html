@@ -1,0 +1,3572 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HelperVisitor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">HelperVisitor.java</span></div><h1>HelperVisitor.java</h1><pre class="source lang-java linenums">package org.sandbox.jdt.internal.common;
+
+/*-
+ * #%L
+ * Sandbox common
+ * %%
+ * Copyright (C) 2024 hammer
+ * %%
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ * 
+ * This Source Code may also be made available under the following Secondary
+ * Licenses when the conditions for such availability set forth in the Eclipse
+ * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
+ * with the GNU Classpath Exception which is
+ * available at https://www.gnu.org/software/classpath/license.html.
+ * 
+ * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
+ * #L%
+ */
+
+
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
+
+import org.eclipse.jdt.core.dom.*;
+
+/**
+ * This class allows to use Lambda expressions for building up your visitor processing
+ *
+ * @author chammer
+ *
+ * @param &lt;E&gt;
+ * @param &lt;V&gt;
+ * @param &lt;T&gt;
+ * @since 1.15
+ */
+public class HelperVisitor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;,V,T&gt; {
+
+	/**
+	 *
+	 */
+	public static final String TYPEOF = &quot;typeof&quot;; //$NON-NLS-1$
+
+	/**
+	 * Key used to match type by fully qualified class name (as String) instead of Class object.
+	 * This avoids deprecation warnings when the type being matched is deprecated.
+	 * @since 1.2.5
+	 */
+	public static final String TYPEOF_BYNAME = &quot;typeof_byname&quot;; //$NON-NLS-1$
+
+	/**
+	 *
+	 */
+	public static final String METHODNAME = &quot;methodname&quot;; //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String ANNOTATIONNAME = &quot;annotationname&quot;; //$NON-NLS-1$
+	
+	/**
+	 * 
+	 */
+	public static final String IMPORT = &quot;import&quot;;  //$NON-NLS-1$
+	/**
+	 * 
+	 */
+	public static final String SUPERCLASSNAME = &quot;superclassname&quot;;  //$NON-NLS-1$
+	/**
+	 *
+	 */
+	public static final String PARAMTYPENAMES = &quot;paramtypenames&quot;; //$NON-NLS-1$
+	/**
+	 * Key used for matching the operator of expressions (for example,
+	 * {@link Assignment} and {@link InfixExpression}) when filtering nodes by
+	 * operator type.
+	 */
+	public static final String OPERATOR = &quot;operator&quot;; //$NON-NLS-1$
+	/**
+	 * Key used for matching the (fully qualified) name of a type associated with
+	 * a node when building or evaluating visitor predicates.
+	 */
+	public static final String TYPENAME = &quot;typename&quot;; //$NON-NLS-1$
+	/**
+	 * Key used for matching the type of an exception in constructs such as
+	 * {@code throws} declarations or {@link CatchClause} nodes.
+	 */
+	public static final String EXCEPTIONTYPE = &quot;exceptiontype&quot;; //$NON-NLS-1$
+
+
+	ASTVisitor astvisitor;
+
+	/**
+	 *
+	 */
+	public E dataholder;
+
+	/**
+	 * This map contains one VisitorSupplier per kind if supplied Each BiPredicate is called with
+	 * two parameters 1) ASTNode 2) your data object Call is processed when build(ASTNode) is
+	 * called.
+	 */
+	Map&lt;VisitorEnum, BiPredicate&lt;? extends ASTNode, E&gt;&gt; predicatemap;
+
+	/**
+	 * This map contains one VisitorConsumer per kind if supplied Each BiConsumer is called with two
+	 * parameters 1) ASTNode 2) your data object Call is processed when build(ASTNode) is called.
+	 * Because the &quot;visitend&quot; does not return a boolean we need a consumer instead of a supplier
+	 * here.
+	 */
+	Map&lt;VisitorEnum, BiConsumer&lt;? extends ASTNode, E&gt;&gt; consumermap;
+
+	/**
+	 * Here we store data to implement convenience methods like method visitor where the method name
+	 * can be given as parameter
+	 */
+	Map&lt;VisitorEnum, VisitorConfigData&gt; predicatedata;
+
+	Map&lt;VisitorEnum, VisitorConfigData&gt; consumerdata;
+
+	/**
+	 *
+	 * @return predicatemap
+	 */
+	public Map&lt;VisitorEnum, BiPredicate&lt;? extends ASTNode, E&gt;&gt; getSuppliermap() {
+<span class="nc" id="L131">		return predicatemap;</span>
+	}
+
+	/**
+	 *
+	 * @return consumermap
+	 */
+	public Map&lt;VisitorEnum, BiConsumer&lt;? extends ASTNode, E&gt;&gt; getConsumermap() {
+<span class="nc" id="L139">		return consumermap;</span>
+	}
+
+	/**
+	 *
+	 */
+	public Set&lt;ASTNode&gt; nodesprocessed;
+
+	/**
+	 *
+	 * @return nodesprocessed
+	 */
+	public Set&lt;ASTNode&gt; getNodesprocessed() {
+<span class="nc" id="L152">		return nodesprocessed;</span>
+	}
+
+	/**
+	 *
+	 * @param nodesprocessed
+	 * @param dataholder
+	 */
+<span class="fc" id="L160">	public HelperVisitor(Set&lt;ASTNode&gt; nodesprocessed, E dataholder) {</span>
+<span class="fc" id="L161">		this.predicatemap= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L162">		this.consumermap= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L163">		this.predicatedata= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L164">		this.consumerdata= new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L166">		this.dataholder= dataholder;</span>
+<span class="fc" id="L167">		dataholder.setHelperVisitor(this);</span>
+<span class="fc" id="L168">		this.nodesprocessed= nodesprocessed;</span>
+<span class="fc" id="L169">	}</span>
+
+	/**
+	 *
+	 * @param node
+	 * @return a reference to this object.
+	 */
+	public HelperVisitor&lt;E, V, T&gt; build(ASTNode node) {
+<span class="fc" id="L177">		return build(node, false);</span>
+	}
+
+	/**
+	 *
+	 * @param node
+	 * @param visitjavadoc
+	 * @return a reference to this object.
+	 */
+	public HelperVisitor&lt;E, V, T&gt; build(ASTNode node, boolean visitjavadoc) {
+<span class="fc" id="L187">		astvisitor= new LambdaASTVisitor&lt;&gt;(this, visitjavadoc);</span>
+<span class="fc" id="L188">		node.accept(astvisitor);</span>
+<span class="fc" id="L189">		return this;</span>
+	}
+
+	/**
+	 *
+	 * @param key
+	 * @param bs
+	 * @return old BiPredicate assigned to key
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; add(VisitorEnum key, BiPredicate&lt;? extends ASTNode, E&gt; bs) {
+<span class="fc" id="L199">		return predicatemap.put(key, bs);</span>
+	}
+
+	/**
+	 * @param config configuration data for the visitor
+	 * @param key
+	 * @param bs
+	 * @return old BiPredicate assigned to key
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; add(VisitorConfigData config, VisitorEnum key, BiPredicate&lt;? extends ASTNode, E&gt; bs) {
+<span class="fc" id="L209">		this.predicatedata.put(key, config);</span>
+<span class="fc" id="L210">		return predicatemap.put(key, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param key
+	 * @param bc
+	 * @return old BiConsumer assigned to key
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addEnd(VisitorEnum key, BiConsumer&lt;? extends ASTNode, E&gt; bc) {
+<span class="fc" id="L220">		return consumermap.put(key, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param key
+	 * @param bs
+	 * @param bc
+	 */
+	public void add(VisitorEnum key, BiPredicate&lt;ASTNode, E&gt; bs, BiConsumer&lt;? extends ASTNode, E&gt; bc) {
+<span class="fc" id="L230">		predicatemap.put(key, bs);</span>
+<span class="fc" id="L231">		consumermap.put(key, bc);</span>
+<span class="fc" id="L232">	}</span>
+
+	/**
+	 * Tests whether a predicate is registered for the given visitor enum key, and if so,
+	 * invokes it with the given node. This method is used by {@link LambdaASTVisitor} to
+	 * dispatch visit calls without directly accessing internal fields.
+	 *
+	 * @param &lt;N&gt; the AST node type
+	 * @param key the visitor enum key identifying the node type
+	 * @param node the AST node to test
+	 * @return the result of the predicate test, or {@code true} (continue visiting) if no predicate is registered
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	boolean hasPredicate(VisitorEnum key) {
+<span class="fc" id="L246">		return predicatemap.containsKey(key);</span>
+	}
+
+	/**
+	 * Invokes the registered predicate for the given visitor enum key with the given node.
+	 * Callers should check {@link #hasPredicate(VisitorEnum)} first.
+	 *
+	 * @param &lt;N&gt; the AST node type
+	 * @param key the visitor enum key
+	 * @param node the AST node to test
+	 * @return the result of the predicate test
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	&lt;N extends ASTNode&gt; boolean testPredicate(VisitorEnum key, N node) {
+<span class="fc" id="L260">		return ((BiPredicate&lt;N, E&gt;) predicatemap.get(key)).test(node, dataholder);</span>
+	}
+
+	/**
+	 * Checks if a consumer is registered for the given visitor enum key.
+	 *
+	 * @param key the visitor enum key
+	 * @return {@code true} if a consumer is registered
+	 */
+	boolean hasConsumer(VisitorEnum key) {
+<span class="fc" id="L270">		return consumermap.containsKey(key);</span>
+	}
+
+	/**
+	 * Invokes the registered consumer for the given visitor enum key with the given node.
+	 * Callers should check {@link #hasConsumer(VisitorEnum)} first.
+	 *
+	 * @param &lt;N&gt; the AST node type
+	 * @param key the visitor enum key
+	 * @param node the AST node to process
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	&lt;N extends ASTNode&gt; void acceptConsumer(VisitorEnum key, N node) {
+<span class="fc" id="L283">		((BiConsumer&lt;N, E&gt;) consumermap.get(key)).accept(node, dataholder);</span>
+<span class="fc" id="L284">	}</span>
+
+	/**
+	 * Removes a visitor (both predicate and consumer) for the given enum key.
+	 *
+	 * @param ve the visitor enum key to remove
+	 */
+	public void removeVisitor(VisitorEnum ve) {
+<span class="fc" id="L292">		this.predicatemap.remove(ve);</span>
+<span class="fc" id="L293">		this.consumermap.remove(ve);</span>
+<span class="fc" id="L294">	}</span>
+
+	/**
+	 *
+	 * @return consumerdata
+	 */
+	protected Map&lt;VisitorEnum, VisitorConfigData&gt; getConsumerData() {
+<span class="fc" id="L301">		return this.consumerdata;</span>
+	}
+
+	/**
+	 *
+	 * @return predicatedata
+	 */
+	protected Map&lt;VisitorEnum, VisitorConfigData&gt; getSupplierData() {
+<span class="fc" id="L309">		return this.predicatedata;</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addAnnotationTypeDeclaration(
+			BiPredicate&lt;AnnotationTypeDeclaration, E&gt; bs) {
+<span class="nc" id="L319">		return predicatemap.put(VisitorEnum.AnnotationTypeDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addAnnotationTypeMemberDeclaration(
+			BiPredicate&lt;AnnotationTypeMemberDeclaration, E&gt; bs) {
+<span class="nc" id="L329">		return predicatemap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addAnonymousClassDeclaration(
+			BiPredicate&lt;AnonymousClassDeclaration, E&gt; bs) {
+<span class="nc" id="L339">		return predicatemap.put(VisitorEnum.AnonymousClassDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addArrayAccess(BiPredicate&lt;ArrayAccess, E&gt; bs) {
+<span class="nc" id="L348">		return predicatemap.put(VisitorEnum.ArrayAccess, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addArrayCreation(BiPredicate&lt;ArrayCreation, E&gt; bs) {
+<span class="nc" id="L357">		return predicatemap.put(VisitorEnum.ArrayCreation, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addArrayInitializer(BiPredicate&lt;ArrayInitializer, E&gt; bs) {
+<span class="nc" id="L366">		return predicatemap.put(VisitorEnum.ArrayInitializer, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addArrayType(BiPredicate&lt;ArrayType, E&gt; bs) {
+<span class="nc" id="L375">		return predicatemap.put(VisitorEnum.ArrayType, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addAssertStatement(BiPredicate&lt;AssertStatement, E&gt; bs) {
+<span class="nc" id="L384">		return predicatemap.put(VisitorEnum.AssertStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addAssignment(BiPredicate&lt;Assignment, E&gt; bs) {
+<span class="nc" id="L393">		return predicatemap.put(VisitorEnum.Assignment, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addBlock(BiPredicate&lt;Block, E&gt; bs) {
+<span class="nc" id="L402">		return predicatemap.put(VisitorEnum.Block, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addBlockComment(BiPredicate&lt;BlockComment, E&gt; bs) {
+<span class="nc" id="L411">		return predicatemap.put(VisitorEnum.BlockComment, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addBooleanLiteral(BiPredicate&lt;BooleanLiteral, E&gt; bs) {
+<span class="nc" id="L420">		return predicatemap.put(VisitorEnum.BooleanLiteral, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addBreakStatement(BiPredicate&lt;BreakStatement, E&gt; bs) {
+<span class="nc" id="L429">		return predicatemap.put(VisitorEnum.BreakStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addCastExpression(BiPredicate&lt;CastExpression, E&gt; bs) {
+<span class="nc" id="L438">		return predicatemap.put(VisitorEnum.CastExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addCatchClause(BiPredicate&lt;CatchClause, E&gt; bs) {
+<span class="nc" id="L447">		return predicatemap.put(VisitorEnum.CatchClause, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addCharacterLiteral(BiPredicate&lt;CharacterLiteral, E&gt; bs) {
+<span class="nc" id="L456">		return predicatemap.put(VisitorEnum.CharacterLiteral, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addClassInstanceCreation(BiPredicate&lt;ClassInstanceCreation, E&gt; bs) {
+<span class="fc" id="L465">		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param typeof
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addClassInstanceCreation(Class&lt;?&gt; typeof, BiPredicate&lt;ClassInstanceCreation, E&gt; bs) {
+<span class="fc" id="L475">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="fc" id="L476">				.typeof(typeof)</span>
+<span class="fc" id="L477">				.build();</span>
+<span class="fc" id="L478">		predicatedata.put(VisitorEnum.ClassInstanceCreation, config);</span>
+<span class="fc" id="L479">		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);</span>
+	}
+
+	/**
+	 * Adds a visitor for ClassInstanceCreation nodes filtered by fully qualified type name.
+	 * 
+	 * &lt;p&gt;This overload accepts a String instead of a Class to avoid deprecation warnings
+	 * when the class being filtered is deprecated (e.g., SubProgressMonitor).&lt;/p&gt;
+	 *
+	 * @param qualifiedTypeName the fully qualified class name to filter for
+	 * @param bs the predicate to test each matching node
+	 * @return old BiPredicate assigned for nodetype
+	 * @since 1.2.5
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addClassInstanceCreation(String qualifiedTypeName, BiPredicate&lt;ClassInstanceCreation, E&gt; bs) {
+<span class="nc" id="L494">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L495">				.typeofByName(qualifiedTypeName)</span>
+<span class="nc" id="L496">				.build();</span>
+<span class="nc" id="L497">		predicatedata.put(VisitorEnum.ClassInstanceCreation, config);</span>
+<span class="nc" id="L498">		return predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addCompilationUnit(BiPredicate&lt;CompilationUnit, E&gt; bs) {
+<span class="nc" id="L507">		return predicatemap.put(VisitorEnum.CompilationUnit, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addConditionalExpression(BiPredicate&lt;ConditionalExpression, E&gt; bs) {
+<span class="nc" id="L516">		return predicatemap.put(VisitorEnum.ConditionalExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addConstructorInvocation(BiPredicate&lt;ConstructorInvocation, E&gt; bs) {
+<span class="nc" id="L525">		return predicatemap.put(VisitorEnum.ConstructorInvocation, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addContinueStatement(BiPredicate&lt;ContinueStatement, E&gt; bs) {
+<span class="nc" id="L534">		return predicatemap.put(VisitorEnum.ContinueStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addCreationReference(BiPredicate&lt;CreationReference, E&gt; bs) {
+<span class="nc" id="L543">		return predicatemap.put(VisitorEnum.CreationReference, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addDimension(BiPredicate&lt;Dimension, E&gt; bs) {
+<span class="nc" id="L552">		return predicatemap.put(VisitorEnum.Dimension, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addDoStatement(BiPredicate&lt;DoStatement, E&gt; bs) {
+<span class="nc" id="L561">		return predicatemap.put(VisitorEnum.DoStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addEmptyStatement(BiPredicate&lt;EmptyStatement, E&gt; bs) {
+<span class="nc" id="L570">		return predicatemap.put(VisitorEnum.EmptyStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addEnhancedForStatement(BiPredicate&lt;EnhancedForStatement, E&gt; bs) {
+<span class="fc" id="L579">		return predicatemap.put(VisitorEnum.EnhancedForStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addEnumConstantDeclaration(BiPredicate&lt;EnumConstantDeclaration, E&gt; bs) {
+<span class="nc" id="L588">		return predicatemap.put(VisitorEnum.EnumConstantDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addEnumDeclaration(BiPredicate&lt;EnumDeclaration, E&gt; bs) {
+<span class="nc" id="L597">		return predicatemap.put(VisitorEnum.EnumDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addExportsDirective(BiPredicate&lt;ExportsDirective, E&gt; bs) {
+<span class="nc" id="L606">		return predicatemap.put(VisitorEnum.ExportsDirective, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addExpressionMethodReference(
+			BiPredicate&lt;ExpressionMethodReference, E&gt; bs) {
+<span class="nc" id="L616">		return predicatemap.put(VisitorEnum.ExpressionMethodReference, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addExpressionStatement(BiPredicate&lt;ExpressionStatement, E&gt; bs) {
+<span class="nc" id="L625">		return predicatemap.put(VisitorEnum.ExpressionStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addFieldAccess(BiPredicate&lt;FieldAccess, E&gt; bs) {
+<span class="nc" id="L634">		return predicatemap.put(VisitorEnum.FieldAccess, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addFieldDeclaration(BiPredicate&lt;FieldDeclaration, E&gt; bs) {
+<span class="fc" id="L643">		return predicatemap.put(VisitorEnum.FieldDeclaration, bs);</span>
+	}
+
+	/**
+	 * @param annotationname 
+	 * @param superclassname
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addFieldDeclaration(String annotationname, String superclassname, BiPredicate&lt;FieldDeclaration, E&gt; bs) {
+<span class="fc" id="L653">		predicatedata.put(VisitorEnum.FieldDeclaration, VisitorConfigData.builder()</span>
+<span class="fc" id="L654">				.superClassName(superclassname)</span>
+<span class="fc" id="L655">				.annotationName(annotationname)</span>
+<span class="fc" id="L656">				.build());</span>
+<span class="fc" id="L657">		return predicatemap.put(VisitorEnum.FieldDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addForStatement(BiPredicate&lt;ForStatement, E&gt; bs) {
+<span class="nc" id="L666">		return predicatemap.put(VisitorEnum.ForStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addIfStatement(BiPredicate&lt;IfStatement, E&gt; bs) {
+<span class="nc" id="L675">		return predicatemap.put(VisitorEnum.IfStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addImportDeclaration(BiPredicate&lt;ImportDeclaration, E&gt; bs) {
+<span class="nc" id="L684">		return predicatemap.put(VisitorEnum.ImportDeclaration, bs);</span>
+	}
+
+	/**
+	 * @param importname the import name to match
+	 * @param bs the BiPredicate to assign for ImportDeclaration
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addImportDeclaration(String importname, BiPredicate&lt;ImportDeclaration, E&gt; bs) {
+<span class="fc" id="L693">		predicatedata.put(VisitorEnum.ImportDeclaration, VisitorConfigData.builder()</span>
+<span class="fc" id="L694">				.importName(importname)</span>
+<span class="fc" id="L695">				.build());</span>
+<span class="fc" id="L696">		return predicatemap.put(VisitorEnum.ImportDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addInfixExpression(BiPredicate&lt;InfixExpression, E&gt; bs) {
+<span class="nc" id="L705">		return predicatemap.put(VisitorEnum.InfixExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addInitializer(BiPredicate&lt;Initializer, E&gt; bs) {
+<span class="nc" id="L714">		return predicatemap.put(VisitorEnum.Initializer, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addInstanceofExpression(BiPredicate&lt;InstanceofExpression, E&gt; bs) {
+<span class="nc" id="L723">		return predicatemap.put(VisitorEnum.InstanceofExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addIntersectionType(BiPredicate&lt;IntersectionType, E&gt; bs) {
+<span class="nc" id="L732">		return predicatemap.put(VisitorEnum.IntersectionType, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addJavadoc(BiPredicate&lt;Javadoc, E&gt; bs) {
+<span class="nc" id="L741">		return predicatemap.put(VisitorEnum.Javadoc, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addLabeledStatement(BiPredicate&lt;LabeledStatement, E&gt; bs) {
+<span class="nc" id="L750">		return predicatemap.put(VisitorEnum.LabeledStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addLambdaExpression(BiPredicate&lt;LambdaExpression, E&gt; bs) {
+<span class="nc" id="L759">		return predicatemap.put(VisitorEnum.LambdaExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addLineComment(BiPredicate&lt;LineComment, E&gt; bs) {
+<span class="nc" id="L768">		return predicatemap.put(VisitorEnum.LineComment, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMarkerAnnotation(BiPredicate&lt;MarkerAnnotation, E&gt; bs) {
+<span class="nc" id="L777">		return predicatemap.put(VisitorEnum.MarkerAnnotation, bs);</span>
+	}
+
+	/**
+	 * @param name
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMarkerAnnotation(String name, BiPredicate&lt;MarkerAnnotation, E&gt; bs) {
+<span class="fc" id="L786">		predicatedata.put(VisitorEnum.MarkerAnnotation, VisitorConfigData.builder()</span>
+<span class="fc" id="L787">				.annotationName(name)</span>
+<span class="fc" id="L788">				.build());</span>
+<span class="fc" id="L789">		return predicatemap.put(VisitorEnum.MarkerAnnotation, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMemberRef(BiPredicate&lt;MemberRef, E&gt; bs) {
+<span class="nc" id="L798">		return predicatemap.put(VisitorEnum.MemberRef, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMemberValuePair(BiPredicate&lt;MemberValuePair, E&gt; bs) {
+<span class="nc" id="L807">		return predicatemap.put(VisitorEnum.MemberValuePair, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMethodRef(BiPredicate&lt;MethodRef, E&gt; bs) {
+<span class="nc" id="L816">		return predicatemap.put(VisitorEnum.MethodRef, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMethodRefParameter(BiPredicate&lt;MethodRefParameter, E&gt; bs) {
+<span class="nc" id="L825">		return predicatemap.put(VisitorEnum.MethodRefParameter, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMethodDeclaration(BiPredicate&lt;MethodDeclaration, E&gt; bs) {
+<span class="fc" id="L834">		return predicatemap.put(VisitorEnum.MethodDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMethodInvocation(BiPredicate&lt;MethodInvocation, E&gt; bs) {
+<span class="fc" id="L843">		return predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param methodname
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMethodInvocation(String methodname,
+			BiPredicate&lt;MethodInvocation, E&gt; bs) {
+<span class="fc" id="L854">		predicatedata.put(VisitorEnum.MethodInvocation, VisitorConfigData.builder()</span>
+<span class="fc" id="L855">				.methodName(methodname)</span>
+<span class="fc" id="L856">				.build());</span>
+<span class="fc" id="L857">		return predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+	}
+
+	/**
+	 * @param typeof
+	 * @param methodname
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMethodInvocation(Class&lt;?&gt; typeof, String methodname,
+			BiPredicate&lt;MethodInvocation, E&gt; bs) {
+<span class="fc" id="L868">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="fc" id="L869">				.methodName(methodname)</span>
+<span class="fc" id="L870">				.typeof(typeof)</span>
+<span class="fc" id="L871">				.build();</span>
+<span class="fc" id="L872">		predicatedata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="fc" id="L873">		return predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+	}
+
+	/**
+	 * @param typeof
+	 * @param methodname
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMethodInvocation(String typeof, String methodname,
+			BiPredicate&lt;MethodInvocation, E&gt; bs) {
+<span class="fc" id="L884">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="fc" id="L885">				.methodName(methodname)</span>
+<span class="fc" id="L886">				.typeofByName(typeof)</span>
+<span class="fc" id="L887">				.build();</span>
+<span class="fc" id="L888">		predicatedata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="fc" id="L889">		return predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+	}
+
+	/**
+	 * @param typeof the type of the method invocation
+	 * @param methodname the method name to match
+	 * @param bs the BiPredicate to assign for MethodInvocation
+	 * @param params the parameter type names
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addMethodInvocation(String typeof, String methodname,
+			BiPredicate&lt;MethodInvocation, E&gt; bs, String[] params) {
+<span class="nc" id="L901">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L902">				.paramTypeNames(params)</span>
+<span class="nc" id="L903">				.methodName(methodname)</span>
+<span class="nc" id="L904">				.typeofByName(typeof)</span>
+<span class="nc" id="L905">				.build();</span>
+<span class="nc" id="L906">		predicatedata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="nc" id="L907">		return predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+	}
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addModifier(BiPredicate&lt;Modifier, E&gt; bs) {
+<span class="nc" id="L915">		return predicatemap.put(VisitorEnum.Modifier, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addModuleDeclaration(BiPredicate&lt;ModuleDeclaration, E&gt; bs) {
+<span class="nc" id="L924">		return predicatemap.put(VisitorEnum.ModuleDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addModuleModifier(BiPredicate&lt;ModuleModifier, E&gt; bs) {
+<span class="nc" id="L933">		return predicatemap.put(VisitorEnum.ModuleModifier, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addNameQualifiedType(BiPredicate&lt;NameQualifiedType, E&gt; bs) {
+<span class="nc" id="L942">		return predicatemap.put(VisitorEnum.NameQualifiedType, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addNormalAnnotation(BiPredicate&lt;NormalAnnotation, E&gt; bs) {
+<span class="nc" id="L951">		return predicatemap.put(VisitorEnum.NormalAnnotation, bs);</span>
+	}
+
+	/**
+	 * @param name the annotation name to match
+	 * @param bs the BiPredicate to assign for NormalAnnotation
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addNormalAnnotation(String name, BiPredicate&lt;NormalAnnotation, E&gt; bs) {
+<span class="fc" id="L960">		predicatedata.put(VisitorEnum.NormalAnnotation, VisitorConfigData.builder()</span>
+<span class="fc" id="L961">				.annotationName(name)</span>
+<span class="fc" id="L962">				.build());</span>
+<span class="fc" id="L963">		return predicatemap.put(VisitorEnum.NormalAnnotation, bs);</span>
+	}
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addNullLiteral(BiPredicate&lt;NullLiteral, E&gt; bs) {
+<span class="nc" id="L971">		return predicatemap.put(VisitorEnum.NullLiteral, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addNumberLiteral(BiPredicate&lt;NumberLiteral, E&gt; bs) {
+<span class="nc" id="L980">		return predicatemap.put(VisitorEnum.NumberLiteral, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addOpensDirective(BiPredicate&lt;OpensDirective, E&gt; bs) {
+<span class="nc" id="L989">		return predicatemap.put(VisitorEnum.OpensDirective, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addPackageDeclaration(BiPredicate&lt;PackageDeclaration, E&gt; bs) {
+<span class="nc" id="L998">		return predicatemap.put(VisitorEnum.PackageDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addParameterizedType(BiPredicate&lt;ParameterizedType, E&gt; bs) {
+<span class="nc" id="L1007">		return predicatemap.put(VisitorEnum.ParameterizedType, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addParenthesizedExpression(BiPredicate&lt;ParenthesizedExpression, E&gt; bs) {
+<span class="nc" id="L1016">		return predicatemap.put(VisitorEnum.ParenthesizedExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addPatternInstanceofExpression(
+			BiPredicate&lt;PatternInstanceofExpression, E&gt; bs) {
+<span class="nc" id="L1026">		return predicatemap.put(VisitorEnum.PatternInstanceofExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addPostfixExpression(BiPredicate&lt;PostfixExpression, E&gt; bs) {
+<span class="nc" id="L1035">		return predicatemap.put(VisitorEnum.PostfixExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addPrefixExpression(BiPredicate&lt;PrefixExpression, E&gt; bs) {
+<span class="nc" id="L1044">		return predicatemap.put(VisitorEnum.PrefixExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addProvidesDirective(BiPredicate&lt;ProvidesDirective, E&gt; bs) {
+<span class="nc" id="L1053">		return predicatemap.put(VisitorEnum.ProvidesDirective, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addPrimitiveType(BiPredicate&lt;PrimitiveType, E&gt; bs) {
+<span class="nc" id="L1062">		return predicatemap.put(VisitorEnum.PrimitiveType, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addQualifiedName(BiPredicate&lt;QualifiedName, E&gt; bs) {
+<span class="nc" id="L1071">		return predicatemap.put(VisitorEnum.QualifiedName, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addQualifiedType(BiPredicate&lt;QualifiedType, E&gt; bs) {
+<span class="nc" id="L1080">		return predicatemap.put(VisitorEnum.QualifiedType, bs);</span>
+	}
+
+	/**
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addModuleQualifiedName(
+			BiPredicate&lt;ModuleQualifiedName, E&gt; bs) {
+<span class="nc" id="L1089">		return predicatemap.put(VisitorEnum.ModuleQualifiedName, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addRequiresDirective(BiPredicate&lt;RequiresDirective, E&gt; bs) {
+<span class="nc" id="L1098">		return predicatemap.put(VisitorEnum.RequiresDirective, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addRecordDeclaration(BiPredicate&lt;RecordDeclaration, E&gt; bs) {
+<span class="nc" id="L1107">		return predicatemap.put(VisitorEnum.RecordDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addReturnStatement(BiPredicate&lt;ReturnStatement, E&gt; bs) {
+<span class="nc" id="L1116">		return predicatemap.put(VisitorEnum.ReturnStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSimpleName(BiPredicate&lt;SimpleName, E&gt; bs) {
+<span class="nc" id="L1125">		return predicatemap.put(VisitorEnum.SimpleName, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSimpleType(BiPredicate&lt;SimpleType, E&gt; bs) {
+<span class="nc" id="L1134">		return predicatemap.put(VisitorEnum.SimpleType, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSingleMemberAnnotation(BiPredicate&lt;SingleMemberAnnotation, E&gt; bs) {
+<span class="nc" id="L1143">		return predicatemap.put(VisitorEnum.SingleMemberAnnotation, bs);</span>
+	}
+	
+	/**
+	 * @param name
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSingleMemberAnnotation(String name, BiPredicate&lt;SingleMemberAnnotation, E&gt; bs) {
+<span class="fc" id="L1152">		predicatedata.put(VisitorEnum.SingleMemberAnnotation, VisitorConfigData.builder()</span>
+<span class="fc" id="L1153">				.annotationName(name)</span>
+<span class="fc" id="L1154">				.build());</span>
+<span class="fc" id="L1155">		return predicatemap.put(VisitorEnum.SingleMemberAnnotation, bs);</span>
+	}
+	
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSingleVariableDeclaration(
+			BiPredicate&lt;SingleVariableDeclaration, E&gt; bs) {
+<span class="fc" id="L1165">		return predicatemap.put(VisitorEnum.SingleVariableDeclaration, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addStringLiteral(BiPredicate&lt;StringLiteral, E&gt; bs) {
+<span class="nc" id="L1174">		return predicatemap.put(VisitorEnum.StringLiteral, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSuperConstructorInvocation(
+			BiPredicate&lt;SuperConstructorInvocation, E&gt; bs) {
+<span class="nc" id="L1184">		return predicatemap.put(VisitorEnum.SuperConstructorInvocation, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSuperFieldAccess(BiPredicate&lt;SuperFieldAccess, E&gt; bs) {
+<span class="nc" id="L1193">		return predicatemap.put(VisitorEnum.SuperFieldAccess, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSuperMethodInvocation(BiPredicate&lt;SuperMethodInvocation, E&gt; bs) {
+<span class="nc" id="L1202">		return predicatemap.put(VisitorEnum.SuperMethodInvocation, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSuperMethodReference(BiPredicate&lt;SuperMethodReference, E&gt; bs) {
+<span class="nc" id="L1211">		return predicatemap.put(VisitorEnum.SuperMethodReference, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSwitchCase(BiPredicate&lt;SwitchCase, E&gt; bs) {
+<span class="nc" id="L1220">		return predicatemap.put(VisitorEnum.SwitchCase, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSwitchExpression(BiPredicate&lt;SwitchExpression, E&gt; bs) {
+<span class="nc" id="L1229">		return predicatemap.put(VisitorEnum.SwitchExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSwitchStatement(BiPredicate&lt;SwitchStatement, E&gt; bs) {
+<span class="nc" id="L1238">		return predicatemap.put(VisitorEnum.SwitchStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addSynchronizedStatement(BiPredicate&lt;SynchronizedStatement, E&gt; bs) {
+<span class="nc" id="L1247">		return predicatemap.put(VisitorEnum.SynchronizedStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTagElement(BiPredicate&lt;TagElement, E&gt; bs) {
+<span class="nc" id="L1256">		return predicatemap.put(VisitorEnum.TagElement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTextBlock(BiPredicate&lt;TextBlock, E&gt; bs) {
+<span class="nc" id="L1265">		return predicatemap.put(VisitorEnum.TextBlock, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTextElement(BiPredicate&lt;TextElement, E&gt; bs) {
+<span class="nc" id="L1274">		return predicatemap.put(VisitorEnum.TextElement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addThisExpression(BiPredicate&lt;ThisExpression, E&gt; bs) {
+<span class="nc" id="L1283">		return predicatemap.put(VisitorEnum.ThisExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addThrowStatement(BiPredicate&lt;ThrowStatement, E&gt; bs) {
+<span class="nc" id="L1292">		return predicatemap.put(VisitorEnum.ThrowStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTryStatement(BiPredicate&lt;TryStatement, E&gt; bs) {
+<span class="nc" id="L1301">		return predicatemap.put(VisitorEnum.TryStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTypeDeclaration(BiPredicate&lt;TypeDeclaration, E&gt; bs) {
+<span class="nc" id="L1310">		return predicatemap.put(VisitorEnum.TypeDeclaration, bs);</span>
+	}
+
+	/**
+	 * @param derivedfrom the superclass name to match
+	 * @param bs the BiPredicate to assign for TypeDeclaration
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTypeDeclaration(String derivedfrom, BiPredicate&lt;TypeDeclaration, E&gt; bs) {
+<span class="fc" id="L1319">		predicatedata.put(VisitorEnum.TypeDeclaration, VisitorConfigData.builder()</span>
+<span class="fc" id="L1320">				.superClassName(derivedfrom)</span>
+<span class="fc" id="L1321">				.build());</span>
+<span class="fc" id="L1322">		return predicatemap.put(VisitorEnum.TypeDeclaration, bs);</span>
+	}
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTypeDeclarationStatement(BiPredicate&lt;TypeDeclarationStatement, E&gt; bs) {
+<span class="nc" id="L1330">		return predicatemap.put(VisitorEnum.TypeDeclarationStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTypeLiteral(BiPredicate&lt;TypeLiteral, E&gt; bs) {
+<span class="nc" id="L1339">		return predicatemap.put(VisitorEnum.TypeLiteral, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTypeMethodReference(BiPredicate&lt;TypeMethodReference, E&gt; bs) {
+<span class="nc" id="L1348">		return predicatemap.put(VisitorEnum.TypeMethodReference, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addTypeParameter(BiPredicate&lt;TypeParameter, E&gt; bs) {
+<span class="nc" id="L1357">		return predicatemap.put(VisitorEnum.TypeParameter, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addUnionType(BiPredicate&lt;UnionType, E&gt; bs) {
+<span class="nc" id="L1366">		return predicatemap.put(VisitorEnum.UnionType, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addUsesDirective(BiPredicate&lt;UsesDirective, E&gt; bs) {
+<span class="nc" id="L1375">		return predicatemap.put(VisitorEnum.UsesDirective, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addVariableDeclarationExpression(
+			BiPredicate&lt;VariableDeclarationExpression, E&gt; bs) {
+<span class="nc" id="L1385">		return predicatemap.put(VisitorEnum.VariableDeclarationExpression, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addVariableDeclarationStatement(
+			BiPredicate&lt;VariableDeclarationStatement, E&gt; bs) {
+<span class="nc" id="L1395">		return predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param typeof
+	 * @param class1
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addVariableDeclarationStatement(Class&lt;?&gt; typeof,
+			BiPredicate&lt;VariableDeclarationStatement, E&gt; bs) {
+<span class="fc" id="L1407">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="fc" id="L1408">				.typeof(typeof)</span>
+<span class="fc" id="L1409">				.build();</span>
+<span class="fc" id="L1410">		predicatedata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
+<span class="fc" id="L1411">		return predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addVariableDeclarationFragment(
+			BiPredicate&lt;VariableDeclarationFragment, E&gt; bs) {
+<span class="fc" id="L1421">		return predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addWhileStatement(BiPredicate&lt;WhileStatement, E&gt; bs) {
+<span class="fc" id="L1430">		return predicatemap.put(VisitorEnum.WhileStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addWildcardType(BiPredicate&lt;WildcardType, E&gt; bs) {
+<span class="nc" id="L1439">		return predicatemap.put(VisitorEnum.WildcardType, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bs
+	 * @return old BiPredicate assigned for nodetype
+	 */
+	public BiPredicate&lt;? extends ASTNode, E&gt; addYieldStatement(BiPredicate&lt;YieldStatement, E&gt; bs) {
+<span class="nc" id="L1448">		return predicatemap.put(VisitorEnum.YieldStatement, bs);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addAnnotationTypeDeclaration(BiConsumer&lt;AnnotationTypeDeclaration, E&gt; bc) {
+<span class="nc" id="L1457">		return consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addAnnotationTypeMemberDeclaration(
+			BiConsumer&lt;AnnotationTypeMemberDeclaration, E&gt; bc) {
+<span class="nc" id="L1467">		return consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addAnonymousClassDeclaration(BiConsumer&lt;AnonymousClassDeclaration, E&gt; bc) {
+<span class="nc" id="L1476">		return consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addArrayAccess(BiConsumer&lt;ArrayAccess, E&gt; bc) {
+<span class="nc" id="L1485">		return consumermap.put(VisitorEnum.ArrayAccess, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addArrayCreation(BiConsumer&lt;ArrayCreation, E&gt; bc) {
+<span class="nc" id="L1494">		return consumermap.put(VisitorEnum.ArrayCreation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addArrayInitializer(BiConsumer&lt;ArrayInitializer, E&gt; bc) {
+<span class="nc" id="L1503">		return consumermap.put(VisitorEnum.ArrayInitializer, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addArrayType(BiConsumer&lt;ArrayType, E&gt; bc) {
+<span class="nc" id="L1512">		return consumermap.put(VisitorEnum.ArrayType, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addAssertStatement(BiConsumer&lt;AssertStatement, E&gt; bc) {
+<span class="nc" id="L1521">		return consumermap.put(VisitorEnum.AssertStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addAssignment(BiConsumer&lt;Assignment, E&gt; bc) {
+<span class="nc" id="L1530">		return consumermap.put(VisitorEnum.Assignment, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addBlock(BiConsumer&lt;Block, E&gt; bc) {
+<span class="nc" id="L1539">		return consumermap.put(VisitorEnum.Block, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addBlockComment(BiConsumer&lt;BlockComment, E&gt; bc) {
+<span class="nc" id="L1548">		return consumermap.put(VisitorEnum.BlockComment, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addBooleanLiteral(BiConsumer&lt;BooleanLiteral, E&gt; bc) {
+<span class="nc" id="L1557">		return consumermap.put(VisitorEnum.BooleanLiteral, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addBreakStatement(BiConsumer&lt;BreakStatement, E&gt; bc) {
+<span class="nc" id="L1566">		return consumermap.put(VisitorEnum.BreakStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addCastExpression(BiConsumer&lt;CastExpression, E&gt; bc) {
+<span class="nc" id="L1575">		return consumermap.put(VisitorEnum.CastExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addCatchClause(BiConsumer&lt;CatchClause, E&gt; bc) {
+<span class="nc" id="L1584">		return consumermap.put(VisitorEnum.CatchClause, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addCharacterLiteral(BiConsumer&lt;CharacterLiteral, E&gt; bc) {
+<span class="nc" id="L1593">		return consumermap.put(VisitorEnum.CharacterLiteral, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addClassInstanceCreation(BiConsumer&lt;ClassInstanceCreation, E&gt; bc) {
+<span class="nc" id="L1602">		return consumermap.put(VisitorEnum.ClassInstanceCreation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addCompilationUnit(BiConsumer&lt;CompilationUnit, E&gt; bc) {
+<span class="nc" id="L1611">		return consumermap.put(VisitorEnum.CompilationUnit, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addConditionalExpression(BiConsumer&lt;ConditionalExpression, E&gt; bc) {
+<span class="nc" id="L1620">		return consumermap.put(VisitorEnum.ConditionalExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addConstructorInvocation(BiConsumer&lt;ConstructorInvocation, E&gt; bc) {
+<span class="nc" id="L1629">		return consumermap.put(VisitorEnum.ConstructorInvocation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addContinueStatement(BiConsumer&lt;ContinueStatement, E&gt; bc) {
+<span class="nc" id="L1638">		return consumermap.put(VisitorEnum.ContinueStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addCreationReference(BiConsumer&lt;CreationReference, E&gt; bc) {
+<span class="nc" id="L1647">		return consumermap.put(VisitorEnum.CreationReference, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addDimension(BiConsumer&lt;Dimension, E&gt; bc) {
+<span class="nc" id="L1656">		return consumermap.put(VisitorEnum.Dimension, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addDoStatement(BiConsumer&lt;DoStatement, E&gt; bc) {
+<span class="nc" id="L1665">		return consumermap.put(VisitorEnum.DoStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addEmptyStatement(BiConsumer&lt;EmptyStatement, E&gt; bc) {
+<span class="nc" id="L1674">		return consumermap.put(VisitorEnum.EmptyStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addEnhancedForStatement(BiConsumer&lt;EnhancedForStatement, E&gt; bc) {
+<span class="nc" id="L1683">		return consumermap.put(VisitorEnum.EnhancedForStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addEnumConstantDeclaration(BiConsumer&lt;EnumConstantDeclaration, E&gt; bc) {
+<span class="nc" id="L1692">		return consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addEnumDeclaration(BiConsumer&lt;EnumDeclaration, E&gt; bc) {
+<span class="nc" id="L1701">		return consumermap.put(VisitorEnum.EnumDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addExportsDirective(BiConsumer&lt;ExportsDirective, E&gt; bc) {
+<span class="nc" id="L1710">		return consumermap.put(VisitorEnum.ExportsDirective, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addExpressionMethodReference(BiConsumer&lt;ExpressionMethodReference, E&gt; bc) {
+<span class="nc" id="L1719">		return consumermap.put(VisitorEnum.ExpressionMethodReference, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addExpressionStatement(BiConsumer&lt;ExpressionStatement, E&gt; bc) {
+<span class="nc" id="L1728">		return consumermap.put(VisitorEnum.ExpressionStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addFieldAccess(BiConsumer&lt;FieldAccess, E&gt; bc) {
+<span class="nc" id="L1737">		return consumermap.put(VisitorEnum.FieldAccess, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addFieldDeclaration(BiConsumer&lt;FieldDeclaration, E&gt; bc) {
+<span class="nc" id="L1746">		return consumermap.put(VisitorEnum.FieldDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addForStatement(BiConsumer&lt;ForStatement, E&gt; bc) {
+<span class="nc" id="L1755">		return consumermap.put(VisitorEnum.ForStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addIfStatement(BiConsumer&lt;IfStatement, E&gt; bc) {
+<span class="nc" id="L1764">		return consumermap.put(VisitorEnum.IfStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addImportDeclaration(BiConsumer&lt;ImportDeclaration, E&gt; bc) {
+<span class="nc" id="L1773">		return consumermap.put(VisitorEnum.ImportDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addInfixExpression(BiConsumer&lt;InfixExpression, E&gt; bc) {
+<span class="nc" id="L1782">		return consumermap.put(VisitorEnum.InfixExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addInitializer(BiConsumer&lt;Initializer, E&gt; bc) {
+<span class="nc" id="L1791">		return consumermap.put(VisitorEnum.Initializer, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addInstanceofExpression(BiConsumer&lt;InstanceofExpression, E&gt; bc) {
+<span class="nc" id="L1800">		return consumermap.put(VisitorEnum.InstanceofExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addIntersectionType(BiConsumer&lt;IntersectionType, E&gt; bc) {
+<span class="nc" id="L1809">		return consumermap.put(VisitorEnum.IntersectionType, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addJavadoc(BiConsumer&lt;Javadoc, E&gt; bc) {
+<span class="nc" id="L1818">		return consumermap.put(VisitorEnum.Javadoc, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addLabeledStatement(BiConsumer&lt;LabeledStatement, E&gt; bc) {
+<span class="nc" id="L1827">		return consumermap.put(VisitorEnum.LabeledStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addLambdaExpression(BiConsumer&lt;LambdaExpression, E&gt; bc) {
+<span class="nc" id="L1836">		return consumermap.put(VisitorEnum.LambdaExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addLineComment(BiConsumer&lt;LineComment, E&gt; bc) {
+<span class="nc" id="L1845">		return consumermap.put(VisitorEnum.LineComment, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addMarkerAnnotation(BiConsumer&lt;MarkerAnnotation, E&gt; bc) {
+<span class="nc" id="L1854">		return consumermap.put(VisitorEnum.MarkerAnnotation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addMemberRef(BiConsumer&lt;MemberRef, E&gt; bc) {
+<span class="nc" id="L1863">		return consumermap.put(VisitorEnum.MemberRef, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addMemberValuePair(BiConsumer&lt;MemberValuePair, E&gt; bc) {
+<span class="nc" id="L1872">		return consumermap.put(VisitorEnum.MemberValuePair, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodRef(BiConsumer&lt;MethodRef, E&gt; bc) {
+<span class="nc" id="L1881">		return consumermap.put(VisitorEnum.MethodRef, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodRefParameter(BiConsumer&lt;MethodRefParameter, E&gt; bc) {
+<span class="nc" id="L1890">		return consumermap.put(VisitorEnum.MethodRefParameter, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodDeclaration(BiConsumer&lt;MethodDeclaration, E&gt; bc) {
+<span class="nc" id="L1899">		return consumermap.put(VisitorEnum.MethodDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodInvocation(BiConsumer&lt;MethodInvocation, E&gt; bc) {
+<span class="fc" id="L1908">		return consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param methodname
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addMethodInvocation(String methodname, BiConsumer&lt;MethodInvocation, E&gt; bc) {
+<span class="nc" id="L1918">		this.consumerdata.put(VisitorEnum.MethodInvocation, VisitorConfigData.builder()</span>
+<span class="nc" id="L1919">				.methodName(methodname)</span>
+<span class="nc" id="L1920">				.build());</span>
+<span class="nc" id="L1921">		return consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addModifier(BiConsumer&lt;Modifier, E&gt; bc) {
+<span class="nc" id="L1930">		return consumermap.put(VisitorEnum.Modifier, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addModuleDeclaration(BiConsumer&lt;ModuleDeclaration, E&gt; bc) {
+<span class="nc" id="L1939">		return consumermap.put(VisitorEnum.ModuleDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addModuleModifier(BiConsumer&lt;ModuleModifier, E&gt; bc) {
+<span class="nc" id="L1948">		return consumermap.put(VisitorEnum.ModuleModifier, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addNameQualifiedType(BiConsumer&lt;NameQualifiedType, E&gt; bc) {
+<span class="nc" id="L1957">		return consumermap.put(VisitorEnum.NameQualifiedType, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addNormalAnnotation(BiConsumer&lt;NormalAnnotation, E&gt; bc) {
+<span class="nc" id="L1966">		return consumermap.put(VisitorEnum.NormalAnnotation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addNullLiteral(BiConsumer&lt;NullLiteral, E&gt; bc) {
+<span class="nc" id="L1975">		return consumermap.put(VisitorEnum.NullLiteral, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addNumberLiteral(BiConsumer&lt;NumberLiteral, E&gt; bc) {
+<span class="nc" id="L1984">		return consumermap.put(VisitorEnum.NumberLiteral, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addOpensDirective(BiConsumer&lt;OpensDirective, E&gt; bc) {
+<span class="nc" id="L1993">		return consumermap.put(VisitorEnum.OpensDirective, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addPackageDeclaration(BiConsumer&lt;PackageDeclaration, E&gt; bc) {
+<span class="nc" id="L2002">		return consumermap.put(VisitorEnum.PackageDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addParameterizedType(BiConsumer&lt;ParameterizedType, E&gt; bc) {
+<span class="nc" id="L2011">		return consumermap.put(VisitorEnum.ParameterizedType, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addParenthesizedExpression(BiConsumer&lt;ParenthesizedExpression, E&gt; bc) {
+<span class="nc" id="L2020">		return consumermap.put(VisitorEnum.ParenthesizedExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addPatternInstanceofExpression(
+			BiConsumer&lt;PatternInstanceofExpression, E&gt; bc) {
+<span class="nc" id="L2030">		return consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addPostfixExpression(BiConsumer&lt;PostfixExpression, E&gt; bc) {
+<span class="nc" id="L2039">		return consumermap.put(VisitorEnum.PostfixExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addPrefixExpression(BiConsumer&lt;PrefixExpression, E&gt; bc) {
+<span class="nc" id="L2048">		return consumermap.put(VisitorEnum.PrefixExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addProvidesDirective(BiConsumer&lt;ProvidesDirective, E&gt; bc) {
+<span class="nc" id="L2057">		return consumermap.put(VisitorEnum.ProvidesDirective, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addPrimitiveType(BiConsumer&lt;PrimitiveType, E&gt; bc) {
+<span class="nc" id="L2066">		return consumermap.put(VisitorEnum.PrimitiveType, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addQualifiedName(BiConsumer&lt;QualifiedName, E&gt; bc) {
+<span class="nc" id="L2075">		return consumermap.put(VisitorEnum.QualifiedName, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addQualifiedType(BiConsumer&lt;QualifiedType, E&gt; bc) {
+<span class="nc" id="L2084">		return consumermap.put(VisitorEnum.QualifiedType, bc);</span>
+	}
+
+	/**
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addModuleQualifiedName(BiConsumer&lt;ModuleQualifiedName, E&gt; bc) {
+<span class="nc" id="L2092">		return consumermap.put(VisitorEnum.ModuleQualifiedName, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+
+	public BiConsumer&lt;? extends ASTNode, E&gt; addRequiresDirective(BiConsumer&lt;RequiresDirective, E&gt; bc) {
+<span class="nc" id="L2102">		return consumermap.put(VisitorEnum.RequiresDirective, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addRecordDeclaration(BiConsumer&lt;RecordDeclaration, E&gt; bc) {
+<span class="nc" id="L2111">		return consumermap.put(VisitorEnum.RecordDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addReturnStatement(BiConsumer&lt;ReturnStatement, E&gt; bc) {
+<span class="nc" id="L2120">		return consumermap.put(VisitorEnum.ReturnStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSimpleName(BiConsumer&lt;SimpleName, E&gt; bc) {
+<span class="nc" id="L2129">		return consumermap.put(VisitorEnum.SimpleName, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSimpleType(BiConsumer&lt;SimpleType, E&gt; bc) {
+<span class="nc" id="L2138">		return consumermap.put(VisitorEnum.SimpleType, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSingleMemberAnnotation(BiConsumer&lt;SingleMemberAnnotation, E&gt; bc) {
+<span class="nc" id="L2147">		return consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSingleVariableDeclaration(BiConsumer&lt;SingleVariableDeclaration, E&gt; bc) {
+<span class="nc" id="L2156">		return consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addStringLiteral(BiConsumer&lt;StringLiteral, E&gt; bc) {
+<span class="nc" id="L2165">		return consumermap.put(VisitorEnum.StringLiteral, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSuperConstructorInvocation(
+			BiConsumer&lt;SuperConstructorInvocation, E&gt; bc) {
+<span class="nc" id="L2175">		return consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSuperFieldAccess(BiConsumer&lt;SuperFieldAccess, E&gt; bc) {
+<span class="nc" id="L2184">		return consumermap.put(VisitorEnum.SuperFieldAccess, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSuperMethodInvocation(BiConsumer&lt;SuperMethodInvocation, E&gt; bc) {
+<span class="nc" id="L2193">		return consumermap.put(VisitorEnum.SuperMethodInvocation, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSuperMethodReference(BiConsumer&lt;SuperMethodReference, E&gt; bc) {
+<span class="nc" id="L2202">		return consumermap.put(VisitorEnum.SuperMethodReference, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSwitchCase(BiConsumer&lt;SwitchCase, E&gt; bc) {
+<span class="nc" id="L2211">		return consumermap.put(VisitorEnum.SwitchCase, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSwitchExpression(BiConsumer&lt;SwitchExpression, E&gt; bc) {
+<span class="nc" id="L2220">		return consumermap.put(VisitorEnum.SwitchExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSwitchStatement(BiConsumer&lt;SwitchStatement, E&gt; bc) {
+<span class="nc" id="L2229">		return consumermap.put(VisitorEnum.SwitchStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addSynchronizedStatement(BiConsumer&lt;SynchronizedStatement, E&gt; bc) {
+<span class="nc" id="L2238">		return consumermap.put(VisitorEnum.SynchronizedStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addTagElement(BiConsumer&lt;TagElement, E&gt; bc) {
+<span class="nc" id="L2247">		return consumermap.put(VisitorEnum.TagElement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addTextBlock(BiConsumer&lt;TextBlock, E&gt; bc) {
+<span class="nc" id="L2256">		return consumermap.put(VisitorEnum.TextBlock, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addTextElement(BiConsumer&lt;TextElement, E&gt; bc) {
+<span class="nc" id="L2265">		return consumermap.put(VisitorEnum.TextElement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addThisExpression(BiConsumer&lt;ThisExpression, E&gt; bc) {
+<span class="nc" id="L2274">		return consumermap.put(VisitorEnum.ThisExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addThrowStatement(BiConsumer&lt;ThrowStatement, E&gt; bc) {
+<span class="nc" id="L2283">		return consumermap.put(VisitorEnum.ThrowStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addTryStatement(BiConsumer&lt;TryStatement, E&gt; bc) {
+<span class="nc" id="L2292">		return consumermap.put(VisitorEnum.TryStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeDeclaration(BiConsumer&lt;TypeDeclaration, E&gt; bc) {
+<span class="nc" id="L2301">		return consumermap.put(VisitorEnum.TypeDeclaration, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeDeclarationStatement(BiConsumer&lt;TypeDeclarationStatement, E&gt; bc) {
+<span class="nc" id="L2310">		return consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeLiteral(BiConsumer&lt;TypeLiteral, E&gt; bc) {
+<span class="nc" id="L2319">		return consumermap.put(VisitorEnum.TypeLiteral, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeMethodReference(BiConsumer&lt;TypeMethodReference, E&gt; bc) {
+<span class="nc" id="L2328">		return consumermap.put(VisitorEnum.TypeMethodReference, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addTypeParameter(BiConsumer&lt;TypeParameter, E&gt; bc) {
+<span class="nc" id="L2337">		return consumermap.put(VisitorEnum.TypeParameter, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addUnionType(BiConsumer&lt;UnionType, E&gt; bc) {
+<span class="nc" id="L2346">		return consumermap.put(VisitorEnum.UnionType, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addUsesDirective(BiConsumer&lt;UsesDirective, E&gt; bc) {
+<span class="nc" id="L2355">		return consumermap.put(VisitorEnum.UsesDirective, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addVariableDeclarationExpression(
+			BiConsumer&lt;VariableDeclarationExpression, E&gt; bc) {
+<span class="nc" id="L2365">		return consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addVariableDeclarationStatement(
+			BiConsumer&lt;VariableDeclarationStatement, E&gt; bc) {
+<span class="nc" id="L2375">		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param typeof
+	 * @param class1
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addVariableDeclarationStatement(Class&lt;?&gt; typeof,
+			BiConsumer&lt;VariableDeclarationStatement, E&gt; bc) {
+<span class="nc" id="L2387">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L2388">				.typeof(typeof)</span>
+<span class="nc" id="L2389">				.build();</span>
+<span class="nc" id="L2390">		consumerdata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
+<span class="nc" id="L2391">		return consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addVariableDeclarationFragment(
+			BiConsumer&lt;VariableDeclarationFragment, E&gt; bc) {
+<span class="nc" id="L2401">		return consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addWhileStatement(BiConsumer&lt;WhileStatement, E&gt; bc) {
+<span class="fc" id="L2410">		return consumermap.put(VisitorEnum.WhileStatement, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addWildcardType(BiConsumer&lt;WildcardType, E&gt; bc) {
+<span class="nc" id="L2419">		return consumermap.put(VisitorEnum.WildcardType, bc);</span>
+	}
+
+	/**
+	 *
+	 * @param bc
+	 * @return old BiConsumer assigned for nodetype
+	 */
+	public BiConsumer&lt;? extends ASTNode, E&gt; addYieldStatement(BiConsumer&lt;YieldStatement, E&gt; bc) {
+<span class="nc" id="L2428">		return consumermap.put(VisitorEnum.YieldStatement, bc);</span>
+	}
+
+
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addAnnotationTypeDeclaration(BiPredicate&lt;AnnotationTypeDeclaration, E&gt; bs,
+			BiConsumer&lt;AnnotationTypeDeclaration, E&gt; bc) {
+<span class="nc" id="L2440">		predicatemap.put(VisitorEnum.AnnotationTypeDeclaration, bs);</span>
+<span class="nc" id="L2441">		consumermap.put(VisitorEnum.AnnotationTypeDeclaration, bc);</span>
+<span class="nc" id="L2442">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addAnnotationTypeMemberDeclaration(BiPredicate&lt;AnnotationTypeMemberDeclaration, E&gt; bs,
+			BiConsumer&lt;AnnotationTypeMemberDeclaration, E&gt; bc) {
+<span class="nc" id="L2451">		predicatemap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bs);</span>
+<span class="nc" id="L2452">		consumermap.put(VisitorEnum.AnnotationTypeMemberDeclaration, bc);</span>
+<span class="nc" id="L2453">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addAnonymousClassDeclaration(BiPredicate&lt;AnonymousClassDeclaration, E&gt; bs,
+			BiConsumer&lt;AnonymousClassDeclaration, E&gt; bc) {
+<span class="nc" id="L2462">		predicatemap.put(VisitorEnum.AnonymousClassDeclaration, bs);</span>
+<span class="nc" id="L2463">		consumermap.put(VisitorEnum.AnonymousClassDeclaration, bc);</span>
+<span class="nc" id="L2464">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addArrayAccess(BiPredicate&lt;ArrayAccess, E&gt; bs, BiConsumer&lt;ArrayAccess, E&gt; bc) {
+<span class="nc" id="L2472">		predicatemap.put(VisitorEnum.ArrayAccess, bs);</span>
+<span class="nc" id="L2473">		consumermap.put(VisitorEnum.ArrayAccess, bc);</span>
+<span class="nc" id="L2474">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addArrayCreation(BiPredicate&lt;ArrayCreation, E&gt; bs, BiConsumer&lt;ArrayCreation, E&gt; bc) {
+<span class="nc" id="L2482">		predicatemap.put(VisitorEnum.ArrayCreation, bs);</span>
+<span class="nc" id="L2483">		consumermap.put(VisitorEnum.ArrayCreation, bc);</span>
+<span class="nc" id="L2484">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addArrayInitializer(BiPredicate&lt;ArrayInitializer, E&gt; bs, BiConsumer&lt;ArrayInitializer, E&gt; bc) {
+<span class="nc" id="L2492">		predicatemap.put(VisitorEnum.ArrayInitializer, bs);</span>
+<span class="nc" id="L2493">		consumermap.put(VisitorEnum.ArrayInitializer, bc);</span>
+<span class="nc" id="L2494">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addArrayType(BiPredicate&lt;ArrayType, E&gt; bs, BiConsumer&lt;ArrayType, E&gt; bc) {
+<span class="nc" id="L2502">		predicatemap.put(VisitorEnum.ArrayType, bs);</span>
+<span class="nc" id="L2503">		consumermap.put(VisitorEnum.ArrayType, bc);</span>
+<span class="nc" id="L2504">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addAssertStatement(BiPredicate&lt;AssertStatement, E&gt; bs, BiConsumer&lt;AssertStatement, E&gt; bc) {
+<span class="nc" id="L2512">		predicatemap.put(VisitorEnum.AssertStatement, bs);</span>
+<span class="nc" id="L2513">		consumermap.put(VisitorEnum.AssertStatement, bc);</span>
+<span class="nc" id="L2514">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addAssignment(BiPredicate&lt;Assignment, E&gt; bs, BiConsumer&lt;Assignment, E&gt; bc) {
+<span class="nc" id="L2522">		predicatemap.put(VisitorEnum.Assignment, bs);</span>
+<span class="nc" id="L2523">		consumermap.put(VisitorEnum.Assignment, bc);</span>
+<span class="nc" id="L2524">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addBlock(BiPredicate&lt;Block, E&gt; bs, BiConsumer&lt;Block, E&gt; bc) {
+<span class="nc" id="L2532">		predicatemap.put(VisitorEnum.Block, bs);</span>
+<span class="nc" id="L2533">		consumermap.put(VisitorEnum.Block, bc);</span>
+<span class="nc" id="L2534">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addBlockComment(BiPredicate&lt;BlockComment, E&gt; bs, BiConsumer&lt;BlockComment, E&gt; bc) {
+<span class="nc" id="L2542">		predicatemap.put(VisitorEnum.BlockComment, bs);</span>
+<span class="nc" id="L2543">		consumermap.put(VisitorEnum.BlockComment, bc);</span>
+<span class="nc" id="L2544">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addBooleanLiteral(BiPredicate&lt;BooleanLiteral, E&gt; bs, BiConsumer&lt;BooleanLiteral, E&gt; bc) {
+<span class="nc" id="L2552">		predicatemap.put(VisitorEnum.BooleanLiteral, bs);</span>
+<span class="nc" id="L2553">		consumermap.put(VisitorEnum.BooleanLiteral, bc);</span>
+<span class="nc" id="L2554">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addBreakStatement(BiPredicate&lt;BreakStatement, E&gt; bs, BiConsumer&lt;BreakStatement, E&gt; bc) {
+<span class="nc" id="L2562">		predicatemap.put(VisitorEnum.BreakStatement, bs);</span>
+<span class="nc" id="L2563">		consumermap.put(VisitorEnum.BreakStatement, bc);</span>
+<span class="nc" id="L2564">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addCastExpression(BiPredicate&lt;CastExpression, E&gt; bs, BiConsumer&lt;CastExpression, E&gt; bc) {
+<span class="nc" id="L2572">		predicatemap.put(VisitorEnum.CastExpression, bs);</span>
+<span class="nc" id="L2573">		consumermap.put(VisitorEnum.CastExpression, bc);</span>
+<span class="nc" id="L2574">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addCatchClause(BiPredicate&lt;CatchClause, E&gt; bs, BiConsumer&lt;CatchClause, E&gt; bc) {
+<span class="nc" id="L2582">		predicatemap.put(VisitorEnum.CatchClause, bs);</span>
+<span class="nc" id="L2583">		consumermap.put(VisitorEnum.CatchClause, bc);</span>
+<span class="nc" id="L2584">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addCharacterLiteral(BiPredicate&lt;CharacterLiteral, E&gt; bs, BiConsumer&lt;CharacterLiteral, E&gt; bc) {
+<span class="nc" id="L2592">		predicatemap.put(VisitorEnum.CharacterLiteral, bs);</span>
+<span class="nc" id="L2593">		consumermap.put(VisitorEnum.CharacterLiteral, bc);</span>
+<span class="nc" id="L2594">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addClassInstanceCreation(BiPredicate&lt;ClassInstanceCreation, E&gt; bs,
+			BiConsumer&lt;ClassInstanceCreation, E&gt; bc) {
+<span class="nc" id="L2603">		predicatemap.put(VisitorEnum.ClassInstanceCreation, bs);</span>
+<span class="nc" id="L2604">		consumermap.put(VisitorEnum.ClassInstanceCreation, bc);</span>
+<span class="nc" id="L2605">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addCompilationUnit(BiPredicate&lt;CompilationUnit, E&gt; bs, BiConsumer&lt;CompilationUnit, E&gt; bc) {
+<span class="nc" id="L2613">		predicatemap.put(VisitorEnum.CompilationUnit, bs);</span>
+<span class="nc" id="L2614">		consumermap.put(VisitorEnum.CompilationUnit, bc);</span>
+<span class="nc" id="L2615">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addConditionalExpression(BiPredicate&lt;ConditionalExpression, E&gt; bs,
+			BiConsumer&lt;ConditionalExpression, E&gt; bc) {
+<span class="nc" id="L2624">		predicatemap.put(VisitorEnum.ConditionalExpression, bs);</span>
+<span class="nc" id="L2625">		consumermap.put(VisitorEnum.ConditionalExpression, bc);</span>
+<span class="nc" id="L2626">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addConstructorInvocation(BiPredicate&lt;ConstructorInvocation, E&gt; bs,
+			BiConsumer&lt;ConstructorInvocation, E&gt; bc) {
+<span class="nc" id="L2635">		predicatemap.put(VisitorEnum.ConstructorInvocation, bs);</span>
+<span class="nc" id="L2636">		consumermap.put(VisitorEnum.ConstructorInvocation, bc);</span>
+<span class="nc" id="L2637">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addContinueStatement(BiPredicate&lt;ContinueStatement, E&gt; bs, BiConsumer&lt;ContinueStatement, E&gt; bc) {
+<span class="nc" id="L2645">		predicatemap.put(VisitorEnum.ContinueStatement, bs);</span>
+<span class="nc" id="L2646">		consumermap.put(VisitorEnum.ContinueStatement, bc);</span>
+<span class="nc" id="L2647">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addCreationReference(BiPredicate&lt;CreationReference, E&gt; bs, BiConsumer&lt;CreationReference, E&gt; bc) {
+<span class="nc" id="L2655">		predicatemap.put(VisitorEnum.CreationReference, bs);</span>
+<span class="nc" id="L2656">		consumermap.put(VisitorEnum.CreationReference, bc);</span>
+<span class="nc" id="L2657">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addDimension(BiPredicate&lt;Dimension, E&gt; bs, BiConsumer&lt;Dimension, E&gt; bc) {
+<span class="nc" id="L2665">		predicatemap.put(VisitorEnum.Dimension, bs);</span>
+<span class="nc" id="L2666">		consumermap.put(VisitorEnum.Dimension, bc);</span>
+<span class="nc" id="L2667">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addDoStatement(BiPredicate&lt;DoStatement, E&gt; bs, BiConsumer&lt;DoStatement, E&gt; bc) {
+<span class="nc" id="L2675">		predicatemap.put(VisitorEnum.DoStatement, bs);</span>
+<span class="nc" id="L2676">		consumermap.put(VisitorEnum.DoStatement, bc);</span>
+<span class="nc" id="L2677">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addEmptyStatement(BiPredicate&lt;EmptyStatement, E&gt; bs, BiConsumer&lt;EmptyStatement, E&gt; bc) {
+<span class="nc" id="L2685">		predicatemap.put(VisitorEnum.EmptyStatement, bs);</span>
+<span class="nc" id="L2686">		consumermap.put(VisitorEnum.EmptyStatement, bc);</span>
+<span class="nc" id="L2687">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addEnhancedForStatement(BiPredicate&lt;EnhancedForStatement, E&gt; bs,
+			BiConsumer&lt;EnhancedForStatement, E&gt; bc) {
+<span class="fc" id="L2696">		predicatemap.put(VisitorEnum.EnhancedForStatement, bs);</span>
+<span class="fc" id="L2697">		consumermap.put(VisitorEnum.EnhancedForStatement, bc);</span>
+<span class="fc" id="L2698">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addEnumConstantDeclaration(BiPredicate&lt;EnumConstantDeclaration, E&gt; bs,
+			BiConsumer&lt;EnumConstantDeclaration, E&gt; bc) {
+<span class="nc" id="L2707">		predicatemap.put(VisitorEnum.EnumConstantDeclaration, bs);</span>
+<span class="nc" id="L2708">		consumermap.put(VisitorEnum.EnumConstantDeclaration, bc);</span>
+<span class="nc" id="L2709">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addEnumDeclaration(BiPredicate&lt;EnumDeclaration, E&gt; bs, BiConsumer&lt;EnumDeclaration, E&gt; bc) {
+<span class="nc" id="L2717">		predicatemap.put(VisitorEnum.EnumDeclaration, bs);</span>
+<span class="nc" id="L2718">		consumermap.put(VisitorEnum.EnumDeclaration, bc);</span>
+<span class="nc" id="L2719">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addExportsDirective(BiPredicate&lt;ExportsDirective, E&gt; bs, BiConsumer&lt;ExportsDirective, E&gt; bc) {
+<span class="nc" id="L2727">		predicatemap.put(VisitorEnum.ExportsDirective, bs);</span>
+<span class="nc" id="L2728">		consumermap.put(VisitorEnum.ExportsDirective, bc);</span>
+<span class="nc" id="L2729">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addExpressionMethodReference(BiPredicate&lt;ExpressionMethodReference, E&gt; bs,
+			BiConsumer&lt;ExpressionMethodReference, E&gt; bc) {
+<span class="nc" id="L2738">		predicatemap.put(VisitorEnum.ExpressionMethodReference, bs);</span>
+<span class="nc" id="L2739">		consumermap.put(VisitorEnum.ExpressionMethodReference, bc);</span>
+<span class="nc" id="L2740">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addExpressionStatement(BiPredicate&lt;ExpressionStatement, E&gt; bs, BiConsumer&lt;ExpressionStatement, E&gt; bc) {
+<span class="nc" id="L2748">		predicatemap.put(VisitorEnum.ExpressionStatement, bs);</span>
+<span class="nc" id="L2749">		consumermap.put(VisitorEnum.ExpressionStatement, bc);</span>
+<span class="nc" id="L2750">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addFieldAccess(BiPredicate&lt;FieldAccess, E&gt; bs, BiConsumer&lt;FieldAccess, E&gt; bc) {
+<span class="nc" id="L2758">		predicatemap.put(VisitorEnum.FieldAccess, bs);</span>
+<span class="nc" id="L2759">		consumermap.put(VisitorEnum.FieldAccess, bc);</span>
+<span class="nc" id="L2760">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addFieldDeclaration(BiPredicate&lt;FieldDeclaration, E&gt; bs, BiConsumer&lt;FieldDeclaration, E&gt; bc) {
+<span class="nc" id="L2768">		predicatemap.put(VisitorEnum.FieldDeclaration, bs);</span>
+<span class="nc" id="L2769">		consumermap.put(VisitorEnum.FieldDeclaration, bc);</span>
+<span class="nc" id="L2770">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addForStatement(BiPredicate&lt;ForStatement, E&gt; bs, BiConsumer&lt;ForStatement, E&gt; bc) {
+<span class="nc" id="L2778">		predicatemap.put(VisitorEnum.ForStatement, bs);</span>
+<span class="nc" id="L2779">		consumermap.put(VisitorEnum.ForStatement, bc);</span>
+<span class="nc" id="L2780">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addIfStatement(BiPredicate&lt;IfStatement, E&gt; bs, BiConsumer&lt;IfStatement, E&gt; bc) {
+<span class="nc" id="L2788">		predicatemap.put(VisitorEnum.IfStatement, bs);</span>
+<span class="nc" id="L2789">		consumermap.put(VisitorEnum.IfStatement, bc);</span>
+<span class="nc" id="L2790">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addImportDeclaration(BiPredicate&lt;ImportDeclaration, E&gt; bs, BiConsumer&lt;ImportDeclaration, E&gt; bc) {
+<span class="nc" id="L2798">		predicatemap.put(VisitorEnum.ImportDeclaration, bs);</span>
+<span class="nc" id="L2799">		consumermap.put(VisitorEnum.ImportDeclaration, bc);</span>
+<span class="nc" id="L2800">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addInfixExpression(BiPredicate&lt;InfixExpression, E&gt; bs, BiConsumer&lt;InfixExpression, E&gt; bc) {
+<span class="nc" id="L2808">		predicatemap.put(VisitorEnum.InfixExpression, bs);</span>
+<span class="nc" id="L2809">		consumermap.put(VisitorEnum.InfixExpression, bc);</span>
+<span class="nc" id="L2810">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addInitializer(BiPredicate&lt;Initializer, E&gt; bs, BiConsumer&lt;Initializer, E&gt; bc) {
+<span class="nc" id="L2818">		predicatemap.put(VisitorEnum.Initializer, bs);</span>
+<span class="nc" id="L2819">		consumermap.put(VisitorEnum.Initializer, bc);</span>
+<span class="nc" id="L2820">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addInstanceofExpression(BiPredicate&lt;InstanceofExpression, E&gt; bs,
+			BiConsumer&lt;InstanceofExpression, E&gt; bc) {
+<span class="nc" id="L2829">		predicatemap.put(VisitorEnum.InstanceofExpression, bs);</span>
+<span class="nc" id="L2830">		consumermap.put(VisitorEnum.InstanceofExpression, bc);</span>
+<span class="nc" id="L2831">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addIntersectionType(BiPredicate&lt;IntersectionType, E&gt; bs, BiConsumer&lt;IntersectionType, E&gt; bc) {
+<span class="nc" id="L2839">		predicatemap.put(VisitorEnum.IntersectionType, bs);</span>
+<span class="nc" id="L2840">		consumermap.put(VisitorEnum.IntersectionType, bc);</span>
+<span class="nc" id="L2841">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addJavadoc(BiPredicate&lt;Javadoc, E&gt; bs, BiConsumer&lt;Javadoc, E&gt; bc) {
+<span class="nc" id="L2849">		predicatemap.put(VisitorEnum.Javadoc, bs);</span>
+<span class="nc" id="L2850">		consumermap.put(VisitorEnum.Javadoc, bc);</span>
+<span class="nc" id="L2851">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addLabeledStatement(BiPredicate&lt;LabeledStatement, E&gt; bs, BiConsumer&lt;LabeledStatement, E&gt; bc) {
+<span class="nc" id="L2859">		predicatemap.put(VisitorEnum.LabeledStatement, bs);</span>
+<span class="nc" id="L2860">		consumermap.put(VisitorEnum.LabeledStatement, bc);</span>
+<span class="nc" id="L2861">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addLambdaExpression(BiPredicate&lt;LambdaExpression, E&gt; bs, BiConsumer&lt;LambdaExpression, E&gt; bc) {
+<span class="nc" id="L2869">		predicatemap.put(VisitorEnum.LambdaExpression, bs);</span>
+<span class="nc" id="L2870">		consumermap.put(VisitorEnum.LambdaExpression, bc);</span>
+<span class="nc" id="L2871">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addLineComment(BiPredicate&lt;LineComment, E&gt; bs, BiConsumer&lt;LineComment, E&gt; bc) {
+<span class="nc" id="L2879">		predicatemap.put(VisitorEnum.LineComment, bs);</span>
+<span class="nc" id="L2880">		consumermap.put(VisitorEnum.LineComment, bc);</span>
+<span class="nc" id="L2881">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMarkerAnnotation(BiPredicate&lt;MarkerAnnotation, E&gt; bs, BiConsumer&lt;MarkerAnnotation, E&gt; bc) {
+<span class="nc" id="L2889">		predicatemap.put(VisitorEnum.MarkerAnnotation, bs);</span>
+<span class="nc" id="L2890">		consumermap.put(VisitorEnum.MarkerAnnotation, bc);</span>
+<span class="nc" id="L2891">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMemberRef(BiPredicate&lt;MemberRef, E&gt; bs, BiConsumer&lt;MemberRef, E&gt; bc) {
+<span class="nc" id="L2899">		predicatemap.put(VisitorEnum.MemberRef, bs);</span>
+<span class="nc" id="L2900">		consumermap.put(VisitorEnum.MemberRef, bc);</span>
+<span class="nc" id="L2901">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMemberValuePair(BiPredicate&lt;MemberValuePair, E&gt; bs, BiConsumer&lt;MemberValuePair, E&gt; bc) {
+<span class="nc" id="L2909">		predicatemap.put(VisitorEnum.MemberValuePair, bs);</span>
+<span class="nc" id="L2910">		consumermap.put(VisitorEnum.MemberValuePair, bc);</span>
+<span class="nc" id="L2911">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMethodRef(BiPredicate&lt;MethodRef, E&gt; bs, BiConsumer&lt;MethodRef, E&gt; bc) {
+<span class="nc" id="L2919">		predicatemap.put(VisitorEnum.MethodRef, bs);</span>
+<span class="nc" id="L2920">		consumermap.put(VisitorEnum.MethodRef, bc);</span>
+<span class="nc" id="L2921">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMethodRefParameter(BiPredicate&lt;MethodRefParameter, E&gt; bs, BiConsumer&lt;MethodRefParameter, E&gt; bc) {
+<span class="nc" id="L2929">		predicatemap.put(VisitorEnum.MethodRefParameter, bs);</span>
+<span class="nc" id="L2930">		consumermap.put(VisitorEnum.MethodRefParameter, bc);</span>
+<span class="nc" id="L2931">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMethodDeclaration(BiPredicate&lt;MethodDeclaration, E&gt; bs, BiConsumer&lt;MethodDeclaration, E&gt; bc) {
+<span class="nc" id="L2939">		predicatemap.put(VisitorEnum.MethodDeclaration, bs);</span>
+<span class="nc" id="L2940">		consumermap.put(VisitorEnum.MethodDeclaration, bc);</span>
+<span class="nc" id="L2941">	}</span>
+
+	/**
+	 *
+	 * @param methodname
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMethodInvocation(String methodname, BiPredicate&lt;MethodInvocation, E&gt; bs,
+			BiConsumer&lt;MethodInvocation, E&gt; bc) {
+<span class="nc" id="L2951">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L2952">				.methodName(methodname)</span>
+<span class="nc" id="L2953">				.build();</span>
+<span class="nc" id="L2954">		predicatedata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="nc" id="L2955">		predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+<span class="nc" id="L2956">		consumerdata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="nc" id="L2957">		consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+<span class="nc" id="L2958">	}</span>
+
+	/**
+	 * @param typeof
+	 * @param methodof
+	 * @param methodname
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMethodInvocation(Class&lt;?&gt; typeof, String methodname, BiPredicate&lt;MethodInvocation, E&gt; bs,
+			BiConsumer&lt;MethodInvocation, E&gt; bc) {
+<span class="nc" id="L2969">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L2970">				.methodName(methodname)</span>
+<span class="nc" id="L2971">				.typeof(typeof)</span>
+<span class="nc" id="L2972">				.build();</span>
+<span class="nc" id="L2973">		predicatedata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="nc" id="L2974">		predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+<span class="nc" id="L2975">		consumerdata.put(VisitorEnum.MethodInvocation, config);</span>
+<span class="nc" id="L2976">		consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+<span class="nc" id="L2977">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addMethodInvocation(BiPredicate&lt;MethodInvocation, E&gt; bs, BiConsumer&lt;MethodInvocation, E&gt; bc) {
+<span class="nc" id="L2985">		predicatemap.put(VisitorEnum.MethodInvocation, bs);</span>
+<span class="nc" id="L2986">		consumermap.put(VisitorEnum.MethodInvocation, bc);</span>
+<span class="nc" id="L2987">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addModifier(BiPredicate&lt;Modifier, E&gt; bs, BiConsumer&lt;Modifier, E&gt; bc) {
+<span class="nc" id="L2995">		predicatemap.put(VisitorEnum.Modifier, bs);</span>
+<span class="nc" id="L2996">		consumermap.put(VisitorEnum.Modifier, bc);</span>
+<span class="nc" id="L2997">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addModuleDeclaration(BiPredicate&lt;ModuleDeclaration, E&gt; bs, BiConsumer&lt;ModuleDeclaration, E&gt; bc) {
+<span class="nc" id="L3005">		predicatemap.put(VisitorEnum.ModuleDeclaration, bs);</span>
+<span class="nc" id="L3006">		consumermap.put(VisitorEnum.ModuleDeclaration, bc);</span>
+<span class="nc" id="L3007">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addModuleModifier(BiPredicate&lt;ModuleModifier, E&gt; bs, BiConsumer&lt;ModuleModifier, E&gt; bc) {
+<span class="nc" id="L3015">		predicatemap.put(VisitorEnum.ModuleModifier, bs);</span>
+<span class="nc" id="L3016">		consumermap.put(VisitorEnum.ModuleModifier, bc);</span>
+<span class="nc" id="L3017">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addNameQualifiedType(BiPredicate&lt;NameQualifiedType, E&gt; bs, BiConsumer&lt;NameQualifiedType, E&gt; bc) {
+<span class="nc" id="L3025">		predicatemap.put(VisitorEnum.NameQualifiedType, bs);</span>
+<span class="nc" id="L3026">		consumermap.put(VisitorEnum.NameQualifiedType, bc);</span>
+<span class="nc" id="L3027">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addNormalAnnotation(BiPredicate&lt;NormalAnnotation, E&gt; bs, BiConsumer&lt;NormalAnnotation, E&gt; bc) {
+<span class="nc" id="L3035">		predicatemap.put(VisitorEnum.NormalAnnotation, bs);</span>
+<span class="nc" id="L3036">		consumermap.put(VisitorEnum.NormalAnnotation, bc);</span>
+<span class="nc" id="L3037">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addNullLiteral(BiPredicate&lt;NullLiteral, E&gt; bs, BiConsumer&lt;NullLiteral, E&gt; bc) {
+<span class="nc" id="L3045">		predicatemap.put(VisitorEnum.NullLiteral, bs);</span>
+<span class="nc" id="L3046">		consumermap.put(VisitorEnum.NullLiteral, bc);</span>
+<span class="nc" id="L3047">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addNumberLiteral(BiPredicate&lt;NumberLiteral, E&gt; bs, BiConsumer&lt;NumberLiteral, E&gt; bc) {
+<span class="nc" id="L3055">		predicatemap.put(VisitorEnum.NumberLiteral, bs);</span>
+<span class="nc" id="L3056">		consumermap.put(VisitorEnum.NumberLiteral, bc);</span>
+<span class="nc" id="L3057">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addOpensDirective(BiPredicate&lt;OpensDirective, E&gt; bs, BiConsumer&lt;OpensDirective, E&gt; bc) {
+<span class="nc" id="L3065">		predicatemap.put(VisitorEnum.OpensDirective, bs);</span>
+<span class="nc" id="L3066">		consumermap.put(VisitorEnum.OpensDirective, bc);</span>
+<span class="nc" id="L3067">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addPackageDeclaration(BiPredicate&lt;PackageDeclaration, E&gt; bs, BiConsumer&lt;PackageDeclaration, E&gt; bc) {
+<span class="nc" id="L3075">		predicatemap.put(VisitorEnum.PackageDeclaration, bs);</span>
+<span class="nc" id="L3076">		consumermap.put(VisitorEnum.PackageDeclaration, bc);</span>
+<span class="nc" id="L3077">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addParameterizedType(BiPredicate&lt;ParameterizedType, E&gt; bs, BiConsumer&lt;ParameterizedType, E&gt; bc) {
+<span class="nc" id="L3085">		predicatemap.put(VisitorEnum.ParameterizedType, bs);</span>
+<span class="nc" id="L3086">		consumermap.put(VisitorEnum.ParameterizedType, bc);</span>
+<span class="nc" id="L3087">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addParenthesizedExpression(BiPredicate&lt;ParenthesizedExpression, E&gt; bs,
+			BiConsumer&lt;ParenthesizedExpression, E&gt; bc) {
+<span class="nc" id="L3096">		predicatemap.put(VisitorEnum.ParenthesizedExpression, bs);</span>
+<span class="nc" id="L3097">		consumermap.put(VisitorEnum.ParenthesizedExpression, bc);</span>
+<span class="nc" id="L3098">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addPatternInstanceofExpression(BiPredicate&lt;PatternInstanceofExpression, E&gt; bs,
+			BiConsumer&lt;PatternInstanceofExpression, E&gt; bc) {
+<span class="nc" id="L3107">		predicatemap.put(VisitorEnum.PatternInstanceofExpression, bs);</span>
+<span class="nc" id="L3108">		consumermap.put(VisitorEnum.PatternInstanceofExpression, bc);</span>
+<span class="nc" id="L3109">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addPostfixExpression(BiPredicate&lt;PostfixExpression, E&gt; bs, BiConsumer&lt;PostfixExpression, E&gt; bc) {
+<span class="nc" id="L3117">		predicatemap.put(VisitorEnum.PostfixExpression, bs);</span>
+<span class="nc" id="L3118">		consumermap.put(VisitorEnum.PostfixExpression, bc);</span>
+<span class="nc" id="L3119">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addPrefixExpression(BiPredicate&lt;PrefixExpression, E&gt; bs, BiConsumer&lt;PrefixExpression, E&gt; bc) {
+<span class="nc" id="L3127">		predicatemap.put(VisitorEnum.PrefixExpression, bs);</span>
+<span class="nc" id="L3128">		consumermap.put(VisitorEnum.PrefixExpression, bc);</span>
+<span class="nc" id="L3129">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addProvidesDirective(BiPredicate&lt;ProvidesDirective, E&gt; bs, BiConsumer&lt;ProvidesDirective, E&gt; bc) {
+<span class="nc" id="L3137">		predicatemap.put(VisitorEnum.ProvidesDirective, bs);</span>
+<span class="nc" id="L3138">		consumermap.put(VisitorEnum.ProvidesDirective, bc);</span>
+<span class="nc" id="L3139">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addPrimitiveType(BiPredicate&lt;PrimitiveType, E&gt; bs, BiConsumer&lt;PrimitiveType, E&gt; bc) {
+<span class="nc" id="L3147">		predicatemap.put(VisitorEnum.PrimitiveType, bs);</span>
+<span class="nc" id="L3148">		consumermap.put(VisitorEnum.PrimitiveType, bc);</span>
+<span class="nc" id="L3149">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addQualifiedName(BiPredicate&lt;QualifiedName, E&gt; bs, BiConsumer&lt;QualifiedName, E&gt; bc) {
+<span class="nc" id="L3157">		predicatemap.put(VisitorEnum.QualifiedName, bs);</span>
+<span class="nc" id="L3158">		consumermap.put(VisitorEnum.QualifiedName, bc);</span>
+<span class="nc" id="L3159">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addQualifiedType(BiPredicate&lt;QualifiedType, E&gt; bs, BiConsumer&lt;QualifiedType, E&gt; bc) {
+<span class="nc" id="L3167">		predicatemap.put(VisitorEnum.QualifiedType, bs);</span>
+<span class="nc" id="L3168">		consumermap.put(VisitorEnum.QualifiedType, bc);</span>
+<span class="nc" id="L3169">	}</span>
+
+	/**
+	 * @param bs
+	 * @param bc
+	 */
+	public void addModuleQualifiedName(BiPredicate&lt;ModuleQualifiedName, E&gt; bs,
+			BiConsumer&lt;ModuleQualifiedName, E&gt; bc) {
+<span class="nc" id="L3177">		predicatemap.put(VisitorEnum.ModuleQualifiedName, bs);</span>
+<span class="nc" id="L3178">		consumermap.put(VisitorEnum.ModuleQualifiedName, bc);</span>
+<span class="nc" id="L3179">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+
+	public void addRequiresDirective(BiPredicate&lt;RequiresDirective, E&gt; bs, BiConsumer&lt;RequiresDirective, E&gt; bc) {
+<span class="nc" id="L3188">		predicatemap.put(VisitorEnum.RequiresDirective, bs);</span>
+<span class="nc" id="L3189">		consumermap.put(VisitorEnum.RequiresDirective, bc);</span>
+<span class="nc" id="L3190">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addRecordDeclaration(BiPredicate&lt;RecordDeclaration, E&gt; bs, BiConsumer&lt;RecordDeclaration, E&gt; bc) {
+<span class="nc" id="L3198">		predicatemap.put(VisitorEnum.RecordDeclaration, bs);</span>
+<span class="nc" id="L3199">		consumermap.put(VisitorEnum.RecordDeclaration, bc);</span>
+<span class="nc" id="L3200">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addReturnStatement(BiPredicate&lt;ReturnStatement, E&gt; bs, BiConsumer&lt;ReturnStatement, E&gt; bc) {
+<span class="nc" id="L3208">		predicatemap.put(VisitorEnum.ReturnStatement, bs);</span>
+<span class="nc" id="L3209">		consumermap.put(VisitorEnum.ReturnStatement, bc);</span>
+<span class="nc" id="L3210">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSimpleName(BiPredicate&lt;SimpleName, E&gt; bs, BiConsumer&lt;SimpleName, E&gt; bc) {
+<span class="nc" id="L3218">		predicatemap.put(VisitorEnum.SimpleName, bs);</span>
+<span class="nc" id="L3219">		consumermap.put(VisitorEnum.SimpleName, bc);</span>
+<span class="nc" id="L3220">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSimpleType(BiPredicate&lt;SimpleType, E&gt; bs, BiConsumer&lt;SimpleType, E&gt; bc) {
+<span class="nc" id="L3228">		predicatemap.put(VisitorEnum.SimpleType, bs);</span>
+<span class="nc" id="L3229">		consumermap.put(VisitorEnum.SimpleType, bc);</span>
+<span class="nc" id="L3230">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSingleMemberAnnotation(BiPredicate&lt;SingleMemberAnnotation, E&gt; bs,
+			BiConsumer&lt;SingleMemberAnnotation, E&gt; bc) {
+<span class="nc" id="L3239">		predicatemap.put(VisitorEnum.SingleMemberAnnotation, bs);</span>
+<span class="nc" id="L3240">		consumermap.put(VisitorEnum.SingleMemberAnnotation, bc);</span>
+<span class="nc" id="L3241">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSingleVariableDeclaration(BiPredicate&lt;SingleVariableDeclaration, E&gt; bs,
+			BiConsumer&lt;SingleVariableDeclaration, E&gt; bc) {
+<span class="nc" id="L3250">		predicatemap.put(VisitorEnum.SingleVariableDeclaration, bs);</span>
+<span class="nc" id="L3251">		consumermap.put(VisitorEnum.SingleVariableDeclaration, bc);</span>
+<span class="nc" id="L3252">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addStringLiteral(BiPredicate&lt;StringLiteral, E&gt; bs, BiConsumer&lt;StringLiteral, E&gt; bc) {
+<span class="nc" id="L3260">		predicatemap.put(VisitorEnum.StringLiteral, bs);</span>
+<span class="nc" id="L3261">		consumermap.put(VisitorEnum.StringLiteral, bc);</span>
+<span class="nc" id="L3262">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSuperConstructorInvocation(BiPredicate&lt;SuperConstructorInvocation, E&gt; bs,
+			BiConsumer&lt;SuperConstructorInvocation, E&gt; bc) {
+<span class="nc" id="L3271">		predicatemap.put(VisitorEnum.SuperConstructorInvocation, bs);</span>
+<span class="nc" id="L3272">		consumermap.put(VisitorEnum.SuperConstructorInvocation, bc);</span>
+<span class="nc" id="L3273">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSuperFieldAccess(BiPredicate&lt;SuperFieldAccess, E&gt; bs, BiConsumer&lt;SuperFieldAccess, E&gt; bc) {
+<span class="nc" id="L3281">		predicatemap.put(VisitorEnum.SuperFieldAccess, bs);</span>
+<span class="nc" id="L3282">		consumermap.put(VisitorEnum.SuperFieldAccess, bc);</span>
+<span class="nc" id="L3283">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSuperMethodInvocation(BiPredicate&lt;SuperMethodInvocation, E&gt; bs,
+			BiConsumer&lt;SuperMethodInvocation, E&gt; bc) {
+<span class="nc" id="L3292">		predicatemap.put(VisitorEnum.SuperMethodInvocation, bs);</span>
+<span class="nc" id="L3293">		consumermap.put(VisitorEnum.SuperMethodInvocation, bc);</span>
+<span class="nc" id="L3294">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSuperMethodReference(BiPredicate&lt;SuperMethodReference, E&gt; bs,
+			BiConsumer&lt;SuperMethodReference, E&gt; bc) {
+<span class="nc" id="L3303">		predicatemap.put(VisitorEnum.SuperMethodReference, bs);</span>
+<span class="nc" id="L3304">		consumermap.put(VisitorEnum.SuperMethodReference, bc);</span>
+<span class="nc" id="L3305">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSwitchCase(BiPredicate&lt;SwitchCase, E&gt; bs, BiConsumer&lt;SwitchCase, E&gt; bc) {
+<span class="nc" id="L3313">		predicatemap.put(VisitorEnum.SwitchCase, bs);</span>
+<span class="nc" id="L3314">		consumermap.put(VisitorEnum.SwitchCase, bc);</span>
+<span class="nc" id="L3315">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSwitchExpression(BiPredicate&lt;SwitchExpression, E&gt; bs, BiConsumer&lt;SwitchExpression, E&gt; bc) {
+<span class="nc" id="L3323">		predicatemap.put(VisitorEnum.SwitchExpression, bs);</span>
+<span class="nc" id="L3324">		consumermap.put(VisitorEnum.SwitchExpression, bc);</span>
+<span class="nc" id="L3325">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSwitchStatement(BiPredicate&lt;SwitchStatement, E&gt; bs, BiConsumer&lt;SwitchStatement, E&gt; bc) {
+<span class="nc" id="L3333">		predicatemap.put(VisitorEnum.SwitchStatement, bs);</span>
+<span class="nc" id="L3334">		consumermap.put(VisitorEnum.SwitchStatement, bc);</span>
+<span class="nc" id="L3335">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addSynchronizedStatement(BiPredicate&lt;SynchronizedStatement, E&gt; bs,
+			BiConsumer&lt;SynchronizedStatement, E&gt; bc) {
+<span class="nc" id="L3344">		predicatemap.put(VisitorEnum.SynchronizedStatement, bs);</span>
+<span class="nc" id="L3345">		consumermap.put(VisitorEnum.SynchronizedStatement, bc);</span>
+<span class="nc" id="L3346">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addTagElement(BiPredicate&lt;TagElement, E&gt; bs, BiConsumer&lt;TagElement, E&gt; bc) {
+<span class="nc" id="L3354">		predicatemap.put(VisitorEnum.TagElement, bs);</span>
+<span class="nc" id="L3355">		consumermap.put(VisitorEnum.TagElement, bc);</span>
+<span class="nc" id="L3356">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addTextBlock(BiPredicate&lt;TextBlock, E&gt; bs, BiConsumer&lt;TextBlock, E&gt; bc) {
+<span class="nc" id="L3364">		predicatemap.put(VisitorEnum.TextBlock, bs);</span>
+<span class="nc" id="L3365">		consumermap.put(VisitorEnum.TextBlock, bc);</span>
+<span class="nc" id="L3366">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addTextElement(BiPredicate&lt;TextElement, E&gt; bs, BiConsumer&lt;TextElement, E&gt; bc) {
+<span class="nc" id="L3374">		predicatemap.put(VisitorEnum.TextElement, bs);</span>
+<span class="nc" id="L3375">		consumermap.put(VisitorEnum.TextElement, bc);</span>
+<span class="nc" id="L3376">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addThisExpression(BiPredicate&lt;ThisExpression, E&gt; bs, BiConsumer&lt;ThisExpression, E&gt; bc) {
+<span class="nc" id="L3384">		predicatemap.put(VisitorEnum.ThisExpression, bs);</span>
+<span class="nc" id="L3385">		consumermap.put(VisitorEnum.ThisExpression, bc);</span>
+<span class="nc" id="L3386">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addThrowStatement(BiPredicate&lt;ThrowStatement, E&gt; bs, BiConsumer&lt;ThrowStatement, E&gt; bc) {
+<span class="nc" id="L3394">		predicatemap.put(VisitorEnum.ThrowStatement, bs);</span>
+<span class="nc" id="L3395">		consumermap.put(VisitorEnum.ThrowStatement, bc);</span>
+<span class="nc" id="L3396">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addTryStatement(BiPredicate&lt;TryStatement, E&gt; bs, BiConsumer&lt;TryStatement, E&gt; bc) {
+<span class="nc" id="L3404">		predicatemap.put(VisitorEnum.TryStatement, bs);</span>
+<span class="nc" id="L3405">		consumermap.put(VisitorEnum.TryStatement, bc);</span>
+<span class="nc" id="L3406">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addTypeDeclaration(BiPredicate&lt;TypeDeclaration, E&gt; bs, BiConsumer&lt;TypeDeclaration, E&gt; bc) {
+<span class="nc" id="L3414">		predicatemap.put(VisitorEnum.TypeDeclaration, bs);</span>
+<span class="nc" id="L3415">		consumermap.put(VisitorEnum.TypeDeclaration, bc);</span>
+<span class="nc" id="L3416">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addTypeDeclarationStatement(BiPredicate&lt;TypeDeclarationStatement, E&gt; bs,
+			BiConsumer&lt;TypeDeclarationStatement, E&gt; bc) {
+<span class="nc" id="L3425">		predicatemap.put(VisitorEnum.TypeDeclarationStatement, bs);</span>
+<span class="nc" id="L3426">		consumermap.put(VisitorEnum.TypeDeclarationStatement, bc);</span>
+<span class="nc" id="L3427">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addTypeLiteral(BiPredicate&lt;TypeLiteral, E&gt; bs, BiConsumer&lt;TypeLiteral, E&gt; bc) {
+<span class="nc" id="L3435">		predicatemap.put(VisitorEnum.TypeLiteral, bs);</span>
+<span class="nc" id="L3436">		consumermap.put(VisitorEnum.TypeLiteral, bc);</span>
+<span class="nc" id="L3437">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addTypeMethodReference(BiPredicate&lt;TypeMethodReference, E&gt; bs, BiConsumer&lt;TypeMethodReference, E&gt; bc) {
+<span class="nc" id="L3445">		predicatemap.put(VisitorEnum.TypeMethodReference, bs);</span>
+<span class="nc" id="L3446">		consumermap.put(VisitorEnum.TypeMethodReference, bc);</span>
+<span class="nc" id="L3447">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addTypeParameter(BiPredicate&lt;TypeParameter, E&gt; bs, BiConsumer&lt;TypeParameter, E&gt; bc) {
+<span class="nc" id="L3455">		predicatemap.put(VisitorEnum.TypeParameter, bs);</span>
+<span class="nc" id="L3456">		consumermap.put(VisitorEnum.TypeParameter, bc);</span>
+<span class="nc" id="L3457">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addUnionType(BiPredicate&lt;UnionType, E&gt; bs, BiConsumer&lt;UnionType, E&gt; bc) {
+<span class="nc" id="L3465">		predicatemap.put(VisitorEnum.UnionType, bs);</span>
+<span class="nc" id="L3466">		consumermap.put(VisitorEnum.UnionType, bc);</span>
+<span class="nc" id="L3467">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addUsesDirective(BiPredicate&lt;UsesDirective, E&gt; bs, BiConsumer&lt;UsesDirective, E&gt; bc) {
+<span class="nc" id="L3475">		predicatemap.put(VisitorEnum.UsesDirective, bs);</span>
+<span class="nc" id="L3476">		consumermap.put(VisitorEnum.UsesDirective, bc);</span>
+<span class="nc" id="L3477">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addVariableDeclarationExpression(BiPredicate&lt;VariableDeclarationExpression, E&gt; bs,
+			BiConsumer&lt;VariableDeclarationExpression, E&gt; bc) {
+<span class="nc" id="L3486">		predicatemap.put(VisitorEnum.VariableDeclarationExpression, bs);</span>
+<span class="nc" id="L3487">		consumermap.put(VisitorEnum.VariableDeclarationExpression, bc);</span>
+<span class="nc" id="L3488">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addVariableDeclarationStatement(BiPredicate&lt;VariableDeclarationStatement, E&gt; bs,
+			BiConsumer&lt;VariableDeclarationStatement, E&gt; bc) {
+<span class="nc" id="L3497">		predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
+<span class="nc" id="L3498">		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
+<span class="nc" id="L3499">	}</span>
+
+	/**
+	 *
+	 * @param typeof
+	 * @param class1
+	 * @param bs
+	 * @param bc
+	 */
+	public void addVariableDeclarationStatement(Class&lt;?&gt; typeof, BiPredicate&lt;VariableDeclarationStatement, E&gt; bs,
+			BiConsumer&lt;VariableDeclarationStatement, E&gt; bc) {
+<span class="nc" id="L3510">		VisitorConfigData config = VisitorConfigData.builder()</span>
+<span class="nc" id="L3511">				.typeof(typeof)</span>
+<span class="nc" id="L3512">				.build();</span>
+<span class="nc" id="L3513">		predicatedata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
+<span class="nc" id="L3514">		consumerdata.put(VisitorEnum.VariableDeclarationStatement, config);</span>
+<span class="nc" id="L3515">		predicatemap.put(VisitorEnum.VariableDeclarationStatement, bs);</span>
+<span class="nc" id="L3516">		consumermap.put(VisitorEnum.VariableDeclarationStatement, bc);</span>
+<span class="nc" id="L3517">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addVariableDeclarationFragment(BiPredicate&lt;VariableDeclarationFragment, E&gt; bs,
+			BiConsumer&lt;VariableDeclarationFragment, E&gt; bc) {
+<span class="nc" id="L3526">		predicatemap.put(VisitorEnum.VariableDeclarationFragment, bs);</span>
+<span class="nc" id="L3527">		consumermap.put(VisitorEnum.VariableDeclarationFragment, bc);</span>
+<span class="nc" id="L3528">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addWhileStatement(BiPredicate&lt;WhileStatement, E&gt; bs, BiConsumer&lt;WhileStatement, E&gt; bc) {
+<span class="nc" id="L3536">		predicatemap.put(VisitorEnum.WhileStatement, bs);</span>
+<span class="nc" id="L3537">		consumermap.put(VisitorEnum.WhileStatement, bc);</span>
+<span class="nc" id="L3538">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addWildcardType(BiPredicate&lt;WildcardType, E&gt; bs, BiConsumer&lt;WildcardType, E&gt; bc) {
+<span class="nc" id="L3546">		predicatemap.put(VisitorEnum.WildcardType, bs);</span>
+<span class="nc" id="L3547">		consumermap.put(VisitorEnum.WildcardType, bc);</span>
+<span class="nc" id="L3548">	}</span>
+
+	/**
+	 *
+	 * @param bs
+	 * @param bc
+	 */
+	public void addYieldStatement(BiPredicate&lt;YieldStatement, E&gt; bs, BiConsumer&lt;YieldStatement, E&gt; bc) {
+<span class="nc" id="L3556">		predicatemap.put(VisitorEnum.YieldStatement, bs);</span>
+<span class="nc" id="L3557">		consumermap.put(VisitorEnum.YieldStatement, bc);</span>
+<span class="nc" id="L3558">	}</span>
+
+
+	/**
+	 *
+	 */
+	public void clear() {
+<span class="nc" id="L3565">		this.consumermap.clear();</span>
+<span class="nc" id="L3566">		this.consumerdata.clear();</span>
+<span class="nc" id="L3567">		this.predicatemap.clear();</span>
+<span class="nc" id="L3568">		this.predicatedata.clear();</span>
+<span class="nc" id="L3569">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

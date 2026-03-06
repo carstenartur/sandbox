@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CommitWalker.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.git</a> &gt; <span class="el_source">CommitWalker.java</span></div><h1>CommitWalker.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.git;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevSort;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.CommitTimeRevFilter;
+
+/**
+ * Iterates over commits in a Git repository using JGit's RevWalk.
+ *
+ * &lt;p&gt;Supports date-based filtering and batch iteration, allowing
+ * the mining process to resume from the last processed commit.&lt;/p&gt;
+ */
+public class CommitWalker implements Closeable {
+
+	private final Git git;
+	private final Repository repository;
+
+	/**
+	 * Creates a CommitWalker for the given repository directory.
+	 *
+	 * @param repoDir the local repository directory
+	 * @throws IOException if the repository cannot be opened
+	 */
+<span class="fc" id="L52">	public CommitWalker(Path repoDir) throws IOException {</span>
+<span class="fc" id="L53">		this.git = Git.open(repoDir.toFile());</span>
+<span class="fc" id="L54">		this.repository = git.getRepository();</span>
+<span class="fc" id="L55">	}</span>
+
+	/**
+	 * Returns the next batch of commits after the given commit hash.
+	 *
+	 * @param afterCommitHash the commit hash to start after (null for beginning)
+	 * @param startDate       only include commits after this date ({@code yyyy-MM-dd} format, may be null)
+	 * @param batchSize       maximum number of commits to return
+	 * @return list of commits in chronological order
+	 * @throws IOException if a Git operation fails
+	 */
+	public List&lt;RevCommit&gt; nextBatch(String afterCommitHash, String startDate, int batchSize)
+			throws IOException {
+<span class="fc" id="L68">		return nextBatch(afterCommitHash, startDate, null, batchSize);</span>
+	}
+
+	/**
+	 * Returns the next batch of commits after the given commit hash,
+	 * filtered to the given date range.
+	 *
+	 * @param afterCommitHash the commit hash to start after (null for beginning)
+	 * @param startDate       only include commits after this date ({@code yyyy-MM-dd} format, may be null)
+	 * @param endDate         only include commits before this date ({@code yyyy-MM-dd} format, may be null)
+	 * @param batchSize       maximum number of commits to return
+	 * @return list of commits in chronological order
+	 * @throws IOException if a Git operation fails
+	 */
+	public List&lt;RevCommit&gt; nextBatch(String afterCommitHash, String startDate, String endDate, int batchSize)
+			throws IOException {
+<span class="fc" id="L84">		List&lt;RevCommit&gt; batch = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L86">		try (RevWalk walk = new RevWalk(repository)) {</span>
+<span class="fc" id="L87">			ObjectId head = repository.resolve(&quot;HEAD&quot;);</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">			if (head == null) {</span>
+<span class="nc" id="L89">				return batch;</span>
+			}
+<span class="fc" id="L91">			walk.markStart(walk.parseCommit(head));</span>
+<span class="fc" id="L92">			walk.sort(RevSort.REVERSE); // chronological order</span>
+
+			// Apply date filter (using thread-safe DateTimeFormatter)
+<span class="fc" id="L95">			DateTimeFormatter dtf = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L96">			Date since = null;</span>
+<span class="fc" id="L97">			Date until = null;</span>
+<span class="pc bpc" id="L98" title="1 of 4 branches missed.">			if (startDate != null &amp;&amp; !startDate.isBlank()) {</span>
+				try {
+<span class="fc" id="L100">					since = Date.from(LocalDate.parse(startDate, dtf).atStartOfDay(ZoneOffset.UTC).toInstant());</span>
+<span class="nc" id="L101">				} catch (DateTimeParseException e) {</span>
+<span class="nc" id="L102">					System.err.println(&quot;Invalid start-date format: &quot; + startDate); //$NON-NLS-1$</span>
+<span class="fc" id="L103">				}</span>
+			}
+<span class="pc bpc" id="L105" title="3 of 4 branches missed.">			if (endDate != null &amp;&amp; !endDate.isBlank()) {</span>
+				try {
+<span class="nc" id="L107">					until = Date.from(LocalDate.parse(endDate, dtf).atStartOfDay(ZoneOffset.UTC).toInstant());</span>
+<span class="nc" id="L108">				} catch (DateTimeParseException e) {</span>
+<span class="nc" id="L109">					System.err.println(&quot;Invalid end-date format: &quot; + endDate); //$NON-NLS-1$</span>
+<span class="nc" id="L110">				}</span>
+			}
+<span class="pc bpc" id="L112" title="1 of 4 branches missed.">			if (since != null &amp;&amp; until != null) {</span>
+<span class="nc" id="L113">				walk.setRevFilter(CommitTimeRevFilter.between(since, until));</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">			} else if (since != null) {</span>
+<span class="fc" id="L115">				walk.setRevFilter(CommitTimeRevFilter.after(since));</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">			} else if (until != null) {</span>
+<span class="nc" id="L117">				walk.setRevFilter(CommitTimeRevFilter.before(until));</span>
+			}
+
+<span class="pc bpc" id="L120" title="3 of 4 branches missed.">			boolean pastAnchor = (afterCommitHash == null || afterCommitHash.isBlank());</span>
+
+<span class="fc bfc" id="L122" title="All 2 branches covered.">			for (RevCommit commit : walk) {</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">				if (!pastAnchor) {</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">					if (commit.getName().equals(afterCommitHash)) {</span>
+<span class="nc" id="L125">						pastAnchor = true;</span>
+					}
+					continue;
+				}
+
+<span class="fc" id="L130">				batch.add(commit);</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">				if (batch.size() &gt;= batchSize) {</span>
+<span class="fc" id="L132">					break;</span>
+				}
+<span class="fc" id="L134">			}</span>
+<span class="nc" id="L135">		}</span>
+
+<span class="fc" id="L137">		return batch;</span>
+	}
+
+	@Override
+	public void close() {
+<span class="fc" id="L142">		repository.close();</span>
+<span class="fc" id="L143">		git.close();</span>
+<span class="fc" id="L144">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

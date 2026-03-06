@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SourceScanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-cli</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.scanner</a> &gt; <span class="el_source">SourceScanner.java</span></div><h1>SourceScanner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.scanner;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.mining.report.MiningReport;
+
+/**
+ * Scans directories for Java source files and runs transformation rules against them.
+ */
+public class SourceScanner {
+
+	private final StandaloneAstParser parser;
+	private final int maxFiles;
+
+	public SourceScanner() {
+<span class="fc" id="L41">		this(new StandaloneAstParser(), 5000);</span>
+<span class="fc" id="L42">	}</span>
+
+<span class="fc" id="L44">	public SourceScanner(StandaloneAstParser parser, int maxFiles) {</span>
+<span class="fc" id="L45">		this.parser = parser;</span>
+<span class="fc" id="L46">		this.maxFiles = maxFiles;</span>
+<span class="fc" id="L47">	}</span>
+
+	/**
+	 * Finds all Java files in the given directory tree.
+	 *
+	 * @param rootDir  the root directory to scan
+	 * @param subPaths optional sub-paths to restrict scanning to; if empty, scans
+	 *                 all
+	 * @return list of Java file paths
+	 * @throws IOException if directory traversal fails
+	 */
+	public List&lt;Path&gt; findJavaFiles(Path rootDir, List&lt;String&gt; subPaths) throws IOException {
+<span class="fc" id="L59">		List&lt;Path&gt; javaFiles = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L61">		List&lt;Path&gt; searchRoots = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L62" title="1 of 4 branches missed.">		if (subPaths == null || subPaths.isEmpty()) {</span>
+<span class="fc" id="L63">			searchRoots.add(rootDir);</span>
+		} else {
+<span class="fc bfc" id="L65" title="All 2 branches covered.">			for (String sub : subPaths) {</span>
+<span class="fc" id="L66">				Path subPath = rootDir.resolve(sub);</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">				if (Files.isDirectory(subPath)) {</span>
+<span class="fc" id="L68">					searchRoots.add(subPath);</span>
+				}
+<span class="fc" id="L70">			}</span>
+		}
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		for (Path searchRoot : searchRoots) {</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">			if (!Files.isDirectory(searchRoot)) {</span>
+<span class="nc" id="L75">				continue;</span>
+			}
+<span class="fc" id="L77">			Files.walkFileTree(searchRoot, new SimpleFileVisitor&lt;&gt;() {</span>
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">					if (javaFiles.size() &gt;= maxFiles) {</span>
+<span class="fc" id="L81">						return FileVisitResult.TERMINATE;</span>
+					}
+<span class="fc bfc" id="L83" title="All 2 branches covered.">					if (file.toString().endsWith(&quot;.java&quot;)) {</span>
+<span class="fc" id="L84">						javaFiles.add(file);</span>
+					}
+<span class="fc" id="L86">					return FileVisitResult.CONTINUE;</span>
+				}
+
+				@Override
+				public FileVisitResult visitFileFailed(Path file, IOException exc) {
+<span class="nc" id="L91">					return FileVisitResult.CONTINUE;</span>
+				}
+			});
+<span class="fc" id="L94">		}</span>
+
+<span class="fc" id="L96">		return javaFiles;</span>
+	}
+
+	/**
+	 * Scans all Java files using the given hint file and produces a mining report.
+	 *
+	 * @param repoName  name of the repository being scanned
+	 * @param rootDir   the root directory of the cloned repository
+	 * @param subPaths  optional sub-paths to restrict scanning to
+	 * @param hintFiles list of parsed hint files to apply
+	 * @return the mining report with all matches
+	 * @throws IOException if file reading fails
+	 */
+	public MiningReport scan(String repoName, Path rootDir, List&lt;String&gt; subPaths, List&lt;HintFile&gt; hintFiles)
+			throws IOException {
+<span class="nc" id="L111">		MiningReport report = new MiningReport();</span>
+<span class="nc" id="L112">		List&lt;Path&gt; javaFiles = findJavaFiles(rootDir, subPaths);</span>
+<span class="nc" id="L113">		report.addFileCount(repoName, javaFiles.size());</span>
+
+<span class="nc bnc" id="L115" title="All 2 branches missed.">		for (HintFile hintFile : hintFiles) {</span>
+<span class="nc" id="L116">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
+
+<span class="nc bnc" id="L118" title="All 2 branches missed.">			for (Path javaFile : javaFiles) {</span>
+<span class="nc" id="L119">				String source = Files.readString(javaFile, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L120">				CompilationUnit cu = parser.parse(source);</span>
+<span class="nc" id="L121">				List&lt;TransformationResult&gt; results = processor.process(cu);</span>
+
+<span class="nc bnc" id="L123" title="All 2 branches missed.">				for (TransformationResult result : results) {</span>
+<span class="nc" id="L124">					String relativePath = rootDir.relativize(javaFile).toString();</span>
+<span class="nc" id="L125">					int line = cu.getLineNumber(result.match().getOffset());</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">					String hintFileName = hintFile.getId() != null ? hintFile.getId() : &quot;unknown&quot;;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">					String ruleName = result.rule().getDescription() != null ? result.rule().getDescription()</span>
+<span class="nc" id="L128">							: &quot;unnamed&quot;;</span>
+<span class="nc" id="L129">					report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">							result.hasReplacement() ? result.replacement() : null);</span>
+<span class="nc" id="L131">				}</span>
+<span class="nc" id="L132">			}</span>
+<span class="nc" id="L133">		}</span>
+
+<span class="nc" id="L135">		return report;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

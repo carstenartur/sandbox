@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AdminResource.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.rest</a> &gt; <span class="el_source">AdminResource.java</span></div><h1>AdminResource.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.server.rest;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.storage.hibernate.service.IndexMigrationService;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ * REST endpoint for administrative operations.
+ * &lt;ul&gt;
+ * &lt;li&gt;{@code POST /api/admin/reindex} — trigger full re-indexing of all
+ * Hibernate Search entities&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+public class AdminResource extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+
+<span class="nc" id="L41">	private static final Logger LOG = Logger</span>
+<span class="nc" id="L42">			.getLogger(AdminResource.class.getName());</span>
+
+	private final HibernateSessionFactoryProvider provider;
+
+	/**
+	 * Create an admin endpoint.
+	 *
+	 * @param provider
+	 *            the session factory provider
+	 */
+<span class="nc" id="L52">	public AdminResource(HibernateSessionFactoryProvider provider) {</span>
+<span class="nc" id="L53">		this.provider = provider;</span>
+<span class="nc" id="L54">	}</span>
+
+	@Override
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+			throws IOException {
+<span class="nc" id="L59">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L60">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
+
+<span class="nc bnc" id="L62" title="All 2 branches missed.">		if (!isAuthorized(req)) {</span>
+<span class="nc" id="L63">			resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);</span>
+<span class="nc" id="L64">			resp.setHeader(&quot;WWW-Authenticate&quot;, //$NON-NLS-1$</span>
+					&quot;Bearer realm=\&quot;admin\&quot;&quot;); //$NON-NLS-1$
+<span class="nc" id="L66">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L67">				w.write(&quot;{\&quot;error\&quot;:\&quot;Unauthorized. Set JGIT_ADMIN_TOKEN and pass as Bearer token.\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L69">			return;</span>
+		}
+
+<span class="nc" id="L72">		String pathInfo = req.getPathInfo();</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">		if (pathInfo == null) {</span>
+<span class="nc" id="L74">			pathInfo = &quot;/&quot;; //$NON-NLS-1$</span>
+		}
+
+<span class="nc bnc" id="L77" title="All 2 branches missed.">		if (pathInfo.startsWith(&quot;/reindex&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L78">			handleReindex(resp);</span>
+		} else {
+<span class="nc" id="L80">			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);</span>
+<span class="nc" id="L81">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L82">				w.write(&quot;{\&quot;error\&quot;:\&quot;Unknown admin endpoint\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+		}
+<span class="nc" id="L85">	}</span>
+
+	private void handleReindex(HttpServletResponse resp) throws IOException {
+		try {
+<span class="nc" id="L89">			IndexMigrationService migrationService = new IndexMigrationService(</span>
+<span class="nc" id="L90">					provider.getSessionFactory());</span>
+<span class="nc" id="L91">			migrationService.reindexAll();</span>
+<span class="nc" id="L92">			resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L93">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L94">				w.write(&quot;{\&quot;status\&quot;:\&quot;Re-indexing completed\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L96">		} catch (InterruptedException e) {</span>
+<span class="nc" id="L97">			Thread.currentThread().interrupt();</span>
+<span class="nc" id="L98">			LOG.log(Level.WARNING, &quot;Re-indexing interrupted&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L99">			resp.setStatus(</span>
+					HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+<span class="nc" id="L101">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L102">				w.write(&quot;{\&quot;error\&quot;:\&quot;Re-indexing was interrupted\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L104">		} catch (Exception e) {</span>
+<span class="nc" id="L105">			LOG.log(Level.WARNING, &quot;Re-indexing failed&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L106">			resp.setStatus(</span>
+					HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+<span class="nc" id="L108">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L109">				w.write(&quot;{\&quot;error\&quot;:\&quot;Re-indexing failed\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L111">		}</span>
+<span class="nc" id="L112">	}</span>
+
+	/**
+	 * Check if the request is authorized for admin operations.
+	 * &lt;p&gt;
+	 * The {@code JGIT_ADMIN_TOKEN} environment variable must be set to a
+	 * non-empty value; all admin access is denied when the variable is absent
+	 * or empty.  Requests must include an
+	 * {@code Authorization: Bearer &lt;token&gt;} header whose value matches that
+	 * variable.
+	 * &lt;/p&gt;
+	 *
+	 * @param req
+	 *            the HTTP request
+	 * @return {@code true} if the request is authorized
+	 */
+	private static boolean isAuthorized(HttpServletRequest req) {
+<span class="nc" id="L129">		String expectedToken = System.getenv(&quot;JGIT_ADMIN_TOKEN&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">		if (expectedToken == null || expectedToken.isEmpty()) {</span>
+<span class="nc" id="L131">			LOG.log(Level.WARNING,</span>
+					&quot;Admin access denied: JGIT_ADMIN_TOKEN is not set&quot;); //$NON-NLS-1$
+<span class="nc" id="L133">			return false;</span>
+		}
+<span class="nc" id="L135">		String authHeader = req.getHeader(&quot;Authorization&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">		if (authHeader == null</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">				|| !authHeader.startsWith(&quot;Bearer &quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L138">			return false;</span>
+		}
+<span class="nc" id="L140">		String token = authHeader</span>
+<span class="nc" id="L141">				.substring(&quot;Bearer &quot;.length()).trim(); //$NON-NLS-1$</span>
+<span class="nc" id="L142">		return MessageDigest.isEqual(</span>
+<span class="nc" id="L143">				expectedToken.getBytes(StandardCharsets.UTF_8),</span>
+<span class="nc" id="L144">				token.getBytes(StandardCharsets.UTF_8));</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

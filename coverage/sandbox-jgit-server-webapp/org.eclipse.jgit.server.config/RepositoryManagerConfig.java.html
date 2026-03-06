@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RepositoryManagerConfig.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.config</a> &gt; <span class="el_source">RepositoryManagerConfig.java</span></div><h1>RepositoryManagerConfig.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.server.config;
+
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.storage.hibernate.repository.HibernateRepository;
+import org.eclipse.jgit.storage.hibernate.repository.HibernateRepositoryBuilder;
+
+/**
+ * Manages automatic creation of default Git repositories on server startup.
+ * &lt;p&gt;
+ * Reads the {@code JGIT_DEFAULT_REPOS} environment variable (comma-separated
+ * list of repository names) and ensures each one exists in the database.
+ */
+public class RepositoryManagerConfig {
+
+<span class="nc" id="L32">	private static final Logger LOG = Logger</span>
+<span class="nc" id="L33">			.getLogger(RepositoryManagerConfig.class.getName());</span>
+
+	private RepositoryManagerConfig() {
+		// utility class
+	}
+
+	/**
+	 * Initialize default repositories from a comma-separated list of names.
+	 * &lt;p&gt;
+	 * Each repository is created if it does not already exist. Existing
+	 * repositories are not modified.
+	 *
+	 * @param provider
+	 *            the session factory provider
+	 * @param repoList
+	 *            comma-separated list of repository names
+	 */
+	public static void initDefaultRepositories(
+			HibernateSessionFactoryProvider provider, String repoList) {
+<span class="nc" id="L52">		String[] repos = repoList.split(&quot;,&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		for (String repoName : repos) {</span>
+<span class="nc" id="L54">			String name = repoName.trim();</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">			if (!name.isEmpty()) {</span>
+				try {
+<span class="nc" id="L57">					createRepositoryIfAbsent(provider, name);</span>
+<span class="nc" id="L58">					LOG.log(Level.INFO,</span>
+							&quot;Initialized default repository: {0}&quot;, //$NON-NLS-1$
+							name);
+<span class="nc" id="L61">				} catch (IOException e) {</span>
+<span class="nc" id="L62">					LOG.log(Level.WARNING,</span>
+							&quot;Failed to create default repository: &quot; //$NON-NLS-1$
+									+ name,
+							e);
+<span class="nc" id="L66">				}</span>
+			}
+		}
+<span class="nc" id="L69">	}</span>
+
+	/**
+	 * Create a repository if it doesn't already exist.
+	 *
+	 * @param provider
+	 *            the session factory provider
+	 * @param repositoryName
+	 *            the name of the repository to create
+	 * @return the repository (existing or newly created)
+	 * @throws IOException
+	 *             if creation fails
+	 */
+	public static HibernateRepository createRepositoryIfAbsent(
+			HibernateSessionFactoryProvider provider,
+			String repositoryName) throws IOException {
+<span class="nc" id="L85">		return new HibernateRepositoryBuilder()</span>
+<span class="nc" id="L86">				.setSessionFactoryProvider(provider)</span>
+<span class="nc" id="L87">				.setRepositoryName(repositoryName).build();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

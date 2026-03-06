@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TransformationReporter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">TransformationReporter.java</span></div><h1>TransformationReporter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.List;
+
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+
+/**
+ * Generates CSV and JSON reports from {@link TransformationResult} lists.
+ *
+ * &lt;p&gt;This reporter works directly with the results produced by
+ * {@link BatchTransformationProcessor#process} and writes reports to a
+ * caller-supplied {@link Writer}, making it easy to write to files, streams,
+ * or string buffers.&lt;/p&gt;
+ *
+ * &lt;h2&gt;Usage&lt;/h2&gt;
+ * &lt;pre&gt;
+ * List&amp;lt;TransformationResult&amp;gt; results = processor.process(cu);
+ * TransformationReporter reporter = new TransformationReporter();
+ * try (Writer w = new FileWriter(&quot;report.csv&quot;)) {
+ *     reporter.generateCsvReport(results, w);
+ * }
+ * &lt;/pre&gt;
+ *
+ * @since 1.3.6
+ */
+<span class="fc" id="L41">public final class TransformationReporter {</span>
+
+	/**
+	 * Writes a CSV report of the given transformation results to the writer.
+	 *
+	 * &lt;p&gt;The CSV contains a header row followed by one data row per result.
+	 * Columns: {@code line, offset, length, matched, replacement, description,
+	 * severity, pattern}.&lt;/p&gt;
+	 *
+	 * @param results the transformation results to report
+	 * @param writer the writer to write the CSV to
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void generateCsvReport(List&lt;TransformationResult&gt; results, Writer writer) throws IOException {
+<span class="fc" id="L55">		writer.write(&quot;line,offset,length,matched,replacement,description,severity,pattern\n&quot;); //$NON-NLS-1$</span>
+
+<span class="fc bfc" id="L57" title="All 2 branches covered.">		for (TransformationResult result : results) {</span>
+<span class="fc" id="L58">			writer.write(String.valueOf(result.lineNumber()));</span>
+<span class="fc" id="L59">			writer.write(',');</span>
+<span class="fc" id="L60">			writer.write(String.valueOf(result.match().getOffset()));</span>
+<span class="fc" id="L61">			writer.write(',');</span>
+<span class="fc" id="L62">			writer.write(String.valueOf(result.match().getLength()));</span>
+<span class="fc" id="L63">			writer.write(',');</span>
+<span class="fc" id="L64">			writer.write(escapeCsv(result.matchedText()));</span>
+<span class="fc" id="L65">			writer.write(',');</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">			writer.write(result.replacement() != null ? escapeCsv(result.replacement()) : &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L67">			writer.write(',');</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">			writer.write(result.description() != null ? escapeCsv(result.description()) : &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L69">			writer.write(',');</span>
+<span class="fc" id="L70">			writer.write(escapeCsv(getSeverity(result)));</span>
+<span class="fc" id="L71">			writer.write(',');</span>
+<span class="fc" id="L72">			writer.write(escapeCsv(result.rule().sourcePattern().getValue()));</span>
+<span class="fc" id="L73">			writer.write('\n');</span>
+<span class="fc" id="L74">		}</span>
+<span class="fc" id="L75">	}</span>
+
+	/**
+	 * Writes a JSON report of the given transformation results to the writer.
+	 *
+	 * &lt;p&gt;The JSON output is an array of objects, one per result, with fields:
+	 * {@code line, offset, length, matched, replacement, description, severity,
+	 * pattern}.&lt;/p&gt;
+	 *
+	 * @param results the transformation results to report
+	 * @param writer the writer to write the JSON to
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void generateJsonReport(List&lt;TransformationResult&gt; results, Writer writer) throws IOException {
+<span class="fc" id="L89">		writer.write(&quot;[\n&quot;); //$NON-NLS-1$</span>
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (int i = 0; i &lt; results.size(); i++) {</span>
+<span class="fc" id="L92">			TransformationResult result = results.get(i);</span>
+<span class="fc" id="L93">			writer.write(&quot;  {\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L94">			writer.write(&quot;    \&quot;line\&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L95">			writer.write(String.valueOf(result.lineNumber()));</span>
+<span class="fc" id="L96">			writer.write(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L97">			writer.write(&quot;    \&quot;offset\&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L98">			writer.write(String.valueOf(result.match().getOffset()));</span>
+<span class="fc" id="L99">			writer.write(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L100">			writer.write(&quot;    \&quot;length\&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L101">			writer.write(String.valueOf(result.match().getLength()));</span>
+<span class="fc" id="L102">			writer.write(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L103">			writer.write(&quot;    \&quot;matched\&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L104">			writer.write(escapeJson(result.matchedText()));</span>
+<span class="fc" id="L105">			writer.write(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L106">			writer.write(&quot;    \&quot;replacement\&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">			writer.write(result.replacement() != null</span>
+<span class="fc" id="L108">					? escapeJson(result.replacement())</span>
+<span class="nc" id="L109">					: &quot;null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L110">			writer.write(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L111">			writer.write(&quot;    \&quot;description\&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">			writer.write(result.description() != null</span>
+<span class="fc" id="L113">					? escapeJson(result.description())</span>
+<span class="nc" id="L114">					: &quot;null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L115">			writer.write(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L116">			writer.write(&quot;    \&quot;severity\&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L117">			writer.write(escapeJson(getSeverity(result)));</span>
+<span class="fc" id="L118">			writer.write(&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L119">			writer.write(&quot;    \&quot;pattern\&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L120">			writer.write(escapeJson(result.rule().sourcePattern().getValue()));</span>
+<span class="fc" id="L121">			writer.write('\n');</span>
+<span class="fc" id="L122">			writer.write(&quot;  }&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">			if (i &lt; results.size() - 1) {</span>
+<span class="nc" id="L124">				writer.write(',');</span>
+			}
+<span class="fc" id="L126">			writer.write('\n');</span>
+		}
+
+<span class="fc" id="L129">		writer.write(&quot;]&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L130">	}</span>
+
+	/**
+	 * Determines the severity string for a transformation result.
+	 */
+	private String getSeverity(TransformationResult result) {
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">		if (result.rule() != null &amp;&amp; result.rule().sourcePattern() != null) {</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">			return result.hasReplacement() ? &quot;warning&quot; : &quot;info&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="nc" id="L139">		return &quot;info&quot;; //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Escapes a string for JSON output.
+	 * Handles common escape sequences and also escapes other control
+	 * characters (U+0000 to U+001F) as {@code &amp;#92;uXXXX} for fully
+	 * compliant JSON output.
+	 */
+	static String escapeJson(String value) {
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L150">			return &quot;null&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L152">		StringBuilder sb = new StringBuilder(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">		for (char c : value.toCharArray()) {</span>
+<span class="pc bpc" id="L154" title="5 of 6 branches missed.">			switch (c) {</span>
+			case '&quot;':
+<span class="nc" id="L156">				sb.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L157">				break;</span>
+			case '\\':
+<span class="nc" id="L159">				sb.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L160">				break;</span>
+			case '\n':
+<span class="nc" id="L162">				sb.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L163">				break;</span>
+			case '\r':
+<span class="nc" id="L165">				sb.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L166">				break;</span>
+			case '\t':
+<span class="nc" id="L168">				sb.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L169">				break;</span>
+			default:
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">				if (c &lt; 0x20) {</span>
+<span class="nc" id="L172">					sb.append(String.format(&quot;\\u%04x&quot;, (int) c)); //$NON-NLS-1$</span>
+				} else {
+<span class="fc" id="L174">					sb.append(c);</span>
+				}
+				break;
+			}
+		}
+<span class="fc" id="L179">		sb.append('&quot;');</span>
+<span class="fc" id="L180">		return sb.toString();</span>
+	}
+
+	/**
+	 * Escapes a string for CSV output.
+	 */
+	static String escapeCsv(String value) {
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L188">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L190" title="3 of 6 branches missed.">		if (value.contains(&quot;,&quot;) || value.contains(&quot;\&quot;&quot;) || value.contains(&quot;\n&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L191">			return &quot;\&quot;&quot; + value.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;) + &quot;\&quot;&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+		}
+<span class="fc" id="L193">		return value;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

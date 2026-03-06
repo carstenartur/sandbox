@@ -1,0 +1,730 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>NullabilityGuard.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.nullability</a> &gt; <span class="el_source">NullabilityGuard.java</span></div><h1>NullabilityGuard.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.nullability;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.ThisExpression;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
+/**
+ * Analyzes the nullability of expressions in Java AST using a four-stage model:
+ *
+ * &lt;ol&gt;
+ *   &lt;li&gt;&lt;b&gt;Stage 1&lt;/b&gt;: Type-based whitelist (fast, cheap)&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Stage 2&lt;/b&gt;: Initialization analysis (local data flow)&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Stage 3&lt;/b&gt;: Contextual null-check analysis (SpotBugs-style)&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Stage 4&lt;/b&gt;: Annotation-based checking ({@code @Nullable}/{@code @NonNull})&lt;/li&gt;
+ * &lt;/ol&gt;
+ *
+ * @since 1.2.6
+ */
+public class NullabilityGuard {
+
+	private static final String PROPERTIES_PATH = &quot;org/sandbox/jdt/triggerpattern/nullability/non-null-types.properties&quot;; //$NON-NLS-1$
+
+	/** Known non-null factory methods (class -&gt; set of method names). */
+<span class="fc" id="L65">	private static final Map&lt;String, Set&lt;String&gt;&gt; NON_NULL_FACTORY_METHODS = Map.of(</span>
+<span class="fc" id="L66">			&quot;java.nio.file.Paths&quot;, Set.of(&quot;get&quot;), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L67">			&quot;java.nio.file.Path&quot;, Set.of(&quot;of&quot;), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L68">			&quot;java.util.List&quot;, Set.of(&quot;of&quot;, &quot;copyOf&quot;), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L69">			&quot;java.util.Set&quot;, Set.of(&quot;of&quot;, &quot;copyOf&quot;), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L70">			&quot;java.util.Map&quot;, Set.of(&quot;of&quot;, &quot;copyOf&quot;, &quot;ofEntries&quot;, &quot;entry&quot;), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
+<span class="fc" id="L71">			&quot;java.util.Objects&quot;, Set.of(&quot;requireNonNull&quot;, &quot;requireNonNullElse&quot;, &quot;requireNonNullElseGet&quot;), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L72">			&quot;java.util.Collections&quot;, Set.of(&quot;unmodifiableList&quot;, &quot;unmodifiableSet&quot;, &quot;unmodifiableMap&quot;, &quot;emptyList&quot;, &quot;emptySet&quot;, &quot;emptyMap&quot;, &quot;singletonList&quot;, &quot;singleton&quot;, &quot;singletonMap&quot;), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$</span>
+<span class="fc" id="L73">			&quot;java.lang.String&quot;, Set.of(&quot;valueOf&quot;, &quot;format&quot;, &quot;join&quot;) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+	);
+
+	/** Nullable annotation simple names. */
+<span class="fc" id="L77">	private static final Set&lt;String&gt; NULLABLE_ANNOTATIONS = Set.of(</span>
+			&quot;Nullable&quot;, &quot;CheckForNull&quot;); //$NON-NLS-1$ //$NON-NLS-2$
+
+	/** Non-null annotation simple names. */
+<span class="fc" id="L81">	private static final Set&lt;String&gt; NON_NULL_ANNOTATIONS = Set.of(</span>
+			&quot;NonNull&quot;, &quot;Nonnull&quot;, &quot;NotNull&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+	private final Map&lt;String, String&gt; nonNullTypes;
+
+	/**
+	 * Creates a guard using the bundled whitelist.
+	 */
+<span class="fc" id="L89">	public NullabilityGuard() {</span>
+<span class="fc" id="L90">		this.nonNullTypes = loadWhitelist();</span>
+<span class="fc" id="L91">	}</span>
+
+	/**
+	 * Creates a guard using the given whitelist.
+	 *
+	 * @param nonNullTypes map of fully-qualified type names to reasons
+	 */
+<span class="fc" id="L98">	public NullabilityGuard(Map&lt;String, String&gt; nonNullTypes) {</span>
+<span class="fc" id="L99">		this.nonNullTypes = new ConcurrentHashMap&lt;&gt;(nonNullTypes);</span>
+<span class="fc" id="L100">	}</span>
+
+	/**
+	 * Analyzes the nullability of the given expression AST node.
+	 *
+	 * @param expression the expression to analyze (typically the receiver of a
+	 *                   method call such as {@code x.toString()})
+	 * @return a result containing the determined status, reason, and evidence
+	 */
+	public NullabilityResult analyze(Expression expression) {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		if (expression == null) {</span>
+<span class="fc" id="L111">			return new NullabilityResult(NullStatus.UNKNOWN, &quot;null expression&quot;, List.of()); //$NON-NLS-1$</span>
+		}
+
+		// Stage 1: Type-based whitelist
+<span class="fc" id="L115">		NullabilityResult stage1 = analyzeByType(expression);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">		if (stage1.status() != NullStatus.UNKNOWN) {</span>
+<span class="fc" id="L117">			return stage1;</span>
+		}
+
+		// Stage 2: Initialization analysis
+<span class="fc" id="L121">		NullabilityResult stage2 = analyzeByInitialization(expression);</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">		if (stage2.status() != NullStatus.UNKNOWN) {</span>
+<span class="nc" id="L123">			return stage2;</span>
+		}
+
+		// Stage 3: Contextual null-check analysis
+<span class="fc" id="L127">		NullabilityResult stage3 = analyzeByNullChecks(expression);</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		if (stage3.status() != NullStatus.UNKNOWN) {</span>
+<span class="nc" id="L129">			return stage3;</span>
+		}
+
+		// Stage 4: Annotation-based
+<span class="fc" id="L133">		NullabilityResult stage4 = analyzeByAnnotations(expression);</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">		if (stage4.status() != NullStatus.UNKNOWN) {</span>
+<span class="nc" id="L135">			return stage4;</span>
+		}
+
+<span class="fc" id="L138">		return new NullabilityResult(NullStatus.UNKNOWN,</span>
+<span class="fc" id="L139">				&quot;nullability could not be determined&quot;, List.of()); //$NON-NLS-1$</span>
+	}
+
+	// ---- Stage 1: Type-based whitelist ----
+
+	NullabilityResult analyzeByType(Expression expression) {
+		// this expression is always non-null
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (expression instanceof ThisExpression) {</span>
+<span class="nc" id="L147">			return new NullabilityResult(NullStatus.NON_NULL,</span>
+<span class="nc" id="L148">					&quot;'this' reference is always non-null&quot;, List.of()); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L151">		ITypeBinding typeBinding = expression.resolveTypeBinding();</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">		if (typeBinding != null) {</span>
+			// Primitive types are never null
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">			if (typeBinding.isPrimitive()) {</span>
+<span class="nc" id="L155">				return new NullabilityResult(NullStatus.NON_NULL,</span>
+<span class="nc" id="L156">						&quot;primitive type is never null&quot;, List.of()); //$NON-NLS-1$</span>
+			}
+
+			// Enum types are never null (when referenced as constants)
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">			if (typeBinding.isEnum()) {</span>
+<span class="nc" id="L161">				return new NullabilityResult(NullStatus.NON_NULL,</span>
+<span class="nc" id="L162">						&quot;enum type is never null&quot;, List.of()); //$NON-NLS-1$</span>
+			}
+
+			// Check whitelist
+<span class="fc" id="L166">			String qualifiedName = typeBinding.getQualifiedName();</span>
+<span class="fc" id="L167">			String reason = nonNullTypes.get(qualifiedName);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">			if (reason != null) {</span>
+<span class="fc" id="L169">				return new NullabilityResult(NullStatus.NON_NULL,</span>
+						&quot;type '&quot; + qualifiedName + &quot;' is in non-null whitelist (&quot; + reason + &quot;)&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+<span class="fc" id="L171">						List.of());</span>
+			}
+
+			// Check if supertype is in whitelist
+<span class="fc" id="L175">			ITypeBinding superclass = typeBinding.getSuperclass();</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">			while (superclass != null) {</span>
+<span class="nc" id="L177">				String superName = superclass.getQualifiedName();</span>
+<span class="nc" id="L178">				String superReason = nonNullTypes.get(superName);</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">				if (superReason != null) {</span>
+<span class="nc" id="L180">					return new NullabilityResult(NullStatus.NON_NULL,</span>
+							&quot;supertype '&quot; + superName + &quot;' is in non-null whitelist (&quot; + superReason + &quot;)&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+<span class="nc" id="L182">							List.of());</span>
+				}
+<span class="nc" id="L184">				superclass = superclass.getSuperclass();</span>
+<span class="nc" id="L185">			}</span>
+		}
+
+<span class="fc" id="L188">		return NullabilityResult.UNKNOWN;</span>
+	}
+
+	// ---- Stage 2: Initialization analysis ----
+
+	NullabilityResult analyzeByInitialization(Expression expression) {
+		// new Constructor() is always non-null
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">		if (expression instanceof ClassInstanceCreation) {</span>
+<span class="nc" id="L196">			return new NullabilityResult(NullStatus.NON_NULL,</span>
+<span class="nc" id="L197">					&quot;'new' expression is always non-null&quot;, List.of()); //$NON-NLS-1$</span>
+		}
+
+		// Check if expression is a method invocation on a known non-null factory
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">		if (expression instanceof MethodInvocation mi) {</span>
+<span class="nc" id="L202">			return analyzeMethodInvocation(mi);</span>
+		}
+
+		// Check if it's a variable with a known initializer
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">		if (expression instanceof SimpleName name) {</span>
+<span class="fc" id="L207">			return analyzeVariableInitializer(name);</span>
+		}
+
+<span class="nc" id="L210">		return NullabilityResult.UNKNOWN;</span>
+	}
+
+	private NullabilityResult analyzeMethodInvocation(MethodInvocation mi) {
+<span class="nc" id="L214">		IMethodBinding methodBinding = mi.resolveMethodBinding();</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">		if (methodBinding != null) {</span>
+<span class="nc" id="L216">			ITypeBinding declaringClass = methodBinding.getDeclaringClass();</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">			if (declaringClass != null) {</span>
+<span class="nc" id="L218">				String className = declaringClass.getQualifiedName();</span>
+<span class="nc" id="L219">				String methodName = methodBinding.getName();</span>
+<span class="nc" id="L220">				Set&lt;String&gt; methods = NON_NULL_FACTORY_METHODS.get(className);</span>
+<span class="nc bnc" id="L221" title="All 4 branches missed.">				if (methods != null &amp;&amp; methods.contains(methodName)) {</span>
+<span class="nc" id="L222">					return new NullabilityResult(NullStatus.NON_NULL,</span>
+							className + &quot;.&quot; + methodName + &quot;() is a known non-null factory method&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+<span class="nc" id="L224">							List.of());</span>
+				}
+			}
+		}
+
+		// AST-Getter on parsed nodes: non-null (structural children)
+<span class="nc" id="L230">		Expression receiver = mi.getExpression();</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">		if (receiver != null) {</span>
+<span class="nc" id="L232">			ITypeBinding receiverType = receiver.resolveTypeBinding();</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">			if (receiverType != null) {</span>
+<span class="nc" id="L234">				String receiverTypeName = receiverType.getQualifiedName();</span>
+<span class="nc" id="L235">				String reason = nonNullTypes.get(receiverTypeName);</span>
+<span class="nc bnc" id="L236" title="All 4 branches missed.">				if (reason != null &amp;&amp; &quot;structural_child&quot;.equals(reason)) { //$NON-NLS-1$</span>
+<span class="nc" id="L237">					String methodName = mi.getName().getIdentifier();</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">					if (methodName.startsWith(&quot;get&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L239">						return new NullabilityResult(NullStatus.NON_NULL,</span>
+								&quot;getter on AST node type '&quot; + receiverTypeName + &quot;' returns structural child&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+<span class="nc" id="L241">								List.of());</span>
+					}
+				}
+			}
+		}
+
+<span class="nc" id="L247">		return NullabilityResult.UNKNOWN;</span>
+	}
+
+	private NullabilityResult analyzeVariableInitializer(SimpleName name) {
+<span class="fc" id="L251">		IVariableBinding varBinding = resolveVariableBinding(name);</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">		if (varBinding == null) {</span>
+<span class="nc" id="L253">			return NullabilityResult.UNKNOWN;</span>
+		}
+
+		// Walk up to find the enclosing method/block
+<span class="fc" id="L257">		ASTNode scope = findEnclosingBlock(name);</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">		if (scope == null) {</span>
+<span class="nc" id="L259">			return NullabilityResult.UNKNOWN;</span>
+		}
+
+		// Look for variable declaration with initializer
+<span class="fc" id="L263">		String varName = name.getIdentifier();</span>
+<span class="fc" id="L264">		VariableInitializerFinder finder = new VariableInitializerFinder(varName);</span>
+<span class="fc" id="L265">		scope.accept(finder);</span>
+
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">		if (finder.initializer != null) {</span>
+			// new X() → non-null
+<span class="nc bnc" id="L269" title="All 2 branches missed.">			if (finder.initializer instanceof ClassInstanceCreation) {</span>
+<span class="nc" id="L270">				return new NullabilityResult(NullStatus.NON_NULL,</span>
+						&quot;variable '&quot; + varName + &quot;' initialized with 'new'&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+<span class="nc" id="L272">						List.of());</span>
+			}
+			// Known factory method → non-null
+<span class="nc bnc" id="L275" title="All 2 branches missed.">			if (finder.initializer instanceof MethodInvocation mi) {</span>
+<span class="nc" id="L276">				NullabilityResult initResult = analyzeMethodInvocation(mi);</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">				if (initResult.status() == NullStatus.NON_NULL) {</span>
+<span class="nc" id="L278">					return new NullabilityResult(NullStatus.NON_NULL,</span>
+<span class="nc" id="L279">							&quot;variable '&quot; + varName + &quot;' initialized with non-null factory: &quot; + initResult.reason(), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L280">							List.of());</span>
+				}
+			}
+		}
+
+		// Check if initializer is a Map.get() call → nullable
+<span class="pc bpc" id="L286" title="3 of 4 branches missed.">		if (finder.initializer != null &amp;&amp; isCollectionGetCall(finder.initializer)) {</span>
+<span class="nc" id="L287">			return new NullabilityResult(NullStatus.NULLABLE,</span>
+					&quot;variable may be result of Map.get() which can return null&quot;, //$NON-NLS-1$
+<span class="nc" id="L289">					List.of());</span>
+		}
+
+<span class="fc" id="L292">		return NullabilityResult.UNKNOWN;</span>
+	}
+
+	private boolean isCollectionGetCall(Expression initializer) {
+<span class="nc bnc" id="L296" title="All 2 branches missed.">		if (!(initializer instanceof MethodInvocation mi)) {</span>
+<span class="nc" id="L297">			return false;</span>
+		}
+
+<span class="nc" id="L300">		String methodName = mi.getName().getIdentifier();</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">		if (!&quot;get&quot;.equals(methodName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L302">			return false;</span>
+		}
+
+<span class="nc" id="L305">		Expression receiver = mi.getExpression();</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">		if (receiver == null) {</span>
+<span class="nc" id="L307">			return false;</span>
+		}
+
+<span class="nc" id="L310">		ITypeBinding receiverType = receiver.resolveTypeBinding();</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">		if (receiverType == null) {</span>
+<span class="nc" id="L312">			return false;</span>
+		}
+
+<span class="nc" id="L315">		String typeName = receiverType.getQualifiedName();</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">		return typeName.startsWith(&quot;java.util.Map&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">				|| typeName.startsWith(&quot;java.util.HashMap&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">				|| typeName.startsWith(&quot;java.util.LinkedHashMap&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">				|| typeName.startsWith(&quot;java.util.TreeMap&quot;); //$NON-NLS-1$</span>
+	}
+
+	// ---- Stage 3: Contextual null-check analysis (SpotBugs-style) ----
+
+	NullabilityResult analyzeByNullChecks(Expression expression) {
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">		if (!(expression instanceof SimpleName name)) {</span>
+<span class="nc" id="L326">			return NullabilityResult.UNKNOWN;</span>
+		}
+
+<span class="fc" id="L329">		String varName = name.getIdentifier();</span>
+<span class="fc" id="L330">		ASTNode enclosingMethod = findEnclosingMethod(expression);</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">		if (enclosingMethod == null) {</span>
+<span class="nc" id="L332">			return NullabilityResult.UNKNOWN;</span>
+		}
+
+<span class="fc" id="L335">		int expressionOffset = expression.getStartPosition();</span>
+<span class="fc" id="L336">		NullCheckFinder finder = new NullCheckFinder(varName);</span>
+<span class="fc" id="L337">		enclosingMethod.accept(finder);</span>
+
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">		if (finder.nullCheckLocations.isEmpty()) {</span>
+<span class="fc" id="L340">			return NullabilityResult.UNKNOWN;</span>
+		}
+
+<span class="nc" id="L343">		List&lt;String&gt; evidence = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L344">		boolean hasCheckBefore = false;</span>
+<span class="nc" id="L345">		boolean hasCheckAfter = false;</span>
+<span class="nc" id="L346">		boolean isInsideGuard = false;</span>
+
+<span class="nc bnc" id="L348" title="All 2 branches missed.">		for (NullCheckLocation loc : finder.nullCheckLocations) {</span>
+<span class="nc" id="L349">			evidence.add(&quot;line &quot; + loc.line + &quot;: &quot; + loc.description); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">			if (loc.offset &lt; expressionOffset) {</span>
+<span class="nc" id="L351">				hasCheckBefore = true;</span>
+				// Check if we are inside a guarded block (e.g., if (x != null) { ...here... })
+<span class="nc bnc" id="L353" title="All 2 branches missed.">				if (isInsideNullGuard(expression, varName)) {</span>
+<span class="nc" id="L354">					isInsideGuard = true;</span>
+				}
+			}
+<span class="nc bnc" id="L357" title="All 2 branches missed.">			if (loc.offset &gt; expressionOffset) {</span>
+<span class="nc" id="L358">				hasCheckAfter = true;</span>
+			}
+<span class="nc" id="L360">		}</span>
+
+<span class="nc bnc" id="L362" title="All 2 branches missed.">		if (isInsideGuard) {</span>
+			// Expression is inside a null guard → safe in this context
+<span class="nc" id="L364">			return new NullabilityResult(NullStatus.NON_NULL,</span>
+					&quot;variable '&quot; + varName + &quot;' is inside a null guard&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+					evidence);
+		}
+
+<span class="nc bnc" id="L369" title="All 4 branches missed.">		if (hasCheckAfter &amp;&amp; !hasCheckBefore) {</span>
+			// SpotBugs-style: null check AFTER the usage → high risk
+<span class="nc" id="L371">			return new NullabilityResult(NullStatus.NULLABLE,</span>
+					&quot;null-check for '&quot; + varName + &quot;' found after usage (SpotBugs-style: null is realistic)&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+					evidence);
+		}
+
+<span class="nc bnc" id="L376" title="All 4 branches missed.">		if (hasCheckBefore &amp;&amp; !isInsideGuard) {</span>
+			// There's a check before but we're not inside its guard
+<span class="nc" id="L378">			return new NullabilityResult(NullStatus.POTENTIALLY_NULLABLE,</span>
+					&quot;null-check for '&quot; + varName + &quot;' exists nearby but usage is not inside guard&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+					evidence);
+		}
+
+		// Null check exists somewhere → the type can be null
+<span class="nc" id="L384">		return new NullabilityResult(NullStatus.POTENTIALLY_NULLABLE,</span>
+				&quot;null-check for '&quot; + varName + &quot;' found in same method&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+				evidence);
+	}
+
+	/**
+	 * Checks if the given expression is inside a block guarded by a null check
+	 * for the given variable name.
+	 */
+	private boolean isInsideNullGuard(Expression expression, String varName) {
+<span class="nc" id="L394">		ASTNode current = expression.getParent();</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">		while (current != null) {</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">			if (current instanceof IfStatement ifStmt) {</span>
+<span class="nc" id="L397">				Expression condition = ifStmt.getExpression();</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">				if (isNonNullCheck(condition, varName)) {</span>
+					// Check if expression is in the then-branch
+<span class="nc" id="L400">					Statement thenBranch = ifStmt.getThenStatement();</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">					if (isAncestor(thenBranch, expression)) {</span>
+<span class="nc" id="L402">						return true;</span>
+					}
+				}
+<span class="nc bnc" id="L405" title="All 2 branches missed.">				if (isNullCheck(condition, varName)) {</span>
+					// if (x == null) return; → expression after this is guarded
+<span class="nc" id="L407">					Statement thenBranch = ifStmt.getThenStatement();</span>
+<span class="nc bnc" id="L408" title="All 4 branches missed.">					if (isEarlyReturn(thenBranch) &amp;&amp; !isAncestor(thenBranch, expression)) {</span>
+<span class="nc" id="L409">						return true;</span>
+					}
+				}
+			}
+<span class="nc" id="L413">			current = current.getParent();</span>
+		}
+<span class="nc" id="L415">		return false;</span>
+	}
+
+	private boolean isNonNullCheck(Expression condition, String varName) {
+<span class="nc bnc" id="L419" title="All 2 branches missed.">		if (condition instanceof InfixExpression infix) {</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">			if (infix.getOperator() == InfixExpression.Operator.NOT_EQUALS) {</span>
+<span class="nc" id="L421">				return isNullComparisonWith(infix, varName);</span>
+			}
+		}
+<span class="nc" id="L424">		return false;</span>
+	}
+
+	private boolean isNullCheck(Expression condition, String varName) {
+<span class="nc bnc" id="L428" title="All 2 branches missed.">		if (condition instanceof InfixExpression infix) {</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">			if (infix.getOperator() == InfixExpression.Operator.EQUALS) {</span>
+<span class="nc" id="L430">				return isNullComparisonWith(infix, varName);</span>
+			}
+		}
+<span class="nc" id="L433">		return false;</span>
+	}
+
+	private boolean isNullComparisonWith(InfixExpression infix, String varName) {
+<span class="nc" id="L437">		Expression left = infix.getLeftOperand();</span>
+<span class="nc" id="L438">		Expression right = infix.getRightOperand();</span>
+<span class="nc bnc" id="L439" title="All 4 branches missed.">		return (isNameMatch(left, varName) &amp;&amp; right instanceof NullLiteral)</span>
+<span class="nc bnc" id="L440" title="All 4 branches missed.">				|| (isNameMatch(right, varName) &amp;&amp; left instanceof NullLiteral);</span>
+	}
+
+	private boolean isNameMatch(Expression expr, String varName) {
+<span class="nc bnc" id="L444" title="All 4 branches missed.">		return expr instanceof SimpleName sn &amp;&amp; sn.getIdentifier().equals(varName);</span>
+	}
+
+	private boolean isEarlyReturn(Statement stmt) {
+<span class="nc bnc" id="L448" title="All 2 branches missed.">		if (stmt instanceof ReturnStatement) {</span>
+<span class="nc" id="L449">			return true;</span>
+		}
+<span class="nc bnc" id="L451" title="All 2 branches missed.">		if (stmt instanceof Block block) {</span>
+			@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L453">			List&lt;Statement&gt; stmts = block.statements();</span>
+<span class="nc bnc" id="L454" title="All 4 branches missed.">			return !stmts.isEmpty() &amp;&amp; stmts.get(0) instanceof ReturnStatement;</span>
+		}
+<span class="nc" id="L456">		return false;</span>
+	}
+
+	private boolean isAncestor(ASTNode ancestor, ASTNode descendant) {
+<span class="nc" id="L460">		ASTNode current = descendant;</span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">		while (current != null) {</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">			if (current == ancestor) {</span>
+<span class="nc" id="L463">				return true;</span>
+			}
+<span class="nc" id="L465">			current = current.getParent();</span>
+		}
+<span class="nc" id="L467">		return false;</span>
+	}
+
+	// ---- Stage 4: Annotation-based checking ----
+
+	NullabilityResult analyzeByAnnotations(Expression expression) {
+<span class="fc" id="L473">		ITypeBinding typeBinding = expression.resolveTypeBinding();</span>
+<span class="pc bpc" id="L474" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L475">			return NullabilityResult.UNKNOWN;</span>
+		}
+
+		// Check annotations on the type binding
+<span class="pc bpc" id="L479" title="1 of 2 branches missed.">		for (IAnnotationBinding annotation : typeBinding.getTypeAnnotations()) {</span>
+<span class="nc" id="L480">			String annotName = annotation.getAnnotationType().getName();</span>
+<span class="nc bnc" id="L481" title="All 2 branches missed.">			if (NULLABLE_ANNOTATIONS.contains(annotName)) {</span>
+<span class="nc" id="L482">				return new NullabilityResult(NullStatus.NULLABLE,</span>
+						&quot;@&quot; + annotName + &quot; annotation found&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+<span class="nc" id="L484">						List.of());</span>
+			}
+<span class="nc bnc" id="L486" title="All 2 branches missed.">			if (NON_NULL_ANNOTATIONS.contains(annotName)) {</span>
+<span class="nc" id="L487">				return new NullabilityResult(NullStatus.NON_NULL,</span>
+						&quot;@&quot; + annotName + &quot; annotation found&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+<span class="nc" id="L489">						List.of());</span>
+			}
+		}
+
+		// Check if it's a variable → check variable annotations
+<span class="pc bpc" id="L494" title="1 of 2 branches missed.">		if (expression instanceof SimpleName name) {</span>
+<span class="fc" id="L495">			IVariableBinding varBinding = resolveVariableBinding(name);</span>
+<span class="pc bpc" id="L496" title="1 of 2 branches missed.">			if (varBinding != null) {</span>
+<span class="pc bpc" id="L497" title="1 of 2 branches missed.">				for (IAnnotationBinding annotation : varBinding.getAnnotations()) {</span>
+<span class="nc" id="L498">					String annotName = annotation.getAnnotationType().getName();</span>
+<span class="nc bnc" id="L499" title="All 2 branches missed.">					if (NULLABLE_ANNOTATIONS.contains(annotName)) {</span>
+<span class="nc" id="L500">						return new NullabilityResult(NullStatus.NULLABLE,</span>
+								&quot;@&quot; + annotName + &quot; annotation on variable&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+<span class="nc" id="L502">								List.of());</span>
+					}
+<span class="nc bnc" id="L504" title="All 2 branches missed.">					if (NON_NULL_ANNOTATIONS.contains(annotName)) {</span>
+<span class="nc" id="L505">						return new NullabilityResult(NullStatus.NON_NULL,</span>
+								&quot;@&quot; + annotName + &quot; annotation on variable&quot;, //$NON-NLS-1$ //$NON-NLS-2$
+<span class="nc" id="L507">								List.of());</span>
+					}
+				}
+			}
+		}
+
+		// Check method return annotations for method invocations
+<span class="pc bpc" id="L514" title="1 of 2 branches missed.">		if (expression instanceof MethodInvocation mi) {</span>
+<span class="nc" id="L515">			IMethodBinding methodBinding = mi.resolveMethodBinding();</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">			if (methodBinding != null) {</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">				for (IAnnotationBinding annotation : methodBinding.getAnnotations()) {</span>
+<span class="nc" id="L518">					String annotName = annotation.getAnnotationType().getName();</span>
+<span class="nc bnc" id="L519" title="All 2 branches missed.">					if (NULLABLE_ANNOTATIONS.contains(annotName)) {</span>
+<span class="nc" id="L520">						return new NullabilityResult(NullStatus.NULLABLE,</span>
+								&quot;method return annotated @&quot; + annotName, //$NON-NLS-1$
+<span class="nc" id="L522">								List.of());</span>
+					}
+<span class="nc bnc" id="L524" title="All 2 branches missed.">					if (NON_NULL_ANNOTATIONS.contains(annotName)) {</span>
+<span class="nc" id="L525">						return new NullabilityResult(NullStatus.NON_NULL,</span>
+								&quot;method return annotated @&quot; + annotName, //$NON-NLS-1$
+<span class="nc" id="L527">								List.of());</span>
+					}
+				}
+			}
+		}
+
+<span class="fc" id="L533">		return NullabilityResult.UNKNOWN;</span>
+	}
+
+	// ---- Helper methods and inner classes ----
+
+	private static IVariableBinding resolveVariableBinding(SimpleName name) {
+<span class="pc bpc" id="L539" title="1 of 2 branches missed.">		if (name.resolveBinding() instanceof IVariableBinding vb) {</span>
+<span class="fc" id="L540">			return vb;</span>
+		}
+<span class="nc" id="L542">		return null;</span>
+	}
+
+	private static ASTNode findEnclosingBlock(ASTNode node) {
+<span class="fc" id="L546">		ASTNode current = node.getParent();</span>
+<span class="pc bpc" id="L547" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="pc bpc" id="L548" title="1 of 4 branches missed.">			if (current instanceof Block || current instanceof MethodDeclaration) {</span>
+<span class="fc" id="L549">				return current;</span>
+			}
+<span class="fc" id="L551">			current = current.getParent();</span>
+		}
+<span class="nc" id="L553">		return null;</span>
+	}
+
+	private static ASTNode findEnclosingMethod(ASTNode node) {
+<span class="fc" id="L557">		ASTNode current = node.getParent();</span>
+<span class="pc bpc" id="L558" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L559" title="All 2 branches covered.">			if (current instanceof MethodDeclaration) {</span>
+<span class="fc" id="L560">				return current;</span>
+			}
+<span class="fc" id="L562">			current = current.getParent();</span>
+		}
+<span class="nc" id="L564">		return null;</span>
+	}
+
+	private Map&lt;String, String&gt; loadWhitelist() {
+<span class="fc" id="L568">		Properties props = new Properties();</span>
+<span class="fc" id="L569">		try (InputStream is = getClass().getClassLoader().getResourceAsStream(PROPERTIES_PATH)) {</span>
+<span class="pc bpc" id="L570" title="1 of 2 branches missed.">			if (is != null) {</span>
+<span class="fc" id="L571">				props.load(is);</span>
+			}
+<span class="nc" id="L573">		} catch (IOException e) {</span>
+			// Fall through with empty properties
+<span class="fc" id="L575">		}</span>
+<span class="fc" id="L576">		Map&lt;String, String&gt; result = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L577" title="All 2 branches covered.">		for (String key : props.stringPropertyNames()) {</span>
+<span class="fc" id="L578">			result.put(key, props.getProperty(key));</span>
+<span class="fc" id="L579">		}</span>
+<span class="fc" id="L580">		return result;</span>
+	}
+
+	/**
+	 * Returns the loaded non-null type whitelist.
+	 *
+	 * @return unmodifiable view of the whitelist
+	 */
+	public Map&lt;String, String&gt; getNonNullTypes() {
+<span class="fc" id="L589">		return Map.copyOf(nonNullTypes);</span>
+	}
+
+	/** Records a location where a null check was found. */
+<span class="nc" id="L593">	record NullCheckLocation(int offset, int line, String description) {}</span>
+
+	/**
+	 * Visitor that finds null checks for a specific variable within a method body.
+	 */
+	private static class NullCheckFinder extends ASTVisitor {
+		private final String varName;
+<span class="fc" id="L600">		final List&lt;NullCheckLocation&gt; nullCheckLocations = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L602">		NullCheckFinder(String varName) {</span>
+<span class="fc" id="L603">			this.varName = varName;</span>
+<span class="fc" id="L604">		}</span>
+
+		@Override
+		public boolean visit(InfixExpression node) {
+<span class="nc" id="L608">			InfixExpression.Operator op = node.getOperator();</span>
+<span class="nc bnc" id="L609" title="All 4 branches missed.">			if (op == InfixExpression.Operator.EQUALS || op == InfixExpression.Operator.NOT_EQUALS) {</span>
+<span class="nc" id="L610">				Expression left = node.getLeftOperand();</span>
+<span class="nc" id="L611">				Expression right = node.getRightOperand();</span>
+<span class="nc" id="L612">				boolean leftIsVar = isNameMatch(left);</span>
+<span class="nc" id="L613">				boolean rightIsVar = isNameMatch(right);</span>
+<span class="nc" id="L614">				boolean leftIsNull = left instanceof NullLiteral;</span>
+<span class="nc" id="L615">				boolean rightIsNull = right instanceof NullLiteral;</span>
+
+<span class="nc bnc" id="L617" title="All 8 branches missed.">				if ((leftIsVar &amp;&amp; rightIsNull) || (rightIsVar &amp;&amp; leftIsNull)) {</span>
+<span class="nc" id="L618">					ASTNode root = node.getRoot();</span>
+<span class="nc" id="L619">					int line = -1;</span>
+<span class="nc bnc" id="L620" title="All 2 branches missed.">					if (root instanceof org.eclipse.jdt.core.dom.CompilationUnit cu) {</span>
+<span class="nc" id="L621">						line = cu.getLineNumber(node.getStartPosition());</span>
+					}
+<span class="nc" id="L623">					String desc = varName + &quot; &quot; + op + &quot; null&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L624">					nullCheckLocations.add(new NullCheckLocation(node.getStartPosition(), line, desc));</span>
+				}
+			}
+<span class="nc" id="L627">			return true;</span>
+		}
+
+		@Override
+		public boolean visit(MethodInvocation node) {
+			// Objects.requireNonNull(variable)
+<span class="pc bpc" id="L633" title="1 of 2 branches missed.">			if (&quot;requireNonNull&quot;.equals(node.getName().getIdentifier())) { //$NON-NLS-1$</span>
+				@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L635">				List&lt;Expression&gt; args = node.arguments();</span>
+<span class="nc bnc" id="L636" title="All 4 branches missed.">				if (!args.isEmpty() &amp;&amp; isNameMatch(args.get(0))) {</span>
+<span class="nc" id="L637">					ASTNode root = node.getRoot();</span>
+<span class="nc" id="L638">					int line = -1;</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">					if (root instanceof org.eclipse.jdt.core.dom.CompilationUnit cu) {</span>
+<span class="nc" id="L640">						line = cu.getLineNumber(node.getStartPosition());</span>
+					}
+<span class="nc" id="L642">					nullCheckLocations.add(new NullCheckLocation(node.getStartPosition(), line,</span>
+							&quot;Objects.requireNonNull(&quot; + varName + &quot;)&quot;)); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+			}
+			// Optional.ofNullable(variable)
+<span class="pc bpc" id="L647" title="1 of 2 branches missed.">			if (&quot;ofNullable&quot;.equals(node.getName().getIdentifier())) { //$NON-NLS-1$</span>
+				@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L649">				List&lt;Expression&gt; args = node.arguments();</span>
+<span class="nc bnc" id="L650" title="All 4 branches missed.">				if (!args.isEmpty() &amp;&amp; isNameMatch(args.get(0))) {</span>
+<span class="nc" id="L651">					ASTNode root = node.getRoot();</span>
+<span class="nc" id="L652">					int line = -1;</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">					if (root instanceof org.eclipse.jdt.core.dom.CompilationUnit cu) {</span>
+<span class="nc" id="L654">						line = cu.getLineNumber(node.getStartPosition());</span>
+					}
+<span class="nc" id="L656">					nullCheckLocations.add(new NullCheckLocation(node.getStartPosition(), line,</span>
+							&quot;Optional.ofNullable(&quot; + varName + &quot;)&quot;)); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+			}
+<span class="fc" id="L660">			return true;</span>
+		}
+
+		@Override
+		public boolean visit(ConditionalExpression node) {
+			// variable != null ? ... : ...
+<span class="nc" id="L666">			Expression condition = node.getExpression();</span>
+<span class="nc bnc" id="L667" title="All 2 branches missed.">			if (condition instanceof InfixExpression infix) {</span>
+<span class="nc" id="L668">				InfixExpression.Operator op = infix.getOperator();</span>
+<span class="nc bnc" id="L669" title="All 4 branches missed.">				if (op == InfixExpression.Operator.EQUALS || op == InfixExpression.Operator.NOT_EQUALS) {</span>
+<span class="nc" id="L670">					Expression left = infix.getLeftOperand();</span>
+<span class="nc" id="L671">					Expression right = infix.getRightOperand();</span>
+<span class="nc" id="L672">					boolean leftIsVar = isNameMatch(left);</span>
+<span class="nc" id="L673">					boolean rightIsVar = isNameMatch(right);</span>
+<span class="nc" id="L674">					boolean leftIsNull = left instanceof NullLiteral;</span>
+<span class="nc" id="L675">					boolean rightIsNull = right instanceof NullLiteral;</span>
+
+<span class="nc bnc" id="L677" title="All 8 branches missed.">					if ((leftIsVar &amp;&amp; rightIsNull) || (rightIsVar &amp;&amp; leftIsNull)) {</span>
+<span class="nc" id="L678">						ASTNode root = node.getRoot();</span>
+<span class="nc" id="L679">						int line = -1;</span>
+<span class="nc bnc" id="L680" title="All 2 branches missed.">						if (root instanceof org.eclipse.jdt.core.dom.CompilationUnit cu) {</span>
+<span class="nc" id="L681">							line = cu.getLineNumber(node.getStartPosition());</span>
+						}
+<span class="nc" id="L683">						nullCheckLocations.add(new NullCheckLocation(node.getStartPosition(), line,</span>
+								varName + &quot; &quot; + op + &quot; null (ternary)&quot;)); //$NON-NLS-1$ //$NON-NLS-2$
+					}
+				}
+			}
+<span class="nc" id="L688">			return true;</span>
+		}
+
+		private boolean isNameMatch(Expression expr) {
+<span class="nc bnc" id="L692" title="All 4 branches missed.">			return expr instanceof SimpleName sn &amp;&amp; sn.getIdentifier().equals(varName);</span>
+		}
+	}
+
+	/**
+	 * Visitor that finds variable declarations with initializers.
+	 */
+	private static class VariableInitializerFinder extends ASTVisitor {
+		private final String varName;
+		Expression initializer;
+
+<span class="fc" id="L703">		VariableInitializerFinder(String varName) {</span>
+<span class="fc" id="L704">			this.varName = varName;</span>
+<span class="fc" id="L705">		}</span>
+
+		@Override
+		public boolean visit(VariableDeclarationStatement node) {
+			@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L710">			List&lt;VariableDeclarationFragment&gt; fragments = node.fragments();</span>
+<span class="nc bnc" id="L711" title="All 2 branches missed.">			for (VariableDeclarationFragment frag : fragments) {</span>
+<span class="nc bnc" id="L712" title="All 4 branches missed.">				if (frag.getName().getIdentifier().equals(varName) &amp;&amp; frag.getInitializer() != null) {</span>
+<span class="nc" id="L713">					this.initializer = frag.getInitializer();</span>
+<span class="nc" id="L714">					return false;</span>
+				}
+<span class="nc" id="L716">			}</span>
+<span class="nc" id="L717">			return true;</span>
+		}
+
+		@Override
+		public boolean visit(SingleVariableDeclaration node) {
+<span class="nc bnc" id="L722" title="All 4 branches missed.">			if (node.getName().getIdentifier().equals(varName) &amp;&amp; node.getInitializer() != null) {</span>
+<span class="nc" id="L723">				this.initializer = node.getInitializer();</span>
+<span class="nc" id="L724">				return false;</span>
+			}
+<span class="nc" id="L726">			return true;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

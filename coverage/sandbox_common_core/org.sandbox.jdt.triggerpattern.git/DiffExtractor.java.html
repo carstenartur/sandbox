@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DiffExtractor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.git</a> &gt; <span class="el_source">DiffExtractor.java</span></div><h1>DiffExtractor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.git;
+
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.EmptyTreeIterator;
+
+/**
+ * Extracts the diff of a commit as a string using JGit's DiffFormatter.
+ *
+ * &lt;p&gt;Limits the diff output to a configurable maximum number of lines
+ * to avoid sending overly large prompts to the Gemini API.&lt;/p&gt;
+ *
+ * &lt;p&gt;If the commit touches more files than {@code maxFilesPerCommit}, an empty
+ * string is returned so that the caller treats the commit as skipped (mass-change
+ * commits such as auto-formatting or renames are not useful for DSL mining).&lt;/p&gt;
+ *
+ * &lt;p&gt;Implements {@link Closeable} to ensure the underlying Git and
+ * Repository resources are properly released.&lt;/p&gt;
+ */
+public class DiffExtractor implements Closeable {
+
+	private final Git git;
+	private final Repository repository;
+	private final int maxDiffLines;
+	private final List&lt;String&gt; pathFilters;
+	private final int maxFilesPerCommit;
+
+	/**
+	 * Creates a DiffExtractor for the given repository directory.
+	 *
+	 * @param repoDir      the local repository directory
+	 * @param maxDiffLines maximum number of diff lines to include
+	 * @throws IOException if the repository cannot be opened
+	 */
+	public DiffExtractor(Path repoDir, int maxDiffLines) throws IOException {
+<span class="nc" id="L61">		this(repoDir, maxDiffLines, List.of(), Integer.MAX_VALUE);</span>
+<span class="nc" id="L62">	}</span>
+
+	/**
+	 * Creates a DiffExtractor for the given repository directory with path filtering.
+	 *
+	 * @param repoDir      the local repository directory
+	 * @param maxDiffLines maximum number of diff lines to include
+	 * @param pathFilters  list of path prefixes to include (empty = all paths)
+	 * @throws IOException if the repository cannot be opened
+	 */
+	public DiffExtractor(Path repoDir, int maxDiffLines, List&lt;String&gt; pathFilters) throws IOException {
+<span class="nc" id="L73">		this(repoDir, maxDiffLines, pathFilters, Integer.MAX_VALUE);</span>
+<span class="nc" id="L74">	}</span>
+
+	/**
+	 * Creates a DiffExtractor for the given repository directory with path filtering
+	 * and a maximum file count per commit.
+	 *
+	 * @param repoDir           the local repository directory
+	 * @param maxDiffLines      maximum number of diff lines to include
+	 * @param pathFilters       list of path prefixes to include (empty = all paths)
+	 * @param maxFilesPerCommit maximum number of changed files before the commit is
+	 *                          skipped (returns empty string)
+	 * @throws IOException if the repository cannot be opened
+	 */
+	public DiffExtractor(Path repoDir, int maxDiffLines, List&lt;String&gt; pathFilters,
+<span class="fc" id="L88">			int maxFilesPerCommit) throws IOException {</span>
+<span class="fc" id="L89">		this.git = Git.open(repoDir.toFile());</span>
+<span class="fc" id="L90">		this.repository = git.getRepository();</span>
+<span class="fc" id="L91">		this.maxDiffLines = maxDiffLines;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		this.pathFilters = pathFilters != null ? pathFilters : List.of();</span>
+<span class="fc" id="L93">		this.maxFilesPerCommit = maxFilesPerCommit;</span>
+<span class="fc" id="L94">	}</span>
+
+	/**
+	 * Extracts the diff of a commit as a string.
+	 *
+	 * &lt;p&gt;Returns an empty string if the commit touches more files (after path
+	 * filtering) than {@code maxFilesPerCommit}, so that the caller can treat it as
+	 * a skipped commit (mass-change commits are not useful for DSL mining).&lt;/p&gt;
+	 *
+	 * @param commit the commit to extract the diff from
+	 * @return the diff as a string truncated to maxDiffLines, or an empty string if
+	 *         too many files are changed
+	 * @throws IOException if a Git operation fails
+	 */
+	public String extractDiff(RevCommit commit) throws IOException {
+<span class="fc" id="L109">		ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+
+<span class="fc" id="L111">		try (DiffFormatter formatter = new DiffFormatter(out)) {</span>
+<span class="fc" id="L112">			formatter.setRepository(repository);</span>
+<span class="fc" id="L113">			formatter.setDetectRenames(true);</span>
+
+<span class="fc" id="L115">			AbstractTreeIterator parentTree = getParentTree(commit);</span>
+<span class="fc" id="L116">			AbstractTreeIterator commitTree = getTree(commit);</span>
+
+<span class="fc" id="L118">			List&lt;DiffEntry&gt; diffs = formatter.scan(parentTree, commitTree);</span>
+
+			// Skip commits that touch too many files (mass-changes are not useful for mining)
+<span class="fc" id="L121">			long matchingFiles = diffs.stream().filter(this::matchesPathFilter).count();</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">			if (matchingFiles &gt; maxFilesPerCommit) {</span>
+<span class="fc" id="L123">				return &quot;&quot;; //$NON-NLS-1$</span>
+			}
+
+<span class="fc bfc" id="L126" title="All 2 branches covered.">			for (DiffEntry entry : diffs) {</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">				if (matchesPathFilter(entry)) {</span>
+<span class="fc" id="L128">					formatter.format(entry);</span>
+				}
+<span class="fc" id="L130">			}</span>
+<span class="fc" id="L131">		}</span>
+
+<span class="fc" id="L133">		String fullDiff = out.toString(java.nio.charset.StandardCharsets.UTF_8);</span>
+<span class="fc" id="L134">		return truncateToMaxLines(fullDiff);</span>
+	}
+
+	private boolean matchesPathFilter(DiffEntry entry) {
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		if (pathFilters.isEmpty()) {</span>
+<span class="fc" id="L139">			return true;</span>
+		}
+<span class="nc bnc" id="L141" title="All 2 branches missed.">		String path = entry.getChangeType() == DiffEntry.ChangeType.DELETE</span>
+<span class="nc" id="L142">				? entry.getOldPath()</span>
+<span class="nc" id="L143">				: entry.getNewPath();</span>
+<span class="nc" id="L144">		return pathFilters.stream().anyMatch(path::startsWith);</span>
+	}
+
+	private AbstractTreeIterator getParentTree(RevCommit commit) throws IOException {
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">		if (commit.getParentCount() == 0) {</span>
+<span class="nc" id="L149">			return new EmptyTreeIterator();</span>
+		}
+<span class="fc" id="L151">		RevCommit parent = commit.getParent(0);</span>
+<span class="fc" id="L152">		return getTree(parent);</span>
+	}
+
+	private AbstractTreeIterator getTree(RevCommit commit) throws IOException {
+<span class="fc" id="L156">		try (ObjectReader reader = repository.newObjectReader()) {</span>
+<span class="fc" id="L157">			CanonicalTreeParser parser = new CanonicalTreeParser();</span>
+<span class="fc" id="L158">			parser.reset(reader, commit.getTree().getId());</span>
+<span class="fc" id="L159">			return parser;</span>
+		}
+	}
+
+	private String truncateToMaxLines(String diff) {
+<span class="fc" id="L164">		String[] lines = diff.split(&quot;\n&quot;, -1);</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">		if (lines.length &lt;= maxDiffLines) {</span>
+<span class="fc" id="L166">			return diff;</span>
+		}
+<span class="nc" id="L168">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">		for (int i = 0; i &lt; maxDiffLines; i++) {</span>
+<span class="nc" id="L170">			sb.append(lines[i]).append('\n');</span>
+		}
+<span class="nc" id="L172">		sb.append(&quot;\n... (truncated, &quot;).append(lines.length - maxDiffLines)</span>
+<span class="nc" id="L173">				.append(&quot; more lines)&quot;);</span>
+<span class="nc" id="L174">		return sb.toString();</span>
+	}
+
+	@Override
+	public void close() {
+<span class="fc" id="L179">		repository.close();</span>
+<span class="fc" id="L180">		git.close();</span>
+<span class="fc" id="L181">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

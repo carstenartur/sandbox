@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DslContextCollector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.llm</a> &gt; <span class="el_source">DslContextCollector.java</span></div><h1>DslContextCollector.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.llm;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Walks a directory tree and collects all {@code .sandbox-hint} files,
+ * returning their content formatted as context for an LLM prompt.
+ */
+<span class="nc" id="L30">public class DslContextCollector {</span>
+
+	private static final String HINT_FILE_EXTENSION = &quot;.sandbox-hint&quot;;
+
+	/**
+	 * Collects DSL context from all hint files under the given root directory.
+	 *
+	 * @param sandboxRoot the root directory to search
+	 * @return formatted string containing all hint file contents
+	 * @throws IOException if an I/O error occurs
+	 */
+	public String collectContext(Path sandboxRoot) throws IOException {
+<span class="nc bnc" id="L42" title="All 2 branches missed.">		if (!Files.isDirectory(sandboxRoot)) {</span>
+<span class="nc" id="L43">			return &quot;&quot;;</span>
+		}
+
+<span class="nc" id="L46">		List&lt;Path&gt; hintFiles = findHintFiles(sandboxRoot);</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">		if (hintFiles.isEmpty()) {</span>
+<span class="nc" id="L48">			return &quot;(no existing DSL rules found)&quot;;</span>
+		}
+
+<span class="nc" id="L51">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		for (Path hintFile : hintFiles) {</span>
+<span class="nc" id="L53">			sb.append(&quot;### &quot;);</span>
+<span class="nc" id="L54">			sb.append(sandboxRoot.relativize(hintFile));</span>
+<span class="nc" id="L55">			sb.append(&quot;\n```\n&quot;);</span>
+<span class="nc" id="L56">			sb.append(Files.readString(hintFile, StandardCharsets.UTF_8));</span>
+<span class="nc" id="L57">			sb.append(&quot;\n```\n\n&quot;);</span>
+<span class="nc" id="L58">		}</span>
+<span class="nc" id="L59">		return sb.toString();</span>
+	}
+
+	/**
+	 * Finds all .sandbox-hint files under the given directory.
+	 *
+	 * @param root the root directory to search
+	 * @return list of hint file paths
+	 * @throws IOException if an I/O error occurs
+	 */
+	List&lt;Path&gt; findHintFiles(Path root) throws IOException {
+<span class="nc" id="L70">		List&lt;Path&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L71">		Files.walkFileTree(root, new SimpleFileVisitor&lt;&gt;() {</span>
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+<span class="nc" id="L74">				Path fileName = file.getFileName();</span>
+<span class="nc bnc" id="L75" title="All 4 branches missed.">				if (fileName != null &amp;&amp; fileName.toString().endsWith(HINT_FILE_EXTENSION)) {</span>
+<span class="nc" id="L76">					result.add(file);</span>
+				}
+<span class="nc" id="L78">				return FileVisitResult.CONTINUE;</span>
+			}
+
+			@Override
+			public FileVisitResult visitFileFailed(Path file, IOException exc) {
+<span class="nc" id="L83">				return FileVisitResult.CONTINUE;</span>
+			}
+		});
+<span class="nc" id="L86">		return result;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

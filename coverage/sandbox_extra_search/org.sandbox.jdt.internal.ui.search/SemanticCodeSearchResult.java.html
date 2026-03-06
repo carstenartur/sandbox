@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SemanticCodeSearchResult.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search</a> &gt; <span class="el_source">SemanticCodeSearchResult.java</span></div><h1>SemanticCodeSearchResult.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search;
+
+import java.util.Collections;
+import java.util.List;
+
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.search.ui.ISearchQuery;
+import org.eclipse.search.ui.ISearchResult;
+import org.eclipse.search.ui.ISearchResultListener;
+import org.sandbox.jdt.internal.ui.search.gitindex.SearchHit;
+
+/**
+ * Holds the results of a semantic code search query.
+ *
+ * &lt;p&gt;
+ * Wraps the list of {@link SearchHit} entries returned by
+ * {@code SemanticSearchClient.semanticSearch()} or
+ * {@code hybridSearch()}.
+ * &lt;/p&gt;
+ */
+public class SemanticCodeSearchResult implements ISearchResult {
+
+	private final SemanticCodeSearchQuery query;
+
+<span class="nc" id="L38">	private List&lt;SearchHit&gt; matches= Collections.emptyList();</span>
+
+	/**
+	 * Creates a new search result container for the given query.
+	 *
+	 * @param query
+	 *            the owning search query
+	 */
+<span class="nc" id="L46">	public SemanticCodeSearchResult(SemanticCodeSearchQuery query) {</span>
+<span class="nc" id="L47">		this.query= query;</span>
+<span class="nc" id="L48">	}</span>
+
+	/**
+	 * Sets the list of matching search hits.
+	 *
+	 * @param matches
+	 *            the search results
+	 */
+	public void setMatches(List&lt;SearchHit&gt; matches) {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		this.matches= matches != null ? matches : Collections.emptyList();</span>
+<span class="nc" id="L58">	}</span>
+
+	/**
+	 * Returns the list of matching search hits.
+	 *
+	 * @return unmodifiable list of results
+	 */
+	public List&lt;SearchHit&gt; getMatches() {
+<span class="nc" id="L66">		return Collections.unmodifiableList(matches);</span>
+	}
+
+	@Override
+	public String getLabel() {
+<span class="nc" id="L71">		return &quot;Semantic Search: '&quot; + query.getQueryText() + &quot;' — &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L72">				+ matches.size() + &quot; result(s)&quot;; //$NON-NLS-1$</span>
+	}
+
+	@Override
+	public String getTooltip() {
+<span class="nc" id="L77">		return &quot;Semantic code search results for: &quot; + query.getQueryText(); //$NON-NLS-1$</span>
+	}
+
+	@Override
+	public ImageDescriptor getImageDescriptor() {
+<span class="nc" id="L82">		return null;</span>
+	}
+
+	@Override
+	public ISearchQuery getQuery() {
+<span class="nc" id="L87">		return query;</span>
+	}
+
+	@Override
+	public void addListener(ISearchResultListener l) {
+		// not needed for static results
+<span class="nc" id="L93">	}</span>
+
+	@Override
+	public void removeListener(ISearchResultListener l) {
+		// not needed for static results
+<span class="nc" id="L98">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

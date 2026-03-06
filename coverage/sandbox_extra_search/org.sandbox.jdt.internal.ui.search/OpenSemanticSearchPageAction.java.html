@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>OpenSemanticSearchPageAction.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search</a> &gt; <span class="el_source">OpenSemanticSearchPageAction.java</span></div><h1>OpenSemanticSearchPageAction.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search;
+
+import org.eclipse.jdt.internal.ui.JavaPlugin;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.search.ui.NewSearchUI;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.IWorkbenchWindowActionDelegate;
+import org.eclipse.ui.PlatformUI;
+
+/**
+ * Opens the Eclipse Search Dialog with the Semantic Code Search page in front.
+ *
+ * &lt;p&gt;
+ * Follows the same pattern as {@link OpenUpdateSearchPageAction}.
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L32">public class OpenSemanticSearchPageAction implements IWorkbenchWindowActionDelegate {</span>
+
+	private IWorkbenchWindow fWindow;
+
+	@Override
+	public void init(IWorkbenchWindow window) {
+<span class="nc" id="L38">		fWindow= window;</span>
+<span class="nc" id="L39">	}</span>
+
+	@Override
+	public void run(IAction action) {
+<span class="nc bnc" id="L43" title="All 2 branches missed.">		if (fWindow == null) {</span>
+<span class="nc" id="L44">			beep();</span>
+<span class="nc" id="L45">			JavaPlugin.logErrorMessage(Messages.OpenSemanticSearchPageAction_WindowNotAvailable);</span>
+<span class="nc" id="L46">			return;</span>
+		}
+<span class="nc bnc" id="L48" title="All 2 branches missed.">		if (fWindow.getActivePage() == null) {</span>
+<span class="nc" id="L49">			beep();</span>
+<span class="nc" id="L50">			JavaPlugin.logErrorMessage(Messages.OpenSemanticSearchPageAction_PageNotAvailable);</span>
+<span class="nc" id="L51">			return;</span>
+		}
+<span class="nc" id="L53">		NewSearchUI.openSearchDialog(fWindow, SemanticCodeSearchPage.PAGE_ID);</span>
+<span class="nc" id="L54">	}</span>
+
+	@Override
+	public void selectionChanged(IAction action, ISelection selection) {
+		// do nothing — action is not selection-dependent
+<span class="nc" id="L59">	}</span>
+
+	@Override
+	public void dispose() {
+<span class="nc" id="L63">		fWindow= null;</span>
+<span class="nc" id="L64">	}</span>
+
+	protected void beep() {
+		try {
+<span class="nc" id="L68">			IWorkbenchWindow activeWorkbenchWindow= PlatformUI.getWorkbench().getActiveWorkbenchWindow();</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">			if (activeWorkbenchWindow == null) {</span>
+<span class="nc" id="L70">				return;</span>
+			}
+<span class="nc" id="L72">			Shell shell= activeWorkbenchWindow.getShell();</span>
+<span class="nc bnc" id="L73" title="All 4 branches missed.">			if (shell != null &amp;&amp; shell.getDisplay() != null) {</span>
+<span class="nc" id="L74">				shell.getDisplay().beep();</span>
+			}
+<span class="nc" id="L76">		} catch (Exception e) {</span>
+			// Ignore — beep is not critical
+		}
+<span class="nc" id="L79">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

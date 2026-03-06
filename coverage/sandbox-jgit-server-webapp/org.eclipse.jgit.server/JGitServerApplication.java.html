@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JGitServerApplication.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server</a> &gt; <span class="el_source">JGitServerApplication.java</span></div><h1>JGitServerApplication.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.server;
+
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jgit.http.server.GitServlet;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.server.config.HibernateConfig;
+import org.eclipse.jgit.server.config.RepositoryManagerConfig;
+import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
+import org.eclipse.jgit.server.rest.AnalyticsResource;
+import org.eclipse.jgit.server.rest.CorsFilter;
+import org.eclipse.jgit.server.rest.HealthResource;
+import org.eclipse.jgit.server.rest.RepositoryResource;
+import org.eclipse.jgit.server.rest.SearchResource;
+import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.transport.ReceivePack;
+import org.eclipse.jgit.transport.resolver.ReceivePackFactory;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+/**
+ * Main application entry point for the JGit database-backed server.
+ * &lt;p&gt;
+ * Starts an embedded Jetty server with:
+ * &lt;ul&gt;
+ * &lt;li&gt;Git Smart HTTP protocol on port 8443 (configurable)&lt;/li&gt;
+ * &lt;li&gt;REST API on port 8080 (configurable)&lt;/li&gt;
+ * &lt;/ul&gt;
+ * Configuration is read from environment variables.
+ */
+<span class="fc" id="L54">public class JGitServerApplication {</span>
+
+<span class="fc" id="L56">	private static final Logger LOG = Logger</span>
+<span class="fc" id="L57">			.getLogger(JGitServerApplication.class.getName());</span>
+
+	private static final int DEFAULT_REST_PORT = 8080;
+
+	private static final int DEFAULT_GIT_PORT = 8443;
+
+	private Server server;
+
+	private HibernateSessionFactoryProvider sessionFactoryProvider;
+
+	private HibernateRepositoryResolver repositoryResolver;
+
+	/**
+	 * Main entry point.
+	 *
+	 * @param args
+	 *            command line arguments (unused)
+	 * @throws Exception
+	 *             if server startup fails
+	 */
+	public static void main(String[] args) throws Exception {
+<span class="nc" id="L78">		JGitServerApplication app = new JGitServerApplication();</span>
+<span class="nc" id="L79">		app.start();</span>
+<span class="nc" id="L80">		app.join();</span>
+<span class="nc" id="L81">	}</span>
+
+	/**
+	 * Start the server.
+	 *
+	 * @throws Exception
+	 *             if server startup fails
+	 */
+	public void start() throws Exception {
+<span class="nc" id="L90">		sessionFactoryProvider = HibernateConfig</span>
+<span class="nc" id="L91">				.createSessionFactoryProvider();</span>
+<span class="nc" id="L92">		repositoryResolver = new HibernateRepositoryResolver(</span>
+				sessionFactoryProvider);
+
+		// Auto-create default repositories
+<span class="nc" id="L96">		String defaultRepos = System.getenv(&quot;JGIT_DEFAULT_REPOS&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">		if (defaultRepos != null &amp;&amp; !defaultRepos.isEmpty()) {</span>
+<span class="nc" id="L98">			RepositoryManagerConfig.initDefaultRepositories(</span>
+					sessionFactoryProvider, defaultRepos);
+		}
+
+<span class="nc" id="L102">		int restPort = getIntEnv(&quot;JGIT_REST_PORT&quot;, DEFAULT_REST_PORT); //$NON-NLS-1$</span>
+<span class="nc" id="L103">		int gitPort = getIntEnv(&quot;JGIT_GIT_PORT&quot;, DEFAULT_GIT_PORT); //$NON-NLS-1$</span>
+
+<span class="nc" id="L105">		server = new Server();</span>
+
+		// REST API connector
+<span class="nc" id="L108">		ServerConnector restConnector = new ServerConnector(server);</span>
+<span class="nc" id="L109">		restConnector.setPort(restPort);</span>
+<span class="nc" id="L110">		restConnector.setName(&quot;rest&quot;); //$NON-NLS-1$</span>
+
+		// Git HTTP connector
+<span class="nc" id="L113">		ServerConnector gitConnector = new ServerConnector(server);</span>
+<span class="nc" id="L114">		gitConnector.setPort(gitPort);</span>
+<span class="nc" id="L115">		gitConnector.setName(&quot;git&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L117">		server.addConnector(restConnector);</span>
+<span class="nc" id="L118">		server.addConnector(gitConnector);</span>
+
+<span class="nc" id="L120">		ContextHandlerCollection contexts = new ContextHandlerCollection();</span>
+
+		// REST API context
+<span class="nc" id="L123">		ServletContextHandler restContext = new ServletContextHandler(</span>
+				ServletContextHandler.SESSIONS);
+<span class="nc" id="L125">		restContext.setContextPath(&quot;/api&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L126">		restContext.setVirtualHosts(List.of(&quot;@rest&quot;)); //$NON-NLS-1$</span>
+
+		// CORS filter
+<span class="nc" id="L129">		String corsOrigins = System.getenv(&quot;JGIT_CORS_ORIGINS&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">		if (corsOrigins != null &amp;&amp; !corsOrigins.isEmpty()) {</span>
+<span class="nc" id="L131">			restContext.addFilter(</span>
+					new FilterHolder(new CorsFilter(corsOrigins)),
+					&quot;/*&quot;, //$NON-NLS-1$
+					java.util.EnumSet
+<span class="nc" id="L135">							.allOf(jakarta.servlet.DispatcherType.class));</span>
+		}
+
+<span class="nc" id="L138">		restContext.addServlet(new ServletHolder(&quot;health&quot;, //$NON-NLS-1$</span>
+				new HealthResource(sessionFactoryProvider)), &quot;/health&quot;); //$NON-NLS-1$
+<span class="nc" id="L140">		restContext.addServlet(</span>
+				new ServletHolder(&quot;repos&quot;, //$NON-NLS-1$
+						new RepositoryResource(sessionFactoryProvider,
+								repositoryResolver)),
+				&quot;/repos/*&quot;); //$NON-NLS-1$
+<span class="nc" id="L145">		restContext.addServlet(</span>
+				new ServletHolder(&quot;search&quot;, //$NON-NLS-1$
+						new SearchResource(sessionFactoryProvider)),
+				&quot;/search/*&quot;); //$NON-NLS-1$
+<span class="nc" id="L149">		restContext.addServlet(</span>
+				new ServletHolder(&quot;analytics&quot;, //$NON-NLS-1$
+						new AnalyticsResource(sessionFactoryProvider)),
+				&quot;/analytics/*&quot;); //$NON-NLS-1$
+
+		// Git Smart HTTP context
+<span class="nc" id="L155">		ServletContextHandler gitContext = new ServletContextHandler(</span>
+				ServletContextHandler.SESSIONS);
+<span class="nc" id="L157">		gitContext.setContextPath(&quot;/git&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L158">		gitContext.setVirtualHosts(List.of(&quot;@git&quot;)); //$NON-NLS-1$</span>
+
+<span class="nc" id="L160">		gitContext.addServlet(</span>
+<span class="nc" id="L161">				new ServletHolder(createGitServlet(repositoryResolver)),</span>
+				&quot;/*&quot;); //$NON-NLS-1$
+
+<span class="nc" id="L164">		contexts.addHandler(restContext);</span>
+
+		// Also serve /api/v1/* for forward-compatible API versioning
+<span class="nc" id="L167">		ServletContextHandler v1Context = new ServletContextHandler(</span>
+				ServletContextHandler.SESSIONS);
+<span class="nc" id="L169">		v1Context.setContextPath(&quot;/api/v1&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L170">		v1Context.setVirtualHosts(List.of(&quot;@rest&quot;)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L171" title="All 4 branches missed.">		if (corsOrigins != null &amp;&amp; !corsOrigins.isEmpty()) {</span>
+<span class="nc" id="L172">			v1Context.addFilter(</span>
+					new FilterHolder(new CorsFilter(corsOrigins)),
+					&quot;/*&quot;, //$NON-NLS-1$
+					java.util.EnumSet
+<span class="nc" id="L176">							.allOf(jakarta.servlet.DispatcherType.class));</span>
+		}
+<span class="nc" id="L178">		v1Context.addServlet(new ServletHolder(&quot;health&quot;, //$NON-NLS-1$</span>
+				new HealthResource(sessionFactoryProvider)), &quot;/health&quot;); //$NON-NLS-1$
+<span class="nc" id="L180">		v1Context.addServlet(</span>
+				new ServletHolder(&quot;repos&quot;, //$NON-NLS-1$
+						new RepositoryResource(sessionFactoryProvider,
+								repositoryResolver)),
+				&quot;/repos/*&quot;); //$NON-NLS-1$
+<span class="nc" id="L185">		v1Context.addServlet(</span>
+				new ServletHolder(&quot;search&quot;, //$NON-NLS-1$
+						new SearchResource(sessionFactoryProvider)),
+				&quot;/search/*&quot;); //$NON-NLS-1$
+<span class="nc" id="L189">		v1Context.addServlet(</span>
+				new ServletHolder(&quot;analytics&quot;, //$NON-NLS-1$
+						new AnalyticsResource(sessionFactoryProvider)),
+				&quot;/analytics/*&quot;); //$NON-NLS-1$
+<span class="nc" id="L193">		contexts.addHandler(v1Context);</span>
+
+<span class="nc" id="L195">		contexts.addHandler(gitContext);</span>
+<span class="nc" id="L196">		GzipHandler gzip = new GzipHandler();</span>
+<span class="nc" id="L197">		gzip.setHandler(contexts);</span>
+<span class="nc" id="L198">		server.setHandler(gzip);</span>
+
+<span class="nc" id="L200">		server.start();</span>
+<span class="nc" id="L201">		LOG.log(Level.INFO, &quot;JGit Server started&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L202">		LOG.log(Level.INFO, &quot;  REST API: http://0.0.0.0:{0}/api/&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L203">				Integer.toString(restPort));</span>
+<span class="nc" id="L204">		LOG.log(Level.INFO, &quot;  REST API v1: http://0.0.0.0:{0}/api/v1/&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L205">				Integer.toString(restPort));</span>
+<span class="nc" id="L206">		LOG.log(Level.INFO,</span>
+				&quot;  Git HTTP: http://0.0.0.0:{0}/git/&quot;, //$NON-NLS-1$
+<span class="nc" id="L208">				Integer.toString(gitPort));</span>
+<span class="nc" id="L209">	}</span>
+
+	/**
+	 * Start the server with explicit Hibernate properties and ports.
+	 * &lt;p&gt;
+	 * Useful for integration testing with Testcontainers where the database
+	 * connection URL and ports are determined at runtime.
+	 *
+	 * @param hibernateProperties
+	 *            Hibernate configuration properties
+	 * @param restPort
+	 *            REST API port (0 for dynamic allocation)
+	 * @param gitPort
+	 *            Git HTTP port (0 for dynamic allocation)
+	 * @throws Exception
+	 *             if server startup fails
+	 */
+	public void start(Properties hibernateProperties, int restPort,
+			int gitPort) throws Exception {
+<span class="fc" id="L228">		sessionFactoryProvider = HibernateConfig</span>
+<span class="fc" id="L229">				.createSessionFactoryProvider(hibernateProperties);</span>
+<span class="fc" id="L230">		repositoryResolver = new HibernateRepositoryResolver(</span>
+				sessionFactoryProvider);
+
+<span class="fc" id="L233">		server = new Server();</span>
+
+		// REST API connector
+<span class="fc" id="L236">		ServerConnector restConnector = new ServerConnector(server);</span>
+<span class="fc" id="L237">		restConnector.setPort(restPort);</span>
+<span class="fc" id="L238">		restConnector.setName(&quot;rest&quot;); //$NON-NLS-1$</span>
+
+		// Git HTTP connector
+<span class="fc" id="L241">		ServerConnector gitConnector = new ServerConnector(server);</span>
+<span class="fc" id="L242">		gitConnector.setPort(gitPort);</span>
+<span class="fc" id="L243">		gitConnector.setName(&quot;git&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L245">		server.addConnector(restConnector);</span>
+<span class="fc" id="L246">		server.addConnector(gitConnector);</span>
+
+<span class="fc" id="L248">		ContextHandlerCollection contexts = new ContextHandlerCollection();</span>
+
+		// REST API context
+<span class="fc" id="L251">		ServletContextHandler restContext = new ServletContextHandler(</span>
+				ServletContextHandler.SESSIONS);
+<span class="fc" id="L253">		restContext.setContextPath(&quot;/api&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L254">		restContext.setVirtualHosts(List.of(&quot;@rest&quot;)); //$NON-NLS-1$</span>
+
+<span class="fc" id="L256">		restContext.addServlet(new ServletHolder(&quot;health&quot;, //$NON-NLS-1$</span>
+				new HealthResource(sessionFactoryProvider)), &quot;/health&quot;); //$NON-NLS-1$
+<span class="fc" id="L258">		restContext.addServlet(</span>
+				new ServletHolder(&quot;repos&quot;, //$NON-NLS-1$
+						new RepositoryResource(sessionFactoryProvider,
+								repositoryResolver)),
+				&quot;/repos/*&quot;); //$NON-NLS-1$
+<span class="fc" id="L263">		restContext.addServlet(</span>
+				new ServletHolder(&quot;search&quot;, //$NON-NLS-1$
+						new SearchResource(sessionFactoryProvider)),
+				&quot;/search/*&quot;); //$NON-NLS-1$
+<span class="fc" id="L267">		restContext.addServlet(</span>
+				new ServletHolder(&quot;analytics&quot;, //$NON-NLS-1$
+						new AnalyticsResource(sessionFactoryProvider)),
+				&quot;/analytics/*&quot;); //$NON-NLS-1$
+
+		// Git Smart HTTP context
+<span class="fc" id="L273">		ServletContextHandler gitContext = new ServletContextHandler(</span>
+				ServletContextHandler.SESSIONS);
+<span class="fc" id="L275">		gitContext.setContextPath(&quot;/git&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L276">		gitContext.setVirtualHosts(List.of(&quot;@git&quot;)); //$NON-NLS-1$</span>
+
+<span class="fc" id="L278">		gitContext.addServlet(</span>
+<span class="fc" id="L279">				new ServletHolder(createGitServlet(repositoryResolver)),</span>
+				&quot;/*&quot;); //$NON-NLS-1$
+
+<span class="fc" id="L282">		contexts.addHandler(restContext);</span>
+<span class="fc" id="L283">		contexts.addHandler(gitContext);</span>
+<span class="fc" id="L284">		GzipHandler gzip = new GzipHandler();</span>
+<span class="fc" id="L285">		gzip.setHandler(contexts);</span>
+<span class="fc" id="L286">		server.setHandler(gzip);</span>
+
+<span class="fc" id="L288">		server.start();</span>
+<span class="fc" id="L289">		LOG.log(Level.INFO, &quot;JGit Server started (test mode)&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L290">		LOG.log(Level.INFO, &quot;  REST API: http://0.0.0.0:{0}/api/&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L291">				Integer.toString(getRestPort()));</span>
+<span class="fc" id="L292">		LOG.log(Level.INFO,</span>
+				&quot;  Git HTTP: http://0.0.0.0:{0}/git/&quot;, //$NON-NLS-1$
+<span class="fc" id="L294">				Integer.toString(getGitPort()));</span>
+<span class="fc" id="L295">	}</span>
+
+	/**
+	 * Wait for the server to stop.
+	 *
+	 * @throws InterruptedException
+	 *             if interrupted while waiting
+	 */
+	public void join() throws InterruptedException {
+<span class="nc bnc" id="L304" title="All 2 branches missed.">		if (server != null) {</span>
+<span class="nc" id="L305">			server.join();</span>
+		}
+<span class="nc" id="L307">	}</span>
+
+	/**
+	 * Stop the server and release resources.
+	 *
+	 * @throws Exception
+	 *             if an error occurs during shutdown
+	 */
+	public void stop() throws Exception {
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">		if (server != null) {</span>
+<span class="fc" id="L317">			server.stop();</span>
+		}
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		if (repositoryResolver != null) {</span>
+<span class="fc" id="L320">			repositoryResolver.close();</span>
+		}
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">		if (sessionFactoryProvider != null) {</span>
+<span class="fc" id="L323">			sessionFactoryProvider.close();</span>
+		}
+<span class="fc" id="L325">	}</span>
+
+	/**
+	 * Get the REST API port the server is listening on.
+	 *
+	 * @return the REST port, or -1 if not started
+	 */
+	public int getRestPort() {
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">		if (server != null) {</span>
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">			for (var connector : server.getConnectors()) {</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">				if (connector instanceof ServerConnector sc</span>
+<span class="pc bpc" id="L336" title="1 of 2 branches missed.">						&amp;&amp; &quot;rest&quot;.equals(sc.getName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L337">					return sc.getLocalPort();</span>
+				}
+			}
+		}
+<span class="nc" id="L341">		return -1;</span>
+	}
+
+	/**
+	 * Get the Git HTTP port the server is listening on.
+	 *
+	 * @return the Git port, or -1 if not started
+	 */
+	public int getGitPort() {
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">		if (server != null) {</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">			for (var connector : server.getConnectors()) {</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">				if (connector instanceof ServerConnector sc</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">						&amp;&amp; &quot;git&quot;.equals(sc.getName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L354">					return sc.getLocalPort();</span>
+				}
+			}
+		}
+<span class="nc" id="L358">		return -1;</span>
+	}
+
+	/**
+	 * Get the repository resolver.
+	 *
+	 * @return the resolver
+	 */
+	public HibernateRepositoryResolver getRepositoryResolver() {
+<span class="fc" id="L367">		return repositoryResolver;</span>
+	}
+
+	private static int getIntEnv(String name, int defaultValue) {
+<span class="nc" id="L371">		String val = System.getenv(name);</span>
+<span class="nc bnc" id="L372" title="All 4 branches missed.">		if (val != null &amp;&amp; !val.isEmpty()) {</span>
+			try {
+<span class="nc" id="L374">				return Integer.parseInt(val);</span>
+<span class="nc" id="L375">			} catch (NumberFormatException e) {</span>
+<span class="nc" id="L376">				LOG.log(Level.WARNING,</span>
+						&quot;Invalid integer for {0}: {1}, using default {2}&quot;, //$NON-NLS-1$
+						new Object[] { name, val,
+<span class="nc" id="L379">								Integer.toString(defaultValue) });</span>
+			}
+		}
+<span class="nc" id="L382">		return defaultValue;</span>
+	}
+
+	/**
+	 * Create a ReceivePackFactory that allows anonymous push operations.
+	 *
+	 * @return a factory that creates ReceivePack instances without requiring
+	 *         authentication
+	 */
+	private static ReceivePackFactory&lt;HttpServletRequest&gt; createReceivePackFactory() {
+<span class="fc" id="L392">		return (HttpServletRequest req, Repository db) -&gt; {</span>
+<span class="fc" id="L393">			ReceivePack rp = new ReceivePack(db);</span>
+			// Default 3 MiB limit is too low for repositories with many refs.
+			// Allow override via env var; default to 50 MiB.
+<span class="fc" id="L396">			long maxCmdBytes = 50L &lt;&lt; 20;</span>
+<span class="fc" id="L397">			String envVal = System.getenv(&quot;JGIT_RECEIVE_MAX_COMMAND_BYTES&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L398" title="3 of 4 branches missed.">			if (envVal != null &amp;&amp; !envVal.isEmpty()) {</span>
+				try {
+<span class="nc" id="L400">					maxCmdBytes = Long.parseLong(envVal);</span>
+<span class="nc" id="L401">				} catch (NumberFormatException e) {</span>
+<span class="nc" id="L402">					LOG.log(Level.WARNING,</span>
+							&quot;Invalid JGIT_RECEIVE_MAX_COMMAND_BYTES value: {0}, using default 50 MiB&quot;, //$NON-NLS-1$
+							envVal);
+<span class="nc" id="L405">				}</span>
+			}
+<span class="fc" id="L407">			rp.setMaxCommandBytes(maxCmdBytes);</span>
+<span class="fc" id="L408">			return rp;</span>
+		};
+	}
+
+	private static GitServlet createGitServlet(
+			HibernateRepositoryResolver resolver) {
+<span class="fc" id="L414">		GitServlet gitServlet = new GitServlet();</span>
+<span class="fc" id="L415">		gitServlet.setRepositoryResolver(resolver);</span>
+<span class="fc" id="L416">		gitServlet.setReceivePackFactory(createReceivePackFactory());</span>
+<span class="fc" id="L417">		gitServlet.setReceivePackErrorHandler(</span>
+				(req, rsp, r) -&gt; {
+					try {
+<span class="fc" id="L420">						r.receive();</span>
+<span class="nc" id="L421">					} catch (Exception e) {</span>
+<span class="nc" id="L422">						LOG.log(Level.SEVERE,</span>
+								&quot;ReceivePack error for &quot; //$NON-NLS-1$
+<span class="nc" id="L424">										+ req.getRequestURI(),</span>
+								e);
+<span class="nc" id="L426">						throw e;</span>
+<span class="fc" id="L427">					}</span>
+<span class="fc" id="L428">				});</span>
+<span class="fc" id="L429">		return gitServlet;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Pattern.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">Pattern.java</span></div><h1>Pattern.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.Objects;
+
+/**
+ * Represents a pattern for matching Java code snippets.
+ * 
+ * &lt;p&gt;A pattern consists of:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;A pattern string with placeholders (e.g., {@code &quot;$x + 1&quot;})&lt;/li&gt;
+ *   &lt;li&gt;A {@link PatternKind} indicating whether it's an expression or statement&lt;/li&gt;
+ *   &lt;li&gt;Optional metadata (id, display name)&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * &lt;p&gt;Placeholders are identified by a {@code $} prefix (e.g., {@code $x}, {@code $var}, {@code $cond}).
+ * When a pattern matches, placeholders are bound to actual AST nodes from the matched code.&lt;/p&gt;
+ * 
+ * @since 1.2.2
+ */
+public final class Pattern {
+	private final String value;
+	private final PatternKind kind;
+	private final String id;
+	private final String displayName;
+	private final String qualifiedType;
+	private final String overridesType;
+	private final ConstraintVariableType[] constraints;
+	
+	/**
+	 * Creates a pattern with only value and kind, all other fields null.
+	 * 
+	 * @param value the pattern string with placeholders
+	 * @param kind the kind of pattern
+	 * @return a new pattern
+	 */
+	public static Pattern of(String value, PatternKind kind) {
+<span class="fc" id="L50">		return new Pattern(value, kind, null, null, null, null, null);</span>
+	}
+	
+	/**
+	 * Creates a new pattern with the specified value, kind, id, display name, qualified type,
+	 * overrides type, and type constraints.
+	 * 
+	 * @param value the pattern string with placeholders
+	 * @param kind the kind of pattern
+	 * @param id optional unique identifier for the pattern
+	 * @param displayName optional human-readable name for the pattern
+	 * @param qualifiedType optional qualified type name
+	 * @param overridesType optional fully qualified type name for override constraint
+	 * @param constraints optional type constraints for placeholder variables
+	 */
+	public Pattern(String value, PatternKind kind, String id, String displayName, String qualifiedType,
+<span class="fc" id="L66">			String overridesType, ConstraintVariableType[] constraints) {</span>
+<span class="fc" id="L67">		this.value = Objects.requireNonNull(value, &quot;Pattern value cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L68">		this.kind = Objects.requireNonNull(kind, &quot;Pattern kind cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L69">		this.id = id;</span>
+<span class="fc" id="L70">		this.displayName = displayName;</span>
+<span class="fc" id="L71">		this.qualifiedType = qualifiedType;</span>
+<span class="fc" id="L72">		this.overridesType = overridesType;</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		this.constraints = constraints == null ? null : constraints.clone();</span>
+<span class="fc" id="L74">	}</span>
+	
+	/**
+	 * Returns the pattern string.
+	 * 
+	 * @return the pattern string with placeholders
+	 */
+	public String getValue() {
+<span class="fc" id="L82">		return value;</span>
+	}
+	
+	/**
+	 * Returns the pattern kind.
+	 * 
+	 * @return the kind (EXPRESSION or STATEMENT)
+	 */
+	public PatternKind getKind() {
+<span class="fc" id="L91">		return kind;</span>
+	}
+	
+	/**
+	 * Returns the optional pattern ID.
+	 * 
+	 * @return the pattern ID or {@code null} if not set
+	 */
+	public String getId() {
+<span class="nc" id="L100">		return id;</span>
+	}
+	
+	/**
+	 * Returns the optional display name.
+	 * 
+	 * @return the display name or {@code null} if not set
+	 */
+	public String getDisplayName() {
+<span class="nc" id="L109">		return displayName;</span>
+	}
+	
+	/**
+	 * Returns the optional qualified type.
+	 * 
+	 * @return the qualified type name or {@code null} if not set
+	 * @since 1.2.3
+	 */
+	public String getQualifiedType() {
+<span class="fc" id="L119">		return qualifiedType;</span>
+	}
+	
+	/**
+	 * Returns the optional overrides type constraint.
+	 * 
+	 * &lt;p&gt;For METHOD_DECLARATION patterns, this specifies that the matched method
+	 * must override a method from the specified type.&lt;/p&gt;
+	 * 
+	 * @return the fully qualified type name that must be overridden, or {@code null} if not set
+	 * @since 1.2.6
+	 */
+	public String getOverridesType() {
+<span class="fc" id="L132">		return overridesType;</span>
+	}
+	
+	/**
+	 * Returns the type constraints for placeholder variables.
+	 * 
+	 * &lt;p&gt;Each constraint maps a placeholder variable to an expected Java type.
+	 * When binding resolution is available, matches are filtered to only include
+	 * those where bound nodes satisfy the type constraints.&lt;/p&gt;
+	 * 
+	 * @return the type constraints, or {@code null} if not set
+	 * @since 1.4.0
+	 */
+	public ConstraintVariableType[] getConstraints() {
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (constraints == null) {</span>
+<span class="fc" id="L147">			return null;</span>
+		}
+<span class="nc" id="L149">		return constraints.clone();</span>
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">		if (this == obj) {</span>
+<span class="fc" id="L155">			return true;</span>
+		}
+<span class="nc bnc" id="L157" title="All 4 branches missed.">		if (obj == null || getClass() != obj.getClass()) {</span>
+<span class="nc" id="L158">			return false;</span>
+		}
+<span class="nc" id="L160">		Pattern other = (Pattern) obj;</span>
+<span class="nc bnc" id="L161" title="All 4 branches missed.">		return Objects.equals(value, other.value) </span>
+				&amp;&amp; kind == other.kind 
+<span class="nc bnc" id="L163" title="All 2 branches missed.">				&amp;&amp; Objects.equals(id, other.id)</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">				&amp;&amp; Objects.equals(qualifiedType, other.qualifiedType)</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">				&amp;&amp; Objects.equals(overridesType, other.overridesType);</span>
+	}
+	
+	@Override
+	public int hashCode() {
+<span class="nc" id="L170">		return Objects.hash(value, kind, id, qualifiedType, overridesType);</span>
+	}
+	
+	@Override
+	public String toString() {
+<span class="nc" id="L175">		return &quot;Pattern[kind=&quot; + kind + &quot;, value=&quot; + value + &quot;, id=&quot; + id  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">				+ (qualifiedType != null ? &quot;, qualifiedType=&quot; + qualifiedType : &quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">				+ (overridesType != null ? &quot;, overridesType=&quot; + overridesType : &quot;&quot;) + &quot;]&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

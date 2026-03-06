@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JavaTypeHistoryView.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search.gitindex</a> &gt; <span class="el_source">JavaTypeHistoryView.java</span></div><h1>JavaTypeHistoryView.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search.gitindex;
+
+import java.util.List;
+
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.part.ViewPart;
+
+/**
+ * Eclipse view showing the change history of a Java type across all commits.
+ *
+ * &lt;p&gt;
+ * Displays which commits modified a given Java class, including which methods
+ * were changed. Internally uses {@link SemanticSearchClient#getFileHistory(String, String)}
+ * to call the REST API of {@code sandbox-jgit-server-webapp}.
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L40">public class JavaTypeHistoryView extends ViewPart {</span>
+
+	/** The view ID as registered in plugin.xml */
+	public static final String ID= &quot;org.sandbox.jdt.internal.ui.search.gitindex.JavaTypeHistoryView&quot;; //$NON-NLS-1$
+
+	private Text typeNameText;
+	private TableViewer tableViewer;
+
+	@Override
+	public void createPartControl(Composite parent) {
+<span class="nc" id="L50">		Composite container= new Composite(parent, SWT.NONE);</span>
+<span class="nc" id="L51">		container.setLayout(new GridLayout(2, false));</span>
+
+<span class="nc" id="L53">		Label typeLabel= new Label(container, SWT.NONE);</span>
+<span class="nc" id="L54">		typeLabel.setText(&quot;Class:&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L56">		typeNameText= new Text(container, SWT.BORDER | SWT.SEARCH);</span>
+<span class="nc" id="L57">		typeNameText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L58">		typeNameText.setMessage(&quot;e.g. org.eclipse.jdt.core.dom.ASTVisitor&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L60">		tableViewer= new TableViewer(container,</span>
+<span class="nc" id="L61">				SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER);</span>
+<span class="nc" id="L62">		Table table= tableViewer.getTable();</span>
+<span class="nc" id="L63">		table.setHeaderVisible(true);</span>
+<span class="nc" id="L64">		table.setLinesVisible(true);</span>
+<span class="nc" id="L65">		GridData tableData= new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1);</span>
+<span class="nc" id="L66">		table.setLayoutData(tableData);</span>
+
+<span class="nc" id="L68">		createColumns();</span>
+<span class="nc" id="L69">		tableViewer.setContentProvider(ArrayContentProvider.getInstance());</span>
+
+<span class="nc" id="L71">		typeNameText.addListener(SWT.DefaultSelection, e -&gt; performSearch());</span>
+<span class="nc" id="L72">	}</span>
+
+	private void createColumns() {
+<span class="nc" id="L75">		TableViewerColumn colCommit= new TableViewerColumn(tableViewer, SWT.NONE);</span>
+<span class="nc" id="L76">		colCommit.getColumn().setText(&quot;Commit&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L77">		colCommit.getColumn().setWidth(100);</span>
+<span class="nc" id="L78">		colCommit.setLabelProvider(new ColumnLabelProvider());</span>
+
+<span class="nc" id="L80">		TableViewerColumn colAuthor= new TableViewerColumn(tableViewer, SWT.NONE);</span>
+<span class="nc" id="L81">		colAuthor.getColumn().setText(&quot;Author&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L82">		colAuthor.getColumn().setWidth(150);</span>
+<span class="nc" id="L83">		colAuthor.setLabelProvider(new ColumnLabelProvider());</span>
+
+<span class="nc" id="L85">		TableViewerColumn colDate= new TableViewerColumn(tableViewer, SWT.NONE);</span>
+<span class="nc" id="L86">		colDate.getColumn().setText(&quot;Date&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L87">		colDate.getColumn().setWidth(120);</span>
+<span class="nc" id="L88">		colDate.setLabelProvider(new ColumnLabelProvider());</span>
+
+<span class="nc" id="L90">		TableViewerColumn colMethods= new TableViewerColumn(tableViewer, SWT.NONE);</span>
+<span class="nc" id="L91">		colMethods.getColumn().setText(&quot;Changed Methods&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L92">		colMethods.getColumn().setWidth(300);</span>
+<span class="nc" id="L93">		colMethods.setLabelProvider(new ColumnLabelProvider());</span>
+<span class="nc" id="L94">	}</span>
+
+	private void performSearch() {
+<span class="nc" id="L97">		String typeName= typeNameText.getText().trim();</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (typeName.isEmpty()) {</span>
+<span class="nc" id="L99">			return;</span>
+		}
+<span class="nc" id="L101">		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">		if (client == null) {</span>
+<span class="nc" id="L103">			tableViewer.setInput(new Object[0]);</span>
+<span class="nc" id="L104">			return;</span>
+		}
+<span class="nc" id="L106">		List&lt;SearchHit&gt; results= client.getFileHistory(&quot;&quot;, typeName); //$NON-NLS-1$</span>
+<span class="nc" id="L107">		tableViewer.setInput(results);</span>
+<span class="nc" id="L108">	}</span>
+
+	@Override
+	public void setFocus() {
+<span class="nc" id="L112">		typeNameText.setFocus();</span>
+<span class="nc" id="L113">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

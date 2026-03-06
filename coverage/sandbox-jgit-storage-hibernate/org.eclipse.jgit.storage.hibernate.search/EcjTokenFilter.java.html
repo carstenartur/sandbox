@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EcjTokenFilter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.search</a> &gt; <span class="el_source">EcjTokenFilter.java</span></div><h1>EcjTokenFilter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.search;
+
+import java.io.IOException;
+
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+
+/**
+ * A Lucene {@link TokenFilter} that processes tokens emitted by
+ * {@link EcjTokenizer}.
+ * &lt;p&gt;
+ * For identifiers, it applies CamelCase splitting, emitting the sub-tokens at
+ * the same position (via {@link PositionIncrementAttribute} set to 0). For
+ * string literals, it strips surrounding quotes and indexes the content. For
+ * operators, the tokens are skipped (no search value). Keywords pass through
+ * unchanged. Comments are optionally indexed or skipped.
+ * &lt;/p&gt;
+ */
+public final class EcjTokenFilter extends TokenFilter {
+
+<span class="fc" id="L38">	private final CharTermAttribute termAttr = addAttribute(</span>
+			CharTermAttribute.class);
+
+<span class="fc" id="L41">	private final TypeAttribute typeAttr = addAttribute(TypeAttribute.class);</span>
+
+<span class="fc" id="L43">	private final PositionIncrementAttribute posIncAttr = addAttribute(</span>
+			PositionIncrementAttribute.class);
+
+<span class="fc" id="L46">	private final OffsetAttribute offsetAttr = addAttribute(</span>
+			OffsetAttribute.class);
+
+	private final boolean indexComments;
+
+	private String[] pendingParts;
+
+	private int pendingIndex;
+
+	private String savedType;
+
+	private int savedStartOffset;
+
+	private int savedEndOffset;
+
+	/**
+	 * Create a new ECJ token filter that skips comments.
+	 *
+	 * @param input
+	 *            the upstream token stream
+	 */
+	public EcjTokenFilter(TokenStream input) {
+<span class="fc" id="L68">		this(input, false);</span>
+<span class="fc" id="L69">	}</span>
+
+	/**
+	 * Create a new ECJ token filter.
+	 *
+	 * @param input
+	 *            the upstream token stream
+	 * @param indexComments
+	 *            whether to index comment tokens
+	 */
+	public EcjTokenFilter(TokenStream input, boolean indexComments) {
+<span class="fc" id="L80">		super(input);</span>
+<span class="fc" id="L81">		this.indexComments = indexComments;</span>
+<span class="fc" id="L82">	}</span>
+
+	@Override
+	public boolean incrementToken() throws IOException {
+		// Emit pending CamelCase sub-parts
+<span class="pc bpc" id="L87" title="1 of 4 branches missed.">		if (pendingParts != null &amp;&amp; pendingIndex &lt; pendingParts.length) {</span>
+<span class="fc" id="L88">			clearAttributes();</span>
+<span class="fc" id="L89">			termAttr.setEmpty().append(pendingParts[pendingIndex]);</span>
+<span class="fc" id="L90">			typeAttr.setType(savedType);</span>
+<span class="fc" id="L91">			posIncAttr.setPositionIncrement(0);</span>
+<span class="fc" id="L92">			offsetAttr.setOffset(savedStartOffset, savedEndOffset);</span>
+<span class="fc" id="L93">			pendingIndex++;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">			if (pendingIndex &gt;= pendingParts.length) {</span>
+<span class="fc" id="L95">				pendingParts = null;</span>
+			}
+<span class="fc" id="L97">			return true;</span>
+		}
+<span class="fc" id="L99">		pendingParts = null;</span>
+
+<span class="fc bfc" id="L101" title="All 2 branches covered.">		while (input.incrementToken()) {</span>
+<span class="fc" id="L102">			String type = typeAttr.type();</span>
+
+			// Skip operators
+<span class="fc bfc" id="L105" title="All 2 branches covered.">			if (EcjTokenizer.TYPE_OPERATOR.equals(type)) {</span>
+<span class="fc" id="L106">				continue;</span>
+			}
+
+			// Skip comments unless configured to index them
+<span class="pc bpc" id="L110" title="3 of 4 branches missed.">			if (EcjTokenizer.TYPE_COMMENT.equals(type) &amp;&amp; !indexComments) {</span>
+<span class="nc" id="L111">				continue;</span>
+			}
+
+			// Skip annotations (the '@' symbol itself)
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">			if (EcjTokenizer.TYPE_ANNOTATION.equals(type)) {</span>
+<span class="nc" id="L116">				continue;</span>
+			}
+
+			// For identifiers: apply CamelCase splitting
+<span class="fc bfc" id="L120" title="All 2 branches covered.">			if (EcjTokenizer.TYPE_IDENTIFIER.equals(type)) {</span>
+<span class="fc" id="L121">				String term = termAttr.toString();</span>
+<span class="fc" id="L122">				String[] parts = splitCamelCase(term);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">				if (parts.length &gt; 1) {</span>
+					// The original term is already emitted
+					// Queue sub-parts at position increment 0
+<span class="fc" id="L126">					savedType = type;</span>
+<span class="fc" id="L127">					savedStartOffset = offsetAttr.startOffset();</span>
+<span class="fc" id="L128">					savedEndOffset = offsetAttr.endOffset();</span>
+<span class="fc" id="L129">					pendingParts = parts;</span>
+<span class="fc" id="L130">					pendingIndex = 0;</span>
+				}
+<span class="fc" id="L132">				return true;</span>
+			}
+
+			// Keywords, string literals, number literals: pass through
+<span class="fc" id="L136">			return true;</span>
+		}
+<span class="fc" id="L138">		return false;</span>
+	}
+
+	@Override
+	public void reset() throws IOException {
+<span class="fc" id="L143">		super.reset();</span>
+<span class="fc" id="L144">		pendingParts = null;</span>
+<span class="fc" id="L145">		pendingIndex = 0;</span>
+<span class="fc" id="L146">	}</span>
+
+	/**
+	 * Split a CamelCase identifier into its parts.
+	 *
+	 * @param identifier
+	 *            the identifier to split
+	 * @return an array of parts
+	 */
+	public static String[] splitCamelCase(String identifier) {
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">		if (identifier == null || identifier.isEmpty()) {</span>
+<span class="nc" id="L157">			return new String[0];</span>
+		}
+<span class="fc" id="L159">		java.util.List&lt;String&gt; parts = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L160">		int start = 0;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">		for (int i = 1; i &lt; identifier.length(); i++) {</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">			if (Character.isUpperCase(identifier.charAt(i))</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">					&amp;&amp; Character.isLowerCase(identifier.charAt(i - 1))) {</span>
+<span class="fc" id="L164">				parts.add(identifier.substring(start, i));</span>
+<span class="fc" id="L165">				start = i;</span>
+			}
+		}
+<span class="fc" id="L168">		parts.add(identifier.substring(start));</span>
+<span class="fc" id="L169">		return parts.toArray(new String[0]);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConfidenceScorer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.nullability</a> &gt; <span class="el_source">ConfidenceScorer.java</span></div><h1>ConfidenceScorer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.nullability;
+
+/**
+ * Computes a {@link MatchScore} from a {@link NullabilityResult}.
+ *
+ * &lt;p&gt;The scorer assigns a {@code trivialChange} value from 0 (trivial) to
+ * 10 (critical) and a {@link MatchSeverity} based on the nullability status
+ * and the reason/evidence collected by the {@link NullabilityGuard}.&lt;/p&gt;
+ *
+ * @since 1.2.6
+ */
+<span class="fc" id="L25">public class ConfidenceScorer {</span>
+
+	/**
+	 * Scores a nullability result.
+	 *
+	 * @param result the nullability analysis result
+	 * @return the computed match score
+	 */
+	public MatchScore score(NullabilityResult result) {
+<span class="fc bfc" id="L34" title="All 4 branches covered.">		return switch (result.status()) {</span>
+<span class="fc" id="L35">			case NON_NULL -&gt; scoreNonNull(result);</span>
+<span class="fc" id="L36">			case NULLABLE -&gt; scoreNullable(result);</span>
+<span class="fc" id="L37">			case POTENTIALLY_NULLABLE -&gt; scorePotentiallyNullable(result);</span>
+<span class="fc" id="L38">			case UNKNOWN -&gt; scoreUnknown(result);</span>
+		};
+	}
+
+	private MatchScore scoreNonNull(NullabilityResult result) {
+<span class="fc" id="L43">		String reason = result.reason();</span>
+
+		// AST getter on structural child → INFO (trivialChange 1)
+<span class="fc bfc" id="L46" title="All 2 branches covered.">		if (reason.contains(&quot;structural child&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L47">			return new MatchScore(1, NullStatus.NON_NULL, MatchSeverity.INFO, reason, result.evidence());</span>
+		}
+
+		// Everything else that is NON_NULL → IGNORE (trivialChange 0)
+<span class="fc" id="L51">		return new MatchScore(0, NullStatus.NON_NULL, MatchSeverity.IGNORE, reason, result.evidence());</span>
+	}
+
+	private MatchScore scoreNullable(NullabilityResult result) {
+<span class="fc" id="L55">		String reason = result.reason();</span>
+
+		// SpotBugs-style: null check AFTER usage → highest risk
+<span class="fc bfc" id="L58" title="All 2 branches covered.">		if (reason.contains(&quot;after usage&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L59">			return new MatchScore(10, NullStatus.NULLABLE, MatchSeverity.WARNING, reason, result.evidence());</span>
+		}
+
+		// @Nullable annotation → CLEANUP
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">		if (reason.contains(&quot;@Nullable&quot;) || reason.contains(&quot;@CheckForNull&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L64">			return new MatchScore(10, NullStatus.NULLABLE, MatchSeverity.CLEANUP, reason, result.evidence());</span>
+		}
+
+		// Map.get() → CLEANUP
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (reason.contains(&quot;Map.get&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L69">			return new MatchScore(8, NullStatus.NULLABLE, MatchSeverity.CLEANUP, reason, result.evidence());</span>
+		}
+
+		// Generic nullable → WARNING
+<span class="nc" id="L73">		return new MatchScore(9, NullStatus.NULLABLE, MatchSeverity.WARNING, reason, result.evidence());</span>
+	}
+
+	private MatchScore scorePotentiallyNullable(NullabilityResult result) {
+		// Null check exists somewhere → QUICKASSIST with medium score
+<span class="fc" id="L78">		return new MatchScore(5, NullStatus.POTENTIALLY_NULLABLE, MatchSeverity.QUICKASSIST,</span>
+<span class="fc" id="L79">				result.reason(), result.evidence());</span>
+	}
+
+	private MatchScore scoreUnknown(NullabilityResult result) {
+<span class="fc" id="L83">		String reason = result.reason();</span>
+
+		// Parameter without null check → QUICKASSIST
+<span class="fc bfc" id="L86" title="All 2 branches covered.">		if (reason.contains(&quot;parameter&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L87">			return new MatchScore(3, NullStatus.UNKNOWN, MatchSeverity.QUICKASSIST, reason, result.evidence());</span>
+		}
+
+		// Field without null check → QUICKASSIST
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		if (reason.contains(&quot;field&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L92">			return new MatchScore(5, NullStatus.UNKNOWN, MatchSeverity.QUICKASSIST, reason, result.evidence());</span>
+		}
+
+		// Getter on unknown type → QUICKASSIST
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		if (reason.contains(&quot;getter&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L97">			return new MatchScore(4, NullStatus.UNKNOWN, MatchSeverity.QUICKASSIST, reason, result.evidence());</span>
+		}
+
+		// Default unknown → QUICKASSIST
+<span class="fc" id="L101">		return new MatchScore(3, NullStatus.UNKNOWN, MatchSeverity.QUICKASSIST, reason, result.evidence());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

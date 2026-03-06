@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>GuardExpressionParser.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">GuardExpressionParser.java</span></div><h1>GuardExpressionParser.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.sandbox.jdt.triggerpattern.api.GuardExpression;
+
+/**
+ * Recursive descent parser for guard expressions.
+ * 
+ * &lt;p&gt;Syntax:&lt;/p&gt;
+ * &lt;pre&gt;
+ * expr            = or_expr
+ * or_expr         = and_expr ('||' and_expr)*
+ * and_expr        = unary_expr ('&amp;amp;&amp;amp;' unary_expr)*
+ * unary_expr      = '!' unary_expr | primary
+ * primary         = '(' expr ')' | instanceof_expr | function_call
+ * function_call   = IDENTIFIER '(' arg_list ')'
+ * instanceof_expr = PLACEHOLDER 'instanceof' TYPE
+ * arg_list        = (arg (',' arg)*)?
+ * arg             = PLACEHOLDER | IDENTIFIER | NUMBER
+ * &lt;/pre&gt;
+ * 
+ * &lt;p&gt;Examples:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code sourceVersionGE(11)}&lt;/li&gt;
+ *   &lt;li&gt;{@code $x instanceof String}&lt;/li&gt;
+ *   &lt;li&gt;{@code $x instanceof String &amp;&amp; sourceVersionGE(11)}&lt;/li&gt;
+ *   &lt;li&gt;{@code !isStatic($x)}&lt;/li&gt;
+ *   &lt;li&gt;{@code ($a || $b) &amp;&amp; $c}&lt;/li&gt;
+ * &lt;/ul&gt;
+ * 
+ * @since 1.3.2
+ */
+<span class="fc" id="L48">public final class GuardExpressionParser {</span>
+	
+	private static final class ParseState {
+		final String input;
+		int pos;
+		
+<span class="fc" id="L54">		ParseState(String input) {</span>
+<span class="fc" id="L55">			this.input = input;</span>
+<span class="fc" id="L56">			this.pos = 0;</span>
+<span class="fc" id="L57">		}</span>
+	}
+	
+	/**
+	 * Parses a guard expression string into a {@link GuardExpression} AST.
+	 * 
+	 * @param guardText the guard expression text
+	 * @return the parsed guard expression
+	 * @throws IllegalArgumentException if the expression cannot be parsed
+	 */
+	public GuardExpression parse(String guardText) {
+<span class="fc bfc" id="L68" title="All 4 branches covered.">		if (guardText == null || guardText.isBlank()) {</span>
+<span class="fc" id="L69">			throw new IllegalArgumentException(&quot;Guard expression cannot be null or blank&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L71">		ParseState state = new ParseState(guardText.trim());</span>
+		
+<span class="fc" id="L73">		GuardExpression expr = parseOrExpr(state);</span>
+<span class="fc" id="L74">		skipWhitespace(state);</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">		if (state.pos &lt; state.input.length()) {</span>
+<span class="nc" id="L76">			throw new IllegalArgumentException(</span>
+<span class="nc" id="L77">					&quot;Unexpected character at position &quot; + state.pos + &quot;: '&quot; + state.input.charAt(state.pos) + &quot;'&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+		}
+<span class="fc" id="L79">		return expr;</span>
+	}
+	
+	/**
+	 * or_expr = and_expr ('||' and_expr)*
+	 */
+	private GuardExpression parseOrExpr(ParseState state) {
+<span class="fc" id="L86">		GuardExpression left = parseAndExpr(state);</span>
+		
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		while (matchToken(state, &quot;||&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L89">			GuardExpression right = parseAndExpr(state);</span>
+<span class="fc" id="L90">			left = new GuardExpression.Or(left, right);</span>
+<span class="fc" id="L91">		}</span>
+		
+<span class="fc" id="L93">		return left;</span>
+	}
+	
+	/**
+	 * and_expr = unary_expr (('&amp;&amp;' | ',') unary_expr)*
+	 * 
+	 * &lt;p&gt;Both {@code &amp;&amp;} and {@code ,} are accepted as AND operators.
+	 * The comma form is used in hint file guard lists, e.g.
+	 * {@code sourceVersionGE(7), mode(ENFORCE_UTF8)}.&lt;/p&gt;
+	 */
+	private GuardExpression parseAndExpr(ParseState state) {
+<span class="fc" id="L104">		GuardExpression left = parseUnaryExpr(state);</span>
+		
+<span class="fc bfc" id="L106" title="All 4 branches covered.">		while (matchToken(state, &quot;&amp;&amp;&quot;) || matchCommaAnd(state)) { //$NON-NLS-1$</span>
+<span class="fc" id="L107">			GuardExpression right = parseUnaryExpr(state);</span>
+<span class="fc" id="L108">			left = new GuardExpression.And(left, right);</span>
+<span class="fc" id="L109">		}</span>
+		
+<span class="fc" id="L111">		return left;</span>
+	}
+
+	/**
+	 * Tries to match a comma used as an AND operator between guard expressions.
+	 * Only matches when the comma is NOT inside a function argument list
+	 * (those commas are consumed by {@link #parseArgList}).
+	 */
+	private boolean matchCommaAnd(ParseState state) {
+<span class="fc" id="L120">		skipWhitespace(state);</span>
+<span class="fc bfc" id="L121" title="All 4 branches covered.">		if (state.pos &lt; state.input.length() &amp;&amp; state.input.charAt(state.pos) == ',') {</span>
+<span class="fc" id="L122">			state.pos++;</span>
+<span class="fc" id="L123">			return true;</span>
+		}
+<span class="fc" id="L125">		return false;</span>
+	}
+	
+	/**
+	 * unary_expr = '!' unary_expr | primary
+	 */
+	private GuardExpression parseUnaryExpr(ParseState state) {
+<span class="fc" id="L132">		skipWhitespace(state);</span>
+		
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">		if (state.pos &lt; state.input.length() &amp;&amp; state.input.charAt(state.pos) == '!') {</span>
+<span class="fc" id="L135">			state.pos++;</span>
+<span class="fc" id="L136">			GuardExpression operand = parseUnaryExpr(state);</span>
+<span class="fc" id="L137">			return new GuardExpression.Not(operand);</span>
+		}
+		
+<span class="fc" id="L140">		return parsePrimary(state);</span>
+	}
+	
+	/**
+	 * primary = '(' expr ')' | instanceof_expr | function_call
+	 */
+	private GuardExpression parsePrimary(ParseState state) {
+<span class="fc" id="L147">		skipWhitespace(state);</span>
+		
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (state.pos &gt;= state.input.length()) {</span>
+<span class="nc" id="L150">			throw new IllegalArgumentException(&quot;Unexpected end of expression&quot;); //$NON-NLS-1$</span>
+		}
+		
+		// Parenthesized expression
+<span class="fc bfc" id="L154" title="All 2 branches covered.">		if (state.input.charAt(state.pos) == '(') {</span>
+<span class="fc" id="L155">			state.pos++;</span>
+<span class="fc" id="L156">			GuardExpression expr = parseOrExpr(state);</span>
+<span class="fc" id="L157">			skipWhitespace(state);</span>
+<span class="pc bpc" id="L158" title="2 of 4 branches missed.">			if (state.pos &gt;= state.input.length() || state.input.charAt(state.pos) != ')') {</span>
+<span class="nc" id="L159">				throw new IllegalArgumentException(&quot;Expected ')' at position &quot; + state.pos); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L161">			state.pos++;</span>
+<span class="fc" id="L162">			return expr;</span>
+		}
+		
+		// Placeholder: might be instanceof expression or matchesAny($x) style
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		if (state.input.charAt(state.pos) == '$') {</span>
+<span class="fc" id="L167">			String placeholder = readToken(state);</span>
+<span class="fc" id="L168">			skipWhitespace(state);</span>
+			
+			// Check for instanceof
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">			if (matchKeyword(state, &quot;instanceof&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L172">				skipWhitespace(state);</span>
+<span class="fc" id="L173">				String typeName = readToken(state);</span>
+				// Handle array types: Type[]
+<span class="fc" id="L175">				skipWhitespace(state);</span>
+<span class="pc bpc" id="L176" title="1 of 6 branches missed.">				if (state.pos + 1 &lt; state.input.length() &amp;&amp; state.input.charAt(state.pos) == '[' &amp;&amp; state.input.charAt(state.pos + 1) == ']') {</span>
+<span class="fc" id="L177">					typeName = typeName + &quot;[]&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L178">					state.pos += 2;</span>
+				}
+<span class="fc" id="L180">				return new GuardExpression.FunctionCall(&quot;instanceof&quot;, List.of(placeholder, typeName)); //$NON-NLS-1$</span>
+			}
+			
+			// Standalone placeholder treated as matchesAny($placeholder)
+<span class="nc" id="L184">			return new GuardExpression.FunctionCall(&quot;matchesAny&quot;, List.of(placeholder)); //$NON-NLS-1$</span>
+		}
+		
+		// Function call: IDENTIFIER '(' arg_list ')'
+<span class="fc" id="L188">		String name = readToken(state);</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">		if (name.isEmpty()) {</span>
+<span class="nc" id="L190">			throw new IllegalArgumentException(&quot;Expected identifier at position &quot; + state.pos); //$NON-NLS-1$</span>
+		}
+		
+<span class="fc" id="L193">		skipWhitespace(state);</span>
+<span class="pc bpc" id="L194" title="1 of 4 branches missed.">		if (state.pos &lt; state.input.length() &amp;&amp; state.input.charAt(state.pos) == '(') {</span>
+<span class="fc" id="L195">			state.pos++;</span>
+<span class="fc" id="L196">			List&lt;String&gt; args = parseArgList(state);</span>
+<span class="fc" id="L197">			skipWhitespace(state);</span>
+<span class="pc bpc" id="L198" title="2 of 4 branches missed.">			if (state.pos &gt;= state.input.length() || state.input.charAt(state.pos) != ')') {</span>
+<span class="nc" id="L199">				throw new IllegalArgumentException(&quot;Expected ')' at position &quot; + state.pos); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L201">			state.pos++;</span>
+<span class="fc" id="L202">			return new GuardExpression.FunctionCall(name, args);</span>
+		}
+		
+		// Bare identifier treated as zero-arg function call
+<span class="fc" id="L206">		return new GuardExpression.FunctionCall(name, List.of());</span>
+	}
+	
+	/**
+	 * arg_list = (arg (',' arg)*)?
+	 */
+	private List&lt;String&gt; parseArgList(ParseState state) {
+<span class="fc" id="L213">		List&lt;String&gt; args = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L214">		skipWhitespace(state);</span>
+		
+<span class="pc bpc" id="L216" title="1 of 4 branches missed.">		if (state.pos &lt; state.input.length() &amp;&amp; state.input.charAt(state.pos) == ')') {</span>
+<span class="fc" id="L217">			return args;</span>
+		}
+		
+<span class="fc" id="L220">		args.add(readArg(state));</span>
+		
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">		while (state.pos &lt; state.input.length()) {</span>
+<span class="fc" id="L223">			skipWhitespace(state);</span>
+<span class="pc bpc" id="L224" title="1 of 4 branches missed.">			if (state.pos &gt;= state.input.length() || state.input.charAt(state.pos) != ',') {</span>
+<span class="fc" id="L225">				break;</span>
+			}
+<span class="fc" id="L227">			state.pos++;</span>
+<span class="fc" id="L228">			args.add(readArg(state));</span>
+		}
+		
+<span class="fc" id="L231">		return args;</span>
+	}
+	
+	/**
+	 * Reads a single argument (placeholder, identifier, or number).
+	 */
+	private String readArg(ParseState state) {
+<span class="fc" id="L238">		skipWhitespace(state);</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (state.pos &gt;= state.input.length()) {</span>
+<span class="nc" id="L240">			throw new IllegalArgumentException(&quot;Expected argument at position &quot; + state.pos); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L242">		return readToken(state);</span>
+	}
+	
+	/**
+	 * Reads a token (identifier, placeholder with $ prefix, number, or quoted string literal).
+	 * 
+	 * &lt;p&gt;Quoted string literals are returned with their surrounding quotes preserved
+	 * (e.g., {@code &quot;foo&quot;} is returned as {@code &quot;foo&quot;}). Guard function implementations
+	 * use {@code stripQuotes()} during evaluation to extract the literal value.&lt;/p&gt;
+	 */
+	private String readToken(ParseState state) {
+<span class="fc" id="L253">		skipWhitespace(state);</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">		if (state.pos &gt;= state.input.length()) {</span>
+<span class="nc" id="L255">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+		
+<span class="fc" id="L258">		int start = state.pos;</span>
+<span class="fc" id="L259">		char c = state.input.charAt(state.pos);</span>
+		
+		// Quoted string literal: &quot;...&quot;
+<span class="fc bfc" id="L262" title="All 2 branches covered.">		if (c == '&quot;') {</span>
+<span class="fc" id="L263">			state.pos++;</span>
+<span class="fc" id="L264">			StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L265">			sb.append('&quot;');</span>
+<span class="fc bfc" id="L266" title="All 4 branches covered.">			while (state.pos &lt; state.input.length() &amp;&amp; state.input.charAt(state.pos) != '&quot;') {</span>
+<span class="pc bpc" id="L267" title="3 of 4 branches missed.">				if (state.input.charAt(state.pos) == '\\' &amp;&amp; state.pos + 1 &lt; state.input.length()) {</span>
+<span class="nc" id="L268">					char escaped = state.input.charAt(state.pos + 1);</span>
+					// Handle escaped quote: \&quot; becomes &quot; in the output
+<span class="nc bnc" id="L270" title="All 2 branches missed.">					if (escaped == '&quot;') {</span>
+<span class="nc" id="L271">						sb.append('&quot;');</span>
+<span class="nc" id="L272">						state.pos += 2;</span>
+<span class="nc" id="L273">						continue;</span>
+					}
+					// Preserve other escape sequences as-is
+<span class="nc" id="L276">					sb.append('\\');</span>
+<span class="nc" id="L277">					sb.append(escaped);</span>
+<span class="nc" id="L278">					state.pos += 2;</span>
+<span class="nc" id="L279">					continue;</span>
+				}
+<span class="fc" id="L281">				sb.append(state.input.charAt(state.pos));</span>
+<span class="fc" id="L282">				state.pos++;</span>
+			}
+<span class="fc bfc" id="L284" title="All 2 branches covered.">			if (state.pos &gt;= state.input.length()) {</span>
+<span class="fc" id="L285">				throw new IllegalArgumentException(</span>
+						&quot;Unterminated string literal starting at position &quot; + start); //$NON-NLS-1$
+			}
+<span class="fc" id="L288">			sb.append('&quot;');</span>
+<span class="fc" id="L289">			state.pos++; // consume closing quote</span>
+<span class="fc" id="L290">			return sb.toString();</span>
+		}
+		
+		// Placeholder: $identifier
+<span class="fc bfc" id="L294" title="All 2 branches covered.">		if (c == '$') {</span>
+<span class="fc" id="L295">			state.pos++;</span>
+<span class="pc bpc" id="L296" title="1 of 4 branches missed.">			while (state.pos &lt; state.input.length() &amp;&amp; isIdentifierPart(state.input.charAt(state.pos))) {</span>
+<span class="fc" id="L297">				state.pos++;</span>
+			}
+			// Handle multi-placeholder ending with $
+<span class="pc bpc" id="L300" title="2 of 4 branches missed.">			if (state.pos &lt; state.input.length() &amp;&amp; state.input.charAt(state.pos) == '$') {</span>
+<span class="nc" id="L301">				state.pos++;</span>
+			}
+<span class="fc" id="L303">			return state.input.substring(start, state.pos);</span>
+		}
+		
+		// Number
+<span class="fc bfc" id="L307" title="All 2 branches covered.">		if (Character.isDigit(c)) {</span>
+<span class="pc bpc" id="L308" title="2 of 6 branches missed.">			while (state.pos &lt; state.input.length() &amp;&amp; (Character.isDigit(state.input.charAt(state.pos)) || state.input.charAt(state.pos) == '.')) {</span>
+<span class="fc" id="L309">				state.pos++;</span>
+			}
+<span class="fc" id="L311">			return state.input.substring(start, state.pos);</span>
+		}
+		
+		// Identifier (including qualified names like java.lang.String)
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">		if (isIdentifierStart(c)) {</span>
+<span class="fc bfc" id="L316" title="All 6 branches covered.">			while (state.pos &lt; state.input.length() &amp;&amp; (isIdentifierPart(state.input.charAt(state.pos)) || state.input.charAt(state.pos) == '.')) {</span>
+<span class="fc" id="L317">				state.pos++;</span>
+			}
+<span class="fc" id="L319">			return state.input.substring(start, state.pos);</span>
+		}
+		
+<span class="nc" id="L322">		throw new IllegalArgumentException(</span>
+				&quot;Unexpected character at position &quot; + state.pos + &quot;: '&quot; + c + &quot;'&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+	
+	/**
+	 * Tries to match and consume a two-character token.
+	 */
+	private boolean matchToken(ParseState state, String token) {
+<span class="fc" id="L330">		skipWhitespace(state);</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">		if (state.pos + token.length() &lt;= state.input.length()</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">				&amp;&amp; state.input.substring(state.pos, state.pos + token.length()).equals(token)) {</span>
+<span class="fc" id="L333">			state.pos += token.length();</span>
+<span class="fc" id="L334">			return true;</span>
+		}
+<span class="fc" id="L336">		return false;</span>
+	}
+	
+	/**
+	 * Tries to match and consume a keyword (must be followed by non-identifier char).
+	 */
+	private boolean matchKeyword(ParseState state, String keyword) {
+<span class="fc" id="L343">		int savedPos = state.pos;</span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">		if (state.pos + keyword.length() &lt;= state.input.length()</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">				&amp;&amp; state.input.substring(state.pos, state.pos + keyword.length()).equals(keyword)) {</span>
+<span class="fc" id="L346">			int afterKeyword = state.pos + keyword.length();</span>
+<span class="pc bpc" id="L347" title="2 of 4 branches missed.">			if (afterKeyword &gt;= state.input.length() || !isIdentifierPart(state.input.charAt(afterKeyword))) {</span>
+<span class="fc" id="L348">				state.pos += keyword.length();</span>
+<span class="fc" id="L349">				return true;</span>
+			}
+		}
+<span class="nc" id="L352">		state.pos = savedPos;</span>
+<span class="nc" id="L353">		return false;</span>
+	}
+	
+	private void skipWhitespace(ParseState state) {
+<span class="fc bfc" id="L357" title="All 4 branches covered.">		while (state.pos &lt; state.input.length() &amp;&amp; Character.isWhitespace(state.input.charAt(state.pos))) {</span>
+<span class="fc" id="L358">			state.pos++;</span>
+		}
+<span class="fc" id="L360">	}</span>
+	
+	private boolean isIdentifierStart(char c) {
+<span class="fc" id="L363">		return Character.isJavaIdentifierStart(c);</span>
+	}
+	
+	private boolean isIdentifierPart(char c) {
+<span class="fc" id="L367">		return Character.isJavaIdentifierPart(c);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

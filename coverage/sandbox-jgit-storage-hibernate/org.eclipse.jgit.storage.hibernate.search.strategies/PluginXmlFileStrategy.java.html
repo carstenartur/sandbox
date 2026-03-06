@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PluginXmlFileStrategy.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.search.strategies</a> &gt; <span class="el_source">PluginXmlFileStrategy.java</span></div><h1>PluginXmlFileStrategy.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.search.strategies;
+
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.eclipse.jgit.storage.hibernate.search.BlobIndexData;
+import org.eclipse.jgit.storage.hibernate.search.FileTypeStrategy;
+
+/**
+ * Strategy for extracting searchable metadata from Eclipse plugin.xml and
+ * fragment.xml files.
+ */
+<span class="fc" id="L29">public class PluginXmlFileStrategy implements FileTypeStrategy {</span>
+
+<span class="fc" id="L31">	private static final Pattern EXT_POINT_PATTERN = Pattern</span>
+<span class="fc" id="L32">			.compile(&quot;point=\&quot;([^\&quot;]+)\&quot;&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L34">	private static final Pattern CLASS_ATTR_PATTERN = Pattern</span>
+<span class="fc" id="L35">			.compile(&quot;class=\&quot;([^\&quot;]+)\&quot;&quot;); //$NON-NLS-1$</span>
+
+	private static final int MAX_SNIPPET = 65535;
+
+	@Override
+	public Set&lt;String&gt; supportedExtensions() {
+<span class="fc" id="L41">		return Collections.emptySet();</span>
+	}
+
+	@Override
+	public Set&lt;String&gt; supportedFilenames() {
+<span class="fc" id="L46">		return Set.of(&quot;plugin.xml&quot;, &quot;fragment.xml&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	@Override
+	public BlobIndexData extract(String source, String filePath) {
+<span class="nc" id="L51">		BlobIndexData data = new BlobIndexData();</span>
+<span class="nc" id="L52">		data.setFileType(&quot;plugin-xml&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L53">		data.setSourceSnippet(</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">				source.length() &gt; MAX_SNIPPET</span>
+<span class="nc" id="L55">						? source.substring(0, MAX_SNIPPET)</span>
+<span class="nc" id="L56">						: source);</span>
+
+<span class="nc" id="L58">		Set&lt;String&gt; extPoints = new LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L59">		Matcher epMatcher = EXT_POINT_PATTERN.matcher(source);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">		while (epMatcher.find()) {</span>
+<span class="nc" id="L61">			extPoints.add(epMatcher.group(1));</span>
+		}
+<span class="nc" id="L63">		data.setFullyQualifiedNames(</span>
+<span class="nc" id="L64">				String.join(&quot;\n&quot;, extPoints)); //$NON-NLS-1$</span>
+
+<span class="nc" id="L66">		Set&lt;String&gt; classes = new LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L67">		Matcher classMatcher = CLASS_ATTR_PATTERN.matcher(source);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		while (classMatcher.find()) {</span>
+<span class="nc" id="L69">			classes.add(classMatcher.group(1));</span>
+		}
+<span class="nc" id="L71">		data.setDeclaredTypes(</span>
+<span class="nc" id="L72">				String.join(&quot;\n&quot;, classes)); //$NON-NLS-1$</span>
+
+<span class="nc" id="L74">		return data;</span>
+	}
+
+	@Override
+	public String fileType() {
+<span class="nc" id="L79">		return &quot;plugin-xml&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

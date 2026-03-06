@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CorsFilter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.rest</a> &gt; <span class="el_source">CorsFilter.java</span></div><h1>CorsFilter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.server.rest;
+
+import java.io.IOException;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ * Simple CORS filter for the REST API.
+ * &lt;p&gt;
+ * When configured, adds {@code Access-Control-Allow-*} headers to responses.
+ * The allowed origins are passed at construction time (typically from the
+ * {@code JGIT_CORS_ORIGINS} environment variable).
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * If the value is {@code &quot;*&quot;}, a wildcard is sent. Otherwise the request's
+ * {@code Origin} header is echoed back only when it matches one of the
+ * comma-separated entries in the allowed-origins list.
+ * &lt;/p&gt;
+ */
+public class CorsFilter implements Filter {
+
+	private final String[] allowedOrigins;
+
+	private final boolean wildcard;
+
+	/**
+	 * Create a CORS filter.
+	 *
+	 * @param allowedOrigins
+	 *            comma-separated list of allowed origins, or {@code &quot;*&quot;}
+	 */
+<span class="nc" id="L52">	public CorsFilter(String allowedOrigins) {</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		String trimmed = allowedOrigins == null ? &quot;&quot; : allowedOrigins.trim(); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">		if (&quot;*&quot;.equals(trimmed)) { //$NON-NLS-1$</span>
+<span class="nc" id="L55">			this.wildcard = true;</span>
+<span class="nc" id="L56">			this.allowedOrigins = new String[0];</span>
+		} else {
+<span class="nc" id="L58">			this.wildcard = false;</span>
+<span class="nc" id="L59">			this.allowedOrigins = trimmed.split(&quot;\\s*,\\s*&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L61">	}</span>
+
+	@Override
+	public void init(FilterConfig filterConfig) {
+		// nothing to do
+<span class="nc" id="L66">	}</span>
+
+	@Override
+	public void doFilter(ServletRequest request, ServletResponse response,
+			FilterChain chain) throws IOException, ServletException {
+<span class="nc bnc" id="L71" title="All 4 branches missed.">		if (response instanceof HttpServletResponse httpResp</span>
+<span class="nc" id="L72">				&amp;&amp; request instanceof HttpServletRequest httpReq) {</span>
+<span class="nc" id="L73">			String rawOrigin = httpReq.getHeader(&quot;Origin&quot;); //$NON-NLS-1$</span>
+			// Strip CR/LF to prevent header injection before echoing back
+<span class="nc bnc" id="L75" title="All 2 branches missed.">			String origin = rawOrigin != null</span>
+<span class="nc" id="L76">					? rawOrigin.replace(&quot;\r&quot;, &quot;&quot;).replace(&quot;\n&quot;, &quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc" id="L77">					: null;</span>
+<span class="nc bnc" id="L78" title="All 4 branches missed.">			boolean originAllowed = origin != null &amp;&amp; isAllowed(origin);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">			if (wildcard) {</span>
+<span class="nc" id="L80">				httpResp.setHeader(&quot;Access-Control-Allow-Origin&quot;, &quot;*&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">			} else if (originAllowed) {</span>
+<span class="nc" id="L82">				httpResp.setHeader(&quot;Access-Control-Allow-Origin&quot;, origin); //$NON-NLS-1$</span>
+<span class="nc" id="L83">				httpResp.setHeader(&quot;Vary&quot;, &quot;Origin&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+<span class="nc bnc" id="L85" title="All 4 branches missed.">			if (wildcard || originAllowed) {</span>
+<span class="nc" id="L86">				httpResp.setHeader(&quot;Access-Control-Allow-Methods&quot;, //$NON-NLS-1$</span>
+						&quot;GET, POST, OPTIONS&quot;); //$NON-NLS-1$
+<span class="nc" id="L88">				httpResp.setHeader(&quot;Access-Control-Allow-Headers&quot;, //$NON-NLS-1$</span>
+						&quot;Content-Type, Authorization&quot;); //$NON-NLS-1$
+<span class="nc" id="L90">				httpResp.setHeader(&quot;Access-Control-Max-Age&quot;, &quot;3600&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">			if (&quot;OPTIONS&quot;.equals(httpReq.getMethod())) { //$NON-NLS-1$</span>
+<span class="nc" id="L94">				httpResp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L95">				return;</span>
+			}
+		}
+<span class="nc" id="L98">		chain.doFilter(request, response);</span>
+<span class="nc" id="L99">	}</span>
+
+	private boolean isAllowed(String origin) {
+<span class="nc bnc" id="L102" title="All 2 branches missed.">		for (String allowed : allowedOrigins) {</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">			if (allowed.equals(origin)) {</span>
+<span class="nc" id="L104">				return true;</span>
+			}
+		}
+<span class="nc" id="L107">		return false;</span>
+	}
+
+	@Override
+	public void destroy() {
+		// nothing to do
+<span class="nc" id="L113">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

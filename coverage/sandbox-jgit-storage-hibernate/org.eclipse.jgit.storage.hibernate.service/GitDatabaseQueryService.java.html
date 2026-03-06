@@ -1,0 +1,1845 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>GitDatabaseQueryService.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.service</a> &gt; <span class="el_source">GitDatabaseQueryService.java</span></div><h1>GitDatabaseQueryService.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.service;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
+import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
+import org.eclipse.jgit.storage.hibernate.entity.GitObjectEntity;
+import org.eclipse.jgit.storage.hibernate.entity.GitRefEntity;
+import org.eclipse.jgit.storage.hibernate.entity.GitReflogEntity;
+import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
+import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
+import org.eclipse.jgit.storage.hibernate.search.RankFusionUtil;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.search.mapper.orm.Search;
+import org.hibernate.search.mapper.orm.session.SearchSession;
+
+/**
+ * Extended query service that leverages the relational database and Hibernate
+ * Search for operations impossible with filesystem-based Git storage.
+ * &lt;p&gt;
+ * Full-text search across commit messages and changed paths is powered by
+ * Hibernate Search with a Lucene backend. Other queries (statistics,
+ * time-range, reflog, pack analytics) use standard HQL.
+ */
+public class GitDatabaseQueryService {
+
+	private final SessionFactory sessionFactory;
+
+	private EmbeddingService embeddingService;
+
+	/**
+	 * Create a new query service.
+	 *
+	 * @param sessionFactory
+	 *            the Hibernate session factory
+	 */
+<span class="fc" id="L67">	public GitDatabaseQueryService(SessionFactory sessionFactory) {</span>
+<span class="fc" id="L68">		this.sessionFactory = sessionFactory;</span>
+<span class="fc" id="L69">	}</span>
+
+	/**
+	 * Set the embedding service for semantic search.
+	 *
+	 * @param embeddingService
+	 *            the embedding service
+	 */
+	public void setEmbeddingService(EmbeddingService embeddingService) {
+<span class="fc" id="L78">		this.embeddingService = embeddingService;</span>
+<span class="fc" id="L79">	}</span>
+
+	/**
+	 * Search commit messages using Hibernate Search full-text query.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param query
+	 *            the search query
+	 * @return matching commit index entries
+	 */
+	public List&lt;GitCommitIndex&gt; searchCommitMessages(String repoName,
+			String query) {
+<span class="fc" id="L92">		return searchCommitMessages(repoName, query, 0, 20);</span>
+	}
+
+	/**
+	 * Search commit messages with pagination.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param query
+	 *            the search query
+	 * @param offset
+	 *            the result offset
+	 * @param limit
+	 *            the maximum number of results
+	 * @return matching commit index entries
+	 */
+	public List&lt;GitCommitIndex&gt; searchCommitMessages(String repoName,
+			String query, int offset, int limit) {
+<span class="fc" id="L110">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L111">			SearchSession searchSession = Search.session(session);</span>
+<span class="fc" id="L112">			return searchSession.search(GitCommitIndex.class)</span>
+<span class="fc" id="L113">					.where(f -&gt; f.bool()</span>
+<span class="fc" id="L114">							.must(f.match().field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L115">									.matching(repoName))</span>
+<span class="fc" id="L116">							.must(f.match().field(&quot;commitMessage&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L117">									.matching(query)))</span>
+<span class="fc" id="L118">					.fetch(offset, limit).hits();</span>
+		}
+	}
+
+	/**
+	 * Find repositories containing a specific object.
+	 *
+	 * @param objectId
+	 *            the SHA-1 hex string
+	 * @return list of repository names containing this object
+	 */
+	public List&lt;String&gt; findRepositoriesContainingObject(String objectId) {
+<span class="nc" id="L130">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L131">			return session.createQuery(</span>
+					&quot;SELECT DISTINCT o.repositoryName FROM GitObjectEntity o WHERE o.objectId = :oid&quot;, //$NON-NLS-1$
+<span class="nc" id="L133">					String.class).setParameter(&quot;oid&quot;, objectId) //$NON-NLS-1$</span>
+<span class="nc" id="L134">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Get commits between two timestamps.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param start
+	 *            start of the time range (inclusive)
+	 * @param end
+	 *            end of the time range (inclusive)
+	 * @return matching commit index entries
+	 */
+	public List&lt;GitCommitIndex&gt; getCommitsBetween(String repoName,
+			Instant start, Instant end) {
+<span class="nc" id="L151">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L152">			return session.createQuery(</span>
+					&quot;FROM GitCommitIndex c WHERE c.repositoryName = :repo AND c.commitTime BETWEEN :start AND :end&quot;, //$NON-NLS-1$
+<span class="nc" id="L154">					GitCommitIndex.class).setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L155">					.setParameter(&quot;start&quot;, start).setParameter(&quot;end&quot;, end) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L156">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Get refs modified since a given timestamp.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param since
+	 *            the cutoff timestamp
+	 * @return refs modified after the given timestamp
+	 */
+	public List&lt;GitRefEntity&gt; getRefsModifiedSince(String repoName,
+			Instant since) {
+<span class="nc" id="L171">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L172">			return session.createQuery(</span>
+					&quot;FROM GitRefEntity r WHERE r.repositoryName = :repo AND r.updatedAt &gt;= :since&quot;, //$NON-NLS-1$
+<span class="nc" id="L174">					GitRefEntity.class).setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L175">					.setParameter(&quot;since&quot;, since).getResultList(); //$NON-NLS-1$</span>
+		}
+	}
+
+	/**
+	 * Count objects by type in a repository.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param objectType
+	 *            the object type constant
+	 * @return count of objects of the given type
+	 */
+	public long countObjectsByType(String repoName, int objectType) {
+<span class="fc" id="L189">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L190">			Long count = session.createQuery(</span>
+					&quot;SELECT COUNT(o) FROM GitObjectEntity o WHERE o.repositoryName = :repo AND o.objectType = :type&quot;, //$NON-NLS-1$
+<span class="fc" id="L192">					Long.class).setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="fc" id="L193">					.setParameter(&quot;type&quot;, objectType).uniqueResult(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			return count != null ? count : 0;</span>
+		}
+	}
+
+	/**
+	 * Get all objects in a repository.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @return all object entities
+	 */
+	public List&lt;GitObjectEntity&gt; getAllObjects(String repoName) {
+<span class="nc" id="L206">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L207">			return session.createQuery(</span>
+					&quot;FROM GitObjectEntity o WHERE o.repositoryName = :repo&quot;, //$NON-NLS-1$
+<span class="nc" id="L209">					GitObjectEntity.class).setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L210">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Search commits by changed path using Hibernate Search full-text query.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param pathPattern
+	 *            the path pattern to search for
+	 * @return matching commit index entries
+	 */
+	public List&lt;GitCommitIndex&gt; searchByChangedPath(String repoName,
+			String pathPattern) {
+<span class="nc" id="L225">		return searchByChangedPath(repoName, pathPattern, 0, 20);</span>
+	}
+
+	/**
+	 * Search commits by changed path with pagination.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param pathPattern
+	 *            the path pattern to search for
+	 * @param offset
+	 *            the result offset
+	 * @param limit
+	 *            the maximum number of results
+	 * @return matching commit index entries
+	 */
+	public List&lt;GitCommitIndex&gt; searchByChangedPath(String repoName,
+			String pathPattern, int offset, int limit) {
+<span class="fc" id="L243">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L244">			SearchSession searchSession = Search.session(session);</span>
+<span class="fc" id="L245">			return searchSession.search(GitCommitIndex.class)</span>
+<span class="fc" id="L246">					.where(f -&gt; f.bool()</span>
+<span class="fc" id="L247">							.must(f.match().field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L248">									.matching(repoName))</span>
+<span class="fc" id="L249">							.must(f.match().field(&quot;changedPaths&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L250">									.matching(pathPattern)))</span>
+<span class="fc" id="L251">					.fetch(offset, limit).hits();</span>
+		}
+	}
+
+	/**
+	 * Get author statistics for a repository. Returns a list of
+	 * [authorName, authorEmail, commitCount] arrays.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @return list of author statistics as Object arrays
+	 */
+	public List&lt;AuthorStats&gt; getAuthorStatistics(String repoName) {
+<span class="fc" id="L264">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L265">			List&lt;Object[]&gt; rows = session.createQuery(</span>
+					&quot;SELECT c.authorName, c.authorEmail, COUNT(c) FROM GitCommitIndex c WHERE c.repositoryName = :repo GROUP BY c.authorName, c.authorEmail ORDER BY COUNT(c) DESC&quot;, //$NON-NLS-1$
+<span class="fc" id="L267">					Object[].class).setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="fc" id="L268">					.getResultList();</span>
+<span class="fc" id="L269">			List&lt;AuthorStats&gt; result = new ArrayList&lt;&gt;(rows.size());</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">			for (Object[] row : rows) {</span>
+<span class="fc" id="L271">				result.add(new AuthorStats((String) row[0], (String) row[1],</span>
+<span class="fc" id="L272">						(Long) row[2]));</span>
+<span class="fc" id="L273">			}</span>
+<span class="fc" id="L274">			return result;</span>
+		}
+	}
+
+	/**
+	 * Get reflog entries for a specific ref.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param refName
+	 *            the reference name
+	 * @param max
+	 *            maximum number of entries to return
+	 * @return reflog entities in reverse chronological order
+	 */
+	public List&lt;GitReflogEntity&gt; getReflogEntries(String repoName,
+			String refName, int max) {
+<span class="nc" id="L291">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L292">			return session.createQuery(</span>
+					&quot;FROM GitReflogEntity r WHERE r.repositoryName = :repo AND r.refName = :ref ORDER BY r.id DESC&quot;, //$NON-NLS-1$
+					GitReflogEntity.class)
+<span class="nc" id="L295">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L296">					.setParameter(&quot;ref&quot;, refName) //$NON-NLS-1$</span>
+<span class="nc" id="L297">					.setMaxResults(max).getResultList();</span>
+		}
+	}
+
+	/**
+	 * Delete reflog entries older than a given timestamp.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param before
+	 *            the cutoff timestamp
+	 * @return number of entries deleted
+	 */
+	public int purgeReflogEntries(String repoName, Instant before) {
+<span class="nc" id="L311">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L312">			session.beginTransaction();</span>
+<span class="nc" id="L313">			int deleted = session.createMutationQuery(</span>
+					&quot;DELETE FROM GitReflogEntity r WHERE r.repositoryName = :repo AND r.when &lt; :before&quot;) //$NON-NLS-1$
+<span class="nc" id="L315">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L316">					.setParameter(&quot;before&quot;, before) //$NON-NLS-1$</span>
+<span class="nc" id="L317">					.executeUpdate();</span>
+<span class="nc" id="L318">			session.getTransaction().commit();</span>
+<span class="nc" id="L319">			return deleted;</span>
+		}
+	}
+
+	/**
+	 * Find pack names that are not referenced by any current pack description.
+	 * &lt;p&gt;
+	 * This can identify orphaned pack data left after failed operations.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @return list of orphaned pack names
+	 */
+	public List&lt;String&gt; findOrphanedPacks(String repoName) {
+<span class="nc" id="L333">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L334">			return session.createQuery(</span>
+					&quot;SELECT DISTINCT p.packName FROM GitPackEntity p &quot; //$NON-NLS-1$
+							+ &quot;WHERE p.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND NOT EXISTS (&quot; //$NON-NLS-1$
+							+ &quot;SELECT 1 FROM GitPackEntity p2 &quot; //$NON-NLS-1$
+							+ &quot;WHERE p2.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND p2.packName = p.packName &quot; //$NON-NLS-1$
+							+ &quot;AND p2.packExtension = 'pack')&quot;, //$NON-NLS-1$
+					String.class)
+<span class="nc" id="L343">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L344">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Get the total count of pack files in a repository.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @return the number of distinct pack files
+	 */
+	public long countPacks(String repoName) {
+<span class="fc" id="L356">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L357">			Long count = session.createQuery(</span>
+					&quot;SELECT COUNT(DISTINCT p.packName) FROM GitPackEntity p WHERE p.repositoryName = :repo&quot;, //$NON-NLS-1$
+<span class="fc" id="L359">					Long.class).setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="fc" id="L360">					.uniqueResult();</span>
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">			return count != null ? count : 0;</span>
+		}
+	}
+
+	/**
+	 * Get the total storage size (in bytes) of all packs in a repository.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @return the total pack data size in bytes
+	 */
+	public long getTotalPackSize(String repoName) {
+<span class="fc" id="L373">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L374">			Long size = session.createQuery(</span>
+					&quot;SELECT COALESCE(SUM(p.fileSize), 0) FROM GitPackEntity p WHERE p.repositoryName = :repo&quot;, //$NON-NLS-1$
+<span class="fc" id="L376">					Long.class).setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="fc" id="L377">					.uniqueResult();</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">			return size != null ? size : 0;</span>
+		}
+	}
+
+	private static final int MAX_BLOB_SIZE_FOR_SEARCH = 1024 * 1024; // 1 MB
+
+	/**
+	 * Search commits whose tree blobs contain the given content string.
+	 * &lt;p&gt;
+	 * For each indexed commit in the repository, this method uses JGit's
+	 * {@code RevWalk} and {@code TreeWalk} to read every blob in the commit
+	 * tree and checks whether its UTF-8 text contains {@code contentQuery}.
+	 * Blobs larger than 1 MB are skipped.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param contentQuery
+	 *            the string to search for inside blob content
+	 * @param repo
+	 *            the {@link Repository} object used to read objects
+	 * @return list of {@link GitCommitIndex} entries whose committed files
+	 *         contain the search string
+	 * @throws IOException
+	 *             if an error occurs reading objects from the repository
+	 */
+	public List&lt;GitCommitIndex&gt; searchBlobContent(String repoName,
+			String contentQuery, Repository repo) throws IOException {
+		List&lt;GitCommitIndex&gt; allCommits;
+<span class="nc" id="L406">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L407">			allCommits = session.createQuery(</span>
+					&quot;FROM GitCommitIndex c WHERE c.repositoryName = :repo&quot;, //$NON-NLS-1$
+					GitCommitIndex.class)
+<span class="nc" id="L410">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L411">					.getResultList();</span>
+		}
+<span class="nc" id="L413">		List&lt;GitCommitIndex&gt; matches = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L414">		try (RevWalk rw = new RevWalk(repo)) {</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">			for (GitCommitIndex idx : allCommits) {</span>
+<span class="nc" id="L416">				RevCommit commit = rw</span>
+<span class="nc" id="L417">						.parseCommit(repo.resolve(idx.getObjectId()));</span>
+<span class="nc" id="L418">				try (ObjectReader reader = repo.newObjectReader();</span>
+<span class="nc" id="L419">						TreeWalk tw = new TreeWalk(reader)) {</span>
+<span class="nc" id="L420">					tw.addTree(commit.getTree());</span>
+<span class="nc" id="L421">					tw.setRecursive(true);</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">					while (tw.next()) {</span>
+<span class="nc" id="L423">						ObjectLoader loader = reader</span>
+<span class="nc" id="L424">								.open(tw.getObjectId(0));</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">						if (loader.getSize() &gt; MAX_BLOB_SIZE_FOR_SEARCH) {</span>
+<span class="nc" id="L426">							continue;</span>
+						}
+<span class="nc" id="L428">						byte[] bytes = loader.getBytes();</span>
+<span class="nc" id="L429">						String text = new String(bytes,</span>
+								StandardCharsets.UTF_8);
+<span class="nc bnc" id="L431" title="All 2 branches missed.">						if (text.contains(contentQuery)) {</span>
+<span class="nc" id="L432">							matches.add(idx);</span>
+<span class="nc" id="L433">							break;</span>
+						}
+<span class="nc" id="L435">					}</span>
+				}
+<span class="nc" id="L437">			}</span>
+		}
+<span class="nc" id="L439">		return matches;</span>
+	}
+
+	/**
+	 * Search Java blob indices by type name (declared types or FQNs).
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param query
+	 *            the type name query
+	 * @return matching Java blob index entries
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByType(String repoName, String query) {
+<span class="nc" id="L452">		return searchByType(repoName, query, 0, 20);</span>
+	}
+
+	/**
+	 * Search Java blob indices by type name with pagination and boosting.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param query
+	 *            the type name query
+	 * @param offset
+	 *            the result offset
+	 * @param limit
+	 *            the maximum number of results
+	 * @return matching Java blob index entries
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByType(String repoName, String query,
+			int offset, int limit) {
+<span class="fc" id="L470">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L471">			SearchSession searchSession = Search.session(session);</span>
+<span class="fc" id="L472">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="fc" id="L473">					.where(f -&gt; f.bool()</span>
+<span class="fc" id="L474">							.must(f.match().field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L475">									.matching(repoName))</span>
+<span class="fc" id="L476">							.must(f.match()</span>
+<span class="fc" id="L477">									.field(&quot;fullyQualifiedNames&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L478">									.boost(2.0f)</span>
+<span class="fc" id="L479">									.field(&quot;declaredTypes&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L480">									.boost(1.5f)</span>
+<span class="fc" id="L481">									.matching(query)))</span>
+<span class="fc" id="L482">					.fetch(offset, limit).hits();</span>
+		}
+	}
+
+	/**
+	 * Search Java blob indices by symbol name (methods and fields).
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param query
+	 *            the symbol name query
+	 * @return matching Java blob index entries
+	 */
+	public List&lt;JavaBlobIndex&gt; searchBySymbol(String repoName, String query) {
+<span class="nc" id="L496">		return searchBySymbol(repoName, query, 0, 20);</span>
+	}
+
+	/**
+	 * Search Java blob indices by symbol name with pagination and boosting.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param query
+	 *            the symbol name query
+	 * @param offset
+	 *            the result offset
+	 * @param limit
+	 *            the maximum number of results
+	 * @return matching Java blob index entries
+	 */
+	public List&lt;JavaBlobIndex&gt; searchBySymbol(String repoName, String query,
+			int offset, int limit) {
+<span class="fc" id="L514">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L515">			SearchSession searchSession = Search.session(session);</span>
+<span class="fc" id="L516">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="fc" id="L517">					.where(f -&gt; f.bool()</span>
+<span class="fc" id="L518">							.must(f.match().field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L519">									.matching(repoName))</span>
+<span class="fc" id="L520">							.must(f.match()</span>
+<span class="fc" id="L521">									.field(&quot;declaredMethods&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L522">									.boost(1.5f)</span>
+<span class="fc" id="L523">									.field(&quot;declaredFields&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L524">									.matching(query)))</span>
+<span class="fc" id="L525">					.fetch(offset, limit).hits();</span>
+		}
+	}
+
+	/**
+	 * Search Java blob indices by type hierarchy (extends/implements).
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param typeName
+	 *            the type name to find subtypes of
+	 * @return matching Java blob index entries
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByHierarchy(String repoName,
+			String typeName) {
+<span class="nc" id="L540">		return searchByHierarchy(repoName, typeName, 0, 20);</span>
+	}
+
+	/**
+	 * Search Java blob indices by type hierarchy with pagination.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param typeName
+	 *            the type name to find subtypes of
+	 * @param offset
+	 *            the result offset
+	 * @param limit
+	 *            the maximum number of results
+	 * @return matching Java blob index entries
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByHierarchy(String repoName,
+			String typeName, int offset, int limit) {
+<span class="fc" id="L558">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L559">			SearchSession searchSession = Search.session(session);</span>
+<span class="fc" id="L560">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="fc" id="L561">					.where(f -&gt; f.bool()</span>
+<span class="fc" id="L562">							.must(f.match().field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L563">									.matching(repoName))</span>
+<span class="fc" id="L564">							.must(f.match()</span>
+<span class="fc" id="L565">									.field(&quot;extendsTypes&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L566">									.field(&quot;implementsTypes&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L567">									.matching(typeName)))</span>
+<span class="fc" id="L568">					.fetch(offset, limit).hits();</span>
+		}
+	}
+
+	/**
+	 * Search blobs by annotation names.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the annotation search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByAnnotation(String repo,
+			String query, int offset, int limit) {
+<span class="nc" id="L587">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L588">			SearchSession searchSession = Search.session(session);</span>
+<span class="nc" id="L589">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="nc" id="L590">					.where(f -&gt; f.bool()</span>
+<span class="nc" id="L591">							.must(f.match()</span>
+<span class="nc" id="L592">									.field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L593">									.matching(repo))</span>
+<span class="nc" id="L594">							.must(f.match()</span>
+<span class="nc" id="L595">									.field(&quot;annotations&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L596">									.matching(query)))</span>
+<span class="nc" id="L597">					.fetchHits(offset, limit);</span>
+		}
+	}
+
+	/**
+	 * Search blobs by type with optional module/project filter.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the type search query
+	 * @param module
+	 *            optional module/project name filter (may be null)
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByTypeWithModule(String repo,
+			String query, String module, int offset, int limit) {
+<span class="nc" id="L618">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L619">			SearchSession searchSession = Search.session(session);</span>
+<span class="nc" id="L620">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="nc" id="L621">					.where(f -&gt; {</span>
+<span class="nc" id="L622">						var bool = f.bool()</span>
+<span class="nc" id="L623">								.must(f.match()</span>
+<span class="nc" id="L624">										.field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L625">										.matching(repo))</span>
+<span class="nc" id="L626">								.must(f.match()</span>
+<span class="nc" id="L627">										.fields(&quot;simpleClassName&quot;, //$NON-NLS-1$</span>
+												&quot;declaredTypes&quot;, //$NON-NLS-1$
+												&quot;fullyQualifiedNames&quot;) //$NON-NLS-1$
+<span class="nc" id="L630">										.matching(query));</span>
+<span class="nc bnc" id="L631" title="All 4 branches missed.">						if (module != null &amp;&amp; !module.isEmpty()) {</span>
+<span class="nc" id="L632">							bool = bool.must(f.match()</span>
+<span class="nc" id="L633">									.field(&quot;projectName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L634">									.matching(module));</span>
+						}
+<span class="nc" id="L636">						return bool;</span>
+					})
+<span class="nc" id="L638">					.fetchHits(offset, limit);</span>
+		}
+	}
+
+	/**
+	 * Full-text search across Java source snippets.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param query
+	 *            the search query
+	 * @return matching Java blob index entries
+	 */
+	public List&lt;JavaBlobIndex&gt; searchSourceContent(String repoName,
+			String query) {
+<span class="nc" id="L653">		return searchSourceContent(repoName, query, 0, 20);</span>
+	}
+
+	/**
+	 * Full-text search across Java source snippets with pagination.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param query
+	 *            the search query
+	 * @param offset
+	 *            the result offset
+	 * @param limit
+	 *            the maximum number of results
+	 * @return matching Java blob index entries
+	 */
+	public List&lt;JavaBlobIndex&gt; searchSourceContent(String repoName,
+			String query, int offset, int limit) {
+<span class="fc" id="L671">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L672">			SearchSession searchSession = Search.session(session);</span>
+<span class="fc" id="L673">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="fc" id="L674">					.where(f -&gt; f.bool()</span>
+<span class="fc" id="L675">							.must(f.match().field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L676">									.matching(repoName))</span>
+<span class="fc" id="L677">							.must(f.match().field(&quot;sourceSnippet&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L678">									.matching(query)))</span>
+<span class="fc" id="L679">					.fetch(offset, limit).hits();</span>
+		}
+	}
+
+	/**
+	 * Search blobs by type documentation (Javadoc).
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the documentation search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByDocumentation(String repo,
+			String query, int offset, int limit) {
+<span class="nc" id="L698">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L699">			SearchSession searchSession = Search.session(session);</span>
+<span class="nc" id="L700">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="nc" id="L701">					.where(f -&gt; f.bool()</span>
+<span class="nc" id="L702">							.must(f.match()</span>
+<span class="nc" id="L703">									.field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L704">									.matching(repo))</span>
+<span class="nc" id="L705">							.must(f.match()</span>
+<span class="nc" id="L706">									.field(&quot;typeDocumentation&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L707">									.matching(query)))</span>
+<span class="nc" id="L708">					.fetchHits(offset, limit);</span>
+		}
+	}
+
+	/**
+	 * Search blobs by referenced type.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the referenced type search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByReferencedType(String repo,
+			String query, int offset, int limit) {
+<span class="nc" id="L727">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L728">			SearchSession searchSession = Search.session(session);</span>
+<span class="nc" id="L729">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="nc" id="L730">					.where(f -&gt; f.bool()</span>
+<span class="nc" id="L731">							.must(f.match()</span>
+<span class="nc" id="L732">									.field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L733">									.matching(repo))</span>
+<span class="nc" id="L734">							.must(f.match()</span>
+<span class="nc" id="L735">									.field(&quot;referencedTypes&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L736">									.matching(query)))</span>
+<span class="nc" id="L737">					.fetchHits(offset, limit);</span>
+		}
+	}
+
+	/**
+	 * Search blobs by string literals.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param query
+	 *            the string literal search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByStringLiteral(String repo,
+			String query, int offset, int limit) {
+<span class="nc" id="L756">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L757">			SearchSession searchSession = Search.session(session);</span>
+<span class="nc" id="L758">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="nc" id="L759">					.where(f -&gt; f.bool()</span>
+<span class="nc" id="L760">							.must(f.match()</span>
+<span class="nc" id="L761">									.field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L762">									.matching(repo))</span>
+<span class="nc" id="L763">							.must(f.match()</span>
+<span class="nc" id="L764">									.field(&quot;stringLiterals&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L765">									.matching(query)))</span>
+<span class="nc" id="L766">					.fetchHits(offset, limit);</span>
+		}
+	}
+
+	/**
+	 * Search file paths across all commits.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param pathQuery
+	 *            the file path search query
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching file path history entries
+	 */
+	public List&lt;FilePathHistory&gt; searchFilePath(String repo,
+			String pathQuery, int offset, int limit) {
+<span class="nc" id="L785">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L786">			SearchSession searchSession = Search.session(session);</span>
+<span class="nc" id="L787">			return searchSession.search(FilePathHistory.class)</span>
+<span class="nc" id="L788">					.where(f -&gt; f.bool()</span>
+<span class="nc" id="L789">							.must(f.match()</span>
+<span class="nc" id="L790">									.field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L791">									.matching(repo))</span>
+<span class="nc" id="L792">							.must(f.match()</span>
+<span class="nc" id="L793">									.field(&quot;filePath&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L794">									.matching(pathQuery)))</span>
+<span class="nc" id="L795">					.fetchHits(offset, limit);</span>
+		}
+	}
+
+	/**
+	 * Get the history of a specific file across commits.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param exactPath
+	 *            the exact file path
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return file path history entries ordered by commit time
+	 */
+	public List&lt;FilePathHistory&gt; getFileHistory(String repo,
+			String exactPath, int offset, int limit) {
+<span class="nc" id="L814">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L815">			return session.createQuery(</span>
+					&quot;FROM FilePathHistory f WHERE f.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND f.filePath = :path ORDER BY f.commitTime DESC&quot;, //$NON-NLS-1$
+					FilePathHistory.class)
+<span class="nc" id="L819">					.setParameter(&quot;repo&quot;, repo) //$NON-NLS-1$</span>
+<span class="nc" id="L820">					.setParameter(&quot;path&quot;, exactPath) //$NON-NLS-1$</span>
+<span class="nc" id="L821">					.setFirstResult(offset)</span>
+<span class="nc" id="L822">					.setMaxResults(limit)</span>
+<span class="nc" id="L823">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Search fully qualified names across all file types.
+	 *
+	 * @param repo
+	 *            the repository name
+	 * @param fqnQuery
+	 *            the FQN search query
+	 * @param fileType
+	 *            optional file type filter (may be null)
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List&lt;JavaBlobIndex&gt; searchFqnAcrossTypes(String repo,
+			String fqnQuery, String fileType, int offset, int limit) {
+<span class="nc" id="L844">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L845">			SearchSession searchSession = Search.session(session);</span>
+<span class="nc" id="L846">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="nc" id="L847">					.where(f -&gt; {</span>
+<span class="nc" id="L848">						var bool = f.bool()</span>
+<span class="nc" id="L849">								.must(f.match()</span>
+<span class="nc" id="L850">										.field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L851">										.matching(repo))</span>
+<span class="nc" id="L852">								.must(f.match()</span>
+<span class="nc" id="L853">										.field(&quot;fullyQualifiedNames&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L854">										.matching(fqnQuery));</span>
+<span class="nc bnc" id="L855" title="All 4 branches missed.">						if (fileType != null &amp;&amp; !fileType.isEmpty()) {</span>
+<span class="nc" id="L856">							bool = bool.must(f.match()</span>
+<span class="nc" id="L857">									.field(&quot;fileType&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L858">									.matching(fileType));</span>
+						}
+<span class="nc" id="L860">						return bool;</span>
+					})
+<span class="nc" id="L862">					.fetchHits(offset, limit);</span>
+		}
+	}
+
+	// --- Semantic search methods ---
+
+	/**
+	 * Semantic search: find code by natural language description.
+	 * &lt;p&gt;
+	 * Uses vector similarity (cosine) on pre-computed embeddings. Requires
+	 * the embedding service to be configured via
+	 * {@link #setEmbeddingService(EmbeddingService)}.
+	 * &lt;/p&gt;
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param queryText
+	 *            natural language query (e.g., &quot;HTTP client with retry&quot;)
+	 * @param topK
+	 *            number of results
+	 * @return matching Java blob index entries ranked by semantic similarity
+	 */
+	public List&lt;JavaBlobIndex&gt; semanticSearch(String repoName,
+			String queryText, int topK) {
+<span class="nc bnc" id="L886" title="All 4 branches missed.">		if (embeddingService == null || !embeddingService.isAvailable()) {</span>
+<span class="nc" id="L887">			return List.of();</span>
+		}
+<span class="nc" id="L889">		float[] queryVector = embeddingService.embed(queryText);</span>
+<span class="nc bnc" id="L890" title="All 2 branches missed.">		if (queryVector == null) {</span>
+<span class="nc" id="L891">			return List.of();</span>
+		}
+<span class="nc" id="L893">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L894">			SearchSession searchSession = Search.session(session);</span>
+<span class="nc" id="L895">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="nc" id="L896">					.where(f -&gt; f.knn(topK)</span>
+<span class="nc" id="L897">							.field(&quot;semanticEmbedding&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L898">							.matching(queryVector)</span>
+<span class="nc" id="L899">							.filter(f.match()</span>
+<span class="nc" id="L900">									.field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L901">									.matching(repoName)))</span>
+<span class="nc" id="L902">					.fetchHits(topK);</span>
+		}
+	}
+
+	/**
+	 * Hybrid search: combines full-text and semantic search.
+	 * &lt;p&gt;
+	 * Returns the union of both result sets, re-ranked using Reciprocal Rank
+	 * Fusion (RRF). Falls back to full-text only search if the embedding
+	 * service is not available.
+	 * &lt;/p&gt;
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param queryText
+	 *            natural language or keyword query
+	 * @param topK
+	 *            number of results
+	 * @return fused results ordered by combined relevance score
+	 */
+	public List&lt;JavaBlobIndex&gt; hybridSearch(String repoName,
+			String queryText, int topK) {
+<span class="nc" id="L924">		List&lt;JavaBlobIndex&gt; fulltextResults = searchSourceContent(</span>
+				repoName, queryText, 0, topK);
+
+<span class="nc" id="L927">		List&lt;JavaBlobIndex&gt; semanticResults = semanticSearch(repoName,</span>
+				queryText, topK);
+
+<span class="nc bnc" id="L930" title="All 2 branches missed.">		if (semanticResults.isEmpty()) {</span>
+<span class="nc" id="L931">			return fulltextResults;</span>
+		}
+
+<span class="nc" id="L934">		return RankFusionUtil.reciprocalRankFusion(semanticResults,</span>
+				fulltextResults, topK);
+	}
+
+	/**
+	 * Find semantically similar code to a given blob.
+	 * &lt;p&gt;
+	 * Uses the embedding of the source blob to find nearest neighbors in the
+	 * vector space. Returns an empty list if the source blob has no embedding
+	 * or the embedding service is not available.
+	 * &lt;/p&gt;
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param blobObjectId
+	 *            the blob object ID of the source file
+	 * @param topK
+	 *            number of similar results to return
+	 * @return similar Java blob index entries ranked by vector similarity
+	 */
+	public List&lt;JavaBlobIndex&gt; findSimilarCode(String repoName,
+			String blobObjectId, int topK) {
+<span class="nc" id="L956">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L957">			JavaBlobIndex source = session.createQuery(</span>
+					&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND j.blobObjectId = :blobOid &quot; //$NON-NLS-1$
+							+ &quot;AND j.hasEmbedding = true&quot;, //$NON-NLS-1$
+					JavaBlobIndex.class)
+<span class="nc" id="L962">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L963">					.setParameter(&quot;blobOid&quot;, blobObjectId) //$NON-NLS-1$</span>
+<span class="nc" id="L964">					.setMaxResults(1)</span>
+<span class="nc" id="L965">					.uniqueResult();</span>
+<span class="nc bnc" id="L966" title="All 2 branches missed.">			if (source == null</span>
+<span class="nc bnc" id="L967" title="All 2 branches missed.">					|| source.getSemanticEmbedding() == null) {</span>
+<span class="nc" id="L968">				return List.of();</span>
+			}
+<span class="nc" id="L970">			float[] sourceVector = source.getSemanticEmbedding();</span>
+<span class="nc" id="L971">			SearchSession searchSession = Search.session(session);</span>
+<span class="nc" id="L972">			return searchSession.search(JavaBlobIndex.class)</span>
+<span class="nc" id="L973">					.where(f -&gt; f.knn(topK + 1)</span>
+<span class="nc" id="L974">							.field(&quot;semanticEmbedding&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L975">							.matching(sourceVector)</span>
+<span class="nc" id="L976">							.filter(f.match()</span>
+<span class="nc" id="L977">									.field(&quot;repositoryName&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L978">									.matching(repoName)))</span>
+<span class="nc" id="L979">					.fetchHits(topK + 1)</span>
+<span class="nc" id="L980">					.stream()</span>
+<span class="nc" id="L981">					.filter(r -&gt; !blobObjectId</span>
+<span class="nc bnc" id="L982" title="All 2 branches missed.">							.equals(r.getBlobObjectId()))</span>
+<span class="nc" id="L983">					.limit(topK)</span>
+<span class="nc" id="L984">					.toList();</span>
+<span class="nc bnc" id="L985" title="All 2 branches missed.">		}</span>
+	}
+
+	/**
+	 * Author statistics record.
+	 */
+	public static class AuthorStats {
+		private final String authorName;
+
+		private final String authorEmail;
+
+		private final long commitCount;
+
+		/**
+		 * Create author statistics.
+		 *
+		 * @param authorName
+		 *            the author name
+		 * @param authorEmail
+		 *            the author email
+		 * @param commitCount
+		 *            the number of commits
+		 */
+		public AuthorStats(String authorName, String authorEmail,
+<span class="fc" id="L1009">				long commitCount) {</span>
+<span class="fc" id="L1010">			this.authorName = authorName;</span>
+<span class="fc" id="L1011">			this.authorEmail = authorEmail;</span>
+<span class="fc" id="L1012">			this.commitCount = commitCount;</span>
+<span class="fc" id="L1013">		}</span>
+
+		/**
+		 * Get the author name.
+		 *
+		 * @return the authorName
+		 */
+		public String getAuthorName() {
+<span class="fc" id="L1021">			return authorName;</span>
+		}
+
+		/**
+		 * Get the author email.
+		 *
+		 * @return the authorEmail
+		 */
+		public String getAuthorEmail() {
+<span class="fc" id="L1030">			return authorEmail;</span>
+		}
+
+		/**
+		 * Get the commit count.
+		 *
+		 * @return the commitCount
+		 */
+		public long getCommitCount() {
+<span class="fc" id="L1039">			return commitCount;</span>
+		}
+	}
+
+	// --- Feature 1: Migration Planning Queries ---
+
+	/**
+	 * Find all Java blob index entries whose import statements match a given
+	 * prefix. Useful for planning framework migrations (e.g. from
+	 * {@code javax.servlet} to {@code jakarta.servlet}).
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param importPrefix
+	 *            the import prefix to search for (e.g. {@code &quot;javax.servlet&quot;})
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List&lt;JavaBlobIndex&gt; getMigrationImpact(String repoName,
+			String importPrefix, int offset, int limit) {
+<span class="nc bnc" id="L1062" title="All 6 branches missed.">		if (repoName == null || repoName.isEmpty() || importPrefix == null</span>
+<span class="nc bnc" id="L1063" title="All 2 branches missed.">				|| importPrefix.isEmpty()) {</span>
+<span class="nc" id="L1064">			return List.of();</span>
+		}
+<span class="nc" id="L1066">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1067">			return session.createQuery(</span>
+					&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND (j.importStatements LIKE :prefixFirst &quot; //$NON-NLS-1$
+							+ &quot;OR j.importStatements LIKE :prefixOther)&quot;, //$NON-NLS-1$
+					JavaBlobIndex.class)
+<span class="nc" id="L1072">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1073">					.setParameter(&quot;prefixFirst&quot;, importPrefix + &quot;%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1074">					.setParameter(&quot;prefixOther&quot;, &quot;%\n&quot; + importPrefix + &quot;%&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1075">					.setFirstResult(offset)</span>
+<span class="nc" id="L1076">					.setMaxResults(limit)</span>
+<span class="nc" id="L1077">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Returns aggregated migration impact statistics for a given import prefix.
+	 * &lt;p&gt;
+	 * The returned map contains:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;{@code totalFiles} — total number of affected files&lt;/li&gt;
+	 * &lt;li&gt;{@code distinctPackages} — number of distinct package names&lt;/li&gt;
+	 * &lt;li&gt;{@code distinctAuthors} — number of distinct commit authors&lt;/li&gt;
+	 * &lt;li&gt;{@code earliestDate} — earliest commit date as ISO-8601 string&lt;/li&gt;
+	 * &lt;li&gt;{@code latestDate} — latest commit date as ISO-8601 string&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param importPrefix
+	 *            the import prefix to search for
+	 * @return summary statistics as a map
+	 */
+	public Map&lt;String, Object&gt; getMigrationImpactSummary(String repoName,
+			String importPrefix) {
+<span class="nc" id="L1101">		Map&lt;String, Object&gt; summary = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L1102">		summary.put(&quot;totalFiles&quot;, Integer.valueOf(0)); //$NON-NLS-1$</span>
+<span class="nc" id="L1103">		summary.put(&quot;distinctPackages&quot;, Integer.valueOf(0)); //$NON-NLS-1$</span>
+<span class="nc" id="L1104">		summary.put(&quot;distinctAuthors&quot;, Integer.valueOf(0)); //$NON-NLS-1$</span>
+<span class="nc" id="L1105">		summary.put(&quot;earliestDate&quot;, null); //$NON-NLS-1$</span>
+<span class="nc" id="L1106">		summary.put(&quot;latestDate&quot;, null); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1107" title="All 6 branches missed.">		if (repoName == null || repoName.isEmpty() || importPrefix == null</span>
+<span class="nc bnc" id="L1108" title="All 2 branches missed.">				|| importPrefix.isEmpty()) {</span>
+<span class="nc" id="L1109">			return summary;</span>
+		}
+<span class="nc" id="L1111">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1112">			Long total = session.createQuery(</span>
+					&quot;SELECT COUNT(j) FROM JavaBlobIndex j &quot; //$NON-NLS-1$
+							+ &quot;WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND (j.importStatements LIKE :prefixFirst &quot; //$NON-NLS-1$
+							+ &quot;OR j.importStatements LIKE :prefixOther)&quot;, //$NON-NLS-1$
+					Long.class)
+<span class="nc" id="L1118">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1119">					.setParameter(&quot;prefixFirst&quot;, importPrefix + &quot;%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1120">					.setParameter(&quot;prefixOther&quot;, &quot;%\n&quot; + importPrefix + &quot;%&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1121">					.getSingleResult();</span>
+<span class="nc bnc" id="L1122" title="All 4 branches missed.">			if (total == null || total == 0L) {</span>
+<span class="nc" id="L1123">				return summary;</span>
+			}
+<span class="nc bnc" id="L1125" title="All 2 branches missed.">			int totalFiles = total &gt; Integer.MAX_VALUE ? Integer.MAX_VALUE</span>
+<span class="nc" id="L1126">					: total.intValue();</span>
+<span class="nc" id="L1127">			summary.put(&quot;totalFiles&quot;, Integer.valueOf(totalFiles)); //$NON-NLS-1$</span>
+
+<span class="nc" id="L1129">			Set&lt;String&gt; packages = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1130">			Set&lt;String&gt; authors = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1131">			Instant earliest = null;</span>
+<span class="nc" id="L1132">			Instant latest = null;</span>
+<span class="nc" id="L1133">			final int pageSize = 1000;</span>
+<span class="nc" id="L1134">			int offset = 0;</span>
+			while (true) {
+<span class="nc" id="L1136">				List&lt;JavaBlobIndex&gt; page = session.createQuery(</span>
+						&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+								+ &quot;AND (j.importStatements LIKE :prefixFirst &quot; //$NON-NLS-1$
+								+ &quot;OR j.importStatements LIKE :prefixOther)&quot;, //$NON-NLS-1$
+						JavaBlobIndex.class)
+<span class="nc" id="L1141">						.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1142">						.setParameter(&quot;prefixFirst&quot;, importPrefix + &quot;%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1143">						.setParameter(&quot;prefixOther&quot;, &quot;%\n&quot; + importPrefix + &quot;%&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1144">						.setFirstResult(offset)</span>
+<span class="nc" id="L1145">						.setMaxResults(pageSize)</span>
+<span class="nc" id="L1146">						.getResultList();</span>
+<span class="nc bnc" id="L1147" title="All 2 branches missed.">				if (page.isEmpty()) {</span>
+<span class="nc" id="L1148">					break;</span>
+				}
+<span class="nc bnc" id="L1150" title="All 2 branches missed.">				for (JavaBlobIndex entry : page) {</span>
+<span class="nc" id="L1151">					String pkg = entry.getPackageName();</span>
+<span class="nc bnc" id="L1152" title="All 2 branches missed.">					if (pkg != null) {</span>
+<span class="nc" id="L1153">						packages.add(pkg);</span>
+					}
+<span class="nc" id="L1155">					String author = entry.getCommitAuthor();</span>
+<span class="nc bnc" id="L1156" title="All 2 branches missed.">					if (author != null) {</span>
+<span class="nc" id="L1157">						authors.add(author);</span>
+					}
+<span class="nc" id="L1159">					Instant date = entry.getCommitDate();</span>
+<span class="nc bnc" id="L1160" title="All 2 branches missed.">					if (date != null) {</span>
+<span class="nc bnc" id="L1161" title="All 4 branches missed.">						if (earliest == null || date.isBefore(earliest)) {</span>
+<span class="nc" id="L1162">							earliest = date;</span>
+						}
+<span class="nc bnc" id="L1164" title="All 4 branches missed.">						if (latest == null || date.isAfter(latest)) {</span>
+<span class="nc" id="L1165">							latest = date;</span>
+						}
+					}
+<span class="nc" id="L1168">				}</span>
+<span class="nc" id="L1169">				offset += pageSize;</span>
+<span class="nc bnc" id="L1170" title="All 2 branches missed.">				if (page.size() &lt; pageSize) {</span>
+<span class="nc" id="L1171">					break;</span>
+				}
+<span class="nc" id="L1173">			}</span>
+<span class="nc" id="L1174">			summary.put(&quot;distinctPackages&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L1175">					Integer.valueOf(packages.size()));</span>
+<span class="nc" id="L1176">			summary.put(&quot;distinctAuthors&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L1177">					Integer.valueOf(authors.size()));</span>
+<span class="nc" id="L1178">			summary.put(&quot;earliestDate&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1179" title="All 2 branches missed.">					earliest != null ? earliest.toString() : null);</span>
+<span class="nc" id="L1180">			summary.put(&quot;latestDate&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1181" title="All 2 branches missed.">					latest != null ? latest.toString() : null);</span>
+<span class="nc" id="L1182">			return summary;</span>
+<span class="nc bnc" id="L1183" title="All 2 branches missed.">		}</span>
+	}
+
+	/**
+	 * Find all Java blob index entries that use the {@code @Deprecated}
+	 * annotation.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities with {@code @Deprecated} annotation
+	 */
+	public List&lt;JavaBlobIndex&gt; getDeprecatedApiUsage(String repoName,
+			int offset, int limit) {
+<span class="nc bnc" id="L1200" title="All 4 branches missed.">		if (repoName == null || repoName.isEmpty()) {</span>
+<span class="nc" id="L1201">			return List.of();</span>
+		}
+<span class="nc" id="L1203">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1204">			return session.createQuery(</span>
+					&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repoName &quot; //$NON-NLS-1$
+							+ &quot;AND (j.annotations = :exact &quot; //$NON-NLS-1$
+							+ &quot;OR j.annotations LIKE :first &quot; //$NON-NLS-1$
+							+ &quot;OR j.annotations LIKE :middle &quot; //$NON-NLS-1$
+							+ &quot;OR j.annotations LIKE :last)&quot;, //$NON-NLS-1$
+					JavaBlobIndex.class)
+<span class="nc" id="L1211">					.setParameter(&quot;repoName&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1212">					.setParameter(&quot;exact&quot;, &quot;Deprecated&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1213">					.setParameter(&quot;first&quot;, &quot;Deprecated\n%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1214">					.setParameter(&quot;middle&quot;, &quot;%\nDeprecated\n%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1215">					.setParameter(&quot;last&quot;, &quot;%\nDeprecated&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1216">					.setFirstResult(offset)</span>
+<span class="nc" id="L1217">					.setMaxResults(limit)</span>
+<span class="nc" id="L1218">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Count how many files in the repository import types matching the given
+	 * prefix. Useful for dependency impact analysis.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param importPrefix
+	 *            the import prefix to count (e.g. {@code &quot;com.google.guava&quot;})
+	 * @return number of files that contain at least one matching import
+	 */
+	public long getImportFrequency(String repoName, String importPrefix) {
+<span class="nc bnc" id="L1233" title="All 6 branches missed.">		if (repoName == null || repoName.isEmpty() || importPrefix == null</span>
+<span class="nc bnc" id="L1234" title="All 2 branches missed.">				|| importPrefix.isEmpty()) {</span>
+<span class="nc" id="L1235">			return 0L;</span>
+		}
+<span class="nc" id="L1237">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1238">			Long count = session.createQuery(</span>
+					&quot;SELECT COUNT(j) FROM JavaBlobIndex j &quot; //$NON-NLS-1$
+							+ &quot;WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND (j.importStatements LIKE :prefixFirst &quot; //$NON-NLS-1$
+							+ &quot;OR j.importStatements LIKE :prefixOther)&quot;, //$NON-NLS-1$
+					Long.class)
+<span class="nc" id="L1244">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1245">					.setParameter(&quot;prefixFirst&quot;, importPrefix + &quot;%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1246">					.setParameter(&quot;prefixOther&quot;, &quot;%\n&quot; + importPrefix + &quot;%&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1247">					.getSingleResult();</span>
+<span class="nc bnc" id="L1248" title="All 2 branches missed.">			return count != null ? count.longValue() : 0L;</span>
+		}
+	}
+
+	/**
+	 * Find all files that import from any of the given prefixes.
+	 * &lt;p&gt;
+	 * Useful for determining migration scope across multiple frameworks (e.g.
+	 * &quot;find everything using {@code javax.servlet} OR {@code javax.ws.rs}&quot;).
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param importPrefixes
+	 *            list of import prefixes to match
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List&lt;JavaBlobIndex&gt; searchByMultipleImports(String repoName,
+			List&lt;String&gt; importPrefixes, int offset, int limit) {
+<span class="nc bnc" id="L1270" title="All 6 branches missed.">		if (repoName == null || repoName.isEmpty()</span>
+<span class="nc bnc" id="L1271" title="All 2 branches missed.">				|| importPrefixes == null || importPrefixes.isEmpty()) {</span>
+<span class="nc" id="L1272">			return List.of();</span>
+		}
+<span class="nc" id="L1274">		List&lt;String&gt; validPrefixes = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L1275" title="All 2 branches missed.">		for (String p : importPrefixes) {</span>
+<span class="nc bnc" id="L1276" title="All 4 branches missed.">			if (p != null &amp;&amp; !p.isBlank()) {</span>
+<span class="nc" id="L1277">				validPrefixes.add(p);</span>
+			}
+<span class="nc" id="L1279">		}</span>
+<span class="nc bnc" id="L1280" title="All 2 branches missed.">		if (validPrefixes.isEmpty()) {</span>
+<span class="nc" id="L1281">			return List.of();</span>
+		}
+		// Cap to avoid excessive query length
+<span class="nc bnc" id="L1284" title="All 2 branches missed.">		if (validPrefixes.size() &gt; MAX_IMPORT_PREFIXES) {</span>
+<span class="nc" id="L1285">			validPrefixes = validPrefixes.subList(0, MAX_IMPORT_PREFIXES);</span>
+		}
+<span class="nc" id="L1287">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1288">			StringBuilder hql = new StringBuilder(</span>
+					&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo AND (&quot;); //$NON-NLS-1$
+<span class="nc bnc" id="L1290" title="All 2 branches missed.">			for (int i = 0; i &lt; validPrefixes.size(); i++) {</span>
+<span class="nc bnc" id="L1291" title="All 2 branches missed.">				if (i &gt; 0) {</span>
+<span class="nc" id="L1292">					hql.append(&quot; OR &quot;); //$NON-NLS-1$</span>
+				}
+<span class="nc" id="L1294">				hql.append(&quot;j.importStatements LIKE :pf&quot;).append(i) //$NON-NLS-1$</span>
+<span class="nc" id="L1295">						.append(&quot; OR j.importStatements LIKE :pm&quot;).append(i); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L1297">			hql.append(&quot;)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L1298">			var query = session.createQuery(hql.toString(), JavaBlobIndex.class)</span>
+<span class="nc" id="L1299">					.setParameter(&quot;repo&quot;, repoName); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1300" title="All 2 branches missed.">			for (int i = 0; i &lt; validPrefixes.size(); i++) {</span>
+<span class="nc" id="L1301">				String prefix = validPrefixes.get(i);</span>
+<span class="nc" id="L1302">				query.setParameter(&quot;pf&quot; + i, prefix + &quot;%&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L1303">				query.setParameter(&quot;pm&quot; + i, &quot;%\n&quot; + prefix + &quot;%&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+<span class="nc" id="L1305">			return query.setFirstResult(offset)</span>
+<span class="nc" id="L1306">					.setMaxResults(limit)</span>
+<span class="nc" id="L1307">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Find which files need updating for each old→new import mapping.
+	 * &lt;p&gt;
+	 * Takes a map of old import prefixes to new import prefixes (e.g.
+	 * {@code {&quot;javax.servlet&quot; → &quot;jakarta.servlet&quot;}}) and returns the files
+	 * affected by each mapping.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param oldToNewImportMap
+	 *            map of old import prefix → new import prefix
+	 * @return map of old prefix → list of files that need migration
+	 */
+	public Map&lt;String, List&lt;JavaBlobIndex&gt;&gt; getMigrationCandidates(
+			String repoName,
+			Map&lt;String, String&gt; oldToNewImportMap) {
+<span class="nc" id="L1327">		Map&lt;String, List&lt;JavaBlobIndex&gt;&gt; result = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L1328" title="All 6 branches missed.">		if (repoName == null || repoName.isEmpty()</span>
+<span class="nc bnc" id="L1329" title="All 2 branches missed.">				|| oldToNewImportMap == null || oldToNewImportMap.isEmpty()) {</span>
+<span class="nc" id="L1330">			return result;</span>
+		}
+<span class="nc bnc" id="L1332" title="All 2 branches missed.">		for (String oldPrefix : oldToNewImportMap.keySet()) {</span>
+<span class="nc bnc" id="L1333" title="All 4 branches missed.">			if (oldPrefix != null &amp;&amp; !oldPrefix.isEmpty()) {</span>
+<span class="nc" id="L1334">				List&lt;JavaBlobIndex&gt; affected = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1335">				int offset = 0;</span>
+<span class="nc" id="L1336">				final int pageSize = 1000;</span>
+				while (true) {
+<span class="nc" id="L1338">					List&lt;JavaBlobIndex&gt; page = getMigrationImpact(</span>
+							repoName, oldPrefix, offset, pageSize);
+<span class="nc bnc" id="L1340" title="All 2 branches missed.">					if (page.isEmpty()) {</span>
+<span class="nc" id="L1341">						break;</span>
+					}
+<span class="nc" id="L1343">					affected.addAll(page);</span>
+<span class="nc bnc" id="L1344" title="All 2 branches missed.">					if (page.size() &lt; pageSize) {</span>
+<span class="nc" id="L1345">						break;</span>
+					}
+<span class="nc" id="L1347">					offset += pageSize;</span>
+<span class="nc" id="L1348">				}</span>
+<span class="nc" id="L1349">				result.put(oldPrefix, affected);</span>
+			}
+<span class="nc" id="L1351">		}</span>
+<span class="nc" id="L1352">		return result;</span>
+	}
+
+	// --- Feature 2: API Evolution Tracker ---
+
+	/**
+	 * Compare {@link JavaBlobIndex} entries between two commits.
+	 * &lt;p&gt;
+	 * Returns an {@link ApiDiffResult} with:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;files added in commit B (not in A)&lt;/li&gt;
+	 * &lt;li&gt;files removed from commit A (not in B)&lt;/li&gt;
+	 * &lt;li&gt;files with method signature or visibility changes&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param commitOidA
+	 *            the first (older) commit object ID
+	 * @param commitOidB
+	 *            the second (newer) commit object ID
+	 * @return the diff result
+	 */
+	public ApiDiffResult getApiDiff(String repoName, String commitOidA,
+			String commitOidB) {
+<span class="nc bnc" id="L1377" title="All 6 branches missed.">		if (repoName == null || repoName.isEmpty()</span>
+<span class="nc bnc" id="L1378" title="All 4 branches missed.">				|| commitOidA == null || commitOidA.isEmpty()</span>
+<span class="nc bnc" id="L1379" title="All 2 branches missed.">				|| commitOidB == null || commitOidB.isEmpty()) {</span>
+<span class="nc" id="L1380">			return new ApiDiffResult(List.of(), List.of(), List.of());</span>
+		}
+<span class="nc" id="L1382">		List&lt;JavaBlobIndex&gt; entriesA = getEntriesForCommit(repoName,</span>
+				commitOidA);
+<span class="nc" id="L1384">		List&lt;JavaBlobIndex&gt; entriesB = getEntriesForCommit(repoName,</span>
+				commitOidB);
+
+<span class="nc" id="L1387">		Map&lt;String, JavaBlobIndex&gt; mapA = indexByFilePath(entriesA);</span>
+<span class="nc" id="L1388">		Map&lt;String, JavaBlobIndex&gt; mapB = indexByFilePath(entriesB);</span>
+
+<span class="nc" id="L1390">		List&lt;JavaBlobIndex&gt; added = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1391">		List&lt;JavaBlobIndex&gt; removed = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1392">		List&lt;ApiChangeEntry&gt; changed = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L1394" title="All 2 branches missed.">		for (Map.Entry&lt;String, JavaBlobIndex&gt; entry : mapB.entrySet()) {</span>
+<span class="nc bnc" id="L1395" title="All 2 branches missed.">			if (!mapA.containsKey(entry.getKey())) {</span>
+<span class="nc" id="L1396">				added.add(entry.getValue());</span>
+			}
+<span class="nc" id="L1398">		}</span>
+<span class="nc bnc" id="L1399" title="All 2 branches missed.">		for (Map.Entry&lt;String, JavaBlobIndex&gt; entry : mapA.entrySet()) {</span>
+<span class="nc bnc" id="L1400" title="All 2 branches missed.">			if (!mapB.containsKey(entry.getKey())) {</span>
+<span class="nc" id="L1401">				removed.add(entry.getValue());</span>
+			} else {
+<span class="nc" id="L1403">				JavaBlobIndex before = entry.getValue();</span>
+<span class="nc" id="L1404">				JavaBlobIndex after = mapB.get(entry.getKey());</span>
+<span class="nc" id="L1405">				String desc = detectApiChanges(before, after);</span>
+<span class="nc bnc" id="L1406" title="All 2 branches missed.">				if (desc != null) {</span>
+<span class="nc" id="L1407">					changed.add(new ApiChangeEntry(before, after, desc));</span>
+				}
+			}
+<span class="nc" id="L1410">		}</span>
+<span class="nc" id="L1411">		return new ApiDiffResult(added, removed, changed);</span>
+	}
+
+	/**
+	 * Find all entries with {@code @Deprecated} annotation ordered by commit
+	 * date. Shows when deprecations were introduced over time.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return deprecated entries ordered by commit date ascending
+	 */
+	public List&lt;JavaBlobIndex&gt; getDeprecationTimeline(String repoName,
+			int offset, int limit) {
+<span class="nc bnc" id="L1428" title="All 4 branches missed.">		if (repoName == null || repoName.isEmpty()) {</span>
+<span class="nc" id="L1429">			return List.of();</span>
+		}
+<span class="nc" id="L1431">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1432">			return session.createQuery(</span>
+					&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND (j.annotations = :exact &quot; //$NON-NLS-1$
+							+ &quot;OR j.annotations LIKE :first &quot; //$NON-NLS-1$
+							+ &quot;OR j.annotations LIKE :middle &quot; //$NON-NLS-1$
+							+ &quot;OR j.annotations LIKE :last) &quot; //$NON-NLS-1$
+							+ &quot;ORDER BY j.commitDate ASC&quot;, //$NON-NLS-1$
+					JavaBlobIndex.class)
+<span class="nc" id="L1440">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1441">					.setParameter(&quot;exact&quot;, &quot;Deprecated&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1442">					.setParameter(&quot;first&quot;, &quot;Deprecated\n%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1443">					.setParameter(&quot;middle&quot;, &quot;%\nDeprecated\n%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1444">					.setParameter(&quot;last&quot;, &quot;%\nDeprecated&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1445">					.setFirstResult(offset)</span>
+<span class="nc" id="L1446">					.setMaxResults(limit)</span>
+<span class="nc" id="L1447">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Like {@link #getApiDiff(String, String, String)} but filtered to public
+	 * API only. Detects breaking changes to publicly visible types.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param commitOidA
+	 *            the first (older) commit object ID
+	 * @param commitOidB
+	 *            the second (newer) commit object ID
+	 * @return the diff result for public API entries only
+	 */
+	public ApiDiffResult getPublicApiChanges(String repoName,
+			String commitOidA, String commitOidB) {
+<span class="nc" id="L1465">		ApiDiffResult full = getApiDiff(repoName, commitOidA, commitOidB);</span>
+<span class="nc bnc" id="L1466" title="All 2 branches missed.">		List&lt;JavaBlobIndex&gt; addedPublic = full.getAddedFiles() == null</span>
+<span class="nc" id="L1467">				? List.of()</span>
+<span class="nc" id="L1468">				: full.getAddedFiles().stream()</span>
+<span class="nc" id="L1469">						.filter(e -&gt; isPublic(e))</span>
+<span class="nc" id="L1470">						.toList();</span>
+<span class="nc bnc" id="L1471" title="All 2 branches missed.">		List&lt;JavaBlobIndex&gt; removedPublic = full.getRemovedFiles() == null</span>
+<span class="nc" id="L1472">				? List.of()</span>
+<span class="nc" id="L1473">				: full.getRemovedFiles().stream()</span>
+<span class="nc" id="L1474">						.filter(e -&gt; isPublic(e))</span>
+<span class="nc" id="L1475">						.toList();</span>
+<span class="nc bnc" id="L1476" title="All 2 branches missed.">		List&lt;ApiChangeEntry&gt; changedPublic = full.getChangedFiles() == null</span>
+<span class="nc" id="L1477">				? List.of()</span>
+<span class="nc" id="L1478">				: full.getChangedFiles().stream()</span>
+<span class="nc bnc" id="L1479" title="All 2 branches missed.">						.filter(e -&gt; isPublic(e.getBefore())</span>
+<span class="nc bnc" id="L1480" title="All 2 branches missed.">								|| isPublic(e.getAfter()))</span>
+<span class="nc" id="L1481">						.toList();</span>
+<span class="nc" id="L1482">		return new ApiDiffResult(addedPublic, removedPublic, changedPublic);</span>
+	}
+
+	/**
+	 * Track how a specific type's declared methods and method signatures
+	 * changed over time across commits.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param fullyQualifiedTypeName
+	 *            the fully qualified type name to track
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return entries for the type ordered by commit date ascending
+	 */
+	public List&lt;JavaBlobIndex&gt; getMethodEvolution(String repoName,
+			String fullyQualifiedTypeName, int offset, int limit) {
+<span class="nc bnc" id="L1501" title="All 6 branches missed.">		if (repoName == null || repoName.isEmpty()</span>
+				|| fullyQualifiedTypeName == null
+<span class="nc bnc" id="L1503" title="All 2 branches missed.">				|| fullyQualifiedTypeName.isEmpty()) {</span>
+<span class="nc" id="L1504">			return List.of();</span>
+		}
+<span class="nc" id="L1506">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1507">			return session.createQuery(</span>
+					&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND (j.fullyQualifiedNames = :fqnExact &quot; //$NON-NLS-1$
+							+ &quot;OR j.fullyQualifiedNames LIKE :fqnPrefix &quot; //$NON-NLS-1$
+							+ &quot;OR j.fullyQualifiedNames LIKE :fqnSuffix &quot; //$NON-NLS-1$
+							+ &quot;OR j.fullyQualifiedNames LIKE :fqnMiddle) &quot; //$NON-NLS-1$
+							+ &quot;ORDER BY j.commitDate ASC&quot;, //$NON-NLS-1$
+					JavaBlobIndex.class)
+<span class="nc" id="L1515">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1516">					.setParameter(&quot;fqnExact&quot;, fullyQualifiedTypeName) //$NON-NLS-1$</span>
+<span class="nc" id="L1517">					.setParameter(&quot;fqnPrefix&quot;, fullyQualifiedTypeName + &quot;\n%&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1518">					.setParameter(&quot;fqnSuffix&quot;, &quot;%\n&quot; + fullyQualifiedTypeName) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1519">					.setParameter(&quot;fqnMiddle&quot;, &quot;%\n&quot; + fullyQualifiedTypeName + &quot;\n%&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1520">					.setFirstResult(offset)</span>
+<span class="nc" id="L1521">					.setMaxResults(limit)</span>
+<span class="nc" id="L1522">					.getResultList();</span>
+		}
+	}
+
+	// --- Feature 3: Developer Analytics ---
+
+	/**
+	 * Group entries by commit author and type kind, counting how many
+	 * classes/interfaces/enums each author introduced.
+	 * &lt;p&gt;
+	 * Each element of the returned list is an {@code Object[]} with:
+	 * {@code [commitAuthor, typeKind, count]}.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @return aggregated statistics per author and type kind
+	 */
+	public List&lt;Object[]&gt; getAuthorTypeStatistics(String repoName) {
+<span class="nc bnc" id="L1540" title="All 4 branches missed.">		if (repoName == null || repoName.isEmpty()) {</span>
+<span class="nc" id="L1541">			return List.of();</span>
+		}
+<span class="nc" id="L1543">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1544">			return session.createQuery(</span>
+					&quot;SELECT j.commitAuthor, j.typeKind, COUNT(j) &quot; //$NON-NLS-1$
+							+ &quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;GROUP BY j.commitAuthor, j.typeKind &quot; //$NON-NLS-1$
+							+ &quot;ORDER BY j.commitAuthor, j.typeKind&quot;, //$NON-NLS-1$
+					Object[].class)
+<span class="nc" id="L1550">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1551">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Return average line count per commit date for entries matching a package
+	 * prefix. Shows how code size grows over time.
+	 * &lt;p&gt;
+	 * Each element of the returned list is an {@code Object[]} with:
+	 * {@code [commitDate, avgLineCount]}.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param packagePrefix
+	 *            package name prefix filter (e.g. {@code &quot;com.example&quot;})
+	 * @return average line count per commit date ordered by date ascending
+	 */
+	public List&lt;Object[]&gt; getCodeComplexityTrend(String repoName,
+			String packagePrefix) {
+<span class="nc bnc" id="L1570" title="All 4 branches missed.">		if (repoName == null || repoName.isEmpty()) {</span>
+<span class="nc" id="L1571">			return List.of();</span>
+		}
+<span class="nc" id="L1573">		try (Session session = sessionFactory.openSession()) {</span>
+			String hql;
+<span class="nc bnc" id="L1575" title="All 4 branches missed.">			if (packagePrefix == null || packagePrefix.isEmpty()) {</span>
+<span class="nc" id="L1576">				hql = &quot;SELECT j.commitDate, AVG(j.lineCount) &quot; //$NON-NLS-1$</span>
+						+ &quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+						+ &quot;GROUP BY j.commitDate ORDER BY j.commitDate ASC&quot;; //$NON-NLS-1$
+<span class="nc" id="L1579">				return session.createQuery(hql, Object[].class)</span>
+<span class="nc" id="L1580">						.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1581">						.getResultList();</span>
+			}
+<span class="nc" id="L1583">			hql = &quot;SELECT j.commitDate, AVG(j.lineCount) &quot; //$NON-NLS-1$</span>
+					+ &quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+					+ &quot;AND j.packageName LIKE :pkg &quot; //$NON-NLS-1$
+					+ &quot;GROUP BY j.commitDate ORDER BY j.commitDate ASC&quot;; //$NON-NLS-1$
+<span class="nc" id="L1587">			return session.createQuery(hql, Object[].class)</span>
+<span class="nc" id="L1588">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1589">					.setParameter(&quot;pkg&quot;, packagePrefix + &quot;%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1590">					.getResultList();</span>
+<span class="nc bnc" id="L1591" title="All 2 branches missed.">		}</span>
+	}
+
+	/**
+	 * Find {@link JavaBlobIndex} entries with a line count above the given
+	 * threshold. Useful for identifying large classes that may need
+	 * refactoring.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param lineCountThreshold
+	 *            minimum line count (inclusive)
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return entries whose line count exceeds the threshold, ordered by line
+	 *         count descending
+	 */
+	public List&lt;JavaBlobIndex&gt; getMonsterClasses(String repoName,
+			int lineCountThreshold, int offset, int limit) {
+<span class="nc bnc" id="L1612" title="All 4 branches missed.">		if (repoName == null || repoName.isEmpty()) {</span>
+<span class="nc" id="L1613">			return List.of();</span>
+		}
+<span class="nc" id="L1615">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1616">			return session.createQuery(</span>
+					&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND j.lineCount &gt;= :threshold &quot; //$NON-NLS-1$
+							+ &quot;ORDER BY j.lineCount DESC&quot;, //$NON-NLS-1$
+					JavaBlobIndex.class)
+<span class="nc" id="L1621">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1622">					.setParameter(&quot;threshold&quot;, lineCountThreshold) //$NON-NLS-1$</span>
+<span class="nc" id="L1623">					.setFirstResult(offset)</span>
+<span class="nc" id="L1624">					.setMaxResults(limit)</span>
+<span class="nc" id="L1625">					.getResultList();</span>
+		}
+	}
+
+	/**
+	 * Find types whose fully qualified names never appear in any other file's
+	 * import statements within the same repository. These are potential dead
+	 * code candidates.
+	 * &lt;p&gt;
+	 * Wildcard imports (e.g. {@code pkg.*}) are treated as covering all types
+	 * in that package, so types referenced only via wildcard imports are not
+	 * considered dead.
+	 * &lt;p&gt;
+	 * &lt;b&gt;Note:&lt;/b&gt; The cross-reference filtering is performed in-memory after
+	 * loading all entries with non-null FQNs. Pagination is applied to the
+	 * filtered result set. For very large repositories, callers should use
+	 * reasonable {@code limit} values.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param offset
+	 *            pagination offset into the filtered result
+	 * @param limit
+	 *            maximum number of results to return
+	 * @return entries that are never imported by other files in the repository
+	 */
+	public List&lt;JavaBlobIndex&gt; getDeadCodeCandidates(String repoName,
+			int offset, int limit) {
+<span class="nc bnc" id="L1653" title="All 4 branches missed.">		if (repoName == null || repoName.isEmpty()) {</span>
+<span class="nc" id="L1654">			return List.of();</span>
+		}
+<span class="nc" id="L1656">		try (Session session = sessionFactory.openSession()) {</span>
+			// Collect all import statements in the repo as a set of tokens
+<span class="nc" id="L1658">			List&lt;String&gt; allImports = session.createQuery(</span>
+					&quot;SELECT j.importStatements FROM JavaBlobIndex j &quot; //$NON-NLS-1$
+							+ &quot;WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND j.importStatements IS NOT NULL&quot;, //$NON-NLS-1$
+					String.class)
+<span class="nc" id="L1663">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1664">					.getResultList();</span>
+			// Build a set of individual imported names for precise matching,
+			// and track wildcard-import package prefixes (pkg.*).
+<span class="nc" id="L1667">			Set&lt;String&gt; importedNames = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1668">			Set&lt;String&gt; wildcardPackages = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L1669" title="All 2 branches missed.">			for (String imports : allImports) {</span>
+<span class="nc bnc" id="L1670" title="All 2 branches missed.">				if (imports != null) {</span>
+<span class="nc bnc" id="L1671" title="All 2 branches missed.">					for (String token : FQN_SPLIT_PATTERN.split(imports)) {</span>
+<span class="nc" id="L1672">						String t = token.trim();</span>
+<span class="nc bnc" id="L1673" title="All 2 branches missed.">						if (t.isBlank()) {</span>
+<span class="nc" id="L1674">							continue;</span>
+						}
+<span class="nc bnc" id="L1676" title="All 2 branches missed.">						if (t.endsWith(&quot;.*&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L1677">							String pkg = t.substring(0, t.length() - 2);</span>
+<span class="nc bnc" id="L1678" title="All 2 branches missed.">							if (!pkg.isEmpty()) {</span>
+<span class="nc" id="L1679">								wildcardPackages.add(pkg);</span>
+							}
+<span class="nc" id="L1681">						} else {</span>
+<span class="nc" id="L1682">							importedNames.add(t);</span>
+						}
+					}
+				}
+<span class="nc" id="L1686">			}</span>
+
+			// Collect all types
+<span class="nc" id="L1689">			List&lt;JavaBlobIndex&gt; all = session.createQuery(</span>
+					&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND j.fullyQualifiedNames IS NOT NULL&quot;, //$NON-NLS-1$
+					JavaBlobIndex.class)
+<span class="nc" id="L1693">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1694">					.getResultList();</span>
+
+<span class="nc" id="L1696">			List&lt;JavaBlobIndex&gt; deadCandidates = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L1697" title="All 2 branches missed.">			for (JavaBlobIndex entry : all) {</span>
+<span class="nc" id="L1698">				String fqns = entry.getFullyQualifiedNames();</span>
+<span class="nc bnc" id="L1699" title="All 4 branches missed.">				if (fqns == null || fqns.isBlank()) {</span>
+<span class="nc" id="L1700">					continue;</span>
+				}
+<span class="nc" id="L1702">				boolean referenced = false;</span>
+<span class="nc bnc" id="L1703" title="All 2 branches missed.">				for (String fqn : FQN_SPLIT_PATTERN.split(fqns)) {</span>
+<span class="nc bnc" id="L1704" title="All 2 branches missed.">					if (fqn.isBlank()) {</span>
+<span class="nc" id="L1705">						continue;</span>
+					}
+<span class="nc" id="L1707">					String f = fqn.trim();</span>
+<span class="nc bnc" id="L1708" title="All 2 branches missed.">					if (importedNames.contains(f)) {</span>
+<span class="nc" id="L1709">						referenced = true;</span>
+<span class="nc" id="L1710">						break;</span>
+					}
+					// Also check if covered by a wildcard import
+<span class="nc" id="L1713">					int lastDot = f.lastIndexOf('.');</span>
+<span class="nc bnc" id="L1714" title="All 2 branches missed.">					if (lastDot &gt; 0</span>
+							&amp;&amp; wildcardPackages
+<span class="nc bnc" id="L1716" title="All 2 branches missed.">									.contains(f.substring(0, lastDot))) {</span>
+<span class="nc" id="L1717">						referenced = true;</span>
+<span class="nc" id="L1718">						break;</span>
+					}
+				}
+<span class="nc bnc" id="L1721" title="All 2 branches missed.">				if (!referenced) {</span>
+<span class="nc" id="L1722">					deadCandidates.add(entry);</span>
+				}
+<span class="nc" id="L1724">			}</span>
+<span class="nc" id="L1725">			int from = Math.min(offset, deadCandidates.size());</span>
+<span class="nc" id="L1726">			int to = Math.min(from + limit, deadCandidates.size());</span>
+<span class="nc" id="L1727">			return new ArrayList&lt;&gt;(deadCandidates.subList(from, to));</span>
+		}
+	}
+
+	/**
+	 * Count types annotated with {@code @Test} (test types) vs. total types
+	 * per package. Returns a proxy for test coverage.
+	 * &lt;p&gt;
+	 * Each element of the returned list is an {@code Object[]} with:
+	 * {@code [packageName, testTypeCount, totalTypeCount]}.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @return per-package test type count and total type count
+	 */
+	public List&lt;Object[]&gt; getTestCoverageProxy(String repoName) {
+<span class="nc bnc" id="L1743" title="All 4 branches missed.">		if (repoName == null || repoName.isEmpty()) {</span>
+<span class="nc" id="L1744">			return List.of();</span>
+		}
+<span class="nc" id="L1746">		try (Session session = sessionFactory.openSession()) {</span>
+			// Total types per package
+<span class="nc" id="L1748">			List&lt;Object[]&gt; totals = session.createQuery(</span>
+					&quot;SELECT j.packageName, COUNT(j) FROM JavaBlobIndex j &quot; //$NON-NLS-1$
+							+ &quot;WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;GROUP BY j.packageName&quot;, //$NON-NLS-1$
+					Object[].class)
+<span class="nc" id="L1753">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1754">					.getResultList();</span>
+
+			// Test types per package (JUnit @Test annotations)
+<span class="nc" id="L1757">			List&lt;Object[]&gt; testCounts = session.createQuery(</span>
+					&quot;SELECT j.packageName, COUNT(j) FROM JavaBlobIndex j &quot; //$NON-NLS-1$
+							+ &quot;WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND (j.annotations LIKE :junit4Test OR j.annotations LIKE :junit5Test) &quot; //$NON-NLS-1$
+							+ &quot;GROUP BY j.packageName&quot;, //$NON-NLS-1$
+					Object[].class)
+<span class="nc" id="L1763">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1764">					.setParameter(&quot;junit4Test&quot;, &quot;%org.junit.Test%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1765">					.setParameter(&quot;junit5Test&quot;, &quot;%org.junit.jupiter.api.Test%&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L1766">					.getResultList();</span>
+
+<span class="nc" id="L1768">			Map&lt;String, Long&gt; testMap = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L1769" title="All 2 branches missed.">			for (Object[] row : testCounts) {</span>
+<span class="nc" id="L1770">				testMap.put((String) row[0], (Long) row[1]);</span>
+<span class="nc" id="L1771">			}</span>
+
+<span class="nc" id="L1773">			List&lt;Object[]&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L1774" title="All 2 branches missed.">			for (Object[] row : totals) {</span>
+<span class="nc" id="L1775">				String pkg = (String) row[0];</span>
+<span class="nc" id="L1776">				Long total = (Long) row[1];</span>
+<span class="nc" id="L1777">				Long testCount = testMap.getOrDefault(pkg, 0L);</span>
+<span class="nc" id="L1778">				result.add(new Object[] { pkg, testCount, total });</span>
+<span class="nc" id="L1779">			}</span>
+<span class="nc" id="L1780">			return result;</span>
+		}
+	}
+
+<span class="fc" id="L1784">	private static final java.util.regex.Pattern FQN_SPLIT_PATTERN = java.util.regex.Pattern</span>
+<span class="fc" id="L1785">			.compile(&quot;[,\\s]+&quot;); //$NON-NLS-1$</span>
+
+	/** Maximum number of import prefixes accepted by searchByMultipleImports. */
+	private static final int MAX_IMPORT_PREFIXES = 50;
+
+	// --- Private helpers ---
+
+	private List&lt;JavaBlobIndex&gt; getEntriesForCommit(String repoName,
+			String commitOid) {
+<span class="nc" id="L1794">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="nc" id="L1795">			return session.createQuery(</span>
+					&quot;FROM JavaBlobIndex j WHERE j.repositoryName = :repo &quot; //$NON-NLS-1$
+							+ &quot;AND j.commitObjectId = :commit&quot;, //$NON-NLS-1$
+					JavaBlobIndex.class)
+<span class="nc" id="L1799">					.setParameter(&quot;repo&quot;, repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L1800">					.setParameter(&quot;commit&quot;, commitOid) //$NON-NLS-1$</span>
+<span class="nc" id="L1801">					.getResultList();</span>
+		}
+	}
+
+	private static Map&lt;String, JavaBlobIndex&gt; indexByFilePath(
+			List&lt;JavaBlobIndex&gt; entries) {
+<span class="nc" id="L1807">		Map&lt;String, JavaBlobIndex&gt; map = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L1808" title="All 2 branches missed.">		for (JavaBlobIndex entry : entries) {</span>
+<span class="nc bnc" id="L1809" title="All 2 branches missed.">			if (entry.getFilePath() != null) {</span>
+<span class="nc" id="L1810">				map.put(entry.getFilePath(), entry);</span>
+			}
+<span class="nc" id="L1812">		}</span>
+<span class="nc" id="L1813">		return map;</span>
+	}
+
+	private static String detectApiChanges(JavaBlobIndex before,
+			JavaBlobIndex after) {
+<span class="nc" id="L1818">		List&lt;String&gt; changes = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L1819" title="All 2 branches missed.">		if (!Objects.equals(before.getDeclaredMethods(),</span>
+<span class="nc" id="L1820">				after.getDeclaredMethods())) {</span>
+<span class="nc" id="L1821">			changes.add(&quot;methods changed&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L1823" title="All 2 branches missed.">		if (!Objects.equals(before.getMethodSignatures(),</span>
+<span class="nc" id="L1824">				after.getMethodSignatures())) {</span>
+<span class="nc" id="L1825">			changes.add(&quot;signatures changed&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L1827" title="All 2 branches missed.">		if (!Objects.equals(before.getVisibility(),</span>
+<span class="nc" id="L1828">				after.getVisibility())) {</span>
+<span class="nc" id="L1829">			changes.add(&quot;visibility changed&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L1831" title="All 2 branches missed.">		if (changes.isEmpty()) {</span>
+<span class="nc" id="L1832">			return null;</span>
+		}
+<span class="nc" id="L1834">		return String.join(&quot;, &quot;, changes); //$NON-NLS-1$</span>
+	}
+
+	private static boolean isPublic(JavaBlobIndex entry) {
+<span class="nc bnc" id="L1838" title="All 2 branches missed.">		if (entry == null) {</span>
+<span class="nc" id="L1839">			return false;</span>
+		}
+<span class="nc" id="L1841">		String vis = entry.getVisibility();</span>
+<span class="nc bnc" id="L1842" title="All 4 branches missed.">		return vis != null &amp;&amp; vis.contains(&quot;public&quot;); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

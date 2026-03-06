@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>GitPackEntity.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.entity</a> &gt; <span class="el_source">GitPackEntity.java</span></div><h1>GitPackEntity.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.entity;
+
+import java.time.Instant;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+
+/**
+ * Entity representing a Git pack file stored in the database.
+ */
+@Entity
+@Table(name = &quot;git_packs&quot;, indexes = {
+		@Index(name = &quot;idx_pack_repo&quot;, columnList = &quot;repository_name&quot;),
+		@Index(name = &quot;idx_pack_repo_name&quot;, columnList = &quot;repository_name, pack_name&quot;) })
+public class GitPackEntity {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(name = &quot;repository_name&quot;, nullable = false)
+	private String repositoryName;
+
+	@Column(name = &quot;pack_name&quot;, nullable = false)
+	private String packName;
+
+	@Column(name = &quot;pack_extension&quot;, nullable = false)
+	private String packExtension;
+
+	@JdbcTypeCode(SqlTypes.LONG32VARBINARY)
+	@Basic(fetch = FetchType.LAZY)
+	@Column(name = &quot;data&quot;, nullable = false)
+	private byte[] data;
+
+	@Column(name = &quot;file_size&quot;, nullable = false)
+	private long fileSize;
+
+	@Column(name = &quot;created_at&quot;, nullable = false)
+	private Instant createdAt;
+
+	/** Default constructor for JPA. */
+<span class="fc" id="L65">	public GitPackEntity() {</span>
+<span class="fc" id="L66">	}</span>
+
+	/**
+	 * Get the primary key.
+	 *
+	 * @return the id
+	 */
+	public Long getId() {
+<span class="nc" id="L74">		return id;</span>
+	}
+
+	/**
+	 * Set the primary key.
+	 *
+	 * @param id
+	 *            the id
+	 */
+	public void setId(Long id) {
+<span class="nc" id="L84">		this.id = id;</span>
+<span class="nc" id="L85">	}</span>
+
+	/**
+	 * Get the repository name.
+	 *
+	 * @return the repositoryName
+	 */
+	public String getRepositoryName() {
+<span class="nc" id="L93">		return repositoryName;</span>
+	}
+
+	/**
+	 * Set the repository name.
+	 *
+	 * @param repositoryName
+	 *            the repository name
+	 */
+	public void setRepositoryName(String repositoryName) {
+<span class="fc" id="L103">		this.repositoryName = repositoryName;</span>
+<span class="fc" id="L104">	}</span>
+
+	/**
+	 * Get the pack name.
+	 *
+	 * @return the packName
+	 */
+	public String getPackName() {
+<span class="nc" id="L112">		return packName;</span>
+	}
+
+	/**
+	 * Set the pack name.
+	 *
+	 * @param packName
+	 *            the pack name
+	 */
+	public void setPackName(String packName) {
+<span class="fc" id="L122">		this.packName = packName;</span>
+<span class="fc" id="L123">	}</span>
+
+	/**
+	 * Get the pack extension.
+	 *
+	 * @return the packExtension
+	 */
+	public String getPackExtension() {
+<span class="nc" id="L131">		return packExtension;</span>
+	}
+
+	/**
+	 * Set the pack extension.
+	 *
+	 * @param packExtension
+	 *            the extension (e.g. PACK, IDX)
+	 */
+	public void setPackExtension(String packExtension) {
+<span class="fc" id="L141">		this.packExtension = packExtension;</span>
+<span class="fc" id="L142">	}</span>
+
+	/**
+	 * Get the pack data.
+	 *
+	 * @return the data
+	 */
+	public byte[] getData() {
+<span class="fc" id="L150">		return data;</span>
+	}
+
+	/**
+	 * Set the pack data.
+	 *
+	 * @param data
+	 *            the raw pack data
+	 */
+	public void setData(byte[] data) {
+<span class="fc" id="L160">		this.data = data;</span>
+<span class="fc" id="L161">	}</span>
+
+	/**
+	 * Get the file size.
+	 *
+	 * @return the fileSize
+	 */
+	public long getFileSize() {
+<span class="nc" id="L169">		return fileSize;</span>
+	}
+
+	/**
+	 * Set the file size.
+	 *
+	 * @param fileSize
+	 *            the file size in bytes
+	 */
+	public void setFileSize(long fileSize) {
+<span class="fc" id="L179">		this.fileSize = fileSize;</span>
+<span class="fc" id="L180">	}</span>
+
+	/**
+	 * Get the creation timestamp.
+	 *
+	 * @return the createdAt
+	 */
+	public Instant getCreatedAt() {
+<span class="nc" id="L188">		return createdAt;</span>
+	}
+
+	/**
+	 * Set the creation timestamp.
+	 *
+	 * @param createdAt
+	 *            the timestamp
+	 */
+	public void setCreatedAt(Instant createdAt) {
+<span class="fc" id="L198">		this.createdAt = createdAt;</span>
+<span class="fc" id="L199">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

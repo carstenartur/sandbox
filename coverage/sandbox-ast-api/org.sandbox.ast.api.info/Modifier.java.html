@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Modifier.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-ast-api</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.ast.api.info</a> &gt; <span class="el_source">Modifier.java</span></div><h1>Modifier.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.ast.api.info;
+
+import java.util.EnumSet;
+import java.util.Set;
+
+/**
+ * Represents Java modifiers (public, private, static, final, etc.).
+ * This enum provides a type-safe way to work with modifiers without
+ * relying on JDT-specific flags.
+ */
+<span class="fc" id="L24">public enum Modifier {</span>
+<span class="fc" id="L25">	PUBLIC(0x0001),</span>
+<span class="fc" id="L26">	PRIVATE(0x0002),</span>
+<span class="fc" id="L27">	PROTECTED(0x0004),</span>
+<span class="fc" id="L28">	STATIC(0x0008),</span>
+<span class="fc" id="L29">	FINAL(0x0010),</span>
+<span class="fc" id="L30">	SYNCHRONIZED(0x0020),</span>
+<span class="fc" id="L31">	VOLATILE(0x0040),</span>
+<span class="fc" id="L32">	TRANSIENT(0x0080),</span>
+<span class="fc" id="L33">	NATIVE(0x0100),</span>
+<span class="fc" id="L34">	INTERFACE(0x0200),</span>
+<span class="fc" id="L35">	ABSTRACT(0x0400),</span>
+<span class="fc" id="L36">	STRICTFP(0x0800),</span>
+<span class="fc" id="L37">	DEFAULT(0x1000);</span>
+	
+	private final int flag;
+	
+<span class="fc" id="L41">	Modifier(int flag) {</span>
+<span class="fc" id="L42">		this.flag = flag;</span>
+<span class="fc" id="L43">	}</span>
+	
+	/**
+	 * Returns the flag value for this modifier.
+	 * @return the flag value
+	 */
+	public int getFlag() {
+<span class="fc" id="L50">		return flag;</span>
+	}
+	
+	/**
+	 * Converts JDT modifier flags to a set of Modifier enums.
+	 * 
+	 * @param jdtFlags JDT modifier flags (as int)
+	 * @return Set of Modifier enums
+	 */
+	public static Set&lt;Modifier&gt; fromJdtFlags(int jdtFlags) {
+<span class="fc" id="L60">		Set&lt;Modifier&gt; modifiers = EnumSet.noneOf(Modifier.class);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		for (Modifier mod : values()) {</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">			if ((jdtFlags &amp; mod.flag) != 0) {</span>
+<span class="fc" id="L63">				modifiers.add(mod);</span>
+			}
+		}
+<span class="fc" id="L66">		return modifiers;</span>
+	}
+	
+	/**
+	 * Converts a set of modifiers to JDT-style flags.
+	 * 
+	 * @param modifiers Set of modifiers
+	 * @return JDT flags as int
+	 */
+	public static int toJdtFlags(Set&lt;Modifier&gt; modifiers) {
+<span class="fc" id="L76">		int flags = 0;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (Modifier mod : modifiers) {</span>
+<span class="fc" id="L78">			flags |= mod.flag;</span>
+<span class="fc" id="L79">		}</span>
+<span class="fc" id="L80">		return flags;</span>
+	}
+	
+	/**
+	 * Checks if the given flags contain this modifier.
+	 * 
+	 * @param jdtFlags JDT modifier flags
+	 * @return true if this modifier is present
+	 */
+	public boolean isPresentIn(int jdtFlags) {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		return (jdtFlags &amp; flag) != 0;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

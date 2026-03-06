@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TransformationRule.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">TransformationRule.java</span></div><h1>TransformationRule.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Represents a transformation rule consisting of a source pattern, an optional guard,
+ * and a list of rewrite alternatives.
+ * 
+ * &lt;p&gt;A rule matches source code using its {@link #sourcePattern()} and optional
+ * {@link #sourceGuard()}. When a match is found, the rewrite alternatives are
+ * evaluated in order. The first alternative whose guard evaluates to {@code true}
+ * (or an unconditional &quot;otherwise&quot; alternative) is applied.&lt;/p&gt;
+ * 
+ * &lt;p&gt;If no alternatives are provided, the rule acts as a hint-only rule
+ * (warning/inspection without rewrite).&lt;/p&gt;
+ * 
+ * &lt;p&gt;Optionally, a rule may have import directives ({@link ImportDirective}) that
+ * specify imports to add or remove when the rule is applied. Import directives
+ * are automatically inferred from fully qualified names (FQNs) in the source
+ * and replacement patterns.&lt;/p&gt;
+ * 
+ * &lt;p&gt;Example DSL syntax (FQN-based):&lt;/p&gt;
+ * &lt;pre&gt;
+ * new java.io.FileReader($path) :: sourceVersionGE(11)
+ * =&amp;gt; new java.io.FileReader($path, java.nio.charset.StandardCharsets.UTF_8) :: sourceVersionGE(11)
+ * =&amp;gt; new java.io.FileReader($path, java.nio.charset.Charset.defaultCharset()) :: otherwise
+ * ;;
+ * &lt;/pre&gt;
+ * 
+ * @since 1.3.2
+ */
+public final class TransformationRule {
+	
+	private final String ruleId;
+	private final String description;
+	private final Pattern sourcePattern;
+	private final GuardExpression sourceGuard;
+	private final List&lt;RewriteAlternative&gt; alternatives;
+	private final ImportDirective importDirective;
+	private final Severity severity;
+	
+	/**
+	 * Creates a rule with only a source pattern and alternatives, all other fields null.
+	 * Pass an empty list for hint-only rules that flag matches without rewriting.
+	 * 
+	 * @param sourcePattern the pattern to match
+	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
+	 * @return a new transformation rule
+	 */
+	public static TransformationRule of(Pattern sourcePattern, List&lt;RewriteAlternative&gt; alternatives) {
+<span class="fc" id="L67">		return new TransformationRule(null, null, sourcePattern, null, alternatives, null, null);</span>
+	}
+	
+	/**
+	 * Creates a new transformation rule.
+	 * 
+	 * @param ruleId optional unique rule ID for usage tracking (may be {@code null})
+	 * @param description optional description (may be {@code null})
+	 * @param sourcePattern the pattern to match
+	 * @param sourceGuard optional guard on the source pattern (may be {@code null})
+	 * @param alternatives list of rewrite alternatives (empty for hint-only rules)
+	 * @param importDirective optional import directives (may be {@code null})
+	 * @param severity optional per-rule severity level (may be {@code null} to inherit from hint file)
+	 */
+	public TransformationRule(String ruleId, String description, Pattern sourcePattern,
+			GuardExpression sourceGuard, List&lt;RewriteAlternative&gt; alternatives,
+<span class="fc" id="L83">			ImportDirective importDirective, Severity severity) {</span>
+<span class="fc" id="L84">		this.ruleId = ruleId;</span>
+<span class="fc" id="L85">		this.description = description;</span>
+<span class="fc" id="L86">		this.sourcePattern = Objects.requireNonNull(sourcePattern, &quot;Source pattern cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L87">		this.sourceGuard = sourceGuard;</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		this.alternatives = alternatives != null</span>
+<span class="fc" id="L89">				? Collections.unmodifiableList(alternatives)</span>
+<span class="pc" id="L90">				: Collections.emptyList();</span>
+<span class="fc" id="L91">		this.importDirective = importDirective;</span>
+<span class="fc" id="L92">		this.severity = severity;</span>
+<span class="fc" id="L93">	}</span>
+	
+	/**
+	 * Returns the unique rule ID for usage tracking.
+	 * 
+	 * &lt;p&gt;If not set, the rule has no explicit ID. Callers should fall back to
+	 * a generated ID (e.g., hint file ID + rule index).&lt;/p&gt;
+	 * 
+	 * @return the rule ID, or {@code null} if not set
+	 * @since 1.4.1
+	 */
+	public String getRuleId() {
+<span class="fc" id="L105">		return ruleId;</span>
+	}
+	
+	/**
+	 * Returns the rule description.
+	 * 
+	 * @return the description, or {@code null} if not set
+	 */
+	public String getDescription() {
+<span class="fc" id="L114">		return description;</span>
+	}
+	
+	/**
+	 * Returns the source pattern.
+	 * 
+	 * @return the source pattern
+	 */
+	public Pattern sourcePattern() {
+<span class="fc" id="L123">		return sourcePattern;</span>
+	}
+	
+	/**
+	 * Returns the source guard.
+	 * 
+	 * @return the source guard, or {@code null} if unconditional
+	 */
+	public GuardExpression sourceGuard() {
+<span class="fc" id="L132">		return sourceGuard;</span>
+	}
+	
+	/**
+	 * Returns the list of rewrite alternatives.
+	 * 
+	 * @return unmodifiable list of alternatives (empty for hint-only rules)
+	 */
+	public List&lt;RewriteAlternative&gt; alternatives() {
+<span class="fc" id="L141">		return alternatives;</span>
+	}
+	
+	/**
+	 * Returns {@code true} if this is a hint-only rule (no rewrite alternatives).
+	 * 
+	 * @return {@code true} if no alternatives are defined
+	 */
+	public boolean isHintOnly() {
+<span class="fc" id="L150">		return alternatives.isEmpty();</span>
+	}
+	
+	/**
+	 * Returns the import directive for this rule.
+	 * 
+	 * @return the import directive, or {@code null} if no imports are specified
+	 * @since 1.3.2
+	 */
+	public ImportDirective getImportDirective() {
+<span class="fc" id="L160">		return importDirective;</span>
+	}
+	
+	/**
+	 * Returns {@code true} if this rule has import directives.
+	 * 
+	 * @return {@code true} if imports are specified
+	 * @since 1.3.2
+	 */
+	public boolean hasImportDirective() {
+<span class="pc bpc" id="L170" title="1 of 4 branches missed.">		return importDirective != null &amp;&amp; !importDirective.isEmpty();</span>
+	}
+	
+	/**
+	 * Returns the per-rule severity level.
+	 * 
+	 * &lt;p&gt;If not set, the severity should be inherited from the containing
+	 * {@link HintFile}.&lt;/p&gt;
+	 * 
+	 * @return the severity, or {@code null} if not set (inherit from hint file)
+	 * @since 1.4.0
+	 */
+	public Severity getSeverity() {
+<span class="fc" id="L183">		return severity;</span>
+	}
+	
+	/**
+	 * Finds the first matching rewrite alternative for the given context.
+	 * 
+	 * &lt;p&gt;Alternatives are evaluated in order. The first one whose guard evaluates
+	 * to {@code true}, or an unconditional &quot;otherwise&quot; alternative, is returned.&lt;/p&gt;
+	 * 
+	 * @param ctx the guard context for evaluation
+	 * @return an {@link Optional} containing the matching alternative, or empty if none matches
+	 */
+	public Optional&lt;RewriteAlternative&gt; findMatchingAlternative(GuardContext ctx) {
+<span class="fc bfc" id="L196" title="All 2 branches covered.">		for (RewriteAlternative alt : alternatives) {</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">			if (alt.isOtherwise()) {</span>
+<span class="fc" id="L198">				return Optional.of(alt);</span>
+			}
+<span class="pc bpc" id="L200" title="1 of 4 branches missed.">			if (alt.condition() != null &amp;&amp; alt.condition().evaluate(ctx)) {</span>
+<span class="fc" id="L201">				return Optional.of(alt);</span>
+			}
+<span class="fc" id="L203">		}</span>
+<span class="fc" id="L204">		return Optional.empty();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

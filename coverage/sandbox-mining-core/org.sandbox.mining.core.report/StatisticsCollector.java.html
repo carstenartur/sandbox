@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StatisticsCollector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.report</a> &gt; <span class="el_source">StatisticsCollector.java</span></div><h1>StatisticsCollector.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.report;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+
+/**
+ * Tracks statistical counts for the mining process.
+ *
+ * &lt;p&gt;Records counts of total processed commits, relevant/irrelevant commits,
+ * duplicates, traffic light distribution, per-repository statistics,
+ * and daily progress tracking.&lt;/p&gt;
+ */
+<span class="fc" id="L33">public class StatisticsCollector {</span>
+
+	private int totalProcessed;
+	private int relevant;
+	private int irrelevant;
+	private int duplicates;
+	private int green;
+	private int yellow;
+	private int red;
+<span class="fc" id="L42">	private final Map&lt;String, Integer&gt; irrelevantReasons = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L43">	private final Map&lt;String, RepoStatistics&gt; perRepository = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L44">	private final List&lt;DailyProgress&gt; dailyProgress = new ArrayList&lt;&gt;();</span>
+	private RunMetadata runMetadata;
+	private TimeWindow timeWindow;
+
+	/**
+	 * Per-repository statistics.
+	 */
+<span class="fc" id="L51">	public static class RepoStatistics {</span>
+		private int totalProcessed;
+		private int relevant;
+		private int green;
+		private int yellow;
+		private int red;
+
+		public void record(CommitEvaluation evaluation) {
+<span class="fc" id="L59">			totalProcessed++;</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">			if (evaluation.relevant()) {</span>
+<span class="fc" id="L61">				relevant++;</span>
+			}
+<span class="fc bfc" id="L63" title="All 4 branches covered.">			switch (evaluation.trafficLight()) {</span>
+<span class="fc" id="L64">			case GREEN -&gt; green++;</span>
+<span class="fc" id="L65">			case YELLOW -&gt; yellow++;</span>
+<span class="fc" id="L66">			case RED -&gt; red++;</span>
+			case NOT_APPLICABLE -&gt; { /* no counter */ }
+			}
+<span class="fc" id="L69">		}</span>
+
+<span class="nc" id="L71">		public int getTotalProcessed() { return totalProcessed; }</span>
+<span class="nc" id="L72">		public int getRelevant() { return relevant; }</span>
+<span class="nc" id="L73">		public int getGreen() { return green; }</span>
+<span class="nc" id="L74">		public int getYellow() { return yellow; }</span>
+<span class="nc" id="L75">		public int getRed() { return red; }</span>
+	}
+
+	/**
+	 * Daily progress entry.
+	 */
+	public static class DailyProgress {
+		private final String date;
+		private int processed;
+		private int relevant;
+
+<span class="fc" id="L86">		public DailyProgress(String date) {</span>
+<span class="fc" id="L87">			this.date = date;</span>
+<span class="fc" id="L88">		}</span>
+
+<span class="fc" id="L90">		public String getDate() { return date; }</span>
+<span class="nc" id="L91">		public int getProcessed() { return processed; }</span>
+<span class="nc" id="L92">		public int getRelevant() { return relevant; }</span>
+	}
+
+	/**
+	 * Records a single evaluation in the statistics.
+	 *
+	 * @param evaluation the evaluation to record
+	 */
+	public void record(CommitEvaluation evaluation) {
+<span class="fc" id="L101">		totalProcessed++;</span>
+
+<span class="fc bfc" id="L103" title="All 2 branches covered.">		if (evaluation.relevant()) {</span>
+<span class="fc" id="L104">			relevant++;</span>
+		} else {
+<span class="fc" id="L106">			irrelevant++;</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">			if (evaluation.irrelevantReason() != null) {</span>
+<span class="fc" id="L108">				irrelevantReasons.merge(evaluation.irrelevantReason(), 1, Integer::sum);</span>
+			}
+		}
+
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (evaluation.isDuplicate()) {</span>
+<span class="fc" id="L113">			duplicates++;</span>
+		}
+
+<span class="fc bfc" id="L116" title="All 4 branches covered.">		switch (evaluation.trafficLight()) {</span>
+<span class="fc" id="L117">		case GREEN -&gt; green++;</span>
+<span class="fc" id="L118">		case YELLOW -&gt; yellow++;</span>
+<span class="fc" id="L119">		case RED -&gt; red++;</span>
+		case NOT_APPLICABLE -&gt; { /* no counter */ }
+		}
+
+		// Per-repository tracking
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		if (evaluation.repoUrl() != null) {</span>
+<span class="fc" id="L125">			perRepository.computeIfAbsent(evaluation.repoUrl(), k -&gt; new RepoStatistics())</span>
+<span class="fc" id="L126">					.record(evaluation);</span>
+		}
+
+		// Daily progress tracking — use the evaluation's date if available, else today
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">		String today = (evaluation.evaluatedAt() != null)</span>
+<span class="fc" id="L131">				? LocalDate.ofInstant(evaluation.evaluatedAt(), ZoneOffset.UTC).toString()</span>
+<span class="pc" id="L132">				: LocalDate.now().toString();</span>
+<span class="fc" id="L133">		DailyProgress todayProgress = dailyProgress.stream()</span>
+<span class="fc" id="L134">				.filter(d -&gt; d.getDate().equals(today))</span>
+<span class="fc" id="L135">				.findFirst()</span>
+<span class="fc" id="L136">				.orElseGet(() -&gt; {</span>
+<span class="fc" id="L137">					DailyProgress dp = new DailyProgress(today);</span>
+<span class="fc" id="L138">					dailyProgress.add(dp);</span>
+<span class="fc" id="L139">					return dp;</span>
+				});
+<span class="fc" id="L141">		todayProgress.processed++;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">		if (evaluation.relevant()) {</span>
+<span class="fc" id="L143">			todayProgress.relevant++;</span>
+		}
+<span class="fc" id="L145">	}</span>
+
+	public int getTotalProcessed() {
+<span class="fc" id="L148">		return totalProcessed;</span>
+	}
+
+	public int getRelevant() {
+<span class="fc" id="L152">		return relevant;</span>
+	}
+
+	public int getIrrelevant() {
+<span class="fc" id="L156">		return irrelevant;</span>
+	}
+
+	public int getDuplicates() {
+<span class="fc" id="L160">		return duplicates;</span>
+	}
+
+	public int getGreen() {
+<span class="fc" id="L164">		return green;</span>
+	}
+
+	public int getYellow() {
+<span class="fc" id="L168">		return yellow;</span>
+	}
+
+	public int getRed() {
+<span class="fc" id="L172">		return red;</span>
+	}
+
+	public Map&lt;String, Integer&gt; getIrrelevantReasons() {
+<span class="fc" id="L176">		return Map.copyOf(irrelevantReasons);</span>
+	}
+
+	public Map&lt;String, RepoStatistics&gt; getPerRepository() {
+<span class="nc" id="L180">		return Map.copyOf(perRepository);</span>
+	}
+
+	public List&lt;DailyProgress&gt; getDailyProgress() {
+<span class="fc" id="L184">		return List.copyOf(dailyProgress);</span>
+	}
+
+	public RunMetadata getRunMetadata() {
+<span class="fc" id="L188">		return runMetadata;</span>
+	}
+
+	public void setRunMetadata(RunMetadata runMetadata) {
+<span class="fc" id="L192">		this.runMetadata = runMetadata;</span>
+<span class="fc" id="L193">	}</span>
+
+	/**
+	 * Rebuilds a {@link StatisticsCollector} from a list of evaluations.
+	 *
+	 * @param evaluations the evaluations to rebuild from
+	 * @return a new {@link StatisticsCollector} reflecting the given evaluations
+	 */
+	public static StatisticsCollector rebuildFrom(List&lt;CommitEvaluation&gt; evaluations) {
+<span class="fc" id="L202">		StatisticsCollector stats = new StatisticsCollector();</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
+<span class="fc" id="L204">			stats.record(eval);</span>
+<span class="fc" id="L205">		}</span>
+<span class="fc" id="L206">		return stats;</span>
+	}
+
+	/**
+	 * Convenience method to record run metadata from raw values.
+	 */
+	public void recordRunMetadata(String startedAt, String completedAt, long durationSeconds,
+			String llmProvider, String llmModel, int batchSize, int commitsPerRequest,
+			int apiCallsMade, int deferredCommits, int permanentlySkipped) {
+<span class="fc" id="L215">		RunMetadata meta = new RunMetadata();</span>
+<span class="fc" id="L216">		meta.startedAt = startedAt;</span>
+<span class="fc" id="L217">		meta.completedAt = completedAt;</span>
+<span class="fc" id="L218">		meta.durationSeconds = durationSeconds;</span>
+<span class="fc" id="L219">		meta.llmProvider = llmProvider;</span>
+<span class="fc" id="L220">		meta.llmModel = llmModel;</span>
+<span class="fc" id="L221">		meta.batchSize = batchSize;</span>
+<span class="fc" id="L222">		meta.commitsPerRequest = commitsPerRequest;</span>
+<span class="fc" id="L223">		meta.apiCallsMade = apiCallsMade;</span>
+<span class="fc" id="L224">		meta.deferredCommits = deferredCommits;</span>
+<span class="fc" id="L225">		meta.permanentlySkipped = permanentlySkipped;</span>
+<span class="fc" id="L226">		this.runMetadata = meta;</span>
+<span class="fc" id="L227">	}</span>
+
+	public TimeWindow getTimeWindow() {
+<span class="fc" id="L230">		return timeWindow;</span>
+	}
+
+	/**
+	 * Computes the time window (earliest and latest evaluatedAt) from a list of evaluations.
+	 */
+	public void computeTimeWindow(List&lt;CommitEvaluation&gt; evaluations) {
+<span class="pc bpc" id="L237" title="1 of 4 branches missed.">		if (evaluations == null || evaluations.isEmpty()) {</span>
+<span class="fc" id="L238">			return;</span>
+		}
+<span class="fc" id="L240">		Instant earliest = null;</span>
+<span class="fc" id="L241">		Instant latest = null;</span>
+<span class="fc" id="L242">		Instant earliestCommit = null;</span>
+<span class="fc" id="L243">		Instant latestCommit = null;</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
+<span class="fc" id="L245">			Instant at = eval.evaluatedAt();</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">			if (at != null) {</span>
+<span class="fc bfc" id="L247" title="All 4 branches covered.">				if (earliest == null || at.isBefore(earliest)) {</span>
+<span class="fc" id="L248">					earliest = at;</span>
+				}
+<span class="fc bfc" id="L250" title="All 4 branches covered.">				if (latest == null || at.isAfter(latest)) {</span>
+<span class="fc" id="L251">					latest = at;</span>
+				}
+			}
+<span class="fc" id="L254">			Instant cd = eval.commitDate();</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">			if (cd != null) {</span>
+<span class="nc bnc" id="L256" title="All 4 branches missed.">				if (earliestCommit == null || cd.isBefore(earliestCommit)) {</span>
+<span class="nc" id="L257">					earliestCommit = cd;</span>
+				}
+<span class="nc bnc" id="L259" title="All 4 branches missed.">				if (latestCommit == null || cd.isAfter(latestCommit)) {</span>
+<span class="nc" id="L260">					latestCommit = cd;</span>
+				}
+			}
+<span class="fc" id="L263">		}</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">		if (earliest != null) {</span>
+<span class="fc" id="L265">			this.timeWindow = new TimeWindow(earliest.toString(), latest.toString(),</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">					earliestCommit != null ? earliestCommit.toString() : null,</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">					latestCommit != null ? latestCommit.toString() : null);</span>
+		}
+<span class="fc" id="L269">	}</span>
+
+	/**
+	 * Run-level metadata captured at the end of a mining run.
+	 */
+<span class="fc" id="L274">	public static class RunMetadata {</span>
+		private String startedAt;
+		private String completedAt;
+		private long durationSeconds;
+		private String llmProvider;
+		private String llmModel;
+		private int batchSize;
+		private int commitsPerRequest;
+		private int apiCallsMade;
+		private int deferredCommits;
+		private int permanentlySkipped;
+
+<span class="fc" id="L286">		public String getStartedAt() { return startedAt; }</span>
+<span class="fc" id="L287">		public String getCompletedAt() { return completedAt; }</span>
+<span class="fc" id="L288">		public long getDurationSeconds() { return durationSeconds; }</span>
+<span class="nc" id="L289">		public String getLlmProvider() { return llmProvider; }</span>
+<span class="fc" id="L290">		public String getLlmModel() { return llmModel; }</span>
+<span class="nc" id="L291">		public int getBatchSize() { return batchSize; }</span>
+<span class="nc" id="L292">		public int getCommitsPerRequest() { return commitsPerRequest; }</span>
+<span class="fc" id="L293">		public int getApiCallsMade() { return apiCallsMade; }</span>
+<span class="fc" id="L294">		public int getDeferredCommits() { return deferredCommits; }</span>
+<span class="fc" id="L295">		public int getPermanentlySkipped() { return permanentlySkipped; }</span>
+	}
+
+	/**
+	 * Time window of evaluated commits.
+	 */
+	public static class TimeWindow {
+		private final String earliestEvaluation;
+		private final String latestEvaluation;
+		private final String earliestCommitDate;
+		private final String latestCommitDate;
+
+		public TimeWindow(String earliestEvaluation, String latestEvaluation,
+<span class="fc" id="L308">				String earliestCommitDate, String latestCommitDate) {</span>
+<span class="fc" id="L309">			this.earliestEvaluation = earliestEvaluation;</span>
+<span class="fc" id="L310">			this.latestEvaluation = latestEvaluation;</span>
+<span class="fc" id="L311">			this.earliestCommitDate = earliestCommitDate;</span>
+<span class="fc" id="L312">			this.latestCommitDate = latestCommitDate;</span>
+<span class="fc" id="L313">		}</span>
+
+<span class="fc" id="L315">		public String getEarliestEvaluation() { return earliestEvaluation; }</span>
+<span class="fc" id="L316">		public String getLatestEvaluation() { return latestEvaluation; }</span>
+<span class="nc" id="L317">		public String getEarliestCommitDate() { return earliestCommitDate; }</span>
+<span class="nc" id="L318">		public String getLatestCommitDate() { return latestCommitDate; }</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

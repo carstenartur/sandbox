@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UpdateNeededSearchPage.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search</a> &gt; <span class="el_source">UpdateNeededSearchPage.java</span></div><h1>UpdateNeededSearchPage.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2020 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer - initial API and implementation
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.Set;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
+import org.eclipse.jdt.core.search.IJavaSearchScope;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
+import org.eclipse.jdt.internal.ui.JavaPlugin;
+import org.eclipse.jdt.internal.ui.search.JavaSearchQuery;
+import org.eclipse.jdt.internal.ui.search.JavaSearchScopeFactory;
+import org.eclipse.jdt.internal.ui.search.SearchUtil;
+import org.eclipse.jdt.ui.search.ElementQuerySpecification;
+import org.eclipse.jdt.ui.search.QuerySpecification;
+import org.eclipse.jface.dialogs.DialogPage;
+import org.eclipse.jface.dialogs.IDialogSettings;
+import org.eclipse.search.ui.ISearchPage;
+import org.eclipse.search.ui.ISearchPageContainer;
+import org.eclipse.search.ui.NewSearchUI;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.RowLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.ui.IWorkingSet;
+
+<span class="nc" id="L61">public class UpdateNeededSearchPage extends DialogPage implements ISearchPage {</span>
+
+	private final static String PAGE_NAME = &quot;UpdateNeededSearchPage&quot;; //$NON-NLS-1$
+
+	private ISearchPageContainer fContainer;
+
+	private Map&lt;String, Set&lt;String&gt;&gt; listofClassLists;
+
+	private IDialogSettings fDialogSettings;
+
+	private SearchSettingsData leaveoutsearch;
+
+	public static class SearchSettingsData extends HashMap&lt;String, Boolean&gt; {
+		/**
+		 *
+		 */
+		private static final long serialVersionUID = 1L;
+
+<span class="nc" id="L79">		public SearchSettingsData(int limitTo, int includeMask, int scope) {</span>
+<span class="nc" id="L80">			this.limitTo = limitTo;</span>
+<span class="nc" id="L81">			this.includeMask = includeMask;</span>
+<span class="nc" id="L82">			this.scope = scope;</span>
+<span class="nc" id="L83">		}</span>
+
+		public int getLimitTo() {
+<span class="nc" id="L86">			return limitTo;</span>
+		}
+
+		public void setLimitTo(int limitTo) {
+<span class="nc" id="L90">			this.limitTo = limitTo;</span>
+<span class="nc" id="L91">		}</span>
+
+		public int getIncludeMask() {
+<span class="nc" id="L94">			return includeMask;</span>
+		}
+
+		public void setIncludeMask(int includeMask) {
+<span class="nc" id="L98">			this.includeMask = includeMask;</span>
+<span class="nc" id="L99">		}</span>
+
+		public int getScope() {
+<span class="nc" id="L102">			return scope;</span>
+		}
+
+		public void setScope(int scope) {
+<span class="nc" id="L106">			this.scope = scope;</span>
+<span class="nc" id="L107">		}</span>
+
+		int limitTo;
+
+		int includeMask;
+
+		int scope;
+
+		public static SearchSettingsData create(IDialogSettings settings, Map&lt;String, Set&lt;String&gt;&gt; listofClassLists) {
+<span class="nc bnc" id="L116" title="All 2 branches missed.">			if (settings == null) {</span>
+				// Use defaults if settings are not available
+<span class="nc" id="L118">				return new SearchSettingsData(IJavaSearchConstants.REFERENCES, </span>
+<span class="nc" id="L119">						JavaSearchScopeFactory.NO_JRE, </span>
+<span class="nc" id="L120">						ISearchPageContainer.WORKSPACE_SCOPE);</span>
+			}
+			
+			int limitto;
+			try {
+<span class="nc" id="L125">				limitto = settings.getInt(&quot;limitTo&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L126">			} catch (NumberFormatException e) {</span>
+<span class="nc" id="L127">				limitto = IJavaSearchConstants.REFERENCES;</span>
+			}
+			int includemask;
+			try {
+<span class="nc" id="L131">				includemask = settings.getInt(&quot;includeMask&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L132">			} catch (NumberFormatException e) {</span>
+<span class="nc" id="L133">				includemask = JavaSearchScopeFactory.NO_JRE;</span>
+			}
+			int myscope;
+			try {
+<span class="nc" id="L137">				myscope = settings.getInt(&quot;scope&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L138">			} catch (NumberFormatException e) {</span>
+<span class="nc" id="L139">				myscope = ISearchPageContainer.WORKSPACE_SCOPE;</span>
+			}
+<span class="nc" id="L141">			SearchSettingsData ssd = new SearchSettingsData(limitto, includemask, myscope);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">			if (listofClassLists != null) {</span>
+<span class="nc" id="L143">				listofClassLists.keySet().forEach(lc -&gt; {</span>
+<span class="nc" id="L144">					ssd.put(lc, settings.getBoolean(lc));</span>
+<span class="nc" id="L145">				});</span>
+			}
+<span class="nc" id="L147">			return ssd;</span>
+		}
+
+		public void store(IDialogSettings settings, Map&lt;String, Set&lt;String&gt;&gt; listofClassLists) {
+<span class="nc bnc" id="L151" title="All 4 branches missed.">			if (settings == null || listofClassLists == null) {</span>
+<span class="nc" id="L152">				return;</span>
+			}
+<span class="nc" id="L154">			settings.put(&quot;scope&quot;, scope); //$NON-NLS-1$</span>
+<span class="nc" id="L155">			settings.put(&quot;limitTo&quot;, limitTo); //$NON-NLS-1$</span>
+<span class="nc" id="L156">			settings.put(&quot;includeMask&quot;, includeMask); //$NON-NLS-1$</span>
+<span class="nc" id="L157">			listofClassLists.keySet().forEach(lc -&gt; {</span>
+<span class="nc" id="L158">				Boolean value = this.get(lc);</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">				settings.put(lc, value != null ? value.booleanValue() : false);</span>
+<span class="nc" id="L160">			});</span>
+<span class="nc" id="L161">		}</span>
+
+	}
+
+	@Override
+	public void createControl(Composite parent) {
+<span class="nc" id="L167">		initializeDialogUnits(parent);</span>
+<span class="nc" id="L168">		listofClassLists = readClassList();</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">		if (listofClassLists.isEmpty()) {</span>
+<span class="nc" id="L170">			JavaPlugin.logErrorMessage(Messages.UpdateNeededSearchPage_ClassListLoadFailed);</span>
+		}
+<span class="nc" id="L172">		readConfiguration();</span>
+
+<span class="nc" id="L174">		ScrolledComposite scrolledComposite = new ScrolledComposite(parent, SWT.V_SCROLL | SWT.BORDER);</span>
+<span class="nc" id="L175">		scrolledComposite.setExpandHorizontal(true);</span>
+<span class="nc" id="L176">		scrolledComposite.setExpandVertical(true);</span>
+
+<span class="nc" id="L178">		Composite composite = new Composite(scrolledComposite, SWT.NONE);</span>
+<span class="nc" id="L179">		composite.setLayout(new RowLayout(SWT.VERTICAL));</span>
+
+<span class="nc" id="L181">		Label lblNewLabel = new Label(composite, SWT.NONE);</span>
+<span class="nc" id="L182">		lblNewLabel.setText(&quot;Select legacy classes to search for&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L183" title="All 4 branches missed.">		if (listofClassLists != null &amp;&amp; !listofClassLists.isEmpty()) {</span>
+<span class="nc" id="L184">			listofClassLists.keySet().forEach(lc -&gt; {</span>
+<span class="nc" id="L185">				Button btnCheckButton = new Button(composite, SWT.CHECK);</span>
+<span class="nc" id="L186">				Boolean selection = leaveoutsearch.get(lc);</span>
+<span class="nc bnc" id="L187" title="All 4 branches missed.">				btnCheckButton.setSelection(selection == null || !selection.booleanValue());</span>
+<span class="nc" id="L188">				btnCheckButton.setText(lc);</span>
+<span class="nc" id="L189">				btnCheckButton.addSelectionListener(new SelectionAdapter() {</span>
+					@Override
+					public void widgetSelected(SelectionEvent e) {
+<span class="nc" id="L192">						Button button = (Button) e.widget;</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">						if (button.getSelection()) {</span>
+<span class="nc" id="L194">							leaveoutsearch.put(lc, Boolean.FALSE);</span>
+<span class="nc" id="L195">						} else {</span>
+<span class="nc" id="L196">							leaveoutsearch.put(lc, Boolean.TRUE);</span>
+						}
+<span class="nc" id="L198">					}</span>
+				});
+<span class="nc" id="L200">			});</span>
+		}
+<span class="nc" id="L202">		scrolledComposite.setContent(composite);</span>
+<span class="nc" id="L203">		scrolledComposite.setMinSize(composite.computeSize(SWT.DEFAULT, SWT.DEFAULT));</span>
+<span class="nc" id="L204">		setControl(scrolledComposite);</span>
+<span class="nc" id="L205">	}</span>
+
+	@Override
+	public void dispose() {
+<span class="nc" id="L209">		writeConfiguration();</span>
+<span class="nc" id="L210">		super.dispose();</span>
+<span class="nc" id="L211">	}</span>
+
+	private IDialogSettings getDialogSettings() {
+<span class="nc bnc" id="L214" title="All 2 branches missed.">		if (fDialogSettings == null) {</span>
+<span class="nc" id="L215">			fDialogSettings = JavaPlugin.getDefault().getDialogSettingsSection(PAGE_NAME);</span>
+		}
+<span class="nc" id="L217">		return fDialogSettings;</span>
+	}
+
+	/**
+	 * Initializes itself from the stored page settings.
+	 */
+	private void readConfiguration() {
+<span class="nc" id="L224">		leaveoutsearch = SearchSettingsData.create(getDialogSettings(), listofClassLists);</span>
+<span class="nc" id="L225">	}</span>
+
+	/**
+	 * Stores the current configuration in the dialog store.
+	 */
+	private void writeConfiguration() {
+<span class="nc" id="L231">		leaveoutsearch.store(getDialogSettings(), listofClassLists);</span>
+<span class="nc" id="L232">	}</span>
+
+	@Override
+	public boolean performAction() {
+<span class="nc" id="L236">		return performNewSearch();</span>
+	}
+
+	/**
+	 * Returns the search page's container.
+	 *
+	 * @return the search page container
+	 */
+	private ISearchPageContainer getContainer() {
+<span class="nc" id="L245">		return fContainer;</span>
+	}
+
+	private boolean performNewSearch() {
+		// Setup search scope
+<span class="nc" id="L250">		IJavaSearchScope scope = null;</span>
+<span class="nc" id="L251">		String scopeDescription = &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L252">		int limitTo = IJavaSearchConstants.ALL_OCCURRENCES;</span>
+<span class="nc" id="L253">		int includeMask = IJavaSearchScope.SOURCES;</span>
+<span class="nc" id="L254">		JavaSearchScopeFactory factory = JavaSearchScopeFactory.getInstance();</span>
+
+<span class="nc bnc" id="L256" title="All 5 branches missed.">		switch (getContainer().getSelectedScope()) {</span>
+		case ISearchPageContainer.WORKSPACE_SCOPE:
+<span class="nc" id="L258">			scopeDescription = factory.getWorkspaceScopeDescription(includeMask);</span>
+<span class="nc" id="L259">			scope = factory.createWorkspaceScope(includeMask);</span>
+<span class="nc" id="L260">			break;</span>
+
+		case ISearchPageContainer.SELECTION_SCOPE:
+<span class="nc" id="L263">			IJavaElement[] javaElements = {};</span>
+
+<span class="nc bnc" id="L265" title="All 2 branches missed.">			if (getContainer().getActiveEditorInput() != null) {</span>
+<span class="nc" id="L266">				IFile file = getContainer().getActiveEditorInput().getAdapter(IFile.class);</span>
+
+<span class="nc bnc" id="L268" title="All 4 branches missed.">				if (file != null &amp;&amp; file.exists()) {</span>
+<span class="nc" id="L269">					IJavaElement javaElement = JavaCore.create(file);</span>
+
+<span class="nc bnc" id="L271" title="All 2 branches missed.">					if (javaElement != null) {</span>
+<span class="nc" id="L272">						javaElements = new IJavaElement[] { javaElement };</span>
+					}
+				}
+<span class="nc" id="L275">			} else {</span>
+<span class="nc" id="L276">				javaElements = factory.getJavaElements(getContainer().getSelection());</span>
+			}
+
+<span class="nc" id="L279">			scope = factory.createJavaSearchScope(javaElements, includeMask);</span>
+<span class="nc" id="L280">			scopeDescription = factory.getSelectionScopeDescription(javaElements, includeMask);</span>
+<span class="nc" id="L281">			break;</span>
+
+		case ISearchPageContainer.SELECTED_PROJECTS_SCOPE:
+<span class="nc" id="L284">			String[] projectNames = getContainer().getSelectedProjectNames();</span>
+<span class="nc" id="L285">			scope = factory.createJavaProjectSearchScope(projectNames, includeMask);</span>
+<span class="nc" id="L286">			scopeDescription = factory.getProjectScopeDescription(projectNames, includeMask);</span>
+<span class="nc" id="L287">			break;</span>
+
+		case ISearchPageContainer.WORKING_SET_SCOPE:
+<span class="nc" id="L290">			IWorkingSet[] workingSets = getContainer().getSelectedWorkingSets();</span>
+
+			// Should not happen - just to be sure
+<span class="nc bnc" id="L293" title="All 4 branches missed.">			if (workingSets == null || workingSets.length &lt; 1) {</span>
+<span class="nc" id="L294">				return false;</span>
+			}
+
+<span class="nc" id="L297">			scopeDescription = factory.getWorkingSetScopeDescription(workingSets, includeMask);</span>
+<span class="nc" id="L298">			scope = factory.createJavaSearchScope(workingSets, includeMask);</span>
+<span class="nc" id="L299">			SearchUtil.updateLRUWorkingSets(workingSets);</span>
+<span class="nc" id="L300">			break;</span>
+
+		default:
+			break;
+		}
+
+<span class="nc" id="L306">		IJavaElement element = null;</span>
+<span class="nc" id="L307">		IWorkspaceRoot wspace = ResourcesPlugin.getWorkspace().getRoot();</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">		if (wspace == null) {</span>
+<span class="nc" id="L309">			JavaPlugin.logErrorMessage(Messages.UpdateNeededSearchPage_WorkspaceNotAvailable);</span>
+<span class="nc" id="L310">			return false;</span>
+		}
+
+<span class="nc" id="L313">		List&lt;QuerySpecification&gt; arl = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L315" title="All 2 branches missed.">		for (Entry&lt;String, Set&lt;String&gt;&gt; lc : listofClassLists.entrySet()) {</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">			if (leaveoutsearch.get(lc.getKey())) {</span>
+<span class="nc" id="L317">				continue;</span>
+			}
+
+<span class="nc bnc" id="L320" title="All 2 branches missed.">			for (String checkclass : lc.getValue()) {</span>
+<span class="nc" id="L321">				IProject[] projects = wspace.getProjects();</span>
+<span class="nc bnc" id="L322" title="All 4 branches missed.">				if (projects == null || projects.length == 0) {</span>
+<span class="nc" id="L323">					JavaPlugin.logErrorMessage(Messages.UpdateNeededSearchPage_NoProjectsFound);</span>
+<span class="nc" id="L324">					break;</span>
+				}
+<span class="nc bnc" id="L326" title="All 2 branches missed.">				for (IProject pr : projects) {</span>
+					try {
+<span class="nc bnc" id="L328" title="All 2 branches missed.">						if (pr.isNatureEnabled(&quot;org.eclipse.jdt.core.javanature&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L329">							IJavaProject project = JavaCore.create(pr);</span>
+<span class="nc" id="L330">							element = JavaModelUtil.findTypeContainer(project, checkclass);</span>
+
+<span class="nc bnc" id="L332" title="All 2 branches missed.">							if (element instanceof IType) {</span>
+<span class="nc" id="L333">								break;</span>
+							}
+						}
+<span class="nc" id="L336">					} catch (CoreException e) {</span>
+<span class="nc" id="L337">						JavaPlugin.log(e);</span>
+					}
+				}
+
+<span class="nc bnc" id="L341" title="All 2 branches missed.">				if (element != null) {</span>
+<span class="nc" id="L342">					QuerySpecification querySpec = new ElementQuerySpecification(element, limitTo, scope,</span>
+<span class="nc" id="L343">							scopeDescription);</span>
+<span class="nc" id="L344">					arl.add(querySpec);</span>
+				}
+			}
+		}
+
+<span class="nc bnc" id="L349" title="All 2 branches missed.">		if (arl.isEmpty()) {</span>
+<span class="nc" id="L350">			return false;</span>
+		}
+
+<span class="nc" id="L353">		JavaSearchQuery textSearchJob = new JavaSearchQuery(arl);</span>
+<span class="nc" id="L354">		NewSearchUI.runQueryInBackground(textSearchJob);</span>
+<span class="nc" id="L355">		return true;</span>
+	}
+
+	/*
+	 * Implements method from ISearchPage
+	 */
+	@Override
+	public void setContainer(ISearchPageContainer container) {
+<span class="nc" id="L363">		fContainer = container;</span>
+<span class="nc" id="L364">	}</span>
+
+	/**
+	 * Reads the list of deprecated/legacy classes from classlist.properties.
+	 * 
+	 * @return a map of category names to sets of fully-qualified class names,
+	 *         or an empty map if loading fails
+	 */
+	private Map&lt;String, Set&lt;String&gt;&gt; readClassList() {
+<span class="nc" id="L373">		Map&lt;String, Set&lt;String&gt;&gt; result = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L374">		String filename = &quot;/org/sandbox/jdt/internal/ui/search/classlist.properties&quot;; //$NON-NLS-1$</span>
+		
+<span class="nc" id="L376">		try (InputStream input = getClass().getClassLoader().getResourceAsStream(filename)) {</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">			if (input == null) {</span>
+<span class="nc" id="L378">				JavaPlugin.logErrorMessage(Messages.UpdateNeededSearchPage_ClassListNotFound);</span>
+<span class="nc" id="L379">				return Collections.emptyMap();</span>
+			}
+
+<span class="nc" id="L382">			Properties prop = new Properties();</span>
+<span class="nc" id="L383">			prop.load(input);</span>
+			
+			// Build category -&gt; class set map
+<span class="nc" id="L386">			Map&lt;String, String&gt; sprop = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">			for (String key : prop.stringPropertyNames()) {</span>
+<span class="nc" id="L388">				sprop.put(key, prop.getProperty(key));</span>
+			}
+			
+			// Initialize category sets
+<span class="nc" id="L392">			sprop.forEach((key, value) -&gt; result.putIfAbsent(value, new HashSet&lt;&gt;()));</span>
+			// Populate class names into category sets
+<span class="nc" id="L394">			sprop.forEach((key, value) -&gt; result.get(value).add(key));</span>
+
+<span class="nc" id="L396">		} catch (IOException e) {</span>
+<span class="nc" id="L397">			JavaPlugin.log(e);</span>
+<span class="nc" id="L398">			return Collections.emptyMap();</span>
+		}
+<span class="nc" id="L400">		return result;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

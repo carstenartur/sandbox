@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>InfixOperator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-ast-api</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.ast.api.expr</a> &gt; <span class="el_source">InfixOperator.java</span></div><h1>InfixOperator.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.ast.api.expr;
+
+/**
+ * Enum representing infix operators in Java expressions.
+ * Provides type-safe representation of binary operators.
+ */
+<span class="fc" id="L20">public enum InfixOperator {</span>
+	/** Multiplication operator (*) */
+<span class="fc" id="L22">	TIMES(&quot;*&quot;, true, false, false),</span>
+	
+	/** Division operator (/) */
+<span class="fc" id="L25">	DIVIDE(&quot;/&quot;, true, false, false),</span>
+	
+	/** Remainder operator (%) */
+<span class="fc" id="L28">	REMAINDER(&quot;%&quot;, true, false, false),</span>
+	
+	/** Addition operator (+) */
+<span class="fc" id="L31">	PLUS(&quot;+&quot;, true, false, false),</span>
+	
+	/** Subtraction operator (-) */
+<span class="fc" id="L34">	MINUS(&quot;-&quot;, true, false, false),</span>
+	
+	/** Left shift operator (&amp;lt;&amp;lt;) */
+<span class="fc" id="L37">	LEFT_SHIFT(&quot;&lt;&lt;&quot;, true, false, false),</span>
+	
+	/** Signed right shift operator (&amp;gt;&amp;gt;) */
+<span class="fc" id="L40">	RIGHT_SHIFT_SIGNED(&quot;&gt;&gt;&quot;, true, false, false),</span>
+	
+	/** Unsigned right shift operator (&amp;gt;&amp;gt;&amp;gt;) */
+<span class="fc" id="L43">	RIGHT_SHIFT_UNSIGNED(&quot;&gt;&gt;&gt;&quot;, true, false, false),</span>
+	
+	/** Less than operator (&amp;lt;) */
+<span class="fc" id="L46">	LESS(&quot;&lt;&quot;, false, true, false),</span>
+	
+	/** Greater than operator (&amp;gt;) */
+<span class="fc" id="L49">	GREATER(&quot;&gt;&quot;, false, true, false),</span>
+	
+	/** Less than or equal operator (&amp;lt;=) */
+<span class="fc" id="L52">	LESS_EQUALS(&quot;&lt;=&quot;, false, true, false),</span>
+	
+	/** Greater than or equal operator (&amp;gt;=) */
+<span class="fc" id="L55">	GREATER_EQUALS(&quot;&gt;=&quot;, false, true, false),</span>
+	
+	/** Equality operator (==) */
+<span class="fc" id="L58">	EQUALS(&quot;==&quot;, false, true, false),</span>
+	
+	/** Inequality operator (!=) */
+<span class="fc" id="L61">	NOT_EQUALS(&quot;!=&quot;, false, true, false),</span>
+	
+	/** Bitwise XOR operator (^) */
+<span class="fc" id="L64">	XOR(&quot;^&quot;, true, false, false),</span>
+	
+	/** Bitwise OR operator (|) */
+<span class="fc" id="L67">	OR(&quot;|&quot;, true, false, false),</span>
+	
+	/** Bitwise AND operator (&amp;amp;) */
+<span class="fc" id="L70">	AND(&quot;&amp;&quot;, true, false, false),</span>
+	
+	/** Conditional AND operator (&amp;amp;&amp;amp;) */
+<span class="fc" id="L73">	CONDITIONAL_AND(&quot;&amp;&amp;&quot;, false, false, true),</span>
+	
+	/** Conditional OR operator (||) */
+<span class="fc" id="L76">	CONDITIONAL_OR(&quot;||&quot;, false, false, true);</span>
+	
+	private final String symbol;
+	private final boolean isArithmetic;
+	private final boolean isComparison;
+	private final boolean isLogical;
+	
+	/**
+	 * Creates an infix operator.
+	 * 
+	 * @param symbol the operator symbol
+	 * @param isArithmetic true if arithmetic operator
+	 * @param isComparison true if comparison operator
+	 * @param isLogical true if logical operator
+	 */
+<span class="fc" id="L91">	InfixOperator(String symbol, boolean isArithmetic, boolean isComparison, boolean isLogical) {</span>
+<span class="fc" id="L92">		this.symbol = symbol;</span>
+<span class="fc" id="L93">		this.isArithmetic = isArithmetic;</span>
+<span class="fc" id="L94">		this.isComparison = isComparison;</span>
+<span class="fc" id="L95">		this.isLogical = isLogical;</span>
+<span class="fc" id="L96">	}</span>
+	
+	/**
+	 * Gets the operator symbol.
+	 * 
+	 * @return the symbol
+	 */
+	public String symbol() {
+<span class="fc" id="L104">		return symbol;</span>
+	}
+	
+	/**
+	 * Checks if this is an arithmetic operator.
+	 * 
+	 * @return true if arithmetic
+	 */
+	public boolean isArithmetic() {
+<span class="fc" id="L113">		return isArithmetic;</span>
+	}
+	
+	/**
+	 * Checks if this is a comparison operator.
+	 * 
+	 * @return true if comparison
+	 */
+	public boolean isComparison() {
+<span class="fc" id="L122">		return isComparison;</span>
+	}
+	
+	/**
+	 * Checks if this is a logical operator.
+	 * 
+	 * @return true if logical
+	 */
+	public boolean isLogical() {
+<span class="fc" id="L131">		return isLogical;</span>
+	}
+	
+	/**
+	 * Gets an operator by its symbol.
+	 * 
+	 * @param symbol the operator symbol
+	 * @return the operator, or empty if not found
+	 */
+	public static java.util.Optional&lt;InfixOperator&gt; fromSymbol(String symbol) {
+<span class="fc bfc" id="L141" title="All 2 branches covered.">		for (InfixOperator op : values()) {</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">			if (op.symbol.equals(symbol)) {</span>
+<span class="fc" id="L143">				return java.util.Optional.of(op);</span>
+			}
+		}
+<span class="fc" id="L146">		return java.util.Optional.empty();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

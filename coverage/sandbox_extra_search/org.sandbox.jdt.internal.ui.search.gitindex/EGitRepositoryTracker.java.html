@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EGitRepositoryTracker.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search.gitindex</a> &gt; <span class="el_source">EGitRepositoryTracker.java</span></div><h1>EGitRepositoryTracker.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search.gitindex;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.egit.core.RepositoryCache;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+
+/**
+ * Tracks EGit-managed repositories and triggers indexing when changes are
+ * detected. Listens for workspace resource changes that affect {@code .git}
+ * directories (refs, objects) to detect new commits from EGit operations.
+ *
+ * &lt;p&gt;
+ * Integration points with EGit:
+ * &lt;/p&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;{@code RepositoryCache.INSTANCE.getAllRepositories()} — all known
+ * repos&lt;/li&gt;
+ * &lt;li&gt;{@code IResourceChangeListener} on .git/refs and .git/objects — detects
+ * new commits&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+<span class="nc" id="L47">public class EGitRepositoryTracker implements IResourceChangeListener {</span>
+
+<span class="nc" id="L49">	private static final ILog LOG= Platform.getLog(EGitRepositoryTracker.class);</span>
+
+<span class="nc" id="L51">	private static final String GIT_DIR= &quot;.git&quot;; //$NON-NLS-1$</span>
+
+	/**
+	 * Starts tracking EGit repositories by registering a resource change listener.
+	 */
+	public void start() {
+<span class="nc" id="L57">		ResourcesPlugin.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);</span>
+<span class="nc" id="L58">		LOG.info(&quot;Git Database Index: Repository tracker started&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L59">	}</span>
+
+	/**
+	 * Stops tracking by removing the resource change listener.
+	 */
+	public void stop() {
+<span class="nc" id="L65">		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);</span>
+<span class="nc" id="L66">		LOG.info(&quot;Git Database Index: Repository tracker stopped&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L67">	}</span>
+
+	@Override
+	public void resourceChanged(IResourceChangeEvent event) {
+<span class="nc" id="L71">		IResourceDelta delta= event.getDelta();</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (delta == null) {</span>
+<span class="nc" id="L73">			return;</span>
+		}
+<span class="nc bnc" id="L75" title="All 2 branches missed.">		if (containsGitChanges(delta)) {</span>
+<span class="nc" id="L76">			scheduleIndexUpdate();</span>
+		}
+<span class="nc" id="L78">	}</span>
+
+	private boolean containsGitChanges(IResourceDelta delta) {
+<span class="nc bnc" id="L81" title="All 4 branches missed.">		if (delta.getResource() != null &amp;&amp; delta.getResource().getName().equals(GIT_DIR)) {</span>
+<span class="nc" id="L82">			return true;</span>
+		}
+<span class="nc bnc" id="L84" title="All 2 branches missed.">		for (IResourceDelta child : delta.getAffectedChildren()) {</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">			if (containsGitChanges(child)) {</span>
+<span class="nc" id="L86">				return true;</span>
+			}
+		}
+<span class="nc" id="L89">		return false;</span>
+	}
+
+	private void scheduleIndexUpdate() {
+<span class="nc" id="L93">		Collection&lt;File&gt; repositories= getAllRepositoryDirs();</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">		if (repositories.isEmpty()) {</span>
+<span class="nc" id="L95">			return;</span>
+		}
+<span class="nc" id="L97">		LOG.info(&quot;Git Database Index: Detected Git changes, &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L98">				+ repositories.size() + &quot; repositories known&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L99">	}</span>
+
+	/**
+	 * Returns all EGit-managed repository directories in the workspace.
+	 *
+	 * @return collection of .git directories
+	 */
+	public static Collection&lt;File&gt; getAllRepositoryDirs() {
+		try {
+<span class="nc" id="L108">			Repository[] repos= RepositoryCache.INSTANCE.getAllRepositories();</span>
+<span class="nc" id="L109">			List&lt;File&gt; dirs= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">			for (Repository repo : repos) {</span>
+<span class="nc" id="L111">				File dir= repo.getDirectory();</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">				if (dir != null) {</span>
+<span class="nc" id="L113">					dirs.add(dir);</span>
+				}
+			}
+<span class="nc" id="L116">			return dirs;</span>
+<span class="nc" id="L117">		} catch (Exception e) {</span>
+<span class="nc" id="L118">			LOG.error(&quot;Failed to get EGit repositories&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L119">			return Collections.emptyList();</span>
+		}
+	}
+
+	/**
+	 * Opens a JGit Repository from a .git directory.
+	 *
+	 * @param gitDir the .git directory
+	 * @return the repository, or {@code null} on failure
+	 */
+	public static Repository openRepository(File gitDir) {
+		try {
+<span class="nc" id="L131">			return FileRepositoryBuilder.create(gitDir);</span>
+<span class="nc" id="L132">		} catch (Exception e) {</span>
+<span class="nc" id="L133">			LOG.error(&quot;Failed to open repository: &quot; + gitDir, e); //$NON-NLS-1$</span>
+<span class="nc" id="L134">			return null;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

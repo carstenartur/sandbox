@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SemanticCodeSearchPage.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search</a> &gt; <span class="el_source">SemanticCodeSearchPage.java</span></div><h1>SemanticCodeSearchPage.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search;
+
+import org.eclipse.jface.dialogs.DialogPage;
+import org.eclipse.search.ui.ISearchPage;
+import org.eclipse.search.ui.ISearchPageContainer;
+import org.eclipse.search.ui.NewSearchUI;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Spinner;
+import org.eclipse.swt.widgets.Text;
+import org.sandbox.jdt.internal.ui.search.SemanticCodeSearchQuery.SearchMode;
+import org.sandbox.jdt.internal.ui.search.gitindex.EmbeddedSearchService;
+
+/**
+ * Eclipse search page for semantic code search using local AI embeddings.
+ *
+ * &lt;p&gt;
+ * Provides a UI to search code by natural language description. Uses
+ * {@link EmbeddedSearchService} to delegate queries via a
+ * {@code SemanticSearchClient} to the semantic search REST backend.
+ * &lt;/p&gt;
+ *
+ * &lt;p&gt;
+ * UI layout:
+ * &lt;/p&gt;
+ *
+ * &lt;pre&gt;
+ * ┌─────────────────────────────────────────────────┐
+ * │ Search: [Describe what you're looking for...  ] │
+ * │                                                 │
+ * │ Mode:  ○ Semantic  ○ Hybrid  ○ Similar Code     │
+ * │                                                 │
+ * │ Repository: [text field                       ] │
+ * │ Max results: [10 ▾]                             │
+ * │                                                 │
+ * │ ℹ Uses local AI embeddings (offline, ~1ms)      │
+ * └─────────────────────────────────────────────────┘
+ * &lt;/pre&gt;
+ */
+<span class="nc" id="L57">public class SemanticCodeSearchPage extends DialogPage implements ISearchPage {</span>
+
+	/** The search page ID as registered in plugin.xml. */
+	public static final String PAGE_ID= &quot;org.sandbox.jdt.ui.SemanticCodeSearchPage&quot;; //$NON-NLS-1$
+
+	private ISearchPageContainer container;
+
+	private Text queryText;
+	private Button semanticRadio;
+	private Button hybridRadio;
+	private Button similarRadio;
+	private Text repoText;
+	private Spinner maxResultsSpinner;
+
+	@Override
+	public void createControl(Composite parent) {
+<span class="nc" id="L73">		initializeDialogUnits(parent);</span>
+
+<span class="nc" id="L75">		Composite composite= new Composite(parent, SWT.NONE);</span>
+<span class="nc" id="L76">		composite.setLayout(new GridLayout(2, false));</span>
+<span class="nc" id="L77">		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
+
+		// Search query field
+<span class="nc" id="L80">		Label searchLabel= new Label(composite, SWT.NONE);</span>
+<span class="nc" id="L81">		searchLabel.setText(&quot;Search:&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L83">		queryText= new Text(composite, SWT.BORDER | SWT.SINGLE);</span>
+<span class="nc" id="L84">		queryText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L85">		queryText.setMessage(&quot;Natural language query (or blob object ID for Similar mode)&quot;); //$NON-NLS-1$</span>
+
+		// Mode section
+<span class="nc" id="L88">		Label modeLabel= new Label(composite, SWT.NONE);</span>
+<span class="nc" id="L89">		modeLabel.setText(&quot;Mode:&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L91">		Composite modeComposite= new Composite(composite, SWT.NONE);</span>
+<span class="nc" id="L92">		modeComposite.setLayout(new GridLayout(3, false));</span>
+<span class="nc" id="L93">		modeComposite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+
+<span class="nc" id="L95">		semanticRadio= new Button(modeComposite, SWT.RADIO);</span>
+<span class="nc" id="L96">		semanticRadio.setText(&quot;Semantic&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L97">		semanticRadio.setSelection(true);</span>
+
+<span class="nc" id="L99">		hybridRadio= new Button(modeComposite, SWT.RADIO);</span>
+<span class="nc" id="L100">		hybridRadio.setText(&quot;Hybrid&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L102">		similarRadio= new Button(modeComposite, SWT.RADIO);</span>
+<span class="nc" id="L103">		similarRadio.setText(&quot;Similar Code&quot;); //$NON-NLS-1$</span>
+
+		// Repository field
+<span class="nc" id="L106">		Label repoLabel= new Label(composite, SWT.NONE);</span>
+<span class="nc" id="L107">		repoLabel.setText(&quot;Repository:&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L109">		repoText= new Text(composite, SWT.BORDER | SWT.SINGLE);</span>
+<span class="nc" id="L110">		repoText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L111">		repoText.setMessage(&quot;Repository name (required)&quot;); //$NON-NLS-1$</span>
+
+		// Max results
+<span class="nc" id="L114">		Label maxLabel= new Label(composite, SWT.NONE);</span>
+<span class="nc" id="L115">		maxLabel.setText(&quot;Max results:&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L117">		maxResultsSpinner= new Spinner(composite, SWT.BORDER);</span>
+<span class="nc" id="L118">		maxResultsSpinner.setMinimum(1);</span>
+<span class="nc" id="L119">		maxResultsSpinner.setMaximum(100);</span>
+<span class="nc" id="L120">		maxResultsSpinner.setSelection(10);</span>
+
+		// Info label
+<span class="nc" id="L123">		Label infoLabel= new Label(composite, SWT.NONE);</span>
+<span class="nc" id="L124">		infoLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
+<span class="nc" id="L125">		infoLabel.setText(&quot;\u2139 Uses local AI embeddings via local Git index service (requires running backend)&quot;); //$NON-NLS-1$</span>
+
+<span class="nc" id="L127">		setControl(composite);</span>
+<span class="nc" id="L128">	}</span>
+
+	@Override
+	public boolean performAction() {
+<span class="nc bnc" id="L132" title="All 2 branches missed.">		String text= queryText != null ? queryText.getText().trim() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L134">			return false;</span>
+		}
+
+<span class="nc bnc" id="L137" title="All 2 branches missed.">		if (EmbeddedSearchService.getInstance().getSearchClient() == null) {</span>
+<span class="nc" id="L138">			setErrorMessage(Messages.SemanticSearchClient_BackendNotAvailable);</span>
+<span class="nc" id="L139">			return false;</span>
+		}
+
+		SearchMode mode;
+<span class="nc bnc" id="L143" title="All 4 branches missed.">		if (hybridRadio != null &amp;&amp; hybridRadio.getSelection()) {</span>
+<span class="nc" id="L144">			mode= SearchMode.HYBRID;</span>
+<span class="nc bnc" id="L145" title="All 4 branches missed.">		} else if (similarRadio != null &amp;&amp; similarRadio.getSelection()) {</span>
+<span class="nc" id="L146">			mode= SearchMode.SIMILAR;</span>
+<span class="nc" id="L147">		} else {</span>
+<span class="nc" id="L148">			mode= SearchMode.SEMANTIC;</span>
+		}
+
+<span class="nc bnc" id="L151" title="All 2 branches missed.">		String repo= repoText != null ? repoText.getText().trim() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">		int maxResults= maxResultsSpinner != null ? maxResultsSpinner.getSelection() : 10;</span>
+
+<span class="nc" id="L154">		SemanticCodeSearchQuery query= new SemanticCodeSearchQuery(text, repo, maxResults, mode);</span>
+<span class="nc" id="L155">		NewSearchUI.runQueryInBackground(query);</span>
+<span class="nc" id="L156">		return true;</span>
+	}
+
+	@Override
+	public void setContainer(ISearchPageContainer container) {
+<span class="nc" id="L161">		this.container= container;</span>
+<span class="nc" id="L162">	}</span>
+
+	/**
+	 * Returns the search page container.
+	 *
+	 * @return the container
+	 */
+	protected ISearchPageContainer getContainer() {
+<span class="nc" id="L170">		return container;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

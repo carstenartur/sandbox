@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JavaBlobExtractor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.service</a> &gt; <span class="el_source">JavaBlobExtractor.java</span></div><h1>JavaBlobExtractor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.service;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
+import org.eclipse.jgit.storage.hibernate.search.JavaStructureVisitor;
+
+/**
+ * Extracts structural metadata from Java source code using JDT's
+ * {@link ASTParser} without bindings.
+ * &lt;p&gt;
+ * This extractor parses Java source files into an AST and visits the tree to
+ * collect package names, declared types, methods, fields, supertypes,
+ * interfaces, and import statements. No classpath or binding resolution is
+ * required.
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L38">public class JavaBlobExtractor {</span>
+
+<span class="nc" id="L40">	private static final Logger LOG = Logger</span>
+<span class="nc" id="L41">			.getLogger(JavaBlobExtractor.class.getName());</span>
+
+	private static final int MAX_SNIPPET_LENGTH = 65535;
+
+	/**
+	 * Extract structural metadata from a Java source file.
+	 *
+	 * @param source
+	 *            the Java source code
+	 * @param filePath
+	 *            the file path within the repository
+	 * @param repoName
+	 *            the repository name
+	 * @param blobOid
+	 *            the blob object SHA-1
+	 * @param commitOid
+	 *            the commit object SHA-1
+	 * @return a populated {@link JavaBlobIndex} entity
+	 */
+	public JavaBlobIndex extract(String source, String filePath,
+			String repoName, String blobOid, String commitOid) {
+<span class="nc" id="L62">		JavaBlobIndex idx = new JavaBlobIndex();</span>
+<span class="nc" id="L63">		idx.setRepositoryName(repoName);</span>
+<span class="nc" id="L64">		idx.setBlobObjectId(blobOid);</span>
+<span class="nc" id="L65">		idx.setCommitObjectId(commitOid);</span>
+<span class="nc" id="L66">		idx.setFilePath(filePath);</span>
+<span class="nc" id="L67">		idx.setSourceSnippet(truncate(source, MAX_SNIPPET_LENGTH));</span>
+
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (!filePath.endsWith(&quot;.java&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L70">			return idx;</span>
+		}
+
+		try {
+			@SuppressWarnings(&quot;deprecation&quot;)
+<span class="nc" id="L75">			ASTParser parser = ASTParser.newParser(AST.JLS_Latest);</span>
+<span class="nc" id="L76">			parser.setResolveBindings(false);</span>
+<span class="nc" id="L77">			parser.setSource(source.toCharArray());</span>
+<span class="nc" id="L78">			parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+
+<span class="nc" id="L80">			CompilationUnit cu = (CompilationUnit) parser.createAST(null);</span>
+
+			// Extract package
+<span class="nc bnc" id="L83" title="All 2 branches missed.">			if (cu.getPackage() != null) {</span>
+<span class="nc" id="L84">				idx.setPackageName(cu.getPackage().getName()</span>
+<span class="nc" id="L85">						.getFullyQualifiedName());</span>
+			}
+
+			// Build import map for FQN resolution of simple names
+<span class="nc" id="L89">			Map&lt;String, String&gt; importMap = buildImportMap(cu);</span>
+<span class="nc" id="L90">			idx.setImportStatements(serializeImports(cu));</span>
+
+			// Walk AST for types, methods, fields, extends, implements
+<span class="nc" id="L93">			JavaStructureVisitor visitor = new JavaStructureVisitor(importMap,</span>
+<span class="nc" id="L94">					idx.getPackageName());</span>
+<span class="nc" id="L95">			cu.accept(visitor);</span>
+
+<span class="nc" id="L97">			idx.setDeclaredTypes(visitor.getTypes());</span>
+<span class="nc" id="L98">			idx.setFullyQualifiedNames(visitor.getFQNs());</span>
+<span class="nc" id="L99">			idx.setDeclaredMethods(visitor.getMethods());</span>
+<span class="nc" id="L100">			idx.setDeclaredFields(visitor.getFields());</span>
+<span class="nc" id="L101">			idx.setExtendsTypes(visitor.getSuperTypes());</span>
+<span class="nc" id="L102">			idx.setImplementsTypes(visitor.getInterfaces());</span>
+<span class="nc" id="L103">			idx.setAnnotations(visitor.getAnnotations());</span>
+<span class="nc" id="L104">			idx.setTypeKind(visitor.getTypeKind());</span>
+<span class="nc" id="L105">			idx.setVisibility(visitor.getVisibility());</span>
+<span class="nc" id="L106">			idx.setSimpleClassName(extractSimpleClassName(filePath));</span>
+<span class="nc" id="L107">			idx.setProjectName(extractProjectName(filePath));</span>
+<span class="nc" id="L108">			idx.setLineCount(countLines(source));</span>
+<span class="nc" id="L109">			idx.setTypeDocumentation(visitor.getTypeDocumentation());</span>
+<span class="nc" id="L110">			idx.setMethodSignatures(visitor.getMethodSignatures());</span>
+<span class="nc" id="L111">			idx.setReferencedTypes(visitor.getReferencedTypes());</span>
+<span class="nc" id="L112">			idx.setStringLiterals(visitor.getStringLiterals());</span>
+<span class="nc" id="L113">			idx.setHasMainMethod(visitor.hasMainMethod());</span>
+<span class="nc" id="L114">		} catch (Exception e) {</span>
+			// Graceful degradation: return partial results on parse errors
+<span class="nc" id="L116">			LOG.log(Level.WARNING,</span>
+					&quot;Failed to parse Java source: {0}: {1} - returning partial results&quot;, //$NON-NLS-1$
+<span class="nc" id="L118">					new Object[] { filePath, e.getMessage() });</span>
+<span class="nc" id="L119">		}</span>
+
+<span class="nc" id="L121">		return idx;</span>
+	}
+
+	private static Map&lt;String, String&gt; buildImportMap(CompilationUnit cu) {
+<span class="nc" id="L125">		Map&lt;String, String&gt; importMap = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		for (Object imp : cu.imports()) {</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">			if (imp instanceof ImportDeclaration importDecl) {</span>
+<span class="nc" id="L128">				String fqn = importDecl.getName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">				if (!importDecl.isOnDemand()) {</span>
+<span class="nc" id="L130">					String simpleName = fqn</span>
+<span class="nc" id="L131">							.substring(fqn.lastIndexOf('.') + 1);</span>
+<span class="nc" id="L132">					importMap.put(simpleName, fqn);</span>
+				}
+			}
+<span class="nc" id="L135">		}</span>
+<span class="nc" id="L136">		return importMap;</span>
+	}
+
+	private static String serializeImports(CompilationUnit cu) {
+<span class="nc" id="L140">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">		for (Object imp : cu.imports()) {</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">			if (imp instanceof ImportDeclaration importDecl) {</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">				if (sb.length() &gt; 0) {</span>
+<span class="nc" id="L144">					sb.append('\n');</span>
+				}
+<span class="nc" id="L146">				sb.append(importDecl.getName().getFullyQualifiedName());</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">				if (importDecl.isOnDemand()) {</span>
+<span class="nc" id="L148">					sb.append(&quot;.*&quot;); //$NON-NLS-1$</span>
+				}
+			}
+<span class="nc" id="L151">		}</span>
+<span class="nc" id="L152">		return sb.toString();</span>
+	}
+
+	private static String truncate(String text, int maxLength) {
+<span class="nc bnc" id="L156" title="All 2 branches missed.">		if (text == null) {</span>
+<span class="nc" id="L157">			return null;</span>
+		}
+<span class="nc bnc" id="L159" title="All 2 branches missed.">		if (text.length() &lt;= maxLength) {</span>
+<span class="nc" id="L160">			return text;</span>
+		}
+<span class="nc" id="L162">		return text.substring(0, maxLength);</span>
+	}
+
+	private static String extractProjectName(String filePath) {
+<span class="nc" id="L166">		int srcIdx = filePath.indexOf(&quot;/src/&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">		if (srcIdx &lt; 0) {</span>
+<span class="nc" id="L168">			srcIdx = filePath.indexOf(&quot;/tst/&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L170" title="All 2 branches missed.">		if (srcIdx &gt; 0) {</span>
+<span class="nc" id="L171">			String beforeSrc = filePath.substring(0, srcIdx);</span>
+<span class="nc" id="L172">			int lastSlash = beforeSrc.lastIndexOf('/');</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">			return lastSlash &gt;= 0 ? beforeSrc.substring(lastSlash + 1)</span>
+<span class="nc" id="L174">					: beforeSrc;</span>
+		}
+<span class="nc" id="L176">		return null;</span>
+	}
+
+	private static String extractSimpleClassName(String filePath) {
+<span class="nc" id="L180">		int lastSlash = filePath.lastIndexOf('/');</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">		String filename = lastSlash &gt;= 0 ? filePath.substring(lastSlash + 1)</span>
+<span class="nc" id="L182">				: filePath;</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">		if (filename.endsWith(&quot;.java&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L184">			return filename.substring(0,</span>
+<span class="nc" id="L185">					filename.length() - &quot;.java&quot;.length()); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L187">		return filename;</span>
+	}
+
+	private static int countLines(String source) {
+<span class="nc bnc" id="L191" title="All 4 branches missed.">		if (source == null || source.isEmpty()) {</span>
+<span class="nc" id="L192">			return 0;</span>
+		}
+<span class="nc" id="L194">		int count = 1;</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">		for (int i = 0; i &lt; source.length(); i++) {</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">			if (source.charAt(i) == '\n') {</span>
+<span class="nc" id="L197">				count++;</span>
+			}
+		}
+<span class="nc" id="L200">		return count;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

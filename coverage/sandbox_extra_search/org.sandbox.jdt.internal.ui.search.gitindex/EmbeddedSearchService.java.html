@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EmbeddedSearchService.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search.gitindex</a> &gt; <span class="el_source">EmbeddedSearchService.java</span></div><h1>EmbeddedSearchService.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search.gitindex;
+
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Platform;
+
+/**
+ * Singleton service that manages the {@link SemanticSearchClient} connecting to
+ * the {@code sandbox-jgit-server-webapp} REST backend.
+ *
+ * &lt;h2&gt;Architecture&lt;/h2&gt;
+ *
+ * &lt;pre&gt;
+ * Eclipse Plugin (sandbox_extra_search)
+ * └── EmbeddedSearchService (this class — lazy singleton)
+ *     └── SemanticSearchClient → REST HTTP calls → sandbox-jgit-server-webapp
+ *         ├── GitSearchView       → searchBySymbol / searchByType / ...
+ *         ├── JavaTypeHistoryView → getFileHistory()
+ *         └── CommitAnalyticsView → getAuthorStatistics()
+ * &lt;/pre&gt;
+ *
+ * &lt;p&gt;
+ * No dependency on Hibernate, DJL, Lucene, HSQLDB, or Jakarta Persistence.
+ * Start the backend with: {@code cd sandbox-jgit-server-webapp &amp;amp;&amp;amp; mvn spring-boot:run}
+ * &lt;/p&gt;
+ *
+ * @see SemanticSearchClient
+ * @see RepositoryIndexService
+ */
+public class EmbeddedSearchService {
+
+<span class="nc" id="L45">	private static final ILog LOG= Platform.getLog(EmbeddedSearchService.class);</span>
+
+<span class="nc" id="L47">	private static EmbeddedSearchService instance;</span>
+
+	private boolean initialized;
+
+	private EmbeddedSearchService() {
+		// singleton
+	}
+
+	/**
+	 * Returns the singleton instance, creating it on first access.
+	 *
+	 * @return the embedded search service instance
+	 */
+	public static synchronized EmbeddedSearchService getInstance() {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		if (instance == null) {</span>
+<span class="nc" id="L62">			instance= new EmbeddedSearchService();</span>
+		}
+<span class="nc" id="L64">		return instance;</span>
+	}
+
+	/**
+	 * Initializes the REST search client. Safe to call multiple times —
+	 * subsequent calls are no-ops.
+	 *
+	 * @param stateLocation the Eclipse plugin state location (unused, kept for
+	 *            API compatibility)
+	 */
+	public void initialize(IPath stateLocation) {
+<span class="nc bnc" id="L75" title="All 2 branches missed.">		if (initialized) {</span>
+<span class="nc" id="L76">			return;</span>
+		}
+<span class="nc" id="L78">		SemanticSearchClient.getInstance();</span>
+<span class="nc" id="L79">		LOG.info(&quot;Git Search: REST client initialized (backend: &quot; //$NON-NLS-1$</span>
+				+ SemanticSearchClient.DEFAULT_BASE_URL + &quot;)&quot;); //$NON-NLS-1$
+<span class="nc" id="L81">		initialized= true;</span>
+<span class="nc" id="L82">	}</span>
+
+	/**
+	 * Returns whether the service has been initialized.
+	 *
+	 * @return {@code true} if initialized
+	 */
+	public boolean isInitialized() {
+<span class="nc" id="L90">		return initialized;</span>
+	}
+
+	/**
+	 * Returns whether the REST backend is reachable.
+	 *
+	 * @return {@code true} if the health endpoint responds with HTTP 200
+	 */
+	public boolean isAvailable() {
+<span class="nc bnc" id="L99" title="All 4 branches missed.">		return initialized &amp;&amp; SemanticSearchClient.getInstance().isAvailable();</span>
+	}
+
+	/**
+	 * Shuts down the service and releases resources. Called when the plugin is
+	 * stopped.
+	 */
+	public void shutdown() {
+<span class="nc bnc" id="L107" title="All 2 branches missed.">		if (!initialized) {</span>
+<span class="nc" id="L108">			return;</span>
+		}
+<span class="nc" id="L110">		initialized= false;</span>
+<span class="nc" id="L111">		LOG.info(&quot;Git Search: REST search service shut down&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L112">	}</span>
+
+	/**
+	 * Returns the REST search client, lazily initializing the service on first
+	 * access if necessary.
+	 *
+	 * @return the {@link SemanticSearchClient} instance
+	 */
+	public SemanticSearchClient getSearchClient() {
+<span class="nc bnc" id="L121" title="All 2 branches missed.">		if (!initialized) {</span>
+<span class="nc" id="L122">			initialize(null);</span>
+		}
+<span class="nc" id="L124">		return SemanticSearchClient.getInstance();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

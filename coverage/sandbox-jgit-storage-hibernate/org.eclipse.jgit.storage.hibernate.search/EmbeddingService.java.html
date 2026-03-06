@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EmbeddingService.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.search</a> &gt; <span class="el_source">EmbeddingService.java</span></div><h1>EmbeddingService.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.search;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import ai.djl.MalformedModelException;
+import ai.djl.inference.Predictor;
+import ai.djl.repository.zoo.Criteria;
+import ai.djl.repository.zoo.ModelNotFoundException;
+import ai.djl.repository.zoo.ZooModel;
+import ai.djl.translate.TranslateException;
+
+/**
+ * Service for generating semantic embeddings from text using a local ONNX
+ * model.
+ * &lt;p&gt;
+ * Uses Deep Java Library (DJL) with ONNX Runtime to run the
+ * {@code all-MiniLM-L6-v2} sentence-transformer model locally on CPU. The
+ * model produces 384-dimensional float vectors suitable for cosine similarity
+ * search via Hibernate Search's {@code @VectorField}.
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * The model is lazily initialized on first use and cached for the lifetime of
+ * the service. If the model cannot be loaded (e.g., no network on first run,
+ * corrupted cache), the service degrades gracefully — {@link #embed(String)}
+ * returns {@code null} and callers should set {@code hasEmbedding = false}.
+ * &lt;/p&gt;
+ *
+ * &lt;h3&gt;Configuration (environment variables)&lt;/h3&gt;
+ * &lt;ul&gt;
+ * &lt;li&gt;{@code JGIT_EMBEDDING_ENABLED} — set to {@code false} to disable
+ * embedding generation entirely (default: {@code true})&lt;/li&gt;
+ * &lt;li&gt;{@code JGIT_EMBEDDING_MODEL_DIR} — local directory for cached model
+ * files (default: DJL default cache {@code ~/.djl.ai/cache})&lt;/li&gt;
+ * &lt;li&gt;{@code JGIT_EMBEDDING_MODEL_NAME} — HuggingFace model ID (default:
+ * {@code sentence-transformers/all-MiniLM-L6-v2})&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @see ai.djl.repository.zoo.ZooModel
+ */
+public class EmbeddingService {
+
+<span class="fc" id="L59">	private static final Logger LOG = Logger</span>
+<span class="fc" id="L60">			.getLogger(EmbeddingService.class.getName());</span>
+
+	/** Embedding vector dimension produced by all-MiniLM-L6-v2. */
+	public static final int EMBEDDING_DIMENSION = 384;
+
+	/** Maximum token length supported by the model. */
+	private static final int MAX_TOKEN_LENGTH = 512;
+
+	/** Default model name. */
+	private static final String DEFAULT_MODEL_NAME = &quot;sentence-transformers/all-MiniLM-L6-v2&quot;; //$NON-NLS-1$
+
+	private final boolean enabled;
+
+	private final String modelName;
+
+	private final String modelDir;
+
+	private volatile ZooModel&lt;String, float[]&gt; model;
+
+	private volatile boolean initAttempted;
+
+	private volatile boolean available;
+
+	/**
+	 * Create an embedding service with default configuration from environment
+	 * variables.
+	 */
+	public EmbeddingService() {
+<span class="fc" id="L88">		this(isEnabledFromEnv(), getModelNameFromEnv(), getModelDirFromEnv());</span>
+<span class="fc" id="L89">	}</span>
+
+	/**
+	 * Create an embedding service with explicit configuration.
+	 *
+	 * @param enabled
+	 *            whether embedding generation is enabled
+	 * @param modelName
+	 *            the HuggingFace model identifier
+	 * @param modelDir
+	 *            local model cache directory, or {@code null} for DJL default
+	 */
+	public EmbeddingService(boolean enabled, String modelName,
+<span class="fc" id="L102">			String modelDir) {</span>
+<span class="fc" id="L103">		this.enabled = enabled;</span>
+<span class="fc" id="L104">		this.modelName = modelName;</span>
+<span class="fc" id="L105">		this.modelDir = modelDir;</span>
+<span class="fc" id="L106">	}</span>
+
+	/**
+	 * Generate a semantic embedding vector for the given text.
+	 * &lt;p&gt;
+	 * The text is truncated to the model's maximum token length (512 tokens)
+	 * before encoding. If the model is not available or embedding is disabled,
+	 * returns {@code null}.
+	 * &lt;/p&gt;
+	 *
+	 * @param text
+	 *            the input text to embed
+	 * @return a 384-dimensional float array, or {@code null} if embedding is
+	 *         unavailable
+	 */
+	public float[] embed(String text) {
+<span class="fc bfc" id="L122" title="All 6 branches covered.">		if (!enabled || text == null || text.isBlank()) {</span>
+<span class="fc" id="L123">			return null;</span>
+		}
+<span class="fc" id="L125">		ensureInitialized();</span>
+<span class="pc bpc" id="L126" title="3 of 4 branches missed.">		if (!available || model == null) {</span>
+<span class="fc" id="L127">			return null;</span>
+		}
+		try {
+<span class="nc" id="L130">			String truncated = truncateToTokenLimit(text);</span>
+<span class="nc" id="L131">			try (Predictor&lt;String, float[]&gt; predictor = model</span>
+<span class="nc" id="L132">					.newPredictor()) {</span>
+<span class="nc" id="L133">				return predictor.predict(truncated);</span>
+			}
+<span class="nc" id="L135">		} catch (TranslateException e) {</span>
+<span class="nc" id="L136">			LOG.log(Level.WARNING,</span>
+					&quot;Failed to generate embedding&quot;, e); //$NON-NLS-1$
+<span class="nc" id="L138">			return null;</span>
+		}
+	}
+
+	/**
+	 * Build the embedding input text from Java source metadata.
+	 * &lt;p&gt;
+	 * Combines class name, documentation, method signatures and package name
+	 * into a single string optimized for semantic search.
+	 * &lt;/p&gt;
+	 *
+	 * @param simpleClassName
+	 *            the simple class name (may be null)
+	 * @param typeDocumentation
+	 *            the Javadoc documentation (may be null)
+	 * @param methodSignatures
+	 *            newline-separated method signatures (may be null)
+	 * @param packageName
+	 *            the package name (may be null)
+	 * @return the combined embedding input text
+	 */
+	public static String buildEmbeddingText(String simpleClassName,
+			String typeDocumentation, String methodSignatures,
+			String packageName) {
+<span class="fc" id="L162">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L163" title="All 4 branches covered.">		if (simpleClassName != null &amp;&amp; !simpleClassName.isEmpty()) {</span>
+<span class="fc" id="L164">			sb.append(simpleClassName);</span>
+		}
+<span class="fc bfc" id="L166" title="All 4 branches covered.">		if (typeDocumentation != null &amp;&amp; !typeDocumentation.isEmpty()) {</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">			if (sb.length() &gt; 0) {</span>
+<span class="fc" id="L168">				sb.append(&quot;: &quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L170">			sb.append(typeDocumentation);</span>
+		}
+<span class="fc bfc" id="L172" title="All 4 branches covered.">		if (methodSignatures != null &amp;&amp; !methodSignatures.isEmpty()) {</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">			if (sb.length() &gt; 0) {</span>
+<span class="fc" id="L174">				sb.append(&quot;\nMethods: &quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L176">			sb.append(methodSignatures);</span>
+		}
+<span class="fc bfc" id="L178" title="All 4 branches covered.">		if (packageName != null &amp;&amp; !packageName.isEmpty()) {</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">			if (sb.length() &gt; 0) {</span>
+<span class="fc" id="L180">				sb.append(&quot;\nPackage: &quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L182">			sb.append(packageName);</span>
+		}
+<span class="fc" id="L184">		return sb.toString();</span>
+	}
+
+	/**
+	 * Check if the embedding service is available (model loaded successfully).
+	 *
+	 * @return {@code true} if embeddings can be generated
+	 */
+	public boolean isAvailable() {
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		if (!enabled) {</span>
+<span class="fc" id="L194">			return false;</span>
+		}
+<span class="nc" id="L196">		ensureInitialized();</span>
+<span class="nc" id="L197">		return available;</span>
+	}
+
+	/**
+	 * Check if embedding generation is enabled.
+	 *
+	 * @return {@code true} if embedding is enabled
+	 */
+	public boolean isEnabled() {
+<span class="fc" id="L206">		return enabled;</span>
+	}
+
+	/**
+	 * Close the model and release resources.
+	 */
+	public void close() {
+<span class="nc bnc" id="L213" title="All 2 branches missed.">		if (model != null) {</span>
+<span class="nc" id="L214">			model.close();</span>
+<span class="nc" id="L215">			model = null;</span>
+<span class="nc" id="L216">			available = false;</span>
+		}
+<span class="nc" id="L218">	}</span>
+
+	private synchronized void ensureInitialized() {
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		if (initAttempted) {</span>
+<span class="nc" id="L222">			return;</span>
+		}
+<span class="fc" id="L224">		initAttempted = true;</span>
+		try {
+<span class="fc" id="L226">			LOG.log(Level.INFO,</span>
+					&quot;Initializing embedding model: {0}&quot;, modelName); //$NON-NLS-1$
+<span class="fc" id="L228">			Criteria.Builder&lt;String, float[]&gt; builder = Criteria.builder()</span>
+<span class="fc" id="L229">					.setTypes(String.class, float[].class)</span>
+<span class="fc" id="L230">					.optModelUrls(</span>
+							&quot;djl://ai.djl.huggingface.pytorch/&quot; //$NON-NLS-1$
+									+ modelName)
+<span class="fc" id="L233">					.optEngine(&quot;OnnxRuntime&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L234">					.optTranslatorFactory(</span>
+							new ai.djl.huggingface.translator.TextEmbeddingTranslatorFactory());
+<span class="pc bpc" id="L236" title="3 of 4 branches missed.">			if (modelDir != null &amp;&amp; !modelDir.isEmpty()) {</span>
+<span class="nc" id="L237">				Path dir = Paths.get(modelDir);</span>
+<span class="nc" id="L238">				System.setProperty(&quot;DJL_CACHE_DIR&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L239">						dir.toAbsolutePath().toString());</span>
+			}
+<span class="nc" id="L241">			model = builder.build().loadModel();</span>
+<span class="nc" id="L242">			available = true;</span>
+<span class="nc" id="L243">			LOG.log(Level.INFO,</span>
+					&quot;Embedding model loaded successfully: {0}&quot;, //$NON-NLS-1$
+					modelName);
+<span class="fc" id="L246">		} catch (ModelNotFoundException | MalformedModelException</span>
+				| IOException e) {
+<span class="fc" id="L248">			LOG.log(Level.WARNING,</span>
+					&quot;Failed to load embedding model — vector search disabled. &quot; //$NON-NLS-1$
+							+ &quot;Full-text search remains functional.&quot;, //$NON-NLS-1$
+					e);
+<span class="fc" id="L252">			available = false;</span>
+<span class="nc" id="L253">		}</span>
+<span class="fc" id="L254">	}</span>
+
+	/**
+	 * Truncate text to approximate the model's token limit.
+	 * &lt;p&gt;
+	 * Uses a simple character-based approximation (~4 characters per token
+	 * for English text). This may over- or under-estimate for non-English
+	 * text or code with many special characters. The model itself handles
+	 * actual tokenization and will truncate at its internal token limit.
+	 * &lt;/p&gt;
+	 */
+	private static String truncateToTokenLimit(String text) {
+		// Simple character-based approximation: ~4 chars per token for English
+<span class="nc" id="L267">		int maxChars = MAX_TOKEN_LENGTH * 4;</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">		if (text.length() &gt; maxChars) {</span>
+<span class="nc" id="L269">			return text.substring(0, maxChars);</span>
+		}
+<span class="nc" id="L271">		return text;</span>
+	}
+
+	private static boolean isEnabledFromEnv() {
+<span class="fc" id="L275">		String val = System.getenv(&quot;JGIT_EMBEDDING_ENABLED&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L276" title="3 of 4 branches missed.">		return val == null || !&quot;false&quot;.equalsIgnoreCase(val); //$NON-NLS-1$</span>
+	}
+
+	private static String getModelNameFromEnv() {
+<span class="fc" id="L280">		String val = System.getenv(&quot;JGIT_EMBEDDING_MODEL_NAME&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L281" title="3 of 4 branches missed.">		return val != null &amp;&amp; !val.isEmpty() ? val : DEFAULT_MODEL_NAME;</span>
+	}
+
+	private static String getModelDirFromEnv() {
+<span class="fc" id="L285">		return System.getenv(&quot;JGIT_EMBEDDING_MODEL_DIR&quot;); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

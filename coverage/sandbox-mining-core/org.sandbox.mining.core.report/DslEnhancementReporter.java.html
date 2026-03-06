@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DslEnhancementReporter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.report</a> &gt; <span class="el_source">DslEnhancementReporter.java</span></div><h1>DslEnhancementReporter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.report;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.sandbox.mining.core.config.KnownRulesStore;
+import org.sandbox.mining.core.config.KnownRulesStore.KnownRule;
+import org.sandbox.mining.core.config.KnownRulesStore.RuleStatus;
+
+/**
+ * Generates reports from rules that require DSL enhancements.
+ *
+ * &lt;p&gt;Scans the {@link KnownRulesStore} for rules with status
+ * {@link RuleStatus#NEEDS_DSL_EXTENSION} and groups them by the
+ * DSL limitation they hit (inferred from category and summary).&lt;/p&gt;
+ *
+ * &lt;p&gt;The generated report can be used to create GitHub issues
+ * automatically from the mining workflow.&lt;/p&gt;
+ *
+ * @since 1.3.3
+ */
+<span class="fc" id="L37">public class DslEnhancementReporter {</span>
+
+	/** A group of rules that share the same DSL limitation. */
+	public static class DslLimitationGroup {
+		private final String limitation;
+		private final List&lt;KnownRule&gt; rules;
+
+<span class="fc" id="L44">		DslLimitationGroup(String limitation, List&lt;KnownRule&gt; rules) {</span>
+<span class="fc" id="L45">			this.limitation = limitation;</span>
+<span class="fc" id="L46">			this.rules = List.copyOf(rules);</span>
+<span class="fc" id="L47">		}</span>
+
+<span class="fc" id="L49">		public String getLimitation() { return limitation; }</span>
+<span class="fc" id="L50">		public List&lt;KnownRule&gt; getRules() { return rules; }</span>
+<span class="fc" id="L51">		public int getCount() { return rules.size(); }</span>
+	}
+
+	/**
+	 * Scans the known rules store and groups rules that need DSL extensions
+	 * by the DSL limitation they hit.
+	 *
+	 * @param store the known rules store to scan
+	 * @return list of limitation groups, sorted by count (most impactful first)
+	 */
+	public List&lt;DslLimitationGroup&gt; groupByLimitation(KnownRulesStore store) {
+<span class="fc" id="L62">		Map&lt;String, List&lt;KnownRule&gt;&gt; groups = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		for (KnownRule rule : store.getRules()) {</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">			if (rule.getStatus() != RuleStatus.NEEDS_DSL_EXTENSION) {</span>
+<span class="fc" id="L65">				continue;</span>
+			}
+<span class="fc" id="L67">			String limitation = inferLimitation(rule);</span>
+<span class="fc" id="L68">			groups.computeIfAbsent(limitation, k -&gt; new ArrayList&lt;&gt;()).add(rule);</span>
+<span class="fc" id="L69">		}</span>
+<span class="fc" id="L70">		return groups.entrySet().stream()</span>
+<span class="fc" id="L71">				.map(e -&gt; new DslLimitationGroup(e.getKey(), e.getValue()))</span>
+<span class="fc" id="L72">				.sorted((a, b) -&gt; Integer.compare(b.getCount(), a.getCount()))</span>
+<span class="fc" id="L73">				.toList();</span>
+	}
+
+	/**
+	 * Generates a structured markdown report of all DSL enhancement needs.
+	 *
+	 * @param store the known rules store to scan
+	 * @return markdown report string, or empty string if no rules need DSL extensions
+	 */
+	public String generateReport(KnownRulesStore store) {
+<span class="fc" id="L83">		List&lt;DslLimitationGroup&gt; groups = groupByLimitation(store);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		if (groups.isEmpty()) {</span>
+<span class="fc" id="L85">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L88">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L89">		sb.append(&quot;# DSL Enhancement Needs\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L90">		sb.append(&quot;Found &quot;).append(groups.stream().mapToInt(DslLimitationGroup::getCount).sum()); //$NON-NLS-1$</span>
+<span class="fc" id="L91">		sb.append(&quot; rules across &quot;).append(groups.size()).append(&quot; limitation categories.\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		for (DslLimitationGroup group : groups) {</span>
+<span class="fc" id="L94">			sb.append(&quot;## &quot;).append(group.getLimitation()); //$NON-NLS-1$</span>
+<span class="fc" id="L95">			sb.append(&quot; (&quot;).append(group.getCount()).append(&quot; rules)\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">			for (KnownRule rule : group.getRules()) {</span>
+<span class="fc" id="L97">				sb.append(&quot;- **&quot;).append(safe(rule.getSummary())).append(&quot;**&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L98">				sb.append(&quot; (category: &quot;).append(safe(rule.getCategory())); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">				if (rule.getSourceCommit() != null) {</span>
+<span class="fc" id="L100">					sb.append(&quot;, commit: `&quot;).append(rule.getSourceCommit().substring(0, //$NON-NLS-1$</span>
+<span class="fc" id="L101">							Math.min(7, rule.getSourceCommit().length()))).append('`');</span>
+				}
+<span class="fc" id="L103">				sb.append(&quot;)\n&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L104" title="2 of 4 branches missed.">				if (rule.getDslRule() != null &amp;&amp; !rule.getDslRule().isBlank()) {</span>
+<span class="fc" id="L105">					sb.append(&quot;  ```\n  &quot;).append(rule.getDslRule().replace(&quot;\n&quot;, &quot;\n  &quot;)).append(&quot;\n  ```\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+				}
+<span class="fc" id="L107">			}</span>
+<span class="fc" id="L108">			sb.append('\n');</span>
+<span class="fc" id="L109">		}</span>
+<span class="fc" id="L110">		return sb.toString();</span>
+	}
+
+	/**
+	 * Generates a list of issue descriptors, one per DSL limitation category.
+	 * Each descriptor contains a title and body suitable for creating a GitHub issue.
+	 *
+	 * @param store the known rules store to scan
+	 * @return list of issue descriptors
+	 */
+	public List&lt;IssueDescriptor&gt; generateIssueDescriptors(KnownRulesStore store) {
+<span class="fc" id="L121">		List&lt;DslLimitationGroup&gt; groups = groupByLimitation(store);</span>
+<span class="fc" id="L122">		List&lt;IssueDescriptor&gt; issues = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		for (DslLimitationGroup group : groups) {</span>
+<span class="fc" id="L124">			String title = &quot;\uD83D\uDD27 DSL Enhancement: &quot; + group.getLimitation() //$NON-NLS-1$</span>
+<span class="fc" id="L125">					+ &quot; (&quot; + group.getCount() + &quot; rules blocked)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L126">			StringBuilder body = new StringBuilder();</span>
+<span class="fc" id="L127">			body.append(&quot;## DSL Limitation\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L128">			body.append(&quot;**&quot;).append(group.getLimitation()).append(&quot;**\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L129">			body.append(&quot;## Blocked Rules\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L130">			body.append(&quot;| # | Summary | Category | Commit |\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L131">			body.append(&quot;|---|---------|----------|--------|\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L132">			int idx = 0;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">			for (KnownRule rule : group.getRules()) {</span>
+<span class="fc" id="L134">				idx++;</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">				String shortCommit = rule.getSourceCommit() != null</span>
+<span class="fc" id="L136">						? rule.getSourceCommit().substring(0, Math.min(7, rule.getSourceCommit().length()))</span>
+<span class="pc" id="L137">						: &quot;?&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L138">				body.append(&quot;| &quot;).append(idx).append(&quot; | &quot;).append(safe(rule.getSummary())); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L139">				body.append(&quot; | &quot;).append(safe(rule.getCategory())); //$NON-NLS-1$</span>
+<span class="fc" id="L140">				body.append(&quot; | `&quot;).append(shortCommit).append(&quot;` |\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L141">			}</span>
+<span class="fc" id="L142">			body.append(&quot;\n## Priority\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L143">			body.append(&quot;This limitation blocks **&quot;).append(group.getCount()); //$NON-NLS-1$</span>
+<span class="fc" id="L144">			body.append(&quot;** discovered transformation rules from being implemented.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L145">			body.append(&quot;\n_Auto-generated by mining workflow._\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L146">			issues.add(new IssueDescriptor(title, body.toString()));</span>
+<span class="fc" id="L147">		}</span>
+<span class="fc" id="L148">		return issues;</span>
+	}
+
+	/**
+	 * Descriptor for a GitHub issue to be created.
+	 */
+<span class="fc" id="L154">	public record IssueDescriptor(String title, String body) {</span>
+	}
+
+	/**
+	 * Infers the DSL limitation category from a rule's summary and category.
+	 */
+	static String inferLimitation(KnownRule rule) {
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		String summary = rule.getSummary() != null ? rule.getSummary().toLowerCase() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">		String dslRule = rule.getDslRule() != null ? rule.getDslRule().toLowerCase() : &quot;&quot;; //$NON-NLS-1$</span>
+
+<span class="pc bpc" id="L164" title="2 of 6 branches missed.">		if (summary.contains(&quot;bitwise&quot;) || dslRule.contains(&quot; | &quot;) || dslRule.contains(&quot;&amp;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L165">			return &quot;Bitwise operators in patterns/replacements&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L167" title="1 of 4 branches missed.">		if (summary.contains(&quot;try-with&quot;) || summary.contains(&quot;autocloseable&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">				|| summary.contains(&quot;resource wrapping&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L169">			return &quot;Statement insertion / wrapping (try-with-resources, guard clauses)&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L171" title="1 of 4 branches missed.">		if (summary.contains(&quot;generic&quot;) || summary.contains(&quot;type parameter&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">				|| dslRule.contains(&quot;&lt;$t&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L173">			return &quot;Type-parameterized matching (generics)&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L175" title="2 of 4 branches missed.">		if (summary.contains(&quot;arity&quot;) || summary.contains(&quot;vararg&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">				|| summary.contains(&quot;argument reorder&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L177">			return &quot;Complex expression composition with arity changes&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L179" title="2 of 4 branches missed.">		if (summary.contains(&quot;control flow&quot;) || summary.contains(&quot;if-else&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">				|| summary.contains(&quot;multi-statement&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L181">			return &quot;Control flow / multi-statement patterns&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L183">		return &quot;Other DSL limitations&quot;; //$NON-NLS-1$</span>
+	}
+
+	private static String safe(String s) {
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">		return s != null ? s : &quot;?&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

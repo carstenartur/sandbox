@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReportAggregator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.report</a> &gt; <span class="el_source">ReportAggregator.java</span></div><h1>ReportAggregator.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.report;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
+
+/**
+ * Aggregates {@link CommitEvaluation} results.
+ *
+ * &lt;p&gt;Groups evaluations by repository, category, and traffic light
+ * for reporting purposes.&lt;/p&gt;
+ */
+<span class="nc" id="L32">public class ReportAggregator {</span>
+
+<span class="nc" id="L34">	private final List&lt;CommitEvaluation&gt; evaluations = new ArrayList&lt;&gt;();</span>
+
+	/**
+	 * Adds an evaluation to the aggregator.
+	 *
+	 * @param evaluation the evaluation to add
+	 */
+	public void add(CommitEvaluation evaluation) {
+<span class="nc bnc" id="L42" title="All 2 branches missed.">		if (evaluation != null) {</span>
+<span class="nc" id="L43">			evaluations.add(evaluation);</span>
+		}
+<span class="nc" id="L45">	}</span>
+
+	/**
+	 * Returns all evaluations.
+	 *
+	 * @return unmodifiable list of all evaluations
+	 */
+	public List&lt;CommitEvaluation&gt; getAllEvaluations() {
+<span class="nc" id="L53">		return Collections.unmodifiableList(evaluations);</span>
+	}
+
+	/**
+	 * Groups evaluations by repository URL.
+	 *
+	 * @return map of repo URL to list of evaluations
+	 */
+	public Map&lt;String, List&lt;CommitEvaluation&gt;&gt; groupByRepo() {
+<span class="nc" id="L62">		return evaluations.stream()</span>
+<span class="nc" id="L63">				.collect(Collectors.groupingBy(</span>
+						CommitEvaluation::repoUrl,
+						LinkedHashMap::new,
+<span class="nc" id="L66">						Collectors.toList()));</span>
+	}
+
+	/**
+	 * Groups evaluations by category.
+	 *
+	 * @return map of category to list of evaluations
+	 */
+	public Map&lt;String, List&lt;CommitEvaluation&gt;&gt; groupByCategory() {
+<span class="nc" id="L75">		return evaluations.stream()</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">				.filter(e -&gt; e.category() != null)</span>
+<span class="nc" id="L77">				.collect(Collectors.groupingBy(</span>
+						CommitEvaluation::category,
+						LinkedHashMap::new,
+<span class="nc" id="L80">						Collectors.toList()));</span>
+	}
+
+	/**
+	 * Groups evaluations by traffic light.
+	 *
+	 * @return map of traffic light to list of evaluations
+	 */
+	public Map&lt;TrafficLight, List&lt;CommitEvaluation&gt;&gt; groupByTrafficLight() {
+<span class="nc" id="L89">		return evaluations.stream()</span>
+<span class="nc" id="L90">				.collect(Collectors.groupingBy(</span>
+						CommitEvaluation::trafficLight,
+						LinkedHashMap::new,
+<span class="nc" id="L93">						Collectors.toList()));</span>
+	}
+
+	/**
+	 * Returns only evaluations marked as relevant.
+	 *
+	 * @return list of relevant evaluations
+	 */
+	public List&lt;CommitEvaluation&gt; getRelevantEvaluations() {
+<span class="nc" id="L102">		return evaluations.stream()</span>
+<span class="nc" id="L103">				.filter(CommitEvaluation::relevant)</span>
+<span class="nc" id="L104">				.toList();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

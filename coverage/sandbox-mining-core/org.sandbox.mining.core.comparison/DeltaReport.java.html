@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DeltaReport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.comparison</a> &gt; <span class="el_source">DeltaReport.java</span></div><h1>DeltaReport.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.comparison;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * Holds the results of comparing Gemini mining results against
+ * a reference evaluation. Provides gap analysis and suggestions
+ * for improving the mining pipeline.
+ */
+<span class="fc" id="L28">public class DeltaReport {</span>
+
+<span class="fc" id="L30">	private final List&lt;GapEntry&gt; gaps = new ArrayList&lt;&gt;();</span>
+
+	/**
+	 * Adds a gap entry to the report.
+	 *
+	 * @param entry the gap entry
+	 */
+	public void addGap(GapEntry entry) {
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">		if (entry != null) {</span>
+<span class="fc" id="L39">			gaps.add(entry);</span>
+		}
+<span class="fc" id="L41">	}</span>
+
+	/**
+	 * Returns all gap entries.
+	 *
+	 * @return unmodifiable list of all gaps
+	 */
+	public List&lt;GapEntry&gt; getGaps() {
+<span class="fc" id="L49">		return Collections.unmodifiableList(gaps);</span>
+	}
+
+	/**
+	 * Groups gaps by category.
+	 *
+	 * @return map of category to list of gaps
+	 */
+	public Map&lt;GapCategory, List&lt;GapEntry&gt;&gt; groupByCategory() {
+<span class="fc" id="L58">		return gaps.stream()</span>
+<span class="fc" id="L59">				.collect(Collectors.groupingBy(</span>
+						GapEntry::category,
+						LinkedHashMap::new,
+<span class="fc" id="L62">						Collectors.toList()));</span>
+	}
+
+	/**
+	 * Returns a summary of gaps per category.
+	 *
+	 * @return map of category to count
+	 */
+	public Map&lt;GapCategory, Long&gt; summarize() {
+<span class="nc" id="L71">		return gaps.stream()</span>
+<span class="nc" id="L72">				.collect(Collectors.groupingBy(</span>
+						GapEntry::category,
+						LinkedHashMap::new,
+<span class="nc" id="L75">						Collectors.counting()));</span>
+	}
+
+	/**
+	 * Returns the total number of gaps.
+	 *
+	 * @return gap count
+	 */
+	public int getTotalGaps() {
+<span class="fc" id="L84">		return gaps.size();</span>
+	}
+
+	/**
+	 * Formats the delta report as a human-readable string.
+	 *
+	 * @return formatted report
+	 */
+	public String format() {
+<span class="fc" id="L93">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L94">		sb.append(&quot;=== Delta Report ===\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L95">		sb.append(&quot;Total gaps: &quot;).append(gaps.size()).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L96">		Map&lt;GapCategory, List&lt;GapEntry&gt;&gt; grouped = groupByCategory();</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		for (Map.Entry&lt;GapCategory, List&lt;GapEntry&gt;&gt; entry : grouped.entrySet()) {</span>
+<span class="fc" id="L98">			sb.append(&quot;## &quot;).append(entry.getKey()).append(&quot; (&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L99">					.append(entry.getValue().size()).append(&quot;)\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">			for (GapEntry gap : entry.getValue()) {</span>
+<span class="fc" id="L101">				sb.append(&quot;  - &quot;).append(gap.commitHash(), 0, Math.min(7, gap.commitHash().length())); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">				if (gap.suggestion() != null) {</span>
+<span class="fc" id="L103">					sb.append(&quot;: &quot;).append(gap.suggestion()); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L105">				sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L106">			}</span>
+<span class="fc" id="L107">			sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L108">		}</span>
+<span class="fc" id="L109">		return sb.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

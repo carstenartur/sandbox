@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HibernateRepository.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.repository</a> &gt; <span class="el_source">HibernateRepository.java</span></div><h1>HibernateRepository.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.repository;
+
+import java.io.IOException;
+
+import org.eclipse.jgit.annotations.Nullable;
+import org.eclipse.jgit.internal.storage.dfs.DfsReaderOptions;
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
+import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
+import org.eclipse.jgit.lib.RefDatabase;
+import org.eclipse.jgit.lib.ReflogReader;
+import org.eclipse.jgit.storage.hibernate.objects.HibernateObjDatabase;
+import org.eclipse.jgit.storage.hibernate.refs.HibernateRefDatabase;
+import org.eclipse.jgit.storage.hibernate.refs.HibernateReflogReader;
+import org.eclipse.jgit.storage.hibernate.refs.HibernateReflogWriter;
+import org.hibernate.SessionFactory;
+
+/**
+ * A Git repository stored in a relational database via Hibernate.
+ * &lt;p&gt;
+ * This implementation extends the DFS (Distributed File System) repository
+ * abstraction, replacing in-memory or filesystem storage with database-backed
+ * storage using Hibernate ORM.
+ * &lt;p&gt;
+ * Objects, refs, and pack data are stored in database tables. The reftable
+ * format is used for reference storage, persisted as pack extensions in the
+ * database.
+ */
+public class HibernateRepository extends DfsRepository {
+
+	private final HibernateObjDatabase objdb;
+
+	private final HibernateRefDatabase refdb;
+
+	private final HibernateReflogWriter reflogWriter;
+
+	private final SessionFactory sessionFactory;
+
+	private final String repositoryName;
+
+	private String gitwebDescription;
+
+	/**
+	 * Create a new database-backed repository.
+	 *
+	 * @param builder
+	 *            the repository builder with configuration
+	 */
+	public HibernateRepository(HibernateRepositoryBuilder builder) {
+<span class="fc" id="L62">		super(builder);</span>
+<span class="fc" id="L63">		this.sessionFactory = builder.getSessionFactory();</span>
+<span class="fc" id="L64">		this.repositoryName = builder.getRepositoryName();</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		if (this.repositoryName == null) {</span>
+<span class="nc" id="L66">			DfsRepositoryDescription desc = builder.getRepositoryDescription();</span>
+<span class="nc" id="L67">			throw new IllegalArgumentException(</span>
+					&quot;Repository name is required; description=&quot; //$NON-NLS-1$
+<span class="nc bnc" id="L69" title="All 2 branches missed.">							+ (desc != null ? desc.getRepositoryName()</span>
+<span class="nc" id="L70">									: &quot;null&quot;)); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L72">		this.objdb = new HibernateObjDatabase(this, new DfsReaderOptions(),</span>
+				sessionFactory, repositoryName);
+<span class="fc" id="L74">		this.refdb = new HibernateRefDatabase(this);</span>
+<span class="fc" id="L75">		this.reflogWriter = new HibernateReflogWriter(sessionFactory,</span>
+				repositoryName);
+<span class="fc" id="L77">	}</span>
+
+	@Override
+	public HibernateObjDatabase getObjectDatabase() {
+<span class="fc" id="L81">		return objdb;</span>
+	}
+
+	@Override
+	public RefDatabase getRefDatabase() {
+<span class="fc" id="L86">		return refdb;</span>
+	}
+
+	/**
+	 * Get the repository name used for database partitioning.
+	 *
+	 * @return the repository name
+	 */
+	public String getRepositoryName() {
+<span class="nc" id="L95">		return repositoryName;</span>
+	}
+
+	/**
+	 * Get the Hibernate session factory.
+	 *
+	 * @return the session factory
+	 */
+	public SessionFactory getSessionFactory() {
+<span class="nc" id="L104">		return sessionFactory;</span>
+	}
+
+	/**
+	 * Get the reflog writer for persisting reflog entries to the database.
+	 *
+	 * @return the reflog writer
+	 */
+	public HibernateReflogWriter getReflogWriter() {
+<span class="nc" id="L113">		return reflogWriter;</span>
+	}
+
+	@Override
+	public ReflogReader getReflogReader(String refName) throws IOException {
+<span class="nc" id="L118">		return new HibernateReflogReader(sessionFactory, repositoryName,</span>
+				refName);
+	}
+
+	@Override
+	@Nullable
+	public String getGitwebDescription() {
+<span class="fc" id="L125">		return gitwebDescription;</span>
+	}
+
+	@Override
+	public void setGitwebDescription(@Nullable String d) {
+<span class="fc" id="L130">		gitwebDescription = d;</span>
+<span class="fc" id="L131">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

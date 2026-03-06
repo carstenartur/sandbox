@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>KnownRulesStore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.config</a> &gt; <span class="el_source">KnownRulesStore.java</span></div><h1>KnownRulesStore.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.config;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+
+/**
+ * Persistent store for known mining rules ({@code known-rules.json}).
+ *
+ * &lt;p&gt;Tracks all rules ever discovered and validated across mining runs.
+ * GREEN+VALID evaluations are registered after each run so the LLM can
+ * be informed about already-known rules and avoid proposing duplicates.&lt;/p&gt;
+ *
+ * @since 1.3.2
+ */
+public class KnownRulesStore {
+
+	/** Status of a known rule. */
+<span class="fc" id="L45">	public enum RuleStatus {</span>
+		/** Discovered by mining but not yet implemented as a .sandbox-hint file. */
+<span class="fc" id="L47">		DISCOVERED,</span>
+		/** Implemented as a .sandbox-hint rule. */
+<span class="fc" id="L49">		IMPLEMENTED,</span>
+		/** Manually rejected by a reviewer. */
+<span class="fc" id="L51">		REJECTED,</span>
+		/** Requires a DSL language extension before it can be implemented. */
+<span class="fc" id="L53">		NEEDS_DSL_EXTENSION</span>
+	}
+
+	/**
+	 * A single known rule entry.
+	 */
+	public static class KnownRule {
+		private String id;
+		private String category;
+		private String dslRule;
+		private String summary;
+		private String discoveredAt;
+		private int discoveredInRun;
+		private String sourceCommit;
+		private RuleStatus status;
+		private String hintFile;
+
+		/** No-arg constructor for Gson. */
+<span class="fc" id="L71">		public KnownRule() {</span>
+<span class="fc" id="L72">		}</span>
+
+		public KnownRule(String id, String category, String dslRule, String summary,
+				String discoveredAt, int discoveredInRun, String sourceCommit,
+<span class="fc" id="L76">				RuleStatus status, String hintFile) {</span>
+<span class="fc" id="L77">			this.id = id;</span>
+<span class="fc" id="L78">			this.category = category;</span>
+<span class="fc" id="L79">			this.dslRule = dslRule;</span>
+<span class="fc" id="L80">			this.summary = summary;</span>
+<span class="fc" id="L81">			this.discoveredAt = discoveredAt;</span>
+<span class="fc" id="L82">			this.discoveredInRun = discoveredInRun;</span>
+<span class="fc" id="L83">			this.sourceCommit = sourceCommit;</span>
+<span class="fc" id="L84">			this.status = status;</span>
+<span class="fc" id="L85">			this.hintFile = hintFile;</span>
+<span class="fc" id="L86">		}</span>
+
+<span class="nc" id="L88">		public String getId() { return id; }</span>
+<span class="nc" id="L89">		public void setId(String id) { this.id = id; }</span>
+<span class="fc" id="L90">		public String getCategory() { return category; }</span>
+<span class="nc" id="L91">		public void setCategory(String category) { this.category = category; }</span>
+<span class="fc" id="L92">		public String getDslRule() { return dslRule; }</span>
+<span class="nc" id="L93">		public void setDslRule(String dslRule) { this.dslRule = dslRule; }</span>
+<span class="fc" id="L94">		public String getSummary() { return summary; }</span>
+<span class="nc" id="L95">		public void setSummary(String summary) { this.summary = summary; }</span>
+<span class="nc" id="L96">		public String getDiscoveredAt() { return discoveredAt; }</span>
+<span class="nc" id="L97">		public void setDiscoveredAt(String discoveredAt) { this.discoveredAt = discoveredAt; }</span>
+<span class="nc" id="L98">		public int getDiscoveredInRun() { return discoveredInRun; }</span>
+<span class="nc" id="L99">		public void setDiscoveredInRun(int discoveredInRun) { this.discoveredInRun = discoveredInRun; }</span>
+<span class="fc" id="L100">		public String getSourceCommit() { return sourceCommit; }</span>
+<span class="nc" id="L101">		public void setSourceCommit(String sourceCommit) { this.sourceCommit = sourceCommit; }</span>
+<span class="fc" id="L102">		public RuleStatus getStatus() { return status; }</span>
+<span class="nc" id="L103">		public void setStatus(RuleStatus status) { this.status = status; }</span>
+<span class="nc" id="L104">		public String getHintFile() { return hintFile; }</span>
+<span class="nc" id="L105">		public void setHintFile(String hintFile) { this.hintFile = hintFile; }</span>
+	}
+
+	/**
+	 * Root JSON structure for known-rules.json.
+	 */
+<span class="fc" id="L111">	static class KnownRulesData {</span>
+<span class="fc" id="L112">		int version = 1;</span>
+<span class="fc" id="L113">		List&lt;KnownRule&gt; rules = new ArrayList&lt;&gt;();</span>
+	}
+
+<span class="fc" id="L116">	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();</span>
+
+	private final KnownRulesData data;
+
+	/** Creates a new empty store. */
+<span class="fc" id="L121">	public KnownRulesStore() {</span>
+<span class="fc" id="L122">		this.data = new KnownRulesData();</span>
+<span class="fc" id="L123">	}</span>
+
+<span class="fc" id="L125">	private KnownRulesStore(KnownRulesData data) {</span>
+<span class="fc" id="L126">		this.data = data;</span>
+<span class="fc" id="L127">	}</span>
+
+	/**
+	 * Loads the store from a JSON file, or returns a new empty store if the file
+	 * does not exist.
+	 *
+	 * @param path path to known-rules.json
+	 * @return the loaded store
+	 * @throws IOException if the file cannot be read
+	 */
+	public static KnownRulesStore load(Path path) throws IOException {
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		if (!Files.exists(path)) {</span>
+<span class="fc" id="L139">			return new KnownRulesStore();</span>
+		}
+		try {
+<span class="fc" id="L142">			String json = Files.readString(path, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L143">			KnownRulesData loaded = GSON.fromJson(json, KnownRulesData.class);</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">			return new KnownRulesStore(loaded != null ? loaded : new KnownRulesData());</span>
+<span class="fc" id="L145">		} catch (Exception e) {</span>
+<span class="fc" id="L146">			System.err.println(&quot;Warning: could not load known-rules.json: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L147">			return new KnownRulesStore();</span>
+		}
+	}
+
+	/**
+	 * Saves the store to a JSON file atomically.
+	 *
+	 * @param path path to known-rules.json
+	 * @throws IOException if the file cannot be written
+	 */
+	public void save(Path path) throws IOException {
+<span class="fc" id="L158">		Path parent = path.getParent();</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		if (parent != null) {</span>
+<span class="fc" id="L160">			Files.createDirectories(parent);</span>
+		}
+<span class="fc" id="L162">		Path fileName = path.getFileName();</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		if (fileName == null) {</span>
+<span class="nc" id="L164">			throw new IOException(&quot;Cannot save known rules to a root path&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L166">		Path tmpFile = path.resolveSibling(fileName + &quot;.tmp&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L167">		String json = GSON.toJson(data);</span>
+<span class="fc" id="L168">		Files.writeString(tmpFile, json, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L169">		Files.move(tmpFile, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);</span>
+<span class="fc" id="L170">	}</span>
+
+	/**
+	 * Returns all known rules.
+	 *
+	 * @return unmodifiable list of known rules
+	 */
+	public List&lt;KnownRule&gt; getRules() {
+<span class="fc" id="L178">		return List.copyOf(data.rules);</span>
+	}
+
+	/**
+	 * Returns the number of known rules.
+	 *
+	 * @return count
+	 */
+	public int size() {
+<span class="fc" id="L187">		return data.rules.size();</span>
+	}
+
+	/**
+	 * Checks whether a rule with the given commit hash already exists.
+	 *
+	 * @param commitHash the commit hash
+	 * @return true if a rule from this commit is already known
+	 */
+	public boolean containsCommit(String commitHash) {
+<span class="fc" id="L197">		return data.rules.stream().anyMatch(r -&gt; commitHash.equals(r.sourceCommit));</span>
+	}
+
+	/**
+	 * Registers GREEN+VALID evaluations from a mining run as known rules.
+	 * Evaluations whose commit hash is already present are skipped.
+	 *
+	 * @param evaluations all evaluations from the current run
+	 * @param runNumber   the mining run number
+	 * @return the number of newly registered rules
+	 */
+	public int registerFromEvaluations(List&lt;CommitEvaluation&gt; evaluations, int runNumber) {
+<span class="fc" id="L209">		int added = 0;</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">			if (!isGreenAndValid(eval)) {</span>
+<span class="fc" id="L212">				continue;</span>
+			}
+<span class="fc bfc" id="L214" title="All 2 branches covered.">			if (containsCommit(eval.commitHash())) {</span>
+<span class="fc" id="L215">				continue;</span>
+			}
+<span class="fc" id="L217">			String ruleId = buildRuleId(eval);</span>
+<span class="fc" id="L218">			KnownRule rule = new KnownRule(</span>
+					ruleId,
+<span class="fc" id="L220">					eval.category(),</span>
+<span class="fc" id="L221">					eval.dslRule(),</span>
+<span class="fc" id="L222">					eval.summary(),</span>
+<span class="fc" id="L223">					LocalDate.now().toString(),</span>
+					runNumber,
+<span class="fc" id="L225">					eval.commitHash(),</span>
+					RuleStatus.DISCOVERED,
+<span class="fc" id="L227">					eval.targetHintFile());</span>
+<span class="fc" id="L228">			data.rules.add(rule);</span>
+<span class="fc" id="L229">			added++;</span>
+<span class="fc" id="L230">		}</span>
+<span class="fc" id="L231">		return added;</span>
+	}
+
+	/**
+	 * Formats the known rules as a concise text summary suitable for LLM context.
+	 *
+	 * @return summary string, or empty string if no rules are known
+	 */
+	public String formatForPrompt() {
+<span class="fc bfc" id="L240" title="All 2 branches covered.">		if (data.rules.isEmpty()) {</span>
+<span class="fc" id="L241">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L243">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L244">		sb.append('[');</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">		for (int i = 0; i &lt; data.rules.size(); i++) {</span>
+<span class="fc" id="L246">			KnownRule r = data.rules.get(i);</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">			if (i &gt; 0) {</span>
+<span class="nc" id="L248">				sb.append(',');</span>
+			}
+<span class="fc" id="L250">			sb.append(&quot;\n  {\&quot;id\&quot;:\&quot;&quot;).append(escape(r.id)) //$NON-NLS-1$</span>
+<span class="fc" id="L251">			  .append(&quot;\&quot;,\&quot;category\&quot;:\&quot;&quot;).append(escape(r.category)) //$NON-NLS-1$</span>
+<span class="fc" id="L252">			  .append(&quot;\&quot;,\&quot;summary\&quot;:\&quot;&quot;).append(escape(r.summary)) //$NON-NLS-1$</span>
+<span class="fc" id="L253">			  .append(&quot;\&quot;,\&quot;dslRule\&quot;:\&quot;&quot;).append(escape(r.dslRule)) //$NON-NLS-1$</span>
+<span class="fc" id="L254">			  .append(&quot;\&quot;}&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L256">		sb.append(&quot;\n]&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L257">		return sb.toString();</span>
+	}
+
+	/**
+	 * Returns a map of commit hashes to their rule IDs for quick lookup.
+	 *
+	 * @return map of commitHash → ruleId
+	 */
+	public Map&lt;String, String&gt; getCommitHashIndex() {
+<span class="fc" id="L266">		Map&lt;String, String&gt; index = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">		for (KnownRule rule : data.rules) {</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">			if (rule.sourceCommit != null) {</span>
+<span class="fc" id="L269">				index.put(rule.sourceCommit, rule.id);</span>
+			}
+<span class="fc" id="L271">		}</span>
+<span class="fc" id="L272">		return index;</span>
+	}
+
+	private static boolean isGreenAndValid(CommitEvaluation eval) {
+<span class="pc bpc" id="L276" title="2 of 4 branches missed.">		if (eval == null || !eval.relevant()) {</span>
+<span class="nc" id="L277">			return false;</span>
+		}
+<span class="fc bfc" id="L279" title="All 2 branches covered.">		if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {</span>
+<span class="fc" id="L280">			return false;</span>
+		}
+<span class="pc bpc" id="L282" title="1 of 4 branches missed.">		if (eval.dslRule() == null || eval.dslRule().isBlank()) {</span>
+<span class="fc" id="L283">			return false;</span>
+		}
+<span class="fc" id="L285">		return &quot;VALID&quot;.equals(eval.dslValidationResult()); //$NON-NLS-1$</span>
+	}
+
+	private static String buildRuleId(CommitEvaluation eval) {
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">		String category = eval.category() != null ? eval.category().toLowerCase().replace(' ', '-') : &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">		String summary = eval.summary() != null</span>
+<span class="fc" id="L291">				? eval.summary().toLowerCase().replaceAll(&quot;[^a-z0-9]+&quot;, &quot;-&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc" id="L292">				: &quot;rule&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">		if (summary.length() &gt; 40) {</span>
+<span class="nc" id="L294">			summary = summary.substring(0, 40);</span>
+		}
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">		if (summary.endsWith(&quot;-&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L297">			summary = summary.substring(0, summary.length() - 1);</span>
+		}
+<span class="fc" id="L299">		return category + &quot;-&quot; + summary; //$NON-NLS-1$</span>
+	}
+
+	private static String escape(String s) {
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">		if (s == null) {</span>
+<span class="nc" id="L304">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L306">		return s.replace(&quot;\\&quot;, &quot;\\\\&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L307">				.replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L308">				.replace(&quot;\n&quot;, &quot;\\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L309">				.replace(&quot;\r&quot;, &quot;\\r&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L310">				.replace(&quot;\t&quot;, &quot;\\t&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

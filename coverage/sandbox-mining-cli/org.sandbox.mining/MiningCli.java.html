@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MiningCli.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-cli</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining</a> &gt; <span class="el_source">MiningCli.java</span></div><h1>MiningCli.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
+import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.internal.BuiltInGuards;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+import org.sandbox.mining.config.MiningConfig;
+import org.sandbox.mining.config.RepoEntry;
+import org.sandbox.mining.git.RepoCloner;
+import org.sandbox.mining.report.JsonReporter;
+import org.sandbox.mining.report.MarkdownReporter;
+import org.sandbox.mining.report.MiningReport;
+import org.sandbox.mining.scanner.SourceScanner;
+import org.sandbox.mining.scanner.StandaloneAstParser;
+
+/**
+ * CLI entry point for the refactoring mining tool.
+ *
+ * &lt;p&gt;Usage:
+ * &lt;pre&gt;
+ * java -jar sandbox-mining-cli.jar [options]
+ *   --config &amp;lt;path&amp;gt;    Path to repos.yml configuration file
+ *   --hints &amp;lt;dir&amp;gt;       Directory with .sandbox-hint files (overrides config)
+ *   --repo &amp;lt;url&amp;gt;        Single repo to scan (ad-hoc mode, overrides config)
+ *   --output &amp;lt;dir&amp;gt;      Output directory for reports (default: mining-results)
+ *   --format &amp;lt;fmt&amp;gt;      Report format: markdown|json|both (default: both)
+ *   --dry-run            Only count matches, don't generate candidate files
+ * &lt;/pre&gt;
+ */
+<span class="nc" id="L58">public class MiningCli {</span>
+
+	private static final String DEFAULT_OUTPUT = &quot;mining-results&quot;;
+	private static final String FORMAT_MARKDOWN = &quot;markdown&quot;;
+	private static final String FORMAT_JSON = &quot;json&quot;;
+	private static final String FORMAT_BOTH = &quot;both&quot;;
+
+	/** Map of bundled hint names to their classpath resource paths. */
+<span class="fc" id="L66">	private static final Map&lt;String, String&gt; BUNDLED_HINTS = Map.of(</span>
+		&quot;collections&quot;, &quot;/org/sandbox/jdt/triggerpattern/internal/collections.sandbox-hint&quot;,
+		&quot;modernize-java11&quot;, &quot;/org/sandbox/jdt/triggerpattern/internal/modernize-java11.sandbox-hint&quot;,
+		&quot;modernize-java9&quot;, &quot;/org/sandbox/jdt/triggerpattern/internal/modernize-java9.sandbox-hint&quot;,
+		&quot;performance&quot;, &quot;/org/sandbox/jdt/triggerpattern/internal/performance.sandbox-hint&quot;
+	);
+
+	public static void main(String[] args) {
+		try {
+<span class="nc" id="L75">			int exitCode = run(args);</span>
+<span class="nc" id="L76">			System.exit(exitCode);</span>
+<span class="nc" id="L77">		} catch (Exception e) {</span>
+<span class="nc" id="L78">			System.err.println(&quot;Error: &quot; + e.getMessage());</span>
+<span class="nc" id="L79">			e.printStackTrace();</span>
+<span class="nc" id="L80">			System.exit(1);</span>
+<span class="nc" id="L81">		}</span>
+<span class="nc" id="L82">	}</span>
+
+	static int run(String[] args) throws IOException, GitAPIException, HintParseException {
+		// Parse arguments
+<span class="fc" id="L86">		String configPath = null;</span>
+<span class="fc" id="L87">		String hintsDir = null;</span>
+<span class="fc" id="L88">		String repoUrl = null;</span>
+<span class="fc" id="L89">		String outputDir = DEFAULT_OUTPUT;</span>
+<span class="fc" id="L90">		String format = FORMAT_BOTH;</span>
+<span class="fc" id="L91">		boolean dryRun = false;</span>
+
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">		for (int i = 0; i &lt; args.length; i++) {</span>
+<span class="pc bpc" id="L94" title="7 of 8 branches missed.">			switch (args[i]) {</span>
+			case &quot;--config&quot;:
+<span class="nc" id="L96">				configPath = args[++i];</span>
+<span class="nc" id="L97">				break;</span>
+			case &quot;--hints&quot;:
+<span class="nc" id="L99">				hintsDir = args[++i];</span>
+<span class="nc" id="L100">				break;</span>
+			case &quot;--repo&quot;:
+<span class="nc" id="L102">				repoUrl = args[++i];</span>
+<span class="nc" id="L103">				break;</span>
+			case &quot;--output&quot;:
+<span class="nc" id="L105">				outputDir = args[++i];</span>
+<span class="nc" id="L106">				break;</span>
+			case &quot;--format&quot;:
+<span class="nc" id="L108">				format = args[++i];</span>
+<span class="nc" id="L109">				break;</span>
+			case &quot;--dry-run&quot;:
+<span class="nc" id="L111">				dryRun = true;</span>
+<span class="nc" id="L112">				break;</span>
+			case &quot;--help&quot;:
+<span class="fc" id="L114">				printUsage();</span>
+<span class="fc" id="L115">				return 0;</span>
+			default:
+<span class="nc" id="L117">				System.err.println(&quot;Unknown option: &quot; + args[i]);</span>
+<span class="nc" id="L118">				printUsage();</span>
+<span class="nc" id="L119">				return 1;</span>
+			}
+		}
+
+		// Initialize guard functions
+<span class="nc" id="L124">		initializeGuards();</span>
+
+		// Load configuration
+		MiningConfig config;
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (configPath != null) {</span>
+<span class="nc" id="L129">			config = MiningConfig.parse(Path.of(configPath));</span>
+		} else {
+<span class="nc" id="L131">			config = new MiningConfig();</span>
+		}
+
+		// Override with ad-hoc repo if specified
+		List&lt;RepoEntry&gt; repos;
+<span class="nc bnc" id="L136" title="All 2 branches missed.">		if (repoUrl != null) {</span>
+<span class="nc" id="L137">			RepoEntry entry = new RepoEntry(repoUrl, &quot;main&quot;, List.of());</span>
+<span class="nc" id="L138">			repos = List.of(entry);</span>
+<span class="nc" id="L139">		} else {</span>
+<span class="nc" id="L140">			repos = config.getRepositories();</span>
+		}
+
+<span class="nc bnc" id="L143" title="All 2 branches missed.">		if (repos.isEmpty()) {</span>
+<span class="nc" id="L144">			System.err.println(&quot;No repositories to scan. Use --config or --repo.&quot;);</span>
+<span class="nc" id="L145">			return 1;</span>
+		}
+
+		// Load hint files
+<span class="nc" id="L149">		List&lt;HintFile&gt; hintFiles = loadHintFiles(config, hintsDir);</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">		if (hintFiles.isEmpty()) {</span>
+<span class="nc" id="L151">			System.err.println(&quot;No hint files found. Check your configuration.&quot;);</span>
+<span class="nc" id="L152">			return 1;</span>
+		}
+
+<span class="nc" id="L155">		System.out.println(&quot;Mining with &quot; + hintFiles.size() + &quot; hint file(s) against &quot; + repos.size() + &quot; repository(ies).&quot;);</span>
+
+		// Set up scanner
+<span class="nc" id="L158">		StandaloneAstParser astParser = new StandaloneAstParser();</span>
+<span class="nc" id="L159">		SourceScanner scanner = new SourceScanner(astParser, config.getMaxFilesPerRepo());</span>
+<span class="nc" id="L160">		RepoCloner cloner = new RepoCloner();</span>
+
+		// Process each repository
+<span class="nc" id="L163">		MiningReport totalReport = new MiningReport();</span>
+
+<span class="nc bnc" id="L165" title="All 2 branches missed.">		for (RepoEntry repo : repos) {</span>
+<span class="nc" id="L166">			String repoName = extractRepoName(repo.getUrl());</span>
+<span class="nc" id="L167">			System.out.println(&quot;Scanning: &quot; + repoName + &quot; ...&quot;);</span>
+
+<span class="nc" id="L169">			Path tempDir = Files.createTempDirectory(&quot;mining-&quot; + repoName);</span>
+			try {
+<span class="nc" id="L171">				cloner.shallowClone(repo.getUrl(), repo.getBranch(), tempDir);</span>
+<span class="nc" id="L172">				MiningReport repoReport = scanner.scan(repoName, tempDir, repo.getPaths(), hintFiles);</span>
+<span class="nc" id="L173">				totalReport.merge(repoReport);</span>
+
+<span class="nc" id="L175">				int matchCount = repoReport.getMatches().size();</span>
+<span class="nc" id="L176">				System.out.println(&quot;  Found &quot; + matchCount + &quot; match(es) in &quot; + repoReport.getFileCounts().getOrDefault(repoName, 0) + &quot; file(s).&quot;);</span>
+<span class="nc" id="L177">			} catch (Exception e) {</span>
+<span class="nc" id="L178">				System.err.println(&quot;  Error scanning &quot; + repoName + &quot;: &quot; + e.getMessage());</span>
+<span class="nc" id="L179">				totalReport.addError(repoName, e.getMessage());</span>
+<span class="nc" id="L180">				totalReport.addFileCount(repoName, 0);</span>
+			} finally {
+<span class="nc" id="L182">				deleteDirectory(tempDir);</span>
+			}
+<span class="nc" id="L184">		}</span>
+
+		// Generate reports
+<span class="nc bnc" id="L187" title="All 2 branches missed.">		if (!dryRun) {</span>
+<span class="nc" id="L188">			Path output = Path.of(outputDir);</span>
+<span class="nc" id="L189">			writeReports(totalReport, output, format);</span>
+		}
+
+<span class="nc" id="L192">		System.out.println(&quot;\nTotal: &quot; + totalReport.getMatches().size() + &quot; match(es) found.&quot;);</span>
+<span class="nc" id="L193">		return 0;</span>
+	}
+
+	private static void initializeGuards() {
+<span class="nc" id="L197">		Map&lt;String, GuardFunction&gt; guards = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L198">		BuiltInGuards.registerAll(guards);</span>
+<span class="nc" id="L199">		GuardFunctionResolverHolder.setResolver(guards::get);</span>
+<span class="nc" id="L200">	}</span>
+
+	private static List&lt;HintFile&gt; loadHintFiles(MiningConfig config, String hintsDirOverride)
+			throws IOException, HintParseException {
+<span class="nc" id="L204">		List&lt;HintFile&gt; hintFiles = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L205">		HintFileParser parser = new HintFileParser();</span>
+
+<span class="nc bnc" id="L207" title="All 2 branches missed.">		if (hintsDirOverride != null) {</span>
+			// Load all .sandbox-hint files from the given directory
+<span class="nc" id="L209">			Path hintsPath = Path.of(hintsDirOverride);</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">			if (Files.isDirectory(hintsPath)) {</span>
+<span class="nc" id="L211">				try (var stream = Files.walk(hintsPath)) {</span>
+<span class="nc" id="L212">					List&lt;Path&gt; hintPaths = stream.filter(p -&gt; p.toString().endsWith(&quot;.sandbox-hint&quot;)).toList();</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">					for (Path p : hintPaths) {</span>
+<span class="nc" id="L214">						String content = Files.readString(p, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L215">						hintFiles.add(parser.parse(content));</span>
+<span class="nc" id="L216">					}</span>
+				}
+			}
+<span class="nc" id="L219">			return hintFiles;</span>
+		}
+
+		// Load hints from configuration
+<span class="nc bnc" id="L223" title="All 2 branches missed.">		for (String hint : config.getHints()) {</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">			if (hint.startsWith(&quot;bundled:&quot;)) {</span>
+<span class="nc" id="L225">				String name = hint.substring(&quot;bundled:&quot;.length());</span>
+<span class="nc" id="L226">				HintFile hf = loadBundledHint(parser, name);</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">				if (hf != null) {</span>
+<span class="nc" id="L228">					hintFiles.add(hf);</span>
+				}
+<span class="nc bnc" id="L230" title="All 2 branches missed.">			} else if (hint.startsWith(&quot;path:&quot;)) {</span>
+<span class="nc" id="L231">				String path = hint.substring(&quot;path:&quot;.length());</span>
+<span class="nc" id="L232">				Path p = Path.of(path);</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">				if (Files.isRegularFile(p)) {</span>
+<span class="nc" id="L234">					String content = Files.readString(p, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L235">					hintFiles.add(parser.parse(content));</span>
+<span class="nc" id="L236">				} else {</span>
+<span class="nc" id="L237">					System.err.println(&quot;Warning: Hint file not found: &quot; + path);</span>
+				}
+<span class="nc" id="L239">			} else {</span>
+				// Try as bundled first, then as path
+<span class="nc" id="L241">				HintFile hf = loadBundledHint(parser, hint);</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">				if (hf == null) {</span>
+<span class="nc" id="L243">					Path p = Path.of(hint);</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">					if (Files.isRegularFile(p)) {</span>
+<span class="nc" id="L245">						String content = Files.readString(p, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L246">						hf = parser.parse(content);</span>
+					}
+				}
+<span class="nc bnc" id="L249" title="All 2 branches missed.">				if (hf != null) {</span>
+<span class="nc" id="L250">					hintFiles.add(hf);</span>
+				}
+			}
+<span class="nc" id="L253">		}</span>
+
+		// If no hints configured, load all bundled hints
+<span class="nc bnc" id="L256" title="All 2 branches missed.">		if (hintFiles.isEmpty()) {</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">			for (String name : BUNDLED_HINTS.keySet()) {</span>
+<span class="nc" id="L258">				HintFile hf = loadBundledHint(parser, name);</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">				if (hf != null) {</span>
+<span class="nc" id="L260">					hintFiles.add(hf);</span>
+				}
+<span class="nc" id="L262">			}</span>
+		}
+
+<span class="nc" id="L265">		return hintFiles;</span>
+	}
+
+	private static HintFile loadBundledHint(HintFileParser parser, String name) {
+<span class="nc" id="L269">		String resourcePath = BUNDLED_HINTS.get(name);</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">		if (resourcePath == null) {</span>
+<span class="nc" id="L271">			System.err.println(&quot;Warning: Unknown bundled hint: &quot; + name);</span>
+<span class="nc" id="L272">			return null;</span>
+		}
+<span class="nc" id="L274">		try (InputStream is = MiningCli.class.getResourceAsStream(resourcePath)) {</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">			if (is == null) {</span>
+<span class="nc" id="L276">				System.err.println(&quot;Warning: Bundled hint resource not found: &quot; + resourcePath);</span>
+<span class="nc" id="L277">				return null;</span>
+			}
+<span class="nc" id="L279">			try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="nc" id="L280">				return parser.parse(reader);</span>
+			}
+<span class="nc bnc" id="L282" title="All 2 branches missed.">		} catch (IOException e) {</span>
+<span class="nc" id="L283">			System.err.println(&quot;Warning: Error loading bundled hint &quot; + name + &quot;: &quot; + e.getMessage());</span>
+<span class="nc" id="L284">			return null;</span>
+<span class="nc" id="L285">		} catch (HintParseException e) {</span>
+<span class="nc" id="L286">			System.err.println(&quot;Warning: Error parsing bundled hint &quot; + name + &quot;: &quot; + e.getMessage());</span>
+<span class="nc" id="L287">			return null;</span>
+		}
+	}
+
+	static String extractRepoName(String url) {
+<span class="fc bfc" id="L292" title="All 2 branches covered.">		if (url == null) {</span>
+<span class="fc" id="L293">			return &quot;unknown&quot;;</span>
+		}
+<span class="fc" id="L295">		String name = url;</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">		if (name.endsWith(&quot;.git&quot;)) {</span>
+<span class="fc" id="L297">			name = name.substring(0, name.length() - 4);</span>
+		}
+<span class="fc" id="L299">		int lastSlash = name.lastIndexOf('/');</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">		if (lastSlash &gt;= 0) {</span>
+<span class="fc" id="L301">			name = name.substring(lastSlash + 1);</span>
+		}
+<span class="fc" id="L303">		return name;</span>
+	}
+
+	private static void writeReports(MiningReport report, Path outputDir, String format) throws IOException {
+<span class="nc bnc" id="L307" title="All 3 branches missed.">		switch (format) {</span>
+		case FORMAT_MARKDOWN:
+<span class="nc" id="L309">			new MarkdownReporter().write(report, outputDir);</span>
+<span class="nc" id="L310">			System.out.println(&quot;Report written to &quot; + outputDir.resolve(&quot;report.md&quot;));</span>
+<span class="nc" id="L311">			break;</span>
+		case FORMAT_JSON:
+<span class="nc" id="L313">			new JsonReporter().write(report, outputDir);</span>
+<span class="nc" id="L314">			System.out.println(&quot;Report written to &quot; + outputDir.resolve(&quot;report.json&quot;));</span>
+<span class="nc" id="L315">			break;</span>
+		case FORMAT_BOTH:
+		default:
+<span class="nc" id="L318">			new MarkdownReporter().write(report, outputDir);</span>
+<span class="nc" id="L319">			new JsonReporter().write(report, outputDir);</span>
+<span class="nc" id="L320">			System.out.println(&quot;Reports written to &quot; + outputDir);</span>
+			break;
+		}
+<span class="nc" id="L323">	}</span>
+
+	private static void deleteDirectory(Path dir) {
+		try {
+<span class="nc bnc" id="L327" title="All 2 branches missed.">			if (Files.exists(dir)) {</span>
+<span class="nc" id="L328">				try (var stream = Files.walk(dir)) {</span>
+<span class="nc" id="L329">					stream.sorted(java.util.Comparator.reverseOrder()).forEach(p -&gt; {</span>
+						try {
+<span class="nc" id="L331">							Files.delete(p);</span>
+<span class="nc" id="L332">						} catch (IOException e) {</span>
+							// Ignore cleanup errors
+<span class="nc" id="L334">						}</span>
+<span class="nc" id="L335">					});</span>
+				}
+			}
+<span class="nc" id="L338">		} catch (IOException e) {</span>
+			// Ignore cleanup errors
+<span class="nc" id="L340">		}</span>
+<span class="nc" id="L341">	}</span>
+
+	private static void printUsage() {
+<span class="fc" id="L344">		System.out.println(&quot;Usage: java -jar sandbox-mining-cli.jar [options]&quot;);</span>
+<span class="fc" id="L345">		System.out.println();</span>
+<span class="fc" id="L346">		System.out.println(&quot;Options:&quot;);</span>
+<span class="fc" id="L347">		System.out.println(&quot;  --config &lt;path&gt;    Path to repos.yml configuration file&quot;);</span>
+<span class="fc" id="L348">		System.out.println(&quot;  --hints &lt;dir&gt;      Directory with .sandbox-hint files (overrides config)&quot;);</span>
+<span class="fc" id="L349">		System.out.println(&quot;  --repo &lt;url&gt;       Single repo to scan (ad-hoc mode, overrides config)&quot;);</span>
+<span class="fc" id="L350">		System.out.println(&quot;  --output &lt;dir&gt;     Output directory for reports (default: mining-results)&quot;);</span>
+<span class="fc" id="L351">		System.out.println(&quot;  --format &lt;fmt&gt;     Report format: markdown|json|both (default: both)&quot;);</span>
+<span class="fc" id="L352">		System.out.println(&quot;  --dry-run          Only count matches, don't generate candidate files&quot;);</span>
+<span class="fc" id="L353">		System.out.println(&quot;  --help             Show this help message&quot;);</span>
+<span class="fc" id="L354">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

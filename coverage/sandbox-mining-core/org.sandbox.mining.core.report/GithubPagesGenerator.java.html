@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>GithubPagesGenerator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.report</a> &gt; <span class="el_source">GithubPagesGenerator.java</span></div><h1>GithubPagesGenerator.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.report;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+
+/**
+ * Generates an HTML page from evaluations and statistics for GitHub Pages.
+ *
+ * &lt;p&gt;Loads the report template from resources and writes the output HTML
+ * along with the data JSON files (evaluations.json and statistics.json).&lt;/p&gt;
+ */
+public class GithubPagesGenerator {
+
+	private static final String TEMPLATE_RESOURCE = &quot;/templates/report-template.html&quot;;
+<span class="fc" id="L46">	private static final Set&lt;String&gt; DEMO_HASHES = Set.of(</span>
+			&quot;a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2&quot;,
+			&quot;b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3&quot;,
+			&quot;c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4&quot;,
+			&quot;d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5&quot;,
+			&quot;e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6&quot;,
+			&quot;f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1&quot;,
+			&quot;a7b8c9d0e1f2a7b8c9d0e1f2a7b8c9d0e1f2a7b8&quot;);
+	private final Gson gson;
+
+<span class="fc" id="L56">	public GithubPagesGenerator() {</span>
+<span class="fc" id="L57">		this.gson = new GsonBuilder()</span>
+<span class="fc" id="L58">				.setPrettyPrinting()</span>
+<span class="fc" id="L59">				.registerTypeAdapter(Instant.class, new TypeAdapter&lt;Instant&gt;() {</span>
+					@Override
+					public void write(JsonWriter out, Instant value) throws IOException {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">						out.value(value == null ? null : value.toString());</span>
+<span class="fc" id="L63">					}</span>
+					@Override
+					public Instant read(JsonReader in) throws IOException {
+<span class="fc" id="L66">						return Instant.parse(in.nextString());</span>
+					}
+				})
+<span class="fc" id="L69">				.create();</span>
+<span class="fc" id="L70">	}</span>
+
+	/**
+	 * Generates the GitHub Pages output (index.html, evaluations.json, statistics.json).
+	 *
+	 * &lt;p&gt;Loads any existing evaluations.json from the output directory, filters out
+	 * demo seed data, deduplicates by commit hash, merges with the new evaluations,
+	 * and rebuilds statistics from the combined list.&lt;/p&gt;
+	 *
+	 * @param evaluations the evaluation results from the current run
+	 * @param stats       the statistics collector for the current run (used for run metadata)
+	 * @param outputDir   the output directory
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void generate(List&lt;CommitEvaluation&gt; evaluations,
+			StatisticsCollector stats, Path outputDir) throws IOException {
+<span class="fc" id="L86">		Files.createDirectories(outputDir);</span>
+
+<span class="fc" id="L88">		List&lt;CommitEvaluation&gt; merged = loadAndMerge(outputDir, evaluations);</span>
+
+<span class="fc" id="L90">		StatisticsCollector mergedStats = StatisticsCollector.rebuildFrom(merged);</span>
+<span class="fc" id="L91">		mergedStats.setRunMetadata(stats.getRunMetadata());</span>
+<span class="fc" id="L92">		mergedStats.computeTimeWindow(merged);</span>
+
+<span class="fc" id="L94">		String template = loadTemplate();</span>
+<span class="fc" id="L95">		String html = injectStatistics(template, mergedStats);</span>
+
+<span class="fc" id="L97">		Files.writeString(outputDir.resolve(&quot;index.html&quot;), html, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L98">		Files.writeString(outputDir.resolve(&quot;evaluations.json&quot;),</span>
+<span class="fc" id="L99">				gson.toJson(merged), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L100">		Files.writeString(outputDir.resolve(&quot;statistics.json&quot;),</span>
+<span class="fc" id="L101">				gson.toJson(mergedStats), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L102">	}</span>
+
+	/**
+	 * Loads existing evaluations from the output directory, filters demo data,
+	 * and merges with the new evaluations (deduplicating by commit hash).
+	 *
+	 * &lt;p&gt;If the existing file is malformed or unreadable, a warning is printed
+	 * and the method proceeds as if the file did not exist.&lt;/p&gt;
+	 *
+	 * @param outputDir   the output directory
+	 * @param newEvals    the new evaluations from the current run
+	 * @return the merged list
+	 * @throws IOException if an I/O error occurs
+	 */
+	private List&lt;CommitEvaluation&gt; loadAndMerge(Path outputDir,
+			List&lt;CommitEvaluation&gt; newEvals) throws IOException {
+<span class="fc" id="L118">		Path existingFile = outputDir.resolve(&quot;evaluations.json&quot;);</span>
+<span class="fc" id="L119">		List&lt;CommitEvaluation&gt; existing = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		if (Files.exists(existingFile)) {</span>
+			try {
+<span class="fc" id="L122">				String json = Files.readString(existingFile, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L123">				Type listType = new TypeToken&lt;List&lt;CommitEvaluation&gt;&gt;() {}.getType();</span>
+<span class="fc" id="L124">				List&lt;CommitEvaluation&gt; loaded = gson.fromJson(json, listType);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">				if (loaded != null) {</span>
+<span class="fc" id="L126">					existing = loaded.stream()</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">							.filter(e -&gt; !DEMO_HASHES.contains(e.commitHash()))</span>
+<span class="fc" id="L128">							.collect(Collectors.toCollection(ArrayList::new));</span>
+				}
+<span class="nc" id="L130">			} catch (Exception e) {</span>
+<span class="nc" id="L131">				System.err.println(&quot;Warning: could not load existing evaluations: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L132">			}</span>
+		}
+<span class="fc" id="L134">		Set&lt;String&gt; existingHashes = existing.stream()</span>
+<span class="fc" id="L135">				.map(CommitEvaluation::commitHash)</span>
+<span class="fc" id="L136">				.collect(Collectors.toCollection(java.util.HashSet::new));</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">		for (CommitEvaluation newEval : newEvals) {</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">			if (existingHashes.add(newEval.commitHash())) {</span>
+<span class="fc" id="L139">				existing.add(newEval);</span>
+			}
+<span class="fc" id="L141">		}</span>
+<span class="fc" id="L142">		return existing;</span>
+	}
+
+	/**
+	 * Loads the HTML template from resources.
+	 *
+	 * @return the template content
+	 * @throws IOException if the template cannot be loaded
+	 */
+	public String loadTemplate() throws IOException {
+<span class="fc" id="L152">		try (InputStream is = getClass().getResourceAsStream(TEMPLATE_RESOURCE)) {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">			if (is == null) {</span>
+<span class="nc" id="L154">				return getDefaultTemplate();</span>
+			}
+<span class="fc" id="L156">			return new String(is.readAllBytes(), StandardCharsets.UTF_8);</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">		}</span>
+	}
+
+	private String injectStatistics(String template, StatisticsCollector stats) {
+<span class="fc" id="L161">		return template</span>
+<span class="fc" id="L162">				.replace(&quot;{{totalProcessed}}&quot;, String.valueOf(stats.getTotalProcessed()))</span>
+<span class="fc" id="L163">				.replace(&quot;{{relevant}}&quot;, String.valueOf(stats.getRelevant()))</span>
+<span class="fc" id="L164">				.replace(&quot;{{irrelevant}}&quot;, String.valueOf(stats.getIrrelevant()))</span>
+<span class="fc" id="L165">				.replace(&quot;{{duplicates}}&quot;, String.valueOf(stats.getDuplicates()))</span>
+<span class="fc" id="L166">				.replace(&quot;{{green}}&quot;, String.valueOf(stats.getGreen()))</span>
+<span class="fc" id="L167">				.replace(&quot;{{yellow}}&quot;, String.valueOf(stats.getYellow()))</span>
+<span class="fc" id="L168">				.replace(&quot;{{red}}&quot;, String.valueOf(stats.getRed()));</span>
+	}
+
+	private static String getDefaultTemplate() {
+<span class="nc" id="L172">		return &quot;&quot;&quot;</span>
+				&lt;!DOCTYPE html&gt;
+				&lt;html lang=&quot;en&quot;&gt;
+				&lt;head&gt;
+				&lt;meta charset=&quot;UTF-8&quot;&gt;
+				&lt;title&gt;Sandbox Mining Core - Report&lt;/title&gt;
+				&lt;/head&gt;
+				&lt;body&gt;
+				&lt;h1&gt;Mining Report&lt;/h1&gt;
+				&lt;p style=&quot;background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;&quot;&gt;
+				  &lt;a href=&quot;https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml&quot;&gt;
+				    &lt;img src=&quot;https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg&quot; alt=&quot;Workflow Status&quot;&gt;
+				  &lt;/a&gt;
+				  | &lt;a href=&quot;https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml&quot;&gt;View Workflow Runs&lt;/a&gt;
+				  | &lt;a href=&quot;https://carstenartur.github.io/sandbox/&quot;&gt;← Back to Dashboard&lt;/a&gt;
+				&lt;/p&gt;
+				&lt;p&gt;Total: {{totalProcessed}}, Relevant: {{relevant}}, Green: {{green}}, Yellow: {{yellow}}, Red: {{red}}&lt;/p&gt;
+				&lt;h2&gt;Discovered DSL Sequences&lt;/h2&gt;
+				&lt;div id=&quot;dsl-body&quot;&gt;&lt;/div&gt;
+				&lt;script&gt;
+				fetch('evaluations.json').then(r=&gt;r.json()).then(data=&gt;{
+				  var dsl=data.filter(e=&gt;e.dslRule&amp;&amp;e.relevant);
+				  var el=document.getElementById('dsl-body');
+				  if(dsl.length===0){el.textContent='No DSL sequences discovered yet.';return;}
+				  dsl.forEach(e=&gt;{
+				    var p=document.createElement('p');
+				    p.innerHTML='&lt;strong&gt;'+e.trafficLight+'&lt;/strong&gt; ['+e.category+'] '+e.summary+'&lt;pre&gt;'+e.dslRule+'&lt;/pre&gt;';
+				    el.appendChild(p);
+				  });
+				});
+				&lt;/script&gt;
+				&lt;/body&gt;
+				&lt;/html&gt;
+				&quot;&quot;&quot;;
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AnalyticsResource.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.rest</a> &gt; <span class="el_source">AnalyticsResource.java</span></div><h1>AnalyticsResource.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.server.rest;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
+import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService.AuthorStats;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ * REST endpoint for repository analytics.
+ * &lt;ul&gt;
+ * &lt;li&gt;{@code GET /api/analytics/authors?repo=...} — author commit
+ * statistics&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/analytics/objects?repo=...} — object type counts&lt;/li&gt;
+ * &lt;li&gt;{@code GET /api/analytics/packs?repo=...} — pack file statistics&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+public class AnalyticsResource extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+
+<span class="fc" id="L47">	private static final Logger LOG = Logger</span>
+<span class="fc" id="L48">			.getLogger(AnalyticsResource.class.getName());</span>
+
+	private final HibernateSessionFactoryProvider provider;
+
+<span class="fc" id="L52">	private final Gson gson = new Gson();</span>
+
+	/**
+	 * Create an analytics endpoint.
+	 *
+	 * @param provider
+	 *            the session factory provider
+	 */
+<span class="fc" id="L60">	public AnalyticsResource(HibernateSessionFactoryProvider provider) {</span>
+<span class="fc" id="L61">		this.provider = provider;</span>
+<span class="fc" id="L62">	}</span>
+
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+			throws IOException {
+<span class="fc" id="L67">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L68">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L70">		String pathInfo = req.getPathInfo();</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		if (pathInfo == null) {</span>
+<span class="nc" id="L72">			pathInfo = &quot;/&quot;; //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L75">		String repo = req.getParameter(&quot;repo&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L76" title="1 of 4 branches missed.">		if (repo == null || repo.isEmpty()) {</span>
+<span class="fc" id="L77">			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);</span>
+<span class="fc" id="L78">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L79">				w.write(&quot;{\&quot;error\&quot;:\&quot;Parameter 'repo' is required\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L81">			return;</span>
+		}
+
+		try {
+<span class="fc" id="L85">			GitDatabaseQueryService queryService = new GitDatabaseQueryService(</span>
+<span class="fc" id="L86">					provider.getSessionFactory());</span>
+
+<span class="fc bfc" id="L88" title="All 2 branches covered.">			if (pathInfo.startsWith(&quot;/authors&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L89">				handleAuthorStats(queryService, repo, resp);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">			} else if (pathInfo.startsWith(&quot;/objects&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L91">				handleObjectStats(queryService, repo, resp);</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/packs&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L93">				handlePackStats(queryService, repo, resp);</span>
+			} else {
+<span class="nc" id="L95">				resp.setStatus(HttpServletResponse.SC_NOT_FOUND);</span>
+<span class="nc" id="L96">				try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L97">					w.write(&quot;{\&quot;error\&quot;:\&quot;Unknown analytics endpoint\&quot;}&quot;); //$NON-NLS-1$</span>
+				}
+			}
+<span class="nc" id="L100">		} catch (Exception e) {</span>
+<span class="nc" id="L101">			LOG.log(Level.WARNING, &quot;Analytics error&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L102">			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);</span>
+<span class="nc" id="L103">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L104">				w.write(&quot;{\&quot;error\&quot;:\&quot;Analytics query failed\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L106">		}</span>
+<span class="fc" id="L107">	}</span>
+
+	private void handleAuthorStats(GitDatabaseQueryService queryService,
+			String repo, HttpServletResponse resp) throws IOException {
+<span class="fc" id="L111">		List&lt;AuthorStats&gt; stats = queryService.getAuthorStatistics(repo);</span>
+
+<span class="fc" id="L113">		JsonObject response = new JsonObject();</span>
+<span class="fc" id="L114">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+
+<span class="fc" id="L116">		JsonArray authors = new JsonArray();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">		for (AuthorStats as : stats) {</span>
+<span class="fc" id="L118">			JsonObject author = new JsonObject();</span>
+<span class="fc" id="L119">			author.addProperty(&quot;name&quot;, as.getAuthorName()); //$NON-NLS-1$</span>
+<span class="fc" id="L120">			author.addProperty(&quot;email&quot;, as.getAuthorEmail()); //$NON-NLS-1$</span>
+<span class="fc" id="L121">			author.addProperty(&quot;commits&quot;, as.getCommitCount()); //$NON-NLS-1$</span>
+<span class="fc" id="L122">			authors.add(author);</span>
+<span class="fc" id="L123">		}</span>
+<span class="fc" id="L124">		response.add(&quot;authors&quot;, authors); //$NON-NLS-1$</span>
+
+<span class="fc" id="L126">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L127">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L128">			w.write(gson.toJson(response));</span>
+		}
+<span class="fc" id="L130">	}</span>
+
+	private void handleObjectStats(GitDatabaseQueryService queryService,
+			String repo, HttpServletResponse resp) throws IOException {
+<span class="fc" id="L134">		JsonObject response = new JsonObject();</span>
+<span class="fc" id="L135">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+
+<span class="fc" id="L137">		JsonObject counts = new JsonObject();</span>
+<span class="fc" id="L138">		counts.addProperty(&quot;commits&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L139">				queryService.countObjectsByType(repo, 1));</span>
+<span class="fc" id="L140">		counts.addProperty(&quot;trees&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L141">				queryService.countObjectsByType(repo, 2));</span>
+<span class="fc" id="L142">		counts.addProperty(&quot;blobs&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L143">				queryService.countObjectsByType(repo, 3));</span>
+<span class="fc" id="L144">		counts.addProperty(&quot;tags&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L145">				queryService.countObjectsByType(repo, 4));</span>
+<span class="fc" id="L146">		response.add(&quot;objectCounts&quot;, counts); //$NON-NLS-1$</span>
+
+<span class="fc" id="L148">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L149">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L150">			w.write(gson.toJson(response));</span>
+		}
+<span class="fc" id="L152">	}</span>
+
+	private void handlePackStats(GitDatabaseQueryService queryService,
+			String repo, HttpServletResponse resp) throws IOException {
+<span class="fc" id="L156">		JsonObject response = new JsonObject();</span>
+<span class="fc" id="L157">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="fc" id="L158">		response.addProperty(&quot;packCount&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L159">				queryService.countPacks(repo));</span>
+<span class="fc" id="L160">		response.addProperty(&quot;totalSizeBytes&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L161">				queryService.getTotalPackSize(repo));</span>
+
+<span class="fc" id="L163">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L164">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L165">			w.write(gson.toJson(response));</span>
+		}
+<span class="fc" id="L167">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

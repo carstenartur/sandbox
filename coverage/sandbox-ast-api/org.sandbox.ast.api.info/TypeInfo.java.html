@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TypeInfo.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-ast-api</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.ast.api.info</a> &gt; <span class="el_source">TypeInfo.java</span></div><h1>TypeInfo.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.ast.api.info;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Immutable record representing a Java type.
+ * Provides fluent query methods for type checking and comparisons.
+ */
+public record TypeInfo(
+	String qualifiedName,
+	String simpleName,
+	List&lt;TypeInfo&gt; typeArguments,
+	boolean isPrimitive,
+	boolean isArray,
+	int arrayDimensions
+) {
+	
+<span class="fc" id="L34">	private static final Set&lt;String&gt; COLLECTION_TYPES = Set.of(</span>
+		&quot;java.util.Collection&quot;,
+		&quot;java.util.List&quot;,
+		&quot;java.util.Set&quot;,
+		&quot;java.util.Queue&quot;,
+		&quot;java.util.Deque&quot;,
+		&quot;java.util.ArrayList&quot;,
+		&quot;java.util.LinkedList&quot;,
+		&quot;java.util.HashSet&quot;,
+		&quot;java.util.TreeSet&quot;
+	);
+	
+<span class="fc" id="L46">	private static final Set&lt;String&gt; LIST_TYPES = Set.of(</span>
+		&quot;java.util.List&quot;,
+		&quot;java.util.ArrayList&quot;,
+		&quot;java.util.LinkedList&quot;
+	);
+	
+<span class="fc" id="L52">	private static final Set&lt;String&gt; STREAM_TYPES = Set.of(</span>
+		&quot;java.util.stream.Stream&quot;,
+		&quot;java.util.stream.IntStream&quot;,
+		&quot;java.util.stream.LongStream&quot;,
+		&quot;java.util.stream.DoubleStream&quot;
+	);
+	
+<span class="fc" id="L59">	private static final Set&lt;String&gt; OPTIONAL_TYPES = Set.of(</span>
+		&quot;java.util.Optional&quot;,
+		&quot;java.util.OptionalInt&quot;,
+		&quot;java.util.OptionalLong&quot;,
+		&quot;java.util.OptionalDouble&quot;
+	);
+	
+	/**
+	 * Creates a TypeInfo record.
+	 * 
+	 * @param qualifiedName fully qualified name (e.g., &quot;java.util.List&quot;)
+	 * @param simpleName simple name (e.g., &quot;List&quot;)
+	 * @param typeArguments type arguments for generics
+	 * @param isPrimitive true if primitive type
+	 * @param isArray true if array type
+	 * @param arrayDimensions number of array dimensions
+	 */
+<span class="fc" id="L76">	public TypeInfo {</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (qualifiedName == null) {</span>
+<span class="fc" id="L78">			throw new IllegalArgumentException(&quot;Qualified name cannot be null&quot;);</span>
+		}
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		if (qualifiedName.isEmpty()) {</span>
+<span class="fc" id="L81">			throw new IllegalArgumentException(&quot;Qualified name cannot be empty&quot;);</span>
+		}
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">		if (simpleName == null) {</span>
+<span class="nc" id="L84">			throw new IllegalArgumentException(&quot;Simple name cannot be null&quot;);</span>
+		}
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">		if (simpleName.isEmpty()) {</span>
+<span class="nc" id="L87">			throw new IllegalArgumentException(&quot;Simple name cannot be empty&quot;);</span>
+		}
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">		typeArguments = typeArguments == null ? List.of() : List.copyOf(typeArguments);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		if (arrayDimensions &lt; 0) {</span>
+<span class="fc" id="L91">			throw new IllegalArgumentException(&quot;Array dimensions cannot be negative&quot;);</span>
+		}
+<span class="fc" id="L93">	}</span>
+	
+	/**
+	 * Checks if this type matches the given class.
+	 * 
+	 * @param clazz class to compare
+	 * @return true if qualified names match
+	 */
+	public boolean is(Class&lt;?&gt; clazz) {
+<span class="fc" id="L102">		return qualifiedName.equals(clazz.getName());</span>
+	}
+	
+	/**
+	 * Checks if this type matches the given qualified name.
+	 * 
+	 * @param qualifiedName qualified name to compare
+	 * @return true if names match
+	 */
+	public boolean is(String qualifiedName) {
+<span class="fc" id="L112">		return this.qualifiedName.equals(qualifiedName);</span>
+	}
+	
+	/**
+	 * Checks if this type is a collection type (List, Set, Collection, etc.).
+	 * 
+	 * @return true if collection type
+	 */
+	public boolean isCollection() {
+<span class="fc" id="L121">		return COLLECTION_TYPES.contains(qualifiedName);</span>
+	}
+	
+	/**
+	 * Checks if this type is a List.
+	 * 
+	 * @return true if List type
+	 */
+	public boolean isList() {
+<span class="fc" id="L130">		return LIST_TYPES.contains(qualifiedName);</span>
+	}
+	
+	/**
+	 * Checks if this type is a Stream.
+	 * 
+	 * @return true if Stream type
+	 */
+	public boolean isStream() {
+<span class="fc" id="L139">		return STREAM_TYPES.contains(qualifiedName);</span>
+	}
+	
+	/**
+	 * Checks if this type is Optional.
+	 * 
+	 * @return true if Optional type
+	 */
+	public boolean isOptional() {
+<span class="fc" id="L148">		return OPTIONAL_TYPES.contains(qualifiedName);</span>
+	}
+	
+	/**
+	 * Checks if this type is numeric (int, Integer, double, Double, etc.).
+	 * 
+	 * @return true if numeric type
+	 */
+	public boolean isNumeric() {
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		return isPrimitive &amp;&amp; (</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			qualifiedName.equals(&quot;int&quot;) ||</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">			qualifiedName.equals(&quot;long&quot;) ||</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">			qualifiedName.equals(&quot;double&quot;) ||</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">			qualifiedName.equals(&quot;float&quot;) ||</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">			qualifiedName.equals(&quot;short&quot;) ||</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">			qualifiedName.equals(&quot;byte&quot;)</span>
+		) || (
+<span class="fc bfc" id="L165" title="All 2 branches covered.">			qualifiedName.equals(&quot;java.lang.Integer&quot;) ||</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">			qualifiedName.equals(&quot;java.lang.Long&quot;) ||</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">			qualifiedName.equals(&quot;java.lang.Double&quot;) ||</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">			qualifiedName.equals(&quot;java.lang.Float&quot;) ||</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">			qualifiedName.equals(&quot;java.lang.Short&quot;) ||</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">			qualifiedName.equals(&quot;java.lang.Byte&quot;) ||</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">			qualifiedName.equals(&quot;java.math.BigInteger&quot;) ||</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">			qualifiedName.equals(&quot;java.math.BigDecimal&quot;)</span>
+		);
+	}
+	
+	/**
+	 * Returns the boxed version of a primitive type.
+	 * 
+	 * @return Optional containing boxed type, or empty if not primitive
+	 */
+	public Optional&lt;TypeInfo&gt; boxed() {
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		if (!isPrimitive) {</span>
+<span class="fc" id="L183">			return Optional.empty();</span>
+		}
+<span class="pc bpc" id="L185" title="7 of 9 branches missed.">		return switch (qualifiedName) {</span>
+<span class="fc" id="L186">			case &quot;int&quot; -&gt; Optional.of(Builder.of(&quot;java.lang.Integer&quot;).build());</span>
+<span class="nc" id="L187">			case &quot;long&quot; -&gt; Optional.of(Builder.of(&quot;java.lang.Long&quot;).build());</span>
+<span class="fc" id="L188">			case &quot;double&quot; -&gt; Optional.of(Builder.of(&quot;java.lang.Double&quot;).build());</span>
+<span class="nc" id="L189">			case &quot;float&quot; -&gt; Optional.of(Builder.of(&quot;java.lang.Float&quot;).build());</span>
+<span class="nc" id="L190">			case &quot;boolean&quot; -&gt; Optional.of(Builder.of(&quot;java.lang.Boolean&quot;).build());</span>
+<span class="nc" id="L191">			case &quot;byte&quot; -&gt; Optional.of(Builder.of(&quot;java.lang.Byte&quot;).build());</span>
+<span class="nc" id="L192">			case &quot;short&quot; -&gt; Optional.of(Builder.of(&quot;java.lang.Short&quot;).build());</span>
+<span class="nc" id="L193">			case &quot;char&quot; -&gt; Optional.of(Builder.of(&quot;java.lang.Character&quot;).build());</span>
+<span class="nc" id="L194">			default -&gt; Optional.empty();</span>
+		};
+	}
+	
+	/**
+	 * Checks if this type has type arguments (is generic).
+	 * 
+	 * @return true if has type arguments
+	 */
+	public boolean hasTypeArguments() {
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		return !typeArguments.isEmpty();</span>
+	}
+	
+	/**
+	 * Gets the first type argument if present.
+	 * 
+	 * @return Optional containing first type argument
+	 */
+	public Optional&lt;TypeInfo&gt; firstTypeArgument() {
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">		return typeArguments.isEmpty() ? Optional.empty() : Optional.of(typeArguments.get(0));</span>
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+<span class="fc bfc" id="L218" title="All 2 branches covered.">		if (this == obj) return true;</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">		if (!(obj instanceof TypeInfo other)) return false;</span>
+<span class="pc bpc" id="L220" title="4 of 8 branches missed.">		return Objects.equals(qualifiedName, other.qualifiedName) &amp;&amp;</span>
+			   isPrimitive == other.isPrimitive &amp;&amp;
+			   isArray == other.isArray &amp;&amp;
+			   arrayDimensions == other.arrayDimensions &amp;&amp;
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">			   Objects.equals(typeArguments, other.typeArguments);</span>
+	}
+	
+	@Override
+	public int hashCode() {
+<span class="nc" id="L229">		return Objects.hash(qualifiedName, isPrimitive, isArray, arrayDimensions, typeArguments);</span>
+	}
+	
+	@Override
+	public String toString() {
+<span class="fc" id="L234">		StringBuilder sb = new StringBuilder(qualifiedName);</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">		if (!typeArguments.isEmpty()) {</span>
+<span class="fc" id="L236">			sb.append(&quot;&lt;&quot;);</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">			for (int i = 0; i &lt; typeArguments.size(); i++) {</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">				if (i &gt; 0) sb.append(&quot;, &quot;);</span>
+<span class="fc" id="L239">				sb.append(typeArguments.get(i).simpleName);</span>
+			}
+<span class="fc" id="L241">			sb.append(&quot;&gt;&quot;);</span>
+		}
+<span class="fc bfc" id="L243" title="All 2 branches covered.">		if (isArray) {</span>
+<span class="fc" id="L244">			sb.append(&quot;[]&quot;.repeat(arrayDimensions));</span>
+		}
+<span class="fc" id="L246">		return sb.toString();</span>
+	}
+	
+	/**
+	 * Builder for creating TypeInfo instances.
+	 */
+	public static class Builder {
+		private String qualifiedName;
+		private String simpleName;
+<span class="fc" id="L255">		private List&lt;TypeInfo&gt; typeArguments = new java.util.ArrayList&lt;&gt;();</span>
+		private boolean isPrimitive;
+		private boolean isArray;
+		private int arrayDimensions;
+		
+<span class="fc" id="L260">		private Builder(String qualifiedName) {</span>
+<span class="fc" id="L261">			this.qualifiedName = qualifiedName;</span>
+			// Extract simple name from qualified name
+<span class="fc" id="L263">			int lastDot = qualifiedName.lastIndexOf('.');</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">			this.simpleName = lastDot &gt;= 0 ? qualifiedName.substring(lastDot + 1) : qualifiedName;</span>
+<span class="fc" id="L265">		}</span>
+		
+		/**
+		 * Creates a builder for the given qualified name.
+		 * 
+		 * @param qualifiedName fully qualified type name
+		 * @return new Builder
+		 */
+		public static Builder of(String qualifiedName) {
+<span class="fc" id="L274">			return new Builder(qualifiedName);</span>
+		}
+		
+		/**
+		 * Creates a builder for a class.
+		 * 
+		 * @param clazz the class
+		 * @return new Builder
+		 */
+		public static Builder of(Class&lt;?&gt; clazz) {
+<span class="fc" id="L284">			return new Builder(clazz.getName());</span>
+		}
+		
+		/**
+		 * Sets the simple name explicitly.
+		 * 
+		 * @param simpleName simple name
+		 * @return this builder
+		 */
+		public Builder simpleName(String simpleName) {
+<span class="fc" id="L294">			this.simpleName = simpleName;</span>
+<span class="fc" id="L295">			return this;</span>
+		}
+		
+		/**
+		 * Sets type arguments for generics.
+		 * 
+		 * @param typeArguments type arguments
+		 * @return this builder
+		 */
+		public Builder typeArguments(List&lt;TypeInfo&gt; typeArguments) {
+<span class="fc" id="L305">			this.typeArguments = typeArguments;</span>
+<span class="fc" id="L306">			return this;</span>
+		}
+		
+		/**
+		 * Adds a single type argument.
+		 * 
+		 * @param typeArgument type argument to add
+		 * @return this builder
+		 */
+		public Builder addTypeArgument(TypeInfo typeArgument) {
+<span class="fc" id="L316">			typeArguments.add(typeArgument);</span>
+<span class="fc" id="L317">			return this;</span>
+		}
+		
+		/**
+		 * Marks this type as primitive.
+		 * 
+		 * @return this builder
+		 */
+		public Builder primitive() {
+<span class="fc" id="L326">			this.isPrimitive = true;</span>
+<span class="fc" id="L327">			return this;</span>
+		}
+		
+		/**
+		 * Marks this type as an array.
+		 * 
+		 * @param dimensions number of array dimensions
+		 * @return this builder
+		 */
+		public Builder array(int dimensions) {
+<span class="fc" id="L337">			this.isArray = true;</span>
+<span class="fc" id="L338">			this.arrayDimensions = dimensions;</span>
+<span class="fc" id="L339">			return this;</span>
+		}
+		
+		/**
+		 * Marks this type as a 1-dimensional array.
+		 * 
+		 * @return this builder
+		 */
+		public Builder array() {
+<span class="nc" id="L348">			return array(1);</span>
+		}
+		
+		/**
+		 * Builds the TypeInfo instance.
+		 * 
+		 * @return new TypeInfo
+		 */
+		public TypeInfo build() {
+<span class="fc" id="L357">			return new TypeInfo(qualifiedName, simpleName, typeArguments, </span>
+							   isPrimitive, isArray, arrayDimensions);
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

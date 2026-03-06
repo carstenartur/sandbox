@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JsonReporter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.report</a> &gt; <span class="el_source">JsonReporter.java</span></div><h1>JsonReporter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2025 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.report;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import java.time.Instant;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+
+/**
+ * Generates JSON report files (evaluations.json and statistics.json)
+ * using Gson serialization.
+ */
+public class JsonReporter {
+
+	private static final String EVALUATIONS_FILE = &quot;evaluations.json&quot;; //$NON-NLS-1$
+
+	private final Gson gson;
+
+<span class="fc" id="L46">	public JsonReporter() {</span>
+<span class="fc" id="L47">		this.gson = new GsonBuilder()</span>
+<span class="fc" id="L48">				.setPrettyPrinting()</span>
+<span class="fc" id="L49">				.registerTypeAdapter(Instant.class, new TypeAdapter&lt;Instant&gt;() {</span>
+					@Override
+					public void write(JsonWriter out, Instant value) throws IOException {
+<span class="fc bfc" id="L52" title="All 2 branches covered.">						out.value(value == null ? null : value.toString());</span>
+<span class="fc" id="L53">					}</span>
+					@Override
+					public Instant read(JsonReader in) throws IOException {
+<span class="fc" id="L56">						return Instant.parse(in.nextString());</span>
+					}
+				})
+<span class="fc" id="L59">				.create();</span>
+<span class="fc" id="L60">	}</span>
+
+	/**
+	 * Writes evaluations to a JSON file, merging with any existing evaluations
+	 * to accumulate results across runs. Deduplicates by commitHash (newer
+	 * evaluations replace older ones).
+	 *
+	 * @param evaluations the list of new evaluations from the current run
+	 * @param outputDir   the output directory
+	 * @throws IOException if file writing fails
+	 */
+	public void writeEvaluations(List&lt;CommitEvaluation&gt; evaluations, Path outputDir) throws IOException {
+<span class="fc" id="L72">		Files.createDirectories(outputDir);</span>
+<span class="fc" id="L73">		Path file = outputDir.resolve(EVALUATIONS_FILE);</span>
+
+		// Load existing evaluations and merge
+<span class="fc" id="L76">		List&lt;CommitEvaluation&gt; existing = loadExistingEvaluations(file);</span>
+<span class="fc" id="L77">		List&lt;CommitEvaluation&gt; merged = mergeEvaluations(existing, evaluations);</span>
+
+<span class="fc" id="L79">		String json = gson.toJson(merged);</span>
+<span class="fc" id="L80">		Files.writeString(file, json, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L81">	}</span>
+
+	/**
+	 * Loads existing evaluations from a JSON file.
+	 *
+	 * @param file the evaluations file
+	 * @return list of existing evaluations, empty if file doesn't exist or is invalid
+	 */
+	public List&lt;CommitEvaluation&gt; loadExistingEvaluations(Path file) {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		if (!Files.exists(file)) {</span>
+<span class="fc" id="L91">			return List.of();</span>
+		}
+		try {
+<span class="fc" id="L94">			String content = Files.readString(file, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L95">			List&lt;CommitEvaluation&gt; result = gson.fromJson(content,</span>
+<span class="fc" id="L96">					new TypeToken&lt;List&lt;CommitEvaluation&gt;&gt;() {}.getType());</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			return result != null ? result : List.of();</span>
+<span class="fc" id="L98">		} catch (Exception e) {</span>
+<span class="fc" id="L99">			System.err.println(&quot;Warning: could not load existing evaluations: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L100">			return List.of();</span>
+		}
+	}
+
+	/**
+	 * Merges existing and new evaluations, deduplicating by commitHash.
+	 * New evaluations replace existing ones with the same commitHash.
+	 *
+	 * @param existing the existing evaluations
+	 * @param newEvals the new evaluations
+	 * @return merged list
+	 */
+	static List&lt;CommitEvaluation&gt; mergeEvaluations(List&lt;CommitEvaluation&gt; existing,
+			List&lt;CommitEvaluation&gt; newEvals) {
+<span class="fc" id="L114">		Map&lt;String, CommitEvaluation&gt; byHash = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		for (CommitEvaluation e : existing) {</span>
+<span class="fc" id="L116">			byHash.put(e.commitHash(), e);</span>
+<span class="fc" id="L117">		}</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">		for (CommitEvaluation e : newEvals) {</span>
+<span class="fc" id="L119">			byHash.put(e.commitHash(), e);</span>
+<span class="fc" id="L120">		}</span>
+<span class="fc" id="L121">		return new ArrayList&lt;&gt;(byHash.values());</span>
+	}
+
+	/**
+	 * Writes statistics to a JSON file.
+	 *
+	 * @param stats     the statistics collector
+	 * @param outputDir the output directory
+	 * @throws IOException if file writing fails
+	 */
+	public void writeStatistics(StatisticsCollector stats, Path outputDir) throws IOException {
+<span class="nc" id="L132">		Files.createDirectories(outputDir);</span>
+<span class="nc" id="L133">		String json = gson.toJson(stats);</span>
+<span class="nc" id="L134">		Files.writeString(outputDir.resolve(&quot;statistics.json&quot;), json, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L135">	}</span>
+
+	/**
+	 * Serializes evaluations to a JSON string.
+	 *
+	 * @param evaluations the list of evaluations
+	 * @return the JSON string
+	 */
+	public String toJson(List&lt;CommitEvaluation&gt; evaluations) {
+<span class="nc" id="L144">		return gson.toJson(evaluations);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

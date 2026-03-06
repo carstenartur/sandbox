@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HibernateRepositoryBuilder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-storage-hibernate</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.storage.hibernate.repository</a> &gt; <span class="el_source">HibernateRepositoryBuilder.java</span></div><h1>HibernateRepositoryBuilder.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.storage.hibernate.repository;
+
+import java.io.IOException;
+
+import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryBuilder;
+import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.hibernate.SessionFactory;
+
+/**
+ * Builder for creating {@link HibernateRepository} instances.
+ * &lt;p&gt;
+ * Example usage:
+ *
+ * &lt;pre&gt;
+ * Properties props = new Properties();
+ * props.put(&quot;hibernate.connection.url&quot;, &quot;jdbc:h2:mem:test&quot;);
+ * props.put(&quot;hibernate.connection.driver_class&quot;, &quot;org.h2.Driver&quot;);
+ * props.put(&quot;hibernate.hbm2ddl.auto&quot;, &quot;create-drop&quot;);
+ *
+ * HibernateSessionFactoryProvider provider = new HibernateSessionFactoryProvider(
+ * 		props);
+ *
+ * HibernateRepository repo = new HibernateRepositoryBuilder()
+ * 		.setSessionFactoryProvider(provider).setRepositoryName(&quot;my-repo&quot;)
+ * 		.build();
+ * &lt;/pre&gt;
+ */
+<span class="fc" id="L41">public class HibernateRepositoryBuilder extends</span>
+		DfsRepositoryBuilder&lt;HibernateRepositoryBuilder, HibernateRepository&gt; {
+
+	private HibernateSessionFactoryProvider sessionFactoryProvider;
+
+	private String repositoryName;
+
+	/**
+	 * Set the Hibernate session factory provider.
+	 *
+	 * @param provider
+	 *            the session factory provider
+	 * @return this builder
+	 */
+	public HibernateRepositoryBuilder setSessionFactoryProvider(
+			HibernateSessionFactoryProvider provider) {
+<span class="fc" id="L57">		this.sessionFactoryProvider = provider;</span>
+<span class="fc" id="L58">		return self();</span>
+	}
+
+	/**
+	 * Get the session factory provider.
+	 *
+	 * @return the session factory provider
+	 */
+	public HibernateSessionFactoryProvider getSessionFactoryProvider() {
+<span class="nc" id="L67">		return sessionFactoryProvider;</span>
+	}
+
+	/**
+	 * Set the repository name used to partition data in the database.
+	 *
+	 * @param name
+	 *            the repository name
+	 * @return this builder
+	 */
+	public HibernateRepositoryBuilder setRepositoryName(String name) {
+<span class="fc" id="L78">		this.repositoryName = name;</span>
+<span class="fc" id="L79">		return self();</span>
+	}
+
+	/**
+	 * Get the repository name.
+	 *
+	 * @return the repository name
+	 */
+	public String getRepositoryName() {
+<span class="fc" id="L88">		return repositoryName;</span>
+	}
+
+	/**
+	 * Get the Hibernate session factory.
+	 *
+	 * @return the session factory
+	 */
+	public SessionFactory getSessionFactory() {
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		return sessionFactoryProvider != null</span>
+<span class="fc" id="L98">				? sessionFactoryProvider.getSessionFactory()</span>
+<span class="nc" id="L99">				: null;</span>
+	}
+
+	@Override
+	public HibernateRepository build() throws IOException {
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		if (sessionFactoryProvider == null) {</span>
+<span class="nc" id="L105">			throw new IllegalArgumentException(</span>
+					&quot;sessionFactoryProvider must be set before calling build()&quot;); //$NON-NLS-1$
+		}
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">		if (repositoryName == null || repositoryName.isEmpty()) {</span>
+<span class="nc" id="L109">			throw new IllegalArgumentException(</span>
+					&quot;repositoryName must be set before calling build()&quot;); //$NON-NLS-1$
+		}
+<span class="fc" id="L112">		return new HibernateRepository(this);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

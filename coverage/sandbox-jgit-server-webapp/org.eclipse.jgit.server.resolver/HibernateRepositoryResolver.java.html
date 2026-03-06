@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HibernateRepositoryResolver.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.resolver</a> &gt; <span class="el_source">HibernateRepositoryResolver.java</span></div><h1>HibernateRepositoryResolver.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.eclipse.jgit.server.resolver;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.storage.hibernate.repository.HibernateRepository;
+import org.eclipse.jgit.storage.hibernate.repository.HibernateRepositoryBuilder;
+import org.eclipse.jgit.transport.resolver.RepositoryResolver;
+import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+/**
+ * Resolves Git repositories from the Hibernate database backend.
+ * &lt;p&gt;
+ * Repository instances are cached by name to avoid creating duplicate
+ * connections to the same database-backed repository.
+ */
+public class HibernateRepositoryResolver
+		implements RepositoryResolver&lt;HttpServletRequest&gt;, AutoCloseable {
+
+	private final HibernateSessionFactoryProvider sessionFactoryProvider;
+
+<span class="fc" id="L41">	private final Map&lt;String, HibernateRepository&gt; cache = new ConcurrentHashMap&lt;&gt;();</span>
+
+	/**
+	 * Create a resolver backed by the given session factory provider.
+	 *
+	 * @param sessionFactoryProvider
+	 *            the Hibernate session factory provider
+	 */
+	public HibernateRepositoryResolver(
+<span class="fc" id="L50">			HibernateSessionFactoryProvider sessionFactoryProvider) {</span>
+<span class="fc" id="L51">		this.sessionFactoryProvider = sessionFactoryProvider;</span>
+<span class="fc" id="L52">	}</span>
+
+	@Override
+	public Repository open(HttpServletRequest req, String name)
+			throws ServiceNotEnabledException {
+<span class="fc" id="L57">		String repoName = normalizeRepoName(name);</span>
+		try {
+<span class="fc" id="L59">			return getOrCreateRepository(repoName);</span>
+<span class="nc" id="L60">		} catch (IOException e) {</span>
+<span class="nc" id="L61">			throw new ServiceNotEnabledException(e.getMessage());</span>
+		}
+	}
+
+	/**
+	 * Get or create a repository by name.
+	 *
+	 * @param name
+	 *            the repository name
+	 * @return the repository
+	 * @throws IOException
+	 *             if repository creation fails
+	 */
+	public HibernateRepository getOrCreateRepository(String name)
+			throws IOException {
+<span class="fc" id="L76">		return cache.computeIfAbsent(name, n -&gt; {</span>
+			try {
+<span class="fc" id="L78">				return new HibernateRepositoryBuilder()</span>
+<span class="fc" id="L79">						.setSessionFactoryProvider(sessionFactoryProvider)</span>
+<span class="fc" id="L80">						.setRepositoryName(n)</span>
+<span class="fc" id="L81">						.setRepositoryDescription(</span>
+								new DfsRepositoryDescription(n))
+<span class="fc" id="L83">						.build();</span>
+<span class="nc" id="L84">			} catch (IOException e) {</span>
+<span class="nc" id="L85">				throw new IllegalStateException(</span>
+						&quot;Failed to create repository: &quot; + n, e); //$NON-NLS-1$
+			}
+		});
+	}
+
+	/**
+	 * Check if a repository with the given name exists in the cache.
+	 *
+	 * @param name
+	 *            the repository name
+	 * @return true if the repository is cached
+	 */
+	public boolean hasRepository(String name) {
+<span class="fc" id="L99">		return cache.containsKey(normalizeRepoName(name));</span>
+	}
+
+	/**
+	 * Get the session factory provider.
+	 *
+	 * @return the session factory provider
+	 */
+	public HibernateSessionFactoryProvider getSessionFactoryProvider() {
+<span class="fc" id="L108">		return sessionFactoryProvider;</span>
+	}
+
+	@Override
+	public void close() {
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		for (HibernateRepository repo : cache.values()) {</span>
+<span class="fc" id="L114">			repo.close();</span>
+<span class="fc" id="L115">		}</span>
+<span class="fc" id="L116">		cache.clear();</span>
+<span class="fc" id="L117">	}</span>
+
+	private static String normalizeRepoName(String name) {
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		if (name.startsWith(&quot;/&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L121">			name = name.substring(1);</span>
+		}
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (name.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L124">			name = name.substring(0, name.length() - 4);</span>
+		}
+<span class="fc" id="L126">		return name;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
