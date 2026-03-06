@@ -23,3 +23,8 @@ $x.indexOf($y) >= 0
 "Consider using strip() instead of trim() for Unicode-aware whitespace removal (Java 11+)":
 $x.trim() :: sourceVersionGE(11) && instanceof($x, "java.lang.String")
 ;;
+
+// String.replaceAll with literal → String.replace (avoids regex overhead)
+$str.replaceAll($literal, $replacement) :: isStringLiteral($literal) && !isRegexp($literal)
+=> $str.replace($literal, $replacement)
+;;

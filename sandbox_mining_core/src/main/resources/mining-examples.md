@@ -306,3 +306,81 @@ safely capture this distinction.
 10. **Do NOT mark API removal (no replacement) as relevant** —
     when an entire API is removed (e.g., `IPageLayout.addFastView`, keybinding API)
     with no replacement, this is NOT_APPLICABLE. It's deletion, not transformation.
+
+11. **Do NOT mark concurrency refactoring as GREEN or YELLOW** —
+    replacing one synchronization mechanism with another (e.g., Phaser → CountDownLatch)
+    requires understanding of the concurrency model and cannot be expressed as a
+    pattern-based rule. Mark as NOT_APPLICABLE or RED.
+
+12. **Do NOT confuse "cleanup bug fix" with "cleanup enhancement"** —
+    if a commit message says "Fix cleanup to ..." and changes the implementation of
+    an existing JDT cleanup (fixing edge cases, preserving comments/markers), this is
+    RED. Enhancements that add new functionality (e.g., "Add cleanup to use module imports")
+    may be YELLOW or GREEN depending on pattern expressibility.
+
+### Example 15: NOT_APPLICABLE — Concurrency refactoring
+
+**Commit:** `4391448b` from eclipse.platform.ui
+**Message:** "Replace Phaser with CountDownLatch for reliable synchronization"
+
+**Analysis:** Replacing a concurrency mechanism with another is a design decision that depends
+on the specific synchronization requirements. This is not a reusable pattern — each case
+requires understanding of what is being synchronized and why.
+
+**Expected evaluation:**
+- relevant: false
+- irrelevantReason: "Concurrency mechanism replacement — requires understanding of synchronization model, not a reusable transformation"
+- trafficLight: NOT_APPLICABLE
+
+### Example 16: RED — Fix cleanup to handle edge case
+
+**Commit:** `ce67be20` from eclipse.jdt.ui
+**Message:** "Fix cleanup to replace java.specification.version property"
+
+**Analysis:** This commit fixes the ConstantsForSystemProperties cleanup to correctly
+handle `java.specification.version` by adding a Java 10 version check and converting
+the result via `String.valueOf()`. This is fixing existing cleanup logic, not defining
+a new pattern.
+
+**Expected evaluation:**
+- relevant: true
+- trafficLight: RED (NOT GREEN — this is fixing a bug in existing cleanup infrastructure)
+- reusability: 3
+- codeImprovement: 5
+- implementationEffort: 6
+- category: "Clean-up Bug Fix"
+- languageChangeNeeded: "Requires modifying existing cleanup Java code to add version-dependent behavior"
+
+### Example 17: RED — Fix quick-fix to check for diamond context
+
+**Commit:** `90ff95a0` from eclipse.jdt.ui
+**Message:** "Do not offer to add type arguments where diamond operator would do"
+
+**Analysis:** This commit restricts when Eclipse offers to add explicit type arguments — only
+in positions where the diamond operator would not suffice (assignments, variable declarations).
+This is a correction to quick-fix behavior, requiring AST context analysis.
+
+**Expected evaluation:**
+- relevant: true
+- trafficLight: RED (NOT YELLOW — this is fixing quick-fix logic, not a pattern)
+- reusability: 2
+- codeImprovement: 6
+- implementationEffort: 7
+- category: "Clean-up Bug Fix"
+
+### Example 18: RED — Fix deprecation highlighting for records
+
+**Commit:** `f9770112` from eclipse.jdt.ui
+**Message:** "Highlight deprecation of canonical record constructor"
+
+**Analysis:** A single-line change to fix how semantic highlighting handles the canonical
+constructor of a deprecated record type. This is a very narrow bug fix in the JDT
+semantic highlighting engine.
+
+**Expected evaluation:**
+- relevant: true
+- trafficLight: RED (single-line bug fix in existing infrastructure)
+- reusability: 1
+- codeImprovement: 4
+- implementationEffort: 2
+- category: "Deprecation Handling"

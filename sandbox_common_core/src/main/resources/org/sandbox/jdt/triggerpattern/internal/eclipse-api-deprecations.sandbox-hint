@@ -1,0 +1,10 @@
+<!id: eclipse-api-deprecations>
+<!description: Replace deprecated Eclipse Platform API calls with modern alternatives.
+Covers patterns found in Eclipse Platform 2025 commits.>
+<!severity: warning>
+<!tags: eclipse, deprecation, migration>
+
+// Platform.run → SafeRunner.run (deprecated in Eclipse 4.x)
+org.eclipse.core.runtime.Platform.run($runnable)
+=> org.eclipse.core.runtime.SafeRunner.run($runnable)
+;;

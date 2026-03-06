@@ -65,15 +65,70 @@ The parser supports two comment styles:
 
 Comments are stripped before any rule parsing occurs.
 
-### Custom Code Blocks (NetBeans Compatibility)
+### Embedded Java Code Blocks
 
-NetBeans `.hint` files may contain `<? ?>` custom Java code blocks. These are **gracefully
-skipped** by the parser (with a log message). They cannot be executed in the Eclipse JDT
-environment:
+`.sandbox-hint` files support two types of `<? ?>` constructs:
+
+#### 1. Code Blocks: `<? code ?>`
+
+A block containing Java code (identified by having whitespace after `<?`) is extracted and
+compiled by the engine:
 
 ```
-<? import java.util.*; ?>
+<?
+public boolean myCustomGuard(GuardContext ctx, Object... args) {
+    // custom guard logic
+    return true;
+}
+
+@FixFunction
+public void myCustomFix(Match match, ASTRewrite rewrite) {
+    // custom fix/rewrite logic
+}
+?>
 ```
+
+**Guard functions** — methods with a `boolean` return type — are registered in the guard registry
+under their method name. They can then be used in rule guards:
+
+```
+$x.oldMethod() :: myCustomGuard($x)
+=> $x.newMethod()
+;;
+```
+
+**Fix functions** — `void` methods annotated with `@FixFunction` — are registered and can be
+referenced from replacement patterns (see below).
+
+> ⚠️ **Current limitation (since 1.5.0):** The engine validates and parses `<? ?>` blocks
+> using JDT's `ASTParser` (AST-only, no bytecode compilation). Custom guard functions from
+> these blocks are registered as **stubs that always return `true`** — they match conservatively
+> but cannot execute the actual Java logic. Full bytecode execution is future work. The editor
+> shows syntax errors in `<? ?>` blocks immediately.
+
+#### 2. Fix Function References: `<?fixName?>`
+
+A `<? ?>` block containing only a plain Java identifier (no whitespace between `<?` and the
+name) is a **fix function reference** — it calls a `@FixFunction` method defined in a code block:
+
+```
+<?
+@FixFunction
+public void customFix(Match match, ASTRewrite rewrite) {
+    // custom rewrite logic here
+}
+?>
+
+$x.oldMethod()
+=> <?customFix?>
+;;
+```
+
+The identifier must be a valid Java identifier with no surrounding whitespace. This is how
+`<?fixName?>` is distinguished from `<? code ?>`.
+
+> **Previously documented as "gracefully skipped"** — this is no longer accurate. Blocks are
+> now extracted, compiled, and validated. The stubs-only limitation applies only to *execution*.
 
 ### Foreach Expansion
 
@@ -241,8 +296,6 @@ You can use these functions in `:: guard` expressions:
 | Guard | Description |
 |-------|-------------|
 | `instanceof($var, "Type")` | True if `$var` is of the given type (e.g., `java.lang.String`). Supports array types (e.g., `"Type[]"`). |
-| `isStatic($var)` | True if the matched method/field is static |
-| `isFinal($var)` | True if the matched variable is final |
 | `contains("text")` | True if the enclosing method contains the text pattern |
 | `notContains("text")` | True if the enclosing method does **NOT** contain the text |
 | `sourceVersionGE(11)` | True if source level is Java 11 or higher |
@@ -262,7 +315,7 @@ You can use these functions in `:: guard` expressions:
 | `isSingleCharacter($var)` | True if `$var` is a single-character string |
 | `isRegexp($var)` | True if `$var` is a regular expression pattern |
 | `elementKindMatches($var, "kind")` | True if the element kind matches (e.g., "METHOD", "FIELD") |
-| `isInTryWithResourceBlock($var)` | True if the code is inside a try-with-resources block |
+| `isInTryWithResourceBlock($var)` | True if the code is inside a try-with-resources block. With 1 argument: checks the bound placeholder's position. With 0 arguments: checks the matched node's position. |
 | `isPassedToMethod($var)` | True if the node is passed as an argument to a method call or constructor. Takes 0 or 1 args (placeholder name). |
 | `inSerializableClass()` | True if the code is in a serializable class |
 | `containsAnnotation("Type")` | True if the enclosing element contains the annotation |
@@ -290,10 +343,13 @@ You can use these functions in `:: guard` expressions:
 | `isField($var)` | True if the bound placeholder is a field (instance or static). Uses `IVariableBinding.isField()` when available, falls back to AST structure. |
 | `isInConstructor()` | True if the matched node is inside a constructor. Walks up the AST looking for a `MethodDeclaration` that `isConstructor()`. |
 | `classOverrides("methodName")` | True if the enclosing class declares a method with the given name. Useful for detecting missing `hashCode()` when `equals()` is overridden. |
+| `isLocalVariable($var)` | True if the bound placeholder is a local variable (not a field and not a parameter). Uses `IVariableBinding` when available, falls back to AST structure. |
+| `isAssignedToLocalVariable()` | True if the matched expression is the initializer of a local variable declaration (not a field initializer). Takes 0 arguments; operates on the matched node. Use for rules that apply only in local variable context (e.g., `var`, thread-safety). |
+| `isAutoCloseable($var)` | True if the type of the bound placeholder implements `java.lang.AutoCloseable`. Uses type binding when available; falls back to `true` conservatively when binding resolution is not available. |
+| `genericTypeIs($var, index, "type")` | True if the generic type parameter at the given index of the bound placeholder's type matches the expected type name. E.g., `genericTypeIs($list, 0, "java.lang.String")` checks that `$list` is parameterized with `String` at position 0. Falls back to `true` when binding resolution is unavailable. |
+| `argsCount($args$, N)` | True if the variadic multi-placeholder captured exactly N arguments. E.g., `argsCount($args$, 3)` checks that 3 arguments were matched. Works with single bindings (count=1) and unbound placeholders (count=0). |
+| `isResourceVariable($var)` | True if the bound placeholder is a variable whose type implements `AutoCloseable` AND it is not already managed by a try-with-resources statement. Useful for identifying candidates for try-with-resources wrapping. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
-| `genericTypeIs($var, index, "type")` | True if the generic type parameter at the given index of the bound placeholder's type matches the expected type name. Falls back to `true` when binding resolution is unavailable. |
-| `argsCount($args$, N)` | True if the variadic multi-placeholder captured exactly N arguments. |
-| `isResourceVariable($var)` | True if the bound placeholder is a variable whose type implements `AutoCloseable` AND is not already in a try-with-resources block. |
 
 ### Common Mistakes
 
@@ -501,6 +557,92 @@ java.lang.String.valueOf($obj) :: isNonNull($obj)
 When proposing a transformation, consider whether the reverse direction is also useful.
 If both directions are valid, propose both as separate rules with appropriate guards.
 
+## Semantic Safety Rules for Transformations
+
+When generating transformation rules, the DSL rule author MUST consider whether the
+transformation is **semantically safe** in all contexts. A syntactically valid pattern
+match does NOT guarantee semantic equivalence.
+
+### Thread Safety
+
+When replacing a thread-safe class with a non-thread-safe alternative
+(e.g., `StringBuffer` → `StringBuilder`), the replacement is ONLY safe for
+**local variables** (never shared between threads).
+
+✅ CORRECT — use `isAssignedToLocalVariable` guard:
+```
+new java.lang.StringBuffer($arg) :: isAssignedToLocalVariable()
+=> new java.lang.StringBuilder($arg)
+;;
+```
+
+❌ WRONG — blind replacement without scope check:
+```
+new java.lang.StringBuffer($arg)
+=> new java.lang.StringBuilder($arg)
+;;
+```
+
+### Null-Semantics for Collection Factory Methods
+
+Java 9+ factory methods (`List.of()`, `Set.of()`, `Map.of()`) do NOT accept `null` elements,
+while `Collections.singletonList(null)` is valid. When the matched argument could be null,
+the transformation MUST be guarded with `isNonNull()`:
+
+✅ CORRECT:
+```
+java.util.Collections.singletonList($x) :: sourceVersionGE(9) && isNonNull($x)
+=> java.util.List.of($x)
+;;
+```
+
+### Scope Restrictions for `var`
+
+Java `var` (local variable type inference) is ONLY valid for local variable declarations
+with an initializer — NOT for fields, parameters, return types, or catch variables.
+Rules suggesting `var` MUST use `isAssignedToLocalVariable()`:
+
+✅ CORRECT:
+```
+"Consider using 'var' for local variable type inference (Java 10+)":
+new $Type($args) :: sourceVersionGE(10) && isAssignedToLocalVariable()
+;;
+```
+
+### `.close()` Is Not Always try-with-resources
+
+Not every `.close()` call implies a try-with-resources opportunity. The resource must
+implement `AutoCloseable`, must be a local variable, and must not already be inside a
+try-with-resources block. Use:
+```
+$x.close() :: isAutoCloseable($x) && !isInTryWithResourceBlock($x) && isLocalVariable($x)
+```
+
+### Hint-Only Rules Need Selectivity
+
+Hint-only rules (no `=>` replacement) that match very common patterns
+(e.g., `$x.trim()`, `$opt.isPresent()`) produce excessive noise. Add guards to
+narrow matches to meaningful contexts:
+- Use `sourceVersionGE()` to limit version scope
+- Use `isLocalVariable()`, `isAssignedToLocalVariable()` to limit structural scope
+- Use `instanceof($x, "TypeName")` to restrict to specific types
+
+### Avoiding Duplication with Existing Libraries
+
+Before creating a new `.sandbox-hint` file, check if the patterns are already covered
+by an existing bundled library:
+
+| Library | Scope |
+|---------|-------|
+| `collections.sandbox-hint` | `Collections.singletonList` → `List.of()`, `emptyMap()` → `Map.of()`, etc. |
+| `deprecations.sandbox-hint` | `new Boolean($x)` → `Boolean.parseBoolean($x)`, `Character.isSpace` → `isWhitespace`, etc. |
+| `modernize-java9.sandbox-hint` | Java 9+ API modernization |
+| `performance.sandbox-hint` | Performance patterns |
+
+If your rule overlaps with an existing library, either add the rule to the EXISTING library
+or ensure the new rule has clearly DIFFERENT semantics (different replacement target, stricter
+guards). Do NOT create a new file that duplicates rules from existing files.
+
 ## Source Version Guidance
 
 **Minimum version is Java 8.** We do not support anything older than Java 8. Do not use `sourceVersionGE()` with values below 8.
@@ -555,6 +697,10 @@ in generated output, they are hallucinations and must be rejected:
 | `addAnnotation @FQN` | Removed — this directive syntax is no longer supported | Use natural method-rewrite syntax: `=> @FQN void $name($params$)` |
 | `sourceVersionGE(7)` or lower (incl. `sourceVersionGE(6)`) | Java 7 and below are not supported; 8 is the baseline | Omit the guard entirely (applies unconditionally) |
 | `sourceVersionGE(8)` | Java 8 is the baseline — guard is always true and therefore useless | Omit the guard entirely (applies unconditionally) |
+| `sourceVersionGE(5)` | Java 5 is below baseline 8 — guard is always true | Omit the guard entirely |
+| `<!minJavaVersion: 5>` or `<!minJavaVersion: 7>` | Java 5/7 is below baseline 8 | Use `<!minJavaVersion: 8>` or the actual minimum version (≥ 8) |
+| Rules matching `$x.close()` without guards | Too broad — matches every method call named `close()` regardless of type | Add `isAutoCloseable($x) && !isInTryWithResourceBlock($x) && isLocalVariable($x)` |
+| Rules matching `new $Type($args)` without guards | Too broad — matches every constructor call | Add structural guards like `isAssignedToLocalVariable()` |
 | Simple names in patterns | `Charset.forName()` will not match | Use FQN: `java.nio.charset.Charset.forName()` |
 | Bitwise operators (`\|`, `&`, `^`, `>>`, `<<`) | Not supported in patterns or replacements | Mark as RED / not implementable |
 
