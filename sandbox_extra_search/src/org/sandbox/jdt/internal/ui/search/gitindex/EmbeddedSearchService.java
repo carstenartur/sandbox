@@ -114,7 +114,7 @@ public class EmbeddedSearchService {
 				+ props.getProperty("hibernate.connection.url")); //$NON-NLS-1$
 		try {
 			provider= new HibernateSessionFactoryProvider(props);
-			queryService= new GitDatabaseQueryService(provider.getSessionFactory());
+			queryService= GitDatabaseQueryService.create(provider);
 			embeddingService= new EmbeddingService();
 			queryService.setEmbeddingService(embeddingService);
 			initialized= true;
