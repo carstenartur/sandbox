@@ -17,7 +17,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -1032,5 +1038,807 @@ public class GitDatabaseQueryService {
 		public long getCommitCount() {
 			return commitCount;
 		}
+	}
+
+	// --- Feature 1: Migration Planning Queries ---
+
+	/**
+	 * Find all Java blob index entries whose import statements match a given
+	 * prefix. Useful for planning framework migrations (e.g. from
+	 * {@code javax.servlet} to {@code jakarta.servlet}).
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param importPrefix
+	 *            the import prefix to search for (e.g. {@code "javax.servlet"})
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List<JavaBlobIndex> getMigrationImpact(String repoName,
+			String importPrefix, int offset, int limit) {
+		if (repoName == null || repoName.isEmpty() || importPrefix == null
+				|| importPrefix.isEmpty()) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			return session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND (j.importStatements LIKE :prefixFirst " //$NON-NLS-1$
+							+ "OR j.importStatements LIKE :prefixOther)", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("prefixFirst", importPrefix + "%") //$NON-NLS-1$
+					.setParameter("prefixOther", "%\n" + importPrefix + "%") //$NON-NLS-1$ //$NON-NLS-2$
+					.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
+		}
+	}
+
+	/**
+	 * Returns aggregated migration impact statistics for a given import prefix.
+	 * <p>
+	 * The returned map contains:
+	 * <ul>
+	 * <li>{@code totalFiles} — total number of affected files</li>
+	 * <li>{@code distinctPackages} — number of distinct package names</li>
+	 * <li>{@code distinctAuthors} — number of distinct commit authors</li>
+	 * <li>{@code earliestDate} — earliest commit date as ISO-8601 string</li>
+	 * <li>{@code latestDate} — latest commit date as ISO-8601 string</li>
+	 * </ul>
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param importPrefix
+	 *            the import prefix to search for
+	 * @return summary statistics as a map
+	 */
+	public Map<String, Object> getMigrationImpactSummary(String repoName,
+			String importPrefix) {
+		Map<String, Object> summary = new LinkedHashMap<>();
+		summary.put("totalFiles", Integer.valueOf(0)); //$NON-NLS-1$
+		summary.put("distinctPackages", Integer.valueOf(0)); //$NON-NLS-1$
+		summary.put("distinctAuthors", Integer.valueOf(0)); //$NON-NLS-1$
+		summary.put("earliestDate", null); //$NON-NLS-1$
+		summary.put("latestDate", null); //$NON-NLS-1$
+		if (repoName == null || repoName.isEmpty() || importPrefix == null
+				|| importPrefix.isEmpty()) {
+			return summary;
+		}
+		try (Session session = sessionFactory.openSession()) {
+			Long total = session.createQuery(
+					"SELECT COUNT(j) FROM JavaBlobIndex j " //$NON-NLS-1$
+							+ "WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND (j.importStatements LIKE :prefixFirst " //$NON-NLS-1$
+							+ "OR j.importStatements LIKE :prefixOther)", //$NON-NLS-1$
+					Long.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("prefixFirst", importPrefix + "%") //$NON-NLS-1$
+					.setParameter("prefixOther", "%\n" + importPrefix + "%") //$NON-NLS-1$ //$NON-NLS-2$
+					.getSingleResult();
+			if (total == null || total == 0L) {
+				return summary;
+			}
+			int totalFiles = total > Integer.MAX_VALUE ? Integer.MAX_VALUE
+					: total.intValue();
+			summary.put("totalFiles", Integer.valueOf(totalFiles)); //$NON-NLS-1$
+
+			Set<String> packages = new HashSet<>();
+			Set<String> authors = new HashSet<>();
+			Instant earliest = null;
+			Instant latest = null;
+			final int pageSize = 1000;
+			int offset = 0;
+			while (true) {
+				List<JavaBlobIndex> page = session.createQuery(
+						"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+								+ "AND (j.importStatements LIKE :prefixFirst " //$NON-NLS-1$
+								+ "OR j.importStatements LIKE :prefixOther)", //$NON-NLS-1$
+						JavaBlobIndex.class)
+						.setParameter("repo", repoName) //$NON-NLS-1$
+						.setParameter("prefixFirst", importPrefix + "%") //$NON-NLS-1$
+						.setParameter("prefixOther", "%\n" + importPrefix + "%") //$NON-NLS-1$ //$NON-NLS-2$
+						.setFirstResult(offset)
+						.setMaxResults(pageSize)
+						.getResultList();
+				if (page.isEmpty()) {
+					break;
+				}
+				for (JavaBlobIndex entry : page) {
+					String pkg = entry.getPackageName();
+					if (pkg != null) {
+						packages.add(pkg);
+					}
+					String author = entry.getCommitAuthor();
+					if (author != null) {
+						authors.add(author);
+					}
+					Instant date = entry.getCommitDate();
+					if (date != null) {
+						if (earliest == null || date.isBefore(earliest)) {
+							earliest = date;
+						}
+						if (latest == null || date.isAfter(latest)) {
+							latest = date;
+						}
+					}
+				}
+				offset += pageSize;
+				if (page.size() < pageSize) {
+					break;
+				}
+			}
+			summary.put("distinctPackages", //$NON-NLS-1$
+					Integer.valueOf(packages.size()));
+			summary.put("distinctAuthors", //$NON-NLS-1$
+					Integer.valueOf(authors.size()));
+			summary.put("earliestDate", //$NON-NLS-1$
+					earliest != null ? earliest.toString() : null);
+			summary.put("latestDate", //$NON-NLS-1$
+					latest != null ? latest.toString() : null);
+			return summary;
+		}
+	}
+
+	/**
+	 * Find all Java blob index entries that use the {@code @Deprecated}
+	 * annotation.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities with {@code @Deprecated} annotation
+	 */
+	public List<JavaBlobIndex> getDeprecatedApiUsage(String repoName,
+			int offset, int limit) {
+		if (repoName == null || repoName.isEmpty()) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			return session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repoName " //$NON-NLS-1$
+							+ "AND (j.annotations = :exact " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :first " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :middle " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :last)", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repoName", repoName) //$NON-NLS-1$
+					.setParameter("exact", "Deprecated") //$NON-NLS-1$
+					.setParameter("first", "Deprecated\n%") //$NON-NLS-1$
+					.setParameter("middle", "%\nDeprecated\n%") //$NON-NLS-1$
+					.setParameter("last", "%\nDeprecated") //$NON-NLS-1$
+					.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
+		}
+	}
+
+	/**
+	 * Count how many files in the repository import types matching the given
+	 * prefix. Useful for dependency impact analysis.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param importPrefix
+	 *            the import prefix to count (e.g. {@code "com.google.guava"})
+	 * @return number of files that contain at least one matching import
+	 */
+	public long getImportFrequency(String repoName, String importPrefix) {
+		if (repoName == null || repoName.isEmpty() || importPrefix == null
+				|| importPrefix.isEmpty()) {
+			return 0L;
+		}
+		try (Session session = sessionFactory.openSession()) {
+			Long count = session.createQuery(
+					"SELECT COUNT(j) FROM JavaBlobIndex j " //$NON-NLS-1$
+							+ "WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND (j.importStatements LIKE :prefixFirst " //$NON-NLS-1$
+							+ "OR j.importStatements LIKE :prefixOther)", //$NON-NLS-1$
+					Long.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("prefixFirst", importPrefix + "%") //$NON-NLS-1$
+					.setParameter("prefixOther", "%\n" + importPrefix + "%") //$NON-NLS-1$ //$NON-NLS-2$
+					.getSingleResult();
+			return count != null ? count.longValue() : 0L;
+		}
+	}
+
+	/**
+	 * Find all files that import from any of the given prefixes.
+	 * <p>
+	 * Useful for determining migration scope across multiple frameworks (e.g.
+	 * "find everything using {@code javax.servlet} OR {@code javax.ws.rs}").
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param importPrefixes
+	 *            list of import prefixes to match
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return matching blob index entities
+	 */
+	public List<JavaBlobIndex> searchByMultipleImports(String repoName,
+			List<String> importPrefixes, int offset, int limit) {
+		if (repoName == null || repoName.isEmpty()
+				|| importPrefixes == null || importPrefixes.isEmpty()) {
+			return List.of();
+		}
+		List<String> validPrefixes = new ArrayList<>();
+		for (String p : importPrefixes) {
+			if (p != null && !p.isBlank()) {
+				validPrefixes.add(p);
+			}
+		}
+		if (validPrefixes.isEmpty()) {
+			return List.of();
+		}
+		// Cap to avoid excessive query length
+		if (validPrefixes.size() > MAX_IMPORT_PREFIXES) {
+			validPrefixes = validPrefixes.subList(0, MAX_IMPORT_PREFIXES);
+		}
+		try (Session session = sessionFactory.openSession()) {
+			StringBuilder hql = new StringBuilder(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo AND ("); //$NON-NLS-1$
+			for (int i = 0; i < validPrefixes.size(); i++) {
+				if (i > 0) {
+					hql.append(" OR "); //$NON-NLS-1$
+				}
+				hql.append("j.importStatements LIKE :pf").append(i) //$NON-NLS-1$
+						.append(" OR j.importStatements LIKE :pm").append(i); //$NON-NLS-1$
+			}
+			hql.append(")"); //$NON-NLS-1$
+			var query = session.createQuery(hql.toString(), JavaBlobIndex.class)
+					.setParameter("repo", repoName); //$NON-NLS-1$
+			for (int i = 0; i < validPrefixes.size(); i++) {
+				String prefix = validPrefixes.get(i);
+				query.setParameter("pf" + i, prefix + "%"); //$NON-NLS-1$
+				query.setParameter("pm" + i, "%\n" + prefix + "%"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			return query.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
+		}
+	}
+
+	/**
+	 * Find which files need updating for each old→new import mapping.
+	 * <p>
+	 * Takes a map of old import prefixes to new import prefixes (e.g.
+	 * {@code {"javax.servlet" → "jakarta.servlet"}}) and returns the files
+	 * affected by each mapping.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param oldToNewImportMap
+	 *            map of old import prefix → new import prefix
+	 * @return map of old prefix → list of files that need migration
+	 */
+	public Map<String, List<JavaBlobIndex>> getMigrationCandidates(
+			String repoName,
+			Map<String, String> oldToNewImportMap) {
+		Map<String, List<JavaBlobIndex>> result = new LinkedHashMap<>();
+		if (repoName == null || repoName.isEmpty()
+				|| oldToNewImportMap == null || oldToNewImportMap.isEmpty()) {
+			return result;
+		}
+		for (String oldPrefix : oldToNewImportMap.keySet()) {
+			if (oldPrefix != null && !oldPrefix.isEmpty()) {
+				List<JavaBlobIndex> affected = new ArrayList<>();
+				int offset = 0;
+				final int pageSize = 1000;
+				while (true) {
+					List<JavaBlobIndex> page = getMigrationImpact(
+							repoName, oldPrefix, offset, pageSize);
+					if (page.isEmpty()) {
+						break;
+					}
+					affected.addAll(page);
+					if (page.size() < pageSize) {
+						break;
+					}
+					offset += pageSize;
+				}
+				result.put(oldPrefix, affected);
+			}
+		}
+		return result;
+	}
+
+	// --- Feature 2: API Evolution Tracker ---
+
+	/**
+	 * Compare {@link JavaBlobIndex} entries between two commits.
+	 * <p>
+	 * Returns an {@link ApiDiffResult} with:
+	 * <ul>
+	 * <li>files added in commit B (not in A)</li>
+	 * <li>files removed from commit A (not in B)</li>
+	 * <li>files with method signature or visibility changes</li>
+	 * </ul>
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param commitOidA
+	 *            the first (older) commit object ID
+	 * @param commitOidB
+	 *            the second (newer) commit object ID
+	 * @return the diff result
+	 */
+	public ApiDiffResult getApiDiff(String repoName, String commitOidA,
+			String commitOidB) {
+		if (repoName == null || repoName.isEmpty()
+				|| commitOidA == null || commitOidA.isEmpty()
+				|| commitOidB == null || commitOidB.isEmpty()) {
+			return new ApiDiffResult(List.of(), List.of(), List.of());
+		}
+		List<JavaBlobIndex> entriesA = getEntriesForCommit(repoName,
+				commitOidA);
+		List<JavaBlobIndex> entriesB = getEntriesForCommit(repoName,
+				commitOidB);
+
+		Map<String, JavaBlobIndex> mapA = indexByFilePath(entriesA);
+		Map<String, JavaBlobIndex> mapB = indexByFilePath(entriesB);
+
+		List<JavaBlobIndex> added = new ArrayList<>();
+		List<JavaBlobIndex> removed = new ArrayList<>();
+		List<ApiChangeEntry> changed = new ArrayList<>();
+
+		for (Map.Entry<String, JavaBlobIndex> entry : mapB.entrySet()) {
+			if (!mapA.containsKey(entry.getKey())) {
+				added.add(entry.getValue());
+			}
+		}
+		for (Map.Entry<String, JavaBlobIndex> entry : mapA.entrySet()) {
+			if (!mapB.containsKey(entry.getKey())) {
+				removed.add(entry.getValue());
+			} else {
+				JavaBlobIndex before = entry.getValue();
+				JavaBlobIndex after = mapB.get(entry.getKey());
+				String desc = detectApiChanges(before, after);
+				if (desc != null) {
+					changed.add(new ApiChangeEntry(before, after, desc));
+				}
+			}
+		}
+		return new ApiDiffResult(added, removed, changed);
+	}
+
+	/**
+	 * Find all entries with {@code @Deprecated} annotation ordered by commit
+	 * date. Shows when deprecations were introduced over time.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return deprecated entries ordered by commit date ascending
+	 */
+	public List<JavaBlobIndex> getDeprecationTimeline(String repoName,
+			int offset, int limit) {
+		if (repoName == null || repoName.isEmpty()) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			return session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND (j.annotations = :exact " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :first " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :middle " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :last) " //$NON-NLS-1$
+							+ "ORDER BY j.commitDate ASC", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("exact", "Deprecated") //$NON-NLS-1$
+					.setParameter("first", "Deprecated\n%") //$NON-NLS-1$
+					.setParameter("middle", "%\nDeprecated\n%") //$NON-NLS-1$
+					.setParameter("last", "%\nDeprecated") //$NON-NLS-1$
+					.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
+		}
+	}
+
+	/**
+	 * Like {@link #getApiDiff(String, String, String)} but filtered to public
+	 * API only. Detects breaking changes to publicly visible types.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param commitOidA
+	 *            the first (older) commit object ID
+	 * @param commitOidB
+	 *            the second (newer) commit object ID
+	 * @return the diff result for public API entries only
+	 */
+	public ApiDiffResult getPublicApiChanges(String repoName,
+			String commitOidA, String commitOidB) {
+		ApiDiffResult full = getApiDiff(repoName, commitOidA, commitOidB);
+		List<JavaBlobIndex> addedPublic = full.getAddedFiles() == null
+				? List.of()
+				: full.getAddedFiles().stream()
+						.filter(e -> isPublic(e))
+						.toList();
+		List<JavaBlobIndex> removedPublic = full.getRemovedFiles() == null
+				? List.of()
+				: full.getRemovedFiles().stream()
+						.filter(e -> isPublic(e))
+						.toList();
+		List<ApiChangeEntry> changedPublic = full.getChangedFiles() == null
+				? List.of()
+				: full.getChangedFiles().stream()
+						.filter(e -> isPublic(e.getBefore())
+								|| isPublic(e.getAfter()))
+						.toList();
+		return new ApiDiffResult(addedPublic, removedPublic, changedPublic);
+	}
+
+	/**
+	 * Track how a specific type's declared methods and method signatures
+	 * changed over time across commits.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param fullyQualifiedTypeName
+	 *            the fully qualified type name to track
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return entries for the type ordered by commit date ascending
+	 */
+	public List<JavaBlobIndex> getMethodEvolution(String repoName,
+			String fullyQualifiedTypeName, int offset, int limit) {
+		if (repoName == null || repoName.isEmpty()
+				|| fullyQualifiedTypeName == null
+				|| fullyQualifiedTypeName.isEmpty()) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			return session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND (j.fullyQualifiedNames = :fqnExact " //$NON-NLS-1$
+							+ "OR j.fullyQualifiedNames LIKE :fqnPrefix " //$NON-NLS-1$
+							+ "OR j.fullyQualifiedNames LIKE :fqnSuffix " //$NON-NLS-1$
+							+ "OR j.fullyQualifiedNames LIKE :fqnMiddle) " //$NON-NLS-1$
+							+ "ORDER BY j.commitDate ASC", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("fqnExact", fullyQualifiedTypeName) //$NON-NLS-1$
+					.setParameter("fqnPrefix", fullyQualifiedTypeName + "\n%") //$NON-NLS-1$ //$NON-NLS-2$
+					.setParameter("fqnSuffix", "%\n" + fullyQualifiedTypeName) //$NON-NLS-1$ //$NON-NLS-2$
+					.setParameter("fqnMiddle", "%\n" + fullyQualifiedTypeName + "\n%") //$NON-NLS-1$ //$NON-NLS-2$
+					.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
+		}
+	}
+
+	// --- Feature 3: Developer Analytics ---
+
+	/**
+	 * Group entries by commit author and type kind, counting how many
+	 * classes/interfaces/enums each author introduced.
+	 * <p>
+	 * Each element of the returned list is an {@code Object[]} with:
+	 * {@code [commitAuthor, typeKind, count]}.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @return aggregated statistics per author and type kind
+	 */
+	public List<Object[]> getAuthorTypeStatistics(String repoName) {
+		if (repoName == null || repoName.isEmpty()) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			return session.createQuery(
+					"SELECT j.commitAuthor, j.typeKind, COUNT(j) " //$NON-NLS-1$
+							+ "FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "GROUP BY j.commitAuthor, j.typeKind " //$NON-NLS-1$
+							+ "ORDER BY j.commitAuthor, j.typeKind", //$NON-NLS-1$
+					Object[].class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.getResultList();
+		}
+	}
+
+	/**
+	 * Return average line count per commit date for entries matching a package
+	 * prefix. Shows how code size grows over time.
+	 * <p>
+	 * Each element of the returned list is an {@code Object[]} with:
+	 * {@code [commitDate, avgLineCount]}.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param packagePrefix
+	 *            package name prefix filter (e.g. {@code "com.example"})
+	 * @return average line count per commit date ordered by date ascending
+	 */
+	public List<Object[]> getCodeComplexityTrend(String repoName,
+			String packagePrefix) {
+		if (repoName == null || repoName.isEmpty()) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			String hql;
+			if (packagePrefix == null || packagePrefix.isEmpty()) {
+				hql = "SELECT j.commitDate, AVG(j.lineCount) " //$NON-NLS-1$
+						+ "FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+						+ "GROUP BY j.commitDate ORDER BY j.commitDate ASC"; //$NON-NLS-1$
+				return session.createQuery(hql, Object[].class)
+						.setParameter("repo", repoName) //$NON-NLS-1$
+						.getResultList();
+			}
+			hql = "SELECT j.commitDate, AVG(j.lineCount) " //$NON-NLS-1$
+					+ "FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+					+ "AND j.packageName LIKE :pkg " //$NON-NLS-1$
+					+ "GROUP BY j.commitDate ORDER BY j.commitDate ASC"; //$NON-NLS-1$
+			return session.createQuery(hql, Object[].class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("pkg", packagePrefix + "%") //$NON-NLS-1$
+					.getResultList();
+		}
+	}
+
+	/**
+	 * Find {@link JavaBlobIndex} entries with a line count above the given
+	 * threshold. Useful for identifying large classes that may need
+	 * refactoring.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param lineCountThreshold
+	 *            minimum line count (inclusive)
+	 * @param offset
+	 *            pagination offset
+	 * @param limit
+	 *            maximum results
+	 * @return entries whose line count exceeds the threshold, ordered by line
+	 *         count descending
+	 */
+	public List<JavaBlobIndex> getMonsterClasses(String repoName,
+			int lineCountThreshold, int offset, int limit) {
+		if (repoName == null || repoName.isEmpty()) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			return session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND j.lineCount >= :threshold " //$NON-NLS-1$
+							+ "ORDER BY j.lineCount DESC", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("threshold", lineCountThreshold) //$NON-NLS-1$
+					.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
+		}
+	}
+
+	/**
+	 * Find types whose fully qualified names never appear in any other file's
+	 * import statements within the same repository. These are potential dead
+	 * code candidates.
+	 * <p>
+	 * Wildcard imports (e.g. {@code pkg.*}) are treated as covering all types
+	 * in that package, so types referenced only via wildcard imports are not
+	 * considered dead.
+	 * <p>
+	 * <b>Note:</b> The cross-reference filtering is performed in-memory after
+	 * loading all entries with non-null FQNs. Pagination is applied to the
+	 * filtered result set. For very large repositories, callers should use
+	 * reasonable {@code limit} values.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @param offset
+	 *            pagination offset into the filtered result
+	 * @param limit
+	 *            maximum number of results to return
+	 * @return entries that are never imported by other files in the repository
+	 */
+	public List<JavaBlobIndex> getDeadCodeCandidates(String repoName,
+			int offset, int limit) {
+		if (repoName == null || repoName.isEmpty()) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			// Collect all import statements in the repo as a set of tokens
+			List<String> allImports = session.createQuery(
+					"SELECT j.importStatements FROM JavaBlobIndex j " //$NON-NLS-1$
+							+ "WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND j.importStatements IS NOT NULL", //$NON-NLS-1$
+					String.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.getResultList();
+			// Build a set of individual imported names for precise matching,
+			// and track wildcard-import package prefixes (pkg.*).
+			Set<String> importedNames = new HashSet<>();
+			Set<String> wildcardPackages = new HashSet<>();
+			for (String imports : allImports) {
+				if (imports != null) {
+					for (String token : FQN_SPLIT_PATTERN.split(imports)) {
+						String t = token.trim();
+						if (t.isBlank()) {
+							continue;
+						}
+						if (t.endsWith(".*")) { //$NON-NLS-1$
+							String pkg = t.substring(0, t.length() - 2);
+							if (!pkg.isEmpty()) {
+								wildcardPackages.add(pkg);
+							}
+						} else {
+							importedNames.add(t);
+						}
+					}
+				}
+			}
+
+			// Collect all types
+			List<JavaBlobIndex> all = session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND j.fullyQualifiedNames IS NOT NULL", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.getResultList();
+
+			List<JavaBlobIndex> deadCandidates = new ArrayList<>();
+			for (JavaBlobIndex entry : all) {
+				String fqns = entry.getFullyQualifiedNames();
+				if (fqns == null || fqns.isBlank()) {
+					continue;
+				}
+				boolean referenced = false;
+				for (String fqn : FQN_SPLIT_PATTERN.split(fqns)) {
+					if (fqn.isBlank()) {
+						continue;
+					}
+					String f = fqn.trim();
+					if (importedNames.contains(f)) {
+						referenced = true;
+						break;
+					}
+					// Also check if covered by a wildcard import
+					int lastDot = f.lastIndexOf('.');
+					if (lastDot > 0
+							&& wildcardPackages
+									.contains(f.substring(0, lastDot))) {
+						referenced = true;
+						break;
+					}
+				}
+				if (!referenced) {
+					deadCandidates.add(entry);
+				}
+			}
+			int from = Math.min(offset, deadCandidates.size());
+			int to = Math.min(from + limit, deadCandidates.size());
+			return new ArrayList<>(deadCandidates.subList(from, to));
+		}
+	}
+
+	/**
+	 * Count types annotated with {@code @Test} (test types) vs. total types
+	 * per package. Returns a proxy for test coverage.
+	 * <p>
+	 * Each element of the returned list is an {@code Object[]} with:
+	 * {@code [packageName, testTypeCount, totalTypeCount]}.
+	 *
+	 * @param repoName
+	 *            the repository name
+	 * @return per-package test type count and total type count
+	 */
+	public List<Object[]> getTestCoverageProxy(String repoName) {
+		if (repoName == null || repoName.isEmpty()) {
+			return List.of();
+		}
+		try (Session session = sessionFactory.openSession()) {
+			// Total types per package
+			List<Object[]> totals = session.createQuery(
+					"SELECT j.packageName, COUNT(j) FROM JavaBlobIndex j " //$NON-NLS-1$
+							+ "WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "GROUP BY j.packageName", //$NON-NLS-1$
+					Object[].class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.getResultList();
+
+			// Test types per package (JUnit @Test annotations)
+			List<Object[]> testCounts = session.createQuery(
+					"SELECT j.packageName, COUNT(j) FROM JavaBlobIndex j " //$NON-NLS-1$
+							+ "WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND (j.annotations LIKE :junit4Test OR j.annotations LIKE :junit5Test) " //$NON-NLS-1$
+							+ "GROUP BY j.packageName", //$NON-NLS-1$
+					Object[].class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("junit4Test", "%org.junit.Test%") //$NON-NLS-1$
+					.setParameter("junit5Test", "%org.junit.jupiter.api.Test%") //$NON-NLS-1$
+					.getResultList();
+
+			Map<String, Long> testMap = new HashMap<>();
+			for (Object[] row : testCounts) {
+				testMap.put((String) row[0], (Long) row[1]);
+			}
+
+			List<Object[]> result = new ArrayList<>();
+			for (Object[] row : totals) {
+				String pkg = (String) row[0];
+				Long total = (Long) row[1];
+				Long testCount = testMap.getOrDefault(pkg, 0L);
+				result.add(new Object[] { pkg, testCount, total });
+			}
+			return result;
+		}
+	}
+
+	private static final java.util.regex.Pattern FQN_SPLIT_PATTERN = java.util.regex.Pattern
+			.compile("[,\\s]+"); //$NON-NLS-1$
+
+	/** Maximum number of import prefixes accepted by searchByMultipleImports. */
+	private static final int MAX_IMPORT_PREFIXES = 50;
+
+	// --- Private helpers ---
+
+	private List<JavaBlobIndex> getEntriesForCommit(String repoName,
+			String commitOid) {
+		try (Session session = sessionFactory.openSession()) {
+			return session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND j.commitObjectId = :commit", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("commit", commitOid) //$NON-NLS-1$
+					.getResultList();
+		}
+	}
+
+	private static Map<String, JavaBlobIndex> indexByFilePath(
+			List<JavaBlobIndex> entries) {
+		Map<String, JavaBlobIndex> map = new LinkedHashMap<>();
+		for (JavaBlobIndex entry : entries) {
+			if (entry.getFilePath() != null) {
+				map.put(entry.getFilePath(), entry);
+			}
+		}
+		return map;
+	}
+
+	private static String detectApiChanges(JavaBlobIndex before,
+			JavaBlobIndex after) {
+		List<String> changes = new ArrayList<>();
+		if (!Objects.equals(before.getDeclaredMethods(),
+				after.getDeclaredMethods())) {
+			changes.add("methods changed"); //$NON-NLS-1$
+		}
+		if (!Objects.equals(before.getMethodSignatures(),
+				after.getMethodSignatures())) {
+			changes.add("signatures changed"); //$NON-NLS-1$
+		}
+		if (!Objects.equals(before.getVisibility(),
+				after.getVisibility())) {
+			changes.add("visibility changed"); //$NON-NLS-1$
+		}
+		if (changes.isEmpty()) {
+			return null;
+		}
+		return String.join(", ", changes); //$NON-NLS-1$
+	}
+
+	private static boolean isPublic(JavaBlobIndex entry) {
+		if (entry == null) {
+			return false;
+		}
+		String vis = entry.getVisibility();
+		return vis != null && vis.contains("public"); //$NON-NLS-1$
 	}
 }

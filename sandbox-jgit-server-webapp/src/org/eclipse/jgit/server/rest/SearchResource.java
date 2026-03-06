@@ -16,6 +16,7 @@ package org.eclipse.jgit.server.rest;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,6 +25,8 @@ import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
 import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
 import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
 import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
+import org.eclipse.jgit.storage.hibernate.service.ApiChangeEntry;
+import org.eclipse.jgit.storage.hibernate.service.ApiDiffResult;
 import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 
 import com.google.gson.Gson;
@@ -103,8 +106,27 @@ public class SearchResource extends HttpServlet {
 		int offset = parseIntParam(req, "offset", 0); //$NON-NLS-1$
 		int limit = parseIntParam(req, "limit", DEFAULT_LIMIT); //$NON-NLS-1$
 
-		if (repo == null || repo.isEmpty() || query == null
-				|| query.isEmpty()) {
+		// Paths that only need 'repo' (no 'q' required)
+		boolean repoOnly = pathInfo.startsWith("/migration/deprecated") //$NON-NLS-1$
+				|| pathInfo.startsWith("/deprecation-timeline") //$NON-NLS-1$
+				|| pathInfo.startsWith("/analytics/authors") //$NON-NLS-1$
+				|| pathInfo.startsWith("/analytics/monster-classes") //$NON-NLS-1$
+				|| pathInfo.startsWith("/analytics/dead-code") //$NON-NLS-1$
+				|| pathInfo.startsWith("/analytics/test-ratio"); //$NON-NLS-1$
+
+		// Paths that need 'repo', 'commitA', 'commitB'
+		boolean commitDiff = pathInfo.startsWith("/api-diff"); //$NON-NLS-1$
+
+		if (repo == null || repo.isEmpty()) {
+			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			try (PrintWriter w = resp.getWriter()) {
+				w.write("{\"error\":\"Parameter 'repo' is required\"}"); //$NON-NLS-1$
+			}
+			return;
+		}
+
+		if (!repoOnly && !commitDiff
+				&& (query == null || query.isEmpty())) {
 			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			try (PrintWriter w = resp.getWriter()) {
 				w.write("{\"error\":\"Parameters 'repo' and 'q' are required\"}"); //$NON-NLS-1$
@@ -113,7 +135,7 @@ public class SearchResource extends HttpServlet {
 		}
 
 		// Input validation: limit query length to prevent abuse
-		if (query.length() > MAX_QUERY_LENGTH) {
+		if (query != null && query.length() > MAX_QUERY_LENGTH) {
 			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			try (PrintWriter w = resp.getWriter()) {
 				w.write("{\"error\":\"Query too long (max " //$NON-NLS-1$
@@ -135,7 +157,9 @@ public class SearchResource extends HttpServlet {
 
 		// Sanitize repo and query parameters
 		repo = sanitizeInput(repo);
-		query = sanitizeInput(query);
+		if (query != null) {
+			query = sanitizeInput(query);
+		}
 
 		try {
 			GitDatabaseQueryService queryService = new GitDatabaseQueryService(
@@ -218,6 +242,36 @@ public class SearchResource extends HttpServlet {
 					handleSimilarSearch(queryService, repo, blobId,
 							limit, resp);
 				}
+			} else if (pathInfo.startsWith("/migration/summary")) { //$NON-NLS-1$
+				handleMigrationImpactSummary(queryService, repo, query,
+						resp);
+			} else if (pathInfo.startsWith("/migration/deprecated")) { //$NON-NLS-1$
+				handleDeprecatedApiUsage(queryService, repo, offset,
+						limit, resp);
+			} else if (pathInfo.startsWith("/migration")) { //$NON-NLS-1$
+				handleMigrationImpact(queryService, repo, query, offset,
+						limit, resp);
+			} else if (pathInfo.startsWith("/api-diff/public")) { //$NON-NLS-1$
+				handlePublicApiChanges(queryService, repo, req, resp);
+			} else if (pathInfo.startsWith("/api-diff")) { //$NON-NLS-1$
+				handleApiDiff(queryService, repo, req, resp);
+			} else if (pathInfo.startsWith("/deprecation-timeline")) { //$NON-NLS-1$
+				handleDeprecationTimeline(queryService, repo, offset,
+						limit, resp);
+			} else if (pathInfo.startsWith("/analytics/authors")) { //$NON-NLS-1$
+				handleAuthorTypeStatistics(queryService, repo, resp);
+			} else if (pathInfo.startsWith("/analytics/complexity")) { //$NON-NLS-1$
+				handleCodeComplexityTrend(queryService, repo, query,
+						resp);
+			} else if (pathInfo.startsWith("/analytics/monster-classes")) { //$NON-NLS-1$
+				int threshold = parseIntParam(req, "threshold", 500); //$NON-NLS-1$
+				handleMonsterClasses(queryService, repo, threshold,
+						offset, limit, resp);
+			} else if (pathInfo.startsWith("/analytics/dead-code")) { //$NON-NLS-1$
+				handleDeadCodeCandidates(queryService, repo, offset,
+						limit, resp);
+			} else if (pathInfo.startsWith("/analytics/test-ratio")) { //$NON-NLS-1$
+				handleTestCoverageProxy(queryService, repo, resp);
 			} else {
 				// Default: search commits
 				handleCommitSearch(queryService, repo, query, offset,
@@ -410,6 +464,246 @@ public class SearchResource extends HttpServlet {
 		List<JavaBlobIndex> results = queryService.findSimilarCode(repo,
 				blobId, topK);
 		writeJavaBlobResponse(results, repo, blobId, 0, topK, resp);
+	}
+
+	private void handleMigrationImpact(GitDatabaseQueryService queryService,
+			String repo, String importPrefix, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+		List<JavaBlobIndex> results = queryService.getMigrationImpact(
+				repo, importPrefix, offset, limit);
+		writeJavaBlobResponse(results, repo, importPrefix, offset, limit,
+				resp);
+	}
+
+	private void handleMigrationImpactSummary(
+			GitDatabaseQueryService queryService, String repo,
+			String importPrefix, HttpServletResponse resp)
+			throws IOException {
+		Map<String, Object> summary = queryService
+				.getMigrationImpactSummary(repo, importPrefix);
+		JsonObject response = new JsonObject();
+		response.addProperty("repository", repo); //$NON-NLS-1$
+		response.addProperty("importPrefix", importPrefix); //$NON-NLS-1$
+		for (Map.Entry<String, Object> entry : summary.entrySet()) {
+			Object val = entry.getValue();
+			if (val instanceof Number) {
+				response.addProperty(entry.getKey(),
+						((Number) val).longValue());
+			} else if (val != null) {
+				response.addProperty(entry.getKey(), val.toString());
+			} else {
+				response.add(entry.getKey(), null);
+			}
+		}
+		resp.setStatus(HttpServletResponse.SC_OK);
+		try (PrintWriter w = resp.getWriter()) {
+			w.write(gson.toJson(response));
+		}
+	}
+
+	private void handleDeprecatedApiUsage(
+			GitDatabaseQueryService queryService, String repo,
+			int offset, int limit, HttpServletResponse resp)
+			throws IOException {
+		List<JavaBlobIndex> results = queryService.getDeprecatedApiUsage(
+				repo, offset, limit);
+		writeJavaBlobResponse(results, repo, "Deprecated", offset, limit, //$NON-NLS-1$
+				resp);
+	}
+
+	private void handleApiDiff(GitDatabaseQueryService queryService,
+			String repo, HttpServletRequest req,
+			HttpServletResponse resp) throws IOException {
+		String commitA = req.getParameter("commitA"); //$NON-NLS-1$
+		String commitB = req.getParameter("commitB"); //$NON-NLS-1$
+		if (commitA == null || commitA.isEmpty() || commitB == null
+				|| commitB.isEmpty()) {
+			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			try (PrintWriter w = resp.getWriter()) {
+				w.write("{\"error\":\"Parameters 'commitA' and 'commitB' are required\"}"); //$NON-NLS-1$
+			}
+			return;
+		}
+		commitA = sanitizeInput(commitA);
+		commitB = sanitizeInput(commitB);
+		ApiDiffResult diff = queryService.getApiDiff(repo, commitA,
+				commitB);
+		writeApiDiffResponse(diff, resp);
+	}
+
+	private void handlePublicApiChanges(GitDatabaseQueryService queryService,
+			String repo, HttpServletRequest req,
+			HttpServletResponse resp) throws IOException {
+		String commitA = req.getParameter("commitA"); //$NON-NLS-1$
+		String commitB = req.getParameter("commitB"); //$NON-NLS-1$
+		if (commitA == null || commitA.isEmpty() || commitB == null
+				|| commitB.isEmpty()) {
+			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			try (PrintWriter w = resp.getWriter()) {
+				w.write("{\"error\":\"Parameters 'commitA' and 'commitB' are required\"}"); //$NON-NLS-1$
+			}
+			return;
+		}
+		commitA = sanitizeInput(commitA);
+		commitB = sanitizeInput(commitB);
+		ApiDiffResult diff = queryService.getPublicApiChanges(repo,
+				commitA, commitB);
+		writeApiDiffResponse(diff, resp);
+	}
+
+	private void handleDeprecationTimeline(
+			GitDatabaseQueryService queryService, String repo,
+			int offset, int limit, HttpServletResponse resp)
+			throws IOException {
+		List<JavaBlobIndex> results = queryService.getDeprecationTimeline(
+				repo, offset, limit);
+		writeJavaBlobResponse(results, repo, "deprecation-timeline", //$NON-NLS-1$
+				offset, limit, resp);
+	}
+
+	private void handleAuthorTypeStatistics(
+			GitDatabaseQueryService queryService, String repo,
+			HttpServletResponse resp) throws IOException {
+		List<Object[]> rows = queryService.getAuthorTypeStatistics(repo);
+		JsonObject response = new JsonObject();
+		response.addProperty("repository", repo); //$NON-NLS-1$
+		response.addProperty("totalResults", rows.size()); //$NON-NLS-1$
+		JsonArray items = new JsonArray();
+		for (Object[] row : rows) {
+			JsonObject item = new JsonObject();
+			item.addProperty("author", //$NON-NLS-1$
+					row[0] != null ? row[0].toString() : null);
+			item.addProperty("typeKind", //$NON-NLS-1$
+					row[1] != null ? row[1].toString() : null);
+			item.addProperty("count", //$NON-NLS-1$
+					row[2] != null ? ((Number) row[2]).longValue() : 0L);
+			items.add(item);
+		}
+		response.add("results", items); //$NON-NLS-1$
+		resp.setStatus(HttpServletResponse.SC_OK);
+		try (PrintWriter w = resp.getWriter()) {
+			w.write(gson.toJson(response));
+		}
+	}
+
+	private void handleCodeComplexityTrend(
+			GitDatabaseQueryService queryService, String repo,
+			String packagePrefix, HttpServletResponse resp)
+			throws IOException {
+		List<Object[]> rows = queryService.getCodeComplexityTrend(repo,
+				packagePrefix);
+		JsonObject response = new JsonObject();
+		response.addProperty("repository", repo); //$NON-NLS-1$
+		response.addProperty("packagePrefix", packagePrefix); //$NON-NLS-1$
+		response.addProperty("totalResults", rows.size()); //$NON-NLS-1$
+		JsonArray items = new JsonArray();
+		for (Object[] row : rows) {
+			JsonObject item = new JsonObject();
+			item.addProperty("commitDate", //$NON-NLS-1$
+					row[0] != null ? row[0].toString() : null);
+			item.addProperty("avgLineCount", //$NON-NLS-1$
+					row[1] != null ? ((Number) row[1]).doubleValue() : 0.0);
+			items.add(item);
+		}
+		response.add("results", items); //$NON-NLS-1$
+		resp.setStatus(HttpServletResponse.SC_OK);
+		try (PrintWriter w = resp.getWriter()) {
+			w.write(gson.toJson(response));
+		}
+	}
+
+	private void handleMonsterClasses(GitDatabaseQueryService queryService,
+			String repo, int threshold, int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+		List<JavaBlobIndex> results = queryService.getMonsterClasses(repo,
+				threshold, offset, limit);
+		writeJavaBlobResponse(results, repo,
+				"lineCount>=" + threshold, offset, limit, resp); //$NON-NLS-1$
+	}
+
+	private void handleDeadCodeCandidates(
+			GitDatabaseQueryService queryService, String repo,
+			int offset, int limit,
+			HttpServletResponse resp) throws IOException {
+		List<JavaBlobIndex> results = queryService
+				.getDeadCodeCandidates(repo, offset, limit);
+		writeJavaBlobResponse(results, repo, "dead-code", offset, //$NON-NLS-1$
+				limit, resp);
+	}
+
+	private void handleTestCoverageProxy(
+			GitDatabaseQueryService queryService, String repo,
+			HttpServletResponse resp) throws IOException {
+		List<Object[]> rows = queryService.getTestCoverageProxy(repo);
+		JsonObject response = new JsonObject();
+		response.addProperty("repository", repo); //$NON-NLS-1$
+		response.addProperty("totalResults", rows.size()); //$NON-NLS-1$
+		JsonArray items = new JsonArray();
+		for (Object[] row : rows) {
+			JsonObject item = new JsonObject();
+			item.addProperty("packageName", //$NON-NLS-1$
+					row[0] != null ? row[0].toString() : null);
+			item.addProperty("testTypeCount", //$NON-NLS-1$
+					row[1] != null ? ((Number) row[1]).longValue() : 0L);
+			item.addProperty("totalTypeCount", //$NON-NLS-1$
+					row[2] != null ? ((Number) row[2]).longValue() : 0L);
+			items.add(item);
+		}
+		response.add("results", items); //$NON-NLS-1$
+		resp.setStatus(HttpServletResponse.SC_OK);
+		try (PrintWriter w = resp.getWriter()) {
+			w.write(gson.toJson(response));
+		}
+	}
+
+	private void writeApiDiffResponse(ApiDiffResult diff,
+			HttpServletResponse resp) throws IOException {
+		JsonObject response = new JsonObject();
+
+		JsonArray added = new JsonArray();
+		for (JavaBlobIndex jbi : diff.getAddedFiles()) {
+			added.add(toJsonObject(jbi));
+		}
+		response.add("addedFiles", added); //$NON-NLS-1$
+
+		JsonArray removed = new JsonArray();
+		for (JavaBlobIndex jbi : diff.getRemovedFiles()) {
+			removed.add(toJsonObject(jbi));
+		}
+		response.add("removedFiles", removed); //$NON-NLS-1$
+
+		JsonArray changed = new JsonArray();
+		for (ApiChangeEntry ce : diff.getChangedFiles()) {
+			JsonObject item = new JsonObject();
+			item.add("before", toJsonObject(ce.getBefore())); //$NON-NLS-1$
+			item.add("after", toJsonObject(ce.getAfter())); //$NON-NLS-1$
+			item.addProperty("changeDescription", //$NON-NLS-1$
+					ce.getChangeDescription());
+			changed.add(item);
+		}
+		response.add("changedFiles", changed); //$NON-NLS-1$
+
+		resp.setStatus(HttpServletResponse.SC_OK);
+		try (PrintWriter w = resp.getWriter()) {
+			w.write(gson.toJson(response));
+		}
+	}
+
+	private static JsonObject toJsonObject(JavaBlobIndex jbi) {
+		if (jbi == null) {
+			return new JsonObject();
+		}
+		JsonObject item = new JsonObject();
+		item.addProperty("blobObjectId", jbi.getBlobObjectId()); //$NON-NLS-1$
+		item.addProperty("commitObjectId", jbi.getCommitObjectId()); //$NON-NLS-1$
+		item.addProperty("filePath", jbi.getFilePath()); //$NON-NLS-1$
+		item.addProperty("packageName", jbi.getPackageName()); //$NON-NLS-1$
+		item.addProperty("declaredTypes", jbi.getDeclaredTypes()); //$NON-NLS-1$
+		item.addProperty("fullyQualifiedNames", //$NON-NLS-1$
+				jbi.getFullyQualifiedNames());
+		item.addProperty("declaredMethods", jbi.getDeclaredMethods()); //$NON-NLS-1$
+		item.addProperty("visibility", jbi.getVisibility()); //$NON-NLS-1$
+		return item;
 	}
 
 	private void writeFilePathResponse(List<FilePathHistory> results,
