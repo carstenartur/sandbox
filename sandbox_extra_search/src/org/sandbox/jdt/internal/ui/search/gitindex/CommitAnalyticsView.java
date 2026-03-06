@@ -103,6 +103,11 @@ public class CommitAnalyticsView extends ViewPart {
 
 	private void refreshAnalytics() {
 		String repoName= repositoryCombo.getText().trim();
+		if (repoName.isEmpty()) {
+			statsLabel.setText(Messages.CommitAnalyticsView_SelectRepository);
+			authorTableViewer.setInput(new Object[0]);
+			return;
+		}
 		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
 		if (client == null) {
 			statsLabel.setText(Messages.CommitAnalyticsView_ServiceNotInitialized);

@@ -33,9 +33,8 @@ import org.sandbox.jdt.internal.ui.search.gitindex.EmbeddedSearchService;
  *
  * <p>
  * Provides a UI to search code by natural language description. Uses
- * {@link EmbeddedSearchService} to delegate to
- * {@code GitDatabaseQueryService.semanticSearch()} or
- * {@code hybridSearch()}.
+ * {@link EmbeddedSearchService} to delegate queries via a
+ * {@code SemanticSearchClient} to the semantic search REST backend.
  * </p>
  *
  * <p>
@@ -109,7 +108,7 @@ public class SemanticCodeSearchPage extends DialogPage implements ISearchPage {
 
 		repoText= new Text(composite, SWT.BORDER | SWT.SINGLE);
 		repoText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		repoText.setMessage("Repository name (leave empty for all)"); //$NON-NLS-1$
+		repoText.setMessage("Repository name (required)"); //$NON-NLS-1$
 
 		// Max results
 		Label maxLabel= new Label(composite, SWT.NONE);
@@ -123,7 +122,7 @@ public class SemanticCodeSearchPage extends DialogPage implements ISearchPage {
 		// Info label
 		Label infoLabel= new Label(composite, SWT.NONE);
 		infoLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
-		infoLabel.setText("\u2139 Uses local AI embeddings (offline, no network required)"); //$NON-NLS-1$
+		infoLabel.setText("\u2139 Uses local AI embeddings via local Git index service (requires running backend)"); //$NON-NLS-1$
 
 		setControl(composite);
 	}
@@ -136,7 +135,7 @@ public class SemanticCodeSearchPage extends DialogPage implements ISearchPage {
 		}
 
 		if (EmbeddedSearchService.getInstance().getSearchClient() == null) {
-			setErrorMessage("Semantic search service is not available. Please wait for the database to initialize."); //$NON-NLS-1$
+			setErrorMessage(Messages.SemanticSearchClient_BackendNotAvailable);
 			return false;
 		}
 

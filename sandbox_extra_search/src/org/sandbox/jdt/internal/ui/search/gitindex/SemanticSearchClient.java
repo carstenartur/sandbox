@@ -218,8 +218,8 @@ public class SemanticSearchClient {
 	public List<SearchHit> findSimilarCode(String repoName, String blobId,
 			int maxResults) {
 		String url= baseUrl + "/api/search/similar?repo=" //$NON-NLS-1$
-				+ encode(repoName) + "&blobId=" + encode(blobId) //$NON-NLS-1$
-				+ "&limit=" + maxResults; //$NON-NLS-1$
+				+ encode(repoName) + "&q=" + encode(blobId) //$NON-NLS-1$
+				+ "&blobId=" + encode(blobId) + "&limit=" + maxResults; //$NON-NLS-1$ //$NON-NLS-2$
 		return getSearchHits(url);
 	}
 
@@ -233,7 +233,8 @@ public class SemanticSearchClient {
 	 */
 	public List<SearchHit> getFileHistory(String repoName, String path) {
 		String url= baseUrl + "/api/search/filehistory?repo=" //$NON-NLS-1$
-				+ encode(repoName) + "&path=" + encode(path); //$NON-NLS-1$
+				+ encode(repoName) + "&path=" + encode(path) //$NON-NLS-1$
+				+ "&q=" + encode(path); //$NON-NLS-1$
 		return getFileHistoryHits(url);
 	}
 

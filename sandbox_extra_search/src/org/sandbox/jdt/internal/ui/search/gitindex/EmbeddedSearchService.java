@@ -112,13 +112,14 @@ public class EmbeddedSearchService {
 	}
 
 	/**
-	 * Returns the REST search client, or {@code null} if not initialized.
+	 * Returns the REST search client, lazily initializing the service on first
+	 * access if necessary.
 	 *
-	 * @return the {@link SemanticSearchClient}, or {@code null}
+	 * @return the {@link SemanticSearchClient} instance
 	 */
 	public SemanticSearchClient getSearchClient() {
 		if (!initialized) {
-			return null;
+			initialize(null);
 		}
 		return SemanticSearchClient.getInstance();
 	}

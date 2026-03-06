@@ -57,7 +57,8 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 	 * @param queryText
 	 *            the natural language query text
 	 * @param repoName
-	 *            the repository name to search (empty string for all repos)
+	 *            the repository name to search (required — the backend rejects
+	 *            empty values)
 	 * @param maxResults
 	 *            maximum number of results to return
 	 * @param mode
