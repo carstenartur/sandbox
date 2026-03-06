@@ -13,51 +13,32 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.search.gitindex;
 
-import java.util.Properties;
-
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
 
 /**
- * Singleton service that manages the embedded HSQLDB database and Lucene index
- * for Git repository indexing. All data access runs in-process — no REST, no
- * HikariCP, no network communication.
+ * Singleton service that manages the {@link SemanticSearchClient} connecting to
+ * the {@code sandbox-jgit-server-webapp} REST backend.
  *
  * <h2>Architecture</h2>
  *
  * <pre>
- * Eclipse JVM (single process)
- * ├── EmbeddedSearchService (this class — lazy singleton)
- * │   ├── HibernateSessionFactoryProvider → HSQLDB file: (in-process JDBC)
- * │   ├── GitDatabaseQueryService         → Hibernate Search → Lucene (local-filesystem)
- * │   └── CommitIndexer + BlobIndexer     → writes to HSQLDB + Lucene
- * └── Eclipse Views
- *     ├── GitSearchView       → calls queryService.searchBySymbol()
- *     ├── JavaTypeHistoryView → calls queryService.getFileHistory()
- *     └── CommitAnalyticsView → calls queryService.getAuthorStatistics()
+ * Eclipse Plugin (sandbox_extra_search)
+ * └── EmbeddedSearchService (this class — lazy singleton)
+ *     └── SemanticSearchClient → REST HTTP calls → sandbox-jgit-server-webapp
+ *         ├── GitSearchView       → searchBySymbol / searchByType / ...
+ *         ├── JavaTypeHistoryView → getFileHistory()
+ *         └── CommitAnalyticsView → getAuthorStatistics()
  * </pre>
  *
- * <h2>Why HSQLDB Embedded</h2>
- * <ul>
- * <li>No external server process required</li>
- * <li>{@code jdbc:hsqldb:file:} runs as direct JVM method calls (~0ms
- * latency)</li>
- * <li>No connection pool needed — Hibernate's built-in
- * {@code DriverManagerConnectionProviderImpl} suffices</li>
- * <li>No JSON serialization — Java objects used directly</li>
- * <li>Lucene index stored on local filesystem in Eclipse state location</li>
- * </ul>
- *
- * <h2>Phase 1b Status</h2>
  * <p>
- * This class provides the configuration infrastructure. Actual Hibernate/HSQLDB
- * wiring requires bundling {@code sandbox-jgit-storage-hibernate} as an OSGi
- * dependency (tracked in TODO.md Phase 1b).
+ * No dependency on Hibernate, DJL, Lucene, HSQLDB, or Jakarta Persistence.
+ * Start the backend with: {@code cd sandbox-jgit-server-webapp &amp;&amp; mvn spring-boot:run}
  * </p>
  *
+ * @see SemanticSearchClient
  * @see RepositoryIndexService
- * @see IncrementalIndexer
  */
 public class EmbeddedSearchService {
 
@@ -84,69 +65,20 @@ public class EmbeddedSearchService {
 	}
 
 	/**
-	 * Initializes the embedded HSQLDB database and Hibernate Search / Lucene
-	 * index. Safe to call multiple times — subsequent calls are no-ops.
+	 * Initializes the REST search client. Safe to call multiple times —
+	 * subsequent calls are no-ops.
 	 *
-	 * <p>
-	 * Phase 1b: Once {@code sandbox-jgit-storage-hibernate} is available as an
-	 * OSGi bundle, this method will create the
-	 * {@code HibernateSessionFactoryProvider} and
-	 * {@code GitDatabaseQueryService}.
-	 * </p>
-	 *
-	 * @param stateLocation the Eclipse plugin state location for database files
+	 * @param stateLocation the Eclipse plugin state location (unused, kept for
+	 *            API compatibility)
 	 */
 	public void initialize(IPath stateLocation) {
 		if (initialized) {
 			return;
 		}
-		Properties props= buildHsqldbProperties(stateLocation);
-		LOG.info("Git Database Index: HSQLDB embedded configured at " //$NON-NLS-1$
-				+ props.getProperty("hibernate.connection.url")); //$NON-NLS-1$
-		// Phase 1b: Uncomment when sandbox-jgit-storage-hibernate is bundled
-		// provider = new HibernateSessionFactoryProvider(props);
-		// queryService = new GitDatabaseQueryService(provider.getSessionFactory());
+		SemanticSearchClient.getInstance();
+		LOG.info("Git Search: REST client initialized (backend: " //$NON-NLS-1$
+				+ SemanticSearchClient.DEFAULT_BASE_URL + ")"); //$NON-NLS-1$
 		initialized= true;
-	}
-
-	/**
-	 * Builds Hibernate properties for HSQLDB embedded (in-process) mode. No
-	 * HikariCP, no network, no external server.
-	 *
-	 * @param stateLocation the Eclipse plugin state location
-	 * @return configured Hibernate properties
-	 */
-	static Properties buildHsqldbProperties(IPath stateLocation) {
-		Properties props= new Properties();
-
-		// HSQLDB embedded — in-process, no network, no TCP
-		props.put("hibernate.connection.url", //$NON-NLS-1$
-				"jdbc:hsqldb:file:" + stateLocation.append("hsqldb").append("gitindex") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-						+ ";shutdown=true"); //$NON-NLS-1$
-		props.put("hibernate.connection.driver_class", //$NON-NLS-1$
-				"org.hsqldb.jdbc.JDBCDriver"); //$NON-NLS-1$
-		props.put("hibernate.dialect", //$NON-NLS-1$
-				"org.hibernate.dialect.HSQLDialect"); //$NON-NLS-1$
-		props.put("hibernate.connection.username", "sa"); //$NON-NLS-1$ //$NON-NLS-2$
-		props.put("hibernate.connection.password", ""); //$NON-NLS-1$ //$NON-NLS-2$
-		props.put("hibernate.hbm2ddl.auto", "update"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		// No connection pool — HSQLDB embedded = direct method calls in same JVM
-		// Hibernate's built-in DriverManagerConnectionProvider is sufficient
-		props.put("hibernate.connection.provider_class", //$NON-NLS-1$
-				"org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl"); //$NON-NLS-1$
-
-		// Lucene on local filesystem — persistent across Eclipse restarts
-		props.put("hibernate.search.backend.type", "lucene"); //$NON-NLS-1$ //$NON-NLS-2$
-		props.put("hibernate.search.backend.directory.type", //$NON-NLS-1$
-				"local-filesystem"); //$NON-NLS-1$
-		props.put("hibernate.search.backend.directory.root", //$NON-NLS-1$
-				stateLocation.append("lucene-index").toOSString()); //$NON-NLS-1$
-
-		// No second-level cache needed — HSQLDB caches internally
-		props.put("hibernate.cache.use_second_level_cache", "false"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		return props;
 	}
 
 	/**
@@ -159,15 +91,36 @@ public class EmbeddedSearchService {
 	}
 
 	/**
-	 * Shuts down the embedded database and releases all resources. Called when
-	 * the plugin is stopped.
+	 * Returns whether the REST backend is reachable.
+	 *
+	 * @return {@code true} if the health endpoint responds with HTTP 200
+	 */
+	public boolean isAvailable() {
+		return initialized && SemanticSearchClient.getInstance().isAvailable();
+	}
+
+	/**
+	 * Shuts down the service and releases resources. Called when the plugin is
+	 * stopped.
 	 */
 	public void shutdown() {
 		if (!initialized) {
 			return;
 		}
-		// Phase 1b: provider.close();
 		initialized= false;
-		LOG.info("Git Database Index: Embedded search service shut down"); //$NON-NLS-1$
+		LOG.info("Git Search: REST search service shut down"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Returns the REST search client, lazily initializing the service on first
+	 * access if necessary.
+	 *
+	 * @return the {@link SemanticSearchClient} instance
+	 */
+	public SemanticSearchClient getSearchClient() {
+		if (!initialized) {
+			initialize(null);
+		}
+		return SemanticSearchClient.getInstance();
 	}
 }
