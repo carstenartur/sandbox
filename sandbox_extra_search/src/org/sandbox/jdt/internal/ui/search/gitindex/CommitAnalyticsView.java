@@ -19,8 +19,6 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService.AuthorStats;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -45,8 +43,8 @@ import org.sandbox.jdt.internal.ui.search.Messages;
  * </ul>
  *
  * <p>
- * Internally uses {@code GitDatabaseQueryService.getAuthorStatistics()} and
- * {@code countObjectsByType()} from sandbox-jgit-storage-hibernate.
+ * Internally uses {@link SemanticSearchClient} to call the REST API of
+ * {@code sandbox-jgit-server-webapp}.
  * </p>
  */
 public class CommitAnalyticsView extends ViewPart {
@@ -105,13 +103,13 @@ public class CommitAnalyticsView extends ViewPart {
 
 	private void refreshAnalytics() {
 		String repoName= repositoryCombo.getText().trim();
-		GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
-		if (queryService == null) {
+		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
+		if (client == null) {
 			statsLabel.setText(Messages.CommitAnalyticsView_ServiceNotInitialized);
 			authorTableViewer.setInput(new Object[0]);
 			return;
 		}
-		List<AuthorStats> authors= queryService.getAuthorStatistics(repoName);
+		List<AuthorStats> authors= client.getAuthorStatistics(repoName);
 		authorTableViewer.setInput(authors);
 		statsLabel.setText(Messages.bind(Messages.CommitAnalyticsView_ShowingAuthors,
 				new Object[] {Integer.valueOf(authors.size()), repoName}));

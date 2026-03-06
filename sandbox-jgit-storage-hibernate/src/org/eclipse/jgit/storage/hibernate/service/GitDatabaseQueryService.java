@@ -29,7 +29,6 @@ import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
 import org.eclipse.jgit.storage.hibernate.entity.GitObjectEntity;
 import org.eclipse.jgit.storage.hibernate.entity.GitRefEntity;
 import org.eclipse.jgit.storage.hibernate.entity.GitReflogEntity;
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
 import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
 import org.eclipse.jgit.storage.hibernate.search.RankFusionUtil;
@@ -61,22 +60,6 @@ public class GitDatabaseQueryService {
 	 */
 	public GitDatabaseQueryService(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
-	}
-
-	/**
-	 * Create a new query service from a session factory provider.
-	 * <p>
-	 * This factory method allows callers that do not have Hibernate on their
-	 * compile-time classpath (e.g. Eclipse plugin modules compiled by Tycho) to
-	 * construct a {@code GitDatabaseQueryService} without referencing
-	 * {@link SessionFactory} directly.
-	 *
-	 * @param provider
-	 *            the Hibernate session factory provider
-	 * @return a new {@code GitDatabaseQueryService}
-	 */
-	public static GitDatabaseQueryService create(HibernateSessionFactoryProvider provider) {
-		return new GitDatabaseQueryService(provider.getSessionFactory());
 	}
 
 	/**
