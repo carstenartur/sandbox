@@ -63,7 +63,7 @@ layout.addFastView("viewId");
 ### Java 21+ Deprecation Patterns
 
 Java 21 removed or deprecated several APIs. Common patterns seen in Eclipse 2025:
-- `Thread.stop()`, `Thread.suspend()`, `Thread.resume()` — removed for deadlock safety
+- `Thread.stop()`, `Thread.suspend()`, `Thread.resume()` — deprecated for removal due to deadlock and data-corruption risks
 - `new URL(String)` — deprecated since Java 20, use `URI.create(String).toURL()`
 - `SecurityManager` methods — deprecated for removal
 - `Finalization` — deprecated; use `Cleaner` or try-with-resources instead

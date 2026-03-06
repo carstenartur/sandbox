@@ -14,6 +14,7 @@
 package org.sandbox.mining.core.comparison;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -124,7 +125,7 @@ public class MiningComparator {
 		if (validationResult == null) {
 			return GapCategory.INVALID_DSL_RULE;
 		}
-		String lower = validationResult.toLowerCase();
+		String lower = validationResult.toLowerCase(Locale.ROOT);
 		if (lower.contains("xml") || lower.contains("<trigger") //$NON-NLS-1$ //$NON-NLS-2$
 				|| lower.contains("<import") || lower.contains("syntax") //$NON-NLS-1$ //$NON-NLS-2$
 				|| lower.contains("parse")) { //$NON-NLS-1$

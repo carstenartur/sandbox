@@ -157,8 +157,10 @@ public class DeltaReport {
 					sb.append(": ").append(gap.suggestion()); //$NON-NLS-1$
 				}
 				if (gap.geminiValue() != null && gap.referenceValue() != null) {
-					sb.append(" (gemini=`").append(gap.geminiValue()) //$NON-NLS-1$
-							.append("` → reference=`").append(gap.referenceValue()).append("`)"); //$NON-NLS-1$ //$NON-NLS-2$
+					String gemini = sanitizeInlineValue(gap.geminiValue());
+					String reference = sanitizeInlineValue(gap.referenceValue());
+					sb.append(" (gemini=`").append(gemini) //$NON-NLS-1$
+							.append("` → reference=`").append(reference).append("`)"); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 				sb.append("\n"); //$NON-NLS-1$
 			}
@@ -194,5 +196,27 @@ public class DeltaReport {
 				toJson(), StandardCharsets.UTF_8);
 		Files.writeString(outputDir.resolve("delta-report.md"), //$NON-NLS-1$
 				formatMarkdown(), StandardCharsets.UTF_8);
+	}
+
+	private static final int MAX_INLINE_LENGTH = 80;
+
+	/**
+	 * Sanitizes a value for inline Markdown rendering: truncates to a single line,
+	 * escapes backticks, and limits length.
+	 */
+	static String sanitizeInlineValue(String value) {
+		if (value == null) {
+			return ""; //$NON-NLS-1$
+		}
+		// Take only the first line
+		int nl = value.indexOf('\n');
+		String single = nl >= 0 ? value.substring(0, nl) : value;
+		// Escape backticks
+		single = single.replace("`", "'"); //$NON-NLS-1$ //$NON-NLS-2$
+		// Truncate
+		if (single.length() > MAX_INLINE_LENGTH) {
+			single = single.substring(0, MAX_INLINE_LENGTH) + "…"; //$NON-NLS-1$
+		}
+		return single;
 	}
 }

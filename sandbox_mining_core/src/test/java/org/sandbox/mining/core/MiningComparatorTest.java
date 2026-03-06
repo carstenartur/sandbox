@@ -197,6 +197,38 @@ class MiningComparatorTest {
 		assertTrue(mdContent.contains("# Delta Report"));
 	}
 
+	@Test
+	void testMarkdownSanitizesMultiLineValues() {
+		// Gemini value with multi-line DSL rule and backticks
+		CommitEvaluation mining = createEval("hash1", true, TrafficLight.GREEN,
+				"bad `rule`\nline2\nline3", "syntax `error`\ndetails", "Cat1");
+		CommitEvaluation ref = createEval("hash1", true, TrafficLight.GREEN,
+				"good `rule`\nline2", "VALID", "Cat1");
+		MiningComparator comparator = new MiningComparator();
+		DeltaReport report = comparator.compare(List.of(mining), List.of(ref));
+		String markdown = report.formatMarkdown();
+		// Backticks must be escaped (replaced with single quotes)
+		assertFalse(markdown.contains("gemini=`bad `rule`"));
+		// Multi-line values must be truncated to first line
+		assertFalse(markdown.contains("line2"));
+	}
+
+	@Test
+	void testMarkdownTruncatesLongValues() {
+		String longRule = "a".repeat(120);
+		CommitEvaluation mining = createEval("hash1", true, TrafficLight.GREEN,
+				longRule, "long error: " + longRule, "Cat1");
+		CommitEvaluation ref = createEval("hash1", true, TrafficLight.GREEN,
+				"ref-rule", "VALID", "Cat1");
+		MiningComparator comparator = new MiningComparator();
+		DeltaReport report = comparator.compare(List.of(mining), List.of(ref));
+		String markdown = report.formatMarkdown();
+		// Should not contain the full 120-char string
+		assertFalse(markdown.contains(longRule));
+		// Should contain the truncation indicator
+		assertTrue(markdown.contains("…"));
+	}
+
 	private CommitEvaluation createEval(String hash, boolean relevant, TrafficLight light,
 			String dslRule, String validationResult, String category) {
 		return new CommitEvaluation(
