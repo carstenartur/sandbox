@@ -152,6 +152,10 @@ public final class DryRunReporter {
 			if (value instanceof org.eclipse.jdt.core.dom.ASTNode) {
 				result = result.replace(placeholder, value.toString().trim());
 			} else if (value instanceof List<?> list) {
+				// Support indexed access: $args$[0], $args$[-1]
+				result = substituteIndexedAccess(result, placeholder, list);
+				// Support $args$.length
+				result = result.replace(placeholder + ".length", String.valueOf(list.size())); //$NON-NLS-1$
 				// Variadic placeholder: join with ", "
 				StringBuilder sb = new StringBuilder();
 				for (int i = 0; i < list.size(); i++) {
@@ -164,6 +168,34 @@ public final class DryRunReporter {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * Substitutes indexed access patterns like {@code $args$[0]}, {@code $args$[-1]}
+	 * with the corresponding element from the variadic placeholder binding.
+	 *
+	 * @param text the text to substitute in
+	 * @param placeholder the placeholder name
+	 * @param list the bound list of values
+	 * @return the text with indexed accesses substituted
+	 * @since 1.4.2
+	 */
+	private static String substituteIndexedAccess(String text, String placeholder, List<?> list) {
+		java.util.regex.Pattern indexPattern = java.util.regex.Pattern.compile(
+				java.util.regex.Pattern.quote(placeholder) + "\\[(-?\\d+)\\]"); //$NON-NLS-1$
+		java.util.regex.Matcher m = indexPattern.matcher(text);
+		StringBuilder sb = new StringBuilder();
+		while (m.find()) {
+			int index = Integer.parseInt(m.group(1));
+			if (index < 0) {
+				index = list.size() + index;
+			}
+			if (index >= 0 && index < list.size()) {
+				m.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(list.get(index).toString().trim()));
+			}
+		}
+		m.appendTail(sb);
+		return sb.toString();
 	}
 
 	/**

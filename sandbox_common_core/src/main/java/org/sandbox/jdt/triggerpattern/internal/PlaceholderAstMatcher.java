@@ -28,6 +28,7 @@ import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -582,6 +583,65 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Matches infix expressions (binary operators) with placeholder support in operands.
+	 * 
+	 * <p>Supports all Java binary operators including bitwise operators ({@code |}, {@code &},
+	 * {@code ^}, {@code >>}, {@code <<}, {@code >>>}) that are commonly used in Eclipse/SWT
+	 * code for bitmask patterns. Also supports arithmetic, comparison, and logical operators.</p>
+	 * 
+	 * <p>Patterns like {@code $x | $y} or {@code StatusManager.SHOW | StatusManager.LOG}
+	 * will correctly match source code expressions with the same operator and structurally
+	 * matching operands.</p>
+	 * 
+	 * <p>Extended operands (e.g., {@code a | b | c} which JDT parses as InfixExpression(a, |, b, [c]))
+	 * are matched element-by-element with placeholder support.</p>
+	 * 
+	 * @param patternNode the pattern infix expression
+	 * @param other the candidate node
+	 * @return {@code true} if the expressions match
+	 * @since 1.4.2
+	 */
+	@Override
+	public boolean match(InfixExpression patternNode, Object other) {
+		if (!(other instanceof InfixExpression otherInfix)) {
+			return false;
+		}
+		
+		// Operator must match exactly
+		if (!patternNode.getOperator().equals(otherInfix.getOperator())) {
+			return false;
+		}
+		
+		// Match left operand (with placeholder support via recursive subtreeMatch)
+		if (!safeSubtreeMatch(patternNode.getLeftOperand(), otherInfix.getLeftOperand())) {
+			return false;
+		}
+		
+		// Match right operand
+		if (!safeSubtreeMatch(patternNode.getRightOperand(), otherInfix.getRightOperand())) {
+			return false;
+		}
+		
+		// Match extended operands (for chained expressions like a | b | c)
+		@SuppressWarnings("unchecked")
+		List<Expression> patternExtended = patternNode.extendedOperands();
+		@SuppressWarnings("unchecked")
+		List<Expression> otherExtended = otherInfix.extendedOperands();
+		
+		if (patternExtended.size() != otherExtended.size()) {
+			return false;
+		}
+		
+		for (int i = 0; i < patternExtended.size(); i++) {
+			if (!safeSubtreeMatch(patternExtended.get(i), otherExtended.get(i))) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	/**

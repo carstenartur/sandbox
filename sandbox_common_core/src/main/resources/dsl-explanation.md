@@ -346,6 +346,9 @@ You can use these functions in `:: guard` expressions:
 | `isLocalVariable($var)` | True if the bound placeholder is a local variable (not a field and not a parameter). Uses `IVariableBinding` when available, falls back to AST structure. |
 | `isAssignedToLocalVariable()` | True if the matched expression is the initializer of a local variable declaration (not a field initializer). Takes 0 arguments; operates on the matched node. Use for rules that apply only in local variable context (e.g., `var`, thread-safety). |
 | `isAutoCloseable($var)` | True if the type of the bound placeholder implements `java.lang.AutoCloseable`. Uses type binding when available; falls back to `true` conservatively when binding resolution is not available. |
+| `genericTypeIs($var, index, "type")` | True if the generic type parameter at the given index of the bound placeholder's type matches the expected type name. E.g., `genericTypeIs($list, 0, "java.lang.String")` checks that `$list` is parameterized with `String` at position 0. Falls back to `true` when binding resolution is unavailable. |
+| `argsCount($args$, N)` | True if the variadic multi-placeholder captured exactly N arguments. E.g., `argsCount($args$, 3)` checks that 3 arguments were matched. Works with single bindings (count=1) and unbound placeholders (count=0). |
+| `isResourceVariable($var)` | True if the bound placeholder is a variable whose type implements `AutoCloseable` AND it is not already managed by a try-with-resources statement. Useful for identifying candidates for try-with-resources wrapping. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Common Mistakes

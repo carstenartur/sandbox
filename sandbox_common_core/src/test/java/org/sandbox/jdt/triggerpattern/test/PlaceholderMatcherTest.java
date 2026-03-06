@@ -158,4 +158,148 @@ public class PlaceholderMatcherTest {
 		
 		return null;
 	}
+
+	// --- Bitwise operator tests (Issue 1) ---
+
+	@Test
+	public void testBitwiseOrWithPlaceholders() {
+		// Pattern: $x | $y
+		Pattern pattern = Pattern.of("$x | $y", PatternKind.EXPRESSION);
+		ASTNode patternNode = parser.parse(pattern);
+		assertNotNull(patternNode, "Pattern should be parsed as InfixExpression");
+
+		// Code: flags | mask
+		String code = "class Test { void m() { int z = flags | mask; } }";
+		Expression candidate = parseExpression(code);
+		assertNotNull(candidate);
+
+		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+		boolean matches = patternNode.subtreeMatch(matcher, candidate);
+
+		assertTrue(matches, "Pattern $x | $y should match flags | mask");
+		Map<String, Object> bindings = matcher.getBindings();
+		assertEquals(2, bindings.size());
+		assertTrue(bindings.containsKey("$x"));
+		assertTrue(bindings.containsKey("$y"));
+	}
+
+	@Test
+	public void testBitwiseOrDoesNotMatchDifferentOperator() {
+		// Pattern: $x | $y
+		Pattern pattern = Pattern.of("$x | $y", PatternKind.EXPRESSION);
+		ASTNode patternNode = parser.parse(pattern);
+		assertNotNull(patternNode);
+
+		// Code: flags & mask (bitwise AND, not OR)
+		String code = "class Test { void m() { int z = flags & mask; } }";
+		Expression candidate = parseExpression(code);
+		assertNotNull(candidate);
+
+		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+		boolean matches = patternNode.subtreeMatch(matcher, candidate);
+		assertFalse(matches, "Pattern $x | $y should NOT match flags & mask");
+	}
+
+	@Test
+	public void testBitwiseAndWithPlaceholders() {
+		// Pattern: $x & $y
+		Pattern pattern = Pattern.of("$x & $y", PatternKind.EXPRESSION);
+		ASTNode patternNode = parser.parse(pattern);
+		assertNotNull(patternNode);
+
+		// Code: value & MASK
+		String code = "class Test { void m() { int z = value & MASK; } }";
+		Expression candidate = parseExpression(code);
+		assertNotNull(candidate);
+
+		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+		boolean matches = patternNode.subtreeMatch(matcher, candidate);
+		assertTrue(matches, "Pattern $x & $y should match value & MASK");
+	}
+
+	@Test
+	public void testBitwiseXorWithPlaceholders() {
+		// Pattern: $x ^ $y
+		Pattern pattern = Pattern.of("$x ^ $y", PatternKind.EXPRESSION);
+		ASTNode patternNode = parser.parse(pattern);
+		assertNotNull(patternNode);
+
+		// Code: a ^ b
+		String code = "class Test { void m() { int z = a ^ b; } }";
+		Expression candidate = parseExpression(code);
+		assertNotNull(candidate);
+
+		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+		boolean matches = patternNode.subtreeMatch(matcher, candidate);
+		assertTrue(matches, "Pattern $x ^ $y should match a ^ b");
+	}
+
+	@Test
+	public void testShiftLeftWithPlaceholders() {
+		// Pattern: $x << $y
+		Pattern pattern = Pattern.of("$x << $y", PatternKind.EXPRESSION);
+		ASTNode patternNode = parser.parse(pattern);
+		assertNotNull(patternNode);
+
+		// Code: value << 2
+		String code = "class Test { void m() { int z = value << 2; } }";
+		Expression candidate = parseExpression(code);
+		assertNotNull(candidate);
+
+		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+		boolean matches = patternNode.subtreeMatch(matcher, candidate);
+		assertTrue(matches, "Pattern $x << $y should match value << 2");
+	}
+
+	@Test
+	public void testShiftRightWithPlaceholders() {
+		// Pattern: $x >> $y
+		Pattern pattern = Pattern.of("$x >> $y", PatternKind.EXPRESSION);
+		ASTNode patternNode = parser.parse(pattern);
+		assertNotNull(patternNode);
+
+		// Code: value >> 4
+		String code = "class Test { void m() { int z = value >> 4; } }";
+		Expression candidate = parseExpression(code);
+		assertNotNull(candidate);
+
+		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+		boolean matches = patternNode.subtreeMatch(matcher, candidate);
+		assertTrue(matches, "Pattern $x >> $y should match value >> 4");
+	}
+
+	@Test
+	public void testChainedBitwiseOrWithPlaceholders() {
+		// Pattern: $x | $y | $z (extended operands)
+		Pattern pattern = Pattern.of("$x | $y | $z", PatternKind.EXPRESSION);
+		ASTNode patternNode = parser.parse(pattern);
+		assertNotNull(patternNode);
+
+		// Code: a | b | c
+		String code = "class Test { void m() { int z = a | b | c; } }";
+		Expression candidate = parseExpression(code);
+		assertNotNull(candidate);
+
+		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+		boolean matches = patternNode.subtreeMatch(matcher, candidate);
+		assertTrue(matches, "Pattern $x | $y | $z should match a | b | c");
+		assertEquals(3, matcher.getBindings().size());
+	}
+
+	@Test
+	public void testBitwiseOrWithConcreteQualifiedNames() {
+		// Concrete pattern: SHOW | LOG (no placeholders, exact match)
+		Pattern pattern = Pattern.of("SHOW | LOG", PatternKind.EXPRESSION);
+		ASTNode patternNode = parser.parse(pattern);
+		assertNotNull(patternNode);
+
+		// Code: SHOW | LOG
+		String code = "class Test { static int SHOW=1; static int LOG=2; void m() { int z = SHOW | LOG; } }";
+		Expression candidate = parseExpression(code);
+		assertNotNull(candidate);
+
+		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+		boolean matches = patternNode.subtreeMatch(matcher, candidate);
+		assertTrue(matches, "Concrete bitwise OR pattern should match");
+	}
 }

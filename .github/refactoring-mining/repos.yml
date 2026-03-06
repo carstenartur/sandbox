@@ -4,6 +4,16 @@ mining:
     - bundled:collections
     - bundled:modernize-java11
     - bundled:performance
+    - bundled:deprecated-api
+    - bundled:collection-performance
+    - bundled:stream-performance
+    - bundled:string-isblank
+    - bundled:modernize-java9
+    - bundled:io-performance
+    - bundled:misc
+    - bundled:string-equals
+    - bundled:probable-bugs
+    - bundled:try-with-resources
 
   # Eclipse projects to scan
   repositories:
@@ -24,17 +34,17 @@ mining:
         - bundles/org.eclipse.ui.workbench/eclipseui
         - bundles/org.eclipse.ui.workbench/eclipseuieditorsupport
 
-    # - url: https://github.com/eclipse-platform/eclipse.platform
-    #   branch: main
-    #   paths:
-    #     - runtime/bundles/org.eclipse.core.runtime
-    #     - resources/bundles/org.eclipse.core.resources
+    - url: https://github.com/eclipse-platform/eclipse.platform
+      branch: main
+      paths:
+        - runtime/bundles/org.eclipse.core.runtime
+        - resources/bundles/org.eclipse.core.resources
 
-    # - url: https://github.com/eclipse-platform/eclipse.platform.text
-    #   branch: main
+    - url: https://github.com/eclipse-platform/eclipse.platform.text
+      branch: main
 
-    # - url: https://github.com/eclipse-platform/eclipse.platform.debug
-    #   branch: main
+    - url: https://github.com/eclipse-platform/eclipse.platform.debug
+      branch: main
 
     - url: https://github.com/carstenartur/sandbox
       branch: main
@@ -47,3 +57,11 @@ mining:
     start-date: "2015-01-01"
     batch-size: 500
     max-diff-lines-per-commit: 500
+    # Epoch-based mining: explore recent history first, then go backward
+    epochs:
+      - start: "2020-01-01"
+        end: "2026-01-01"
+      - start: "2015-01-01"
+        end: "2020-01-01"
+      - start: "2010-01-01"
+        end: "2015-01-01"

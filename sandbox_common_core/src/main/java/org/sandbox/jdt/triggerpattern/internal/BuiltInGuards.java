@@ -192,6 +192,16 @@ public final class BuiltInGuards {
 
 		// Method override guard — checks if enclosing class overrides a given method
 		guards.put("classOverrides", BuiltInGuards::evaluateClassOverrides); //$NON-NLS-1$
+
+		// Generic type parameter guard — checks if a binding's generic type parameter matches
+		guards.put("genericTypeIs", BuiltInGuards::evaluateGenericTypeIs); //$NON-NLS-1$
+
+		// Variadic argument count guard — checks number of matched variadic args
+		guards.put("argsCount", BuiltInGuards::evaluateArgsCount); //$NON-NLS-1$
+
+		// Resource variable guard — checks if a variable declaration is a resource
+		// that could be wrapped in try-with-resources
+		guards.put("isResourceVariable", BuiltInGuards::evaluateIsResourceVariable); //$NON-NLS-1$
 	}
 
 	/**
@@ -2067,5 +2077,143 @@ public final class BuiltInGuards {
 		}
 		ITypeBinding superClass = typeBinding.getSuperclass();
 		return implementsAutoCloseable(superClass);
+	}
+
+	/**
+	 * Checks if the generic type parameter at a given index of a bound placeholder's type
+	 * matches the expected type name.
+	 *
+	 * <p>Example usage in DSL guard:
+	 * {@code genericTypeIs($var, 0, "java.lang.String")} — checks that the first
+	 * type parameter of {@code $var}'s type is {@code String}.</p>
+	 *
+	 * <p><b>Graceful degradation:</b> Returns {@code true} when binding resolution
+	 * is not available, so rules still fire conservatively.</p>
+	 *
+	 * Args: [placeholderName, paramIndex, typeName]
+	 *
+	 * @since 1.4.2
+	 */
+	private static boolean evaluateGenericTypeIs(GuardContext ctx, Object... args) {
+		if (args.length < 3) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		int paramIndex;
+		try {
+			paramIndex = Integer.parseInt(args[1].toString());
+		} catch (NumberFormatException e) {
+			return false;
+		}
+		String expectedTypeName = args[2].toString();
+
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+
+		ITypeBinding typeBinding = resolveTypeBinding(node);
+		if (typeBinding == null) {
+			// Graceful degradation: no binding info → accept conservatively
+			return true;
+		}
+
+		ITypeBinding[] typeArgs = typeBinding.getTypeArguments();
+		if (typeArgs == null || paramIndex < 0 || paramIndex >= typeArgs.length) {
+			return false;
+		}
+
+		String actualName = typeArgs[paramIndex].getQualifiedName();
+		return expectedTypeName.equals(actualName)
+				|| expectedTypeName.equals(typeArgs[paramIndex].getName());
+	}
+
+	/**
+	 * Checks the number of matched variadic arguments for a multi-placeholder.
+	 *
+	 * <p>Example usage in DSL guard:
+	 * {@code argsCount($args$, 3)} — checks that exactly 3 arguments were captured.</p>
+	 *
+	 * Args: [placeholderName, expectedCount]
+	 *
+	 * @since 1.4.2
+	 */
+	private static boolean evaluateArgsCount(GuardContext ctx, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		int expectedCount;
+		try {
+			expectedCount = Integer.parseInt(args[1].toString());
+		} catch (NumberFormatException e) {
+			return false;
+		}
+
+		Object binding = ctx.getMatch().getBindings().get(placeholderName);
+		if (binding instanceof List<?> list) {
+			return list.size() == expectedCount;
+		}
+		// Single binding counts as 1
+		if (binding != null) {
+			return expectedCount == 1;
+		}
+		return expectedCount == 0;
+	}
+
+	/**
+	 * Checks if the matched placeholder node is a variable declaration whose type
+	 * implements {@code AutoCloseable} and is <b>not</b> already inside a
+	 * try-with-resources block.
+	 *
+	 * <p>This guard is useful for identifying resource variables that could
+	 * benefit from being wrapped in try-with-resources statements.</p>
+	 *
+	 * <p>Example usage in DSL guard:
+	 * {@code isResourceVariable($var)} — returns true if {@code $var} is a
+	 * local variable of an AutoCloseable type not already managed by try-with-resources.</p>
+	 *
+	 * Args: [placeholderName]
+	 *
+	 * @since 1.4.2
+	 */
+	private static boolean evaluateIsResourceVariable(GuardContext ctx, Object... args) {
+		if (args.length < 1) {
+			return false;
+		}
+		String placeholderName = args[0].toString();
+		ASTNode node = ctx.getBinding(placeholderName);
+		if (node == null) {
+			return false;
+		}
+
+		// Check if the node's type implements AutoCloseable
+		ITypeBinding typeBinding = resolveTypeBinding(node);
+		if (typeBinding == null) {
+			// Graceful degradation
+			return true;
+		}
+		if (!implementsAutoCloseable(typeBinding)) {
+			return false;
+		}
+
+		// Check if already in a try-with-resources block
+		ASTNode parent = node.getParent();
+		while (parent != null) {
+			if (parent instanceof TryStatement tryStmt) {
+				@SuppressWarnings("unchecked")
+				List<Expression> resources = tryStmt.resources();
+				if (!resources.isEmpty()) {
+					// This is a try-with-resources, check if our node is within a resource
+					for (Expression resource : resources) {
+						if (isAncestorOrSelf(resource, node)) {
+							return false; // Already managed by try-with-resources
+						}
+					}
+				}
+			}
+			parent = parent.getParent();
+		}
+		return true;
 	}
 }
