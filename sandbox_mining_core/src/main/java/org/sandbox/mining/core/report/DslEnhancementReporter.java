@@ -161,7 +161,7 @@ public class DslEnhancementReporter {
 		String summary = rule.getSummary() != null ? rule.getSummary().toLowerCase() : ""; //$NON-NLS-1$
 		String dslRule = rule.getDslRule() != null ? rule.getDslRule().toLowerCase() : ""; //$NON-NLS-1$
 
-		if (summary.contains("bitwise") || dslRule.contains("|") || dslRule.contains("&")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		if (summary.contains("bitwise") || dslRule.contains(" | ") || dslRule.contains("&")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			return "Bitwise operators in patterns/replacements"; //$NON-NLS-1$
 		}
 		if (summary.contains("try-with") || summary.contains("autocloseable") //$NON-NLS-1$ //$NON-NLS-2$

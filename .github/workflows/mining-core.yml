@@ -218,7 +218,7 @@ jobs:
           groups = {}
           for r in needs_ext:
               summary = (r.get('summary') or '').lower()
-              if 'bitwise' in summary or '|' in (r.get('dslRule') or ''):
+              if 'bitwise' in summary or ' | ' in (r.get('dslRule') or ''):
                   key = 'Bitwise operators'
               elif 'try-with' in summary or 'autocloseable' in summary:
                   key = 'Statement wrapping (try-with-resources)'

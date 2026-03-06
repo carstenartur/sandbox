@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -167,7 +168,7 @@ class DslEnhancementReporterTest {
 				id, summary, category, status, commit);
 	}
 
-	private static int fileCounter;
+	private static final AtomicInteger fileCounter = new AtomicInteger();
 
 	private KnownRulesStore buildStoreWithRules(String... ruleJsons) throws IOException {
 		StringBuilder sb = new StringBuilder();
@@ -177,7 +178,7 @@ class DslEnhancementReporterTest {
 			sb.append(ruleJsons[i]);
 		}
 		sb.append("]}"); //$NON-NLS-1$
-		Path file = tempDir.resolve("known-rules-" + (++fileCounter) + ".json"); //$NON-NLS-1$ //$NON-NLS-2$
+		Path file = tempDir.resolve("known-rules-" + fileCounter.incrementAndGet() + ".json"); //$NON-NLS-1$ //$NON-NLS-2$
 		Files.writeString(file, sb.toString(), StandardCharsets.UTF_8);
 		return KnownRulesStore.load(file);
 	}

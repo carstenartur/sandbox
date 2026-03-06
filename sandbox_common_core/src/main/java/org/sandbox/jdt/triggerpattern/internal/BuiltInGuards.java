@@ -19,7 +19,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -2205,9 +2204,9 @@ public final class BuiltInGuards {
 				@SuppressWarnings("unchecked")
 				List<Expression> resources = tryStmt.resources();
 				if (!resources.isEmpty()) {
-					// This is a try-with-resources, check if our node is a resource
+					// This is a try-with-resources, check if our node is within a resource
 					for (Expression resource : resources) {
-						if (resource.subtreeMatch(new ASTMatcher(), node)) {
+						if (isAncestorOrSelf(resource, node)) {
 							return false; // Already managed by try-with-resources
 						}
 					}

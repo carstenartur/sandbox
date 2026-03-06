@@ -76,6 +76,10 @@ jobs:
             gh pr close "$PR_NUM" --comment "Superseded by mining run #${{ github.run_number }}" 2>/dev/null || true
           done
 
+          # Embed the report hash in the PR body markdown for future dedup checks
+          echo "" >> mining-results/report.md
+          echo "<!-- report-hash: $REPORT_HASH -->" >> mining-results/report.md
+
       - name: Open PR
         if: hashFiles('mining-results/report.json') != ''
         uses: peter-evans/create-pull-request@v8
@@ -83,7 +87,7 @@ jobs:
           title: "🔍 Refactoring Mining: Eclipse Projects (${{ github.run_number }})"
           body-path: mining-results/report.md
           branch: mining/report-${{ github.run_number }}
-          commit-message: "mining: add report from run ${{ github.run_number }} <!-- report-hash: ${{ hashFiles('mining-results/report.json') }} -->"
+          commit-message: "mining: add report from run ${{ github.run_number }}"
           labels: refactoring-mining
           add-paths: |
             mining-results/report.json
