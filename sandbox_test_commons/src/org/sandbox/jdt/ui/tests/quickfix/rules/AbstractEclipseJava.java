@@ -49,6 +49,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -838,6 +839,100 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 			return null;
 		}
 		return s.replace("\r\n", "\n").replace("\r", "\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	}
+
+	/**
+	 * Normalizes whitespace for robust comparison that is tolerant of unrelated
+	 * formatting changes in refactoring output.
+	 * <p>
+	 * This method:
+	 * <ul>
+	 * <li>Normalizes line endings to {@code \n}</li>
+	 * <li>Trims trailing whitespace from each line</li>
+	 * <li>Collapses multiple consecutive blank lines into a single blank line</li>
+	 * <li>Trims leading and trailing blank lines from the whole string</li>
+	 * </ul>
+	 * </p>
+	 *
+	 * @param s the string to normalize, may be {@code null}
+	 * @return the normalized string, or {@code null} if input was {@code null}
+	 */
+	static String normalizeWhitespace(final String s) {
+		if (s == null) {
+			return null;
+		}
+		final String normalized = normalizeLineEndings(s);
+		final String result = Arrays.stream(normalized.split("\n", -1)) //$NON-NLS-1$
+				.map(line -> line.stripTrailing())
+				.collect(Collectors.joining("\n")) //$NON-NLS-1$
+				.replaceAll("\n{3,}", "\n\n") //$NON-NLS-1$ //$NON-NLS-2$
+				.strip();
+		return result;
+	}
+
+	/**
+	 * Asserts that two string arrays contain the same elements, ignoring order
+	 * and normalizing whitespace differences.
+	 * <p>
+	 * Unlike {@link #assertEqualStringsIgnoreOrder}, this method normalizes
+	 * whitespace (trailing spaces, multiple blank lines, leading/trailing blanks)
+	 * before comparison, making tests robust against unrelated formatting changes.
+	 * </p>
+	 *
+	 * @param actuals the actual strings
+	 * @param expecteds the expected strings
+	 */
+	public static void assertEqualStringsIgnoreOrderAndWhitespace(final String[] actuals, final String[] expecteds) {
+		final ArrayList<String> actualList = new ArrayList<>(
+				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeWhitespace).toList());
+		final ArrayList<String> expectedList = new ArrayList<>(
+				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeWhitespace).toList());
+
+		// Remove matching elements from both lists
+		for (int i = actualList.size() - 1; i >= 0; i--) {
+			if (expectedList.remove(actualList.get(i))) {
+				actualList.remove(i);
+			}
+		}
+
+		final int numUnmatchedActuals = actualList.size();
+		final int numUnmatchedExpected = expectedList.size();
+
+		if (numUnmatchedActuals + numUnmatchedExpected > 0) {
+			if (numUnmatchedActuals == 1 && numUnmatchedExpected == 1) {
+				assertEquals(expectedList.get(0), actualList.get(0));
+			}
+
+			final String actual = buildStringFromList(actualList);
+			final String expected = buildStringFromList(expectedList);
+			assertEquals(expected, actual);
+		}
+	}
+
+	/**
+	 * Executes the configured refactoring and asserts the result matches expectations,
+	 * normalizing whitespace differences before comparison.
+	 * <p>
+	 * Use this variant when tests should be robust against unrelated whitespace
+	 * changes in refactoring output (e.g., extra blank lines, trailing spaces).
+	 * </p>
+	 *
+	 * @param cus the compilation units to refactor
+	 * @param expected the expected source code after refactoring (one per CU)
+	 * @param setOfExpectedGroupCategories expected group category names, or null to skip validation
+	 * @return the refactoring status
+	 * @throws CoreException if the refactoring fails
+	 */
+	public RefactoringStatus assertRefactoringResultAsExpectedNormalizingWhitespace(final ICompilationUnit[] cus,
+			final String[] expected, final Set<String> setOfExpectedGroupCategories) throws CoreException {
+		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
+		final String[] previews = new String[cus.length];
+		for (int i = 0; i < cus.length; i++) {
+			final ICompilationUnit cu = cus[i];
+			previews[i] = cu.getBuffer().getContents();
+		}
+		assertEqualStringsIgnoreOrderAndWhitespace(previews, expected);
+		return status;
 	}
 
 	/**
