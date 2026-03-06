@@ -217,6 +217,8 @@ public class SemanticSearchClient {
 	 */
 	public List<SearchHit> findSimilarCode(String repoName, String blobId,
 			int maxResults) {
+		// q= is sent alongside blobId= because the backend validates that
+		// both repo and q are present for all /api/search/* requests.
 		String url= baseUrl + "/api/search/similar?repo=" //$NON-NLS-1$
 				+ encode(repoName) + "&q=" + encode(blobId) //$NON-NLS-1$
 				+ "&blobId=" + encode(blobId) + "&limit=" + maxResults; //$NON-NLS-1$ //$NON-NLS-2$
@@ -232,6 +234,8 @@ public class SemanticSearchClient {
 	 *         the path)
 	 */
 	public List<SearchHit> getFileHistory(String repoName, String path) {
+		// q= is sent alongside path= because the backend validates that
+		// both repo and q are present for all /api/search/* requests.
 		String url= baseUrl + "/api/search/filehistory?repo=" //$NON-NLS-1$
 				+ encode(repoName) + "&path=" + encode(path) //$NON-NLS-1$
 				+ "&q=" + encode(path); //$NON-NLS-1$
