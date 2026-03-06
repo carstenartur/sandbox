@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.search.gitindex;
 
+import java.util.List;
+
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
@@ -31,8 +33,8 @@ import org.eclipse.ui.part.ViewPart;
  *
  * <p>
  * Displays which commits modified a given Java class, including which methods
- * were changed. Internally uses {@code GitDatabaseQueryService.getFileHistory()}
- * and the {@code FilePathHistory} entity from sandbox-jgit-storage-hibernate.
+ * were changed. Internally uses {@link SemanticSearchClient#getFileHistory(String, String)}
+ * to call the REST API of {@code sandbox-jgit-server-webapp}.
  * </p>
  */
 public class JavaTypeHistoryView extends ViewPart {
@@ -92,7 +94,17 @@ public class JavaTypeHistoryView extends ViewPart {
 	}
 
 	private void performSearch() {
-		// Phase 3: Connect to GitDatabaseQueryService.getFileHistory()
+		String typeName= typeNameText.getText().trim();
+		if (typeName.isEmpty()) {
+			return;
+		}
+		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
+		if (client == null) {
+			tableViewer.setInput(new Object[0]);
+			return;
+		}
+		List<SearchHit> results= client.getFileHistory("", typeName); //$NON-NLS-1$
+		tableViewer.setInput(results);
 	}
 
 	@Override
