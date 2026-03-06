@@ -81,11 +81,9 @@ jobs:
         uses: peter-evans/create-pull-request@v8
         with:
           title: "🔍 Refactoring Mining: Eclipse Projects (${{ github.run_number }})"
-          body: |
-            ${{ github.workspace }}/mining-results/report.md
-            <!-- report-hash: ${{ hashFiles('mining-results/report.json') }} -->
+          body-path: mining-results/report.md
           branch: mining/report-${{ github.run_number }}
-          commit-message: "mining: add report from run ${{ github.run_number }}"
+          commit-message: "mining: add report from run ${{ github.run_number }} <!-- report-hash: ${{ hashFiles('mining-results/report.json') }} -->"
           labels: refactoring-mining
           add-paths: |
             mining-results/report.json

@@ -16,8 +16,10 @@ package org.sandbox.jdt.triggerpattern.git;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -89,21 +91,21 @@ public class CommitWalker implements Closeable {
 			walk.markStart(walk.parseCommit(head));
 			walk.sort(RevSort.REVERSE); // chronological order
 
-			// Apply date filter
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd"); //$NON-NLS-1$
+			// Apply date filter (using thread-safe DateTimeFormatter)
+			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd"); //$NON-NLS-1$
 			Date since = null;
 			Date until = null;
 			if (startDate != null && !startDate.isBlank()) {
 				try {
-					since = sdf.parse(startDate);
-				} catch (ParseException e) {
+					since = Date.from(LocalDate.parse(startDate, dtf).atStartOfDay(ZoneOffset.UTC).toInstant());
+				} catch (DateTimeParseException e) {
 					System.err.println("Invalid start-date format: " + startDate); //$NON-NLS-1$
 				}
 			}
 			if (endDate != null && !endDate.isBlank()) {
 				try {
-					until = sdf.parse(endDate);
-				} catch (ParseException e) {
+					until = Date.from(LocalDate.parse(endDate, dtf).atStartOfDay(ZoneOffset.UTC).toInstant());
+				} catch (DateTimeParseException e) {
 					System.err.println("Invalid end-date format: " + endDate); //$NON-NLS-1$
 				}
 			}

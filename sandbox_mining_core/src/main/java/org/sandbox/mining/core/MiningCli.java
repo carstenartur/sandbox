@@ -523,12 +523,12 @@ effectiveStartDate, effectiveEndDate, batchSize);
 // advance to the next epoch and reset lastProcessedCommit
 if (!epochs.isEmpty()) {
 int epochIdx = repoState.getCurrentEpoch();
-String epochLabel = effectiveStartDate + " to " + effectiveEndDate; //$NON-NLS-1$
-repoState.getCompletedEpochs().add(epochLabel);
+MiningConfig.EpochEntry completedEpoch = epochs.get(epochIdx);
+repoState.getCompletedEpochs().add(completedEpoch.toString());
 repoState.setCurrentEpoch(epochIdx + 1);
 repoState.setLastProcessedCommit(null);
 repoState.setStatus("EPOCH_COMPLETE"); //$NON-NLS-1$
-miningLog.println("  Epoch " + epochIdx + " complete (" + epochLabel //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("  Epoch " + epochIdx + " complete (" + completedEpoch //$NON-NLS-1$ //$NON-NLS-2$
 + "). Advancing to epoch " + (epochIdx + 1)); //$NON-NLS-1$
 state.save(statePath);
 }

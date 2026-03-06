@@ -167,6 +167,8 @@ class DslEnhancementReporterTest {
 				id, summary, category, status, commit);
 	}
 
+	private static int fileCounter;
+
 	private KnownRulesStore buildStoreWithRules(String... ruleJsons) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		sb.append("{\"version\":1,\"rules\":["); //$NON-NLS-1$
@@ -175,7 +177,7 @@ class DslEnhancementReporterTest {
 			sb.append(ruleJsons[i]);
 		}
 		sb.append("]}"); //$NON-NLS-1$
-		Path file = tempDir.resolve("known-rules-" + System.nanoTime() + ".json"); //$NON-NLS-1$ //$NON-NLS-2$
+		Path file = tempDir.resolve("known-rules-" + (++fileCounter) + ".json"); //$NON-NLS-1$ //$NON-NLS-2$
 		Files.writeString(file, sb.toString(), StandardCharsets.UTF_8);
 		return KnownRulesStore.load(file);
 	}
