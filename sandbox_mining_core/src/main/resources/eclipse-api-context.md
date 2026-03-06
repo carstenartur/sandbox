@@ -162,3 +162,50 @@ When removing array creation expressions or other refactorings that affect lines
 fix pattern seen in 2025.
 
 **Source:** eclipse.jdt.ui commit `3702d32e` (2025)
+
+### Cleanup Bug Fixes vs. New Patterns (Classification Guide)
+
+Many Eclipse 2025 commits fix bugs in existing JDT cleanups rather than introducing new
+transformation patterns. These two categories must be classified differently:
+
+**Cleanup bug fix (RED):**
+- Commit message says "Fix cleanup to ..." or "Fix clean-up ..."
+- Changes are inside existing cleanup implementation classes
+- Fixes edge cases (NLS markers, lambda bodies, generic types, diamond operator context)
+- Example commits: `3702d32e` (NLS markers), `ce67be20` (system properties), `90ff95a0` (diamond), `52b06dba` (else comments), `73676b06` (lambda return), `5f271d36` (final+generics), `2b89f65d` (ambiguous varargs), `894941ef` (parameterized types), `ad909281` (ambiguous types)
+
+**New cleanup enhancement (YELLOW or GREEN):**
+- Commit message says "Add cleanup to ..." or "Enhance cleanup ..."
+- Introduces new transformation logic or extends existing cleanup to new patterns
+- Example commits: `66872a95` (module imports), `46f45bcb` (switch expressions)
+
+**Key rule:** If the commit modifies an existing cleanup to fix incorrect behavior
+(wrong output, lost markers, incorrect context checking), it is RED. If it adds
+entirely new functionality, it may be YELLOW or GREEN.
+
+### Concurrency and Synchronization Patterns
+
+Concurrency refactoring (e.g., replacing `Phaser` with `CountDownLatch`, adding
+`synchronized` blocks, changing `volatile` usage) is NOT a pattern-based transformation.
+Each change depends on understanding the specific synchronization requirements.
+
+**Classification:** NOT_APPLICABLE or RED (never GREEN or YELLOW)
+**Source:** eclipse.platform.ui commit `4391448b` (2025)
+
+### System Properties Constants (Java 10+)
+
+Eclipse JDT has a cleanup that replaces `System.getProperty("property.name")` with
+the corresponding constant from `Runtime.version()` or similar APIs.
+
+```java
+// Old (before cleanup):
+System.getProperty("java.specification.version")
+// New (after cleanup — Java 10+):
+String.valueOf(Runtime.version().feature())
+```
+
+**Important:** The `java.specification.version` replacement requires Java 10+ because
+`Runtime.version()` was introduced in Java 9 and the `feature()` method in Java 10.
+The cleanup must check the compilation unit's Java version before applying.
+
+**Source:** eclipse.jdt.ui commit `ce67be20` (2025)
