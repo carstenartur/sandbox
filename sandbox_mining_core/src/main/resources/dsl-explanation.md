@@ -258,6 +258,9 @@ You can use these functions in `:: guard` expressions:
 | `isProtected($var)` | True if the binding has the `protected` access modifier. Also supports zero-arg form on matched node. |
 | `throwsException("type")` | True if the enclosing method declares a `throws` clause matching the given type. Zero-arg form returns true if any throws clause is present. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
+| `genericTypeIs($var, index, "type")` | True if the generic type parameter at the given index of the bound placeholder's type matches the expected type name. Falls back to `true` when binding resolution is unavailable. |
+| `argsCount($args$, N)` | True if the variadic multi-placeholder captured exactly N arguments. |
+| `isResourceVariable($var)` | True if the bound placeholder is a variable whose type implements `AutoCloseable` AND is not already in a try-with-resources block. |
 
 ### Common Mistakes
 

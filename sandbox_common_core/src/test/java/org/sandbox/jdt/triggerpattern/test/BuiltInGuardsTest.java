@@ -1683,4 +1683,97 @@ public class BuiltInGuardsTest {
 		});
 		return result[0];
 	}
+
+	// --- argsCount guard tests ---
+
+	@Test
+	public void testArgsCountWithList() {
+		GuardFunction argsCountGuard = guards.get("argsCount"); //$NON-NLS-1$
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$args$", java.util.List.of(createDummyNode(), createDummyNode(), createDummyNode())); //$NON-NLS-1$
+		Match match = new Match(createDummyNode(), bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+		assertTrue(argsCountGuard.evaluate(ctx, "$args$", "3")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(argsCountGuard.evaluate(ctx, "$args$", "2")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testArgsCountWithSingleBinding() {
+		GuardFunction argsCountGuard = guards.get("argsCount"); //$NON-NLS-1$
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", createDummyNode()); //$NON-NLS-1$
+		Match match = new Match(createDummyNode(), bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+		assertTrue(argsCountGuard.evaluate(ctx, "$x", "1")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testArgsCountWithUnbound() {
+		GuardFunction argsCountGuard = guards.get("argsCount"); //$NON-NLS-1$
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(createDummyNode(), bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+		assertTrue(argsCountGuard.evaluate(ctx, "$args$", "0")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	// --- genericTypeIs guard tests (graceful degradation without bindings) ---
+
+	@Test
+	public void testGenericTypeIsGracefulDegradation() {
+		// Without type bindings, genericTypeIs should return true (conservative)
+		GuardFunction genericGuard = guards.get("genericTypeIs"); //$NON-NLS-1$
+		String code = "class Test { java.util.List list = null; void m() { Object x = list; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithoutBindings(code);
+		ASTNode node = findNodeOfType(cu, org.eclipse.jdt.core.dom.SimpleName.class);
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", node); //$NON-NLS-1$
+		Match match = new Match(node, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+		// Without bindings → graceful degradation → true
+		assertTrue(genericGuard.evaluate(ctx, "$x", "0", "java.lang.String")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testGenericTypeIsWithNullBinding() {
+		GuardFunction genericGuard = guards.get("genericTypeIs"); //$NON-NLS-1$
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(createDummyNode(), bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+		assertFalse(genericGuard.evaluate(ctx, "$missing", "0", "java.lang.String")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testGenericTypeIsWithBadIndex() {
+		GuardFunction genericGuard = guards.get("genericTypeIs"); //$NON-NLS-1$
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", createDummyNode()); //$NON-NLS-1$
+		Match match = new Match(createDummyNode(), bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+		assertFalse(genericGuard.evaluate(ctx, "$x", "notanumber", "java.lang.String")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	// --- isResourceVariable guard tests ---
+
+	@Test
+	public void testIsResourceVariableGracefulDegradation() {
+		// Without type bindings, isResourceVariable should return true (conservative)
+		GuardFunction resGuard = guards.get("isResourceVariable"); //$NON-NLS-1$
+		String code = "class Test { void m() { Object x = null; } }"; //$NON-NLS-1$
+		CompilationUnit cu = parseCodeWithoutBindings(code);
+		ASTNode node = findNodeOfType(cu, org.eclipse.jdt.core.dom.SimpleName.class);
+		Map<String, Object> bindings = new HashMap<>();
+		bindings.put("$x", node); //$NON-NLS-1$
+		Match match = new Match(node, bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, cu);
+		assertTrue(resGuard.evaluate(ctx, "$x")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testIsResourceVariableWithNullBinding() {
+		GuardFunction resGuard = guards.get("isResourceVariable"); //$NON-NLS-1$
+		Map<String, Object> bindings = new HashMap<>();
+		Match match = new Match(createDummyNode(), bindings, 0, 0);
+		GuardContext ctx = GuardContext.fromMatch(match, null);
+		assertFalse(resGuard.evaluate(ctx, "$missing")); //$NON-NLS-1$
+	}
 }

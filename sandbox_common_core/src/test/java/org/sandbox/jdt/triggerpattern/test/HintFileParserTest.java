@@ -1655,4 +1655,89 @@ public class HintFileParserTest {
 		RewriteAlternative alt = rule.alternatives().get(0);
 		assertFalse(alt.isEmbeddedFix(), "Regular replacement should not be an embedded fix");
 	}
+
+	// --- Bitwise operator parsing tests (Issue 1) ---
+
+	@Test
+	public void testParseBitwiseOrInPattern() throws HintParseException {
+		String content = """
+			$x | $y
+			=> $x | $y | $z
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertTrue(rule.sourcePattern().getValue().contains("|")); //$NON-NLS-1$
+		assertFalse(rule.isHintOnly());
+	}
+
+	@Test
+	public void testParseBitwiseAndInPattern() throws HintParseException {
+		String content = """
+			$x & MASK
+			=> $x & NEW_MASK
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertTrue(rule.sourcePattern().getValue().contains("&")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testParseBitwiseOperatorWithGuard() throws HintParseException {
+		String content = """
+			$mgr.handle($status, $flags) :: sourceVersionGE(11)
+			=> $mgr.handle($status, $flags | SHOW)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.sourceGuard(), "Guard should be parsed correctly even with | in replacement");
+		String replacement = rule.alternatives().get(0).replacementPattern();
+		assertTrue(replacement.contains("|"), "Replacement should contain bitwise OR"); //$NON-NLS-1$
+	}
+
+	// --- argsCount and genericTypeIs guard in DSL ---
+
+	@Test
+	public void testParseArgsCountGuard() throws HintParseException {
+		String content = """
+			$obj.method($args$) :: argsCount($args$, 3)
+			=> $obj.newMethod($args$[0], $args$[-1])
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.sourceGuard());
+		String replacement = rule.alternatives().get(0).replacementPattern();
+		assertTrue(replacement.contains("$args$[0]")); //$NON-NLS-1$
+		assertTrue(replacement.contains("$args$[-1]")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testParseGenericTypeIsGuard() throws HintParseException {
+		String content = """
+			new java.util.ArrayList($args$) :: genericTypeIs($_, 0, "java.lang.String")
+			=> java.util.List.of($args$)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertNotNull(rule.sourceGuard(), "Guard with genericTypeIs should be parsed");
+	}
 }

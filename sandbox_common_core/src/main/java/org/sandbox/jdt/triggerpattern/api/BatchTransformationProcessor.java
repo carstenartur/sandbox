@@ -182,6 +182,11 @@ public final class BatchTransformationProcessor {
 			if (value instanceof ASTNode astNode) {
 				replacement = astNode.toString();
 			} else if (value instanceof List<?> list) {
+				// Support indexed access: $args$[0], $args$[-1]
+				result = substituteIndexedAccess(result, placeholder, list);
+				// Support $args$.length
+				result = result.replace(placeholder + ".length", String.valueOf(list.size())); //$NON-NLS-1$
+				// Substitute the full variadic placeholder
 				StringBuilder sb = new StringBuilder();
 				for (int i = 0; i < list.size(); i++) {
 					if (i > 0) {
@@ -196,6 +201,40 @@ public final class BatchTransformationProcessor {
 			result = result.replace(placeholder, Matcher.quoteReplacement(replacement));
 		}
 		return result;
+	}
+
+	/**
+	 * Substitutes indexed access patterns like {@code $args$[0]}, {@code $args$[-1]}
+	 * with the corresponding element from the variadic placeholder binding.
+	 *
+	 * <p>Positive indices access from the start, negative indices from the end.
+	 * Invalid indices are left unsubstituted.</p>
+	 *
+	 * @param text the text to substitute in
+	 * @param placeholder the placeholder name (e.g., {@code "$args$"})
+	 * @param list the bound list of values
+	 * @return the text with indexed accesses substituted
+	 * @since 1.4.2
+	 */
+	private static String substituteIndexedAccess(String text, String placeholder, List<?> list) {
+		// Match $args$[N] where N can be negative
+		java.util.regex.Pattern indexPattern = java.util.regex.Pattern.compile(
+				java.util.regex.Pattern.quote(placeholder) + "\\[(-?\\d+)\\]"); //$NON-NLS-1$
+		java.util.regex.Matcher m = indexPattern.matcher(text);
+		StringBuilder sb = new StringBuilder();
+		while (m.find()) {
+			int index = Integer.parseInt(m.group(1));
+			// Support negative indexing
+			if (index < 0) {
+				index = list.size() + index;
+			}
+			if (index >= 0 && index < list.size()) {
+				m.appendReplacement(sb, Matcher.quoteReplacement(list.get(index).toString()));
+			}
+			// Out-of-range indices are left as-is (appendReplacement not called → keeps original)
+		}
+		m.appendTail(sb);
+		return sb.toString();
 	}
 
 	/**
