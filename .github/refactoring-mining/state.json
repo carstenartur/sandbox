@@ -182,9 +182,9 @@
       "lastModelUsed": "gemini-2.5-flash"
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "7de69591e80b72920a966cbff7aa9092885e0dbb",
-      "lastProcessedDate": "2026-03-05T04:19:42.913420853Z",
-      "totalProcessed": 2713,
+      "lastProcessedCommit": "e84704bd5cce8b8b1123ebe325b4ebba7f60d80f",
+      "lastProcessedDate": "2026-03-06T04:16:49.320867814Z",
+      "totalProcessed": 2881,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -357,6 +357,24 @@
           "deferredAt": "2026-03-05T04:19:26.325050231Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "ec0f4460548fe60c84b2460bdc763f8ed7750418",
+          "message": "Bug 552719 - [14] Making Switch Expressions available as Standard feature in DOM AST",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-06T04:14:04.787483987Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ccf6e4b85f958e25ff2d828d9211acab530a13f4",
+          "message": "Bug 553154 - [14] Records - DOM AST Support",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-06T04:14:31.923912Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -372,5 +390,5 @@
       "lastModelUsed": "gemini-2.5-flash"
     }
   },
-  "globalTotalProcessed": 12686
+  "globalTotalProcessed": 12854
 }
