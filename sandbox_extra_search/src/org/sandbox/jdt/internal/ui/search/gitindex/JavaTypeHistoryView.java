@@ -19,8 +19,6 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
-import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -35,8 +33,8 @@ import org.eclipse.ui.part.ViewPart;
  *
  * <p>
  * Displays which commits modified a given Java class, including which methods
- * were changed. Internally uses {@code GitDatabaseQueryService.getFileHistory()}
- * and the {@code FilePathHistory} entity from sandbox-jgit-storage-hibernate.
+ * were changed. Internally uses {@link SemanticSearchClient#getFileHistory(String, String)}
+ * to call the REST API of {@code sandbox-jgit-server-webapp}.
  * </p>
  */
 public class JavaTypeHistoryView extends ViewPart {
@@ -100,12 +98,12 @@ public class JavaTypeHistoryView extends ViewPart {
 		if (typeName.isEmpty()) {
 			return;
 		}
-		GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
-		if (queryService == null) {
+		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
+		if (client == null) {
 			tableViewer.setInput(new Object[0]);
 			return;
 		}
-		List<FilePathHistory> results= queryService.getFileHistory("", typeName, 0, 50); //$NON-NLS-1$
+		List<SearchHit> results= client.getFileHistory("", typeName); //$NON-NLS-1$
 		tableViewer.setInput(results);
 	}
 

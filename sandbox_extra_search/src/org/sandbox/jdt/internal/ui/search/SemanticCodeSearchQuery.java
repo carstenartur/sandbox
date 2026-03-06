@@ -18,18 +18,18 @@ import java.util.List;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 import org.eclipse.search.ui.ISearchQuery;
 import org.eclipse.search.ui.ISearchResult;
 import org.sandbox.jdt.internal.ui.search.gitindex.EmbeddedSearchService;
+import org.sandbox.jdt.internal.ui.search.gitindex.SearchHit;
+import org.sandbox.jdt.internal.ui.search.gitindex.SemanticSearchClient;
 
 /**
  * Search query that executes a semantic or hybrid code search.
  *
  * <p>
- * Delegates to {@link GitDatabaseQueryService#semanticSearch(String, String, int)}
- * or {@link GitDatabaseQueryService#hybridSearch(String, String, int)} via
+ * Delegates to {@link SemanticSearchClient#semanticSearch(String, String, int)}
+ * or {@link SemanticSearchClient#hybridSearch(String, String, int)} via
  * {@link EmbeddedSearchService}.
  * </p>
  */
@@ -79,23 +79,23 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 			if (monitor.isCanceled()) {
 				return Status.CANCEL_STATUS;
 			}
-			GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
-			if (queryService == null) {
+			SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
+			if (client == null) {
 				return Status.error("Semantic search service is not available. " //$NON-NLS-1$
-						+ "Please ensure the database is initialized."); //$NON-NLS-1$
+						+ "Please ensure the search backend is running."); //$NON-NLS-1$
 			}
-			List<JavaBlobIndex> hits;
+			List<SearchHit> hits;
 			switch (mode) {
 				case HYBRID:
-					hits= queryService.hybridSearch(repoName, queryText, maxResults);
+					hits= client.hybridSearch(repoName, queryText, maxResults);
 					break;
 				case SIMILAR:
 					// queryText is treated as a blob object ID for similar code search
-					hits= queryService.findSimilarCode(repoName, queryText, maxResults);
+					hits= client.findSimilarCode(repoName, queryText, maxResults);
 					break;
 				case SEMANTIC:
 				default:
-					hits= queryService.semanticSearch(repoName, queryText, maxResults);
+					hits= client.semanticSearch(repoName, queryText, maxResults);
 					break;
 			}
 			if (monitor.isCanceled()) {

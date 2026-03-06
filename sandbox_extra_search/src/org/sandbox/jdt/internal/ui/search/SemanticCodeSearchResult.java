@@ -17,17 +17,17 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
 import org.eclipse.search.ui.ISearchQuery;
 import org.eclipse.search.ui.ISearchResult;
 import org.eclipse.search.ui.ISearchResultListener;
+import org.sandbox.jdt.internal.ui.search.gitindex.SearchHit;
 
 /**
  * Holds the results of a semantic code search query.
  *
  * <p>
- * Wraps the list of {@link JavaBlobIndex} entries returned by
- * {@code GitDatabaseQueryService.semanticSearch()} or
+ * Wraps the list of {@link SearchHit} entries returned by
+ * {@code SemanticSearchClient.semanticSearch()} or
  * {@code hybridSearch()}.
  * </p>
  */
@@ -35,7 +35,7 @@ public class SemanticCodeSearchResult implements ISearchResult {
 
 	private final SemanticCodeSearchQuery query;
 
-	private List<JavaBlobIndex> matches= Collections.emptyList();
+	private List<SearchHit> matches= Collections.emptyList();
 
 	/**
 	 * Creates a new search result container for the given query.
@@ -48,21 +48,21 @@ public class SemanticCodeSearchResult implements ISearchResult {
 	}
 
 	/**
-	 * Sets the list of matching blob index entries.
+	 * Sets the list of matching search hits.
 	 *
 	 * @param matches
 	 *            the search results
 	 */
-	public void setMatches(List<JavaBlobIndex> matches) {
+	public void setMatches(List<SearchHit> matches) {
 		this.matches= matches != null ? matches : Collections.emptyList();
 	}
 
 	/**
-	 * Returns the list of matching blob index entries.
+	 * Returns the list of matching search hits.
 	 *
 	 * @return unmodifiable list of results
 	 */
-	public List<JavaBlobIndex> getMatches() {
+	public List<SearchHit> getMatches() {
 		return Collections.unmodifiableList(matches);
 	}
 

@@ -11,6 +11,9 @@ public class Messages extends NLS {
 	public static String OpenSemanticSearchPageAction_WindowNotAvailable;
 	public static String CommitAnalyticsView_ServiceNotInitialized;
 	public static String CommitAnalyticsView_ShowingAuthors;
+	public static String SemanticSearchClient_BackendNotAvailable;
+	public static String SemanticSearchClient_ConnectionError;
+	public static String SemanticSearchClient_Searching;
 	public static String UpdateNeededSearchPage_ClassListLoadFailed;
 	public static String UpdateNeededSearchPage_ClassListNotFound;
 	public static String UpdateNeededSearchPage_NoProjectsFound;

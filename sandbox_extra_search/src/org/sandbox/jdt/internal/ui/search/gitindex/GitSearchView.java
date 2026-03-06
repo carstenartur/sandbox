@@ -19,7 +19,6 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -45,8 +44,8 @@ import org.eclipse.ui.part.ViewPart;
  * </ul>
  *
  * <p>
- * Internally uses {@code GitDatabaseQueryService} from
- * sandbox-jgit-storage-hibernate for search operations.
+ * Internally uses {@link SemanticSearchClient} to call the REST API of
+ * {@code sandbox-jgit-server-webapp}.
  * </p>
  */
 public class GitSearchView extends ViewPart {
@@ -123,37 +122,37 @@ public class GitSearchView extends ViewPart {
 		if (query.isEmpty()) {
 			return;
 		}
-		GitDatabaseQueryService queryService= EmbeddedSearchService.getInstance().getQueryService();
-		if (queryService == null) {
+		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
+		if (client == null) {
 			tableViewer.setInput(new Object[0]);
 			return;
 		}
 		int searchType= searchTypeCombo.getSelectionIndex();
-		List<?> results;
+		List<SearchHit> results;
 		switch (searchType) {
 			case 1: // Java Types
-				results= queryService.searchByType("", query); //$NON-NLS-1$
+				results= client.searchByType("", query, 20); //$NON-NLS-1$
 				break;
 			case 2: // Paths
-				results= queryService.searchByChangedPath("", query); //$NON-NLS-1$
+				results= client.searchByChangedPath("", query, 20); //$NON-NLS-1$
 				break;
 			case 3: // Annotations
 			case 4: // Methods
 			case 5: // Fields
-				results= queryService.searchBySymbol("", query); //$NON-NLS-1$
+				results= client.searchBySymbol("", query, 20); //$NON-NLS-1$
 				break;
 			case 6: // Semantic
 				// Note: result count for semantic search is fixed at 10 in this view.
 				// Use SemanticCodeSearchPage for configurable result counts.
-				results= queryService.semanticSearch("", query, 10); //$NON-NLS-1$
+				results= client.semanticSearch("", query, 10); //$NON-NLS-1$
 				break;
 			case 7: // Hybrid
 				// Note: result count for hybrid search is fixed at 10 in this view.
 				// Use SemanticCodeSearchPage for configurable result counts.
-				results= queryService.hybridSearch("", query, 10); //$NON-NLS-1$
+				results= client.hybridSearch("", query, 10); //$NON-NLS-1$
 				break;
 			default: // Commits
-				results= queryService.searchCommitMessages("", query); //$NON-NLS-1$
+				results= client.searchCommitMessages("", query, 20); //$NON-NLS-1$
 				break;
 		}
 		tableViewer.setInput(results);
