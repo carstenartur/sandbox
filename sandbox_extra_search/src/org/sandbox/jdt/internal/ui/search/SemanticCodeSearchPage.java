@@ -135,7 +135,7 @@ public class SemanticCodeSearchPage extends DialogPage implements ISearchPage {
 			return false;
 		}
 
-		if (EmbeddedSearchService.getInstance().getQueryService() == null) {
+		if (EmbeddedSearchService.getInstance().getSearchClient() == null) {
 			setErrorMessage("Semantic search service is not available. Please wait for the database to initialize."); //$NON-NLS-1$
 			return false;
 		}
