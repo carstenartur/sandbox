@@ -295,9 +295,11 @@ Each comparison run should be documented by appending to this file:
    *Gap: MISSING_DSL_RULE — validated GREEN rule had no corresponding hint file*
 
 3. **`sandbox_common_core/.../string-modernization.sandbox-hint`** — Added
-   String.replaceAll → String.replace rule using correct `isStringLiteral` and
-   `!isRegexp` guards.
-   *Gap: MISSING_DSL_RULE — validated GREEN rule not in any hint file*
+   String.replaceAll → String.replace as hint-only rule with `instanceof($str, "java.lang.String")`,
+   `isStringLiteral($literal)`, `!isRegexp($literal)`, and `isStringLiteral($replacement)` guards.
+   Downgraded from auto-fix to hint-only because `replaceAll` applies regex replacement
+   semantics (`$1` backrefs, `\` escapes) while `replace` treats replacement literally.
+   *Gap: MISSING_DSL_RULE — validated rule not in any hint file; downgraded to hint-only per review*
 
 4. **`sandbox_mining_core/src/main/resources/mining-examples.md`** — Added 4 new examples:
    - Example 15: NOT_APPLICABLE — Concurrency refactoring (Phaser → CountDownLatch)
@@ -315,11 +317,14 @@ Each comparison run should be documented by appending to this file:
    *Gap: MISSING_API_CONTEXT + CATEGORY_MISMATCH — Gemini needs explicit guidance*
 
 6. **`output/run-1/copilot-evaluations.json`** — Fixed DSL rule quality:
-   - String.replaceAll: changed `containsRegexChars()` to `!isRegexp()` (correct guard)
+   - String.replaceAll: downgraded from GREEN to YELLOW — auto-fix rule was too
+     permissive (regex replacement semantics differ from literal replacement); now
+     hint-only with type guard `instanceof($str, "java.lang.String")` and
+     `isStringLiteral($replacement)` guard
    - Platform.run: removed unnecessary `sourceVersionGE(11)` guard
    - Fixed targetHintFile from `string-performance.sandbox-hint` to
      `string-modernization.sandbox-hint` (correct existing file)
-   *Gap: INVALID_DSL_RULE — reference evaluations used non-existent guards*
+   *Gap: INVALID_DSL_RULE — reference evaluations used non-existent guards and unsafe auto-fix*
 
 **Recommendations for next run:**
 - Run with actual Gemini API key to validate that the improved prompt context

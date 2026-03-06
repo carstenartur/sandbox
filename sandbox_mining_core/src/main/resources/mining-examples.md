@@ -3,27 +3,32 @@
 These examples show how commits should be evaluated and what good
 DSL rules look like. Based on actual Eclipse Platform 2025 commits.
 
-### Example 1: GREEN — String.replaceAll() → String.replace()
+### Example 1: YELLOW — String.replaceAll() → String.replace()
 
 **Commit:** `7bb8891b` from eclipse.platform.ui
 **Message:** "JDT Clean-up Use String.replace() instead of String.replaceAll() when possible"
 
 **Analysis:** When `replaceAll()` is called with a literal (non-regex) pattern,
 it should be replaced with `replace()` which avoids regex compilation overhead.
+However, `replaceAll` applies regex *replacement* semantics (e.g., `$1` backrefs,
+`\` escapes) while `replace` treats the replacement literally. A fully safe automatic
+replacement requires verifying both the pattern and replacement are safe — currently
+expressible only as a hint-only rule.
 
 **Expected evaluation:**
 - relevant: true
-- trafficLight: GREEN
+- trafficLight: YELLOW
 - reusability: 9
 - codeImprovement: 6
 - implementationEffort: 2
 - category: "String API Modernization"
+- languageChangeNeeded: "Safe automatic replacement requires checking replacement string for regex backreference characters ($, \\)"
 
-**DSL rule:**
+**DSL rule (hint-only):**
 ```
-// String.replaceAll with literal → String.replace
-$str.replaceAll($literal, $replacement) :: isStringLiteral($literal) && !isRegexp($literal)
-=> $str.replace($literal, $replacement)
+// Hint-only: String.replaceAll with literal → String.replace
+"Consider using String.replace(...) instead of replaceAll(...) when using a literal pattern (avoids regex overhead)":
+$str.replaceAll($literal, $replacement) :: instanceof($str, "java.lang.String") && isStringLiteral($literal) && !isRegexp($literal) && isStringLiteral($replacement)
 ;;
 ```
 

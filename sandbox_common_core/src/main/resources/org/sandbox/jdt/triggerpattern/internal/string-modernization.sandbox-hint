@@ -24,7 +24,7 @@ $x.indexOf($y) >= 0
 $x.trim() :: sourceVersionGE(11) && instanceof($x, "java.lang.String")
 ;;
 
-// String.replaceAll with literal → String.replace (avoids regex overhead)
-$str.replaceAll($literal, $replacement) :: isStringLiteral($literal) && !isRegexp($literal)
-=> $str.replace($literal, $replacement)
+// Hint-only: String.replaceAll with literal → String.replace (avoids regex overhead)
+"Consider using String.replace(...) instead of replaceAll(...) when using a literal pattern (avoids regex overhead)":
+$str.replaceAll($literal, $replacement) :: instanceof($str, "java.lang.String") && isStringLiteral($literal) && !isRegexp($literal) && isStringLiteral($replacement)
 ;;
