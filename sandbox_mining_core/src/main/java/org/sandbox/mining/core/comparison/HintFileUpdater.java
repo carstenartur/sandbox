@@ -54,7 +54,9 @@ public class HintFileUpdater {
 
 		for (GapEntry gap : gaps) {
 			if (gap.category() != GapCategory.MISSING_DSL_RULE
-					&& gap.category() != GapCategory.INVALID_DSL_RULE) {
+					&& gap.category() != GapCategory.INVALID_DSL_RULE
+					&& gap.category() != GapCategory.DSL_SYNTAX
+					&& gap.category() != GapCategory.GUARD_WISSEN) {
 				continue;
 			}
 			String rule = gap.referenceValue();

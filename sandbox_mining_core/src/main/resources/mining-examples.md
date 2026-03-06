@@ -196,6 +196,79 @@ cannot express reference-counting logic.
 - category: "Unused Import Removal"
 - languageChangeNeeded: "Requires usage analysis to determine which imports and field declarations are unreferenced"
 
+### Example 11: RED — Fix existing cleanup bug (NLS markers)
+
+**Commit:** `3702d32e` from eclipse.jdt.ui
+**Message:** "Fix Unnecessary Array clean-up to not remove NLS markers"
+
+**Actual diff:** Fixed the JDT "Unnecessary Array Creation" cleanup to preserve `//$NON-NLS-n$`
+markers when removing redundant array creation in varargs calls. The bug caused NLS markers
+to be lost, breaking internationalization.
+
+**Analysis:** This is a bug fix for an existing JDT cleanup, not a new transformation pattern.
+It requires understanding of NLS marker semantics and array creation context — it's fixing
+incorrect behavior in existing infrastructure, not discovering a new pattern.
+
+**Expected evaluation:**
+- relevant: true
+- trafficLight: RED (NOT GREEN/YELLOW — this is a bug fix, not a new pattern)
+- reusability: 2
+- codeImprovement: 7
+- implementationEffort: 8
+- category: "Clean-up Bug Fix"
+- languageChangeNeeded: "Bug fix for existing JDT cleanup — requires understanding of NLS marker renumbering and array creation context"
+
+**Why RED (not YELLOW or GREEN):** Bug fixes to existing cleanup implementations are RED
+because they fix incorrect behavior rather than define new transformations. The DSL cannot
+express "fix the implementation of cleanup X" — that requires changes to the cleanup's Java code.
+
+### Example 12: NOT_APPLICABLE — Apply existing Eclipse JDT cleanups
+
+**Commit:** `c9f1e026` from eclipse.platform.ui
+**Message:** "Perform clean code of org.eclipse.ui.workbench"
+
+**Analysis:** Commits with messages like "Perform clean code" or "Apply code cleanup" typically
+apply existing Eclipse JDT cleanups (add `final`, remove unnecessary casts, organize imports, etc.).
+These are NOT new patterns — they use already-built-in Eclipse cleanup actions.
+
+**Expected evaluation:**
+- relevant: false
+- irrelevantReason: "Applies multiple built-in Eclipse JDT cleanups — these are already implemented as JDT cleanups, no new pattern needed"
+- trafficLight: NOT_APPLICABLE
+
+### Example 13: NOT_APPLICABLE — Mark deprecated API for removal
+
+**Commit:** `a629637e` from eclipse.platform.ui
+**Message:** "Marks several unused deprecated methods/constants for removal"
+
+**Analysis:** Adding `@Deprecated(forRemoval=true)` annotations to already-deprecated methods
+is API lifecycle management. It does NOT change code behavior and is NOT a transformation pattern.
+**Do NOT confuse this with "removing deprecated usage"** (which IS a transformation pattern).
+
+**Expected evaluation:**
+- relevant: false
+- irrelevantReason: "Adding @Deprecated(forRemoval=true) annotations — API lifecycle management, not a code transformation pattern"
+- trafficLight: NOT_APPLICABLE
+
+### Example 14: YELLOW — URL deprecation (Java 20+)
+
+**Commit:** `6361505f` from eclipse.platform.ui
+**Message:** "Fix URL deprecation in tests and snippets"
+
+**Analysis:** Replacing `new URL(String)` (deprecated in Java 20) with URI-based alternatives.
+The replacement changes exception semantics: `URL(String)` throws `MalformedURLException` (checked),
+while `URI.create(String)` throws `IllegalArgumentException` (unchecked). A simple DSL rule cannot
+safely capture this distinction.
+
+**Expected evaluation:**
+- relevant: true
+- trafficLight: YELLOW (NOT GREEN — exception semantics change)
+- reusability: 8
+- codeImprovement: 5
+- implementationEffort: 4
+- category: "Java API Deprecation"
+- languageChangeNeeded: "Requires understanding of checked vs unchecked exception semantics"
+
 ### Common Mistakes to Avoid
 
 1. **Do NOT use XML tags** in dslRule:
@@ -220,3 +293,16 @@ cannot express reference-counting logic.
    GREEN means a valid DSL rule exists. If the pattern requires semantic analysis
    (type resolution, cross-file references, usage counting), it must be YELLOW.
    GREEN evaluations MUST have `dslRule` set and `dslValidationResult == "VALID"`.
+
+8. **Do NOT mark bug fixes to existing cleanups as GREEN or YELLOW** —
+   commits that fix bugs in JDT cleanup implementations (NLS marker handling,
+   lambda edge cases, generic type issues) are RED. They improve existing
+   infrastructure rather than defining new transformation patterns.
+
+9. **Do NOT mark "Perform clean code" commits as relevant** —
+   commits that apply existing built-in Eclipse JDT cleanups (add final, organize
+   imports, remove unnecessary casts) are NOT_APPLICABLE. No new pattern is needed.
+
+10. **Do NOT mark API removal (no replacement) as relevant** —
+    when an entire API is removed (e.g., `IPageLayout.addFastView`, keybinding API)
+    with no replacement, this is NOT_APPLICABLE. It's deletion, not transformation.

@@ -31,6 +31,27 @@ taggedText.replace("&amp;", "&#038;");  // faster, no regex
 ```
 **Source:** eclipse.platform.ui commit `7bb8891b` (2025)
 
+#### URL Constructor Deprecation (Java 20+)
+Old (deprecated in Java 20):
+```java
+import java.net.URL;
+URL url = new URL("https://example.com");  // deprecated since Java 20
+```
+New (URI-based alternatives):
+```java
+import java.net.URI;
+// Option 1: URI.create() (throws unchecked IllegalArgumentException)
+URL url = URI.create("https://example.com").toURL();
+// Option 2: new URI() (throws checked URISyntaxException — preserves checked exception semantics)
+URL url = new URI("https://example.com").toURL();
+```
+**Note:** The `new URL(String)` constructor was deprecated in Java 20 because URL parsing
+is inconsistent. The URI class has stricter, more predictable parsing. When replacing,
+consider exception handling: `URI.create()` throws unchecked `IllegalArgumentException`,
+while `new URI(String)` throws checked `URISyntaxException` and `new URL(String)` throws
+checked `MalformedURLException`.
+**Source:** eclipse.platform.ui commits `6361505f`, `aede3410` (2025)
+
 #### IPageLayout.addFastView (removed)
 The `addFastView` API was removed entirely in 2025.
 ```java
@@ -38,6 +59,19 @@ The `addFastView` API was removed entirely in 2025.
 layout.addFastView("viewId");
 ```
 **Source:** eclipse.platform.ui commit `40552f3c` (2025)
+
+### Java 21+ Deprecation Patterns
+
+Java 21 removed or deprecated several APIs. Common patterns seen in Eclipse 2025:
+- `Thread.stop()`, `Thread.suspend()`, `Thread.resume()` — deprecated for removal due to deadlock and data-corruption risks
+- `new URL(String)` — deprecated since Java 20, use `URI.create(String).toURL()`
+- `SecurityManager` methods — deprecated for removal
+- `Finalization` — deprecated; use `Cleaner` or try-with-resources instead
+
+**Important for mining:** When evaluating "Java 21 deprecation fixes" commits, check whether
+the replacement is a mechanical API substitution (GREEN/YELLOW) or requires deeper understanding
+of the code's concurrency/security model (RED/NOT_APPLICABLE).
+**Source:** eclipse.platform.ui commit `aede3410` (2025)
 
 ### Status API (Eclipse 4.7+)
 

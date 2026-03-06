@@ -13,12 +13,19 @@
  *******************************************************************************/
 package org.sandbox.mining.core.comparison;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * Holds the results of comparing Gemini mining results against
@@ -107,5 +114,109 @@ public class DeltaReport {
 			sb.append("\n"); //$NON-NLS-1$
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Formats the delta report as Markdown with actionable suggestions per category.
+	 *
+	 * @return Markdown-formatted report
+	 */
+	public String formatMarkdown() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("# Delta Report\n\n"); //$NON-NLS-1$
+		sb.append("**Total gaps:** ").append(gaps.size()).append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		if (gaps.isEmpty()) {
+			sb.append("No gaps found — mining results match the reference evaluation.\n"); //$NON-NLS-1$
+			return sb.toString();
+		}
+
+		sb.append("## Gap Distribution\n\n"); //$NON-NLS-1$
+		sb.append("| Category | Count | Suggested Action |\n"); //$NON-NLS-1$
+		sb.append("|----------|-------|------------------|\n"); //$NON-NLS-1$
+		Map<GapCategory, Long> summary = summarize();
+		for (Map.Entry<GapCategory, Long> entry : summary.entrySet()) {
+			sb.append("| ").append(entry.getKey()) //$NON-NLS-1$
+					.append(" | ").append(entry.getValue()) //$NON-NLS-1$
+					.append(" | ").append(entry.getKey().suggestedAction()) //$NON-NLS-1$
+					.append(" |\n"); //$NON-NLS-1$
+		}
+		sb.append("\n"); //$NON-NLS-1$
+
+		sb.append("## Gap Details\n\n"); //$NON-NLS-1$
+		Map<GapCategory, List<GapEntry>> grouped = groupByCategory();
+		for (Map.Entry<GapCategory, List<GapEntry>> entry : grouped.entrySet()) {
+			sb.append("### ").append(entry.getKey()) //$NON-NLS-1$
+					.append(" (").append(entry.getValue().size()).append(")\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			for (GapEntry gap : entry.getValue()) {
+				String shortHash = gap.commitHash() != null
+					? gap.commitHash().substring(0, Math.min(7, gap.commitHash().length()))
+					: "???????"; //$NON-NLS-1$
+				sb.append("- **").append(shortHash).append("**"); //$NON-NLS-1$ //$NON-NLS-2$
+				if (gap.suggestion() != null) {
+					sb.append(": ").append(gap.suggestion()); //$NON-NLS-1$
+				}
+				if (gap.geminiValue() != null && gap.referenceValue() != null) {
+					String gemini = sanitizeInlineValue(gap.geminiValue());
+					String reference = sanitizeInlineValue(gap.referenceValue());
+					sb.append(" (gemini=`").append(gemini) //$NON-NLS-1$
+							.append("` → reference=`").append(reference).append("`)"); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+				sb.append("\n"); //$NON-NLS-1$
+			}
+			sb.append("\n"); //$NON-NLS-1$
+		}
+
+		return sb.toString();
+	}
+
+	/**
+	 * Serializes the delta report as a JSON string.
+	 *
+	 * @return JSON representation of the report
+	 */
+	public String toJson() {
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		Map<String, Object> reportMap = new LinkedHashMap<>();
+		reportMap.put("totalGaps", gaps.size()); //$NON-NLS-1$
+		reportMap.put("summary", summarize()); //$NON-NLS-1$
+		reportMap.put("gaps", gaps); //$NON-NLS-1$
+		return gson.toJson(reportMap);
+	}
+
+	/**
+	 * Writes the delta report to JSON and Markdown files in the given directory.
+	 *
+	 * @param outputDir directory where files will be written
+	 * @throws IOException if file writing fails
+	 */
+	public void writeToFiles(Path outputDir) throws IOException {
+		Files.createDirectories(outputDir);
+		Files.writeString(outputDir.resolve("delta-report.json"), //$NON-NLS-1$
+				toJson(), StandardCharsets.UTF_8);
+		Files.writeString(outputDir.resolve("delta-report.md"), //$NON-NLS-1$
+				formatMarkdown(), StandardCharsets.UTF_8);
+	}
+
+	private static final int MAX_INLINE_LENGTH = 80;
+
+	/**
+	 * Sanitizes a value for inline Markdown rendering: truncates to a single line,
+	 * escapes backticks, and limits length.
+	 */
+	static String sanitizeInlineValue(String value) {
+		if (value == null) {
+			return ""; //$NON-NLS-1$
+		}
+		// Take only the first line
+		int nl = value.indexOf('\n');
+		String single = nl >= 0 ? value.substring(0, nl) : value;
+		// Escape backticks
+		single = single.replace("`", "'"); //$NON-NLS-1$ //$NON-NLS-2$
+		// Truncate
+		if (single.length() > MAX_INLINE_LENGTH) {
+			single = single.substring(0, MAX_INLINE_LENGTH) + "…"; //$NON-NLS-1$
+		}
+		return single;
 	}
 }
