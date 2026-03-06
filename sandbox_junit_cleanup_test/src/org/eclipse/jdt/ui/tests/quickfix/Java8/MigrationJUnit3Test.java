@@ -65,7 +65,7 @@ public class MigrationJUnit3Test {
 
 		enableJUnit3Cleanup();
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
 				import org.junit.jupiter.api.BeforeEach;
@@ -103,7 +103,7 @@ public class MigrationJUnit3Test {
 
 		enableJUnit3Cleanup();
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
 				import org.junit.jupiter.api.BeforeEach;
@@ -142,7 +142,7 @@ public class MigrationJUnit3Test {
 
 		enableJUnit3Cleanup();
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
 				import org.junit.jupiter.api.AfterEach;
@@ -181,7 +181,7 @@ public class MigrationJUnit3Test {
 
 		enableJUnit3Cleanup();
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
 				import org.junit.jupiter.api.BeforeEach;
@@ -221,7 +221,7 @@ public class MigrationJUnit3Test {
 
 		enableJUnit3Cleanup();
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
 				import org.junit.jupiter.api.Assertions;
@@ -261,7 +261,7 @@ public class MigrationJUnit3Test {
 
 		enableJUnit3Cleanup();
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
 				import org.junit.jupiter.api.Assertions;
@@ -302,7 +302,7 @@ public class MigrationJUnit3Test {
 
 		enableJUnit3Cleanup();
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
 				import org.junit.jupiter.api.Assertions;
@@ -342,7 +342,7 @@ public class MigrationJUnit3Test {
 
 		enableJUnit3Cleanup();
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
 				import org.junit.jupiter.api.Assertions;
@@ -387,7 +387,7 @@ public class MigrationJUnit3Test {
 
 		enableJUnit3Cleanup();
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
 				import org.junit.jupiter.api.AfterEach;

@@ -100,7 +100,7 @@ public class JUnitMigrationCleanUpTest {
 		ICompilationUnit cu= pack.createCompilationUnit("MyTest.java", test.given, true, null); //$NON-NLS-1$
 		context4junit3.enable(MYCleanUpConstants.JUNIT3_CLEANUP);
 		context4junit3.enable(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST);
-		context4junit3.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+		context4junit3.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
 	}
 
 	enum NOJUnitCleanupCases {

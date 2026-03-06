@@ -808,3 +808,32 @@ print(f'Open: {content.count(chr(123))}, Close: {content.count(chr(125))}')
 **Learned**: 2026-03-01
 
 ---
+
+## 30. Whitespace Normalization in Refactoring Tests Must Handle Tabs vs Spaces
+
+**Issue**: The Eclipse refactoring engine often inserts **tabs** for indentation on lines
+immediately following inserted annotations (e.g., `@BeforeEach`, `@Test`), while test
+expected output uses **spaces**. A whitespace-normalizing assertion that only handles
+trailing whitespace, blank lines, and line endings will still fail on tab/space differences.
+
+**Root Cause**: When the JDT cleanup inserts an annotation before a method, the method's
+line indentation may change from spaces to a tab character. This is an internal Eclipse
+formatter behavior that varies across versions.
+
+**Solution**: `normalizeWhitespace()` in `AbstractEclipseJava` must convert leading tabs
+to spaces (4 spaces per tab) before comparison. Use `normalizeIndentation()` to handle
+the leading whitespace of each line.
+
+**Rule**: When writing whitespace-normalizing test comparisons:
+1. Normalize line endings (`\r\n` → `\n`)
+2. Convert leading tabs to spaces
+3. Strip trailing whitespace per line
+4. Collapse multiple blank lines
+5. Strip leading/trailing blank lines
+
+**Rule**: ALWAYS check CI logs for the actual "but was:" output before writing expected
+test strings. The Eclipse formatter may use tabs where the test expects spaces.
+
+**Learned**: 2026-03-06
+
+---
