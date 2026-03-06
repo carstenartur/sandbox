@@ -1064,16 +1064,17 @@ public class GitDatabaseQueryService {
 			return List.of();
 		}
 		try (Session session = sessionFactory.openSession()) {
-			SearchSession searchSession = Search.session(session);
-			return searchSession.search(JavaBlobIndex.class)
-					.where(f -> f.bool()
-							.must(f.match()
-									.field("repositoryName") //$NON-NLS-1$
-									.matching(repoName))
-							.must(f.match()
-									.field("importStatements") //$NON-NLS-1$
-									.matching(importPrefix)))
-					.fetchHits(offset, limit);
+			return session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND (j.importStatements LIKE :prefixFirst " //$NON-NLS-1$
+							+ "OR j.importStatements LIKE :prefixOther)", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("prefixFirst", importPrefix + "%") //$NON-NLS-1$
+					.setParameter("prefixOther", "%\n" + importPrefix + "%") //$NON-NLS-1$ //$NON-NLS-2$
+					.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
 		}
 	}
 
@@ -1097,38 +1098,89 @@ public class GitDatabaseQueryService {
 	 */
 	public Map<String, Object> getMigrationImpactSummary(String repoName,
 			String importPrefix) {
-		List<JavaBlobIndex> affected = getMigrationImpact(repoName,
-				importPrefix, 0, Integer.MAX_VALUE);
 		Map<String, Object> summary = new LinkedHashMap<>();
-		summary.put("totalFiles", affected.size()); //$NON-NLS-1$
-		Set<String> packages = new HashSet<>();
-		Set<String> authors = new HashSet<>();
-		Instant earliest = null;
-		Instant latest = null;
-		for (JavaBlobIndex entry : affected) {
-			if (entry.getPackageName() != null) {
-				packages.add(entry.getPackageName());
-			}
-			if (entry.getCommitAuthor() != null) {
-				authors.add(entry.getCommitAuthor());
-			}
-			Instant date = entry.getCommitDate();
-			if (date != null) {
-				if (earliest == null || date.isBefore(earliest)) {
-					earliest = date;
-				}
-				if (latest == null || date.isAfter(latest)) {
-					latest = date;
-				}
-			}
+		summary.put("totalFiles", Integer.valueOf(0)); //$NON-NLS-1$
+		summary.put("distinctPackages", Integer.valueOf(0)); //$NON-NLS-1$
+		summary.put("distinctAuthors", Integer.valueOf(0)); //$NON-NLS-1$
+		summary.put("earliestDate", null); //$NON-NLS-1$
+		summary.put("latestDate", null); //$NON-NLS-1$
+		if (repoName == null || repoName.isEmpty() || importPrefix == null
+				|| importPrefix.isEmpty()) {
+			return summary;
 		}
-		summary.put("distinctPackages", packages.size()); //$NON-NLS-1$
-		summary.put("distinctAuthors", authors.size()); //$NON-NLS-1$
-		summary.put("earliestDate", //$NON-NLS-1$
-				earliest != null ? earliest.toString() : null);
-		summary.put("latestDate", //$NON-NLS-1$
-				latest != null ? latest.toString() : null);
-		return summary;
+		try (Session session = sessionFactory.openSession()) {
+			Long total = session.createQuery(
+					"SELECT COUNT(j) FROM JavaBlobIndex j " //$NON-NLS-1$
+							+ "WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND (j.importStatements LIKE :prefixFirst " //$NON-NLS-1$
+							+ "OR j.importStatements LIKE :prefixOther)", //$NON-NLS-1$
+					Long.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("prefixFirst", importPrefix + "%") //$NON-NLS-1$
+					.setParameter("prefixOther", "%\n" + importPrefix + "%") //$NON-NLS-1$ //$NON-NLS-2$
+					.getSingleResult();
+			if (total == null || total == 0L) {
+				return summary;
+			}
+			int totalFiles = total > Integer.MAX_VALUE ? Integer.MAX_VALUE
+					: total.intValue();
+			summary.put("totalFiles", Integer.valueOf(totalFiles)); //$NON-NLS-1$
+
+			Set<String> packages = new HashSet<>();
+			Set<String> authors = new HashSet<>();
+			Instant earliest = null;
+			Instant latest = null;
+			final int pageSize = 1000;
+			int offset = 0;
+			while (true) {
+				List<JavaBlobIndex> page = session.createQuery(
+						"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
+								+ "AND (j.importStatements LIKE :prefixFirst " //$NON-NLS-1$
+								+ "OR j.importStatements LIKE :prefixOther)", //$NON-NLS-1$
+						JavaBlobIndex.class)
+						.setParameter("repo", repoName) //$NON-NLS-1$
+						.setParameter("prefixFirst", importPrefix + "%") //$NON-NLS-1$
+						.setParameter("prefixOther", "%\n" + importPrefix + "%") //$NON-NLS-1$ //$NON-NLS-2$
+						.setFirstResult(offset)
+						.setMaxResults(pageSize)
+						.getResultList();
+				if (page.isEmpty()) {
+					break;
+				}
+				for (JavaBlobIndex entry : page) {
+					String pkg = entry.getPackageName();
+					if (pkg != null) {
+						packages.add(pkg);
+					}
+					String author = entry.getCommitAuthor();
+					if (author != null) {
+						authors.add(author);
+					}
+					Instant date = entry.getCommitDate();
+					if (date != null) {
+						if (earliest == null || date.isBefore(earliest)) {
+							earliest = date;
+						}
+						if (latest == null || date.isAfter(latest)) {
+							latest = date;
+						}
+					}
+				}
+				offset += pageSize;
+				if (page.size() < pageSize) {
+					break;
+				}
+			}
+			summary.put("distinctPackages", //$NON-NLS-1$
+					Integer.valueOf(packages.size()));
+			summary.put("distinctAuthors", //$NON-NLS-1$
+					Integer.valueOf(authors.size()));
+			summary.put("earliestDate", //$NON-NLS-1$
+					earliest != null ? earliest.toString() : null);
+			summary.put("latestDate", //$NON-NLS-1$
+					latest != null ? latest.toString() : null);
+			return summary;
+		}
 	}
 
 	/**
@@ -1149,16 +1201,21 @@ public class GitDatabaseQueryService {
 			return List.of();
 		}
 		try (Session session = sessionFactory.openSession()) {
-			SearchSession searchSession = Search.session(session);
-			return searchSession.search(JavaBlobIndex.class)
-					.where(f -> f.bool()
-							.must(f.match()
-									.field("repositoryName") //$NON-NLS-1$
-									.matching(repoName))
-							.must(f.match()
-									.field("annotations") //$NON-NLS-1$
-									.matching("Deprecated"))) //$NON-NLS-1$
-					.fetchHits(offset, limit);
+			return session.createQuery(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repoName " //$NON-NLS-1$
+							+ "AND (j.annotations = :exact " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :first " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :middle " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :last)", //$NON-NLS-1$
+					JavaBlobIndex.class)
+					.setParameter("repoName", repoName) //$NON-NLS-1$
+					.setParameter("exact", "Deprecated") //$NON-NLS-1$
+					.setParameter("first", "Deprecated\n%") //$NON-NLS-1$
+					.setParameter("middle", "%\nDeprecated\n%") //$NON-NLS-1$
+					.setParameter("last", "%\nDeprecated") //$NON-NLS-1$
+					.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
 		}
 	}
 
@@ -1178,16 +1235,17 @@ public class GitDatabaseQueryService {
 			return 0L;
 		}
 		try (Session session = sessionFactory.openSession()) {
-			SearchSession searchSession = Search.session(session);
-			return searchSession.search(JavaBlobIndex.class)
-					.where(f -> f.bool()
-							.must(f.match()
-									.field("repositoryName") //$NON-NLS-1$
-									.matching(repoName))
-							.must(f.match()
-									.field("importStatements") //$NON-NLS-1$
-									.matching(importPrefix)))
-					.fetchTotalHitCount();
+			Long count = session.createQuery(
+					"SELECT COUNT(j) FROM JavaBlobIndex j " //$NON-NLS-1$
+							+ "WHERE j.repositoryName = :repo " //$NON-NLS-1$
+							+ "AND (j.importStatements LIKE :prefixFirst " //$NON-NLS-1$
+							+ "OR j.importStatements LIKE :prefixOther)", //$NON-NLS-1$
+					Long.class)
+					.setParameter("repo", repoName) //$NON-NLS-1$
+					.setParameter("prefixFirst", importPrefix + "%") //$NON-NLS-1$
+					.setParameter("prefixOther", "%\n" + importPrefix + "%") //$NON-NLS-1$ //$NON-NLS-2$
+					.getSingleResult();
+			return count != null ? count.longValue() : 0L;
 		}
 	}
 
@@ -1213,25 +1271,40 @@ public class GitDatabaseQueryService {
 				|| importPrefixes == null || importPrefixes.isEmpty()) {
 			return List.of();
 		}
+		List<String> validPrefixes = new ArrayList<>();
+		for (String p : importPrefixes) {
+			if (p != null && !p.isBlank()) {
+				validPrefixes.add(p);
+			}
+		}
+		if (validPrefixes.isEmpty()) {
+			return List.of();
+		}
+		// Cap to avoid excessive query length
+		if (validPrefixes.size() > MAX_IMPORT_PREFIXES) {
+			validPrefixes = validPrefixes.subList(0, MAX_IMPORT_PREFIXES);
+		}
 		try (Session session = sessionFactory.openSession()) {
-			SearchSession searchSession = Search.session(session);
-			return searchSession.search(JavaBlobIndex.class)
-					.where(f -> {
-						var bool = f.bool()
-								.must(f.match()
-										.field("repositoryName") //$NON-NLS-1$
-										.matching(repoName));
-						var should = f.bool();
-						for (String prefix : importPrefixes) {
-							if (prefix != null && !prefix.isEmpty()) {
-								should = should.should(f.match()
-										.field("importStatements") //$NON-NLS-1$
-										.matching(prefix));
-							}
-						}
-						return bool.must(should);
-					})
-					.fetchHits(offset, limit);
+			StringBuilder hql = new StringBuilder(
+					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo AND ("); //$NON-NLS-1$
+			for (int i = 0; i < validPrefixes.size(); i++) {
+				if (i > 0) {
+					hql.append(" OR "); //$NON-NLS-1$
+				}
+				hql.append("j.importStatements LIKE :pf").append(i) //$NON-NLS-1$
+						.append(" OR j.importStatements LIKE :pm").append(i); //$NON-NLS-1$
+			}
+			hql.append(")"); //$NON-NLS-1$
+			var query = session.createQuery(hql.toString(), JavaBlobIndex.class)
+					.setParameter("repo", repoName); //$NON-NLS-1$
+			for (int i = 0; i < validPrefixes.size(); i++) {
+				String prefix = validPrefixes.get(i);
+				query.setParameter("pf" + i, prefix + "%"); //$NON-NLS-1$
+				query.setParameter("pm" + i, "%\n" + prefix + "%"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			return query.setFirstResult(offset)
+					.setMaxResults(limit)
+					.getResultList();
 		}
 	}
 
@@ -1258,8 +1331,21 @@ public class GitDatabaseQueryService {
 		}
 		for (String oldPrefix : oldToNewImportMap.keySet()) {
 			if (oldPrefix != null && !oldPrefix.isEmpty()) {
-				List<JavaBlobIndex> affected = getMigrationImpact(
-						repoName, oldPrefix, 0, Integer.MAX_VALUE);
+				List<JavaBlobIndex> affected = new ArrayList<>();
+				int offset = 0;
+				final int pageSize = 1000;
+				while (true) {
+					List<JavaBlobIndex> page = getMigrationImpact(
+							repoName, oldPrefix, offset, pageSize);
+					if (page.isEmpty()) {
+						break;
+					}
+					affected.addAll(page);
+					if (page.size() < pageSize) {
+						break;
+					}
+					offset += pageSize;
+				}
 				result.put(oldPrefix, affected);
 			}
 		}
@@ -1345,11 +1431,17 @@ public class GitDatabaseQueryService {
 		try (Session session = sessionFactory.openSession()) {
 			return session.createQuery(
 					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
-							+ "AND j.annotations LIKE :dep " //$NON-NLS-1$
+							+ "AND (j.annotations = :exact " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :first " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :middle " //$NON-NLS-1$
+							+ "OR j.annotations LIKE :last) " //$NON-NLS-1$
 							+ "ORDER BY j.commitDate ASC", //$NON-NLS-1$
 					JavaBlobIndex.class)
 					.setParameter("repo", repoName) //$NON-NLS-1$
-					.setParameter("dep", "%Deprecated%") //$NON-NLS-1$
+					.setParameter("exact", "Deprecated") //$NON-NLS-1$
+					.setParameter("first", "Deprecated\n%") //$NON-NLS-1$
+					.setParameter("middle", "%\nDeprecated\n%") //$NON-NLS-1$
+					.setParameter("last", "%\nDeprecated") //$NON-NLS-1$
 					.setFirstResult(offset)
 					.setMaxResults(limit)
 					.getResultList();
@@ -1414,11 +1506,17 @@ public class GitDatabaseQueryService {
 		try (Session session = sessionFactory.openSession()) {
 			return session.createQuery(
 					"FROM JavaBlobIndex j WHERE j.repositoryName = :repo " //$NON-NLS-1$
-							+ "AND j.fullyQualifiedNames LIKE :fqn " //$NON-NLS-1$
+							+ "AND (j.fullyQualifiedNames = :fqnExact " //$NON-NLS-1$
+							+ "OR j.fullyQualifiedNames LIKE :fqnPrefix " //$NON-NLS-1$
+							+ "OR j.fullyQualifiedNames LIKE :fqnSuffix " //$NON-NLS-1$
+							+ "OR j.fullyQualifiedNames LIKE :fqnMiddle) " //$NON-NLS-1$
 							+ "ORDER BY j.commitDate ASC", //$NON-NLS-1$
 					JavaBlobIndex.class)
 					.setParameter("repo", repoName) //$NON-NLS-1$
-					.setParameter("fqn", "%" + fullyQualifiedTypeName + "%") //$NON-NLS-1$ //$NON-NLS-2$
+					.setParameter("fqnExact", fullyQualifiedTypeName) //$NON-NLS-1$
+					.setParameter("fqnPrefix", fullyQualifiedTypeName + "\n%") //$NON-NLS-1$ //$NON-NLS-2$
+					.setParameter("fqnSuffix", "%\n" + fullyQualifiedTypeName) //$NON-NLS-1$ //$NON-NLS-2$
+					.setParameter("fqnMiddle", "%\n" + fullyQualifiedTypeName + "\n%") //$NON-NLS-1$ //$NON-NLS-2$
 					.setFirstResult(offset)
 					.setMaxResults(limit)
 					.getResultList();
@@ -1532,12 +1630,26 @@ public class GitDatabaseQueryService {
 	 * Find types whose fully qualified names never appear in any other file's
 	 * import statements within the same repository. These are potential dead
 	 * code candidates.
+	 * <p>
+	 * Wildcard imports (e.g. {@code pkg.*}) are treated as covering all types
+	 * in that package, so types referenced only via wildcard imports are not
+	 * considered dead.
+	 * <p>
+	 * <b>Note:</b> The cross-reference filtering is performed in-memory after
+	 * loading all entries with non-null FQNs. Pagination is applied to the
+	 * filtered result set. For very large repositories, callers should use
+	 * reasonable {@code limit} values.
 	 *
 	 * @param repoName
 	 *            the repository name
+	 * @param offset
+	 *            pagination offset into the filtered result
+	 * @param limit
+	 *            maximum number of results to return
 	 * @return entries that are never imported by other files in the repository
 	 */
-	public List<JavaBlobIndex> getDeadCodeCandidates(String repoName) {
+	public List<JavaBlobIndex> getDeadCodeCandidates(String repoName,
+			int offset, int limit) {
 		if (repoName == null || repoName.isEmpty()) {
 			return List.of();
 		}
@@ -1550,13 +1662,24 @@ public class GitDatabaseQueryService {
 					String.class)
 					.setParameter("repo", repoName) //$NON-NLS-1$
 					.getResultList();
-			// Build a set of individual imported names for precise matching
+			// Build a set of individual imported names for precise matching,
+			// and track wildcard-import package prefixes (pkg.*).
 			Set<String> importedNames = new HashSet<>();
+			Set<String> wildcardPackages = new HashSet<>();
 			for (String imports : allImports) {
 				if (imports != null) {
 					for (String token : FQN_SPLIT_PATTERN.split(imports)) {
-						if (!token.isBlank()) {
-							importedNames.add(token.trim());
+						String t = token.trim();
+						if (t.isBlank()) {
+							continue;
+						}
+						if (t.endsWith(".*")) { //$NON-NLS-1$
+							String pkg = t.substring(0, t.length() - 2);
+							if (!pkg.isEmpty()) {
+								wildcardPackages.add(pkg);
+							}
+						} else {
+							importedNames.add(t);
 						}
 					}
 				}
@@ -1578,8 +1701,19 @@ public class GitDatabaseQueryService {
 				}
 				boolean referenced = false;
 				for (String fqn : FQN_SPLIT_PATTERN.split(fqns)) {
-					if (!fqn.isBlank()
-							&& importedNames.contains(fqn.trim())) {
+					if (fqn.isBlank()) {
+						continue;
+					}
+					String f = fqn.trim();
+					if (importedNames.contains(f)) {
+						referenced = true;
+						break;
+					}
+					// Also check if covered by a wildcard import
+					int lastDot = f.lastIndexOf('.');
+					if (lastDot > 0
+							&& wildcardPackages
+									.contains(f.substring(0, lastDot))) {
 						referenced = true;
 						break;
 					}
@@ -1588,7 +1722,9 @@ public class GitDatabaseQueryService {
 					deadCandidates.add(entry);
 				}
 			}
-			return deadCandidates;
+			int from = Math.min(offset, deadCandidates.size());
+			int to = Math.min(from + limit, deadCandidates.size());
+			return new ArrayList<>(deadCandidates.subList(from, to));
 		}
 	}
 
@@ -1617,16 +1753,16 @@ public class GitDatabaseQueryService {
 					.setParameter("repo", repoName) //$NON-NLS-1$
 					.getResultList();
 
-			// Test types per package (annotations contain "Test")
+			// Test types per package (JUnit @Test annotations)
 			List<Object[]> testCounts = session.createQuery(
 					"SELECT j.packageName, COUNT(j) FROM JavaBlobIndex j " //$NON-NLS-1$
 							+ "WHERE j.repositoryName = :repo " //$NON-NLS-1$
-							+ "AND (j.annotations LIKE :test1 OR j.annotations LIKE :test2) " //$NON-NLS-1$
+							+ "AND (j.annotations LIKE :junit4Test OR j.annotations LIKE :junit5Test) " //$NON-NLS-1$
 							+ "GROUP BY j.packageName", //$NON-NLS-1$
 					Object[].class)
 					.setParameter("repo", repoName) //$NON-NLS-1$
-					.setParameter("test1", "%Test%") //$NON-NLS-1$
-					.setParameter("test2", "%@Test%") //$NON-NLS-1$
+					.setParameter("junit4Test", "%org.junit.Test%") //$NON-NLS-1$
+					.setParameter("junit5Test", "%org.junit.jupiter.api.Test%") //$NON-NLS-1$
 					.getResultList();
 
 			Map<String, Long> testMap = new HashMap<>();
@@ -1647,6 +1783,9 @@ public class GitDatabaseQueryService {
 
 	private static final java.util.regex.Pattern FQN_SPLIT_PATTERN = java.util.regex.Pattern
 			.compile("[,\\s]+"); //$NON-NLS-1$
+
+	/** Maximum number of import prefixes accepted by searchByMultipleImports. */
+	private static final int MAX_IMPORT_PREFIXES = 50;
 
 	// --- Private helpers ---
 
@@ -1680,6 +1819,10 @@ public class GitDatabaseQueryService {
 		if (!Objects.equals(before.getDeclaredMethods(),
 				after.getDeclaredMethods())) {
 			changes.add("methods changed"); //$NON-NLS-1$
+		}
+		if (!Objects.equals(before.getMethodSignatures(),
+				after.getMethodSignatures())) {
+			changes.add("signatures changed"); //$NON-NLS-1$
 		}
 		if (!Objects.equals(before.getVisibility(),
 				after.getVisibility())) {

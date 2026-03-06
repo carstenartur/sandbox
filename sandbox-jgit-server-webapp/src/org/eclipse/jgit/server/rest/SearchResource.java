@@ -268,7 +268,8 @@ public class SearchResource extends HttpServlet {
 				handleMonsterClasses(queryService, repo, threshold,
 						offset, limit, resp);
 			} else if (pathInfo.startsWith("/analytics/dead-code")) { //$NON-NLS-1$
-				handleDeadCodeCandidates(queryService, repo, resp);
+				handleDeadCodeCandidates(queryService, repo, offset,
+						limit, resp);
 			} else if (pathInfo.startsWith("/analytics/test-ratio")) { //$NON-NLS-1$
 				handleTestCoverageProxy(queryService, repo, resp);
 			} else {
@@ -622,11 +623,12 @@ public class SearchResource extends HttpServlet {
 
 	private void handleDeadCodeCandidates(
 			GitDatabaseQueryService queryService, String repo,
+			int offset, int limit,
 			HttpServletResponse resp) throws IOException {
 		List<JavaBlobIndex> results = queryService
-				.getDeadCodeCandidates(repo);
-		writeJavaBlobResponse(results, repo, "dead-code", 0, //$NON-NLS-1$
-				results.size(), resp);
+				.getDeadCodeCandidates(repo, offset, limit);
+		writeJavaBlobResponse(results, repo, "dead-code", offset, //$NON-NLS-1$
+				limit, resp);
 	}
 
 	private void handleTestCoverageProxy(
