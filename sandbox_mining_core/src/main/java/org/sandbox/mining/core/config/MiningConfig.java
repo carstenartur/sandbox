@@ -46,11 +46,39 @@ public class MiningConfig {
 
 	private List<RepoEntry> repositories = Collections.emptyList();
 	private String startDate;
+	private String endDate;
 	private int batchSize = 50;
 	private int maxDiffLinesPerCommit = 500;
 	private int minDiffLinesPerCommit = 10;
 	private int maxFilesPerCommit = 20;
 	private int timeoutPerRepoMinutes = 10;
+	private List<EpochEntry> epochs = Collections.emptyList();
+
+	/**
+	 * Represents a single epoch (time range) for mining.
+	 */
+	public static class EpochEntry {
+		private String start;
+		private String end;
+
+		public EpochEntry() {
+		}
+
+		public EpochEntry(String start, String end) {
+			this.start = start;
+			this.end = end;
+		}
+
+		public String getStart() { return start; }
+		public void setStart(String start) { this.start = start; }
+		public String getEnd() { return end; }
+		public void setEnd(String end) { this.end = end; }
+
+		@Override
+		public String toString() {
+			return start + " to " + end; //$NON-NLS-1$
+		}
+	}
 
 	public MiningConfig() {
 	}
@@ -104,6 +132,12 @@ public class MiningConfig {
 			config.startDate = startDateObj.toString();
 		}
 
+		// Parse end-date
+		Object endDateObj = source.get("end-date");
+		if (endDateObj != null) {
+			config.endDate = endDateObj.toString();
+		}
+
 		// Parse batch-size
 		Object batchSizeObj = source.get("batch-size");
 		if (batchSizeObj instanceof Number n) {
@@ -155,6 +189,22 @@ public class MiningConfig {
 			}).filter(e -> e != null).toList();
 		}
 
+		// Parse epochs (from mining.settings.epochs)
+		Object epochsObj = source.get("epochs");
+		if (epochsObj instanceof List<?> epochsList) {
+			config.epochs = epochsList.stream().map(obj -> {
+				if (obj instanceof Map<?, ?> map) {
+					EpochEntry entry = new EpochEntry();
+					Object s = map.get("start");
+					if (s != null) entry.setStart(s.toString());
+					Object e = map.get("end");
+					if (e != null) entry.setEnd(e.toString());
+					return entry;
+				}
+				return null;
+			}).filter(e -> e != null).toList();
+		}
+
 		return config;
 	}
 
@@ -172,6 +222,22 @@ public class MiningConfig {
 
 	public void setStartDate(String startDate) {
 		this.startDate = startDate;
+	}
+
+	public String getEndDate() {
+		return endDate;
+	}
+
+	public void setEndDate(String endDate) {
+		this.endDate = endDate;
+	}
+
+	public List<EpochEntry> getEpochs() {
+		return epochs;
+	}
+
+	public void setEpochs(List<EpochEntry> epochs) {
+		this.epochs = epochs != null ? epochs : Collections.emptyList();
 	}
 
 	public int getBatchSize() {

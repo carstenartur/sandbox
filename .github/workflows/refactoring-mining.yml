@@ -50,15 +50,43 @@ jobs:
           name: mining-report-${{ github.run_number }}
           path: mining-results/
 
-      # Create PR if matches found
+      # Create PR if matches found (with deduplication)
       - name: Create PR
+        if: hashFiles('mining-results/report.json') != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Compute hash of the report for dedup
+          REPORT_HASH=$(sha256sum mining-results/report.json | cut -d' ' -f1)
+          echo "Report hash: $REPORT_HASH"
+
+          # Check for existing open mining PRs with the same report hash
+          EXISTING_PRS=$(gh pr list --label "refactoring-mining" --state open --json number,body -q '.[].number' 2>/dev/null || true)
+          for PR_NUM in $EXISTING_PRS; do
+            PR_BODY=$(gh pr view "$PR_NUM" --json body -q '.body' 2>/dev/null || true)
+            if echo "$PR_BODY" | grep -q "$REPORT_HASH"; then
+              echo "Duplicate report detected (matches PR #$PR_NUM). Skipping PR creation."
+              exit 0
+            fi
+          done
+
+          # Close stale open mining report PRs to avoid accumulation
+          for PR_NUM in $EXISTING_PRS; do
+            echo "Closing stale mining PR #$PR_NUM"
+            gh pr close "$PR_NUM" --comment "Superseded by mining run #${{ github.run_number }}" 2>/dev/null || true
+          done
+
+      - name: Open PR
         if: hashFiles('mining-results/report.json') != ''
         uses: peter-evans/create-pull-request@v8
         with:
           title: "🔍 Refactoring Mining: Eclipse Projects (${{ github.run_number }})"
-          body-path: mining-results/report.md
+          body: |
+            ${{ github.workspace }}/mining-results/report.md
+            <!-- report-hash: ${{ hashFiles('mining-results/report.json') }} -->
           branch: mining/report-${{ github.run_number }}
           commit-message: "mining: add report from run ${{ github.run_number }}"
+          labels: refactoring-mining
           add-paths: |
             mining-results/report.json
             mining-results/report.md

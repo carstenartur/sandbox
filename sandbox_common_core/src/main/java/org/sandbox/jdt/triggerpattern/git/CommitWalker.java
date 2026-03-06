@@ -63,6 +63,22 @@ public class CommitWalker implements Closeable {
 	 */
 	public List<RevCommit> nextBatch(String afterCommitHash, String startDate, int batchSize)
 			throws IOException {
+		return nextBatch(afterCommitHash, startDate, null, batchSize);
+	}
+
+	/**
+	 * Returns the next batch of commits after the given commit hash,
+	 * filtered to the given date range.
+	 *
+	 * @param afterCommitHash the commit hash to start after (null for beginning)
+	 * @param startDate       only include commits after this date ({@code yyyy-MM-dd} format, may be null)
+	 * @param endDate         only include commits before this date ({@code yyyy-MM-dd} format, may be null)
+	 * @param batchSize       maximum number of commits to return
+	 * @return list of commits in chronological order
+	 * @throws IOException if a Git operation fails
+	 */
+	public List<RevCommit> nextBatch(String afterCommitHash, String startDate, String endDate, int batchSize)
+			throws IOException {
 		List<RevCommit> batch = new ArrayList<>();
 
 		try (RevWalk walk = new RevWalk(repository)) {
@@ -74,13 +90,29 @@ public class CommitWalker implements Closeable {
 			walk.sort(RevSort.REVERSE); // chronological order
 
 			// Apply date filter
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd"); //$NON-NLS-1$
+			Date since = null;
+			Date until = null;
 			if (startDate != null && !startDate.isBlank()) {
 				try {
-					Date since = new SimpleDateFormat("yyyy-MM-dd").parse(startDate);
-					walk.setRevFilter(CommitTimeRevFilter.after(since));
+					since = sdf.parse(startDate);
 				} catch (ParseException e) {
-					System.err.println("Invalid start-date format: " + startDate);
+					System.err.println("Invalid start-date format: " + startDate); //$NON-NLS-1$
 				}
+			}
+			if (endDate != null && !endDate.isBlank()) {
+				try {
+					until = sdf.parse(endDate);
+				} catch (ParseException e) {
+					System.err.println("Invalid end-date format: " + endDate); //$NON-NLS-1$
+				}
+			}
+			if (since != null && until != null) {
+				walk.setRevFilter(CommitTimeRevFilter.between(since, until));
+			} else if (since != null) {
+				walk.setRevFilter(CommitTimeRevFilter.after(since));
+			} else if (until != null) {
+				walk.setRevFilter(CommitTimeRevFilter.before(until));
 			}
 
 			boolean pastAnchor = (afterCommitHash == null || afterCommitHash.isBlank());

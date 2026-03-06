@@ -102,6 +102,42 @@ class MiningConfigFilteringTest {
 		assertEquals(20, config.getMaxFilesPerCommit());
 	}
 
+	@Test
+	void testParseEndDate() {
+		String yaml = "mining:\n  settings:\n    end-date: \"2026-01-01\"\n"; //$NON-NLS-1$
+		MiningConfig config = MiningConfig.parse(
+				new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)));
+		assertEquals("2026-01-01", config.getEndDate());
+	}
+
+	@Test
+	void testParseEpochs() {
+		String yaml = """
+				mining:
+				  settings:
+				    epochs:
+				      - start: "2020-01-01"
+				        end: "2026-01-01"
+				      - start: "2015-01-01"
+				        end: "2020-01-01"
+				"""; //$NON-NLS-1$
+		MiningConfig config = MiningConfig.parse(
+				new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)));
+		assertEquals(2, config.getEpochs().size());
+		assertEquals("2020-01-01", config.getEpochs().get(0).getStart());
+		assertEquals("2026-01-01", config.getEpochs().get(0).getEnd());
+		assertEquals("2015-01-01", config.getEpochs().get(1).getStart());
+		assertEquals("2020-01-01", config.getEpochs().get(1).getEnd());
+	}
+
+	@Test
+	void testEpochsDefaultToEmpty() {
+		String yaml = "mining:\n  settings:\n    batch-size: 50\n"; //$NON-NLS-1$
+		MiningConfig config = MiningConfig.parse(
+				new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)));
+		assertTrue(config.getEpochs().isEmpty());
+	}
+
 	// -------------------------------------------------------------------------
 	// DiffExtractor: skip commits that touch too many files
 	// -------------------------------------------------------------------------

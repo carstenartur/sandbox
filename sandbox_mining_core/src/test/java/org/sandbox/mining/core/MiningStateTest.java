@@ -16,6 +16,7 @@ package org.sandbox.mining.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -167,5 +168,66 @@ repoState.addDeferredCommit(dc);
 assertEquals(1, repoState.getDeferredCommits().size());
 repoState.removeDeferredCommit("abc123");
 assertTrue(repoState.getDeferredCommits().isEmpty());
+}
+
+@Test
+void testEpochTrackingDefaults() {
+RepoState state = new RepoState();
+assertEquals(0, state.getCurrentEpoch());
+assertTrue(state.getCompletedEpochs().isEmpty());
+}
+
+@Test
+void testEpochRotation() {
+RepoState state = new RepoState();
+assertEquals(0, state.getCurrentEpoch());
+state.getCompletedEpochs().add("2020-01-01 to 2026-01-01");
+state.setCurrentEpoch(1);
+state.setStatus("EPOCH_COMPLETE");
+assertEquals(1, state.getCurrentEpoch());
+assertEquals(1, state.getCompletedEpochs().size());
+assertEquals("EPOCH_COMPLETE", state.getStatus());
+}
+
+@Test
+void testCategoryHitCountTracking() {
+RepoState state = new RepoState();
+assertTrue(state.getCategoryHitCounts().isEmpty());
+state.incrementCategoryHitCount("Collections");
+state.incrementCategoryHitCount("Collections");
+state.incrementCategoryHitCount("Performance");
+assertEquals(2, state.getCategoryHitCounts().get("Collections"));
+assertEquals(1, state.getCategoryHitCounts().get("Performance"));
+}
+
+@Test
+void testExhaustedCategoriesAndFocusCategory() {
+RepoState state = new RepoState();
+assertTrue(state.getExhaustedCategories().isEmpty());
+assertNull(state.getFocusCategory());
+state.getExhaustedCategories().add("Collections");
+state.setFocusCategory("Performance");
+assertEquals(1, state.getExhaustedCategories().size());
+assertEquals("Performance", state.getFocusCategory());
+}
+
+@Test
+void testEpochStatePersistence() throws IOException {
+Path stateFile = tempDir.resolve("epoch-state.json");
+MiningState state = new MiningState();
+RepoState repoState = state.getRepoState("https://github.com/test/repo");
+repoState.setCurrentEpoch(2);
+repoState.getCompletedEpochs().add("2020-01-01 to 2026-01-01");
+repoState.getCompletedEpochs().add("2015-01-01 to 2020-01-01");
+repoState.incrementCategoryHitCount("Collections");
+repoState.setFocusCategory("Performance");
+
+state.save(stateFile);
+MiningState loaded = MiningState.load(stateFile);
+RepoState loadedRepo = loaded.getRepoState("https://github.com/test/repo");
+assertEquals(2, loadedRepo.getCurrentEpoch());
+assertEquals(2, loadedRepo.getCompletedEpochs().size());
+assertEquals(1, loadedRepo.getCategoryHitCounts().get("Collections"));
+assertEquals("Performance", loadedRepo.getFocusCategory());
 }
 }

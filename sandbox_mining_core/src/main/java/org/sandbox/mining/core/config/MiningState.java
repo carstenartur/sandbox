@@ -59,6 +59,11 @@ public class MiningState {
 		private List<String> permanentlySkipped = new ArrayList<>();
 		private int learnedMaxDiffLines = -1;
 		private String lastModelUsed;
+		private int currentEpoch;
+		private List<String> completedEpochs = new ArrayList<>();
+		private Map<String, Integer> categoryHitCounts = new LinkedHashMap<>();
+		private List<String> exhaustedCategories = new ArrayList<>();
+		private String focusCategory;
 
 		public String getLastProcessedCommit() {
 			return lastProcessedCommit;
@@ -122,6 +127,55 @@ public class MiningState {
 
 		public void setLastModelUsed(String lastModelUsed) {
 			this.lastModelUsed = lastModelUsed;
+		}
+
+		public int getCurrentEpoch() {
+			return currentEpoch;
+		}
+
+		public void setCurrentEpoch(int currentEpoch) {
+			this.currentEpoch = currentEpoch;
+		}
+
+		public List<String> getCompletedEpochs() {
+			return completedEpochs;
+		}
+
+		public void setCompletedEpochs(List<String> completedEpochs) {
+			this.completedEpochs = completedEpochs != null ? completedEpochs : new ArrayList<>();
+		}
+
+		public Map<String, Integer> getCategoryHitCounts() {
+			return categoryHitCounts;
+		}
+
+		public void setCategoryHitCounts(Map<String, Integer> categoryHitCounts) {
+			this.categoryHitCounts = categoryHitCounts != null ? categoryHitCounts : new LinkedHashMap<>();
+		}
+
+		/**
+		 * Increments the hit count for a category.
+		 *
+		 * @param category the category name
+		 */
+		public void incrementCategoryHitCount(String category) {
+			categoryHitCounts.merge(category, 1, Integer::sum);
+		}
+
+		public List<String> getExhaustedCategories() {
+			return exhaustedCategories;
+		}
+
+		public void setExhaustedCategories(List<String> exhaustedCategories) {
+			this.exhaustedCategories = exhaustedCategories != null ? exhaustedCategories : new ArrayList<>();
+		}
+
+		public String getFocusCategory() {
+			return focusCategory;
+		}
+
+		public void setFocusCategory(String focusCategory) {
+			this.focusCategory = focusCategory;
 		}
 
 		/**

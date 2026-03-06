@@ -437,11 +437,30 @@ Path repoDir = workDir.resolve(repoDirectoryName(repo.getUrl()));
 cloner.cloneRepo(repo.getUrl(), repo.getBranch(), repoDir);
 
 String lastCommit = state.getLastProcessedCommit(repo.getUrl());
+RepoState repoState = state.getRepoState(repo.getUrl());
+
+// Determine epoch-aware date range
+String effectiveStartDate = config.getStartDate();
+String effectiveEndDate = config.getEndDate();
+List<MiningConfig.EpochEntry> epochs = config.getEpochs();
+if (!epochs.isEmpty()) {
+int epochIdx = repoState.getCurrentEpoch();
+if (epochIdx < epochs.size()) {
+MiningConfig.EpochEntry epoch = epochs.get(epochIdx);
+effectiveStartDate = epoch.getStart();
+effectiveEndDate = epoch.getEnd();
+miningLog.println("  Epoch " + epochIdx + ": " + epoch); //$NON-NLS-1$ //$NON-NLS-2$
+} else {
+miningLog.println("  All " + epochs.size() + " epochs completed for " + repo.getUrl()); //$NON-NLS-1$ //$NON-NLS-2$
+continue;
+}
+}
+
 try (CommitWalker walker = new CommitWalker(repoDir);
 DiffExtractor diffExtractor = new DiffExtractor(repoDir,
 config.getMaxDiffLinesPerCommit(), repo.getPaths(),
 config.getMaxFilesPerCommit())) {
-List<RevCommit> batch = walker.nextBatch(lastCommit, config.getStartDate(), batchSize);
+List<RevCommit> batch = walker.nextBatch(lastCommit, effectiveStartDate, effectiveEndDate, batchSize);
 while (!batch.isEmpty()) {
 // Remember the last commit in the unfiltered batch for walker advancement
 String lastBatchCommit = batch.get(batch.size() - 1).getName();
@@ -461,7 +480,7 @@ miningLog.println("  Commit-list filter: " + effectiveBatch.size() //$NON-NLS-1$
 if (effectiveBatch.isEmpty()) {
 // Advance state past skipped commits and continue to next batch
 state.updateLastProcessedCommit(repo.getUrl(), lastBatchCommit);
-batch = walker.nextBatch(lastBatchCommit, config.getStartDate(), batchSize);
+batch = walker.nextBatch(lastBatchCommit, effectiveStartDate, effectiveEndDate, batchSize);
 continue;
 }
 }
@@ -497,7 +516,21 @@ return;
 }
 }
 batch = walker.nextBatch(lastBatchCommit,
-config.getStartDate(), batchSize);
+effectiveStartDate, effectiveEndDate, batchSize);
+}
+
+// Epoch rotation: if epochs are configured and current epoch is exhausted,
+// advance to the next epoch and reset lastProcessedCommit
+if (!epochs.isEmpty()) {
+int epochIdx = repoState.getCurrentEpoch();
+String epochLabel = effectiveStartDate + " to " + effectiveEndDate; //$NON-NLS-1$
+repoState.getCompletedEpochs().add(epochLabel);
+repoState.setCurrentEpoch(epochIdx + 1);
+repoState.setLastProcessedCommit(null);
+repoState.setStatus("EPOCH_COMPLETE"); //$NON-NLS-1$
+miningLog.println("  Epoch " + epochIdx + " complete (" + epochLabel //$NON-NLS-1$ //$NON-NLS-2$
++ "). Advancing to epoch " + (epochIdx + 1)); //$NON-NLS-1$
+state.save(statePath);
 }
 }
 
@@ -655,6 +688,10 @@ String diffInfo = diffIdx >= 0 && diffIdx < diffLineCounts.size()
 miningLog.println("    - " + formatCommitInfo(commit, repo) + diffInfo + " -> " + evaluation.trafficLight()); //$NON-NLS-1$ //$NON-NLS-2$
 handleEvaluation(evaluation, commit, repo, validator, categoryManager, stats, aggregator);
 state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
+// Track per-category hit counts for category-aware mining
+if (evaluation.relevant() && evaluation.category() != null) {
+repoState.incrementCategoryHitCount(evaluation.category());
+}
 // Remove from deferred list if it was previously deferred
 repoState.removeDeferredCommit(commit.getName());
 }
