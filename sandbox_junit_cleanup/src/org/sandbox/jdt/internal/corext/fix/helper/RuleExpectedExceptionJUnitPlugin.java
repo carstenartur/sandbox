@@ -17,12 +17,10 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -40,45 +38,35 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 ExpectedException rule to JUnit 5 assertThrows.
+ *
+ * @since 1.3.0
  */
-public class RuleExpectedExceptionJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@Rule public ExpectedException $name", kind = PatternKind.FIELD, qualifiedType = ORG_JUNIT_RULES_EXPECTED_EXCEPTION, cleanupId = "cleanup.junit.ruleexpectedexception", description = "Migrate @Rule ExpectedException to assertThrows()", displayName = "JUnit 4 @Rule ExpectedException \u2192 JUnit 5 assertThrows()")
+public class RuleExpectedExceptionJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitorFactory.forField().withAnnotation(ORG_JUNIT_RULE).ofType(ORG_JUNIT_RULES_EXPECTED_EXCEPTION)
-				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited,
-						aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh = new JunitHolder();
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
+	protected JunitHolder createHolder(Match match) {
+		FieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDecl.fragments().get(0);
 		if (fragment.resolveBinding() == null) {
-			// Return true to continue processing other fields
-			return true;
+			return null;
 		}
 		ITypeBinding binding = fragment.resolveBinding().getType();
-		if (binding != null && ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {
-			mh.setMinv(node);
-			dataHolder.put(dataHolder.size(), mh);
-			operations.add(fixcore.rewrite(dataHolder));
+		if (binding == null || !ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(binding.getQualifiedName())) {
+			return null;
 		}
-		// Return true to continue processing other fields
-		return true;
+		JunitHolder holder = new JunitHolder();
+		holder.setMinv(fieldDecl);
+		return holder;
 	}
 
 	@Override

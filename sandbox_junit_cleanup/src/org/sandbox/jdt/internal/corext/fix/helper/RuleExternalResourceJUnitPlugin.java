@@ -15,7 +15,8 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
-import java.util.Set;
+import java.util.List;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
@@ -26,53 +27,57 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 ExternalResource rules to JUnit 5 extensions.
+ *
+ * @since 1.3.0
  */
-public class RuleExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@Rule public $type $name", kind = PatternKind.FIELD, qualifiedType = ORG_JUNIT_RULES_EXTERNAL_RESOURCE, cleanupId = "cleanup.junit.ruleexternalresource", description = "Migrate @Rule ExternalResource to JUnit 5 extension", displayName = "JUnit 4 @Rule ExternalResource \u2192 JUnit 5 Extension")
+public class RuleExternalResourceJUnitPlugin extends TriggerPatternCleanupPlugin {
+
+	/**
+	 * Override getPatterns() to match both @Rule and @ClassRule variants.
+	 */
+	@Override
+	protected List<Pattern> getPatterns() {
+		return List.of(
+				new Pattern("@Rule public $type $name", PatternKind.FIELD, null, null, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, null, null),
+				new Pattern("@ClassRule public $type $name", PatternKind.FIELD, null, null, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, null, null),
+				new Pattern("@ClassRule public static $type $name", PatternKind.FIELD, null, null, ORG_JUNIT_RULES_EXTERNAL_RESOURCE, null, null));
+	}
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-
-		// Find @Rule fields with ExternalResource type
-		HelperVisitorFactory.forField().withAnnotation(ORG_JUNIT_RULE).ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
-				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited,
-						aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
-
-		// Find @ClassRule fields with ExternalResource type
-		HelperVisitorFactory.forField().withAnnotation(ORG_JUNIT_CLASS_RULE).ofType(ORG_JUNIT_RULES_EXTERNAL_RESOURCE)
-				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited,
-						aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh = new JunitHolder();
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
-		ITypeBinding binding = fragment.resolveBinding().getType();
-		if ((binding == null) || ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
-				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
-			return true; // Continue processing other fields
+	protected JunitHolder createHolder(Match match) {
+		FieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDecl.fragments().get(0);
+		if (fragment.resolveBinding() == null) {
+			return null;
 		}
-		mh.setMinv(node);
-		dataHolder.put(dataHolder.size(), mh);
-		operations.add(fixcore.rewrite(dataHolder));
-		// Return true to continue processing other fields
-		return true;
+		ITypeBinding binding = fragment.resolveBinding().getType();
+		if (binding == null) {
+			return null;
+		}
+		// Exclude specific rule types handled by dedicated plugins
+		String qualifiedName = binding.getQualifiedName();
+		if (ORG_JUNIT_RULES_TEST_NAME.equals(qualifiedName)
+				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(qualifiedName)) {
+			return null;
+		}
+		JunitHolder holder = new JunitHolder();
+		holder.setMinv(fieldDecl);
+		return holder;
 	}
 
+	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
 		FieldDeclaration fieldDeclaration = junitHolder.getFieldDeclaration();
