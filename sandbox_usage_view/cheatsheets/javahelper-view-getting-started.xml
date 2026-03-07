@@ -23,10 +23,10 @@
    <item title="Open the JavaHelper View" dialog="true">
       <description>
          Open the <b>JavaHelper View</b> from the
-         Sandbox category:
+         Java category:
          <br/><br/>
          1. Choose <b>Window → Show View → Other…</b><br/>
-         2. Expand the <b>Sandbox</b> category<br/>
+         2. Expand the <b>Java</b> category<br/>
          3. Select <b>JavaHelper</b> and click <b>Open</b><br/>
          <br/>
          The view displays a table of variable name and type
@@ -35,7 +35,7 @@
          Click <b>Perform</b> to open the Show View dialog.
       </description>
       <command
-         serialization="org.eclipse.ui.views.showView(org.eclipse.ui.views.showView.viewId=org.sandbox.jdt.views.javahelper)"
+         serialization="org.eclipse.ui.views.showView(org.eclipse.ui.views.showView.viewId=org.eclipse.jdt.ui.helper.views.JavaHelperView)"
          confirm="false"/>
    </item>
 
@@ -80,11 +80,12 @@
          1. Double-click a row in the JavaHelper View to navigate
             to the declaration<br/>
          2. Place the cursor on the type in the declaration<br/>
-         3. Press <b>Alt+Shift+R</b> (Rename) or use
-            <b>Refactor → Change Method Signature…</b>
-            to update the type<br/>
+         3. Either edit the type directly, or use a type-related
+            quick assist (for example, press <b>Ctrl+1</b> and
+            choose an appropriate proposal)<br/>
          4. Replace the specific type (e.g. <b>ArrayList</b>)
-            with the wider type (e.g. <b>List</b>)<br/>
+            with the wider interface or supertype suggested by
+            the <b>Widest Type</b> column (e.g. <b>List</b>)<br/>
          <br/>
          Run your tests after refactoring to confirm that
          the widened type is compatible with all usages.

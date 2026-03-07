@@ -55,18 +55,17 @@
       </description>
    </item>
 
-   <item title="Enable as a Builder (Optional)">
+   <item title="Run the Cleanup via the Main Menu (Optional)">
       <description>
-         To run the PDE XML cleanup automatically on every build:
+         The cleanup can also be triggered from the main menu:
          <br/><br/>
-         1. Right-click your project in the <b>Package Explorer</b><br/>
-         2. Choose <b>Properties → Builders</b><br/>
-         3. Click <b>New…</b> and select
-            <b>Sandbox PDE XML Builder</b> if available<br/>
+         1. Open a <b>plugin.xml</b> or <b>feature.xml</b> file
+            in the XML editor<br/>
+         2. Choose <b>Source → Clean Up PDE XML</b> from the
+            main menu bar<br/>
          <br/>
-         Alternatively, the cleanup can be triggered from the
-         <b>Source → Clean Up…</b> dialog if a project-level
-         cleanup profile is configured.
+         This is equivalent to using the context menu and
+         applies the same formatting rules.
       </description>
    </item>
 

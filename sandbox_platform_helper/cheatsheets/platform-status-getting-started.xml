@@ -16,18 +16,19 @@
          This cheat sheet guides you through using the
          <b>Platform Status Cleanup</b> to simplify verbose
          <b>new Status(...)</b> constructions with the concise
-         factory methods introduced in Eclipse 4.20 (Java 11+).
+         factory methods available in recent Eclipse versions when
+         running on Java 9 or higher.
       </description>
    </intro>
 
    <item title="Understand the Old vs New Status API">
       <description>
-         Before Eclipse 4.20, creating a status object required
-         a verbose four-argument constructor call:
+         Before these factory methods were available, creating a
+         status object required a verbose constructor call:
          <br/><br/>
-         <b>new Status(IStatus.ERROR, Activator.PLUGIN_ID, message)</b><br/>
+         <b>new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.OK, message, exception)</b><br/>
          <br/>
-         Since Eclipse 4.20, concise factory methods are available:
+         With these factory methods, concise replacements are available:
          <br/><br/>
          • <b>Status.error(message)</b><br/>
          • <b>Status.error(message, exception)</b><br/>
@@ -90,9 +91,9 @@
          • <b>new Status(IStatus.INFO, pluginId, message)</b>
            → <b>Status.info(message)</b><br/>
          <br/>
-         Note: The plugin ID argument is omitted in the factory
-         methods because <b>Status.error()</b> uses the declaring
-         plugin ID automatically. Verify the build still passes
+         Note: The plug-in ID argument is omitted in the factory
+         methods because they automatically determine the caller
+         plug-in ID. Verify the build still passes
          after the cleanup.
       </description>
    </item>

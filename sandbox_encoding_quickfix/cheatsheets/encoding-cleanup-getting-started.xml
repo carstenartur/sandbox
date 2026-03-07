@@ -26,7 +26,7 @@
          <b>String.getBytes()</b> use the platform default charset
          when no encoding is specified. This causes inconsistent
          behavior across different operating systems and locales
-         (JEP 400, Java 17+).
+         (JEP 400, Java 18+).
          <br/><br/>
          The <b>Explicit Encoding</b> cleanup transforms these calls
          to use <b>java.nio.charset.StandardCharsets.UTF_8</b>
