@@ -168,16 +168,29 @@
 
 ## TriggerPattern DSL Integration
 
-### Status: ❌ Not expressible in DSL
+### Status: ✅ Expressible in DSL (since 1.3.12)
 
-The type widening cleanup requires complex type system analysis that cannot be
-expressed in the `.sandbox-hint` DSL:
+The type widening cleanup is now expressible in the `.sandbox-hint` DSL using the
+`DECLARATION` pattern kind with the `canWidenType` guard and `$widestType` replacement function.
 
-- **Type hierarchy traversal**: Finding the widest compatible interface/class
-- **Usage analysis**: Verifying all method calls exist in the general type
-- **Generics handling**: Preserving type parameters during widening
-- **Assignability checks**: Ensuring type safety across assignments
+**Hint file:** `src/org/sandbox/jdt/internal/corext/fix/hints/use-general-type.sandbox-hint`
 
-### Required DSL Extensions (for future work)
-- [ ] Type hierarchy matching patterns
-- [ ] Usage compatibility analysis guards
+**DSL rule:**
+```
+$Type $var = $init; :: canWidenType($var)
+=> $widestType($var) $var = $init;
+;;
+```
+
+**How it works:**
+- `$Type $var = $init;` matches any local variable declaration (DECLARATION pattern kind)
+- `canWidenType($var)` guard analyzes all variable usages and walks the type hierarchy
+- `$widestType($var)` replacement function computes the widest type at rewrite time
+- The guard stores computed data in the match's extra data map for the replacement to use
+
+**DSL infrastructure added:**
+- [x] `PatternKind.DECLARATION` for matching VariableDeclarationStatement nodes
+- [x] `canWidenType` guard in BuiltInGuards with full type hierarchy analysis
+- [x] `$widestType` replacement function in HintFileFixCore
+- [x] `Match.putExtraData/getExtraData` for guard→replacement data passing
+- [x] `HintFileParser.looksLikeDeclaration()` for pattern kind inference

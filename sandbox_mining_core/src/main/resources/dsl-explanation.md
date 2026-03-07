@@ -349,6 +349,7 @@ You can use these functions in `:: guard` expressions:
 | `genericTypeIs($var, index, "type")` | True if the generic type parameter at the given index of the bound placeholder's type matches the expected type name. E.g., `genericTypeIs($list, 0, "java.lang.String")` checks that `$list` is parameterized with `String` at position 0. Falls back to `true` when binding resolution is unavailable. |
 | `argsCount($args$, N)` | True if the variadic multi-placeholder captured exactly N arguments. E.g., `argsCount($args$, 3)` checks that 3 arguments were matched. Works with single bindings (count=1) and unbound placeholders (count=0). |
 | `isResourceVariable($var)` | True if the bound placeholder is a variable whose type implements `AutoCloseable` AND it is not already managed by a try-with-resources statement. Useful for identifying candidates for try-with-resources wrapping. |
+| `canWidenType($var)` | True if the matched variable declaration's type can be widened to a more general supertype/interface based on actual usage. Analyzes all method calls and field accesses on the variable, walks the type hierarchy, and checks if a wider type exists. Stores the widest type FQN in the match for use with `$widestType`. Only works with `DECLARATION` patterns. Returns `false` conservatively when bindings are unavailable. |
 | `otherwise` | Always true (used as default fallback in multi-rewrite rules) |
 
 ### Common Mistakes
@@ -479,6 +480,38 @@ void $name($params$) :: methodNameMatches($name, "setUpBeforeClass") && isStatic
 => @org.junit.jupiter.api.BeforeAll void $name($params$)
 ;;
 ```
+
+### Declaration Patterns (Type Widening)
+
+Declaration patterns match local variable declaration statements and support
+the special `$widestType` replacement function for type widening.
+
+**Syntax:**
+```
+$Type $var = $init; :: canWidenType($var)
+=> $widestType($var) $var = $init;
+;;
+```
+
+**Key features:**
+- **`$Type $var = $init;`** matches any local variable declaration with an initializer.
+- **`canWidenType($var)`** guard analyzes all usages of the variable (method calls, field accesses,
+  casts, instanceof checks, assignments) and walks the type hierarchy to determine if a wider type exists.
+- **`$widestType($var)`** in the replacement computes the widest type at rewrite time and replaces
+  the declaration type. Imports are automatically managed.
+- **Safety**: Variables are skipped when they are cast, used in `instanceof`, passed as method arguments,
+  returned, or assigned to other variables.
+
+**Example transformations:**
+```
+// ArrayList<String> list = new ArrayList<>();  →  List<String> list = new ArrayList<>();
+// LinkedHashMap<K,V> map = new LinkedHashMap<>();  →  Map<K,V> map = new LinkedHashMap<>();
+// FileInputStream fis = new FileInputStream(f);  →  InputStream fis = new FileInputStream(f);
+```
+
+**Note:** Declaration patterns are detected by the parser when the pattern has the form
+`$Type $var = $init;` (two space-separated tokens before `=`, ending with `;`).
+The `canWidenType` guard requires full binding resolution to analyze the type hierarchy.
 
 ### Multiline Replacements
 
