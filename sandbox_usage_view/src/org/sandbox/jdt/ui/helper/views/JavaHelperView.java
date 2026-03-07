@@ -434,36 +434,23 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 			TextEdit astEdits = rewrite.rewriteAST(document, options);
 			astEdits.apply(document);
 
-			// Step 2: Apply import edits to the updated source
-			String afterTypeChange = document.get();
-			ASTParser importParser = ASTParser.newParser(AST.JLS_Latest);
-			importParser.setSource(afterTypeChange.toCharArray());
-			importParser.setUnitName(cu.getElementName());
-			if (cu.getJavaProject() != null) {
-				importParser.setProject(cu.getJavaProject());
-			}
-			CompilationUnit importAst = (CompilationUnit) importParser.createAST(null);
-			ImportRewrite importRewrite2 = ImportRewrite.create(importAst, true);
-			ITypeBinding erasure = targetType.getErasure();
-			importRewrite2.addImport(erasure.getQualifiedName());
-
-			Document importDocument = new Document(afterTypeChange);
-			TextEdit importEdits = importRewrite2.rewriteImports(null);
-			importEdits.apply(importDocument);
+			// Step 2: Apply import edits from the original ImportRewrite
+			TextEdit importEdits = importRewrite.rewriteImports(null);
+			importEdits.apply(document);
 
 			// Step 3: Save changes
 			IBuffer buffer = cu.getBuffer();
-			buffer.setContents(importDocument.get());
+			buffer.setContents(document.get());
 			cu.save(null, false);
 
 			// Reconcile the compilation unit
 			reconcile(cu);
 
-			// Refresh the view to reflect the updated types
-			final ICompilationUnit finalCu = cu;
+			// Refresh the view to reflect the updated types while preserving the
+			// existing input scope (package/project/multi-selection).
 			getSite().getShell().getDisplay().asyncExec(() -> {
-				currentJavaElementInput = null;
-				setSingleInput(finalCu);
+				typeWideningCache.clear();
+				variableTableViewer.refresh();
 			});
 
 		} catch (CoreException | BadLocationException e) {

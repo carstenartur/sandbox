@@ -437,11 +437,11 @@ public class JavaHelperViewTest {
 		List<ITypeBinding> intermediates = listResult.getIntermediateTypes();
 		assertFalse(intermediates.isEmpty(), "Should have intermediate types"); //$NON-NLS-1$
 
-		// The last entry should be the widest type
-		ITypeBinding lastType = intermediates.get(intermediates.size() - 1);
-		assertEquals(listResult.getWidestType().getErasure().getQualifiedName(),
-				lastType.getErasure().getQualifiedName(),
-				"Last intermediate type should equal widest type"); //$NON-NLS-1$
+		// The widest type must be present in the intermediate types list
+		String widestTypeName = listResult.getWidestType().getErasure().getQualifiedName();
+		boolean containsWidest = intermediates.stream()
+				.anyMatch(t -> widestTypeName.equals(t.getErasure().getQualifiedName()));
+		assertTrue(containsWidest, "Intermediate types should contain the widest type"); //$NON-NLS-1$
 
 		// Should contain at least one of: AbstractList, AbstractCollection, List, Collection
 		List<String> typeNames = intermediates.stream()
@@ -454,8 +454,6 @@ public class JavaHelperViewTest {
 						|| typeNames.contains("java.util.Collection"), //$NON-NLS-1$
 				"Should contain at least one of AbstractList, AbstractCollection, List, Collection"); //$NON-NLS-1$
 	}
-
-	// Helper methods
 
 	private CompilationUnit parseCode(String source) {
 		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);

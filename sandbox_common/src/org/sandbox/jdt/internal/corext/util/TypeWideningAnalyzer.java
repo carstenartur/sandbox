@@ -290,21 +290,27 @@ public final class TypeWideningAnalyzer {
 
 	/**
 	 * Collects all types in the hierarchy from {@code currentType} upward that
-	 * still declare all used members. Returns them ordered from most specific
-	 * (just above {@code currentType}) to most general ({@code widestType}).
-	 * The {@code widestType} itself is included as the last element (if valid).
+	 * still declare all used members and are supertypes of (or equal to)
+	 * {@code widestType}. The {@code widestType} is guaranteed to be the last
+	 * element when it passes the member check.
 	 *
 	 * @param currentType           the current declared type of the variable
 	 * @param widestType            the widest (most general) type computed by analysis
 	 * @param usedMethodSignatures  the set of method signatures used on the variable
 	 * @param usedFields            the set of field names accessed on the variable
-	 * @return ordered list of valid target types (exclusive of {@code currentType})
+	 * @return ordered list of valid target types (exclusive of {@code currentType},
+	 *         inclusive of {@code widestType} as the last element)
 	 */
 	public static List<ITypeBinding> collectIntermediateTypes(ITypeBinding currentType, ITypeBinding widestType,
 			Set<String> usedMethodSignatures, Set<String> usedFields) {
+		if (widestType == null) {
+			return new ArrayList<>();
+		}
+		String widestErasureName = widestType.getErasure().getQualifiedName();
+
 		List<ITypeBinding> result = new ArrayList<>();
 		Set<String> seen = new HashSet<>();
-		seen.add(currentType.getQualifiedName());
+		seen.add(currentType.getErasure().getQualifiedName());
 
 		Queue<ITypeBinding> queue = new LinkedList<>();
 		enqueueSupertypes(currentType, queue);
@@ -314,15 +320,26 @@ public final class TypeWideningAnalyzer {
 			if (type == null || isJavaLangObject(type)) {
 				continue;
 			}
-			String qualName = type.getQualifiedName();
-			if (!seen.add(qualName)) {
+			String erasureName = type.getErasure().getQualifiedName();
+			if (!seen.add(erasureName)) {
 				continue;
 			}
+			// Only include types that are supertypes of currentType and subtypes
+			// of (or equal to) widestType, and declare all used members.
 			if (!isTaggingInterface(type)
-					&& declaresAllMembers(currentType, type, usedMethodSignatures, usedFields)) {
-				result.add(type);
+					&& declaresAllMembers(currentType, type, usedMethodSignatures, usedFields)
+					&& widestType.isSubTypeCompatible(type)) {
+				// Don't add widestType yet — it will be appended last
+				if (!erasureName.equals(widestErasureName)) {
+					result.add(type);
+				}
 				enqueueSupertypes(type, queue);
 			}
+		}
+
+		// Always append widestType as the last element if it passed the member check
+		if (declaresAllMembers(currentType, widestType, usedMethodSignatures, usedFields)) {
+			result.add(widestType);
 		}
 		return result;
 	}
