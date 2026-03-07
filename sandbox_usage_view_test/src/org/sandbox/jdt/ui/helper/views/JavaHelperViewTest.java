@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,10 +37,13 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
+import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer.TypeWideningResult;
 
 /**
  * Test class for JavaHelperView and related components.
@@ -395,6 +399,60 @@ public class JavaHelperViewTest {
 			"Filter should report no conflicts when all variable names are unique");
 		assertTrue(filter.getConflictingNames().isEmpty(), 
 			"Conflicting names set should be empty");
+	}
+
+	// Helper methods
+
+	/**
+	 * Test that TypeWideningAnalyzer produces intermediate types for an ArrayList
+	 * that only uses add() and size(). The intermediate types should include
+	 * at least List or Collection, and the widest type should be the last entry.
+	 */
+	@Test
+	public void testGetIntermediateTypesForArrayList() throws Exception {
+		String testCode = """
+			package test;
+			import java.util.ArrayList;
+			public class TestClass {
+				public void method() {
+					ArrayList<String> list = new ArrayList<>();
+					list.add("foo");
+					list.size();
+				}
+			}
+			""";
+
+		CompilationUnit cu = parseCode(testCode);
+		Map<String, TypeWideningResult> results = TypeWideningAnalyzer.analyzeCompilationUnit(cu);
+
+		// Find the result for 'list'
+		TypeWideningResult listResult = results.values().stream()
+				.filter(r -> r.getVariableBinding().getName().equals("list")) //$NON-NLS-1$
+				.findFirst()
+				.orElse(null);
+
+		assertNotNull(listResult, "Should have a result for 'list'"); //$NON-NLS-1$
+		assertTrue(listResult.canWiden(), "Should be able to widen ArrayList"); //$NON-NLS-1$
+
+		List<ITypeBinding> intermediates = listResult.getIntermediateTypes();
+		assertFalse(intermediates.isEmpty(), "Should have intermediate types"); //$NON-NLS-1$
+
+		// The last entry should be the widest type
+		ITypeBinding lastType = intermediates.get(intermediates.size() - 1);
+		assertEquals(listResult.getWidestType().getErasure().getQualifiedName(),
+				lastType.getErasure().getQualifiedName(),
+				"Last intermediate type should equal widest type"); //$NON-NLS-1$
+
+		// Should contain at least one of: AbstractList, AbstractCollection, List, Collection
+		List<String> typeNames = intermediates.stream()
+				.map(t -> t.getErasure().getQualifiedName())
+				.toList();
+		assertTrue(
+				typeNames.contains("java.util.AbstractList") //$NON-NLS-1$
+						|| typeNames.contains("java.util.AbstractCollection") //$NON-NLS-1$
+						|| typeNames.contains("java.util.List") //$NON-NLS-1$
+						|| typeNames.contains("java.util.Collection"), //$NON-NLS-1$
+				"Should contain at least one of AbstractList, AbstractCollection, List, Collection"); //$NON-NLS-1$
 	}
 
 	// Helper methods
