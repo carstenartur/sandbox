@@ -146,6 +146,13 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 - `RunWithJUnitPlugin` - @RunWith(Suite/Mockito/Spring) → JUnit 5 equivalents (multi-runner dispatch)
 - `RunWithCategoriesJUnitPlugin` - @RunWith(Categories) → @Suite + @IncludeTags/@ExcludeTags
 - `ParameterizedTestJUnitPlugin` - @RunWith(Parameterized) → @ParameterizedTest (class restructuring)
+- `TestExpectedJUnitPlugin` - @Test(expected=...) → assertThrows() (method body wrapping)
+- `TestTimeoutJUnitPlugin` - @Test(timeout=...) → @Timeout annotation (parameter extraction)
+- `RuleTestnameJUnitPlugin` - @Rule TestName → TestInfo parameter (field-to-parameter conversion)
+- `RuleExternalResourceJUnitPlugin` - @Rule ExternalResource → JUnit 5 extension (class extraction)
+- `RuleTemporayFolderJUnitPlugin` - @Rule TemporaryFolder → @TempDir (field type + usage rewriting)
+- `RuleExpectedExceptionJUnitPlugin` - @Rule ExpectedException → assertThrows() (statement-level transform)
+- `RuleErrorCollectorJUnitPlugin` - @Rule ErrorCollector → assertAll() (lambda wrapping)
 
 **Future Enhancements** (see Pending section):
 - Multi-placeholder support for complex transformations
@@ -153,35 +160,27 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 ### DSL Migration Status: Remaining Native Plugins
 
-The following plugins still use fully native implementations (`extends AbstractTool`) because their
-detection is NOT annotation-based — they detect patterns by class hierarchy, field type, method naming,
-or type references, which cannot be expressed as `@CleanupPattern` annotations.
+The following plugins still use fully native implementations (`extends AbstractTool`/`AbstractMethodMigrationPlugin`)
+because their detection requires searching BOTH method calls AND import declarations simultaneously,
+or they use class hierarchy / method naming patterns not expressible as `@CleanupPattern`.
 
 | Plugin | Detection Type | Why Native | Required DSL Extension |
 |--------|---------------|------------|----------------------|
 | `TestJUnit3Plugin` | Class hierarchy | Detects `extends TestCase` | Class hierarchy transforms, method renaming |
-| `RuleExternalResourceJUnitPlugin` | Field type + annotation | Complex multi-node transforms | Anonymous class extraction, field-to-extension |
-| `RuleTemporayFolderJUnitPlugin` | Field type + annotation | Field-to-annotation + usage rewrite | Field transformation patterns, usage analysis |
 | `ExternalResourceJUnitPlugin` | Class hierarchy | Detects `extends ExternalResource` | Class hierarchy transforms, interface impl |
 | `LostTestFinderJUnitPlugin` | Method naming pattern | Detects `testXxx()` without `@Test` | Method naming pattern matching |
-| `ThrowingRunnableJUnitPlugin` | Type references | Detects `ThrowingRunnable` in types/imports | Type reference pattern matching |
-| `RuleErrorCollectorJUnitPlugin` | Field type + annotation | Complex call-site rewriting | Statement-level transforms, lambda wrapping |
-| `RuleTestnameJUnitPlugin` | Field type + annotation | Field→parameter with TestInfo | Field transformation, parameter injection |
-| `RuleExpectedExceptionJUnitPlugin` | Field type + annotation | Statement-level try-catch wrapping | Statement-level analysis, exception flow |
-| `AssertJUnitPlugin` | Method invocation | Parameter reordering, multi-method | Method call pattern with reordering |
-| `AssumeJUnitPlugin` | Method invocation | Parameter reordering, Hamcrest | Method call pattern with reordering |
-| `AssertOptimizationJUnitPlugin` | Method invocation | Constant detection heuristics | Expression analysis guards |
+| `ThrowingRunnableJUnitPlugin` | Type references | Detects `ThrowingRunnable` in types/imports/params | Type reference pattern matching |
+| `AssertJUnitPlugin` | Method calls + imports | Dual search: method calls AND imports | Composite detection (method calls + import migration) |
+| `AssumeJUnitPlugin` | Method calls + imports | Dual search + Hamcrest detection | Composite detection + library detection |
+| `AssertOptimizationJUnitPlugin` | Method invocation | Constant detection, expression analysis | Expression analysis guards |
 | `AssumeOptimizationJUnitPlugin` | Method invocation | Negation inversion detection | Expression analysis patterns |
-| `TestExpectedJUnitPlugin` | Annotation parameter | Method body wrapping in lambda | Method body wrapping (WRAP rule kind) |
-| `TestTimeoutJUnitPlugin` | Annotation parameter | Parameter extraction, TimeUnit | NormalAnnotation parameter extraction |
 
 **Key DSL Extensions Needed** (ordered by impact — for future work):
-1. **Method call pattern with parameter reordering** - Swap assertion parameters (Assert/Assume migration plugins)
+1. **Composite detection** - Search both method calls AND imports in one pass (Assert/Assume migration)
 2. **Expression analysis guards** - Detect negation, constant expressions (Optimization plugins)
-3. **Field transformation patterns** - Convert field declarations to annotations (Rule plugins)
-4. **Method body wrapping (WRAP rule kind)** - Wrap method body in lambda/assertThrows (TestExpectedJUnitPlugin)
-5. **Class hierarchy transformations** - Remove superclass, rename methods (TestJUnit3Plugin, ExternalResource)
-6. **Type reference pattern matching** - Detect and replace type references (ThrowingRunnableJUnitPlugin)
+3. **Class hierarchy transformations** - Remove superclass, rename methods (TestJUnit3Plugin, ExternalResource)
+4. **Type reference pattern matching** - Detect and replace type references (ThrowingRunnableJUnitPlugin)
+5. **Method naming pattern matching** - Detect methods by naming convention (LostTestFinderJUnitPlugin)
 
 ### Quick Select Presets (✅ COMPLETED)
 **Priority**: High  
