@@ -8,4 +8,14 @@
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp" id="org.eclipse.jdt.ui.cleanup.functionalcleanup" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
+
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.functional.converter.gettingStarted"
+            name="Converting Loops to Java 8 Streams"
+            contentFile="cheatsheets/functional-converter-getting-started.xml">
+         <description>Learn how to transform imperative for-each loops into Java 8 Stream pipelines</description>
+      </cheatsheet>
+   </extension>
+
 </plugin>

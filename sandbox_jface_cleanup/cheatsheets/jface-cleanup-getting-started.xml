@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2026 Carsten Hammer.
+
+    This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-2.0/
+
+    SPDX-License-Identifier: EPL-2.0
+-->
+<cheatsheet title="Modernizing JFace Code">
+
+   <intro>
+      <description>
+         This cheat sheet guides you through using the
+         <b>JFace Cleanup</b> to modernize JFace API usage
+         in Eclipse plugin code, replacing deprecated APIs
+         with their modern equivalents.
+      </description>
+   </intro>
+
+   <item title="Understand JFace Modernization">
+      <description>
+         The JFace API has evolved over multiple Eclipse versions.
+         Several APIs are deprecated and should be replaced:
+         <br/><br/>
+         • <b>ViewerSorter</b> → <b>ViewerComparator</b>
+           (deprecated since Eclipse 3.3)<br/>
+         • <b>IProgressMonitor</b> usage patterns modernized
+           with null-safe helpers<br/>
+         • <b>Image descriptors</b> updated for HiDPI support<br/>
+         • Old dialog and wizard patterns simplified<br/>
+         <br/>
+         Using the modern APIs improves compatibility with
+         current Eclipse versions and avoids deprecation warnings.
+      </description>
+   </item>
+
+   <item title="Enable the Cleanup" dialog="true">
+      <description>
+         Open the Clean Up dialog to enable the JFace Cleanup:
+         <br/><br/>
+         1. In the <b>Package Explorer</b>, select an Eclipse
+            plugin project using JFace<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Select <b>Use custom profile</b> and click
+            <b>Configure…</b><br/>
+         4. On the <b>JFace Cleanup (Sandbox)</b> tab,
+            enable the desired modernization options<br/>
+         5. Click <b>OK</b><br/>
+         <br/>
+         Click <b>Perform</b> to open the Source menu.
+      </description>
+      <command
+         serialization="org.eclipse.jdt.ui.edit.text.java.clean.up"
+         confirm="false"/>
+   </item>
+
+   <item title="Run the Cleanup on Eclipse Plugin Code">
+      <description>
+         Apply the JFace cleanup to your plugin source files:
+         <br/><br/>
+         1. Open or select Java files in your Eclipse plugin
+            that use JFace APIs<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Confirm the profile has <b>JFace Cleanup (Sandbox)</b>
+            enabled<br/>
+         4. Click <b>Finish</b><br/>
+         <br/>
+         The cleanup replaces deprecated JFace APIs with their
+         modern equivalents automatically.
+      </description>
+   </item>
+
+   <item title="Review the Changes">
+      <description>
+         After the cleanup runs, inspect the updated code:
+         <br/><br/>
+         • <b>ViewerSorter</b> subclasses are migrated to
+           extend <b>ViewerComparator</b><br/>
+         • Deprecated image loading calls are updated for
+           HiDPI / Retina display support<br/>
+         • Progress monitor patterns are modernized<br/>
+         <br/>
+         Build the plugin and run it to verify the changes work
+         correctly in the Eclipse runtime. Use
+         <b>Run → Run As → Eclipse Application</b> to launch
+         a test instance.
+      </description>
+   </item>
+
+</cheatsheet>

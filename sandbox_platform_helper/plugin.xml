@@ -8,4 +8,14 @@
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUp" id="org.eclipse.jdt.ui.cleanup.simplifystatus" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
+
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.platform.helper.gettingStarted"
+            name="Simplifying the Eclipse Platform Status API"
+            contentFile="cheatsheets/platform-status-getting-started.xml">
+         <description>Learn how to replace verbose new Status(...) constructors with concise factory methods</description>
+      </cheatsheet>
+   </extension>
+
 </plugin>

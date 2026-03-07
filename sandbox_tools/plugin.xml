@@ -9,5 +9,14 @@
              id="org.eclipse.jdt.ui.cleanup.toolscleanup" />
               <!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
     </extension>
-         
+
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.tools.gettingStarted"
+            name="Converting Iterator Loops to Enhanced For Loops"
+            contentFile="cheatsheets/iterator-to-for-getting-started.xml">
+         <description>Learn how to replace verbose Iterator-based while loops with enhanced for loops</description>
+      </cheatsheet>
+   </extension>
+
 </plugin>

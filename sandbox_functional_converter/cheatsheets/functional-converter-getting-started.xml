@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2026 Carsten Hammer.
+
+    This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-2.0/
+
+    SPDX-License-Identifier: EPL-2.0
+-->
+<cheatsheet title="Converting Loops to Java 8 Streams">
+
+   <intro>
+      <description>
+         This cheat sheet guides you through using the
+         <b>Functional Converter</b> cleanup to transform
+         imperative for-each loops into expressive
+         <b>Java 8 Stream</b> pipelines.
+      </description>
+   </intro>
+
+   <item title="Understand Loop to Stream Conversions">
+      <description>
+         Java 8 Streams provide a functional, composable way
+         to process collections. The Functional Converter
+         cleanup identifies loop patterns and rewrites them:
+         <br/><br/>
+         • Simple for-each iteration
+           → <b>collection.forEach(e -&gt; ...)</b><br/>
+         • Filtering loops
+           → <b>stream().filter(...).forEach(...)</b><br/>
+         • Mapping/collecting loops
+           → <b>stream().map(...).collect(...)</b><br/>
+         • Reduction loops
+           → <b>stream().reduce(...)</b><br/>
+         <br/>
+         The cleanup only applies when the transformation is
+         semantically safe (e.g. no early returns that change
+         outer control flow, no checked exceptions).
+      </description>
+   </item>
+
+   <item title="Enable the Cleanup" dialog="true">
+      <description>
+         Open the Clean Up dialog to enable the Functional
+         Converter cleanup:
+         <br/><br/>
+         1. In the <b>Package Explorer</b>, select a Java project
+            (Java 8 or later)<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Select <b>Use custom profile</b> and click
+            <b>Configure…</b><br/>
+         4. On the <b>Functional Converter (Sandbox)</b> tab,
+            enable the desired conversion options<br/>
+         5. Click <b>OK</b><br/>
+         <br/>
+         Click <b>Perform</b> to open the Source menu.
+      </description>
+      <command
+         serialization="org.eclipse.jdt.ui.edit.text.java.clean.up"
+         confirm="false"/>
+   </item>
+
+   <item title="Run the Cleanup on Java Files">
+      <description>
+         Apply the functional conversion cleanup to your
+         Java source files:
+         <br/><br/>
+         1. Open or select Java files containing for-each loops
+            that iterate over collections<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Confirm the profile has
+            <b>Functional Converter (Sandbox)</b> enabled<br/>
+         4. Click <b>Finish</b><br/>
+         <br/>
+         The cleanup rewrites eligible loops as stream
+         pipelines and adds necessary imports automatically.
+      </description>
+   </item>
+
+   <item title="Review the Stream Pipeline Code">
+      <description>
+         After the cleanup runs, review the transformed code:
+         <br/><br/>
+         • Simple loops become concise
+           <b>forEach()</b> calls<br/>
+         • Conditional loops include <b>filter()</b> steps<br/>
+         • Loops that build result collections use
+           <b>collect(Collectors.toList())</b> or similar<br/>
+         • <b>java.util.stream.*</b> imports are added as needed<br/>
+         <br/>
+         Verify that stream operations preserve the original
+         semantics by running your test suite after the cleanup.
+         Note that stream pipelines may have different performance
+         characteristics for small collections.
+      </description>
+   </item>
+
+</cheatsheet>

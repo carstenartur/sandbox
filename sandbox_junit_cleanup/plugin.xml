@@ -23,4 +23,14 @@
 			id="junit3-migration"
 			resource="org/sandbox/jdt/internal/corext/fix/hints/junit3-migration.sandbox-hint" />
 	</extension>
+
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.junit.cleanup.gettingStarted"
+            name="Migrating JUnit 3/4 Tests to JUnit 5"
+            contentFile="cheatsheets/junit-migration-getting-started.xml">
+         <description>Learn how to automatically migrate JUnit 3 and JUnit 4 test classes to JUnit 5</description>
+      </cheatsheet>
+   </extension>
+
 </plugin>
