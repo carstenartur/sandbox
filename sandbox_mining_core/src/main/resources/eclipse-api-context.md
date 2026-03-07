@@ -73,6 +73,47 @@ the replacement is a mechanical API substitution (GREEN/YELLOW) or requires deep
 of the code's concurrency/security model (RED/NOT_APPLICABLE).
 **Source:** eclipse.platform.ui commit `aede3410` (2025)
 
+### Java 19+ Deprecation Patterns (Constructor / Method replacements)
+
+These are simple 1:1 replacements that are GREEN — directly expressible as DSL rules:
+
+#### Locale Constructor → Locale.of() (Java 19+)
+Old (deprecated since Java 19):
+```java
+new Locale("en")                     // 1-arg
+new Locale("en", "US")               // 2-arg
+new Locale("en", "US", "POSIX")      // 3-arg
+```
+New (factory method):
+```java
+Locale.of("en")                      // 1-arg
+Locale.of("en", "US")                // 2-arg
+Locale.of("en", "US", "POSIX")      // 3-arg
+```
+**DSL rule exists in:** `java19-deprecations.sandbox-hint`
+**Source:** eclipse.platform.ui commit `aede3410` (2025)
+
+#### Thread.getId() → Thread.threadId() (Java 19+)
+Old (deprecated since Java 19):
+```java
+Thread.currentThread().getId()
+display.getThread().getId()
+nonUiThread.getId()
+```
+New:
+```java
+Thread.currentThread().threadId()
+display.getThread().threadId()
+nonUiThread.threadId()
+```
+**DSL rule exists in:** `java19-deprecations.sandbox-hint`
+**Source:** eclipse.platform.ui commit `aede3410` (2025)
+
+**Important for mining:** When a commit message says "Java 21 deprecation fixes" but the
+actual patterns are `Locale.of()` or `Thread.threadId()`, these were deprecated in Java 19,
+not Java 21. The commit is fixing them in a Java 21+ project. Both patterns are simple
+1:1 replacements and should be classified as GREEN.
+
 ### Status API (Eclipse 4.7+)
 
 Old pattern:

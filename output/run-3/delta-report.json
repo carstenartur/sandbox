@@ -1,0 +1,120 @@
+{
+  "runId": "run-3",
+  "timestamp": "2026-03-06T23:52:00Z",
+  "description": "Run 3: Re-analysis of Eclipse 2025 commits. Promoted Java 19+ deprecation patterns (Locale.of, Thread.threadId) from YELLOW to GREEN. Added hint-only URL deprecation rule. Created new java19-deprecations.sandbox-hint.",
+  "commitsAnalyzed": 39,
+  "repositories": [
+    "https://github.com/eclipse-platform/eclipse.platform.ui",
+    "https://github.com/eclipse-jdt/eclipse.jdt.ui"
+  ],
+  "summary": {
+    "totalCommits": 39,
+    "relevant": 25,
+    "irrelevant": 14,
+    "greenCommits": 2,
+    "yellowCommits": 13,
+    "redCommits": 14,
+    "notApplicable": 10,
+    "discoveredPatterns": 4,
+    "gapCategories": 5
+  },
+  "gapsResolved": [
+    {
+      "category": "WRONG_TRAFFIC_LIGHT",
+      "commitHash": "aede34103616f47826e12d09a2e03d03540c2a6e",
+      "description": "Java 21 deprecation commit was YELLOW but contains only simple 1:1 replacements (Locale.of, Thread.threadId). Promoted to GREEN.",
+      "resolution": "Updated evaluation from YELLOW/canImplement=false to GREEN/canImplement=true with DSL rules"
+    },
+    {
+      "category": "MISSING_DSL_RULE",
+      "commitHash": "aede34103616f47826e12d09a2e03d03540c2a6e",
+      "description": "No hint file existed for Locale.of() and Thread.threadId() Java 19+ deprecation patterns",
+      "resolution": "Created java19-deprecations.sandbox-hint with 4 rules (3 Locale.of variants + Thread.threadId)"
+    },
+    {
+      "category": "MISSING_DSL_RULE",
+      "commitHash": "6361505f1e3f5cf762aad275b1fe753b8f3eee3b",
+      "description": "URL constructor deprecation (Java 20+) had no hint-only rule",
+      "resolution": "Added hint-only rule to deprecated-api.sandbox-hint with exception semantics warning"
+    },
+    {
+      "category": "MISSING_API_CONTEXT",
+      "commitHash": "aede34103616f47826e12d09a2e03d03540c2a6e",
+      "description": "eclipse-api-context.md lacked specific Locale.of() and Thread.threadId() code examples with Java version details",
+      "resolution": "Added Java 19+ Deprecation Patterns section with code examples for both patterns"
+    },
+    {
+      "category": "GENERALISIERUNG",
+      "description": "mining-examples.md lacked GREEN example for multi-pattern deprecation commits and guidance on Java version disambiguation",
+      "resolution": "Added Example 19 (GREEN - Java 19+ deprecation) and Example 20 (YELLOW - URL deprecation) plus 2 new Common Mistakes entries (#13-#14)"
+    }
+  ],
+  "remainingGaps": [
+    {
+      "category": "YELLOW_TO_GREEN_CANDIDATES",
+      "description": "Several YELLOW commits could potentially become GREEN with DSL extensions",
+      "candidates": [
+        {
+          "commitHash": "ce67be20232fee3f8de7c0fde0875b17b6977077",
+          "pattern": "System.getProperty() → Runtime.version() constants",
+          "blocker": "Requires constant lookup mapping (system property name → API constant)"
+        },
+        {
+          "commitHash": "6361505f1e3f5cf762aad275b1fe753b8f3eee3b",
+          "pattern": "new URL(String) → new URI(String).toURL()",
+          "blocker": "Changes exception semantics (MalformedURLException → URISyntaxException)"
+        }
+      ]
+    }
+  ],
+  "discoveredRules": [
+    {
+      "id": "locale-of-1arg",
+      "description": "Replace deprecated Locale(String) constructor with Locale.of(String)",
+      "hintFile": "java19-deprecations.sandbox-hint",
+      "source": "aede34103616f47826e12d09a2e03d03540c2a6e",
+      "category": "Java 19+ Deprecation"
+    },
+    {
+      "id": "locale-of-2arg",
+      "description": "Replace deprecated Locale(String,String) constructor with Locale.of(String,String)",
+      "hintFile": "java19-deprecations.sandbox-hint",
+      "source": "aede34103616f47826e12d09a2e03d03540c2a6e",
+      "category": "Java 19+ Deprecation"
+    },
+    {
+      "id": "locale-of-3arg",
+      "description": "Replace deprecated Locale(String,String,String) constructor with Locale.of(String,String,String)",
+      "hintFile": "java19-deprecations.sandbox-hint",
+      "source": "aede34103616f47826e12d09a2e03d03540c2a6e",
+      "category": "Java 19+ Deprecation"
+    },
+    {
+      "id": "thread-threadid",
+      "description": "Replace deprecated Thread.getId() with Thread.threadId()",
+      "hintFile": "java19-deprecations.sandbox-hint",
+      "source": "aede34103616f47826e12d09a2e03d03540c2a6e",
+      "category": "Java 19+ Deprecation"
+    }
+  ],
+  "improvements": {
+    "promptResources": [
+      "Updated eclipse-api-context.md with Java 19+ deprecation details (Locale.of, Thread.threadId) including code examples",
+      "Added 2 new mining examples (Example 19: GREEN Java 19+ deprecation, Example 20: YELLOW URL deprecation)",
+      "Added 2 new Common Mistakes entries (#13: Java version disambiguation, #14: multi-pattern commit classification)"
+    ],
+    "hintFiles": [
+      "Created java19-deprecations.sandbox-hint with 4 rules: Locale.of (1-arg, 2-arg, 3-arg) + Thread.threadId",
+      "Added URL deprecation hint-only rule to deprecated-api.sandbox-hint"
+    ],
+    "evaluations": [
+      "Corrected aede34103616 from YELLOW to GREEN with canImplementInCurrentDsl=true",
+      "Updated 6361505f with targetHintFile reference to deprecated-api.sandbox-hint"
+    ],
+    "nextSteps": [
+      "Run with Gemini API key to validate improvements lead to better DSL rules",
+      "Focus on URL deprecation: consider adding an exception-aware guard to promote from hint-only to auto-fix",
+      "Consider adding system property name → constant mapping for ce67be20 commit pattern"
+    ]
+  }
+}

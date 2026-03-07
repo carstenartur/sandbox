@@ -43,3 +43,8 @@ new java.lang.Short($x)
 new java.lang.Byte($x)
 => java.lang.Byte.valueOf($x)
 ;;
+
+// Hint-only: new URL(String) is deprecated since Java 20 — use URI-based construction
+"Consider replacing deprecated URL(String) constructor with new URI(String).toURL() (Java 20+). Note: this changes checked exception from MalformedURLException to URISyntaxException":
+new java.net.URL($url) :: sourceVersionGE(20)
+;;

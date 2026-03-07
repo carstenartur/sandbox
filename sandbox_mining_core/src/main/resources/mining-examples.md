@@ -389,3 +389,89 @@ semantic highlighting engine.
 - codeImprovement: 4
 - implementationEffort: 2
 - category: "Deprecation Handling"
+
+---
+
+### Example 19: GREEN — Java 19+ Deprecation Fixes (Locale.of, Thread.threadId)
+
+**Commit:** `aede3410` (eclipse.platform.ui)
+**Message:** "Java 21 deprecation fixes"
+
+**Diff summary:**
+```java
+// Pattern 1: Locale constructor → Locale.of()
+-  new Locale("en", "US", "POSIX")
++  Locale.of("en", "US", "POSIX")
+
+// Pattern 2: Thread.getId() → Thread.threadId()
+-  Thread.currentThread().getId()
++  Thread.currentThread().threadId()
+-  display.getThread().getId()
++  display.getThread().threadId()
+```
+
+**Analysis:** Despite the commit message saying "Java 21 deprecation fixes", the actual
+patterns (`Locale.of()` and `Thread.threadId()`) were introduced in Java 19. Both are
+simple 1:1 API replacements — constructor-to-factory for Locale and method-rename for
+Thread. Each can be expressed as a straightforward DSL rule. The commit touches 5 files
+but applies only these two mechanical patterns.
+
+**Important:** Don't be misled by commit messages mentioning "Java 21" — always check the
+actual Java version where the replacement API was introduced. Here, `sourceVersionGE(19)`
+is correct, not `sourceVersionGE(21)`.
+
+**Expected evaluation:**
+- relevant: true
+- trafficLight: GREEN (simple 1:1 replacements, directly expressible as DSL rules)
+- reusability: 9
+- codeImprovement: 6
+- implementationEffort: 2
+- category: "Java 19+ Deprecation"
+- canImplementInCurrentDsl: true
+- dslRule: See `java19-deprecations.sandbox-hint`
+
+---
+
+### Example 20: YELLOW — URL Constructor Deprecation (Java 20+)
+
+**Commit:** `6361505f` (eclipse.platform.ui)
+**Message:** "Fix URL deprecation in tests and snippets"
+
+**Diff summary:**
+```java
+// Pattern: new URL(String) → new URI(String).toURL()
+-  new URL("http://www.ibm.com")
++  new URI("http://www.ibm.com").toURL()
+
+// Exception handling must be updated:
+-  catch (MalformedURLException e) {
++  catch (MalformedURLException | URISyntaxException e) {
+```
+
+**Analysis:** The `new URL(String)` constructor was deprecated in Java 20 because URL
+parsing is inconsistent. The replacement `new URI(String).toURL()` changes checked
+exception semantics — `URISyntaxException` must be added to catch blocks or method
+signatures. This makes it a hint-only rule (YELLOW) rather than an automatic replacement
+(GREEN). A hint-only rule exists in `deprecated-api.sandbox-hint`.
+
+**Expected evaluation:**
+- relevant: true
+- trafficLight: YELLOW (exception semantics change prevents automatic replacement)
+- reusability: 8
+- codeImprovement: 5
+- implementationEffort: 3
+- category: "Java API Deprecation"
+- canImplementInCurrentDsl: false (hint-only)
+
+## Common Mistakes to Avoid (continued)
+
+13. **Don't confuse commit message Java version with API introduction version:**
+    A commit titled "Java 21 deprecation fixes" may contain patterns like `Locale.of()`
+    which was actually introduced in Java 19. Always verify the actual Java version for
+    each pattern — use `sourceVersionGE(19)`, not `sourceVersionGE(21)`.
+
+14. **Don't classify multi-pattern deprecation commits as YELLOW when individual
+    patterns are GREEN:** If a commit applies multiple simple 1:1 API replacements
+    (e.g., both `Locale.of()` and `Thread.threadId()`), each pattern individually is
+    GREEN. The commit should be GREEN with multiple DSL rules, not YELLOW because
+    "it spans multiple APIs".

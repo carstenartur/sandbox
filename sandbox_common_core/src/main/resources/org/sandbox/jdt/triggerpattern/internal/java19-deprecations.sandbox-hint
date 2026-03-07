@@ -1,0 +1,29 @@
+// java19-deprecations.sandbox-hint — Java 19+ deprecated API replacements
+// Covers constructor and method deprecations introduced in Java 19
+
+<!id: java19-deprecations>
+<!description: Replace deprecated Java 19+ API calls with modern alternatives.
+Covers Locale constructor (deprecated since Java 19) and Thread.getId() (deprecated since Java 19).>
+<!severity: warning>
+<!minJavaVersion: 19>
+<!tags: deprecation, java19, migration>
+
+// new Locale(language) → Locale.of(language) (deprecated since Java 19)
+new java.util.Locale($lang) :: sourceVersionGE(19)
+=> java.util.Locale.of($lang)
+;;
+
+// new Locale(language, country) → Locale.of(language, country)
+new java.util.Locale($lang, $country) :: sourceVersionGE(19)
+=> java.util.Locale.of($lang, $country)
+;;
+
+// new Locale(language, country, variant) → Locale.of(language, country, variant)
+new java.util.Locale($lang, $country, $variant) :: sourceVersionGE(19)
+=> java.util.Locale.of($lang, $country, $variant)
+;;
+
+// Thread.getId() → Thread.threadId() (deprecated since Java 19)
+$thread.getId() :: instanceof($thread, "java.lang.Thread") && sourceVersionGE(19)
+=> $thread.threadId()
+;;

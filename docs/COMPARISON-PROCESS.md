@@ -334,3 +334,72 @@ Each comparison run should be documented by appending to this file:
 - Consider adding a `containsRegexChars` guard alias for `isRegexp` to avoid
   confusion in future mining runs
 - Test whether the semantic safety rules section reduces over-broad rule proposals
+
+### Run 3 — 2026-03-06
+
+**Commits analyzed:** 39 (same set from `eclipse-2025-sample.txt`)
+**Repositories:** eclipse-platform/eclipse.platform.ui, eclipse-jdt/eclipse.jdt.ui
+**Reference:** Copilot Coding Agent evaluation (updated from Run 2; no Gemini results — no API key)
+
+**Gap distribution (identified in Run 3 analysis):**
+- WRONG_TRAFFIC_LIGHT: 1 (aede3410 — Java 19+ deprecation was YELLOW, should be GREEN)
+- MISSING_DSL_RULE: 2 (no hint files for Locale.of/Thread.threadId; no hint-only rule for URL deprecation)
+- MISSING_API_CONTEXT: 1 (eclipse-api-context.md lacked Locale.of/Thread.threadId code examples)
+- GENERALISIERUNG: 1 (mining-examples.md lacked GREEN example for multi-pattern deprecation commits)
+
+**Key findings:**
+- **Most impactful gap:** WRONG_TRAFFIC_LIGHT — commit `aede3410` ("Java 21 deprecation
+  fixes") was classified as YELLOW with `canImplementInCurrentDsl=false`, but the actual
+  diff shows only two simple 1:1 replacements: `new Locale(...)` → `Locale.of(...)` and
+  `Thread.getId()` → `Thread.threadId()`. Both patterns were introduced in Java 19 (not
+  Java 21 as the commit message implies) and are directly expressible as DSL rules.
+- **Java version confusion:** The commit message "Java 21 deprecation fixes" was misleading.
+  The actual APIs (`Locale.of()` and `Thread.threadId()`) were added in Java 19, not Java 21.
+  The commit was simply fixing these deprecations in a Java 21+ project. This caused the
+  original evaluation to incorrectly assume the patterns "span multiple APIs" requiring
+  "case-by-case analysis".
+- **URL deprecation needs hint-only treatment:** Commit `6361505f` replaces `new URL(String)`
+  with `new URI(String).toURL()` which changes checked exception semantics. The catch blocks
+  must be updated from `MalformedURLException` to `MalformedURLException | URISyntaxException`.
+  This makes it unsuitable for automatic replacement but perfect for a hint-only rule.
+- **Pattern discovery rate:** Run 3 discovered 4 new rules (3 Locale.of variants +
+  Thread.threadId) and 1 hint-only rule (URL deprecation), bringing the total to
+  6 validated patterns across all runs.
+
+**Improvements applied:**
+1. **`sandbox_common_core/.../java19-deprecations.sandbox-hint`** — Created new hint file
+   for Java 19+ deprecated API replacements: 3 Locale.of rules (1-arg, 2-arg, 3-arg)
+   and Thread.threadId rule. All with `sourceVersionGE(19)` guard.
+   *Gap: MISSING_DSL_RULE + WRONG_TRAFFIC_LIGHT — patterns were expressible but had no rules*
+
+2. **`sandbox_common_core/.../deprecated-api.sandbox-hint`** — Added hint-only rule for
+   `new URL(String)` deprecation (Java 20+) with exception semantics warning message.
+   *Gap: MISSING_DSL_RULE — URL deprecation pattern had no hint-only rule*
+
+3. **`sandbox_mining_core/src/main/resources/eclipse-api-context.md`** — Added Java 19+
+   Deprecation Patterns section with Locale.of() and Thread.threadId() code examples,
+   correct Java version attribution, and guidance for mining evaluation.
+   *Gap: MISSING_API_CONTEXT — Gemini would not know the correct Java version for these APIs*
+
+4. **`sandbox_mining_core/src/main/resources/mining-examples.md`** — Added 2 new examples:
+   - Example 19: GREEN — Java 19+ deprecation (Locale.of, Thread.threadId)
+   - Example 20: YELLOW — URL deprecation with exception semantics change
+   Added 2 new "Common Mistakes" entries (#13-#14) about Java version disambiguation
+   and multi-pattern commit classification.
+   *Gap: GENERALISIERUNG — Gemini lacked guidance on Java version disambiguation*
+
+5. **`output/run-1/copilot-evaluations.json`** — Corrected evaluations:
+   - aede34103616: YELLOW → GREEN, canImplementInCurrentDsl=true, added DSL rules
+   - 6361505f: added targetHintFile reference to deprecated-api.sandbox-hint
+   *Gap: WRONG_TRAFFIC_LIGHT — reference evaluation was inaccurate*
+
+**Recommendations for next run:**
+- Run with actual Gemini API key to validate that Java 19+ deprecation patterns
+  are correctly identified as GREEN with proper DSL rules
+- Focus on URL deprecation: consider adding an exception-aware guard that could
+  promote the hint-only rule to an auto-fix when the method already declares
+  `throws URISyntaxException` or catches a broad exception type
+- Consider adding system property name → constant mapping for the `ce67be20`
+  commit pattern (System.getProperty → Runtime.version constants)
+- Evaluate whether `containsRegexChars` should be added as a guard alias for
+  `isRegexp` to prevent LLM hallucination of non-existent guard names
