@@ -129,6 +129,26 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 - Only simple (unqualified) annotation names supported
 - Only single placeholder patterns supported
 
+### DSL Approach: Two Complementary Mechanisms
+
+The JUnit cleanup plugin uses **two complementary DSL mechanisms** that coexist without overlap:
+
+1. **`.sandbox-hint` files** (TriggerPattern DSL) — ultra-compact pattern rules in `src/.../hints/`:
+   - `annotations5.sandbox-hint` — annotation migrations (@Before→@BeforeEach, etc.)
+   - `junit5.sandbox-hint` — assert/assume method migrations
+   - `assume5.sandbox-hint` — Assume method migrations
+   - `junit3-migration.sandbox-hint` — JUnit 3 patterns
+   
+2. **Java `@CleanupPattern`/`@RewriteRule` plugins** — for cases requiring:
+   - Complex multi-node transformations
+   - Custom validation/filtering logic
+   - Class hierarchy / field type detection
+   - Parameter reordering or expression analysis
+
+**Design principle**: Where a `.sandbox-hint` rule can express the same transformation as a Java plugin,
+the hint file is preferred because it's dramatically more compact (~3 lines vs ~80 lines).
+The Java plugins handle edge cases and complex transformations the hint DSL cannot express.
+
 **Plugins Using @RewriteRule** (fully declarative):
 - `BeforeJUnitPlugin` - @Before → @BeforeEach
 - `AfterJUnitPlugin` - @After → @AfterEach
