@@ -17,13 +17,10 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
@@ -35,55 +32,48 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 @Category annotations to JUnit 5 @Tag annotations.
  * 
- * Handles: - Single category: @Category(FastTests.class) → @Tag("FastTests") -
- * Multiple categories: @Category({Fast.class, Slow.class})
- * → @Tag("Fast") @Tag("Slow") - Categories on both class and method level
+ * <p>Uses TriggerPattern-based declarative architecture with @CleanupPattern for
+ * detection. The transformation logic remains custom because one @Category
+ * annotation maps to multiple @Tag annotations — too complex for @RewriteRule.</p>
+ * 
+ * <p>Handles:</p>
+ * <ul>
+ *   <li>Single category: @Category(FastTests.class) → @Tag("FastTests")</li>
+ *   <li>Multiple categories: @Category({Fast.class, Slow.class}) → @Tag("Fast") @Tag("Slow")</li>
+ *   <li>Categories on both class and method level</li>
+ * </ul>
+ * 
+ * @since 1.3.0
  */
-public class CategoryJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@Category($value)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY, cleanupId = "cleanup.junit.category", description = "Migrate @Category to @Tag", displayName = "JUnit 4 @Category → JUnit 5 @Tag")
+public class CategoryJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORY).in(compilationUnit)
-				.excluding(nodesprocessed).processEach(dataHolder, (visited, aholder) -> {
-					if (visited instanceof Annotation) {
-						return processFoundNode(fixcore, operations, (Annotation) visited, aholder);
-					}
-					return true;
-				});
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh = new JunitHolder();
-		mh.setMinv(node);
-		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
+	protected JunitHolder createHolder(Match match) {
+		JunitHolder holder = super.createHolder(match);
+		Annotation node = holder.getAnnotation();
 
 		if (node instanceof SingleMemberAnnotation mynode) {
 			Expression value = mynode.getValue();
 			List<String> categoryNames = extractCategoryNames(value);
 			if (!categoryNames.isEmpty()) {
-				mh.setValue(String.join(",", categoryNames));
-				dataHolder.put(dataHolder.size(), mh);
-				operations.add(fixcore.rewrite(dataHolder));
+				holder.setValue(String.join(",", categoryNames)); //$NON-NLS-1$
+				return holder;
 			}
 		}
-		// Return true to continue processing other @Category annotations
-		// (the fluent API interprets false as "stop all processing")
-		return true;
+
+		// Cannot extract category names, skip
+		return null;
 	}
 
 	/**

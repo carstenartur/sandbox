@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -35,15 +36,33 @@ import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 @RunWith and @Suite.SuiteClasses to JUnit 5
  * equivalents.
+ * 
+ * <p>Uses TriggerPattern-based declarative architecture with @CleanupPattern for
+ * detection. The transformation logic remains custom because it handles multiple
+ * runner types (Suite, Mockito, Spring) with different replacement strategies.</p>
+ * 
+ * <p>This plugin overrides {@code find()} because it needs to search for BOTH
+ * {@code @RunWith} and {@code @Suite.SuiteClasses} annotations — the base
+ * TriggerPatternCleanupPlugin only searches for the pattern in @CleanupPattern.</p>
+ * 
+ * @since 1.3.0
  */
-public class RunWithJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@RunWith($runner)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_RUNWITH, cleanupId = "cleanup.junit.runwith", description = "Migrate @RunWith to JUnit 5 equivalents", displayName = "JUnit 4 @RunWith → JUnit 5 @ExtendWith/@Suite")
+public class RunWithJUnitPlugin extends TriggerPatternCleanupPlugin {
 
+	/**
+	 * Override find() because we need to search for TWO annotation types:
+	 * @RunWith and @Suite.SuiteClasses.
+	 */
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {

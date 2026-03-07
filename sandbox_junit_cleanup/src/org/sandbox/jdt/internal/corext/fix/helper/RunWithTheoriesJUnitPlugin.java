@@ -16,13 +16,11 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -37,20 +35,27 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 @RunWith(Theories.class) to JUnit
  * 5 @ParameterizedTest.
+ * 
+ * <p>Uses TriggerPattern-based declarative architecture with @CleanupPattern for
+ * detection. The transformation logic remains custom because it needs multi-node
+ * transformations (@RunWith removal, @DataPoints field removal, @Theory method
+ * transformation) — too complex for @RewriteRule.</p>
+ * 
+ * @since 1.3.0
  */
-public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@RunWith($runner)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_RUNWITH, cleanupId = "cleanup.junit.runwiththeories", description = "Migrate @RunWith(Theories.class) to @ParameterizedTest", displayName = "JUnit 4 @RunWith(Theories) → JUnit 5 @ParameterizedTest")
+public class RunWithTheoriesJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	private static class TheoriesData {
 		Annotation runWithAnnotation;
@@ -60,31 +65,16 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 	}
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-
-		// Find @RunWith(Theories.class) annotations
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH).in(compilationUnit).excluding(nodesprocessed)
-				.processEach(dataHolder, (visited, aholder) -> {
-					if (visited instanceof SingleMemberAnnotation) {
-						return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);
-					}
-					return true;
-				});
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder, Set<ASTNode> nodesprocessed) {
+	protected JunitHolder createHolder(Match match) {
+		Annotation node = (Annotation) match.getMatchedNode();
 
 		if (!(node instanceof SingleMemberAnnotation mynode)) {
-			return true;
+			return null;
 		}
 
 		Expression value = mynode.getValue();
 		if (!(value instanceof TypeLiteral myvalue)) {
-			return true;
+			return null;
 		}
 
 		// Check if it's Theories.class
@@ -92,7 +82,7 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 
 		// Only handle Theories runner
 		if (!ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES.equals(runnerQualifiedName)) {
-			return true;
+			return null;
 		}
 
 		// Find the enclosing TypeDeclaration
@@ -107,7 +97,7 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 		}
 
 		if (typeDecl == null) {
-			return true;
+			return null;
 		}
 
 		// Find @DataPoints field and @Theory methods
@@ -117,23 +107,15 @@ public class RunWithTheoriesJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 
 		// Only process if we found both @DataPoints and @Theory
 		if (theoriesData.dataPointsField == null || theoriesData.theoryMethod == null) {
-			return true;
+			return null;
 		}
 
-		// Mark for transformation
-		nodesprocessed.add(node);
-		nodesprocessed.add(theoriesData.dataPointsField);
-		nodesprocessed.add(theoriesData.theoryMethod);
-
-		JunitHolder mh = new JunitHolder();
-		mh.setMinv(node);
-		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
-		mh.setValue(ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES);
-		mh.setAdditionalInfo(theoriesData);
-		dataHolder.put(dataHolder.size(), mh);
-		operations.add(fixcore.rewrite(dataHolder));
-
-		return true;
+		JunitHolder holder = new JunitHolder();
+		holder.setMinv(node);
+		holder.setMinvname(node.getTypeName().getFullyQualifiedName());
+		holder.setValue(ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES);
+		holder.setAdditionalInfo(theoriesData);
+		return holder;
 	}
 
 	private String getRunnerQualifiedName(TypeLiteral myvalue) {
