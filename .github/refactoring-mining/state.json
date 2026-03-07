@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "4314d0ca19d28e8749c2fc2ac2a43b5da7d5128d",
-      "lastProcessedDate": "2026-03-06T23:36:15.497214439Z",
-      "totalProcessed": 3013,
+      "lastProcessedCommit": "2879704212fa36dd959c9c467a2ea65bd9f6ed3c",
+      "lastProcessedDate": "2026-03-07T04:11:47.764233149Z",
+      "totalProcessed": 3078,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -383,6 +383,24 @@
           "deferredAt": "2026-03-06T04:14:31.923912Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "ac501ce52b87c123d5cc8164d8865aff590f4be1",
+          "message": "Bug 418795 - [compiler] Unnecessary cast warning is wrong when casting\nprimitive to object type\n\nChange-Id: If1ff8dcb9d5",
+          "diffLines": 21,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-03-07T04:08:11.634226581Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9f645e92425e93b312b4182f93ffa420df1ee2d4",
+          "message": "Bug 561820 - [15] Create Java 15 version and supporting code in tests\n\nChange-Id: I1a7369bd6979c32fecf34d17d4929dc05f28a",
+          "diffLines": 57,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-03-07T04:11:47.764147409Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -444,5 +462,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 12986
+  "globalTotalProcessed": 13051
 }
