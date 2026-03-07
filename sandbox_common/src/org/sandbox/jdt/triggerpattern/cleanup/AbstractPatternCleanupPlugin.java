@@ -398,44 +398,16 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         // Parse the replacement pattern to extract annotation name and placeholders
         AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);
         
-        // Create the new annotation based on whether placeholders are present
-        Annotation newAnnotation;
+        // Get placeholder value from bindings
+        Expression value = null;
         if (replacementInfo.hasPlaceholders()) {
-            // Get the placeholder value from bindings
             String placeholder = replacementInfo.placeholderName;
-            Expression value = getBindingAsExpressionFromHolder(holder, "$" + placeholder); //$NON-NLS-1$
-            
-            // Fallback: if no binding is found, reuse the value from existing annotation
-            if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
-                value = ((SingleMemberAnnotation) oldAnnotation).getValue();
-            }
-            
-            // Fallback: if no binding is found and old annotation is NormalAnnotation,
-            // extract the "value" member pair (e.g., @Ignore(value="reason") → "reason")
-            if (value == null && oldAnnotation instanceof NormalAnnotation normalAnnotation) {
-                for (Object obj : normalAnnotation.values()) {
-                    MemberValuePair pair = (MemberValuePair) obj;
-                    if ("value".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
-                        value = pair.getValue();
-                        break;
-                    }
-                }
-            }
-            
-            if (value != null) {
-                // Create SingleMemberAnnotation with the placeholder value
-                SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
-                singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
-                newAnnotation = singleMemberAnnotation;
-            } else {
-                // No value found - create MarkerAnnotation instead of broken SingleMemberAnnotation
-                newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
-            }
-        } else {
-            // Create MarkerAnnotation (no parameters)
-            newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+            value = getBindingAsExpressionFromHolder(holder, "$" + placeholder); //$NON-NLS-1$
         }
+        
+        // Create the new annotation with fallback logic
+        Annotation newAnnotation = createReplacementAnnotation(
+                ast, rewriter, replacementInfo, oldAnnotation, value);
         
         // Replace the old annotation with the new one
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
@@ -459,50 +431,84 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         // Parse the replacement pattern to extract annotation name and placeholders
         AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);
         
-        // Create the new annotation based on whether placeholders are present
-        Annotation newAnnotation;
+        // Get placeholder value from bindings
+        Expression value = null;
         if (replacementInfo.hasPlaceholders()) {
-            // Get the placeholder value from bindings
             String placeholder = replacementInfo.placeholderName;
-            Expression value = holder.getBindingAsExpression("$" + placeholder); //$NON-NLS-1$
-            
-            // Fallback: if no binding is found, reuse the value from existing annotation
-            if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
-                value = ((SingleMemberAnnotation) oldAnnotation).getValue();
-            }
-            
-            // Fallback: if no binding is found and old annotation is NormalAnnotation,
-            // extract the "value" member pair (e.g., @Ignore(value="reason") → "reason")
-            if (value == null && oldAnnotation instanceof NormalAnnotation normalAnnotation) {
-                for (Object obj : normalAnnotation.values()) {
-                    MemberValuePair pair = (MemberValuePair) obj;
-                    if ("value".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
-                        value = pair.getValue();
-                        break;
-                    }
-                }
-            }
-            
-            if (value != null) {
-                // Create SingleMemberAnnotation with the placeholder value
-                SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
-                singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
-                newAnnotation = singleMemberAnnotation;
-            } else {
-                // No value found - create MarkerAnnotation instead of broken SingleMemberAnnotation
-                newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
-            }
-        } else {
-            // Create MarkerAnnotation (no parameters)
-            newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+            value = holder.getBindingAsExpression("$" + placeholder); //$NON-NLS-1$
         }
+        
+        // Create the new annotation with fallback logic
+        Annotation newAnnotation = createReplacementAnnotation(
+                ast, rewriter, replacementInfo, oldAnnotation, value);
         
         // Replace the old annotation with the new one
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
         
         // Handle imports
         processImports(importRewriter, rewriteRule);
+    }
+    
+    /**
+     * Creates a replacement annotation based on the replacement pattern and the old annotation.
+     * Handles three annotation types with appropriate fallback logic:
+     * <ol>
+     *   <li>If replacement has placeholders and a value is found → SingleMemberAnnotation</li>
+     *   <li>If replacement has placeholders but value is null → falls back to SingleMemberAnnotation 
+     *       or NormalAnnotation value extraction, then to MarkerAnnotation if still null</li>
+     *   <li>If replacement has no placeholders → MarkerAnnotation</li>
+     * </ol>
+     * 
+     * @param ast the AST instance
+     * @param rewriter the AST rewriter
+     * @param replacementInfo the parsed replacement pattern info
+     * @param oldAnnotation the original annotation being replaced
+     * @param value the placeholder value from bindings (may be null)
+     * @return the new annotation to replace the old one
+     */
+    private Annotation createReplacementAnnotation(AST ast, ASTRewrite rewriter,
+            AnnotationReplacementInfo replacementInfo, Annotation oldAnnotation, Expression value) {
+        
+        if (!replacementInfo.hasPlaceholders()) {
+            return AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+        }
+        
+        // Fallback: if no binding is found, reuse the value from existing annotation
+        if (value == null && oldAnnotation instanceof SingleMemberAnnotation singleMember) {
+            value = singleMember.getValue();
+        }
+        
+        // Fallback: if no binding is found and old annotation is NormalAnnotation,
+        // extract the "value" member pair (e.g., @Ignore(value="reason") → "reason")
+        if (value == null && oldAnnotation instanceof NormalAnnotation normalAnnotation) {
+            value = extractValueMember(normalAnnotation);
+        }
+        
+        if (value != null) {
+            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
+            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+            singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
+            return singleMemberAnnotation;
+        }
+        
+        // No value found - create MarkerAnnotation instead of broken SingleMemberAnnotation
+        return AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+    }
+    
+    /**
+     * Extracts the "value" member from a NormalAnnotation.
+     * 
+     * @param normalAnnotation the NormalAnnotation to extract from
+     * @return the value expression, or null if no "value" member is found
+     */
+    private static Expression extractValueMember(NormalAnnotation normalAnnotation) {
+        for (Object obj : normalAnnotation.values()) {
+            MemberValuePair pair = (MemberValuePair) obj;
+            if ("value".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+                return pair.getValue();
+            }
+        }
+        return null;
     }
     
     /**
