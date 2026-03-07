@@ -54,24 +54,26 @@ public class HintFileUpdater {
 
 <span class="fc bfc" id="L55" title="All 2 branches covered.">		for (GapEntry gap : gaps) {</span>
 <span class="fc bfc" id="L56" title="All 2 branches covered.">			if (gap.category() != GapCategory.MISSING_DSL_RULE</span>
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">					&amp;&amp; gap.category() != GapCategory.INVALID_DSL_RULE) {</span>
-<span class="fc" id="L58">				continue;</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">					&amp;&amp; gap.category() != GapCategory.INVALID_DSL_RULE</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">					&amp;&amp; gap.category() != GapCategory.DSL_SYNTAX</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">					&amp;&amp; gap.category() != GapCategory.GUARD_WISSEN) {</span>
+<span class="fc" id="L60">				continue;</span>
 			}
-<span class="fc" id="L60">			String rule = gap.referenceValue();</span>
-<span class="pc bpc" id="L61" title="3 of 4 branches missed.">			if (rule == null || rule.isBlank()) {</span>
-<span class="nc" id="L62">				continue;</span>
+<span class="fc" id="L62">			String rule = gap.referenceValue();</span>
+<span class="pc bpc" id="L63" title="3 of 4 branches missed.">			if (rule == null || rule.isBlank()) {</span>
+<span class="nc" id="L64">				continue;</span>
 			}
-<span class="nc" id="L64">			var result = validator.validate(rule);</span>
-<span class="nc bnc" id="L65" title="All 2 branches missed.">			if (!result.valid()) {</span>
-<span class="nc" id="L66">				continue;</span>
+<span class="nc" id="L66">			var result = validator.validate(rule);</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">			if (!result.valid()) {</span>
+<span class="nc" id="L68">				continue;</span>
 			}
-<span class="nc" id="L68">			String fileName = sanitizeFileName(gap.commitHash()) + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L69">			Path hintFile = outputDir.resolve(fileName);</span>
-<span class="nc" id="L70">			Files.writeString(hintFile, rule, StandardCharsets.UTF_8);</span>
-<span class="nc" id="L71">			created.add(hintFile);</span>
-<span class="nc" id="L72">		}</span>
+<span class="nc" id="L70">			String fileName = sanitizeFileName(gap.commitHash()) + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L71">			Path hintFile = outputDir.resolve(fileName);</span>
+<span class="nc" id="L72">			Files.writeString(hintFile, rule, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L73">			created.add(hintFile);</span>
+<span class="nc" id="L74">		}</span>
 
-<span class="fc" id="L74">		return created;</span>
+<span class="fc" id="L76">		return created;</span>
 	}
 
 	/**
@@ -84,50 +86,50 @@ public class HintFileUpdater {
 	 * @throws IOException if file writing fails
 	 */
 	public List&lt;Path&gt; writeHintFiles(List&lt;CommitEvaluation&gt; evaluations, Path outputDir) throws IOException {
-<span class="fc" id="L87">		Files.createDirectories(outputDir);</span>
-<span class="fc" id="L88">		List&lt;Path&gt; created = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L89">		Files.createDirectories(outputDir);</span>
+<span class="fc" id="L90">		List&lt;Path&gt; created = new ArrayList&lt;&gt;();</span>
 
-<span class="fc bfc" id="L90" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">			if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {</span>
-<span class="fc" id="L92">				continue;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">			if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {</span>
+<span class="fc" id="L94">				continue;</span>
 			}
-<span class="fc bfc" id="L94" title="All 2 branches covered.">			if (!&quot;VALID&quot;.equals(eval.dslValidationResult())) { //$NON-NLS-1$</span>
-<span class="fc" id="L95">				continue;</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">			if (!&quot;VALID&quot;.equals(eval.dslValidationResult())) { //$NON-NLS-1$</span>
+<span class="fc" id="L97">				continue;</span>
 			}
-<span class="fc" id="L97">			String rule = eval.dslRule();</span>
-<span class="pc bpc" id="L98" title="1 of 4 branches missed.">			if (rule == null || rule.isBlank()) {</span>
-<span class="nc" id="L99">				continue;</span>
+<span class="fc" id="L99">			String rule = eval.dslRule();</span>
+<span class="pc bpc" id="L100" title="1 of 4 branches missed.">			if (rule == null || rule.isBlank()) {</span>
+<span class="nc" id="L101">				continue;</span>
 			}
 			// Use targetHintFile if available, otherwise generate from commit hash
 			String fileName;
-<span class="pc bpc" id="L103" title="1 of 4 branches missed.">			if (eval.targetHintFile() != null &amp;&amp; !eval.targetHintFile().isBlank()) {</span>
-<span class="fc" id="L104">				fileName = eval.targetHintFile();</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">				if (!fileName.endsWith(&quot;.sandbox-hint&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L106">					fileName = fileName + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L105" title="1 of 4 branches missed.">			if (eval.targetHintFile() != null &amp;&amp; !eval.targetHintFile().isBlank()) {</span>
+<span class="fc" id="L106">				fileName = eval.targetHintFile();</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">				if (!fileName.endsWith(&quot;.sandbox-hint&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L108">					fileName = fileName + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
 				}
 			} else {
-<span class="fc" id="L109">				fileName = sanitizeFileName(eval.commitHash()) + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L111">				fileName = sanitizeFileName(eval.commitHash()) + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
 			}
 			// Sanitize to prevent path traversal (targetHintFile may come from LLM output)
-<span class="fc" id="L112">			Path baseName = Path.of(fileName).getFileName();</span>
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">			fileName = baseName != null ? baseName.toString() : sanitizeFileName(eval.commitHash()) + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
-<span class="pc bpc" id="L114" title="2 of 4 branches missed.">			if (fileName.isEmpty() || &quot;..&quot;.equals(fileName)) { //$NON-NLS-1$</span>
-<span class="nc" id="L115">				fileName = sanitizeFileName(eval.commitHash()) + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L114">			Path baseName = Path.of(fileName).getFileName();</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">			fileName = baseName != null ? baseName.toString() : sanitizeFileName(eval.commitHash()) + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">			if (fileName.isEmpty() || &quot;..&quot;.equals(fileName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L117">				fileName = sanitizeFileName(eval.commitHash()) + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L117">			Path hintFile = outputDir.resolve(fileName);</span>
-<span class="fc" id="L118">			Files.writeString(hintFile, rule, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L119">			created.add(hintFile);</span>
-<span class="fc" id="L120">		}</span>
+<span class="fc" id="L119">			Path hintFile = outputDir.resolve(fileName);</span>
+<span class="fc" id="L120">			Files.writeString(hintFile, rule, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L121">			created.add(hintFile);</span>
+<span class="fc" id="L122">		}</span>
 
-<span class="fc" id="L122">		return created;</span>
+<span class="fc" id="L124">		return created;</span>
 	}
 
 	public static String sanitizeFileName(String commitHash) {
-<span class="fc bfc" id="L126" title="All 4 branches covered.">		if (commitHash == null || commitHash.isBlank()) {</span>
-<span class="fc" id="L127">			return &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L128" title="All 4 branches covered.">		if (commitHash == null || commitHash.isBlank()) {</span>
+<span class="fc" id="L129">			return &quot;unknown&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L129">		return commitHash.substring(0, Math.min(7, commitHash.length()))</span>
-<span class="fc" id="L130">				.replaceAll(&quot;[^a-zA-Z0-9_-]&quot;, &quot;_&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L131">		return commitHash.substring(0, Math.min(7, commitHash.length()))</span>
+<span class="fc" id="L132">				.replaceAll(&quot;[^a-zA-Z0-9_-]&quot;, &quot;_&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

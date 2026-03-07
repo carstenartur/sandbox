@@ -14,6 +14,7 @@
 package org.sandbox.mining.core.comparison;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -24,7 +25,7 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
  * (e.g. from Copilot) and produces a {@link DeltaReport} identifying
  * gaps and improvement opportunities.
  */
-<span class="fc" id="L27">public class MiningComparator {</span>
+<span class="fc" id="L28">public class MiningComparator {</span>
 
 	/**
 	 * Compares mining results against reference evaluations and
@@ -36,81 +37,104 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 	 */
 	public DeltaReport compare(List&lt;CommitEvaluation&gt; miningResults,
 			List&lt;CommitEvaluation&gt; referenceResults) {
-<span class="fc" id="L39">		DeltaReport report = new DeltaReport();</span>
+<span class="fc" id="L40">		DeltaReport report = new DeltaReport();</span>
 
-<span class="fc" id="L41">		Map&lt;String, CommitEvaluation&gt; miningByHash = miningResults.stream()</span>
-<span class="pc" id="L42">				.collect(Collectors.toMap(CommitEvaluation::commitHash, e -&gt; e, (a, b) -&gt; b));</span>
+<span class="fc" id="L42">		Map&lt;String, CommitEvaluation&gt; miningByHash = miningResults.stream()</span>
+<span class="pc" id="L43">				.collect(Collectors.toMap(CommitEvaluation::commitHash, e -&gt; e, (a, b) -&gt; b));</span>
 
-<span class="fc" id="L44">		Map&lt;String, CommitEvaluation&gt; refByHash = referenceResults.stream()</span>
-<span class="pc" id="L45">				.collect(Collectors.toMap(CommitEvaluation::commitHash, e -&gt; e, (a, b) -&gt; b));</span>
+<span class="fc" id="L45">		Map&lt;String, CommitEvaluation&gt; refByHash = referenceResults.stream()</span>
+<span class="pc" id="L46">				.collect(Collectors.toMap(CommitEvaluation::commitHash, e -&gt; e, (a, b) -&gt; b));</span>
 
 		// Check reference results that mining missed or got wrong
-<span class="fc bfc" id="L48" title="All 2 branches covered.">		for (CommitEvaluation ref : referenceResults) {</span>
-<span class="fc" id="L49">			CommitEvaluation mining = miningByHash.get(ref.commitHash());</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">		for (CommitEvaluation ref : referenceResults) {</span>
+<span class="fc" id="L50">			CommitEvaluation mining = miningByHash.get(ref.commitHash());</span>
 
-<span class="fc bfc" id="L51" title="All 2 branches covered.">			if (mining == null) {</span>
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">				if (ref.relevant()) {</span>
-<span class="fc" id="L53">					report.addGap(new GapEntry(ref.commitHash(),</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">			if (mining == null) {</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">				if (ref.relevant()) {</span>
+<span class="fc" id="L54">					report.addGap(new GapEntry(ref.commitHash(),</span>
 							GapCategory.MISSED_RELEVANT, null,
-<span class="fc" id="L55">							ref.trafficLight().name(),</span>
+<span class="fc" id="L56">							ref.trafficLight().name(),</span>
 							&quot;Commit was not evaluated by mining pipeline&quot;)); //$NON-NLS-1$
 				}
 				continue;
 			}
 
 			// Compare relevance
-<span class="pc bpc" id="L62" title="1 of 4 branches missed.">			if (ref.relevant() &amp;&amp; !mining.relevant()) {</span>
-<span class="fc" id="L63">				report.addGap(new GapEntry(ref.commitHash(),</span>
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">			if (ref.relevant() &amp;&amp; !mining.relevant()) {</span>
+<span class="fc" id="L64">				report.addGap(new GapEntry(ref.commitHash(),</span>
 						GapCategory.MISSED_RELEVANT,
 						&quot;irrelevant&quot;, &quot;relevant&quot;, //$NON-NLS-1$ //$NON-NLS-2$
 						&quot;Mining marked as irrelevant but reference found it relevant&quot;)); //$NON-NLS-1$
-<span class="fc" id="L67">				continue;</span>
+<span class="fc" id="L68">				continue;</span>
 			}
 
 			// Compare traffic light
-<span class="pc bpc" id="L71" title="2 of 4 branches missed.">			if (ref.trafficLight() != null &amp;&amp; mining.trafficLight() != null</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">					&amp;&amp; ref.trafficLight() != mining.trafficLight()) {</span>
-<span class="fc" id="L73">				report.addGap(new GapEntry(ref.commitHash(),</span>
+<span class="pc bpc" id="L72" title="2 of 4 branches missed.">			if (ref.trafficLight() != null &amp;&amp; mining.trafficLight() != null</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">					&amp;&amp; ref.trafficLight() != mining.trafficLight()) {</span>
+<span class="fc" id="L74">				report.addGap(new GapEntry(ref.commitHash(),</span>
 						GapCategory.WRONG_TRAFFIC_LIGHT,
-<span class="fc" id="L75">						mining.trafficLight().name(),</span>
-<span class="fc" id="L76">						ref.trafficLight().name(),</span>
+<span class="fc" id="L76">						mining.trafficLight().name(),</span>
+<span class="fc" id="L77">						ref.trafficLight().name(),</span>
 						&quot;Traffic light mismatch&quot;)); //$NON-NLS-1$
 			}
 
 			// Compare DSL rules
-<span class="fc" id="L81">			compareDslRules(report, ref, mining);</span>
+<span class="fc" id="L82">			compareDslRules(report, ref, mining);</span>
 
 			// Compare categories
-<span class="pc bpc" id="L84" title="2 of 4 branches missed.">			if (ref.category() != null &amp;&amp; mining.category() != null</span>
-<span class="fc bfc" id="L85" title="All 2 branches covered.">					&amp;&amp; !ref.category().equals(mining.category())) {</span>
-<span class="fc" id="L86">				report.addGap(new GapEntry(ref.commitHash(),</span>
+<span class="pc bpc" id="L85" title="2 of 4 branches missed.">			if (ref.category() != null &amp;&amp; mining.category() != null</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">					&amp;&amp; !ref.category().equals(mining.category())) {</span>
+<span class="fc" id="L87">				report.addGap(new GapEntry(ref.commitHash(),</span>
 						GapCategory.CATEGORY_MISMATCH,
-<span class="fc" id="L88">						mining.category(), ref.category(),</span>
+<span class="fc" id="L89">						mining.category(), ref.category(),</span>
 						&quot;Category mismatch&quot;)); //$NON-NLS-1$
 			}
-<span class="fc" id="L91">		}</span>
+<span class="fc" id="L92">		}</span>
 
-<span class="fc" id="L93">		return report;</span>
+<span class="fc" id="L94">		return report;</span>
 	}
 
 	private static void compareDslRules(DeltaReport report, CommitEvaluation ref,
 			CommitEvaluation mining) {
-<span class="pc bpc" id="L98" title="2 of 4 branches missed.">		boolean refHasRule = ref.dslRule() != null &amp;&amp; !ref.dslRule().isBlank();</span>
-<span class="pc bpc" id="L99" title="1 of 4 branches missed.">		boolean miningHasRule = mining.dslRule() != null &amp;&amp; !mining.dslRule().isBlank();</span>
+<span class="pc bpc" id="L99" title="2 of 4 branches missed.">		boolean refHasRule = ref.dslRule() != null &amp;&amp; !ref.dslRule().isBlank();</span>
+<span class="pc bpc" id="L100" title="1 of 4 branches missed.">		boolean miningHasRule = mining.dslRule() != null &amp;&amp; !mining.dslRule().isBlank();</span>
 
-<span class="pc bpc" id="L101" title="1 of 4 branches missed.">		if (refHasRule &amp;&amp; !miningHasRule) {</span>
-<span class="fc" id="L102">			report.addGap(new GapEntry(ref.commitHash(),</span>
+<span class="pc bpc" id="L102" title="1 of 4 branches missed.">		if (refHasRule &amp;&amp; !miningHasRule) {</span>
+<span class="fc" id="L103">			report.addGap(new GapEntry(ref.commitHash(),</span>
 					GapCategory.MISSING_DSL_RULE,
-<span class="fc" id="L104">					null, ref.dslRule(),</span>
+<span class="fc" id="L105">					null, ref.dslRule(),</span>
 					&quot;Reference has DSL rule but mining does not&quot;)); //$NON-NLS-1$
-<span class="pc bpc" id="L106" title="2 of 4 branches missed.">		} else if (miningHasRule &amp;&amp; mining.dslValidationResult() != null</span>
-<span class="pc bpc" id="L107" title="3 of 4 branches missed.">				&amp;&amp; !&quot;VALID&quot;.equals(mining.dslValidationResult()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">		} else if (miningHasRule &amp;&amp; mining.dslValidationResult() != null</span>
+<span class="pc bpc" id="L108" title="1 of 4 branches missed.">				&amp;&amp; !&quot;VALID&quot;.equals(mining.dslValidationResult()) //$NON-NLS-1$</span>
 				&amp;&amp; refHasRule) {
-<span class="nc" id="L109">			report.addGap(new GapEntry(ref.commitHash(),</span>
-					GapCategory.INVALID_DSL_RULE,
-<span class="nc" id="L111">					mining.dslValidationResult(), ref.dslRule(),</span>
+<span class="fc" id="L110">			GapCategory detailedCategory = categorizeDslError(mining.dslValidationResult());</span>
+<span class="fc" id="L111">			report.addGap(new GapEntry(ref.commitHash(),</span>
+					detailedCategory,
+<span class="fc" id="L113">					mining.dslValidationResult(), ref.dslRule(),</span>
 					&quot;Mining produced invalid DSL rule&quot;)); //$NON-NLS-1$
 		}
-<span class="fc" id="L114">	}</span>
+<span class="fc" id="L116">	}</span>
+
+	/**
+	 * Categorizes a DSL validation error into a fine-grained gap category.
+	 *
+	 * @param validationResult the DSL validation error message
+	 * @return the most specific gap category for this error
+	 */
+	static GapCategory categorizeDslError(String validationResult) {
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (validationResult == null) {</span>
+<span class="nc" id="L126">			return GapCategory.INVALID_DSL_RULE;</span>
+		}
+<span class="fc" id="L128">		String lower = validationResult.toLowerCase(Locale.ROOT);</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">		if (lower.contains(&quot;xml&quot;) || lower.contains(&quot;&lt;trigger&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L130" title="1 of 4 branches missed.">				|| lower.contains(&quot;&lt;import&quot;) || lower.contains(&quot;syntax&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">				|| lower.contains(&quot;parse&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L132">			return GapCategory.DSL_SYNTAX;</span>
+		}
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">		if (lower.contains(&quot;istype&quot;) || lower.contains(&quot;guard&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L135">			return GapCategory.GUARD_WISSEN;</span>
+		}
+<span class="fc" id="L137">		return GapCategory.INVALID_DSL_RULE;</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

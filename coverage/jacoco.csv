@@ -765,15 +765,15 @@ sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.git,RepoCloner,23,0,0,0,5
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.config,RepoEntry,23,33,3,1,5,13,3,7,1,7
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.config,MiningConfig,46,182,9,17,13,45,12,15,5,9
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,GapEntry,0,18,0,0,0,1,0,1,0,1
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,HintFileUpdater,44,157,12,26,11,38,10,13,0,4
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,DeltaReport,10,130,2,6,3,26,3,8,1,6
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,GapCategory,0,45,0,0,0,8,0,1,0,1
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,HintFileUpdater,44,165,14,28,11,40,12,13,0,4
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,DeltaReport,3,430,6,24,1,87,6,20,0,11
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,GapCategory,10,108,5,9,5,25,5,10,0,2
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter,57,0,4,0,12,0,5,0,3,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter.new TypeAdapter() {...},31,0,6,0,8,0,6,0,3,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ErrorFeedbackCollector,17,143,6,18,2,32,6,12,1,5
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,MiningComparator,20,189,15,27,2,35,16,12,2,5
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,MiningComparator,7,248,18,40,1,47,20,17,2,6
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.filter,CommitKeywordFilter,0,249,4,18,0,28,4,15,0,8
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.enrichment,TypeContextEnricher,0,161,0,12,0,37,0,10,0,4
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,KnownRulesStore.RuleStatus,0,27,0,0,0,5,0,1,0,1
@@ -804,7 +804,7 @@ sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,DslEnhanceme
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,StatisticsCollector,28,326,17,33,5,85,14,33,1,20
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.action,AutoCommitter,79,0,2,0,16,0,3,0,2,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.action,PullRequestCreator,90,0,2,0,18,0,3,0,2,0
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core,MiningCli,1987,296,204,31,442,80,121,25,12,8
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core,MiningCli,2006,296,204,31,445,80,121,25,12,8
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.category,CategoryManager,126,0,12,0,26,0,14,0,8,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.category,CategoryManager.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox-jgit-storage-hibernate,org.eclipse.jgit.storage.hibernate.config,HibernateSessionFactoryProvider,9,188,17,19,3,49,17,5,1,3

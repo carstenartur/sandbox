@@ -13,6 +13,10 @@
  *******************************************************************************/
 package org.sandbox.mining.core.comparison;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -20,14 +24,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 /**
  * Holds the results of comparing Gemini mining results against
  * a reference evaluation. Provides gap analysis and suggestions
  * for improving the mining pipeline.
  */
-<span class="fc" id="L28">public class DeltaReport {</span>
+<span class="fc" id="L35">public class DeltaReport {</span>
 
-<span class="fc" id="L30">	private final List&lt;GapEntry&gt; gaps = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L37">	private final List&lt;GapEntry&gt; gaps = new ArrayList&lt;&gt;();</span>
 
 	/**
 	 * Adds a gap entry to the report.
@@ -35,10 +42,10 @@ import java.util.stream.Collectors;
 	 * @param entry the gap entry
 	 */
 	public void addGap(GapEntry entry) {
-<span class="pc bpc" id="L38" title="1 of 2 branches missed.">		if (entry != null) {</span>
-<span class="fc" id="L39">			gaps.add(entry);</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">		if (entry != null) {</span>
+<span class="fc" id="L46">			gaps.add(entry);</span>
 		}
-<span class="fc" id="L41">	}</span>
+<span class="fc" id="L48">	}</span>
 
 	/**
 	 * Returns all gap entries.
@@ -46,7 +53,7 @@ import java.util.stream.Collectors;
 	 * @return unmodifiable list of all gaps
 	 */
 	public List&lt;GapEntry&gt; getGaps() {
-<span class="fc" id="L49">		return Collections.unmodifiableList(gaps);</span>
+<span class="fc" id="L56">		return Collections.unmodifiableList(gaps);</span>
 	}
 
 	/**
@@ -55,11 +62,11 @@ import java.util.stream.Collectors;
 	 * @return map of category to list of gaps
 	 */
 	public Map&lt;GapCategory, List&lt;GapEntry&gt;&gt; groupByCategory() {
-<span class="fc" id="L58">		return gaps.stream()</span>
-<span class="fc" id="L59">				.collect(Collectors.groupingBy(</span>
+<span class="fc" id="L65">		return gaps.stream()</span>
+<span class="fc" id="L66">				.collect(Collectors.groupingBy(</span>
 						GapEntry::category,
 						LinkedHashMap::new,
-<span class="fc" id="L62">						Collectors.toList()));</span>
+<span class="fc" id="L69">						Collectors.toList()));</span>
 	}
 
 	/**
@@ -68,11 +75,11 @@ import java.util.stream.Collectors;
 	 * @return map of category to count
 	 */
 	public Map&lt;GapCategory, Long&gt; summarize() {
-<span class="nc" id="L71">		return gaps.stream()</span>
-<span class="nc" id="L72">				.collect(Collectors.groupingBy(</span>
+<span class="fc" id="L78">		return gaps.stream()</span>
+<span class="fc" id="L79">				.collect(Collectors.groupingBy(</span>
 						GapEntry::category,
 						LinkedHashMap::new,
-<span class="nc" id="L75">						Collectors.counting()));</span>
+<span class="fc" id="L82">						Collectors.counting()));</span>
 	}
 
 	/**
@@ -81,7 +88,7 @@ import java.util.stream.Collectors;
 	 * @return gap count
 	 */
 	public int getTotalGaps() {
-<span class="fc" id="L84">		return gaps.size();</span>
+<span class="fc" id="L91">		return gaps.size();</span>
 	}
 
 	/**
@@ -90,23 +97,127 @@ import java.util.stream.Collectors;
 	 * @return formatted report
 	 */
 	public String format() {
-<span class="fc" id="L93">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L94">		sb.append(&quot;=== Delta Report ===\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L95">		sb.append(&quot;Total gaps: &quot;).append(gaps.size()).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L96">		Map&lt;GapCategory, List&lt;GapEntry&gt;&gt; grouped = groupByCategory();</span>
-<span class="fc bfc" id="L97" title="All 2 branches covered.">		for (Map.Entry&lt;GapCategory, List&lt;GapEntry&gt;&gt; entry : grouped.entrySet()) {</span>
-<span class="fc" id="L98">			sb.append(&quot;## &quot;).append(entry.getKey()).append(&quot; (&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L99">					.append(entry.getValue().size()).append(&quot;)\n&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L100" title="All 2 branches covered.">			for (GapEntry gap : entry.getValue()) {</span>
-<span class="fc" id="L101">				sb.append(&quot;  - &quot;).append(gap.commitHash(), 0, Math.min(7, gap.commitHash().length())); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L102" title="1 of 2 branches missed.">				if (gap.suggestion() != null) {</span>
-<span class="fc" id="L103">					sb.append(&quot;: &quot;).append(gap.suggestion()); //$NON-NLS-1$</span>
+<span class="fc" id="L100">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L101">		sb.append(&quot;=== Delta Report ===\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L102">		sb.append(&quot;Total gaps: &quot;).append(gaps.size()).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L103">		Map&lt;GapCategory, List&lt;GapEntry&gt;&gt; grouped = groupByCategory();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		for (Map.Entry&lt;GapCategory, List&lt;GapEntry&gt;&gt; entry : grouped.entrySet()) {</span>
+<span class="fc" id="L105">			sb.append(&quot;## &quot;).append(entry.getKey()).append(&quot; (&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L106">					.append(entry.getValue().size()).append(&quot;)\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">			for (GapEntry gap : entry.getValue()) {</span>
+<span class="fc" id="L108">				sb.append(&quot;  - &quot;).append(gap.commitHash(), 0, Math.min(7, gap.commitHash().length())); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">				if (gap.suggestion() != null) {</span>
+<span class="fc" id="L110">					sb.append(&quot;: &quot;).append(gap.suggestion()); //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L105">				sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L106">			}</span>
-<span class="fc" id="L107">			sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L108">		}</span>
-<span class="fc" id="L109">		return sb.toString();</span>
+<span class="fc" id="L112">				sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L113">			}</span>
+<span class="fc" id="L114">			sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L115">		}</span>
+<span class="fc" id="L116">		return sb.toString();</span>
+	}
+
+	/**
+	 * Formats the delta report as Markdown with actionable suggestions per category.
+	 *
+	 * @return Markdown-formatted report
+	 */
+	public String formatMarkdown() {
+<span class="fc" id="L125">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L126">		sb.append(&quot;# Delta Report\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L127">		sb.append(&quot;**Total gaps:** &quot;).append(gaps.size()).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		if (gaps.isEmpty()) {</span>
+<span class="fc" id="L130">			sb.append(&quot;No gaps found — mining results match the reference evaluation.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L131">			return sb.toString();</span>
+		}
+
+<span class="fc" id="L134">		sb.append(&quot;## Gap Distribution\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L135">		sb.append(&quot;| Category | Count | Suggested Action |\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L136">		sb.append(&quot;|----------|-------|------------------|\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L137">		Map&lt;GapCategory, Long&gt; summary = summarize();</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		for (Map.Entry&lt;GapCategory, Long&gt; entry : summary.entrySet()) {</span>
+<span class="fc" id="L139">			sb.append(&quot;| &quot;).append(entry.getKey()) //$NON-NLS-1$</span>
+<span class="fc" id="L140">					.append(&quot; | &quot;).append(entry.getValue()) //$NON-NLS-1$</span>
+<span class="fc" id="L141">					.append(&quot; | &quot;).append(entry.getKey().suggestedAction()) //$NON-NLS-1$</span>
+<span class="fc" id="L142">					.append(&quot; |\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L143">		}</span>
+<span class="fc" id="L144">		sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L146">		sb.append(&quot;## Gap Details\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L147">		Map&lt;GapCategory, List&lt;GapEntry&gt;&gt; grouped = groupByCategory();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		for (Map.Entry&lt;GapCategory, List&lt;GapEntry&gt;&gt; entry : grouped.entrySet()) {</span>
+<span class="fc" id="L149">			sb.append(&quot;### &quot;).append(entry.getKey()) //$NON-NLS-1$</span>
+<span class="fc" id="L150">					.append(&quot; (&quot;).append(entry.getValue().size()).append(&quot;)\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">			for (GapEntry gap : entry.getValue()) {</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">				String shortHash = gap.commitHash() != null</span>
+<span class="fc" id="L153">					? gap.commitHash().substring(0, Math.min(7, gap.commitHash().length()))</span>
+<span class="pc" id="L154">					: &quot;???????&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L155">				sb.append(&quot;- **&quot;).append(shortHash).append(&quot;**&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">				if (gap.suggestion() != null) {</span>
+<span class="fc" id="L157">					sb.append(&quot;: &quot;).append(gap.suggestion()); //$NON-NLS-1$</span>
+				}
+<span class="pc bpc" id="L159" title="1 of 4 branches missed.">				if (gap.geminiValue() != null &amp;&amp; gap.referenceValue() != null) {</span>
+<span class="fc" id="L160">					String gemini = sanitizeInlineValue(gap.geminiValue());</span>
+<span class="fc" id="L161">					String reference = sanitizeInlineValue(gap.referenceValue());</span>
+<span class="fc" id="L162">					sb.append(&quot; (gemini=`&quot;).append(gemini) //$NON-NLS-1$</span>
+<span class="fc" id="L163">							.append(&quot;` → reference=`&quot;).append(reference).append(&quot;`)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+				}
+<span class="fc" id="L165">				sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L166">			}</span>
+<span class="fc" id="L167">			sb.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L168">		}</span>
+
+<span class="fc" id="L170">		return sb.toString();</span>
+	}
+
+	/**
+	 * Serializes the delta report as a JSON string.
+	 *
+	 * @return JSON representation of the report
+	 */
+	public String toJson() {
+<span class="fc" id="L179">		Gson gson = new GsonBuilder().setPrettyPrinting().create();</span>
+<span class="fc" id="L180">		Map&lt;String, Object&gt; reportMap = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L181">		reportMap.put(&quot;totalGaps&quot;, gaps.size()); //$NON-NLS-1$</span>
+<span class="fc" id="L182">		reportMap.put(&quot;summary&quot;, summarize()); //$NON-NLS-1$</span>
+<span class="fc" id="L183">		reportMap.put(&quot;gaps&quot;, gaps); //$NON-NLS-1$</span>
+<span class="fc" id="L184">		return gson.toJson(reportMap);</span>
+	}
+
+	/**
+	 * Writes the delta report to JSON and Markdown files in the given directory.
+	 *
+	 * @param outputDir directory where files will be written
+	 * @throws IOException if file writing fails
+	 */
+	public void writeToFiles(Path outputDir) throws IOException {
+<span class="fc" id="L194">		Files.createDirectories(outputDir);</span>
+<span class="fc" id="L195">		Files.writeString(outputDir.resolve(&quot;delta-report.json&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L196">				toJson(), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L197">		Files.writeString(outputDir.resolve(&quot;delta-report.md&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L198">				formatMarkdown(), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L199">	}</span>
+
+	private static final int MAX_INLINE_LENGTH = 80;
+
+	/**
+	 * Sanitizes a value for inline Markdown rendering: truncates to a single line,
+	 * escapes backticks, and limits length.
+	 */
+	static String sanitizeInlineValue(String value) {
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L209">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+		// Take only the first line
+<span class="fc" id="L212">		int nl = value.indexOf('\n');</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">		String single = nl &gt;= 0 ? value.substring(0, nl) : value;</span>
+		// Escape backticks
+<span class="fc" id="L215">		single = single.replace(&quot;`&quot;, &quot;'&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		// Truncate
+<span class="fc bfc" id="L217" title="All 2 branches covered.">		if (single.length() &gt; MAX_INLINE_LENGTH) {</span>
+<span class="fc" id="L218">			single = single.substring(0, MAX_INLINE_LENGTH) + &quot;…&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L220">		return single;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
