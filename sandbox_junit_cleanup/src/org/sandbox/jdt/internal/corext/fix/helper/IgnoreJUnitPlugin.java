@@ -17,20 +17,11 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.List;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.MarkerAnnotation;
-import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 
 /**
  * Migrates JUnit 4 @Ignore annotations to JUnit 5 @Disabled.
@@ -41,10 +32,10 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * </p>
  * 
  * <p>
- * Uses the TriggerPattern-based declarative architecture. Note: @RewriteRule
- * cannot be used here because we need to handle three different annotation
- * patterns (marker, single-member, and normal), so we keep the custom
- * process2Rewrite() implementation.
+ * Uses the TriggerPattern-based declarative architecture with @RewriteRule
+ * annotation. Handles three different annotation types (marker, single-member,
+ * and normal) through multiple patterns defined in {@code getPatterns()}, with
+ * the framework automatically handling NormalAnnotation value extraction.
  * </p>
  * 
  * <p>
@@ -86,6 +77,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * @since 1.3.0
  */
 @CleanupPattern(value = "@Ignore", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_IGNORE, cleanupId = "cleanup.junit.ignore", description = "Migrate @Ignore to @Disabled", displayName = "JUnit 4 @Ignore → JUnit 5 @Disabled")
+@RewriteRule(replaceWith = "@Disabled($value)", addImports = { ORG_JUNIT_JUPITER_DISABLED })
 public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
@@ -98,57 +90,6 @@ public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 				new Pattern("@Ignore($value)", PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null),
 				// Match @Ignore(value="reason") (NormalAnnotation)
 				new Pattern("@Ignore(value=$value)", PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null));
-	}
-
-	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder junitHolder) {
-		Annotation annotation = junitHolder.getAnnotation();
-		Annotation newAnnotation;
-
-		// Preserve ignore reason if present
-		if (annotation instanceof SingleMemberAnnotation) {
-			SingleMemberAnnotation oldAnnotation = (SingleMemberAnnotation) annotation;
-			SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();
-			newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
-			// Move the value (reason) from old to new annotation
-			newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, oldAnnotation.getValue()));
-			newAnnotation = newSingleMemberAnnotation;
-		} else if (annotation instanceof org.eclipse.jdt.core.dom.NormalAnnotation) {
-			// Handle NormalAnnotation (e.g., @Ignore(value="reason"))
-			// Convert to SingleMemberAnnotation for @Disabled
-			org.eclipse.jdt.core.dom.NormalAnnotation oldAnnotation = (org.eclipse.jdt.core.dom.NormalAnnotation) annotation;
-			java.util.List<org.eclipse.jdt.core.dom.MemberValuePair> values = oldAnnotation.values();
-
-			// Find the "value" member specifically
-			org.eclipse.jdt.core.dom.MemberValuePair valuePair = null;
-			for (org.eclipse.jdt.core.dom.MemberValuePair pair : values) {
-				if ("value".equals(pair.getName().getIdentifier())) {
-					valuePair = pair;
-					break;
-				}
-			}
-
-			if (valuePair != null) {
-				// If there's a value attribute, extract it and create SingleMemberAnnotation
-				SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();
-				newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));
-				newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, valuePair.getValue()));
-				newAnnotation = newSingleMemberAnnotation;
-			} else {
-				// No value, treat as marker
-				MarkerAnnotation newMarkerAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);
-				newAnnotation = newMarkerAnnotation;
-			}
-		} else {
-			// MarkerAnnotation - no reason to preserve
-			MarkerAnnotation newMarkerAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);
-			newAnnotation = newMarkerAnnotation;
-		}
-
-		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);
-		importRewriter.removeImport(ORG_JUNIT_IGNORE);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);
 	}
 
 	@Override

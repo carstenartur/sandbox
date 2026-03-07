@@ -24,6 +24,8 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -399,10 +401,6 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         // Create the new annotation based on whether placeholders are present
         Annotation newAnnotation;
         if (replacementInfo.hasPlaceholders()) {
-            // Create SingleMemberAnnotation with the placeholder value
-            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
-            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-            
             // Get the placeholder value from bindings
             String placeholder = replacementInfo.placeholderName;
             Expression value = getBindingAsExpressionFromHolder(holder, "$" + placeholder); //$NON-NLS-1$
@@ -412,11 +410,28 @@ public abstract class AbstractPatternCleanupPlugin<H> {
                 value = ((SingleMemberAnnotation) oldAnnotation).getValue();
             }
             
-            if (value != null) {
-                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
+            // Fallback: if no binding is found and old annotation is NormalAnnotation,
+            // extract the "value" member pair (e.g., @Ignore(value="reason") → "reason")
+            if (value == null && oldAnnotation instanceof NormalAnnotation normalAnnotation) {
+                for (Object obj : normalAnnotation.values()) {
+                    MemberValuePair pair = (MemberValuePair) obj;
+                    if ("value".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+                        value = pair.getValue();
+                        break;
+                    }
+                }
             }
             
-            newAnnotation = singleMemberAnnotation;
+            if (value != null) {
+                // Create SingleMemberAnnotation with the placeholder value
+                SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
+                singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
+                newAnnotation = singleMemberAnnotation;
+            } else {
+                // No value found - create MarkerAnnotation instead of broken SingleMemberAnnotation
+                newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+            }
         } else {
             // Create MarkerAnnotation (no parameters)
             newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
@@ -447,10 +462,6 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         // Create the new annotation based on whether placeholders are present
         Annotation newAnnotation;
         if (replacementInfo.hasPlaceholders()) {
-            // Create SingleMemberAnnotation with the placeholder value
-            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
-            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-            
             // Get the placeholder value from bindings
             String placeholder = replacementInfo.placeholderName;
             Expression value = holder.getBindingAsExpression("$" + placeholder); //$NON-NLS-1$
@@ -460,11 +471,28 @@ public abstract class AbstractPatternCleanupPlugin<H> {
                 value = ((SingleMemberAnnotation) oldAnnotation).getValue();
             }
             
-            if (value != null) {
-                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
+            // Fallback: if no binding is found and old annotation is NormalAnnotation,
+            // extract the "value" member pair (e.g., @Ignore(value="reason") → "reason")
+            if (value == null && oldAnnotation instanceof NormalAnnotation normalAnnotation) {
+                for (Object obj : normalAnnotation.values()) {
+                    MemberValuePair pair = (MemberValuePair) obj;
+                    if ("value".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+                        value = pair.getValue();
+                        break;
+                    }
+                }
             }
             
-            newAnnotation = singleMemberAnnotation;
+            if (value != null) {
+                // Create SingleMemberAnnotation with the placeholder value
+                SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
+                singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
+                newAnnotation = singleMemberAnnotation;
+            } else {
+                // No value found - create MarkerAnnotation instead of broken SingleMemberAnnotation
+                newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+            }
         } else {
             // Create MarkerAnnotation (no parameters)
             newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);

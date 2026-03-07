@@ -424,22 +424,21 @@ public void find(..., Set<ASTNode> nodesprocessed) {
 }
 ```
 
-### 4. Assuming @RewriteRule Handles All Cases
-❌ **Wrong** (NormalAnnotation not supported):
+### 4. NormalAnnotation Support in @RewriteRule
+✅ **Now supported**: @RewriteRule handles NormalAnnotation with "value" member automatically:
 ```java
-@RewriteRule(replaceWith = "@Disabled($value)")
-// Will fail for @Ignore(value="reason")
+@CleanupPattern(value = "@Ignore", kind = PatternKind.ANNOTATION, qualifiedType = "org.junit.Ignore")
+@RewriteRule(replaceWith = "@Disabled($value)", addImports = {"org.junit.jupiter.api.Disabled"})
+public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
+    // Handles @Ignore, @Ignore("reason"), AND @Ignore(value="reason") automatically
+    // Define multiple patterns in getPatterns() to match all three annotation types
+}
 ```
 
-✅ **Correct**:
+⚠️ **Still requires custom process2Rewrite()**: Annotations with non-"value" named parameters
 ```java
-// Override process2Rewrite() for NormalAnnotation support
-@Override
-protected void process2Rewrite(...) {
-    if (annotation instanceof NormalAnnotation) {
-        // Custom handling
-    }
-}
+// @Test(expected=Exception.class, timeout=1000) → requires custom logic
+// because both "expected" and "timeout" need different handling
 ```
 
 ## Related Documentation
