@@ -17,6 +17,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -24,6 +25,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.e4.core.services.log.Logger;
+import org.eclipse.jdt.core.IBuffer;
 import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IField;
@@ -35,7 +37,20 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.WildcardType;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.core.SourceType;
 import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jdt.ui.refactoring.RenameSupport;
@@ -45,6 +60,8 @@ import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.InputDialog;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -59,6 +76,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.text.edits.TextEdit;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -85,6 +103,7 @@ import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IProgressService;
 import org.sandbox.jdt.internal.corext.util.NamingUtils;
+import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer.TypeWideningResult;
 import org.sandbox.jdt.ui.helper.views.colum.AbstractColumn;
 import org.sandbox.jdt.ui.helper.views.colum.ConflictHighlightingLabelProvider;
 import org.sandbox.jdt.ui.helper.views.colum.DeclaringMethodColumn;
@@ -354,6 +373,135 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 		}
 	}
 
+	/**
+	 * Changes the declared type of a variable to the given target type.
+	 * Uses AST rewriting to update the type declaration and manages imports.
+	 * After a successful change, the view is re-analyzed to reflect the update.
+	 *
+	 * @param variableBinding the variable whose type should be changed
+	 * @param targetType      the new type to use (must be a supertype of the current type)
+	 */
+	private void performChangeType(IVariableBinding variableBinding, ITypeBinding targetType) {
+		IJavaElement javaElement = variableBinding.getJavaElement();
+		if (javaElement == null) {
+			return;
+		}
+		ICompilationUnit cu = (ICompilationUnit) javaElement.getAncestor(IJavaElement.COMPILATION_UNIT);
+		if (cu == null) {
+			return;
+		}
+
+		try {
+			// Parse AST with bindings
+			ASTParser parser = ASTParser.newParser(AST.JLS_Latest);
+			parser.setSource(cu);
+			parser.setResolveBindings(true);
+			parser.setBindingsRecovery(true);
+			CompilationUnit ast = (CompilationUnit) parser.createAST(null);
+
+			// Find the variable declaration and replace the type
+			ASTRewrite rewrite = ASTRewrite.create(ast.getAST());
+			ImportRewrite importRewrite = ImportRewrite.create(ast, true);
+			String targetKey = variableBinding.getKey();
+			boolean[] found = {false};
+
+			ast.accept(new ASTVisitor() {
+				@Override
+				public boolean visit(VariableDeclarationStatement node) {
+					for (Object fragObj : node.fragments()) {
+						VariableDeclarationFragment frag = (VariableDeclarationFragment) fragObj;
+						IVariableBinding b = frag.resolveBinding();
+						if (b != null && targetKey.equals(b.getKey())) {
+							Type newType = createTypeNode(node.getAST(), targetType, importRewrite);
+							rewrite.replace(node.getType(), newType, null);
+							found[0] = true;
+						}
+					}
+					return !found[0];
+				}
+			});
+
+			if (!found[0]) {
+				return;
+			}
+
+			// Step 1: Apply the AST rewrite (type replacement) to the document
+			String source = cu.getSource();
+			Document document = new Document(source);
+			Map<String, String> options = cu.getJavaProject() != null
+					? cu.getJavaProject().getOptions(true)
+					: JavaCore.getOptions();
+			TextEdit astEdits = rewrite.rewriteAST(document, options);
+			astEdits.apply(document);
+
+			// Step 2: Apply import edits from the original ImportRewrite
+			TextEdit importEdits = importRewrite.rewriteImports(null);
+			importEdits.apply(document);
+
+			// Step 3: Save changes
+			IBuffer buffer = cu.getBuffer();
+			buffer.setContents(document.get());
+			cu.save(null, false);
+
+			// Reconcile the compilation unit
+			reconcile(cu);
+
+			// Refresh the view to reflect the updated types while preserving the
+			// existing input scope (package/project/multi-selection).
+			getSite().getShell().getDisplay().asyncExec(() -> {
+				typeWideningCache.clear();
+				variableTableViewer.refresh();
+			});
+
+		} catch (CoreException | BadLocationException e) {
+			logger.error(e, "Error performing change type refactoring"); //$NON-NLS-1$
+		}
+	}
+
+	/**
+	 * Creates an AST {@link Type} node for the given type binding, registering the
+	 * required import via {@code importRewrite}. Handles parameterized types.
+	 *
+	 * @param ast           the AST to use for node creation
+	 * @param typeBinding   the type binding to represent
+	 * @param importRewrite the import rewrite to record needed imports
+	 * @return the AST type node
+	 */
+	@SuppressWarnings("unchecked")
+	private Type createTypeNode(AST ast, ITypeBinding typeBinding, ImportRewrite importRewrite) {
+		ITypeBinding erasure = typeBinding.getErasure();
+		String simpleName = importRewrite.addImport(erasure.getQualifiedName());
+		SimpleType baseType = ast.newSimpleType(ast.newName(simpleName));
+
+		if (!typeBinding.isParameterizedType()) {
+			return baseType;
+		}
+
+		ParameterizedType paramType = ast.newParameterizedType(baseType);
+		for (ITypeBinding typeArg : typeBinding.getTypeArguments()) {
+			paramType.typeArguments().add(createTypeArgNode(ast, typeArg, importRewrite));
+		}
+		return paramType;
+	}
+
+	/**
+	 * Creates an AST type node for a type argument (handles wildcards and type variables).
+	 */
+	private Type createTypeArgNode(AST ast, ITypeBinding typeArg, ImportRewrite importRewrite) {
+		if (typeArg.isWildcardType()) {
+			WildcardType wc = ast.newWildcardType();
+			if (typeArg.getBound() != null) {
+				wc.setBound(createTypeNode(ast, typeArg.getBound(), importRewrite), typeArg.isUpperbound());
+			}
+			return wc;
+		}
+		if (typeArg.isTypeVariable()) {
+			return ast.newSimpleType(ast.newName(typeArg.getName()));
+		}
+		// For other cases (e.g., parameterized type args), use the erasure
+		return createTypeNode(ast, typeArg.isParameterizedType() ? typeArg : typeArg.getErasure(), importRewrite);
+	}
+
 	/* see JavaModelUtil.reconcile((ICompilationUnit) input) */
 	static void reconcile(ICompilationUnit unit) throws JavaModelException {
 		synchronized (unit) {
@@ -480,8 +628,30 @@ public class JavaHelperView extends ViewPart implements IShowInSource, IShowInTa
 				renameVariableAction.setEnabled(canRename);
 				manager.add(renameVariableAction);
 				manager.add(new Separator());
+
+				// Add "Change Variable Type" submenu when widest type is available
+				TypeWideningResult result = typeWideningCache.getResult(variableBinding.getKey());
+				if (result != null && result.canWiden()) {
+					MenuManager changeTypeMenu = new MenuManager("Change Variable Type"); //$NON-NLS-1$
+					List<ITypeBinding> intermediateTypes = result.getIntermediateTypes();
+					for (ITypeBinding targetType : intermediateTypes) {
+						String simpleTypeName = targetType.getErasure().getName();
+						boolean isWidest = targetType.getErasure().getQualifiedName()
+								.equals(result.getWidestType().getErasure().getQualifiedName());
+						String label = simpleTypeName + (isWidest ? " (widest)" : ""); //$NON-NLS-1$ //$NON-NLS-2$
+						changeTypeMenu.add(new Action(label) {
+							@Override
+							public void run() {
+								performChangeType(variableBinding, targetType);
+							}
+						});
+					}
+					if (!intermediateTypes.isEmpty()) {
+						manager.add(changeTypeMenu);
+					}
+				}
 			}
-			
+
 			MenuManager showInSubMenu= new MenuManager(getShowInMenuLabel());
 			IWorkbenchWindow workbenchWindow= getSite().getWorkbenchWindow();
 			showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(workbenchWindow));

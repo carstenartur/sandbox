@@ -13,9 +13,14 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.util;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -64,11 +69,14 @@ public final class TypeWideningAnalyzer {
 		private final IVariableBinding variableBinding;
 		private final ITypeBinding currentType;
 		private final ITypeBinding widestType;
+		private final List<ITypeBinding> intermediateTypes;
 
-		TypeWideningResult(IVariableBinding variableBinding, ITypeBinding currentType, ITypeBinding widestType) {
+		TypeWideningResult(IVariableBinding variableBinding, ITypeBinding currentType, ITypeBinding widestType,
+				List<ITypeBinding> intermediateTypes) {
 			this.variableBinding = variableBinding;
 			this.currentType = currentType;
 			this.widestType = widestType;
+			this.intermediateTypes = intermediateTypes;
 		}
 
 		/** The variable binding that was analyzed */
@@ -84,6 +92,15 @@ public final class TypeWideningAnalyzer {
 		/** The widest type the variable can be downgraded to, or null if no widening is possible */
 		public ITypeBinding getWidestType() {
 			return widestType;
+		}
+
+		/**
+		 * Returns all types in the hierarchy from currentType upward that declare all
+		 * required members, ordered from most specific (just above currentType) to most
+		 * general (widestType). The widestType is included as the last element.
+		 */
+		public List<ITypeBinding> getIntermediateTypes() {
+			return Collections.unmodifiableList(intermediateTypes);
 		}
 
 		/** Whether the variable can be widened to a more general type */
@@ -197,8 +214,10 @@ public final class TypeWideningAnalyzer {
 					usageInfo.usedMethodSignatures, usageInfo.usedFields);
 
 			if (widenedType != null && !widenedType.getQualifiedName().equals(declInfo.typeBinding.getQualifiedName())) {
+				List<ITypeBinding> intermediateTypes = collectIntermediateTypes(declInfo.typeBinding, widenedType,
+						usageInfo.usedMethodSignatures, usageInfo.usedFields);
 				results.put(varBinding.getKey(),
-						new TypeWideningResult(varBinding, declInfo.typeBinding, widenedType));
+						new TypeWideningResult(varBinding, declInfo.typeBinding, widenedType, intermediateTypes));
 			}
 		}
 
@@ -267,6 +286,75 @@ public final class TypeWideningAnalyzer {
 			signature.append(':').append(returnType.getQualifiedName());
 		}
 		return signature.toString();
+	}
+
+	/**
+	 * Collects all types in the hierarchy from {@code currentType} upward that
+	 * still declare all used members and are supertypes of (or equal to)
+	 * {@code widestType}. The {@code widestType} is guaranteed to be the last
+	 * element when it passes the member check.
+	 *
+	 * @param currentType           the current declared type of the variable
+	 * @param widestType            the widest (most general) type computed by analysis
+	 * @param usedMethodSignatures  the set of method signatures used on the variable
+	 * @param usedFields            the set of field names accessed on the variable
+	 * @return ordered list of valid target types (exclusive of {@code currentType},
+	 *         inclusive of {@code widestType} as the last element)
+	 */
+	public static List<ITypeBinding> collectIntermediateTypes(ITypeBinding currentType, ITypeBinding widestType,
+			Set<String> usedMethodSignatures, Set<String> usedFields) {
+		if (widestType == null) {
+			return new ArrayList<>();
+		}
+		String widestErasureName = widestType.getErasure().getQualifiedName();
+
+		List<ITypeBinding> result = new ArrayList<>();
+		Set<String> seen = new HashSet<>();
+		seen.add(currentType.getErasure().getQualifiedName());
+
+		Queue<ITypeBinding> queue = new LinkedList<>();
+		enqueueSupertypes(currentType, queue);
+
+		while (!queue.isEmpty()) {
+			ITypeBinding type = queue.poll();
+			if (type == null || isJavaLangObject(type)) {
+				continue;
+			}
+			String erasureName = type.getErasure().getQualifiedName();
+			if (!seen.add(erasureName)) {
+				continue;
+			}
+			// Only include types that are supertypes of currentType and subtypes
+			// of (or equal to) widestType, and declare all used members.
+			if (!isTaggingInterface(type)
+					&& declaresAllMembers(currentType, type, usedMethodSignatures, usedFields)
+					&& widestType.isSubTypeCompatible(type)) {
+				// Don't add widestType yet — it will be appended last
+				if (!erasureName.equals(widestErasureName)) {
+					result.add(type);
+				}
+				enqueueSupertypes(type, queue);
+			}
+		}
+
+		// Always append widestType as the last element if it passed the member check
+		if (declaresAllMembers(currentType, widestType, usedMethodSignatures, usedFields)) {
+			result.add(widestType);
+		}
+		return result;
+	}
+
+	/**
+	 * Enqueues all direct supertypes (superclass and interfaces) of the given type.
+	 */
+	private static void enqueueSupertypes(ITypeBinding type, Queue<ITypeBinding> queue) {
+		ITypeBinding superclass = type.getSuperclass();
+		if (superclass != null && !isJavaLangObject(superclass)) {
+			queue.add(superclass);
+		}
+		for (ITypeBinding iface : type.getInterfaces()) {
+			queue.add(iface);
+		}
 	}
 
 	/**
