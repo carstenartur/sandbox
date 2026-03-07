@@ -501,9 +501,9 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * @param normalAnnotation the NormalAnnotation to extract from
      * @return the value expression, or null if no "value" member is found
      */
+    @SuppressWarnings("unchecked")
     private static Expression extractValueMember(NormalAnnotation normalAnnotation) {
-        for (Object obj : normalAnnotation.values()) {
-            MemberValuePair pair = (MemberValuePair) obj;
+        for (MemberValuePair pair : (List<MemberValuePair>) normalAnnotation.values()) {
             if ("value".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
                 return pair.getValue();
             }
