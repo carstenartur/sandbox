@@ -29,7 +29,7 @@ The JUnit cleanup framework supports two distinct architectural approaches for i
 - ~80-100 lines of code per plugin
 
 **When to Use AbstractTool**:
-- Detection is NOT based on annotations (class hierarchy, field type, method naming, type references)
+- Detection is **not** based on annotations (class hierarchy, field type, method naming, type references)
 - Complex multi-step transformations (e.g., `ExternalResourceJUnitPlugin`)
 - Need to traverse and modify multiple related AST nodes
 - Custom validation logic beyond simple type matching
