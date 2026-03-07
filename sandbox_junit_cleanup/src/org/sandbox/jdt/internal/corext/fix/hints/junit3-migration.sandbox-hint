@@ -1,0 +1,50 @@
+// junit3-migration.sandbox-hint — JUnit 3 to JUnit 5 method annotation migration
+// Adds JUnit 5 annotations to JUnit 3-style test methods based on naming conventions.
+// Uses natural method-rewrite syntax: the replacement is the target method declaration
+// with the annotation prepended. Idempotent — annotations already present are not duplicated.
+//
+// Guards use isStatic/!isStatic to distinguish instance lifecycle methods from
+// static class-level lifecycle methods.
+// The enclosingClassExtends guard ensures rules only fire in classes that
+// actually extend junit.framework.TestCase (directly or transitively).
+
+<!id: junit3-migration>
+<!description: JUnit 3 to JUnit 5 migration — add annotations to conventionally-named methods>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: junit, testing, migration, junit3>
+
+// ===========================================================================
+// Instance Methods (non-static)
+// ===========================================================================
+
+// --- Test Methods ---
+// JUnit 3 convention: public void methods named "test*" are test methods
+void $name($params$) :: methodNameMatches($name, "test.*") && !isStatic($name) && enclosingClassExtends("junit.framework.TestCase")
+=> @org.junit.jupiter.api.Test void $name($params$)
+;;
+
+// --- Per-Test Lifecycle ---
+// JUnit 3 convention: setUp() is called before each test
+void $name($params$) :: methodNameMatches($name, "setUp") && !isStatic($name) && enclosingClassExtends("junit.framework.TestCase")
+=> @org.junit.jupiter.api.BeforeEach void $name($params$)
+;;
+
+// JUnit 3 convention: tearDown() is called after each test
+void $name($params$) :: methodNameMatches($name, "tearDown") && !isStatic($name) && enclosingClassExtends("junit.framework.TestCase")
+=> @org.junit.jupiter.api.AfterEach void $name($params$)
+;;
+
+// ===========================================================================
+// Static Methods (class-level lifecycle)
+// ===========================================================================
+
+// JUnit 3/4 convention: setUpBeforeClass() is a static method run once before all tests
+void $name($params$) :: methodNameMatches($name, "setUpBeforeClass") && isStatic($name) && enclosingClassExtends("junit.framework.TestCase")
+=> @org.junit.jupiter.api.BeforeAll void $name($params$)
+;;
+
+// JUnit 3/4 convention: tearDownAfterClass() is a static method run once after all tests
+void $name($params$) :: methodNameMatches($name, "tearDownAfterClass") && isStatic($name) && enclosingClassExtends("junit.framework.TestCase")
+=> @org.junit.jupiter.api.AfterAll void $name($params$)
+;;
