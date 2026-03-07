@@ -82,5 +82,20 @@ public enum PatternKind {
 	 * 
 	 * @since 1.3.2
 	 */
-	STATEMENT_SEQUENCE
+	STATEMENT_SEQUENCE,
+
+	/**
+	 * Pattern represents a local variable declaration statement (e.g.,
+	 * {@code $Type $var = $init;}). Used for matching variable declarations
+	 * and applying type-level transformations such as widening to the most
+	 * general type.
+	 *
+	 * <p>Example: A declaration pattern {@code $Type $var = $init;} with
+	 * a {@code canWidenType($var)} guard and a {@code $widestType($var)}
+	 * replacement would widen the declared type to the most general
+	 * supertype/interface that still supports all usages.</p>
+	 *
+	 * @since 1.3.12
+	 */
+	DECLARATION
 }

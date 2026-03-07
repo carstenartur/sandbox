@@ -1024,6 +1024,11 @@ public final class HintFileParser {
 		if (trimmed.contains("(") && trimmed.contains(")") && !trimmed.endsWith(";")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			return PatternKind.METHOD_CALL;
 		}
+		// Variable declaration: "$Type $var = $init;" or "$Type $var;"
+		// Must be checked before generic STATEMENT to distinguish declarations
+		if (looksLikeDeclaration(trimmed)) {
+			return PatternKind.DECLARATION;
+		}
 		if (trimmed.endsWith(";")) { //$NON-NLS-1$
 			return PatternKind.STATEMENT;
 		}
@@ -1078,6 +1083,58 @@ public final class HintFileParser {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Checks if a pattern looks like a variable declaration statement.
+	 *
+	 * <p>A declaration pattern has the form {@code $Type $var = $init;}
+	 * or {@code $Type $var;} where $Type is a type placeholder or FQN,
+	 * and $var is a variable name placeholder.</p>
+	 *
+	 * <p>Examples that match:</p>
+	 * <ul>
+	 *   <li>{@code $Type $var = $init;}</li>
+	 *   <li>{@code $Type $var;}</li>
+	 * </ul>
+	 *
+	 * @param trimmed the trimmed pattern text
+	 * @return {@code true} if the pattern looks like a variable declaration
+	 * @since 1.3.12
+	 */
+	private static boolean looksLikeDeclaration(String trimmed) {
+		// Must end with semicolon
+		if (!trimmed.endsWith(";")) { //$NON-NLS-1$
+			return false;
+		}
+		// Must NOT contain parens (those are method calls/declarations)
+		if (trimmed.contains("(") || trimmed.contains(")")) { //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		// Check for "= " indicating an initializer
+		// Pattern: "$Type $var = $init;" or "$Type $var;"
+		String withoutSemicolon = trimmed.substring(0, trimmed.length() - 1).trim();
+		String declarationPart;
+		if (withoutSemicolon.contains("=")) { //$NON-NLS-1$
+			declarationPart = withoutSemicolon.substring(0, withoutSemicolon.indexOf('=')).trim();
+		} else {
+			declarationPart = withoutSemicolon;
+		}
+		// Must have exactly 2 space-separated tokens: type and name
+		String[] tokens = declarationPart.split("\\s+"); //$NON-NLS-1$
+		if (tokens.length != 2) {
+			return false;
+		}
+		// First token must be a type: placeholder ($Type), FQN, or uppercase identifier
+		String typeToken = tokens[0];
+		// Second token must be a variable name: placeholder ($var) or lowercase identifier
+		String nameToken = tokens[1];
+		boolean typeIsPlaceholder = typeToken.startsWith("$"); //$NON-NLS-1$
+		boolean typeIsUppercase = !typeToken.isEmpty() && Character.isUpperCase(typeToken.charAt(0));
+		boolean typeIsFqn = typeToken.contains("."); //$NON-NLS-1$
+		boolean nameIsPlaceholder = nameToken.startsWith("$"); //$NON-NLS-1$
+		return (typeIsPlaceholder || typeIsUppercase || typeIsFqn)
+				&& (nameIsPlaceholder || !nameToken.isEmpty());
 	}
 	
 	/**

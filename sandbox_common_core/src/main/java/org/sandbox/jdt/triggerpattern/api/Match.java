@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.api;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,7 @@ public final class Match {
 	private final Map<String, Object> bindings;  // Changed to Object to support both ASTNode and List<ASTNode>
 	private final int offset;
 	private final int length;
+	private Map<String, Object> extraData;
 	
 	/**
 	 * Creates a new match.
@@ -149,6 +151,35 @@ public final class Match {
 	 */
 	public boolean hasBinding(String placeholderName) {
 		return bindings.containsKey(placeholderName);
+	}
+
+	/**
+	 * Stores extra data that guards can pass to replacement functions.
+	 *
+	 * <p>This is used by guards like {@code canWidenType} to pass computed
+	 * results (e.g., the widest type name) to replacement functions like
+	 * {@code $widestType} without re-computing them.</p>
+	 *
+	 * @param key the data key
+	 * @param value the data value
+	 * @since 1.3.12
+	 */
+	public void putExtraData(String key, Object value) {
+		if (extraData == null) {
+			extraData = new HashMap<>();
+		}
+		extraData.put(key, value);
+	}
+
+	/**
+	 * Retrieves extra data stored by a guard function.
+	 *
+	 * @param key the data key
+	 * @return the stored value, or {@code null} if not found
+	 * @since 1.3.12
+	 */
+	public Object getExtraData(String key) {
+		return extraData != null ? extraData.get(key) : null;
 	}
 
 	/**

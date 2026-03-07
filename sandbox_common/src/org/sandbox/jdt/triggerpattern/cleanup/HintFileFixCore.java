@@ -37,6 +37,7 @@ import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -494,6 +495,11 @@ public class HintFileFixCore {
 				// source and replacement patterns and add the missing ones.
 				handleMethodDeclarationRewrite(matchedNode, replacement, ast,
 						rewrite, cuRewrite, group);
+			} else if (matchedNode instanceof VariableDeclarationStatement declStmt) {
+				// Handle DECLARATION rewrite with $widestType support.
+				// When the replacement contains $widestType($var), replace the
+				// declaration type with the widest type computed by canWidenType guard.
+				handleDeclarationRewrite(declStmt, replacement, ast, rewrite, cuRewrite, group);
 			}
 		}
 
@@ -509,6 +515,51 @@ public class HintFileFixCore {
 				return normal.getTypeName().toString();
 			}
 			return ""; //$NON-NLS-1$
+		}
+
+		/**
+		 * Handles DECLARATION rewrite with {@code $widestType} support.
+		 *
+		 * <p>When the replacement contains {@code $widestType($var)}, replaces the
+		 * declaration type with the widest type computed by the {@code canWidenType}
+		 * guard and stored in the match's extra data.</p>
+		 *
+		 * @param declStmt the matched VariableDeclarationStatement
+		 * @param replacement the replacement text
+		 * @param ast the AST factory
+		 * @param rewrite the AST rewriter
+		 * @param cuRewrite the compilation unit rewrite context
+		 * @param group the text edit group
+		 * @since 1.3.12
+		 */
+		private void handleDeclarationRewrite(VariableDeclarationStatement declStmt,
+				String replacement, AST ast, ASTRewrite rewrite,
+				CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+			// Check if replacement uses $widestType function
+			if (replacement == null || !replacement.contains("$widestType")) { //$NON-NLS-1$
+				return;
+			}
+
+			// Retrieve the widest type FQN stored by canWidenType guard
+			Object widestTypeFqn = result.match().getExtraData("__widestType__"); //$NON-NLS-1$
+			if (!(widestTypeFqn instanceof String fqn) || fqn.isEmpty()) {
+				return;
+			}
+
+			// Add import for the new type and get the simple name
+			String simpleName = cuRewrite.getImportRewrite().addImport(fqn);
+
+			// Create the new type node
+			Type newType;
+			if (simpleName.contains(".")) { //$NON-NLS-1$
+				// Qualified name: split and create QualifiedName
+				newType = ast.newSimpleType(ast.newName(simpleName.split("\\."))); //$NON-NLS-1$
+			} else {
+				newType = ast.newSimpleType(ast.newSimpleName(simpleName));
+			}
+
+			// Replace the type in the variable declaration statement
+			rewrite.replace(declStmt.getType(), newType, group);
 		}
 
 		/**
