@@ -111,3 +111,20 @@ When ready for upstream contribution:
 - Maintain high test coverage (aim for >80%)
 - Keep performance in mind - analysis should be fast
 - Consider false positive rate in algorithm design
+
+## TriggerPattern DSL Integration
+
+### Status: ❌ Not expressible in DSL
+
+The method reuse cleanup requires complex semantic code matching that cannot be
+expressed in the `.sandbox-hint` DSL:
+
+- **Code sequence matching**: Finding duplicate code sequences across methods
+- **Semantic equivalence**: Verifying two code blocks produce identical results
+- **Variable mapping**: Matching variables across different scopes
+- **Side effect analysis**: Ensuring safe substitution with method calls
+- **Method signature analysis**: Matching return types, parameter types, visibility
+
+### Required DSL Extensions (for future work)
+- [ ] Code block pattern matching
+- [ ] Semantic equivalence guards

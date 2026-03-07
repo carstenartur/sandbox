@@ -150,6 +150,26 @@ Platform API cleanups could benefit Eclipse plugin developers. Consider:
 - [ ] Register cleanup in Eclipse's extension points
 - [ ] Submit to Eclipse Gerrit for review
 
+## TriggerPattern DSL Integration
+
+### Status: ✅ Hint file created
+
+A `platform-status.sandbox-hint` file has been created with DSL rules covering
+the core Status factory method transformations:
+
+| Pattern | DSL Coverage | Notes |
+|---------|-------------|-------|
+| 5-arg Status → factory method | ✅ Covered | `new Status(severity, pluginId, IStatus.OK, msg, ex)` → `Status.error(msg, ex)` |
+| 4-arg Status → factory method | ✅ Covered | `new Status(severity, pluginId, msg, ex)` → `Status.error(msg, ex)` |
+| 3-arg Status → factory method | ✅ Covered | `new Status(severity, pluginId, msg)` → `Status.error(msg)` |
+| MultiStatus code normalization | ❌ Native only | Requires parameter replacement within same constructor (not method substitution) |
+| Null literal handling | ✅ Covered | Guards distinguish null vs non-null exception arguments |
+
+### Future Work
+- [ ] Integrate DSL-first architecture (DSL runs first, native handles remaining edge cases)
+- [ ] Verify DSL rules produce identical output to native Java implementation for all test cases
+- [ ] Once verified, consider removing native Java code for patterns covered by DSL
+
 ## Technical Debt
 
 None currently identified. The codebase is focused and well-tested.

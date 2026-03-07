@@ -165,3 +165,19 @@
 
 **Last Updated**: 2026-02-12
 **Plugin Version**: 1.2.6-SNAPSHOT
+
+## TriggerPattern DSL Integration
+
+### Status: ❌ Not expressible in DSL
+
+The type widening cleanup requires complex type system analysis that cannot be
+expressed in the `.sandbox-hint` DSL:
+
+- **Type hierarchy traversal**: Finding the widest compatible interface/class
+- **Usage analysis**: Verifying all method calls exist in the general type
+- **Generics handling**: Preserving type parameters during widening
+- **Assignability checks**: Ensuring type safety across assignments
+
+### Required DSL Extensions (for future work)
+- [ ] Type hierarchy matching patterns
+- [ ] Usage compatibility analysis guards
