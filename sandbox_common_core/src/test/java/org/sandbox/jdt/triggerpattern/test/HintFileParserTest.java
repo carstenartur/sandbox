@@ -15,6 +15,7 @@ package org.sandbox.jdt.triggerpattern.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
@@ -40,6 +42,21 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
 public class HintFileParserTest {
 	
 	private final HintFileParser parser = new HintFileParser();
+
+	/**
+	 * Returns {@code true} if the guard expression tree contains a
+	 * {@link GuardExpression.FunctionCall} with the given function name.
+	 */
+	private static boolean guardContainsFunctionName(GuardExpression guard, String name) {
+		return switch (guard) {
+			case GuardExpression.FunctionCall fc -> fc.name().equals(name);
+			case GuardExpression.And and -> guardContainsFunctionName(and.left(), name)
+					|| guardContainsFunctionName(and.right(), name);
+			case GuardExpression.Or or -> guardContainsFunctionName(or.left(), name)
+					|| guardContainsFunctionName(or.right(), name);
+			case GuardExpression.Not not -> guardContainsFunctionName(not.operand(), name);
+		};
+	}
 	
 	@Test
 	public void testParseSimpleRule() throws HintParseException {
@@ -1770,14 +1787,14 @@ public class HintFileParserTest {
 			;;
 
 			"Replace @Test(expected=...) or ExpectedException @Rule with Assertions.assertThrows()":
-			@org.junit.rules.ExpectedException
+			org.junit.rules.ExpectedException.none()
 			;;
 
 			new org.eclipse.core.runtime.Path($path)
 			=> org.eclipse.core.runtime.IPath.fromOSString($path)
 			;;
 
-			"Consider using NLS.bind() instead of string concatenation for translatable messages":
+			"When using IStatus.ERROR with user-visible, translatable messages, consider using NLS.bind() rather than manual string concatenation":
 			org.eclipse.core.runtime.IStatus.ERROR
 			;;
 			""";
@@ -1796,10 +1813,12 @@ public class HintFileParserTest {
 		assertTrue(hintFile.getRules().stream().anyMatch(TransformationRule::isHintOnly),
 				"At least one rule should be hint-only");
 		assertTrue(hintFile.getRules().stream()
-				.anyMatch(r -> r.sourceGuard() != null && r.sourceGuard().toString().contains("sourceVersionGE")),
+				.anyMatch(r -> r.sourceGuard() != null
+						&& guardContainsFunctionName(r.sourceGuard(), "sourceVersionGE")),
 				"At least one rule should have a sourceVersionGE guard");
 		assertTrue(hintFile.getRules().stream()
-				.anyMatch(r -> r.sourceGuard() != null && r.sourceGuard().toString().contains("notContains")),
+				.anyMatch(r -> r.sourceGuard() != null
+						&& guardContainsFunctionName(r.sourceGuard(), "notContains")),
 				"At least one rule should have a notContains guard");
 	}
 
@@ -1816,7 +1835,9 @@ public class HintFileParserTest {
 		assertEquals(1, hintFile.getRules().size());
 		TransformationRule rule = hintFile.getRules().get(0);
 		assertFalse(rule.isHintOnly(), "File-to-Path rule should not be hint-only");
-		assertNotNull(rule.sourceGuard(), "File-to-Path rule should have a sourceVersionGE(11) guard");
+		GuardExpression.FunctionCall guard = assertInstanceOf(GuardExpression.FunctionCall.class,
+				rule.sourceGuard(), "Guard should be a FunctionCall node");
+		assertEquals("sourceVersionGE", guard.name(), "Guard function should be sourceVersionGE");
 	}
 
 	@Test
@@ -1835,7 +1856,9 @@ public class HintFileParserTest {
 		assertEquals(
 				"Consider using a widget's getDisplay() instead of Display.getDefault() — avoids null and wrong-display issues",
 				rule.getDescription());
-		assertNotNull(rule.sourceGuard(), "Display.getDefault() rule should have a notContains guard");
+		GuardExpression.FunctionCall guard = assertInstanceOf(GuardExpression.FunctionCall.class,
+				rule.sourceGuard(), "Guard should be a FunctionCall node");
+		assertEquals("notContains", guard.name(), "Guard function should be notContains");
 	}
 
 	@Test

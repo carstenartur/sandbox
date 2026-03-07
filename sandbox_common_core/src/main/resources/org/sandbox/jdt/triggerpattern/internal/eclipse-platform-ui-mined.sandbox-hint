@@ -40,7 +40,7 @@ $file.getAbsolutePath() :: sourceVersionGE(11)
 // JUnit 4 ExpectedException → JUnit 5 assertThrows (hint-only, structural rewrite needed)
 
 "Replace @Test(expected=...) or ExpectedException @Rule with Assertions.assertThrows()":
-@org.junit.rules.ExpectedException
+org.junit.rules.ExpectedException.none()
 ;;
 
 // --- Eclipse IPath deprecation ---
@@ -53,6 +53,6 @@ new org.eclipse.core.runtime.Path($path)
 
 // --- Eclipse NLS usage hint ---
 // Mined from Platform UI: string concatenation in error messages should use NLS.bind()
-"Consider using NLS.bind() instead of string concatenation for translatable messages":
+"When using IStatus.ERROR with user-visible, translatable messages, consider using NLS.bind() rather than manual string concatenation":
 org.eclipse.core.runtime.IStatus.ERROR
 ;;
