@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2026 Carsten Hammer.
+
+    This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-2.0/
+
+    SPDX-License-Identifier: EPL-2.0
+-->
+<cheatsheet title="Using the Explicit Encoding Cleanup">
+
+   <intro>
+      <description>
+         This cheat sheet guides you through using the
+         <b>Explicit Encoding</b> cleanup to replace
+         platform-dependent encoding with explicit
+         <b>StandardCharsets.UTF_8</b> constants.
+      </description>
+   </intro>
+
+   <item title="Understand Platform Encoding Issues">
+      <description>
+         Java APIs like <b>new FileReader(file)</b> and
+         <b>String.getBytes()</b> use the platform default charset
+         when no encoding is specified. This causes inconsistent
+         behavior across different operating systems and locales
+         (JEP 400, Java 17+).
+         <br/><br/>
+         The <b>Explicit Encoding</b> cleanup transforms these calls
+         to use <b>java.nio.charset.StandardCharsets.UTF_8</b>
+         (or another specified charset), making the code
+         portable and predictable.
+         <br/><br/>
+         Example transformations:<br/>
+         • <b>new FileReader(f)</b>
+           → <b>new FileReader(f, StandardCharsets.UTF_8)</b><br/>
+         • <b>str.getBytes()</b>
+           → <b>str.getBytes(StandardCharsets.UTF_8)</b><br/>
+         • <b>Files.readAllLines(path)</b>
+           → <b>Files.readAllLines(path, StandardCharsets.UTF_8)</b>
+      </description>
+   </item>
+
+   <item title="Enable the Cleanup" dialog="true">
+      <description>
+         Open the Clean Up dialog to enable the Explicit Encoding
+         cleanup for your project:
+         <br/><br/>
+         1. In the <b>Package Explorer</b>, select a Java project<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Select <b>Use custom profile</b> and click
+            <b>Configure…</b><br/>
+         4. On the <b>Explicit Encoding (Sandbox)</b> tab,
+            enable <b>Add explicit encoding argument</b><br/>
+         5. Click <b>OK</b><br/>
+         <br/>
+         Click <b>Perform</b> to open the Source menu.
+      </description>
+      <command
+         serialization="org.eclipse.jdt.ui.edit.text.java.clean.up"
+         confirm="false"/>
+   </item>
+
+   <item title="Select Encoding Behavior Mode">
+      <description>
+         The cleanup supports two behavior modes:
+         <br/><br/>
+         • <b>KEEP_BEHAVIOR</b> — only adds the charset argument
+           where the API supports it and where it was previously
+           using the platform default. This preserves existing
+           runtime behavior while making it explicit.<br/>
+         • <b>ENFORCE_UTF8</b> — always uses
+           <b>StandardCharsets.UTF_8</b>, even if the original
+           code used a different charset. Use this mode when
+           you want to standardize all encoding to UTF-8.<br/>
+         <br/>
+         Choose the mode that fits your project requirements in
+         the cleanup profile configuration.
+      </description>
+   </item>
+
+   <item title="Run the Cleanup on a Java File">
+      <description>
+         Apply the cleanup to one or more Java files:
+         <br/><br/>
+         1. Open or select Java files that use encoding-sensitive
+            APIs (e.g. <b>FileReader</b>, <b>FileWriter</b>,
+            <b>InputStreamReader</b>)<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Confirm the profile has
+            <b>Explicit Encoding (Sandbox)</b> enabled<br/>
+         4. Click <b>Finish</b><br/>
+         <br/>
+         The cleanup will add the charset argument to all
+         affected method calls and constructors.
+      </description>
+   </item>
+
+   <item title="Review the Changes">
+      <description>
+         After the cleanup runs, inspect the modified code:
+         <br/><br/>
+         • <b>FileReader</b> and <b>FileWriter</b> constructors
+           now include <b>StandardCharsets.UTF_8</b><br/>
+         • <b>InputStreamReader</b> / <b>OutputStreamWriter</b>
+           constructors now include the charset<br/>
+         • <b>String.getBytes()</b> and
+           <b>new String(bytes)</b> now include the charset<br/>
+         • <b>Files.readAllLines()</b> and similar NIO methods
+           now include the charset<br/>
+         <br/>
+         Use <b>Ctrl+Z</b> (Undo) if you want to revert the
+         changes, or open the <b>Git Staging</b> view to review
+         the diff.
+      </description>
+   </item>
+
+</cheatsheet>

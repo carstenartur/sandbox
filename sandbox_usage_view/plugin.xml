@@ -68,4 +68,14 @@
          </showInPart>
       </perspectiveExtension>
   </extension>
+
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.usage.view.gettingStarted"
+            name="Using the JavaHelper View"
+            contentFile="cheatsheets/javahelper-view-getting-started.xml">
+         <description>Learn how to inspect variable type bindings and detect inconsistent naming with the JavaHelper View</description>
+      </cheatsheet>
+   </extension>
+
 </plugin>

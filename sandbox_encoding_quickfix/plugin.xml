@@ -13,4 +13,14 @@
 			id="encoding"
 			resource="org/sandbox/jdt/internal/corext/fix/hints/encoding.sandbox-hint" />
 	</extension>
+
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.encoding.quickfix.gettingStarted"
+            name="Using the Explicit Encoding Cleanup"
+            contentFile="cheatsheets/encoding-cleanup-getting-started.xml">
+         <description>Learn how to replace platform-dependent encoding with explicit StandardCharsets constants</description>
+      </cheatsheet>
+   </extension>
+
 </plugin>

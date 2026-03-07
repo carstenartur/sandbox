@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2026 Carsten Hammer.
+
+    This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-2.0/
+
+    SPDX-License-Identifier: EPL-2.0
+-->
+<cheatsheet title="Migrating JUnit 3/4 Tests to JUnit 5">
+
+   <intro>
+      <description>
+         This cheat sheet guides you through using the
+         <b>JUnit Migration</b> cleanup to automatically migrate
+         JUnit 3 and JUnit 4 test classes to <b>JUnit 5</b>
+         (Jupiter) style.
+      </description>
+   </intro>
+
+   <item title="Understand JUnit 3/4 to JUnit 5 Differences">
+      <description>
+         JUnit 5 replaces JUnit 3 and 4 conventions with a
+         modern annotation-based approach:
+         <br/><br/>
+         • <b>extends TestCase</b>
+           → annotations only (no base class needed)<br/>
+         • <b>setUp()</b> → <b>@BeforeEach</b><br/>
+         • <b>tearDown()</b> → <b>@AfterEach</b><br/>
+         • <b>@Before</b> → <b>@BeforeEach</b><br/>
+         • <b>@After</b> → <b>@AfterEach</b><br/>
+         • <b>@BeforeClass</b> → <b>@BeforeAll</b><br/>
+         • <b>@AfterClass</b> → <b>@AfterAll</b><br/>
+         • <b>@Test(expected=...)</b>
+           → <b>assertThrows()</b><br/>
+         • <b>Assert.assertEquals(msg, expected, actual)</b>
+           → <b>Assertions.assertEquals(expected, actual, msg)</b>
+           (note: message argument moved to last position)<br/>
+         <br/>
+         The cleanup handles all of these transformations
+         automatically.
+      </description>
+   </item>
+
+   <item title="Add JUnit 5 Dependencies">
+      <description>
+         Before running the migration, ensure your project has
+         JUnit 5 (Jupiter) on the classpath:
+         <br/><br/>
+         • For Maven projects: add
+           <b>org.junit.jupiter:junit-jupiter</b> to your
+           <b>pom.xml</b> dependencies<br/>
+         • For Gradle projects: add
+           <b>testImplementation 'org.junit.jupiter:junit-jupiter'</b><br/>
+         • For Eclipse PDE projects: add
+           <b>org.junit.jupiter.api</b> to your
+           <b>Require-Bundle</b> or classpath<br/>
+         <br/>
+         The JUnit 5 API must be resolvable before the cleanup
+         can add the correct imports.
+      </description>
+   </item>
+
+   <item title="Enable the Cleanup" dialog="true">
+      <description>
+         Open the Clean Up dialog to enable the JUnit Migration
+         cleanup:
+         <br/><br/>
+         1. In the <b>Package Explorer</b>, select a Java project
+            containing test classes<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Select <b>Use custom profile</b> and click
+            <b>Configure…</b><br/>
+         4. On the <b>JUnit Migration (Sandbox)</b> tab,
+            enable the desired migration steps<br/>
+         5. Click <b>OK</b><br/>
+         <br/>
+         Click <b>Perform</b> to open the Source menu.
+      </description>
+      <command
+         serialization="org.eclipse.jdt.ui.edit.text.java.clean.up"
+         confirm="false"/>
+   </item>
+
+   <item title="Run the Cleanup on a Test Class">
+      <description>
+         Apply the migration cleanup to your test classes:
+         <br/><br/>
+         1. Open or select the test Java files to migrate<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Confirm the profile has <b>JUnit Migration (Sandbox)</b>
+            enabled<br/>
+         4. Click <b>Finish</b><br/>
+         <br/>
+         The cleanup transforms annotations, replaces
+         lifecycle methods, and updates assertion calls.
+      </description>
+   </item>
+
+   <item title="Review the Changes">
+      <description>
+         After migration, inspect the updated test class:
+         <br/><br/>
+         • JUnit 4 imports are replaced with
+           <b>org.junit.jupiter.api.*</b> imports<br/>
+         • <b>@Before</b> / <b>@After</b> annotations are
+           replaced with <b>@BeforeEach</b> / <b>@AfterEach</b><br/>
+         • <b>@Test(expected=SomeException.class)</b> becomes
+           an <b>assertThrows()</b> call wrapping the test body<br/>
+         • Assert method calls have the message parameter
+           moved to the last position<br/>
+         <br/>
+         Run the tests after migration to verify correctness.
+         Use <b>Alt+Shift+X, T</b> to run as JUnit test.
+      </description>
+   </item>
+
+</cheatsheet>

@@ -21,5 +21,6 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.expressions,
  org.eclipse.jdt.core.manipulation,
  org.eclipse.platform,
- sandbox_common
+ sandbox_common,
+ org.eclipse.ui.cheatsheets;resolution:=optional
 

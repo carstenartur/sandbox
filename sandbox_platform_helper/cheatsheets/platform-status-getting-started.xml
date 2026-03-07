@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2026 Carsten Hammer.
+
+    This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-2.0/
+
+    SPDX-License-Identifier: EPL-2.0
+-->
+<cheatsheet title="Simplifying the Eclipse Platform Status API">
+
+   <intro>
+      <description>
+         This cheat sheet guides you through using the
+         <b>Platform Status Cleanup</b> to simplify verbose
+         <b>new Status(...)</b> constructions with the concise
+         factory methods introduced in Eclipse 4.20 (Java 11+).
+      </description>
+   </intro>
+
+   <item title="Understand the Old vs New Status API">
+      <description>
+         Before Eclipse 4.20, creating a status object required
+         a verbose four-argument constructor call:
+         <br/><br/>
+         <b>new Status(IStatus.ERROR, Activator.PLUGIN_ID, message)</b><br/>
+         <br/>
+         Since Eclipse 4.20, concise factory methods are available:
+         <br/><br/>
+         • <b>Status.error(message)</b><br/>
+         • <b>Status.error(message, exception)</b><br/>
+         • <b>Status.warning(message)</b><br/>
+         • <b>Status.info(message)</b><br/>
+         <br/>
+         The cleanup replaces the old constructor patterns with
+         these factory methods, reducing boilerplate and improving
+         readability.
+      </description>
+   </item>
+
+   <item title="Enable the Cleanup" dialog="true">
+      <description>
+         Open the Clean Up dialog to enable the Platform Status
+         cleanup:
+         <br/><br/>
+         1. In the <b>Package Explorer</b>, select an Eclipse
+            plugin project<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Select <b>Use custom profile</b> and click
+            <b>Configure…</b><br/>
+         4. On the <b>Platform Status (Sandbox)</b> tab,
+            enable <b>Simplify Status creation</b><br/>
+         5. Click <b>OK</b><br/>
+         <br/>
+         Click <b>Perform</b> to open the Source menu.
+      </description>
+      <command
+         serialization="org.eclipse.jdt.ui.edit.text.java.clean.up"
+         confirm="false"/>
+   </item>
+
+   <item title="Run the Cleanup">
+      <description>
+         Apply the cleanup to your plugin source files:
+         <br/><br/>
+         1. Open or select Java files that create
+            <b>Status</b> objects using the old constructor<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Confirm the profile has
+            <b>Platform Status (Sandbox)</b> enabled<br/>
+         4. Click <b>Finish</b><br/>
+         <br/>
+         The cleanup processes all matching constructor calls
+         and replaces them with factory method invocations.
+      </description>
+   </item>
+
+   <item title="Review the Simplified Status Calls">
+      <description>
+         After the cleanup runs, inspect the updated code:
+         <br/><br/>
+         • <b>new Status(IStatus.ERROR, pluginId, message)</b>
+           → <b>Status.error(message)</b><br/>
+         • <b>new Status(IStatus.ERROR, pluginId, message, e)</b>
+           → <b>Status.error(message, e)</b><br/>
+         • <b>new Status(IStatus.WARNING, pluginId, message)</b>
+           → <b>Status.warning(message)</b><br/>
+         • <b>new Status(IStatus.INFO, pluginId, message)</b>
+           → <b>Status.info(message)</b><br/>
+         <br/>
+         Note: The plugin ID argument is omitted in the factory
+         methods because <b>Status.error()</b> uses the declaring
+         plugin ID automatically. Verify the build still passes
+         after the cleanup.
+      </description>
+   </item>
+
+</cheatsheet>

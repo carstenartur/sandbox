@@ -97,4 +97,14 @@
             </menu>
         </menuContribution>
     </extension>
+
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.xml.cleanup.gettingStarted"
+            name="Cleaning Up PDE XML Files"
+            contentFile="cheatsheets/xml-cleanup-getting-started.xml">
+         <description>Learn how to normalize whitespace and self-closing tags in PDE XML files</description>
+      </cheatsheet>
+   </extension>
+
 </plugin>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2026 Carsten Hammer.
+
+    This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-2.0/
+
+    SPDX-License-Identifier: EPL-2.0
+-->
+<cheatsheet title="Converting Iterator Loops to Enhanced For Loops">
+
+   <intro>
+      <description>
+         This cheat sheet guides you through using the
+         <b>Iterator to For Loop</b> cleanup to replace
+         verbose <b>Iterator</b>-based while loops with
+         concise <b>enhanced for loops</b> (for-each).
+      </description>
+   </intro>
+
+   <item title="Understand the Transformation">
+      <description>
+         Java 5 introduced the enhanced for loop (for-each),
+         which is shorter and easier to read than explicit
+         Iterator usage. This cleanup transforms:
+         <br/><br/>
+         <b>Before:</b><br/>
+         <b>Iterator&lt;String&gt; it = list.iterator();</b><br/>
+         <b>while (it.hasNext()) {</b><br/>
+         <b>    String s = it.next();</b><br/>
+         <b>    // use s</b><br/>
+         <b>}</b><br/>
+         <br/>
+         <b>After:</b><br/>
+         <b>for (String s : list) {</b><br/>
+         <b>    // use s</b><br/>
+         <b>}</b><br/>
+         <br/>
+         The cleanup only applies when the Iterator is not used
+         after the loop and <b>it.remove()</b> is not called.
+      </description>
+   </item>
+
+   <item title="Enable the Cleanup" dialog="true">
+      <description>
+         Open the Clean Up dialog to enable the Iterator
+         conversion cleanup:
+         <br/><br/>
+         1. In the <b>Package Explorer</b>, select a Java project<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Select <b>Use custom profile</b> and click
+            <b>Configure…</b><br/>
+         4. On the <b>Code Style</b> or <b>Sandbox Tools</b> tab,
+            enable <b>Convert Iterator loops to enhanced for loops</b><br/>
+         5. Click <b>OK</b><br/>
+         <br/>
+         Click <b>Perform</b> to open the Source menu.
+      </description>
+      <command
+         serialization="org.eclipse.jdt.ui.edit.text.java.clean.up"
+         confirm="false"/>
+   </item>
+
+   <item title="Run the Cleanup on Java Source Files">
+      <description>
+         Apply the cleanup to your Java source files:
+         <br/><br/>
+         1. Open or select Java files that contain
+            <b>Iterator</b>-based while loops<br/>
+         2. Choose <b>Source → Clean Up…</b><br/>
+         3. Confirm the profile has the Iterator conversion
+            option enabled<br/>
+         4. Click <b>Finish</b><br/>
+         <br/>
+         All eligible Iterator-based loops will be replaced
+         with enhanced for loops.
+      </description>
+   </item>
+
+   <item title="Review the Simplified Loop Code">
+      <description>
+         After the cleanup runs, verify the transformed loops:
+         <br/><br/>
+         • Iterator declarations and <b>hasNext()</b> /
+           <b>next()</b> calls are removed<br/>
+         • The loop variable is declared directly in the
+           for-each header<br/>
+         • The loop body remains unchanged<br/>
+         <br/>
+         If a loop used <b>it.remove()</b> or the Iterator
+         variable after the loop, it is left unchanged since
+         the transformation would alter semantics.
+         <br/><br/>
+         Run your tests to verify correctness after the cleanup.
+      </description>
+   </item>
+
+</cheatsheet>

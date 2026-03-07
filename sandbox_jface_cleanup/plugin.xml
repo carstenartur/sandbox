@@ -9,4 +9,14 @@
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.JFaceCleanUp" id="org.eclipse.jdt.ui.cleanup.jfacecleanup" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
+
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <cheatsheet
+            id="org.sandbox.jdt.jface.cleanup.gettingStarted"
+            name="Modernizing JFace Code"
+            contentFile="cheatsheets/jface-cleanup-getting-started.xml">
+         <description>Learn how to modernize JFace API usage by replacing deprecated APIs with current equivalents</description>
+      </cheatsheet>
+   </extension>
+
 </plugin>

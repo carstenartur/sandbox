@@ -20,7 +20,8 @@ Require-Bundle: org.eclipse.core.runtime,
  sandbox_common,
  org.junit,
  org.eclipse.jdt.junit.runtime,
- org.eclipse.jdt.junit4.runtime
+ org.eclipse.jdt.junit4.runtime,
+ org.eclipse.ui.cheatsheets;resolution:=optional
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
 Import-Package: org.sandbox.jdt.internal.common,

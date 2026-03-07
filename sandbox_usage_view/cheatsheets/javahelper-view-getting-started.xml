@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Copyright (c) 2026 Carsten Hammer.
+
+    This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-2.0/
+
+    SPDX-License-Identifier: EPL-2.0
+-->
+<cheatsheet title="Using the JavaHelper View">
+
+   <intro>
+      <description>
+         This cheat sheet guides you through using the
+         <b>JavaHelper View</b> to inspect variable type
+         bindings in your Java workspace and detect
+         inconsistent naming conventions.
+      </description>
+   </intro>
+
+   <item title="Open the JavaHelper View" dialog="true">
+      <description>
+         Open the <b>JavaHelper View</b> from the
+         Sandbox category:
+         <br/><br/>
+         1. Choose <b>Window → Show View → Other…</b><br/>
+         2. Expand the <b>Sandbox</b> category<br/>
+         3. Select <b>JavaHelper</b> and click <b>Open</b><br/>
+         <br/>
+         The view displays a table of variable name and type
+         binding information for Java elements in the workspace.
+         <br/><br/>
+         Click <b>Perform</b> to open the Show View dialog.
+      </description>
+      <command
+         serialization="org.eclipse.ui.views.showView(org.eclipse.ui.views.showView.viewId=org.sandbox.jdt.views.javahelper)"
+         confirm="false"/>
+   </item>
+
+   <item title="Inspect Variable Bindings">
+      <description>
+         The JavaHelper View table shows:
+         <br/><br/>
+         • <b>Name</b> — the variable or field name<br/>
+         • <b>Type</b> — the declared type<br/>
+         • <b>Widest Type</b> — the widest compatible type
+           inferred from actual usage (e.g. <b>List</b> instead
+           of <b>ArrayList</b>)<br/>
+         • <b>Location</b> — the source file and line number<br/>
+         <br/>
+         When the <b>Type</b> column differs from the
+         <b>Widest Type</b> column, the variable is declared
+         with a more specific type than needed — a possible
+         sign of inconsistent or unnecessarily tight coupling.
+      </description>
+   </item>
+
+   <item title="Sort and Filter Results">
+      <description>
+         Use the table controls to focus on relevant results:
+         <br/><br/>
+         • Click a <b>column header</b> to sort by that column<br/>
+         • Use the <b>filter field</b> at the top of the view
+           to narrow results by name or type<br/>
+         • Double-click a row to navigate to the declaration
+           in the Java editor<br/>
+         <br/>
+         Focus on rows where the <b>Widest Type</b> column
+         suggests a broader interface or abstract type — these
+         are candidates for type widening refactoring.
+      </description>
+   </item>
+
+   <item title="Apply Type Widening">
+      <description>
+         To widen the declared type of a variable:
+         <br/><br/>
+         1. Double-click a row in the JavaHelper View to navigate
+            to the declaration<br/>
+         2. Place the cursor on the type in the declaration<br/>
+         3. Press <b>Alt+Shift+R</b> (Rename) or use
+            <b>Refactor → Change Method Signature…</b>
+            to update the type<br/>
+         4. Replace the specific type (e.g. <b>ArrayList</b>)
+            with the wider type (e.g. <b>List</b>)<br/>
+         <br/>
+         Run your tests after refactoring to confirm that
+         the widened type is compatible with all usages.
+      </description>
+   </item>
+
+</cheatsheet>
