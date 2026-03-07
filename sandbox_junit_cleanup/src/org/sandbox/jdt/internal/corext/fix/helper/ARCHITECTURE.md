@@ -29,14 +29,15 @@ The JUnit cleanup framework supports two distinct architectural approaches for i
 - ~80-100 lines of code per plugin
 
 **When to Use AbstractTool**:
+- Detection is NOT based on annotations (class hierarchy, field type, method naming, type references)
 - Complex multi-step transformations (e.g., `ExternalResourceJUnitPlugin`)
 - Need to traverse and modify multiple related AST nodes
 - Custom validation logic beyond simple type matching
 - Transformations that involve:
-  - Class hierarchy modifications
+  - Class hierarchy modifications (e.g., `extends ExternalResource`)
   - Method renaming and signature changes
   - Field refactoring with usage analysis
-  - Anonymous class transformations
+  - Type reference replacement across the compilation unit
 
 **Example - ExternalResourceJUnitPlugin**:
 ```java
@@ -106,34 +107,37 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 - Cannot handle NormalAnnotation with named parameters (e.g., `@Ignore(value="reason")`)
 - Single placeholder only (no multiple named parameters)
 
-#### B. With Custom process2Rewrite() (More Flexible)
+#### B. With Custom process2Rewrite() (Hybrid — More Flexible)
 
-**Best for**: Pattern-based matching with custom transformation logic.
+**Best for**: Annotation-based detection with complex transformation logic.
 
-**Example - IgnoreJUnitPlugin**:
+**Example - CategoryJUnitPlugin**:
 ```java
 @CleanupPattern(
-    value = "@Ignore",
+    value = "@Category($value)",
     kind = PatternKind.ANNOTATION,
-    qualifiedType = "org.junit.Ignore"
+    qualifiedType = "org.junit.experimental.categories.Category",
+    cleanupId = "cleanup.junit.category",
+    description = "Migrate @Category to @Tag"
 )
-public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
+public class CategoryJUnitPlugin extends TriggerPatternCleanupPlugin {
+    @Override
+    protected JunitHolder createHolder(Match match) {
+        // Custom holder creation: extract category names
+    }
     @Override
     protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
             ImportRewrite importRewriter, JunitHolder junitHolder) {
-        // Custom logic to handle three annotation types:
-        // - MarkerAnnotation: @Ignore → @Disabled
-        // - SingleMemberAnnotation: @Ignore("reason") → @Disabled("reason")
-        // - NormalAnnotation: @Ignore(value="reason") → @Disabled("reason")
+        // Custom logic: one @Category → multiple @Tag annotations
     }
 }
 ```
 
 **When to override process2Rewrite()**:
 - Need to handle multiple annotation formats
-- Require conditional transformation logic
-- Must access binding information from pattern matches
-- Need special handling for edge cases
+- Require conditional transformation logic (e.g., RunWithJUnitPlugin dispatches by runner type)
+- One-to-many annotation conversion (e.g., CategoryJUnitPlugin)
+- Multi-node transformations (e.g., RunWithTheoriesJUnitPlugin removes field + transforms method)
 
 ### Decision Matrix
 
@@ -141,10 +145,11 @@ public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 |-------------|--------------|-------------------------------|-------------------------|
 | Simple annotation migration | ❌ Overkill | ✅ Perfect | ⚠️ Possible but verbose |
 | Pattern matching with placeholders | ⚠️ Manual | ✅ Automatic | ✅ Automatic |
-| Multi-node transformations | ✅ Full control | ❌ Not supported | ⚠️ Limited |
+| Multi-node transformations | ✅ Full control | ❌ Not supported | ✅ Via custom process2Rewrite |
 | Class hierarchy changes | ✅ Yes | ❌ No | ❌ No |
-| NormalAnnotation parameters | ✅ Yes | ❌ No | ✅ Yes |
-| Code size | 80-100 lines | 20-30 lines | 30-50 lines |
+| NormalAnnotation parameters | ✅ Yes | ✅ Yes (auto-extracted) | ✅ Yes |
+| Non-annotation detection | ✅ Yes | ❌ Annotation only | ❌ Annotation only |
+| Code size | 80-100 lines | 20-30 lines | 30-80 lines |
 | Learning curve | Steep | Minimal | Moderate |
 
 ## Directory Structure
@@ -167,10 +172,19 @@ helper/
 ├── BeforeJUnitPlugin.java        # @Before → @BeforeEach (TriggerPattern + @RewriteRule)
 ├── AfterJUnitPlugin.java         # @After → @AfterEach (TriggerPattern + @RewriteRule)
 ├── TestJUnitPlugin.java          # @Test migration (TriggerPattern + @RewriteRule)
-├── IgnoreJUnitPlugin.java        # @Ignore → @Disabled (TriggerPattern + Custom)
-├── ExternalResourceJUnitPlugin.java  # ExternalResource → callbacks (AbstractTool)
-├── ParameterizedTestJUnitPlugin.java # @RunWith(Parameterized) → @ParameterizedTest (AbstractTool)
-└── ...                           # Other migration plugins
+├── IgnoreJUnitPlugin.java        # @Ignore → @Disabled (TriggerPattern + @RewriteRule)
+├── FixMethodOrderJUnitPlugin.java    # @FixMethodOrder → @TestMethodOrder (TriggerPattern + Custom)
+├── CategoryJUnitPlugin.java      # @Category → @Tag (TriggerPattern + Custom)
+├── RunWithEnclosedJUnitPlugin.java   # @RunWith(Enclosed) → @Nested (TriggerPattern + Custom)
+├── RunWithTheoriesJUnitPlugin.java   # @RunWith(Theories) → @ParameterizedTest (TriggerPattern + Custom)
+├── RunWithJUnitPlugin.java       # @RunWith(Suite/Mockito/Spring) (TriggerPattern + Custom)
+├── RunWithCategoriesJUnitPlugin.java # @RunWith(Categories) → @Suite+Tags (TriggerPattern + Custom)
+├── ParameterizedTestJUnitPlugin.java # @RunWith(Parameterized) (TriggerPattern + Custom)
+├── RuleTimeoutJUnitPlugin.java   # @Rule Timeout → @Timeout (TriggerPattern + Custom)
+├── ExternalResourceJUnitPlugin.java  # ExternalResource → callbacks (AbstractTool - class hierarchy)
+├── LostTestFinderJUnitPlugin.java    # Lost test detection (AbstractTool - method naming)
+├── ThrowingRunnableJUnitPlugin.java  # ThrowingRunnable → Executable (AbstractTool - type references)
+└── ...                           # Other migration plugins (AbstractTool)
 ```
 
 ### lib/ Directory Purpose
