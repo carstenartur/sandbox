@@ -89,6 +89,19 @@ class RewriteRuleTest {
     }
     
     @Test
+    void testTestJUnitPlugin_hasRewriteRuleAnnotation() {
+        TestJUnitPlugin plugin = new TestJUnitPlugin();
+        
+        RewriteRule rewriteRule = plugin.getClass().getAnnotation(RewriteRule.class);
+        
+        assertNotNull(rewriteRule, "@RewriteRule annotation should be present");
+        assertEquals("@Test", rewriteRule.replaceWith());
+        assertArrayEquals(new String[]{}, rewriteRule.removeImports(),
+                "removeImports should be empty (derived from @CleanupPattern.qualifiedType)");
+        assertArrayEquals(new String[]{"org.junit.jupiter.api.Test"}, rewriteRule.addImports());
+    }
+    
+    @Test
     void testRewriteRule_defaultValues() {
         // Test that default values are properly defined
         RewriteRule rewriteRule = BeforeJUnitPlugin.class.getAnnotation(RewriteRule.class);

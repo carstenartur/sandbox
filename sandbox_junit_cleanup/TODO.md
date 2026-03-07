@@ -138,6 +138,9 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 **Plugins Using @RewriteRule**:
 - `BeforeJUnitPlugin` - @Before → @BeforeEach
 - `AfterJUnitPlugin` - @After → @AfterEach
+- `BeforeClassJUnitPlugin` - @BeforeClass → @BeforeAll
+- `AfterClassJUnitPlugin` - @AfterClass → @AfterAll
+- `TestJUnitPlugin` - @Test (JUnit 4) → @Test (JUnit 5)
 
 **Future Enhancements** (see Pending section):
 - Multi-placeholder support for complex transformations
