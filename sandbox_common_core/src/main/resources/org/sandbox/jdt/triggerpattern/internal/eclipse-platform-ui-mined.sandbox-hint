@@ -1,0 +1,58 @@
+// eclipse-platform-ui-mined.sandbox-hint — Patterns mined from eclipse-platform/eclipse.platform.ui commits (2024-2026)
+// These patterns were observed as recurring refactoring sequences in the Eclipse Platform UI project.
+
+<!id: eclipse-platform-ui-mined>
+<!description: Refactoring patterns mined from Eclipse Platform UI commits (2024-2026).
+Covers Display.getDefault() safety hints, File→Path migration, and JUnit assertThrows migration.>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: eclipse, mining, migration, platform-ui>
+
+// --- Display.getDefault() safety ---
+// Mined from commit 89a19bf (iloveeclipse): Use widget display instead of Display.getDefault()
+// Display.getDefault() can return null or wrong display in multi-display environments.
+// Hint-only: replacement depends on available widget variable.
+
+"Consider using a widget's getDisplay() instead of Display.getDefault() — avoids null and wrong-display issues":
+org.eclipse.swt.widgets.Display.getDefault() :: notContains("getDisplay()")
+;;
+
+// --- java.io.File → java.nio.file.Path migration ---
+// Mined from UrlImageDescriptorTest (vogella) and multiple cleanup commits.
+
+// new File(path).toPath() → Path.of(path)
+new java.io.File($path).toPath() :: sourceVersionGE(11)
+=> java.nio.file.Path.of($path)
+;;
+
+// new File(path).toURI() → Path.of(path).toUri()
+new java.io.File($path).toURI() :: sourceVersionGE(11)
+=> java.nio.file.Path.of($path).toUri()
+;;
+
+// file.getAbsolutePath() — Hint-only: not always a safe replacement (semantics differ for relative paths)
+"Consider using Path API instead of File.getAbsolutePath()":
+$file.getAbsolutePath() :: sourceVersionGE(11)
+;;
+
+// --- JUnit assertThrows migration ---
+// Mined from JUnit 4→5 migration commits (vogella, akurtakov) across Platform UI.
+// JUnit 4 ExpectedException → JUnit 5 assertThrows (hint-only, structural rewrite needed)
+
+"Replace @Test(expected=...) or ExpectedException @Rule with Assertions.assertThrows()":
+@org.junit.rules.ExpectedException
+;;
+
+// --- Eclipse IPath deprecation ---
+// Mined from multiple Platform UI commits: IPath.fromOSString() is preferred over new Path()
+// org.eclipse.core.runtime.Path constructor is deprecated in favor of IPath.fromOSString()
+
+new org.eclipse.core.runtime.Path($path)
+=> org.eclipse.core.runtime.IPath.fromOSString($path)
+;;
+
+// --- Eclipse NLS usage hint ---
+// Mined from Platform UI: string concatenation in error messages should use NLS.bind()
+"Consider using NLS.bind() instead of string concatenation for translatable messages":
+org.eclipse.core.runtime.IStatus.ERROR
+;;

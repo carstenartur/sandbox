@@ -1740,4 +1740,117 @@ public class HintFileParserTest {
 		TransformationRule rule = hintFile.getRules().get(0);
 		assertNotNull(rule.sourceGuard(), "Guard with genericTypeIs should be parsed");
 	}
+
+	// ---- Eclipse Platform UI mined hint file tests ----
+
+	@Test
+	public void testParseEclipsePlatformUiMinedHintFile() throws HintParseException {
+		String content = """
+			<!id: eclipse-platform-ui-mined>
+			<!description: Refactoring patterns mined from Eclipse Platform UI commits (2024-2026).
+			Covers Display.getDefault() safety hints, File\u2192Path migration, and JUnit assertThrows migration.>
+			<!severity: warning>
+			<!minJavaVersion: 8>
+			<!tags: eclipse, mining, migration, platform-ui>
+
+			"Consider using a widget's getDisplay() instead of Display.getDefault() — avoids null and wrong-display issues":
+			org.eclipse.swt.widgets.Display.getDefault() :: notContains("getDisplay()")
+			;;
+
+			new java.io.File($path).toPath() :: sourceVersionGE(11)
+			=> java.nio.file.Path.of($path)
+			;;
+
+			new java.io.File($path).toURI() :: sourceVersionGE(11)
+			=> java.nio.file.Path.of($path).toUri()
+			;;
+
+			"Consider using Path API instead of File.getAbsolutePath()":
+			$file.getAbsolutePath() :: sourceVersionGE(11)
+			;;
+
+			"Replace @Test(expected=...) or ExpectedException @Rule with Assertions.assertThrows()":
+			@org.junit.rules.ExpectedException
+			;;
+
+			new org.eclipse.core.runtime.Path($path)
+			=> org.eclipse.core.runtime.IPath.fromOSString($path)
+			;;
+
+			"Consider using NLS.bind() instead of string concatenation for translatable messages":
+			org.eclipse.core.runtime.IStatus.ERROR
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals("eclipse-platform-ui-mined", hintFile.getId());
+		assertEquals(Severity.WARNING, hintFile.getSeverity());
+		assertEquals(8, hintFile.getMinJavaVersion());
+		assertTrue(hintFile.getTags().contains("eclipse"), "Tags should contain 'eclipse'");
+		assertTrue(hintFile.getTags().contains("mining"), "Tags should contain 'mining'");
+		assertTrue(hintFile.getTags().contains("migration"), "Tags should contain 'migration'");
+		assertTrue(hintFile.getTags().contains("platform-ui"), "Tags should contain 'platform-ui'");
+		assertEquals(7, hintFile.getRules().size(), "File should have exactly 7 rules");
+
+		assertTrue(hintFile.getRules().stream().anyMatch(TransformationRule::isHintOnly),
+				"At least one rule should be hint-only");
+		assertTrue(hintFile.getRules().stream()
+				.anyMatch(r -> r.sourceGuard() != null && r.sourceGuard().toString().contains("sourceVersionGE")),
+				"At least one rule should have a sourceVersionGE guard");
+		assertTrue(hintFile.getRules().stream()
+				.anyMatch(r -> r.sourceGuard() != null && r.sourceGuard().toString().contains("notContains")),
+				"At least one rule should have a notContains guard");
+	}
+
+	@Test
+	public void testParseFileToPathMigrationRule() throws HintParseException {
+		String content = """
+			new java.io.File($path).toPath() :: sourceVersionGE(11)
+			=> java.nio.file.Path.of($path)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertFalse(rule.isHintOnly(), "File-to-Path rule should not be hint-only");
+		assertNotNull(rule.sourceGuard(), "File-to-Path rule should have a sourceVersionGE(11) guard");
+	}
+
+	@Test
+	public void testParseDisplayGetDefaultHintOnlyRule() throws HintParseException {
+		String content = """
+			"Consider using a widget's getDisplay() instead of Display.getDefault() — avoids null and wrong-display issues":
+			org.eclipse.swt.widgets.Display.getDefault() :: notContains("getDisplay()")
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertTrue(rule.isHintOnly(), "Display.getDefault() rule should be hint-only");
+		assertEquals(
+				"Consider using a widget's getDisplay() instead of Display.getDefault() — avoids null and wrong-display issues",
+				rule.getDescription());
+		assertNotNull(rule.sourceGuard(), "Display.getDefault() rule should have a notContains guard");
+	}
+
+	@Test
+	public void testParseIPathDeprecationRule() throws HintParseException {
+		String content = """
+			new org.eclipse.core.runtime.Path($path)
+			=> org.eclipse.core.runtime.IPath.fromOSString($path)
+			;;
+			""";
+
+		HintFile hintFile = parser.parse(content);
+
+		assertEquals(1, hintFile.getRules().size());
+		TransformationRule rule = hintFile.getRules().get(0);
+		assertFalse(rule.isHintOnly(), "IPath deprecation rule should not be hint-only");
+		assertNull(rule.sourceGuard(), "IPath deprecation rule should have no guard");
+	}
 }
