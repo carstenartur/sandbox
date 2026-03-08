@@ -4,17 +4,16 @@
 <!tags: modernization, type-safety, clean-code>
 
 // Matches any local variable declaration with an initializer.
-// The canWidenType guard analyzes all usages of the variable
+// The $widestType replacement function analyzes all usages of the variable
 // (method calls, field accesses) and walks the type hierarchy
-// to determine if a wider type exists.
-// The $widestType function in the replacement computes the
-// widest type at rewrite time and replaces the declaration type.
+// to determine the widest possible type. When no widening is possible,
+// it falls back to the current type (no-op).
 //
 // Example transformations:
 //   ArrayList<String> list = new ArrayList<>();  →  List<String> list = new ArrayList<>();
 //   LinkedHashMap<K,V> map = new LinkedHashMap<>();  →  Map<K,V> map = new LinkedHashMap<>();
 //   FileInputStream fis = new FileInputStream(f);  →  InputStream fis = new FileInputStream(f);
 
-$Type $var = $init; :: canWidenType($var)
+$Type $var = $init;
 => $widestType($var) $var = $init;
 ;;

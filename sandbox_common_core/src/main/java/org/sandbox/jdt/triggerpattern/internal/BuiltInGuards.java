@@ -14,7 +14,6 @@
 package org.sandbox.jdt.triggerpattern.internal;
 
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -28,19 +27,16 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
-import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -49,14 +45,11 @@ import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.PackageDeclaration;
-import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
-import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.StringLiteral;
-import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -212,10 +205,6 @@ public final class BuiltInGuards {
 		// Resource variable guard — checks if a variable declaration is a resource
 		// that could be wrapped in try-with-resources
 		guards.put("isResourceVariable", BuiltInGuards::evaluateIsResourceVariable); //$NON-NLS-1$
-
-		// Type widening guard — checks if a variable declaration type can be widened
-		// to a more general supertype/interface based on actual usage
-		guards.put("canWidenType", BuiltInGuards::evaluateCanWidenType); //$NON-NLS-1$
 	}
 
 	/**
@@ -2229,308 +2218,5 @@ public final class BuiltInGuards {
 			parent = parent.getParent();
 		}
 		return true;
-	}
-
-	// --- Type Widening ---
-
-	/**
-	 * Evaluates the {@code canWidenType} guard.
-	 *
-	 * <p>Returns {@code true} if the matched variable declaration's type can be widened
-	 * to a more general supertype/interface based on actual variable usage (method calls,
-	 * field accesses). Analyzes the entire compilation unit to collect all usages of the
-	 * variable and walks the type hierarchy to determine if a wider type exists.</p>
-	 *
-	 * <p>The widened type (if any) is stored in the match's extra data map under the key
-	 * {@code "__widestType__"} so it can be retrieved by the replacement function
-	 * {@code $widestType($var)} during rewriting.</p>
-	 *
-	 * <p><b>Safety exclusions:</b> Returns {@code false} (no widening) when the variable
-	 * is cast, used in {@code instanceof}, passed as a method argument, returned from
-	 * a method, or assigned to another variable (all cases where type identity matters).</p>
-	 *
-	 * <p><b>Graceful degradation:</b> Returns {@code false} when type bindings are not
-	 * available (conservative: don't suggest widening without type information).</p>
-	 *
-	 * <p>Args: optional [placeholderName] (defaults to matched node)</p>
-	 *
-	 * @since 1.3.12
-	 */
-	private static boolean evaluateCanWidenType(GuardContext ctx, Object... args) {
-		ASTNode node = ctx.getMatch().getMatchedNode();
-		if (node == null) {
-			return false;
-		}
-
-		// Must be a VariableDeclarationStatement
-		VariableDeclarationStatement declStmt;
-		if (node instanceof VariableDeclarationStatement vds) {
-			declStmt = vds;
-		} else {
-			return false;
-		}
-
-		// Only handle single-fragment declarations
-		if (declStmt.fragments().size() != 1) {
-			return false;
-		}
-
-		Type type = declStmt.getType();
-		if (type == null || type.isVar()) {
-			return false;
-		}
-
-		ITypeBinding typeBinding = type.resolveBinding();
-		if (typeBinding == null || typeBinding.isPrimitive() || typeBinding.isArray()) {
-			return false;
-		}
-
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) declStmt.fragments().get(0);
-		IVariableBinding varBinding = fragment.resolveBinding();
-		if (varBinding == null || varBinding.isField() || varBinding.isParameter()) {
-			return false;
-		}
-
-		// Find the compilation unit
-		CompilationUnit cu = ctx.getCompilationUnit();
-		if (cu == null) {
-			return false;
-		}
-
-		// Collect all usages of this variable
-		VariableUsageInfo usageInfo = collectVariableUsages(cu, varBinding);
-
-		// Safety check: skip if variable has unsafe usage patterns
-		if (usageInfo.hasCast || usageInfo.hasInstanceof || usageInfo.hasUnsafeUsage) {
-			return false;
-		}
-
-		// Skip if no actual usage to analyze
-		if (usageInfo.usedMethodSignatures.isEmpty() && usageInfo.usedFields.isEmpty()) {
-			return false;
-		}
-
-		// Find the widest type
-		ITypeBinding widestType = findWidestType(typeBinding, usageInfo.usedMethodSignatures, usageInfo.usedFields);
-
-		if (widestType != null && !widestType.getQualifiedName().equals(typeBinding.getQualifiedName())) {
-			// Store the widest type in the match's extra data for later retrieval
-			// by the $widestType replacement function
-			ctx.getMatch().putExtraData("__widestType__", widestType.getQualifiedName()); //$NON-NLS-1$
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Helper class to store variable usage information during AST traversal.
-	 */
-	private static class VariableUsageInfo {
-		final Set<String> usedMethodSignatures = new HashSet<>();
-		final Set<String> usedFields = new HashSet<>();
-		boolean hasCast;
-		boolean hasInstanceof;
-		boolean hasUnsafeUsage;
-	}
-
-	/**
-	 * Collects all usages of a variable in the compilation unit.
-	 */
-	private static VariableUsageInfo collectVariableUsages(CompilationUnit cu, IVariableBinding varBinding) {
-		VariableUsageInfo info = new VariableUsageInfo();
-
-		cu.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SimpleName node) {
-				IBinding binding = node.resolveBinding();
-				if (!(binding instanceof IVariableBinding vb)) {
-					return true;
-				}
-				if (!vb.getKey().equals(varBinding.getKey())) {
-					return true;
-				}
-
-				ASTNode parent = node.getParent();
-				if (parent instanceof CastExpression) {
-					info.hasCast = true;
-				} else if (parent instanceof InstanceofExpression) {
-					info.hasInstanceof = true;
-				} else if (parent instanceof MethodInvocation mi) {
-					if (mi.getExpression() == node) {
-						IMethodBinding methodBinding = mi.resolveMethodBinding();
-						if (methodBinding != null) {
-							info.usedMethodSignatures.add(createWideningMethodSignature(methodBinding));
-						}
-					} else {
-						// Variable passed as argument to a method
-						info.hasUnsafeUsage = true;
-					}
-				} else if (parent instanceof FieldAccess fa) {
-					if (fa.getExpression() == node) {
-						info.usedFields.add(fa.getName().getIdentifier());
-					}
-				} else if (parent instanceof QualifiedName qn) {
-					if (qn.getQualifier() == node) {
-						info.usedFields.add(qn.getName().getIdentifier());
-					}
-				} else if (parent instanceof SuperFieldAccess sfa) {
-					info.usedFields.add(sfa.getName().getIdentifier());
-				} else if (parent instanceof Assignment assignment) {
-					if (assignment.getRightHandSide() == node) {
-						info.hasUnsafeUsage = true;
-					}
-				} else if (parent instanceof ReturnStatement) {
-					info.hasUnsafeUsage = true;
-				}
-				return true;
-			}
-		});
-
-		return info;
-	}
-
-	/**
-	 * Creates a method signature string from a method binding.
-	 * Format: methodName(param1Type,param2Type):returnType
-	 */
-	private static String createWideningMethodSignature(IMethodBinding methodBinding) {
-		StringBuilder signature = new StringBuilder();
-		signature.append(methodBinding.getName()).append('(');
-		ITypeBinding[] parameterTypes = methodBinding.getParameterTypes();
-		for (int i = 0; i < parameterTypes.length; i++) {
-			if (i > 0) {
-				signature.append(',');
-			}
-			ITypeBinding paramType = parameterTypes[i];
-			if (paramType != null) {
-				ITypeBinding erasure = paramType.getErasure();
-				signature.append(erasure != null ? erasure.getQualifiedName() : "java.lang.Object"); //$NON-NLS-1$
-			}
-		}
-		signature.append(')');
-		ITypeBinding returnType = methodBinding.getReturnType();
-		if (returnType != null) {
-			signature.append(':').append(returnType.getQualifiedName());
-		}
-		return signature.toString();
-	}
-
-	/**
-	 * Walks the type hierarchy to find the most general type that declares
-	 * all the required method signatures and fields.
-	 */
-	private static ITypeBinding findWidestType(ITypeBinding currentType, Set<String> usedMethodSignatures,
-			Set<String> usedFields) {
-		if (currentType == null) {
-			return null;
-		}
-
-		ITypeBinding mostGeneral = currentType;
-
-		ITypeBinding superclass = currentType.getSuperclass();
-		if (superclass != null && !isJavaLangObjectType(superclass)
-				&& wideningDeclaresAllMembers(superclass, usedMethodSignatures, usedFields)) {
-			ITypeBinding candidate = findWidestType(superclass, usedMethodSignatures, usedFields);
-			if (candidate != null) {
-				mostGeneral = candidate;
-			}
-		}
-
-		for (ITypeBinding iface : currentType.getInterfaces()) {
-			// Skip tagging/marker interfaces (e.g., Serializable, Cloneable)
-			if (isTaggingInterfaceType(iface)) {
-				continue;
-			}
-			if (wideningDeclaresAllMembers(iface, usedMethodSignatures, usedFields)) {
-				mostGeneral = iface;
-			}
-		}
-
-		return mostGeneral;
-	}
-
-	/**
-	 * Checks if a candidate type declares all the required method signatures and fields.
-	 */
-	private static boolean wideningDeclaresAllMembers(ITypeBinding candidateType,
-			Set<String> usedMethodSignatures, Set<String> usedFields) {
-		if (candidateType == null) {
-			return false;
-		}
-
-		Map<String, Set<String>> candidateMethodSigs = new HashMap<>();
-		collectWideningMethodSignatures(candidateType, new HashSet<>(), candidateMethodSigs);
-
-		for (String usedSignature : usedMethodSignatures) {
-			int parenIndex = usedSignature.indexOf('(');
-			if (parenIndex < 0) {
-				continue;
-			}
-			String methodName = usedSignature.substring(0, parenIndex);
-
-			Set<String> candidateSigs = candidateMethodSigs.get(methodName);
-			if (candidateSigs == null || !candidateSigs.contains(usedSignature)) {
-				return false;
-			}
-		}
-
-		Set<String> declaredFields = new HashSet<>();
-		collectWideningFields(candidateType, new HashSet<>(), declaredFields);
-
-		return declaredFields.containsAll(usedFields);
-	}
-
-	/**
-	 * Recursively collects method signatures for a type and its supertypes/interfaces.
-	 */
-	private static void collectWideningMethodSignatures(ITypeBinding type, Set<ITypeBinding> visited,
-			Map<String, Set<String>> signaturesByName) {
-		if (type == null || !visited.add(type)) {
-			return;
-		}
-
-		for (IMethodBinding method : type.getDeclaredMethods()) {
-			String signature = createWideningMethodSignature(method);
-			String name = method.getName();
-			signaturesByName.computeIfAbsent(name, k -> new HashSet<>()).add(signature);
-		}
-
-		collectWideningMethodSignatures(type.getSuperclass(), visited, signaturesByName);
-		for (ITypeBinding iface : type.getInterfaces()) {
-			collectWideningMethodSignatures(iface, visited, signaturesByName);
-		}
-	}
-
-	/**
-	 * Recursively collects field names for a type and its supertypes.
-	 */
-	private static void collectWideningFields(ITypeBinding type, Set<ITypeBinding> visited, Set<String> fieldNames) {
-		if (type == null || !visited.add(type)) {
-			return;
-		}
-
-		for (IVariableBinding field : type.getDeclaredFields()) {
-			fieldNames.add(field.getName());
-		}
-
-		collectWideningFields(type.getSuperclass(), visited, fieldNames);
-	}
-
-	/**
-	 * Checks if a type is java.lang.Object.
-	 */
-	private static boolean isJavaLangObjectType(ITypeBinding type) {
-		return type != null && "java.lang.Object".equals(type.getQualifiedName()); //$NON-NLS-1$
-	}
-
-	/**
-	 * Checks if a type is a tagging/marker interface (has no declared methods).
-	 */
-	private static boolean isTaggingInterfaceType(ITypeBinding type) {
-		if (type == null || !type.isInterface()) {
-			return false;
-		}
-		return type.getDeclaredMethods().length == 0;
 	}
 }
