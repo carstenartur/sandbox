@@ -17,12 +17,10 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -38,58 +36,50 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.AstProcessorBuilder;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 ErrorCollector rule to JUnit 5 assertAll.
  * 
- * Transforms: - collector.checkThat(actual, matcher) → () -> assertThat(actual,
- * matcher) - collector.addError(throwable) → () -> { throw throwable; } -
- * collector.checkSucceeds(callable) → () -> callable.call()
+ * Transforms: - collector.checkThat(actual, matcher) &rarr; () -&gt; assertThat(actual,
+ * matcher) - collector.addError(throwable) &rarr; () -&gt; { throw throwable; } -
+ * collector.checkSucceeds(callable) &rarr; () -&gt; callable.call()
  * 
  * All transformations are wrapped in assertAll() per test method.
+ *
+ * @since 1.3.0
  */
-public class RuleErrorCollectorJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@Rule public ErrorCollector $name", kind = PatternKind.FIELD, qualifiedType = ORG_JUNIT_RULES_ERROR_COLLECTOR, cleanupId = "cleanup.junit.ruleerrorcollector", description = "Migrate @Rule ErrorCollector to assertAll()", displayName = "JUnit 4 @Rule ErrorCollector \u2192 JUnit 5 assertAll()")
+public class RuleErrorCollectorJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitorFactory.forField().withAnnotation(ORG_JUNIT_RULE).ofType(ORG_JUNIT_RULES_ERROR_COLLECTOR)
-				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited,
-						aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
+	protected JunitHolder createHolder(Match match) {
+		FieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDecl.fragments().get(0);
 		ITypeBinding binding = fragment.resolveBinding() != null ? fragment.resolveBinding().getType() : null;
 		boolean isErrorCollector;
 		if (binding != null && ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(binding.getQualifiedName())) {
 			isErrorCollector = true;
 		} else {
 			// Fallback: check by source type name when binding is unavailable or recovered
-			String typeName = node.getType().toString();
+			String typeName = fieldDecl.getType().toString();
 			String simpleTypeName = ORG_JUNIT_RULES_ERROR_COLLECTOR
 					.substring(ORG_JUNIT_RULES_ERROR_COLLECTOR.lastIndexOf('.') + 1);
 			isErrorCollector = simpleTypeName.equals(typeName) || ORG_JUNIT_RULES_ERROR_COLLECTOR.equals(typeName);
 		}
-		if (isErrorCollector) {
-			JunitHolder mh = new JunitHolder();
-			mh.setMinv(node);
-			dataHolder.put(dataHolder.size(), mh);
-			operations.add(fixcore.rewrite(dataHolder));
+		if (!isErrorCollector) {
+			return null;
 		}
-		// Return true to continue processing other fields
-		return true;
+		JunitHolder holder = new JunitHolder();
+		holder.setMinv(fieldDecl);
+		return holder;
 	}
 
 	@Override

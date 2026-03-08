@@ -57,7 +57,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * @since 1.3.0
  */
 @CleanupPattern(value = "@After", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_AFTER, cleanupId = "cleanup.junit.after", description = "Migrate @After to @AfterEach", displayName = "JUnit 4 @After → JUnit 5 @AfterEach")
-@RewriteRule(replaceWith = "@AfterEach", addImports = { ORG_JUNIT_JUPITER_API_AFTER_EACH })
+@RewriteRule(replaceWith = "@AfterEach", targetQualifiedType = ORG_JUNIT_JUPITER_API_AFTER_EACH)
 public class AfterJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override

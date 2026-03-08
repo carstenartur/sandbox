@@ -546,18 +546,23 @@ To implement a new migration (e.g., @RunWith(MockitoJUnitRunner) → @ExtendWith
 - ✅ MigrationIgnoreTest - all tests passing (except 5 known edge cases disabled)
 - ✅ MigrationAssertionsTest - all tests passing
 - ✅ MigrationAssumptionsTest - mostly passing (1 disabled for Hamcrest import issue)
-- ✅ MigrationTestAnnotationTest - all tests passing including timeout
+- ✅ MigrationTestAnnotationTest - passing (1 disabled: combined expected+timeout)
 - ✅ MigrationExceptionsTest - @Test(expected) tests passing (ExpectedException tests still disabled)
-- ✅ MigrationRulesToExtensionsTest - TestName, ExternalResource, and Timeout passing
+- ✅ MigrationRulesToExtensionsTest - TestName, ExternalResource, and Timeout passing (parameterized enum test disabled)
 - ✅ **MigrationAssertOptimizationTest** - **NEW** - all tests passing (migration + assert optimization)
 - ✅ **MigrationAssumeOptimizationTest** - **NEW** - all tests passing (migration + assume optimization)
-- ✅ **MigrationEdgeCasesTest** - **NEW** - all tests passing (edge cases and special scenarios)
+- ✅ **MigrationEdgeCasesTest** - **NEW** - passing (1 disabled: combined expected+timeout)
 - ✅ **TriggerPatternPluginTest** - **NEW** - all tests passing (V2 TriggerPattern plugin validation)
-- ✅ **MigrationCombinationsTest** - **EXTENDED** - now includes tests for multiple rules combined
+- ✅ **MigrationCombinationsTest** - **EXTENDED** - passing (1 disabled: @RunWith(Suite.class) transform)
 
 ### Disabled Tests (Not Implemented)
 - ❌ MigrationExceptionsTest - 3 tests disabled (ExpectedException rule with message/cause)
 - ❌ MigrationRunnersTest - 2 tests disabled (Suite, Parameterized)
+- ❌ MigrationRunnersAdvancedTest - 2 tests disabled (Theories→ParameterizedTest, Categories→Tags not implemented)
+- ❌ MigrationRulesToExtensionsTest - parameterized enum test disabled: TemporaryFolder cases have output mismatches; ErrorCollector cases require hamcrest dependency not on test classpath
+- ❌ MigrationEdgeCasesTest - 1 test disabled (combined @Test expected+timeout)
+- ❌ MigrationTestAnnotationTest - 1 test disabled (combined @Test expected+timeout)
+- ❌ MigrationCombinationsTest - 1 test disabled (@RunWith(Suite.class) to @Suite)
 
 ### Test Statistics (Updated 2026-01-30)
 - **Total test methods**: ~75-80 (increased from ~50-60)

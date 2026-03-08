@@ -15,31 +15,8 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
-/*-
- * #%L
- * Sandbox junit cleanup
- * %%
- * Copyright (C) 2024 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- * 
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- * 
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
-
-import java.util.Set;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -50,47 +27,39 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.common.AstProcessorBuilder;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 TemporaryFolder rule to JUnit 5 @TempDir.
+ *
+ * @since 1.3.0
  */
-public class RuleTemporayFolderJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@Rule public TemporaryFolder $name", kind = PatternKind.FIELD, qualifiedType = ORG_JUNIT_RULES_TEMPORARY_FOLDER, cleanupId = "cleanup.junit.ruletemporaryfolder", description = "Migrate @Rule TemporaryFolder to @TempDir", displayName = "JUnit 4 @Rule TemporaryFolder \u2192 JUnit 5 @TempDir")
+public class RuleTemporayFolderJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-		HelperVisitorFactory.forField().withAnnotation(ORG_JUNIT_RULE).ofType(ORG_JUNIT_RULES_TEMPORARY_FOLDER)
-				.in(compilationUnit).excluding(nodesprocessed).processEach(dataHolder, (visited,
-						aholder) -> processFoundNode(fixcore, operations, (FieldDeclaration) visited, aholder));
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, FieldDeclaration node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-		JunitHolder mh = new JunitHolder();
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);
+	protected JunitHolder createHolder(Match match) {
+		FieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDecl.fragments().get(0);
 		if (fragment.resolveBinding() == null) {
-			return true;
+			return null;
 		}
 		ITypeBinding binding = fragment.resolveBinding().getType();
-		if (binding != null && ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
-			mh.setMinv(node);
-			dataHolder.put(dataHolder.size(), mh);
-			operations.add(fixcore.rewrite(dataHolder));
+		if (binding == null || !ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(binding.getQualifiedName())) {
+			return null;
 		}
-		// Return true to continue processing other fields
-		return true;
+		JunitHolder holder = new JunitHolder();
+		holder.setMinv(fieldDecl);
+		return holder;
 	}
 
 	@Override

@@ -1,0 +1,21 @@
+// jface-deprecations.sandbox-hint — JFace deprecated API migration patterns
+// Replaces deprecated JFace API calls with modern equivalents
+// Import directives are automatically inferred from FQNs in patterns
+
+<!id: jface-deprecations>
+<!description: Replace deprecated JFace API calls with modern alternatives>
+<!severity: warning>
+<!minJavaVersion: 11>
+<!tags: eclipse, jface, deprecation, migration>
+
+// --- ViewerSorter → ViewerComparator method calls ---
+
+// getSorter() → getComparator()
+$viewer.getSorter()
+=> $viewer.getComparator()
+;;
+
+// setSorter(sorter) → setComparator(sorter)
+$viewer.setSorter($sorter)
+=> $viewer.setComparator($sorter)
+;;

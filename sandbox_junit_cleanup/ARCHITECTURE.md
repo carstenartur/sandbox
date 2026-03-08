@@ -62,12 +62,13 @@ Introduced to eliminate boilerplate in simple annotation migration plugins. Inst
 )
 @RewriteRule(
     replaceWith = "@BeforeEach",
-    removeImports = {"org.junit.Before"},
-    addImports = {"org.junit.jupiter.api.BeforeEach"}
+    targetQualifiedType = "org.junit.jupiter.api.BeforeEach"
 )
 public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
     // process2Rewrite() is now automatic!
     // Only getPreview() needed
+    // Import removal: handled safely via ImportRemover (only if no other references exist)
+    // Import addition: derived from targetQualifiedType
 }
 ```
 
@@ -75,6 +76,7 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 - Reduces plugin code by ~20-30 lines per plugin
 - Makes transformations self-documenting
 - Eliminates risk of copy-paste errors
+- Safe import removal via `ImportRemover` (no blind `removeImport()`)
 - Enables future tooling to auto-generate plugins
 
 **Supported Transformations:**
@@ -695,16 +697,7 @@ These files enable Eclipse's built-in localization mechanism and provide user-fa
 
 ## DSL Pattern Library
 
-The JUnit cleanup plugin provides a declarative `.sandbox-hint` file (`junit5.sandbox-hint`) that defines JUnit 4→5 migration rules using the TriggerPattern DSL. This file is located at `src/org/sandbox/jdt/internal/corext/fix/hints/junit5.sandbox-hint` and is registered via the `org.sandbox.jdt.triggerpattern.hints` extension point in `plugin.xml`.
-
-The hint file contains rules for migrating JUnit 4 assertions to JUnit 5 equivalents, including:
-- `Assert.assertEquals(expected, actual)` → `Assertions.assertEquals(expected, actual)`
-- `Assert.assertTrue(cond)` → `Assertions.assertTrue(cond)`
-- `Assert.assertEquals(msg, expected, actual)` → `Assertions.assertEquals(expected, actual, msg)` (parameter reorder)
-
-Each rule includes `addImport org.junit.jupiter.api.Assertions` and `removeImport org.junit.Assert` directives.
-
-This file was moved from `sandbox_common` to this plugin to prevent duplication of functionality with the annotation-based cleanup implementation, keeping domain-specific rules together with their domain-specific plugin.
+The `.sandbox-hint` DSL files (`junit5.sandbox-hint`, `assume5.sandbox-hint`, `annotations5.sandbox-hint`, `junit3-migration.sandbox-hint`) were removed because they overlapped with the existing Java-based `@RewriteRule`/`@CleanupPattern` plugin implementations. Keeping both would cause double transformations. The Java plugin classes (e.g., `TestJUnitPlugin`, `BeforeJUnitPlugin`, `AfterJUnitPlugin`, etc.) are the authoritative implementation for all JUnit migration rules.
 
 ## Maintainers
 

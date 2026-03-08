@@ -18,6 +18,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
@@ -31,35 +32,51 @@ import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTestAnnotationParameterPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 @Test(timeout=...) to JUnit 5 @Timeout.
+ * 
+ * @since 1.3.0
  */
-public class TestTimeoutJUnitPlugin extends AbstractTestAnnotationParameterPlugin {
+@CleanupPattern(value = "@Test(timeout=$t)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_TEST, cleanupId = "cleanup.junit.test.timeout", description = "Migrate @Test(timeout=...) to @Timeout", displayName = "JUnit 4 @Test(timeout) → JUnit 5 @Timeout")
+public class TestTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	protected String getParameterName() {
-		return "timeout";
-	}
-
-	@Override
-	protected boolean validateParameter(MemberValuePair pair) {
-		Expression value = pair.getValue();
-		if (value instanceof NumberLiteral) {
-			try {
-				Long.parseLong(((NumberLiteral) value).getToken());
-				return true;
-			} catch (NumberFormatException e) {
-				// Skip invalid timeout values
-				return false;
+	protected JunitHolder createHolder(Match match) {
+		ASTNode node = match.getMatchedNode();
+		if (!(node instanceof NormalAnnotation)) {
+			return null;
+		}
+		NormalAnnotation annotation = (NormalAnnotation) node;
+		MemberValuePair timeoutPair = null;
+		for (Object obj : annotation.values()) {
+			MemberValuePair pair = (MemberValuePair) obj;
+			if ("timeout".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+				timeoutPair = pair;
+				break;
 			}
 		}
-		// Timeout value is not a simple number literal (could be a constant or
-		// expression)
-		// Skip this case as it requires more complex analysis
-		return false;
+		if (timeoutPair == null) {
+			return null;
+		}
+		Expression value = timeoutPair.getValue();
+		if (!(value instanceof NumberLiteral)) {
+			return null;
+		}
+		try {
+			Long.parseLong(((NumberLiteral) value).getToken());
+		} catch (NumberFormatException e) {
+			return null;
+		}
+		JunitHolder holder = new JunitHolder();
+		holder.setMinv(annotation);
+		holder.setAdditionalInfo(timeoutPair);
+		return holder;
 	}
 
 	@Override

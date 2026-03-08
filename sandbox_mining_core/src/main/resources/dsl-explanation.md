@@ -480,6 +480,38 @@ void $name($params$) :: methodNameMatches($name, "setUpBeforeClass") && isStatic
 ;;
 ```
 
+### Declaration Patterns (Type Widening)
+
+Declaration patterns match local variable declaration statements and support
+the special `$widestType` replacement function for type widening.
+
+**Syntax:**
+```
+$Type $var = $init;
+=> $widestType($var) $var = $init;
+;;
+```
+
+**Key features:**
+- **`$Type $var = $init;`** matches any local variable declaration with an initializer.
+- **`$widestType($var)`** in the replacement analyzes all usages of the variable (method calls,
+  field accesses, casts, instanceof checks, assignments), walks the type hierarchy, and replaces
+  the declaration type with the widest compatible supertype/interface. Imports are automatically managed.
+- **No guard needed**: When no widening is possible (e.g., variable is already the widest type,
+  has unsafe usages like casts/instanceof/argument passing), the declaration is silently skipped.
+  The analysis is performed before entering the rewrite phase, so no empty changes are produced.
+
+**Example transformations:**
+```
+// ArrayList<String> list = new ArrayList<>();  →  List<String> list = new ArrayList<>();
+// LinkedHashMap<K,V> map = new LinkedHashMap<>();  →  Map<K,V> map = new LinkedHashMap<>();
+// FileInputStream fis = new FileInputStream(f);  →  InputStream fis = new FileInputStream(f);
+```
+
+**Note:** Declaration patterns are detected by the parser when the pattern has the form
+`$Type $var = $init;` (two space-separated tokens before `=`, ending with `;`).
+The `$widestType` function requires full binding resolution to analyze the type hierarchy.
+
 ### Multiline Replacements
 
 Continuation lines after `=>` that do not start with `=>` are accumulated into

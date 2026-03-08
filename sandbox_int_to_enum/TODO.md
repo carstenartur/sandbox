@@ -187,3 +187,19 @@
 - User-facing documentation for Eclipse Help
 - Example transformations in README.md
 - Configuration guide for cleanup preferences
+
+## TriggerPattern DSL Integration
+
+### Status: ❌ Not expressible in DSL
+
+The int-to-enum cleanup requires complex multi-statement pattern detection and
+code generation that cannot be expressed in the `.sandbox-hint` DSL:
+
+- **Multi-statement pattern detection**: Identifying if-else chains or switch statements using int constants
+- **Enum generation**: Creating new enum type declarations
+- **Cross-method analysis**: Tracking integer constant usage across the class
+- **Switch/if-else restructuring**: Converting control flow to enum-based patterns
+
+### Required DSL Extensions (for future work)
+- [ ] Multi-statement pattern matching
+- [ ] Code generation patterns (new type creation)

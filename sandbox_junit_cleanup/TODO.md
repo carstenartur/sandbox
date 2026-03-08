@@ -21,14 +21,9 @@ This file was missing from the sandbox_junit_cleanup plugin. It has been created
 - ✅ @Rule ExpectedException migration to assertThrows() (RuleExpectedExceptionJUnitPlugin)
 - ✅ **@Rule Timeout migration to class-level @Timeout** (RuleTimeoutJUnitPlugin)
 - ✅ **@RewriteRule annotation framework** - Declarative transformation for simple annotation migrations
-- ✅ **junit5.sandbox-hint DSL file** - Declarative JUnit 4→5 assertion migration rules bundled with this plugin
-- ✅ **assume5.sandbox-hint DSL file** - Declarative Assume→Assumptions migration rules (assumeTrue, assumeFalse) with `replaceStaticImport`; assumeNotNull/assumeNoException excluded (no direct JUnit 5 equivalents)
 - ✅ **`replaceStaticImport` directive** - All junit5/assume5 rules include `replaceStaticImport` for static import migration
-- ✅ **annotations5.sandbox-hint DSL file** - Declarative annotation migration rules (`@Before→@BeforeEach`, `@After→@AfterEach`, `@BeforeClass→@BeforeAll`, `@AfterClass→@AfterAll`, `@Ignore→@Disabled`, `@Test→@Test`)
-- ✅ **junit3-migration.sandbox-hint DSL file** - Declarative JUnit 3→5 method annotation migration rules (adds `@Test`, `@BeforeEach`, `@AfterEach`, `@BeforeAll`, `@AfterAll` to conventionally-named methods in `TestCase` subclasses). Moved from `sandbox_common_core` bundled libraries to this plugin (loaded via extension point). Intended to eventually replace the Java-based JUnit 3→5 migration.
 - ✅ **Annotation rewrite in HintFileRewriteOperation** - DSL-matched annotations can now be replaced via ASTRewrite; handles MarkerAnnotation, SingleMemberAnnotation (preserves value), and NormalAnnotation (preserves member-value pairs)
-- ✅ **assertThat Hamcrest migration** - `Assert.assertThat→MatcherAssert.assertThat` rules in junit5.sandbox-hint
-- ✅ **DSL integration tests** - `DslHintFileIntegrationTests` in TriggerPatternCleanupFrameworkTest covering annotations5, assume5, junit5 rules (disabled until wiring complete)
+- ⚠️ **Removed `.sandbox-hint` DSL files** - `junit5.sandbox-hint`, `assume5.sandbox-hint`, `annotations5.sandbox-hint`, and `junit3-migration.sandbox-hint` were removed to avoid double transformations with the Java-based `@RewriteRule`/`@CleanupPattern` plugins
 
 ### In Progress
 - None currently
@@ -82,8 +77,8 @@ HelperVisitor.forMethodCalls(CLASS, Set.of("method1", "method2"))
 - [ ] Performance optimization for large test suites
 - [ ] Enhanced error reporting
 - [ ] **@RewriteRule enhancements**:
+  - [x] ~~Support for NormalAnnotation with named parameters~~ ✅ COMPLETED (Phase 2.1)
   - [ ] Support for multi-placeholder patterns (e.g., method invocations with multiple parameters)
-  - [ ] Support for NormalAnnotation with named parameters
   - [ ] Support for qualified annotation names in replacement patterns
 
 ## Recent Enhancements
@@ -116,11 +111,12 @@ Added declarative `@RewriteRule` annotation to eliminate boilerplate in simple a
 )
 @RewriteRule(
     replaceWith = "@BeforeEach",
-    removeImports = {"org.junit.Before"},
-    addImports = {"org.junit.jupiter.api.BeforeEach"}
+    targetQualifiedType = "org.junit.jupiter.api.BeforeEach"
 )
 public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
     // process2Rewrite() now automatic - only getPreview() needed!
+    // Import removal: safely via ImportRemover
+    // Import addition: derived from targetQualifiedType
 }
 ```
 
@@ -128,21 +124,85 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 - Reduced plugin code from ~100 lines to ~80 lines (20% reduction per plugin)
 - Declarative, self-documenting transformations
 - Eliminated copy-paste errors
+- Safe import removal via `ImportRemover` (only removes if no other references exist)
 - Foundation for future code generation tooling
 
 **Current Limitations** (documented in code):
 - Only simple (unqualified) annotation names supported
 - Only single placeholder patterns supported
-- NormalAnnotation with named parameters requires custom implementation
 
-**Plugins Using @RewriteRule**:
+### DSL Approach: Two Complementary Mechanisms
+
+The JUnit cleanup plugin uses **two complementary DSL mechanisms** that coexist without overlap:
+
+1. **`.sandbox-hint` files** (TriggerPattern DSL) — ultra-compact pattern rules in `src/.../hints/`:
+   - `annotations5.sandbox-hint` — annotation migrations (@Before→@BeforeEach, etc.)
+   - `junit5.sandbox-hint` — assert/assume method migrations
+   - `assume5.sandbox-hint` — Assume method migrations
+   - `junit3-migration.sandbox-hint` — JUnit 3 patterns
+   
+2. **Java `@CleanupPattern`/`@RewriteRule` plugins** — for cases requiring:
+   - Complex multi-node transformations
+   - Custom validation/filtering logic
+   - Class hierarchy / field type detection
+   - Parameter reordering or expression analysis
+
+**Design principle**: Where a `.sandbox-hint` rule can express the same transformation as a Java plugin,
+the hint file is preferred because it's dramatically more compact (~3 lines vs ~80 lines).
+The Java plugins handle edge cases and complex transformations the hint DSL cannot express.
+
+**Plugins Using @RewriteRule** (fully declarative):
 - `BeforeJUnitPlugin` - @Before → @BeforeEach
 - `AfterJUnitPlugin` - @After → @AfterEach
+- `BeforeClassJUnitPlugin` - @BeforeClass → @BeforeAll
+- `AfterClassJUnitPlugin` - @AfterClass → @AfterAll
+- `TestJUnitPlugin` - @Test (JUnit 4) → @Test (JUnit 5)
+- `IgnoreJUnitPlugin` - @Ignore → @Disabled (with NormalAnnotation support)
+
+**Plugins Using @CleanupPattern (Hybrid DSL)** — detection via TriggerPattern, custom process2Rewrite:
+- `FixMethodOrderJUnitPlugin` - @FixMethodOrder → @TestMethodOrder (value mapping: MethodSorters → MethodOrderer)
+- `RuleTimeoutJUnitPlugin` - @Rule Timeout → @Timeout class annotation (field removal, timeout extraction)
+- `CategoryJUnitPlugin` - @Category → @Tag (one-to-many annotation conversion)
+- `RunWithEnclosedJUnitPlugin` - @RunWith(Enclosed) → @Nested (inner class modification)
+- `RunWithTheoriesJUnitPlugin` - @RunWith(Theories) → @ParameterizedTest (multi-node: field removal, method transformation)
+- `RunWithJUnitPlugin` - @RunWith(Suite/Mockito/Spring) → JUnit 5 equivalents (multi-runner dispatch)
+- `RunWithCategoriesJUnitPlugin` - @RunWith(Categories) → @Suite + @IncludeTags/@ExcludeTags
+- `ParameterizedTestJUnitPlugin` - @RunWith(Parameterized) → @ParameterizedTest (class restructuring)
+- `TestExpectedJUnitPlugin` - @Test(expected=...) → assertThrows() (method body wrapping)
+- `TestTimeoutJUnitPlugin` - @Test(timeout=...) → @Timeout annotation (parameter extraction)
+- `RuleTestnameJUnitPlugin` - @Rule TestName → TestInfo parameter (field-to-parameter conversion)
+- `RuleExternalResourceJUnitPlugin` - @Rule ExternalResource → JUnit 5 extension (class extraction)
+- `RuleTemporayFolderJUnitPlugin` - @Rule TemporaryFolder → @TempDir (field type + usage rewriting)
+- `RuleExpectedExceptionJUnitPlugin` - @Rule ExpectedException → assertThrows() (statement-level transform)
+- `RuleErrorCollectorJUnitPlugin` - @Rule ErrorCollector → assertAll() (lambda wrapping)
 
 **Future Enhancements** (see Pending section):
 - Multi-placeholder support for complex transformations
-- NormalAnnotation support
 - Qualified annotation name support
+
+### DSL Migration Status: Remaining Native Plugins
+
+The following plugins still use fully native implementations (`extends AbstractTool`/`AbstractMethodMigrationPlugin`)
+because their detection requires searching BOTH method calls AND import declarations simultaneously,
+or they use class hierarchy / method naming patterns not expressible as `@CleanupPattern`.
+
+| Plugin | Detection Type | Why Native | Required DSL Extension |
+|--------|---------------|------------|----------------------|
+| `TestJUnit3Plugin` | Class hierarchy | Detects `extends TestCase` | Class hierarchy transforms, method renaming |
+| `ExternalResourceJUnitPlugin` | Class hierarchy | Detects `extends ExternalResource` | Class hierarchy transforms, interface impl |
+| `LostTestFinderJUnitPlugin` | Method naming pattern | Detects `testXxx()` without `@Test` | Method naming pattern matching |
+| `ThrowingRunnableJUnitPlugin` | Type references | Detects `ThrowingRunnable` in types/imports/params | Type reference pattern matching |
+| `AssertJUnitPlugin` | Method calls + imports | Dual search: method calls AND imports | Composite detection (method calls + import migration) |
+| `AssumeJUnitPlugin` | Method calls + imports | Dual search + Hamcrest detection | Composite detection + library detection |
+| `AssertOptimizationJUnitPlugin` | Method invocation | Constant detection, expression analysis | Expression analysis guards |
+| `AssumeOptimizationJUnitPlugin` | Method invocation | Negation inversion detection | Expression analysis patterns |
+
+**Key DSL Extensions Needed** (ordered by impact — for future work):
+1. **Composite detection** - Search both method calls AND imports in one pass (Assert/Assume migration)
+2. **Expression analysis guards** - Detect negation, constant expressions (Optimization plugins)
+3. **Class hierarchy transformations** - Remove superclass, rename methods (TestJUnit3Plugin, ExternalResource)
+4. **Type reference pattern matching** - Detect and replace type references (ThrowingRunnableJUnitPlugin)
+5. **Method naming pattern matching** - Detect methods by naming convention (LostTestFinderJUnitPlugin)
 
 ### Quick Select Presets (✅ COMPLETED)
 **Priority**: High  

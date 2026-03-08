@@ -8,6 +8,11 @@
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUp" id="org.eclipse.jdt.ui.cleanup.simplifystatus" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
+	<extension point="org.sandbox.jdt.triggerpattern.hints">
+		<hintFile
+			id="platform-status"
+			resource="org/sandbox/jdt/internal/corext/fix/hints/platform-status.sandbox-hint" />
+	</extension>
 
    <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
       <cheatsheet

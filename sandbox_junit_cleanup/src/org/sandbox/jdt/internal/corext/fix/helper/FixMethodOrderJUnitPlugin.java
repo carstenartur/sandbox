@@ -15,74 +15,53 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
-import java.util.Set;
-
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 @FixMethodOrder annotations to JUnit
  * 5 @TestMethodOrder.
  * 
- * Handles: - @FixMethodOrder(MethodSorters.NAME_ASCENDING)
- * → @TestMethodOrder(MethodOrderer.MethodName.class)
- * - @FixMethodOrder(MethodSorters.JVM)
- * → @TestMethodOrder(MethodOrderer.Random.class)
- * - @FixMethodOrder(MethodSorters.DEFAULT) → Remove annotation (JUnit 5 default
- * behavior)
+ * <p>Uses TriggerPattern-based declarative architecture with @CleanupPattern for
+ * detection. The transformation logic remains custom because the value mapping
+ * (MethodSorters → MethodOrderer) is too complex for @RewriteRule.</p>
+ * 
+ * <p>Handles:</p>
+ * <ul>
+ *   <li>@FixMethodOrder(MethodSorters.NAME_ASCENDING) → @TestMethodOrder(MethodOrderer.MethodName.class)</li>
+ *   <li>@FixMethodOrder(MethodSorters.JVM) → @TestMethodOrder(MethodOrderer.Random.class)</li>
+ *   <li>@FixMethodOrder(MethodSorters.DEFAULT) → Remove annotation (JUnit 5 default behavior)</li>
+ * </ul>
+ * 
+ * @since 1.3.0
  */
-public class FixMethodOrderJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@FixMethodOrder($sorter)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_FIX_METHOD_ORDER, cleanupId = "cleanup.junit.fixmethodorder", description = "Migrate @FixMethodOrder to @TestMethodOrder", displayName = "JUnit 4 @FixMethodOrder → JUnit 5 @TestMethodOrder")
+public class FixMethodOrderJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
+	protected JunitHolder createHolder(Match match) {
+		JunitHolder holder = super.createHolder(match);
 
-		// Use Fluent API to find @FixMethodOrder annotations
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_FIX_METHOD_ORDER).in(compilationUnit).excluding(nodesprocessed)
-				.processEach(dataHolder, (visited, aholder) -> {
-					if (visited instanceof SingleMemberAnnotation) {
-						return processFoundNode(fixcore, operations, (SingleMemberAnnotation) visited, aholder);
-					}
-					return true;
-				});
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, SingleMemberAnnotation node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
-
-		JunitHolder mh = new JunitHolder();
-		mh.setMinv(node);
-		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
-
-		// Extract MethodSorter value from the annotation
-		Expression value = node.getValue();
-		if (value instanceof QualifiedName qn) {
+		// Extract MethodSorter value from the $sorter binding
+		Object sorterBinding = match.getBindings().get("$sorter"); //$NON-NLS-1$
+		if (sorterBinding instanceof QualifiedName qn) {
 			String methodSorter = qn.getName().getIdentifier(); // "NAME_ASCENDING", "JVM", "DEFAULT"
-			mh.setAdditionalInfo(methodSorter);
-
-			dataHolder.put(dataHolder.size(), mh);
-			operations.add(fixcore.rewrite(dataHolder));
+			holder.setAdditionalInfo(methodSorter);
+			return holder;
 		}
-		// If value is not a QualifiedName, skip this annotation (invalid format)
 
-		// Return true to continue processing other @FixMethodOrder annotations
-		return true;
+		// If value is not a QualifiedName, skip this annotation (invalid format)
+		return null;
 	}
 
 	@Override

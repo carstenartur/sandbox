@@ -24,6 +24,8 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -31,6 +33,7 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
@@ -81,6 +84,13 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
 public abstract class AbstractPatternCleanupPlugin<H> {
     
     private static final TriggerPatternEngine ENGINE = new TriggerPatternEngine();
+    
+    /**
+     * Transient reference to the current CompilationUnitRewrite, set during rewriteAST.
+     * Used by processImports() to access ImportRemover for safe import removal.
+     * This field is set before processRewrite() and cleared afterwards.
+     */
+    private transient CompilationUnitRewrite currentCuRewrite;
     
     /**
      * Returns the Pattern extracted from the @CleanupPattern annotation.
@@ -248,7 +258,8 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      * 
      * <p><b>Supported patterns:</b></p>
      * <ul>
-     *   <li>ANNOTATION patterns: MarkerAnnotation, SingleMemberAnnotation</li>
+     *   <li>ANNOTATION patterns: MarkerAnnotation, SingleMemberAnnotation, NormalAnnotation
+     *       (with auto-extraction of "value" member via {@code extractValueMember()})</li>
      *   <li>EXPRESSION patterns: Any expression replacement (delegates to FixUtilities.rewriteFix)</li>
      *   <li>METHOD_CALL patterns: Method invocation replacement (delegates to FixUtilities.rewriteFix)</li>
      *   <li>CONSTRUCTOR patterns: Constructor invocation replacement (delegates to FixUtilities.rewriteFix)</li>
@@ -256,9 +267,12 @@ public abstract class AbstractPatternCleanupPlugin<H> {
      *   <li>FIELD patterns: Field declaration replacement (delegates to FixUtilities.rewriteFix)</li>
      * </ul>
      * 
-     * <p><b>Limitations for ANNOTATION patterns:</b></p>
+     * <p><b>Import handling:</b></p>
      * <ul>
-     *   <li>NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.</li>
+     *   <li>Add imports: derived from {@code targetQualifiedType} (preferred), then {@code addImports},
+     *       then auto-detected from FQNs in {@code replaceWith}</li>
+     *   <li>Remove imports: handled safely via {@code ImportRemover} (only removes if no other
+     *       references exist in the compilation unit)</li>
      * </ul>
      * 
      * <p><b>Type-safe version:</b> This overload accepts a {@link MatchHolder} interface,
@@ -396,37 +410,22 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         // Parse the replacement pattern to extract annotation name and placeholders
         AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);
         
-        // Create the new annotation based on whether placeholders are present
-        Annotation newAnnotation;
+        // Get placeholder value from bindings
+        Expression value = null;
         if (replacementInfo.hasPlaceholders()) {
-            // Create SingleMemberAnnotation with the placeholder value
-            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
-            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-            
-            // Get the placeholder value from bindings
             String placeholder = replacementInfo.placeholderName;
-            Expression value = getBindingAsExpressionFromHolder(holder, "$" + placeholder); //$NON-NLS-1$
-            
-            // Fallback: if no binding is found, reuse the value from existing annotation
-            if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
-                value = ((SingleMemberAnnotation) oldAnnotation).getValue();
-            }
-            
-            if (value != null) {
-                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
-            }
-            
-            newAnnotation = singleMemberAnnotation;
-        } else {
-            // Create MarkerAnnotation (no parameters)
-            newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+            value = getBindingAsExpressionFromHolder(holder, "$" + placeholder); //$NON-NLS-1$
         }
+        
+        // Create the new annotation with fallback logic
+        Annotation newAnnotation = createReplacementAnnotation(
+                ast, rewriter, replacementInfo, oldAnnotation, value);
         
         // Replace the old annotation with the new one
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
         
         // Handle imports
-        processImports(importRewriter, rewriteRule);
+        processImports(importRewriter, rewriteRule, oldAnnotation);
     }
     
     /**
@@ -444,37 +443,84 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         // Parse the replacement pattern to extract annotation name and placeholders
         AnnotationReplacementInfo replacementInfo = parseReplacementPattern(replaceWith);
         
-        // Create the new annotation based on whether placeholders are present
-        Annotation newAnnotation;
+        // Get placeholder value from bindings
+        Expression value = null;
         if (replacementInfo.hasPlaceholders()) {
-            // Create SingleMemberAnnotation with the placeholder value
-            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
-            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
-            
-            // Get the placeholder value from bindings
             String placeholder = replacementInfo.placeholderName;
-            Expression value = holder.getBindingAsExpression("$" + placeholder); //$NON-NLS-1$
-            
-            // Fallback: if no binding is found, reuse the value from existing annotation
-            if (value == null && oldAnnotation instanceof SingleMemberAnnotation) {
-                value = ((SingleMemberAnnotation) oldAnnotation).getValue();
-            }
-            
-            if (value != null) {
-                singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
-            }
-            
-            newAnnotation = singleMemberAnnotation;
-        } else {
-            // Create MarkerAnnotation (no parameters)
-            newAnnotation = AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+            value = holder.getBindingAsExpression("$" + placeholder); //$NON-NLS-1$
         }
+        
+        // Create the new annotation with fallback logic
+        Annotation newAnnotation = createReplacementAnnotation(
+                ast, rewriter, replacementInfo, oldAnnotation, value);
         
         // Replace the old annotation with the new one
         ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);
         
         // Handle imports
-        processImports(importRewriter, rewriteRule);
+        processImports(importRewriter, rewriteRule, oldAnnotation);
+    }
+    
+    /**
+     * Creates a replacement annotation based on the replacement pattern and the old annotation.
+     * Handles three annotation types with appropriate fallback logic:
+     * <ol>
+     *   <li>If replacement has placeholders and a value is found → SingleMemberAnnotation</li>
+     *   <li>If replacement has placeholders but value is null → falls back to SingleMemberAnnotation 
+     *       or NormalAnnotation value extraction, then to MarkerAnnotation if still null</li>
+     *   <li>If replacement has no placeholders → MarkerAnnotation</li>
+     * </ol>
+     * 
+     * @param ast the AST instance
+     * @param rewriter the AST rewriter
+     * @param replacementInfo the parsed replacement pattern info
+     * @param oldAnnotation the original annotation being replaced
+     * @param value the placeholder value from bindings (may be null)
+     * @return the new annotation to replace the old one
+     */
+    private Annotation createReplacementAnnotation(AST ast, ASTRewrite rewriter,
+            AnnotationReplacementInfo replacementInfo, Annotation oldAnnotation, Expression value) {
+        
+        if (!replacementInfo.hasPlaceholders()) {
+            return AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+        }
+        
+        // Fallback: if no binding is found, reuse the value from existing annotation
+        if (value == null && oldAnnotation instanceof SingleMemberAnnotation singleMember) {
+            value = singleMember.getValue();
+        }
+        
+        // Fallback: if no binding is found and old annotation is NormalAnnotation,
+        // extract the "value" member pair (e.g., @Ignore(value="reason") → "reason")
+        if (value == null && oldAnnotation instanceof NormalAnnotation normalAnnotation) {
+            value = extractValueMember(normalAnnotation);
+        }
+        
+        if (value != null) {
+            SingleMemberAnnotation singleMemberAnnotation = ast.newSingleMemberAnnotation();
+            singleMemberAnnotation.setTypeName(ast.newSimpleName(replacementInfo.annotationName));
+            singleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, value));
+            return singleMemberAnnotation;
+        }
+        
+        // No value found - create MarkerAnnotation instead of broken SingleMemberAnnotation
+        return AnnotationUtils.createMarkerAnnotation(ast, replacementInfo.annotationName);
+    }
+    
+    /**
+     * Extracts the "value" member from a NormalAnnotation.
+     * 
+     * @param normalAnnotation the NormalAnnotation to extract from
+     * @return the value expression, or null if no "value" member is found
+     */
+    @SuppressWarnings("unchecked")
+    private static Expression extractValueMember(NormalAnnotation normalAnnotation) {
+        for (MemberValuePair pair : (List<MemberValuePair>) normalAnnotation.values()) {
+            if ("value".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+                return pair.getValue();
+            }
+        }
+        return null;
     }
     
     /**
@@ -494,7 +540,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(match, rewriter, replacementPattern);
         
         // Handle imports
-        processImports(importRewriter, rewriteRule);
+        processImports(importRewriter, rewriteRule, matchedNode);
     }
     
     /**
@@ -514,32 +560,50 @@ public abstract class AbstractPatternCleanupPlugin<H> {
         org.sandbox.jdt.triggerpattern.api.FixUtilities.rewriteFix(match, rewriter, replacementPattern);
         
         // Handle imports
-        processImports(importRewriter, rewriteRule);
+        processImports(importRewriter, rewriteRule, matchedNode);
     }
     
     /**
      * Processes import additions and removals from RewriteRule.
      * 
-     * <p>Supports implicit import derivation:</p>
+     * <p>Import handling strategy:</p>
      * <ul>
-     *   <li>If {@code addImports} is empty, imports are auto-detected from FQNs in {@code replaceWith}</li>
-     *   <li>If {@code removeImports} is empty, the {@code qualifiedType} from {@code @CleanupPattern} is used</li>
+     *   <li><b>Add imports:</b> Uses {@code targetQualifiedType} (preferred), then falls back to
+     *       {@code addImports}, then auto-detects from FQNs in {@code replaceWith}</li>
+     *   <li><b>Remove imports:</b> Uses {@code ImportRemover} for safe removal (only removes if
+     *       no other references exist in the compilation unit). Falls back to direct removal
+     *       via {@code importRewriter.removeImport()} when ImportRemover is not available.</li>
      * </ul>
+     * 
+     * @param importRewriter the import rewriter
+     * @param rewriteRule the rewrite rule annotation
+     * @param removedNode the AST node being removed/replaced (for ImportRemover registration)
      */
-    private void processImports(ImportRewrite importRewriter, RewriteRule rewriteRule) {
-        // Phase 3: auto-detect removeImport from @CleanupPattern.qualifiedType
+    private void processImports(ImportRewrite importRewriter, RewriteRule rewriteRule, ASTNode removedNode) {
+        // --- Import removal (safe via ImportRemover when available) ---
         if (rewriteRule.removeImports().length == 0) {
-            CleanupPattern cleanupPattern = getCleanupPatternAnnotation();
-            if (cleanupPattern != null && !cleanupPattern.qualifiedType().isEmpty()) {
-                importRewriter.removeImport(cleanupPattern.qualifiedType());
+            // Use ImportRemover for safe removal: only removes if no other references exist
+            if (currentCuRewrite != null && removedNode != null) {
+                ImportRemover remover = currentCuRewrite.getImportRemover();
+                remover.registerRemovedNode(removedNode);
+                remover.applyRemoves(importRewriter);
+            } else {
+                // Fallback: direct removal from @CleanupPattern.qualifiedType
+                CleanupPattern cleanupPattern = getCleanupPatternAnnotation();
+                if (cleanupPattern != null && !cleanupPattern.qualifiedType().isEmpty()) {
+                    importRewriter.removeImport(cleanupPattern.qualifiedType());
+                }
             }
         } else {
             for (String importToRemove : rewriteRule.removeImports()) {
                 importRewriter.removeImport(importToRemove);
             }
         }
-        // Phase 1: auto-detect addImport from FQNs in replaceWith
-        if (rewriteRule.addImports().length == 0) {
+        // --- Import addition ---
+        // Priority: targetQualifiedType > addImports > auto-detect from replaceWith
+        if (!rewriteRule.targetQualifiedType().isEmpty()) {
+            importRewriter.addImport(rewriteRule.targetQualifiedType());
+        } else if (rewriteRule.addImports().length == 0) {
             ImportDirective detected = ImportDirective.detectFromPattern(rewriteRule.replaceWith());
             for (String importToAdd : detected.getAddImports()) {
                 importRewriter.addImport(importToAdd);
@@ -822,7 +886,12 @@ public abstract class AbstractPatternCleanupPlugin<H> {
             AST ast = cuRewrite.getRoot().getAST();
             TextEditGroup group = createTextEditGroup(plugin.getDescription(), cuRewrite);
             ImportRewrite importRewriter = cuRewrite.getImportRewrite();
-            plugin.processRewrite(group, rewrite, ast, importRewriter, holder);
+            plugin.currentCuRewrite = cuRewrite;
+            try {
+                plugin.processRewrite(group, rewrite, ast, importRewriter, holder);
+            } finally {
+                plugin.currentCuRewrite = null;
+            }
         }
     }
 }

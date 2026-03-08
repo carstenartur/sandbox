@@ -265,7 +265,7 @@ public class RuleInferenceEngine {
 	private static String wrapForKind(String snippet, PatternKind kind) {
 		return switch (kind) {
 		case EXPRESSION -> "class _Infer { void _m() { Object _r = " + snippet + "; } }"; //$NON-NLS-1$ //$NON-NLS-2$
-		case STATEMENT -> "class _Infer { void _m() { " + snippet + " } }"; //$NON-NLS-1$ //$NON-NLS-2$
+		case STATEMENT, DECLARATION -> "class _Infer { void _m() { " + snippet + " } }"; //$NON-NLS-1$ //$NON-NLS-2$
 		case METHOD_CALL -> "class _Infer { void _m() { " + snippet + "; } }"; //$NON-NLS-1$ //$NON-NLS-2$
 		case CONSTRUCTOR -> "class _Infer { void _m() { Object _r = " + snippet + "; } }"; //$NON-NLS-1$ //$NON-NLS-2$
 		case ANNOTATION -> snippet + " class _Infer {}"; //$NON-NLS-1$
@@ -304,7 +304,7 @@ public class RuleInferenceEngine {
 			}
 			yield null;
 		}
-		case STATEMENT, STATEMENT_SEQUENCE -> {
+		case STATEMENT, STATEMENT_SEQUENCE, DECLARATION -> {
 			if (type.getMethods().length == 0) {
 				yield null;
 			}
