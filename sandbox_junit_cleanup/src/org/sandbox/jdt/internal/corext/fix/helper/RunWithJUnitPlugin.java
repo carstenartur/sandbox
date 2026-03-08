@@ -158,11 +158,11 @@ public class RunWithJUnitPlugin extends TriggerPatternCleanupPlugin {
 			if (runnerType != null) {
 				String typeName = runnerType.toString();
 				// Only use it if it's a fully qualified name (contains a dot)
-				if (typeName != null && typeName.contains(".")) { //$NON-NLS-1$
+				if (typeName.contains(".")) { //$NON-NLS-1$
 					runnerQualifiedName = typeName;
 				}
 				// Fallback: resolve well-known JUnit simple names
-				else if (typeName != null) {
+				else {
 					runnerQualifiedName = resolveSimpleName(typeName);
 				}
 			}
