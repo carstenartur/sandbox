@@ -77,7 +77,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * @since 1.3.0
  */
 @CleanupPattern(value = "@Ignore", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_IGNORE, cleanupId = "cleanup.junit.ignore", description = "Migrate @Ignore to @Disabled", displayName = "JUnit 4 @Ignore → JUnit 5 @Disabled")
-@RewriteRule(replaceWith = "@Disabled($value)", addImports = { ORG_JUNIT_JUPITER_DISABLED })
+@RewriteRule(replaceWith = "@Disabled($value)", targetQualifiedType = ORG_JUNIT_JUPITER_DISABLED)
 public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override

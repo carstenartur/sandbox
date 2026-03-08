@@ -89,11 +89,12 @@ public class ExternalResourceJUnitPlugin extends AbstractTool<ReferenceHolder<In
 )
 @RewriteRule(
     replaceWith = "@BeforeEach",
-    removeImports = {"org.junit.Before"},
-    addImports = {"org.junit.jupiter.api.BeforeEach"}
+    targetQualifiedType = "org.junit.jupiter.api.BeforeEach"
 )
 public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
     // Only getPreview() needed - process2Rewrite() is automatic!
+    // Import removal: safely via ImportRemover (only if no other references exist)
+    // Import addition: derived from targetQualifiedType
     @Override
     public String getPreview(boolean afterRefactoring) { ... }
 }

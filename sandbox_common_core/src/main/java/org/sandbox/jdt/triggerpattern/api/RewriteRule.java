@@ -24,30 +24,32 @@ import java.lang.annotation.Target;
  * <p>Eliminates the need for manual {@code process2Rewrite()} implementations by specifying
  * the transformation declaratively. Works in conjunction with {@link CleanupPattern}.</p>
  * 
- * <h2>Implicit Import Derivation</h2>
- * <p>Import directives can often be omitted because they are derived automatically:</p>
+ * <h2>Import Handling</h2>
+ * <p>Imports are derived automatically from the rule configuration:</p>
  * <ul>
- *   <li><b>{@code addImports}:</b> Must be specified explicitly because {@code replaceWith}
- *       only supports short (unqualified) names. Fully qualified type names in
- *       {@code replaceWith} (e.g., {@code @org.junit.jupiter.api.BeforeEach}) are
- *       <b>not</b> supported.</li>
- *   <li><b>{@code removeImports}:</b> If empty, the {@code qualifiedType} from the associated
- *       {@link CleanupPattern} annotation is used as the import to remove.</li>
+ *   <li><b>{@code targetQualifiedType}:</b> (Recommended) FQN of the replacement type.
+ *       The import is added automatically. Example: {@code "org.junit.jupiter.api.BeforeEach"}</li>
+ *   <li><b>{@code removeImports}:</b> If empty, the old import is removed safely via
+ *       {@code ImportRemover} — only when no other references to the type remain in the
+ *       compilation unit. The {@code qualifiedType} from the associated {@link CleanupPattern}
+ *       annotation is used as the candidate.</li>
+ *   <li><b>{@code addImports}:</b> Legacy attribute — prefer {@code targetQualifiedType} instead.
+ *       If both are empty, imports are auto-detected from FQNs in {@code replaceWith}.</li>
  * </ul>
  * 
- * <p><b>Example 1: Implicit removeImports (recommended)</b></p>
+ * <p><b>Example 1: Using targetQualifiedType (recommended)</b></p>
  * <pre>
  * {@literal @}CleanupPattern(value = "@Before", kind = PatternKind.ANNOTATION, qualifiedType = "org.junit.Before")
- * {@literal @}RewriteRule(replaceWith = "@BeforeEach", addImports = {"org.junit.jupiter.api.BeforeEach"})
- * // removeImport: implicitly derived from qualifiedType = "org.junit.Before"
+ * {@literal @}RewriteRule(replaceWith = "@BeforeEach", targetQualifiedType = "org.junit.jupiter.api.BeforeEach")
+ * // removeImport: safely derived from qualifiedType via ImportRemover
+ * // addImport: derived from targetQualifiedType
  * </pre>
  * 
- * <p><b>Example 2: Simple marker annotation replacement (explicit)</b></p>
+ * <p><b>Example 2: Legacy explicit imports</b></p>
  * <pre>
  * {@literal @}CleanupPattern(value = "@Before", kind = PatternKind.ANNOTATION, qualifiedType = "org.junit.Before")
  * {@literal @}RewriteRule(
  *     replaceWith = "@BeforeEach",
- *     removeImports = {"org.junit.Before"},
  *     addImports = {"org.junit.jupiter.api.BeforeEach"}
  * )
  * public class BeforeJUnitPluginV2 extends TriggerPatternCleanupPlugin { }
@@ -58,8 +60,7 @@ import java.lang.annotation.Target;
  * {@literal @}CleanupPattern(value = "@Ignore($value)", kind = PatternKind.ANNOTATION, qualifiedType = "org.junit.Ignore")
  * {@literal @}RewriteRule(
  *     replaceWith = "@Disabled($value)",
- *     removeImports = {"org.junit.Ignore"},
- *     addImports = {"org.junit.jupiter.api.Disabled"}
+ *     targetQualifiedType = "org.junit.jupiter.api.Disabled"
  * )
  * public class IgnoreJUnitPluginV2 extends TriggerPatternCleanupPlugin { }
  * </pre>
@@ -101,7 +102,29 @@ public @interface RewriteRule {
     String replaceWith();
     
     /**
+     * Fully qualified type name of the replacement type.
+     * 
+     * <p>When specified, this FQN is used to automatically add the import for the replacement type.
+     * This is the <b>recommended</b> way to specify the new import, as it is more explicit and
+     * less error-prone than {@code addImports}.</p>
+     * 
+     * <p><b>Example:</b> {@code "org.junit.jupiter.api.BeforeEach"}</p>
+     * 
+     * <p>If both {@code targetQualifiedType} and {@code addImports} are specified,
+     * {@code targetQualifiedType} takes precedence.</p>
+     * 
+     * @return the fully qualified type name of the replacement type, or empty string if not specified
+     * @since 1.3.1
+     */
+    String targetQualifiedType() default ""; //$NON-NLS-1$
+    
+    /**
      * Imports to remove after transformation.
+     * 
+     * <p><b>Note:</b> When empty (the default), import removal is handled automatically
+     * using {@code ImportRemover} — the import derived from {@code @CleanupPattern.qualifiedType}
+     * is only removed if no other references to the type exist in the compilation unit.
+     * This is safer than explicit removal.</p>
      * 
      * @return array of fully qualified import names to remove
      */
@@ -109,6 +132,12 @@ public @interface RewriteRule {
     
     /**
      * Imports to add after transformation.
+     * 
+     * <p><b>Prefer {@code targetQualifiedType} instead.</b> This attribute is retained for
+     * backward compatibility and for cases requiring multiple imports.</p>
+     * 
+     * <p>When empty and {@code targetQualifiedType} is also empty, imports are auto-detected
+     * from FQNs in {@code replaceWith}.</p>
      * 
      * @return array of fully qualified import names to add
      */

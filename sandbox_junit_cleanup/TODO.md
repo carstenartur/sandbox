@@ -111,11 +111,12 @@ Added declarative `@RewriteRule` annotation to eliminate boilerplate in simple a
 )
 @RewriteRule(
     replaceWith = "@BeforeEach",
-    removeImports = {"org.junit.Before"},
-    addImports = {"org.junit.jupiter.api.BeforeEach"}
+    targetQualifiedType = "org.junit.jupiter.api.BeforeEach"
 )
 public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
     // process2Rewrite() now automatic - only getPreview() needed!
+    // Import removal: safely via ImportRemover
+    // Import addition: derived from targetQualifiedType
 }
 ```
 
@@ -123,6 +124,7 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 - Reduced plugin code from ~100 lines to ~80 lines (20% reduction per plugin)
 - Declarative, self-documenting transformations
 - Eliminated copy-paste errors
+- Safe import removal via `ImportRemover` (only removes if no other references exist)
 - Foundation for future code generation tooling
 
 **Current Limitations** (documented in code):

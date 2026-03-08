@@ -64,7 +64,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * @since 1.3.0
  */
 @CleanupPattern(value = "@Test", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_TEST, cleanupId = "cleanup.junit.test", description = "Migrate @Test to JUnit 5", displayName = "JUnit 4 @Test → JUnit 5 @Test")
-@RewriteRule(replaceWith = "@Test", addImports = { ORG_JUNIT_JUPITER_TEST })
+@RewriteRule(replaceWith = "@Test", targetQualifiedType = ORG_JUNIT_JUPITER_TEST)
 public class TestJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override

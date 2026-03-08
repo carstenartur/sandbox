@@ -62,12 +62,13 @@ Introduced to eliminate boilerplate in simple annotation migration plugins. Inst
 )
 @RewriteRule(
     replaceWith = "@BeforeEach",
-    removeImports = {"org.junit.Before"},
-    addImports = {"org.junit.jupiter.api.BeforeEach"}
+    targetQualifiedType = "org.junit.jupiter.api.BeforeEach"
 )
 public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
     // process2Rewrite() is now automatic!
     // Only getPreview() needed
+    // Import removal: handled safely via ImportRemover (only if no other references exist)
+    // Import addition: derived from targetQualifiedType
 }
 ```
 
@@ -75,6 +76,7 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 - Reduces plugin code by ~20-30 lines per plugin
 - Makes transformations self-documenting
 - Eliminates risk of copy-paste errors
+- Safe import removal via `ImportRemover` (no blind `removeImport()`)
 - Enables future tooling to auto-generate plugins
 
 **Supported Transformations:**
