@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "collections-this-commit-replaces-java-util-vector-wi",
+      "category": "Collections",
+      "dslRule": "new java.util.Vector() :: isAssignedToLocalVariable()\n\u003d\u003e new java.util.ArrayList\u003c\u003e()\n;;\n\nnew java.util.Vector($capacity) :: isAssignedToLocalVariable()\n\u003d\u003e new java.util.ArrayList\u003c\u003e($capacity)\n;;\n\nnew java.util.Vector($collection) :: isAssignedToLocalVariable()\n\u003d\u003e new java.util.ArrayList\u003c\u003e($collection)\n;;",
+      "summary": "This commit replaces `java.util.Vector` with `java.util.ArrayList`. `Vector` is a legacy, synchronized class, while `ArrayList` is a more performant, unsynchronized alternative suitable for most single-threaded contexts. The transformation includes adding generics (`\u003c\u003e`) to `ArrayList` for improved type safety. The DSL rules implement this as a set of constructor replacements, guarded by `isAssignedToLocalVariable()` to ensure thread-safety semantic correctness for local variables, similar to `StringBuffer` to `StringBuilder` replacements.",
+      "discoveredAt": "2026-03-08",
+      "discoveredInRun": 13231,
+      "sourceCommit": "c1c989f6c7f6d8d058bbbf089b250ca1c3d327f1",
+      "status": "DISCOVERED",
+      "hintFile": "collections.sandbox-hint"
+    }
+  ]
+}

@@ -1,48 +1,11 @@
-// collections.sandbox-hint — Collections API improvements
-// Replaces verbose collection patterns with modern API equivalents
-
-<!id: collections>
-<!description: Collection API improvements and modernization>
-<!severity: info>
-<!minJavaVersion: 9>
-<!tags: collections, modernization>
-
-// Collections.unmodifiableList(Arrays.asList(...)) → List.of(...)
-java.util.Collections.unmodifiableList(java.util.Arrays.asList($args$)) :: sourceVersionGE(9)
-=> java.util.List.of($args$)
+new java.util.Vector() :: isAssignedToLocalVariable()
+=> new java.util.ArrayList<>()
 ;;
 
-// Collections.singletonList($x) → List.of($x)
-java.util.Collections.singletonList($x) :: sourceVersionGE(9)
-=> java.util.List.of($x)
+new java.util.Vector($capacity) :: isAssignedToLocalVariable()
+=> new java.util.ArrayList<>($capacity)
 ;;
 
-// Collections.emptyList() → List.of()
-java.util.Collections.emptyList() :: sourceVersionGE(9)
-=> java.util.List.of()
-;;
-
-// Collections.singletonMap($k, $v) → Map.of($k, $v)
-java.util.Collections.singletonMap($k, $v) :: sourceVersionGE(9)
-=> java.util.Map.of($k, $v)
-;;
-
-// Collections.emptyMap() → Map.of()
-java.util.Collections.emptyMap() :: sourceVersionGE(9)
-=> java.util.Map.of()
-;;
-
-// Collections.emptySet() → Set.of()
-java.util.Collections.emptySet() :: sourceVersionGE(9)
-=> java.util.Set.of()
-;;
-
-// Collections.singleton($x) → Set.of($x)
-java.util.Collections.singleton($x) :: sourceVersionGE(9)
-=> java.util.Set.of($x)
-;;
-
-// Collections.unmodifiableMap(Collections.singletonMap(k,v)) → Map.of(k,v)
-java.util.Collections.unmodifiableMap(java.util.Collections.singletonMap($k, $v)) :: sourceVersionGE(9)
-=> java.util.Map.of($k, $v)
+new java.util.Vector($collection) :: isAssignedToLocalVariable()
+=> new java.util.ArrayList<>($collection)
 ;;
