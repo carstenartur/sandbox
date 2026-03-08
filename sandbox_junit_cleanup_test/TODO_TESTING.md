@@ -559,7 +559,7 @@ To implement a new migration (e.g., @RunWith(MockitoJUnitRunner) → @ExtendWith
 - ❌ MigrationExceptionsTest - 3 tests disabled (ExpectedException rule with message/cause)
 - ❌ MigrationRunnersTest - 2 tests disabled (Suite, Parameterized)
 - ❌ MigrationRunnersAdvancedTest - 2 tests disabled (Theories→ParameterizedTest, Categories→Tags not implemented)
-- ❌ MigrationRulesToExtensionsTest - parameterized enum test disabled (TemporaryFolder output mismatch, ErrorCollector hamcrest not on classpath)
+- ❌ MigrationRulesToExtensionsTest - parameterized enum test disabled: TemporaryFolder cases have output mismatches; ErrorCollector cases require hamcrest dependency not on test classpath
 - ❌ MigrationEdgeCasesTest - 1 test disabled (combined @Test expected+timeout)
 - ❌ MigrationTestAnnotationTest - 1 test disabled (combined @Test expected+timeout)
 - ❌ MigrationCombinationsTest - 1 test disabled (@RunWith(Suite.class) to @Suite)

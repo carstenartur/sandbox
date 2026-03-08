@@ -44,7 +44,7 @@ public class MigrationRulesToExtensionsTest {
 		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 	}
 
-	@Disabled("Parameterized rule migration test - all cases fail: TemporaryFolder expected output mismatch, ErrorCollector input code doesn't compile (hamcrest not on test classpath)")
+	@Disabled("Rule migration parameterized test - TemporaryFolder output mismatch, ErrorCollector requires hamcrest not on test classpath")
 	@ParameterizedTest
 	@EnumSource(RuleCases.class)
 	public void migrates_junit4_rules_to_junit5_extensions(RuleCases testCase) throws CoreException {
