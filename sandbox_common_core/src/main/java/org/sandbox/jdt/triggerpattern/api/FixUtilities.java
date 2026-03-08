@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 
@@ -119,6 +120,8 @@ public final class FixUtilities {
 			return PatternKind.IMPORT;
 		} else if (node instanceof FieldDeclaration) {
 			return PatternKind.FIELD;
+		} else if (node instanceof VariableDeclarationStatement) {
+			return PatternKind.DECLARATION;
 		} else if (node instanceof Expression) {
 			return PatternKind.EXPRESSION;
 		}

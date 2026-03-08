@@ -1642,3 +1642,21 @@ No code changes were required because the existing implementation already follow
 
 ---
 
+
+## TriggerPattern DSL Integration
+
+### Status: ❌ Not expressible in DSL
+
+The functional converter cleanup requires complex analysis that cannot be expressed
+in the `.sandbox-hint` DSL:
+
+- **Data flow analysis**: Tracking variable mutations across loop iterations
+- **Side effect detection**: Identifying I/O, synchronization, exceptions in loop bodies
+- **Loop semantic analysis**: Recognizing filter/map/reduce/collect patterns
+- **Safety verification**: Ensuring stream conversion preserves execution order and semantics
+- **Multiple loop forms**: Detecting for, while, do-while with iterator patterns
+
+### Required DSL Extensions (for future work)
+- [ ] Multi-statement pattern matching (loop body analysis)
+- [ ] Data flow guards (variable mutation tracking)
+- [ ] Side effect analysis guards

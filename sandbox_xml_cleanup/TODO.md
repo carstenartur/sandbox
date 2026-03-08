@@ -316,3 +316,16 @@ For questions about XML cleanup or suggestions for improvements, please open an 
 2. **Phase 2**: ✅ Add PDE-specific action (for all plugin projects) - COMPLETED
 3. **Phase 3**: Integrate with PDE validation framework - FUTURE
 4. **Phase 4**: Consider contributing to Eclipse PDE project - FUTURE
+
+## TriggerPattern DSL Integration
+
+### Status: ❌ Not applicable
+
+The XML cleanup operates on XML files (plugin.xml, feature.xml, .exsd), not Java
+source code. The `.sandbox-hint` DSL is designed for Java AST transformations and
+cannot express XML restructuring rules.
+
+### Notes
+- This plugin is fundamentally different from Java-based cleanups
+- XML formatting rules would require a separate DSL or tool
+- PDE integration uses Eclipse's XML/DOM APIs, not JDT

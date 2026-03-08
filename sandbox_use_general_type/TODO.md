@@ -165,3 +165,35 @@
 
 **Last Updated**: 2026-02-12
 **Plugin Version**: 1.2.6-SNAPSHOT
+
+## TriggerPattern DSL Integration
+
+### Status: ✅ Expressible in DSL (since 1.3.12)
+
+The type widening cleanup is now expressible in the `.sandbox-hint` DSL using the
+`DECLARATION` pattern kind with the `$widestType` replacement function.
+
+**Hint file:** `src/org/sandbox/jdt/internal/corext/fix/hints/use-general-type.sandbox-hint`
+
+**DSL rule:**
+```
+$Type $var = $init;
+=> $widestType($var) $var = $init;
+;;
+```
+
+**How it works:**
+- `$Type $var = $init;` matches any local variable declaration (DECLARATION pattern kind)
+- `$widestType($var)` replacement function analyzes all variable usages, walks the type
+  hierarchy, and computes the widest compatible type at rewrite time
+- No guard needed: when widening is not possible, the match is silently filtered out
+  before entering the rewrite phase (via `isNonWidenableDeclaration` in HintFileFixCore)
+- The widest type FQN is pre-computed during filtering and stored in the match's extra
+  data for retrieval during rewrite
+
+**DSL infrastructure added:**
+- [x] `PatternKind.DECLARATION` for matching VariableDeclarationStatement nodes
+- [x] `$widestType` replacement function in HintFileFixCore
+- [x] `isNonWidenableDeclaration` filter — pre-rewrite analysis using TypeWideningAnalyzer
+- [x] `Match.putExtraData/getExtraData` for filter→rewrite data passing
+- [x] `HintFileParser.looksLikeDeclaration()` for pattern kind inference

@@ -77,6 +77,10 @@ public class PatternParser {
 			return parseBlock(patternValue);
 		} else if (kind == PatternKind.STATEMENT_SEQUENCE) {
 			return parseBlock(patternValue);
+		} else if (kind == PatternKind.DECLARATION) {
+			// DECLARATION is parsed as a regular statement; the pattern engine
+			// will only match it against VariableDeclarationStatement nodes.
+			return parseStatement(patternValue);
 		}
 		
 		return null;

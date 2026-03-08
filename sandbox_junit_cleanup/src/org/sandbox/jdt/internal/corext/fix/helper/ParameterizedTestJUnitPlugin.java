@@ -26,7 +26,6 @@ import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
 import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -46,44 +45,40 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 @RunWith(Parameterized.class) to JUnit
  * 5 @ParameterizedTest.
  * 
- * This transformation handles: - Removing @RunWith(Parameterized.class)
- * annotation - Converting @Parameters method to return Stream<Arguments> -
- * Removing constructor and parameter fields - Adding @ParameterizedTest
- * and @MethodSource to test methods - Adding method parameters to test methods
+ * <p>Uses TriggerPattern-based declarative architecture with @CleanupPattern for
+ * detection. The transformation logic remains custom because it needs extensive
+ * multi-node transformations (class restructuring, method signature changes,
+ * constructor removal) — too complex for @RewriteRule.</p>
+ * 
+ * <p>This transformation handles:</p>
+ * <ul>
+ *   <li>Removing @RunWith(Parameterized.class) annotation</li>
+ *   <li>Converting @Parameters method to return Stream&lt;Arguments&gt;</li>
+ *   <li>Removing constructor and parameter fields</li>
+ *   <li>Adding @ParameterizedTest and @MethodSource to test methods</li>
+ *   <li>Adding method parameters to test methods</li>
+ * </ul>
+ * 
+ * @since 1.3.0
  */
-public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@RunWith($runner)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_RUNWITH, cleanupId = "cleanup.junit.parameterized", description = "Migrate @RunWith(Parameterized.class) to @ParameterizedTest", displayName = "JUnit 4 @RunWith(Parameterized) → JUnit 5 @ParameterizedTest")
+public class ParameterizedTestJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-
-		// Find @RunWith(Parameterized.class) annotations
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH).in(compilationUnit).excluding(nodesprocessed)
-				.processEach(dataHolder, (visited, aholder) -> {
-					if (visited instanceof Annotation) {
-						return processFoundNode(fixcore, operations, (Annotation) visited, aholder);
-					}
-					return true;
-				});
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder) {
+	protected JunitHolder createHolder(Match match) {
+		Annotation node = (Annotation) match.getMatchedNode();
 
 		// Check if this is @RunWith(Parameterized.class)
 		if (node instanceof SingleMemberAnnotation mynode) {
@@ -96,10 +91,10 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 						String runnerQualifiedName = typeBinding.getQualifiedName();
 						if (ORG_JUNIT_RUNNERS_PARAMETERIZED.equals(runnerQualifiedName)) {
 							// Found a parameterized test class
-							JunitHolder mh = new JunitHolder();
-							mh.setMinv(node);
-							mh.setMinvname(node.getTypeName().getFullyQualifiedName());
-							mh.setValue(ORG_JUNIT_RUNNERS_PARAMETERIZED);
+							JunitHolder holder = new JunitHolder();
+							holder.setMinv(node);
+							holder.setMinvname(node.getTypeName().getFullyQualifiedName());
+							holder.setValue(ORG_JUNIT_RUNNERS_PARAMETERIZED);
 
 							// Get the containing type declaration to store for processing
 							ASTNode parent = node.getParent();
@@ -107,20 +102,17 @@ public class ParameterizedTestJUnitPlugin extends AbstractTool<ReferenceHolder<I
 								parent = parent.getParent();
 							}
 							if (parent != null) {
-								mh.setAdditionalInfo(parent);
+								holder.setAdditionalInfo(parent);
 							}
 
-							dataHolder.put(dataHolder.size(), mh);
-							operations.add(fixcore.rewrite(dataHolder));
-							// Return true to continue processing (there could be nested classes)
-							return true;
+							return holder;
 						}
 					}
 				}
 			}
 		}
-		// Return true to continue processing other annotations
-		return true;
+		// Not a Parameterized runner, skip
+		return null;
 	}
 
 	@Override

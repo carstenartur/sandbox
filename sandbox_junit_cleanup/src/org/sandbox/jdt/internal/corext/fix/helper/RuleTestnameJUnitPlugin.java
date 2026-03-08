@@ -15,42 +15,41 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
-/*-
- * #%L
- * Sandbox junit cleanup
- * %%
- * Copyright (C) 2024 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- * 
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- * 
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractRuleFieldPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
+ *
+ * @since 1.3.0
  */
-public class RuleTestnameJUnitPlugin extends AbstractRuleFieldPlugin {
+@CleanupPattern(value = "@Rule public TestName $name", kind = PatternKind.FIELD, qualifiedType = ORG_JUNIT_RULES_TEST_NAME, cleanupId = "cleanup.junit.ruletestname", description = "Migrate @Rule TestName to TestInfo parameter", displayName = "JUnit 4 @Rule TestName \u2192 JUnit 5 TestInfo")
+public class RuleTestnameJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	protected String getRuleType() {
-		return ORG_JUNIT_RULES_TEST_NAME;
+	protected JunitHolder createHolder(Match match) {
+		FieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
+		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDecl.fragments().get(0);
+		if (fragment.resolveBinding() == null) {
+			return null;
+		}
+		ITypeBinding binding = fragment.resolveBinding().getType();
+		if (binding == null || !ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())) {
+			return null;
+		}
+		JunitHolder holder = new JunitHolder();
+		holder.setMinv(fieldDecl);
+		return holder;
 	}
 
 	@Override

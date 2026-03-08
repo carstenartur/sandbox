@@ -15,33 +15,11 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
-/*-
- * #%L
- * Sandbox junit cleanup
- * %%
- * Copyright (C) 2026 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- * 
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- * 
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
-
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
@@ -54,50 +32,56 @@ import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 @RunWith(Enclosed.class) to JUnit 5 @Nested
  * classes.
+ * 
+ * <p>Uses TriggerPattern-based declarative architecture with @CleanupPattern for
+ * detection. The transformation logic remains custom because it needs to modify
+ * inner classes (remove static, add @Nested) — too complex for @RewriteRule.</p>
+ * 
+ * @since 1.3.0
  */
-public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+@CleanupPattern(value = "@RunWith($runner)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_RUNWITH, cleanupId = "cleanup.junit.runwithenclosed", description = "Migrate @RunWith(Enclosed.class) to @Nested", displayName = "JUnit 4 @RunWith(Enclosed) → JUnit 5 @Nested")
+public class RunWithEnclosedJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
-
-		// Find @RunWith annotations
-		HelperVisitorFactory.forAnnotation(ORG_JUNIT_RUNWITH).in(compilationUnit).excluding(nodesprocessed)
-				.processEach(dataHolder, (visited, aholder) -> {
-					if (visited instanceof SingleMemberAnnotation) {
-						return processFoundNode(fixcore, operations, (Annotation) visited, aholder, nodesprocessed);
-					}
-					return true;
-				});
-	}
-
-	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Annotation node,
-			ReferenceHolder<Integer, JunitHolder> dataHolder, Set<ASTNode> nodesprocessed) {
+	protected JunitHolder createHolder(Match match) {
+		Annotation node = (Annotation) match.getMatchedNode();
 
 		if (!(node instanceof SingleMemberAnnotation mynode)) {
-			return true;
+			return null;
 		}
 
 		Expression value = mynode.getValue();
 		if (!(value instanceof TypeLiteral myvalue)) {
-			return true;
+			return null;
 		}
 
 		// Check if it's Enclosed.class
+		String runnerQualifiedName = resolveRunnerType(myvalue);
+
+		// Only handle Enclosed runner
+		if (!ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED.equals(runnerQualifiedName)) {
+			return null;
+		}
+
+		JunitHolder holder = new JunitHolder();
+		holder.setMinv(node);
+		holder.setMinvname(node.getTypeName().getFullyQualifiedName());
+		holder.setValue(ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED);
+		return holder;
+	}
+
+	private String resolveRunnerType(TypeLiteral myvalue) {
 		ITypeBinding classBinding = myvalue.resolveTypeBinding();
 		String runnerQualifiedName = null;
 
@@ -116,27 +100,13 @@ public class RunWithEnclosedJUnitPlugin extends AbstractTool<ReferenceHolder<Int
 			Type runnerType = myvalue.getType();
 			if (runnerType != null) {
 				String typeName = runnerType.toString();
-				if ("Enclosed".equals(typeName)) {
+				if ("Enclosed".equals(typeName)) { //$NON-NLS-1$
 					runnerQualifiedName = ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED;
 				}
 			}
 		}
 
-		// Only handle Enclosed runner
-		if (!ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED.equals(runnerQualifiedName)) {
-			return true;
-		}
-
-		// Found @RunWith(Enclosed.class), mark it for transformation
-		nodesprocessed.add(node);
-		JunitHolder mh = new JunitHolder();
-		mh.setMinv(node);
-		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
-		mh.setValue(ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED);
-		dataHolder.put(dataHolder.size(), mh);
-		operations.add(fixcore.rewrite(dataHolder));
-
-		return true;
+		return runnerQualifiedName;
 	}
 
 	@Override

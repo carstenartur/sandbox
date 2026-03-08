@@ -28,6 +28,7 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
@@ -37,6 +38,8 @@ import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -46,6 +49,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
@@ -149,6 +153,9 @@ public class HintFileFixCore {
 
 			for (TransformationResult result : results) {
 				if (result.hasReplacement()) {
+					if (isNonWidenableDeclaration(result, compilationUnit)) {
+						continue;
+					}
 					operations.add(new HintFileRewriteOperation(result));
 				} else if (findings != null) {
 					findings.add(HintFinding.fromTransformationResult(result, compilationUnit));
@@ -231,6 +238,9 @@ public class HintFileFixCore {
 
 		for (TransformationResult result : results) {
 			if (result.hasReplacement()) {
+				if (isNonWidenableDeclaration(result, compilationUnit)) {
+					continue;
+				}
 				ASTNode matchedNode = result.match().getMatchedNode();
 				if (matchedNode != null) {
 					nodesprocessed.add(matchedNode);
@@ -259,6 +269,9 @@ public class HintFileFixCore {
 
 			for (TransformationResult result : results) {
 				if (result.hasReplacement()) {
+					if (isNonWidenableDeclaration(result, compilationUnit)) {
+						continue;
+					}
 					operations.add(new HintFileRewriteOperation(result));
 				}
 			}
@@ -294,6 +307,56 @@ public class HintFileFixCore {
 				EmbeddedFixExecutor.registerFixes(compResult, hintFileId);
 			}
 		}
+	}
+
+	/**
+	 * Checks if a transformation result is a DECLARATION pattern with {@code $widestType}
+	 * that cannot actually be widened. When widening IS possible, the widest type FQN
+	 * is stored in the match's extra data for later retrieval by
+	 * {@code handleDeclarationRewrite}.
+	 *
+	 * <p>This filtering ensures that rewrite operations are only created when a real
+	 * type change will be produced — avoiding entering {@code rewriteAST} without a
+	 * change to apply.</p>
+	 *
+	 * @param result the transformation result to check
+	 * @param compilationUnit the compilation unit for type widening analysis
+	 * @return {@code true} if this is a $widestType declaration that cannot be widened
+	 *         (should be skipped); {@code false} otherwise (proceed normally)
+	 * @since 1.3.12
+	 */
+	private static boolean isNonWidenableDeclaration(TransformationResult result,
+			CompilationUnit compilationUnit) {
+		String replacement = result.replacement();
+		if (replacement == null || !replacement.contains("$widestType")) { //$NON-NLS-1$
+			return false; // Not a $widestType rule — proceed normally
+		}
+		ASTNode matchedNode = result.match().getMatchedNode();
+		if (!(matchedNode instanceof VariableDeclarationStatement declStmt)) {
+			return false; // Not a declaration — proceed normally
+		}
+		if (declStmt.fragments().size() != 1) {
+			return true; // Multi-fragment — cannot widen
+		}
+		VariableDeclarationFragment fragment =
+				(VariableDeclarationFragment) declStmt.fragments().get(0);
+		IVariableBinding varBinding = fragment.resolveBinding();
+		if (varBinding == null) {
+			return true; // No binding — cannot analyze
+		}
+
+		Map<String, TypeWideningAnalyzer.TypeWideningResult> analysisResults =
+				TypeWideningAnalyzer.analyzeCompilationUnit(compilationUnit);
+		TypeWideningAnalyzer.TypeWideningResult wideningResult =
+				analysisResults.get(varBinding.getKey());
+		if (wideningResult == null || !wideningResult.canWiden()) {
+			return true; // No widening possible — skip
+		}
+
+		// Widening IS possible — store the FQN for handleDeclarationRewrite
+		result.match().putExtraData("__widestType__", //$NON-NLS-1$
+				wideningResult.getWidestType().getQualifiedName());
+		return false; // Proceed — create the operation
 	}
 
 	/**
@@ -494,6 +557,11 @@ public class HintFileFixCore {
 				// source and replacement patterns and add the missing ones.
 				handleMethodDeclarationRewrite(matchedNode, replacement, ast,
 						rewrite, cuRewrite, group);
+			} else if (matchedNode instanceof VariableDeclarationStatement declStmt) {
+				// Handle DECLARATION rewrite with $widestType support.
+				// When the replacement contains $widestType($var), replace the
+				// declaration type with the widest type computed by canWidenType guard.
+				handleDeclarationRewrite(declStmt, replacement, ast, rewrite, cuRewrite, group);
 			}
 		}
 
@@ -509,6 +577,52 @@ public class HintFileFixCore {
 				return normal.getTypeName().toString();
 			}
 			return ""; //$NON-NLS-1$
+		}
+
+		/**
+		 * Handles DECLARATION rewrite with {@code $widestType} support.
+		 *
+		 * <p>The widest type FQN was pre-computed by {@link #isNonWidenableDeclaration}
+		 * and stored in the match's extra data under {@code "__widestType__"}.
+		 * This method is only called when widening IS possible, so the FQN is
+		 * guaranteed to be present.</p>
+		 *
+		 * @param declStmt the matched VariableDeclarationStatement
+		 * @param replacement the replacement text
+		 * @param ast the AST factory
+		 * @param rewrite the AST rewriter
+		 * @param cuRewrite the compilation unit rewrite context
+		 * @param group the text edit group
+		 * @since 1.3.12
+		 */
+		private void handleDeclarationRewrite(VariableDeclarationStatement declStmt,
+				String replacement, AST ast, ASTRewrite rewrite,
+				CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+			// Check if replacement uses $widestType function
+			if (replacement == null || !replacement.contains("$widestType")) { //$NON-NLS-1$
+				return;
+			}
+
+			// Retrieve the widest type FQN pre-computed by isNonWidenableDeclaration
+			Object widestTypeFqn = result.match().getExtraData("__widestType__"); //$NON-NLS-1$
+			if (!(widestTypeFqn instanceof String fqn) || fqn.isEmpty()) {
+				return;
+			}
+
+			// Add import for the new type and get the simple name
+			String simpleName = cuRewrite.getImportRewrite().addImport(fqn);
+
+			// Create the new type node
+			Type newType;
+			if (simpleName.contains(".")) { //$NON-NLS-1$
+				// Qualified name: split and create QualifiedName
+				newType = ast.newSimpleType(ast.newName(simpleName.split("\\."))); //$NON-NLS-1$
+			} else {
+				newType = ast.newSimpleType(ast.newSimpleName(simpleName));
+			}
+
+			// Replace the type in the variable declaration statement
+			rewrite.replace(declStmt.getType(), newType, group);
 		}
 
 		/**

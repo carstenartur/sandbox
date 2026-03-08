@@ -232,7 +232,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
      * 
      * <p><b>Supported patterns:</b></p>
      * <ul>
-     *   <li>ANNOTATION patterns: MarkerAnnotation, SingleMemberAnnotation</li>
+     *   <li>ANNOTATION patterns: MarkerAnnotation, SingleMemberAnnotation, NormalAnnotation</li>
      *   <li>EXPRESSION patterns: Any expression replacement (delegates to FixUtilities.rewriteFix)</li>
      *   <li>METHOD_CALL patterns: Method invocation replacement (delegates to FixUtilities.rewriteFix)</li>
      *   <li>CONSTRUCTOR patterns: Constructor invocation replacement (delegates to FixUtilities.rewriteFix)</li>
@@ -240,10 +240,9 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
      *   <li>FIELD patterns: Field declaration replacement (delegates to FixUtilities.rewriteFix)</li>
      * </ul>
      * 
-     * <p><b>Limitations for ANNOTATION patterns:</b></p>
-     * <ul>
-     *   <li>NormalAnnotation with named parameters like {@code @Ignore(value="reason")} is not supported.</li>
-     * </ul>
+     * <p><b>NormalAnnotation support:</b> Annotations with named parameters like
+     * {@code @Ignore(value="reason")} are supported. The "value" member is automatically
+     * extracted and used as the placeholder binding.</p>
      * 
      * @param group the text edit group for tracking changes
      * @param rewriter the AST rewriter

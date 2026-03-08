@@ -35,8 +35,11 @@ import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTestAnnotationParameterPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Plugin to migrate JUnit 4 @Test(expected=...) to JUnit 5 assertThrows().
@@ -60,18 +63,34 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
  *     });
  * }
  * </pre>
+ * 
+ * @since 1.3.0
  */
-public class TestExpectedJUnitPlugin extends AbstractTestAnnotationParameterPlugin {
+@CleanupPattern(value = "@Test(expected=$ex)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_TEST, cleanupId = "cleanup.junit.test.expected", description = "Migrate @Test(expected=...) to assertThrows()", displayName = "JUnit 4 @Test(expected) → JUnit 5 assertThrows()")
+public class TestExpectedJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
-	protected String getParameterName() {
-		return "expected";
-	}
-
-	@Override
-	protected boolean validateParameter(MemberValuePair pair) {
-		// Only process TypeLiteral values (e.g., Exception.class)
-		return pair.getValue() instanceof TypeLiteral;
+	protected JunitHolder createHolder(Match match) {
+		ASTNode node = match.getMatchedNode();
+		if (!(node instanceof NormalAnnotation)) {
+			return null;
+		}
+		NormalAnnotation annotation = (NormalAnnotation) node;
+		MemberValuePair expectedPair = null;
+		for (Object obj : annotation.values()) {
+			MemberValuePair pair = (MemberValuePair) obj;
+			if ("expected".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+				expectedPair = pair;
+				break;
+			}
+		}
+		if (expectedPair == null || !(expectedPair.getValue() instanceof TypeLiteral)) {
+			return null;
+		}
+		JunitHolder holder = new JunitHolder();
+		holder.setMinv(annotation);
+		holder.setAdditionalInfo(expectedPair);
+		return holder;
 	}
 
 	@Override

@@ -305,6 +305,30 @@ JFace cleanups could be valuable to Eclipse community. Consider:
 - [ ] User documentation
 - [ ] Community feedback and iteration
 
+## TriggerPattern DSL Integration
+
+### Status: ✅ Hint file created (partial coverage)
+
+A `jface-deprecations.sandbox-hint` file has been created with DSL rules for
+the simpler method rename patterns:
+
+| Pattern | DSL Coverage | Notes |
+|---------|-------------|-------|
+| getSorter() → getComparator() | ✅ Covered | Method call rename |
+| setSorter() → setComparator() | ✅ Covered | Method call rename |
+| ViewerSorter → ViewerComparator type | ❌ Native only | Requires class hierarchy traversal (extends/implements) |
+| SubProgressMonitor → SubMonitor | ❌ Native only | Multi-statement restructuring (beginTask + constructor → convert + split) |
+| ImageData → ImageDataProvider | ❌ Native only | Lambda generation + variable inlining |
+
+### Why Full DSL Coverage Is Not Possible
+- **ViewerSorter type migration** requires traversing class hierarchy and detecting `extends ViewerSorter`
+- **SubProgressMonitor migration** is a multi-statement restructuring that changes variable declarations and call sites
+- **ImageDataProvider migration** requires generating lambda expressions and inlining variable initializers
+
+### Future Work
+- [ ] Verify DSL rules produce identical output to native Java for covered patterns
+- [ ] Expand DSL as framework gains support for type hierarchy patterns
+
 ## Technical Debt
 
 Plugin is in early stage. Technical debt will be identified as implementation progresses.

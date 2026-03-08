@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 
@@ -182,6 +183,9 @@ public final class PatternIndex {
 		}
 		if (node instanceof MethodDeclaration) {
 			matchAgainstKind(node, PatternKind.METHOD_DECLARATION, results);
+		}
+		if (node instanceof VariableDeclarationStatement) {
+			matchAgainstKind(node, PatternKind.DECLARATION, results);
 		}
 		if (node instanceof Block block) {
 			matchAgainstKind(node, PatternKind.BLOCK, results);

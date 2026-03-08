@@ -9,6 +9,11 @@
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.JFaceCleanUp" id="org.eclipse.jdt.ui.cleanup.jfacecleanup" />
 		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
+	<extension point="org.sandbox.jdt.triggerpattern.hints">
+		<hintFile
+			id="jface-deprecations"
+			resource="org/sandbox/jdt/internal/corext/fix/hints/jface-deprecations.sandbox-hint" />
+	</extension>
 
    <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
       <cheatsheet

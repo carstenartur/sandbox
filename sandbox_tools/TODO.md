@@ -158,3 +158,19 @@ This module is effectively **archived** as a reference. It demonstrates:
 - ✅ Proper documentation practices
 
 Use it as a **template and reference** for future Eclipse JDT contributions.
+
+## TriggerPattern DSL Integration
+
+### Status: ❌ Not expressible in DSL
+
+The iterator-to-for-loop cleanup requires complex control flow analysis that
+cannot be expressed in the `.sandbox-hint` DSL:
+
+- **Iterator pattern detection**: Recognizing `while(iter.hasNext()) { iter.next() }` sequences
+- **Variable binding analysis**: Tracking loop variable scope and usage
+- **Mutation tracking**: Ensuring no collection/iterator modification during iteration
+- **Control flow analysis**: Detecting break/continue/return within loop body
+
+### Notes
+This plugin has been successfully contributed to Eclipse JDT. It remains here
+as reference implementation. DSL integration is not a priority.

@@ -90,9 +90,11 @@ public @interface RewriteRule {
      * <ul>
      *   <li>Only simple (unqualified) annotation names are supported, not fully qualified names like 
      *       {@code "@org.junit.jupiter.api.BeforeEach"}</li>
-     *   <li>Named parameters (NormalAnnotation) are not supported. Annotations like 
-     *       {@code @Ignore(value="reason")} require custom {@code process2Rewrite()} implementation.</li>
      * </ul>
+     * 
+     * <p><b>NormalAnnotation support:</b> Annotations with named parameters like
+     * {@code @Ignore(value="reason")} are supported. The "value" member is automatically
+     * extracted and used as the placeholder binding when no explicit binding is found.</p>
      * 
      * @return the replacement pattern with optional placeholders
      */
