@@ -8,7 +8,4 @@
 		
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.UseGeneralTypeCleanUp" id="org.eclipse.jdt.ui.cleanup.use_general_type" />
 	</extension>
-	<extension point="org.sandbox.jdt.triggerpattern.hints">
-		<hintFile path="src/org/sandbox/jdt/internal/corext/fix/hints/use-general-type.sandbox-hint" />
-	</extension>
 </plugin>

@@ -18,37 +18,27 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.UseGeneralTypeCle
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.UseGeneralTypeCleanUp_description;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
-import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
+import org.sandbox.jdt.internal.corext.fix.UseGeneralTypeFixCore;
 
-/**
- * Cleanup that widens variable declarations to more general types.
- *
- * <p>Delegates to the {@code use-general-type.sandbox-hint} DSL rule via
- * {@link HintFileFixCore#findOperationsForBundle}. The DSL rule uses the
- * {@code $widestType($var)} replacement function which analyzes all usages of
- * the variable (method calls, field accesses) and walks the type hierarchy to
- * determine the widest possible type. When no widening is possible the match
- * is filtered out before entering rewrite.</p>
- */
 public class UseGeneralTypeCleanUpCore extends AbstractCleanUp {
-
-	private static final String BUNDLE_ID = "use-general-type"; //$NON-NLS-1$
-
 	public UseGeneralTypeCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
@@ -71,40 +61,46 @@ public class UseGeneralTypeCleanUpCore extends AbstractCleanUp {
 		if (compilationUnit == null) {
 			return null;
 		}
-		if (!isEnabled(USE_GENERAL_TYPE_CLEANUP)) {
+		EnumSet<UseGeneralTypeFixCore> computeFixSet= computeFixSet();
+		if (!isEnabled(USE_GENERAL_TYPE_CLEANUP) || computeFixSet.isEmpty()) {
 			return null;
 		}
-		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
+		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
-
-		// DSL-first: delegate to the use-general-type.sandbox-hint rule.
-		// The $widestType function and isNonWidenableDeclaration filter
-		// in HintFileFixCore ensure that rewrite is only entered when a
-		// real type change is available (no noop).
-		HintFileFixCore.findOperationsForBundle(
-				compilationUnit, BUNDLE_ID, operations, nodesprocessed);
-
+		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed, true));
 		if (operations.isEmpty()) {
 			return null;
 		}
 		return new CompilationUnitRewriteOperationsFixCore(UseGeneralTypeCleanUpFix_refactor, compilationUnit,
-				operations.toArray(new CompilationUnitRewriteOperation[0]));
+				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
 		List<String> result= new ArrayList<>();
 		if (isEnabled(USE_GENERAL_TYPE_CLEANUP)) {
-			result.add(UseGeneralTypeCleanUp_description);
+			result.add(Messages.format(UseGeneralTypeCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
+					computeFixSet().stream().map(UseGeneralTypeFixCore::toString)
+					.collect(Collectors.toList())) }));
 		}
 		return result.toArray(new String[0]);
 	}
 
 	@Override
 	public String getPreview() {
+		StringBuilder sb= new StringBuilder();
+		EnumSet<UseGeneralTypeFixCore> computeFixSet= computeFixSet();
+		EnumSet.allOf(UseGeneralTypeFixCore.class)
+		.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
+		return sb.toString();
+	}
+
+	private EnumSet<UseGeneralTypeFixCore> computeFixSet() {
+		EnumSet<UseGeneralTypeFixCore> fixSet= EnumSet.noneOf(UseGeneralTypeFixCore.class);
+
 		if (isEnabled(USE_GENERAL_TYPE_CLEANUP)) {
-			return "List<String> list = new ArrayList<>();\n"; //$NON-NLS-1$
+			fixSet= EnumSet.allOf(UseGeneralTypeFixCore.class);
 		}
-		return "ArrayList<String> list = new ArrayList<>();\n"; //$NON-NLS-1$
+		return fixSet;
 	}
 }
