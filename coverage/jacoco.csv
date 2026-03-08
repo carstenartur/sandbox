@@ -45,14 +45,14 @@ sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,Exception
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,TypeChangeDetector,7,54,1,9,1,16,1,8,0,4
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,AbstractPatternCleanupPlugin.AnnotationReplacementInfo,23,14,9,1,1,5,6,2,1,2
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,HintFileFixCore,190,97,32,8,47,26,24,3,5,2
-sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,TypeWideningAnalyzer.TypeWideningResult,15,21,4,0,1,8,3,4,1,4
+sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,TypeWideningAnalyzer.TypeWideningResult,2,41,2,2,0,11,2,6,0,6
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,ImportUtils,0,8,0,0,0,2,0,1,0,1
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,ASTNavigationUtils,18,209,11,17,6,43,11,15,0,12
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,NamingUtils,98,129,18,14,22,27,14,11,3,6
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,TypeWideningAnalyzer.new ASTVisitor() {...},5,106,7,17,3,22,7,8,0,3
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,ExpressionHelper,28,122,9,29,9,35,9,16,1,5
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,TypeWideningAnalyzer.VariableInfo,0,13,0,0,0,3,0,1,0,1
-sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,TypeWideningAnalyzer,50,482,25,81,10,100,23,40,0,10
+sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,TypeWideningAnalyzer,54,612,30,102,12,130,28,50,0,12
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,TypeWideningAnalyzer.VariableDeclarationInfo,0,6,0,0,0,3,0,1,0,1
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,AnnotationUtils,30,69,2,6,5,13,5,9,3,7
 sandbox_coverage/sandbox_common,org.sandbox.jdt.internal.corext.util,ASTNavigationUtils.new ASTVisitor() {...},12,34,1,3,2,7,3,4,2,3
@@ -529,8 +529,10 @@ sandbox_coverage/sandbox_triggerpattern,org.sandbox.jdt.internal.ui.quickassist,
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views.preferences,UsageViewPreferencePage,22,0,0,0,10,0,3,0,3,0
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,NamingConflictFilter,15,101,4,10,3,16,4,9,1,5
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JHViewContentProvider,154,103,18,10,29,30,17,9,4,8
-sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JHPluginImages,9,45,0,0,4,12,0,3,0,3
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView.new IPartListener2() {...},46,31,8,4,5,10,10,8,4,8
+sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JHPluginImages,9,45,0,0,4,12,0,3,0,3
+sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView.new ASTVisitor() {...},77,0,8,0,9,0,6,0,2,0
+sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView.new Action() {...},21,0,0,0,3,0,2,0,2,0
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView.new Action() {...},27,8,0,0,8,1,1,1,1,1
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView.new Action() {...},14,8,0,0,2,1,2,1,2,1
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView.new Action() {...},9,8,0,0,3,1,1,1,1,1
@@ -540,7 +542,7 @@ sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperVi
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,UsageViewStartup,7,37,4,4,2,15,4,3,0,3
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,UsageViewPlugin,4,22,0,0,1,11,1,5,1,5
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,VariableBindingContentProviderWithProgress,298,0,42,0,66,0,30,0,9,0
-sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView,867,505,144,10,233,125,99,18,22,18
+sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JavaHelperView,1158,505,174,10,300,125,118,18,26,18
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,VariableNameSuggester,124,0,24,0,34,0,17,0,5,0
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,JHViewSelectionProvider,99,40,18,0,22,12,12,4,3,4
 sandbox_coverage/sandbox_usage_view,org.sandbox.jdt.ui.helper.views,VariableBindingVisitor,0,40,0,2,0,12,0,6,0,5
