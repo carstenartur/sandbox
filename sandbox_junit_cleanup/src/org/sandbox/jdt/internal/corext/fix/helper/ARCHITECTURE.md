@@ -102,10 +102,11 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 **Supported Transformations**:
 - Marker annotations: `@Before` → `@BeforeEach`
 - Single-value annotations: `@Ignore($value)` → `@Disabled($value)`
+- NormalAnnotation with `value` parameter: `@Ignore(value="reason")` → `@Disabled("reason")` (auto-extracted via `extractValueMember()`)
 
 **Limitations**:
-- Cannot handle NormalAnnotation with named parameters (e.g., `@Ignore(value="reason")`)
-- Single placeholder only (no multiple named parameters)
+- Single placeholder only (no multiple named parameters beyond `value`)
+- Cannot handle NormalAnnotation with non-`value` named parameters
 
 #### B. With Custom process2Rewrite() (Hybrid — More Flexible)
 
