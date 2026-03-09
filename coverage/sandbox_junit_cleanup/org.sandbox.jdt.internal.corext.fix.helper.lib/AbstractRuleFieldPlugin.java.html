@@ -37,7 +37,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  *   &lt;li&gt;{@link #getPreview(boolean)} - Preview for UI&lt;/li&gt;
  * &lt;/ul&gt;
  */
-<span class="fc" id="L40">public abstract class AbstractRuleFieldPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="nc" id="L40">public abstract class AbstractRuleFieldPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
 	/**
 	 * Returns the fully qualified name of the rule type to migrate.
@@ -50,25 +50,25 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 	 * Default is false (only @Rule).
 	 */
 	protected boolean includeClassRule() {
-<span class="fc" id="L53">		return false;</span>
+<span class="nc" id="L53">		return false;</span>
 	}
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L59">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
+<span class="nc" id="L59">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
 		
 		// Find @Rule fields
-<span class="fc" id="L62">		HelperVisitorFactory.forField()</span>
-<span class="fc" id="L63">			.withAnnotation(ORG_JUNIT_RULE)</span>
-<span class="fc" id="L64">			.ofType(getRuleType())</span>
-<span class="fc" id="L65">			.in(compilationUnit)</span>
-<span class="fc" id="L66">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L67">			.processEach(dataHolder, (visited, aholder) -&gt; </span>
-<span class="fc" id="L68">				processRuleField(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
+<span class="nc" id="L62">		HelperVisitorFactory.forField()</span>
+<span class="nc" id="L63">			.withAnnotation(ORG_JUNIT_RULE)</span>
+<span class="nc" id="L64">			.ofType(getRuleType())</span>
+<span class="nc" id="L65">			.in(compilationUnit)</span>
+<span class="nc" id="L66">			.excluding(nodesprocessed)</span>
+<span class="nc" id="L67">			.processEach(dataHolder, (visited, aholder) -&gt; </span>
+<span class="nc" id="L68">				processRuleField(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
 		
 		// Optionally find @ClassRule fields
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		if (includeClassRule()) {</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">		if (includeClassRule()) {</span>
 <span class="nc" id="L72">			HelperVisitorFactory.forField()</span>
 <span class="nc" id="L73">				.withAnnotation(ORG_JUNIT_CLASS_RULE)</span>
 <span class="nc" id="L74">				.ofType(getRuleType())</span>
@@ -77,7 +77,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 <span class="nc" id="L77">				.processEach(dataHolder, (visited, aholder) -&gt; </span>
 <span class="nc" id="L78">					processRuleField(fixcore, operations, (FieldDeclaration) visited, aholder));</span>
 		}
-<span class="fc" id="L80">	}</span>
+<span class="nc" id="L80">	}</span>
 
 	/**
 	 * Processes a rule field. Default implementation creates a JunitHolder and adds a rewrite operation.
@@ -87,19 +87,19 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, FieldDeclaration node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 		
-<span class="fc" id="L90">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);</span>
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">		if (fragment.resolveBinding() == null) {</span>
+<span class="nc" id="L90">		VariableDeclarationFragment fragment = (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">		if (fragment.resolveBinding() == null) {</span>
 <span class="nc" id="L92">			return true; // Continue processing</span>
 		}
 		
-<span class="fc" id="L95">		ITypeBinding binding = fragment.resolveBinding().getType();</span>
-<span class="pc bpc" id="L96" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; getRuleType().equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L97">			JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L98">			mh.setMinv(node);</span>
-<span class="fc" id="L99">			dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L100">			operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="nc" id="L95">		ITypeBinding binding = fragment.resolveBinding().getType();</span>
+<span class="nc bnc" id="L96" title="All 4 branches missed.">		if (binding != null &amp;&amp; getRuleType().equals(binding.getQualifiedName())) {</span>
+<span class="nc" id="L97">			JunitHolder mh = new JunitHolder();</span>
+<span class="nc" id="L98">			mh.setMinv(node);</span>
+<span class="nc" id="L99">			dataHolder.put(dataHolder.size(), mh);</span>
+<span class="nc" id="L100">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}
-<span class="fc" id="L102">		return true; // Continue processing</span>
+<span class="nc" id="L102">		return true; // Continue processing</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

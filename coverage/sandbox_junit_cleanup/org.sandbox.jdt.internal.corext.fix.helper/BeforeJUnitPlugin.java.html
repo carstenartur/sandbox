@@ -57,7 +57,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  * @since 1.3.0
  */
 @CleanupPattern(value = &quot;@Before&quot;, kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_BEFORE, cleanupId = &quot;cleanup.junit.before&quot;, description = &quot;Migrate @Before to @BeforeEach&quot;, displayName = &quot;JUnit 4 @Before → JUnit 5 @BeforeEach&quot;)
-@RewriteRule(replaceWith = &quot;@BeforeEach&quot;, addImports = { ORG_JUNIT_JUPITER_API_BEFORE_EACH })
+@RewriteRule(replaceWith = &quot;@BeforeEach&quot;, targetQualifiedType = ORG_JUNIT_JUPITER_API_BEFORE_EACH)
 <span class="fc" id="L61">public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
 
 	@Override

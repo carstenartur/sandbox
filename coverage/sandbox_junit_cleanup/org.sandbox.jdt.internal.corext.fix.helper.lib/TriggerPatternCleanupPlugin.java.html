@@ -177,8 +177,8 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
 <span class="fc" id="L177">                ASTNode node = match.getMatchedNode();</span>
                 
                 // Skip already processed nodes
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">                if (nodesprocessed.contains(node)) {</span>
-<span class="nc" id="L181">                    continue;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">                if (nodesprocessed.contains(node)) {</span>
+<span class="fc" id="L181">                    continue;</span>
                 }
                 
                 // Validate qualified type if specified
@@ -232,7 +232,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * 
      * &lt;p&gt;&lt;b&gt;Supported patterns:&lt;/b&gt;&lt;/p&gt;
      * &lt;ul&gt;
-     *   &lt;li&gt;ANNOTATION patterns: MarkerAnnotation, SingleMemberAnnotation&lt;/li&gt;
+     *   &lt;li&gt;ANNOTATION patterns: MarkerAnnotation, SingleMemberAnnotation, NormalAnnotation&lt;/li&gt;
      *   &lt;li&gt;EXPRESSION patterns: Any expression replacement (delegates to FixUtilities.rewriteFix)&lt;/li&gt;
      *   &lt;li&gt;METHOD_CALL patterns: Method invocation replacement (delegates to FixUtilities.rewriteFix)&lt;/li&gt;
      *   &lt;li&gt;CONSTRUCTOR patterns: Constructor invocation replacement (delegates to FixUtilities.rewriteFix)&lt;/li&gt;
@@ -240,10 +240,9 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      *   &lt;li&gt;FIELD patterns: Field declaration replacement (delegates to FixUtilities.rewriteFix)&lt;/li&gt;
      * &lt;/ul&gt;
      * 
-     * &lt;p&gt;&lt;b&gt;Limitations for ANNOTATION patterns:&lt;/b&gt;&lt;/p&gt;
-     * &lt;ul&gt;
-     *   &lt;li&gt;NormalAnnotation with named parameters like {@code @Ignore(value=&quot;reason&quot;)} is not supported.&lt;/li&gt;
-     * &lt;/ul&gt;
+     * &lt;p&gt;&lt;b&gt;NormalAnnotation support:&lt;/b&gt; Annotations with named parameters like
+     * {@code @Ignore(value=&quot;reason&quot;)} are supported. The &quot;value&quot; member is automatically
+     * extracted and used as the placeholder binding.&lt;/p&gt;
      * 
      * @param group the text edit group for tracking changes
      * @param rewriter the AST rewriter
@@ -257,8 +256,8 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
         
         // Delegate to the consolidated rewrite logic in AbstractPatternCleanupPlugin
         // JunitHolder now implements MatchHolder, enabling type-safe delegation
-<span class="fc" id="L260">        rewriteRuleDelegate.doRewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
-<span class="fc" id="L261">    }</span>
+<span class="fc" id="L259">        rewriteRuleDelegate.doRewrite(group, rewriter, ast, importRewriter, junitHolder);</span>
+<span class="fc" id="L260">    }</span>
     
     /**
      * Inner class that provides access to AbstractPatternCleanupPlugin's processRewriteWithRule.
@@ -266,7 +265,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
      * TriggerPatternCleanupPlugin to extend AbstractPatternCleanupPlugin (which would
      * break the existing AbstractTool inheritance).
      */
-<span class="fc" id="L269">    private class RewriteRuleDelegate extends AbstractPatternCleanupPlugin&lt;JunitHolder&gt; {</span>
+<span class="fc" id="L268">    private class RewriteRuleDelegate extends AbstractPatternCleanupPlugin&lt;JunitHolder&gt; {</span>
         
         /**
          * Public method to invoke the protected processRewriteWithRule.
@@ -274,25 +273,25 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
          */
         public void doRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
                 ImportRewrite importRewriter, JunitHolder holder) {
-<span class="fc" id="L277">            processRewriteWithRule(group, rewriter, ast, importRewriter, holder);</span>
-<span class="fc" id="L278">        }</span>
+<span class="fc" id="L276">            processRewriteWithRule(group, rewriter, ast, importRewriter, holder);</span>
+<span class="fc" id="L277">        }</span>
         
         @Override
         protected JunitHolder createHolder(Match match) {
             // Not used - delegation only for processRewriteWithRule
-<span class="nc" id="L283">            return null;</span>
+<span class="nc" id="L282">            return null;</span>
         }
         
         @Override
         protected void processRewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
                 ImportRewrite importRewriter, JunitHolder holder) {
             // Not used - we call processRewriteWithRule directly
-<span class="nc" id="L290">        }</span>
+<span class="nc" id="L289">        }</span>
         
         @Override
         public String getPreview(boolean afterRefactoring) {
             // Delegate to the outer class's getPreview method
-<span class="nc" id="L295">            return TriggerPatternCleanupPlugin.this.getPreview(afterRefactoring);</span>
+<span class="nc" id="L294">            return TriggerPatternCleanupPlugin.this.getPreview(afterRefactoring);</span>
         }
         
         /**
@@ -301,7 +300,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
          */
         @Override
         protected RewriteRule getRewriteRule() {
-<span class="fc" id="L304">            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(RewriteRule.class);</span>
+<span class="fc" id="L303">            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(RewriteRule.class);</span>
         }
         
         /**
@@ -310,7 +309,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
          */
         @Override
         protected CleanupPattern getCleanupPatternAnnotation() {
-<span class="fc" id="L313">            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(CleanupPattern.class);</span>
+<span class="fc" id="L312">            return TriggerPatternCleanupPlugin.this.getClass().getAnnotation(CleanupPattern.class);</span>
         }
     }
     
@@ -354,10 +353,10 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
             String removeImport, 
             String addImport) {
         
-<span class="nc" id="L357">        MarkerAnnotation newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, newAnnotationName);</span>
-<span class="nc" id="L358">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
-<span class="nc" id="L359">        importRewriter.removeImport(removeImport);</span>
-<span class="nc" id="L360">        importRewriter.addImport(addImport);</span>
-<span class="nc" id="L361">    }</span>
+<span class="nc" id="L356">        MarkerAnnotation newAnnotation= AnnotationUtils.createMarkerAnnotation(ast, newAnnotationName);</span>
+<span class="nc" id="L357">        ASTNodes.replaceButKeepComment(rewriter, oldAnnotation, newAnnotation, group);</span>
+<span class="nc" id="L358">        importRewriter.removeImport(removeImport);</span>
+<span class="nc" id="L359">        importRewriter.addImport(addImport);</span>
+<span class="nc" id="L360">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

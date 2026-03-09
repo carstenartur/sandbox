@@ -131,20 +131,20 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="fc" id="L131">			ClassInstanceCreation cic = (ClassInstanceCreation) initializer;</span>
 <span class="fc" id="L132">			List&lt;Expression&gt; args = cic.arguments();</span>
 
-<span class="pc bpc" id="L134" title="1 of 4 branches missed.">			if (args.size() == 1 &amp;&amp; args.get(0) instanceof NumberLiteral) {</span>
+<span class="pc bpc" id="L134" title="2 of 4 branches missed.">			if (args.size() == 1 &amp;&amp; args.get(0) instanceof NumberLiteral) {</span>
 				// new Timeout(n) - milliseconds
 <span class="fc" id="L136">				long value = parseLong((NumberLiteral) args.get(0));</span>
 <span class="fc" id="L137">				return new TimeoutInfo(value, &quot;MILLISECONDS&quot;);</span>
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">			} else if (args.size() == 2) {</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">			} else if (args.size() == 2) {</span>
 				// new Timeout(n, TimeUnit.X)
-<span class="fc" id="L140">				Expression arg0 = args.get(0);</span>
-<span class="fc" id="L141">				Expression arg1 = args.get(1);</span>
+<span class="nc" id="L140">				Expression arg0 = args.get(0);</span>
+<span class="nc" id="L141">				Expression arg1 = args.get(1);</span>
 
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">				if (arg0 instanceof NumberLiteral) {</span>
-<span class="fc" id="L144">					long value = parseLong((NumberLiteral) arg0);</span>
-<span class="fc" id="L145">					String unit = extractTimeUnit(arg1);</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">					if (unit != null) {</span>
-<span class="fc" id="L147">						return new TimeoutInfo(value, unit);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">				if (arg0 instanceof NumberLiteral) {</span>
+<span class="nc" id="L144">					long value = parseLong((NumberLiteral) arg0);</span>
+<span class="nc" id="L145">					String unit = extractTimeUnit(arg1);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">					if (unit != null) {</span>
+<span class="nc" id="L147">						return new TimeoutInfo(value, unit);</span>
 					}
 				}
 			}
@@ -156,14 +156,14 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 * Extract TimeUnit constant from expression like TimeUnit.SECONDS
 	 */
 	private String extractTimeUnit(Expression expr) {
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		if (expr instanceof QualifiedName) {</span>
-<span class="fc" id="L160">			QualifiedName qn = (QualifiedName) expr;</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">		if (expr instanceof QualifiedName) {</span>
+<span class="nc" id="L160">			QualifiedName qn = (QualifiedName) expr;</span>
 			// Prefer type binding to reliably detect java.util.concurrent.TimeUnit
-<span class="fc" id="L162">			ITypeBinding qualifierBinding = qn.getQualifier().resolveTypeBinding();</span>
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">			if (qualifierBinding != null) {</span>
-<span class="fc" id="L164">				String qualifiedName = qualifierBinding.getQualifiedName();</span>
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				if (&quot;java.util.concurrent.TimeUnit&quot;.equals(qualifiedName)) {</span>
-<span class="fc" id="L166">					return qn.getName().getIdentifier();</span>
+<span class="nc" id="L162">			ITypeBinding qualifierBinding = qn.getQualifier().resolveTypeBinding();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">			if (qualifierBinding != null) {</span>
+<span class="nc" id="L164">				String qualifiedName = qualifierBinding.getQualifiedName();</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">				if (&quot;java.util.concurrent.TimeUnit&quot;.equals(qualifiedName)) {</span>
+<span class="nc" id="L166">					return qn.getName().getIdentifier();</span>
 				}
 <span class="nc bnc" id="L168" title="All 2 branches missed.">			} else if (qn.getQualifier() instanceof SimpleName) {</span>
 				// Fallback when bindings are unavailable: check simple qualifier name

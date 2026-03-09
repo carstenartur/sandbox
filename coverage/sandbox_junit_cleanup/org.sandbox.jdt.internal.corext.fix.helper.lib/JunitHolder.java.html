@@ -274,11 +274,11 @@ import org.sandbox.jdt.triggerpattern.cleanup.MatchHolder;
 	 */
 	@Override
 	public Expression getBindingAsExpression(String placeholder) {
-<span class="nc" id="L277">		Object value = bindings.get(placeholder);</span>
-<span class="nc bnc" id="L278" title="All 2 branches missed.">		if (value instanceof Expression) {</span>
+<span class="fc" id="L277">		Object value = bindings.get(placeholder);</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">		if (value instanceof Expression) {</span>
 <span class="nc" id="L279">			return (Expression) value;</span>
 		}
-<span class="nc" id="L281">		return null;</span>
+<span class="fc" id="L281">		return null;</span>
 	}
 	
 	/**

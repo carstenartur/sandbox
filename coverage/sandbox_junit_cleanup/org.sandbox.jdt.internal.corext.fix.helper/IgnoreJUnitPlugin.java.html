@@ -17,20 +17,11 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.List;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.MarkerAnnotation;
-import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
-import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 
 /**
  * Migrates JUnit 4 @Ignore annotations to JUnit 5 @Disabled.
@@ -41,10 +32,10 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * &lt;/p&gt;
  * 
  * &lt;p&gt;
- * Uses the TriggerPattern-based declarative architecture. Note: @RewriteRule
- * cannot be used here because we need to handle three different annotation
- * patterns (marker, single-member, and normal), so we keep the custom
- * process2Rewrite() implementation.
+ * Uses the TriggerPattern-based declarative architecture with @RewriteRule
+ * annotation. Handles three different annotation types (marker, single-member,
+ * and normal) through multiple patterns defined in {@code getPatterns()}, with
+ * the framework automatically handling NormalAnnotation value extraction.
  * &lt;/p&gt;
  * 
  * &lt;p&gt;
@@ -86,75 +77,25 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  * @since 1.3.0
  */
 @CleanupPattern(value = &quot;@Ignore&quot;, kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_IGNORE, cleanupId = &quot;cleanup.junit.ignore&quot;, description = &quot;Migrate @Ignore to @Disabled&quot;, displayName = &quot;JUnit 4 @Ignore → JUnit 5 @Disabled&quot;)
-<span class="fc" id="L89">public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
+@RewriteRule(replaceWith = &quot;@Disabled($value)&quot;, targetQualifiedType = ORG_JUNIT_JUPITER_DISABLED)
+<span class="fc" id="L81">public class IgnoreJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
 
 	@Override
 	protected List&lt;Pattern&gt; getPatterns() {
 		// Need to explicitly match all three annotation types
-<span class="fc" id="L94">		return List.of(</span>
+<span class="fc" id="L86">		return List.of(</span>
 				// Match @Ignore (MarkerAnnotation)
-<span class="fc" id="L96">				new Pattern(&quot;@Ignore&quot;, PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null),</span>
+<span class="fc" id="L88">				new Pattern(&quot;@Ignore&quot;, PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null),</span>
 				// Match @Ignore(&quot;reason&quot;) (SingleMemberAnnotation)
-<span class="fc" id="L98">				new Pattern(&quot;@Ignore($value)&quot;, PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null),</span>
+<span class="fc" id="L90">				new Pattern(&quot;@Ignore($value)&quot;, PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null),</span>
 				// Match @Ignore(value=&quot;reason&quot;) (NormalAnnotation)
-<span class="fc" id="L100">				new Pattern(&quot;@Ignore(value=$value)&quot;, PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null));</span>
+<span class="fc" id="L92">				new Pattern(&quot;@Ignore(value=$value)&quot;, PatternKind.ANNOTATION, null, null, ORG_JUNIT_IGNORE, null, null));</span>
 	}
 
 	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder junitHolder) {
-<span class="fc" id="L106">		Annotation annotation = junitHolder.getAnnotation();</span>
-		Annotation newAnnotation;
-
-		// Preserve ignore reason if present
-<span class="fc bfc" id="L110" title="All 2 branches covered.">		if (annotation instanceof SingleMemberAnnotation) {</span>
-<span class="fc" id="L111">			SingleMemberAnnotation oldAnnotation = (SingleMemberAnnotation) annotation;</span>
-<span class="fc" id="L112">			SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
-<span class="fc" id="L113">			newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
-			// Move the value (reason) from old to new annotation
-<span class="fc" id="L115">			newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, oldAnnotation.getValue()));</span>
-<span class="fc" id="L116">			newAnnotation = newSingleMemberAnnotation;</span>
-<span class="fc bfc" id="L117" title="All 2 branches covered.">		} else if (annotation instanceof org.eclipse.jdt.core.dom.NormalAnnotation) {</span>
-			// Handle NormalAnnotation (e.g., @Ignore(value=&quot;reason&quot;))
-			// Convert to SingleMemberAnnotation for @Disabled
-<span class="fc" id="L120">			org.eclipse.jdt.core.dom.NormalAnnotation oldAnnotation = (org.eclipse.jdt.core.dom.NormalAnnotation) annotation;</span>
-<span class="fc" id="L121">			java.util.List&lt;org.eclipse.jdt.core.dom.MemberValuePair&gt; values = oldAnnotation.values();</span>
-
-			// Find the &quot;value&quot; member specifically
-<span class="fc" id="L124">			org.eclipse.jdt.core.dom.MemberValuePair valuePair = null;</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">			for (org.eclipse.jdt.core.dom.MemberValuePair pair : values) {</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				if (&quot;value&quot;.equals(pair.getName().getIdentifier())) {</span>
-<span class="fc" id="L127">					valuePair = pair;</span>
-<span class="fc" id="L128">					break;</span>
-				}
-			}
-
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">			if (valuePair != null) {</span>
-				// If there's a value attribute, extract it and create SingleMemberAnnotation
-<span class="fc" id="L134">				SingleMemberAnnotation newSingleMemberAnnotation = ast.newSingleMemberAnnotation();</span>
-<span class="fc" id="L135">				newSingleMemberAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_DISABLED));</span>
-<span class="fc" id="L136">				newSingleMemberAnnotation.setValue(ASTNodes.createMoveTarget(rewriter, valuePair.getValue()));</span>
-<span class="fc" id="L137">				newAnnotation = newSingleMemberAnnotation;</span>
-<span class="fc" id="L138">			} else {</span>
-				// No value, treat as marker
-<span class="nc" id="L140">				MarkerAnnotation newMarkerAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);</span>
-<span class="nc" id="L141">				newAnnotation = newMarkerAnnotation;</span>
-			}
-<span class="nc" id="L143">		} else {</span>
-			// MarkerAnnotation - no reason to preserve
-<span class="fc" id="L145">			MarkerAnnotation newMarkerAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_DISABLED);</span>
-<span class="fc" id="L146">			newAnnotation = newMarkerAnnotation;</span>
-		}
-
-<span class="fc" id="L149">		ASTNodes.replaceButKeepComment(rewriter, annotation, newAnnotation, group);</span>
-<span class="fc" id="L150">		importRewriter.removeImport(ORG_JUNIT_IGNORE);</span>
-<span class="fc" id="L151">		importRewriter.addImport(ORG_JUNIT_JUPITER_DISABLED);</span>
-<span class="fc" id="L152">	}</span>
-
-	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="fc bfc" id="L156" title="All 2 branches covered.">		if (afterRefactoring) {</span>
-<span class="fc" id="L157">			return &quot;&quot;&quot;</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		if (afterRefactoring) {</span>
+<span class="fc" id="L98">			return &quot;&quot;&quot;</span>
 					@Disabled(&quot;not implemented&quot;)
 					@Test
 					public void test() {
@@ -162,7 +103,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="fc" id="L165">		return &quot;&quot;&quot;</span>
+<span class="fc" id="L106">		return &quot;&quot;&quot;</span>
 				@Ignore(&quot;not implemented&quot;)
 				@Test
 				public void test() {
@@ -173,7 +114,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L176">		return &quot;Ignore&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L117">		return &quot;Ignore&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

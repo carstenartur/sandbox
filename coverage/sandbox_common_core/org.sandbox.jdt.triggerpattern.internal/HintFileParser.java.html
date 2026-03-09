@@ -1024,10 +1024,15 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="pc bpc" id="L1024" title="1 of 6 branches missed.">		if (trimmed.contains(&quot;(&quot;) &amp;&amp; trimmed.contains(&quot;)&quot;) &amp;&amp; !trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 <span class="fc" id="L1025">			return PatternKind.METHOD_CALL;</span>
 		}
-<span class="fc bfc" id="L1027" title="All 2 branches covered.">		if (trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1028">			return PatternKind.STATEMENT;</span>
+		// Variable declaration: &quot;$Type $var = $init;&quot; or &quot;$Type $var;&quot;
+		// Must be checked before generic STATEMENT to distinguish declarations
+<span class="fc bfc" id="L1029" title="All 2 branches covered.">		if (looksLikeDeclaration(trimmed)) {</span>
+<span class="fc" id="L1030">			return PatternKind.DECLARATION;</span>
 		}
-<span class="fc" id="L1030">		return PatternKind.EXPRESSION;</span>
+<span class="fc bfc" id="L1032" title="All 2 branches covered.">		if (trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1033">			return PatternKind.STATEMENT;</span>
+		}
+<span class="fc" id="L1035">		return PatternKind.EXPRESSION;</span>
 	}
 	
 	/**
@@ -1049,41 +1054,93 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	private static boolean looksLikeMethodDeclaration(String trimmed) {
 		// Must contain parens
-<span class="pc bpc" id="L1052" title="1 of 4 branches missed.">		if (!trimmed.contains(&quot;(&quot;) || !trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1053">			return false;</span>
+<span class="pc bpc" id="L1057" title="1 of 4 branches missed.">		if (!trimmed.contains(&quot;(&quot;) || !trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1058">			return false;</span>
 		}
 		// Must not contain '.' (method calls have receiver.method())
 		// Method declarations don't have dots in the signature part before '('
-<span class="fc" id="L1057">		String beforeParens = trimmed.substring(0, trimmed.indexOf('(')).trim();</span>
-<span class="fc bfc" id="L1058" title="All 2 branches covered.">		if (beforeParens.contains(&quot;.&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1059">			return false;</span>
+<span class="fc" id="L1062">		String beforeParens = trimmed.substring(0, trimmed.indexOf('(')).trim();</span>
+<span class="fc bfc" id="L1063" title="All 2 branches covered.">		if (beforeParens.contains(&quot;.&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1064">			return false;</span>
 		}
 		// Split into space-separated tokens before '('
-<span class="fc" id="L1062">		String[] tokens = beforeParens.split(&quot;\\s+&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1067">		String[] tokens = beforeParens.split(&quot;\\s+&quot;); //$NON-NLS-1$</span>
 		// Need at least 2 tokens: return type and method name
 		// e.g., &quot;void $name&quot; or &quot;public void setUp&quot;
-<span class="fc bfc" id="L1065" title="All 2 branches covered.">		if (tokens.length &lt; 2) {</span>
-<span class="fc" id="L1066">			return false;</span>
+<span class="fc bfc" id="L1070" title="All 2 branches covered.">		if (tokens.length &lt; 2) {</span>
+<span class="fc" id="L1071">			return false;</span>
 		}
 		// Check if any token is a primitive type or 'void' — strong indicator
-<span class="fc bfc" id="L1069" title="All 2 branches covered.">		for (String token : tokens) {</span>
-<span class="fc bfc" id="L1070" title="All 2 branches covered.">			if (RETURN_TYPE_KEYWORDS.contains(token)) {</span>
-<span class="fc" id="L1071">				return true;</span>
+<span class="fc bfc" id="L1074" title="All 2 branches covered.">		for (String token : tokens) {</span>
+<span class="fc bfc" id="L1075" title="All 2 branches covered.">			if (RETURN_TYPE_KEYWORDS.contains(token)) {</span>
+<span class="fc" id="L1076">				return true;</span>
 			}
 		}
 		// Heuristic: if the second-to-last token looks like a type (starts with uppercase
 		// or is a placeholder) and the last token looks like a name, treat as declaration
-<span class="fc" id="L1076">		String possibleType = tokens[tokens.length - 2];</span>
-<span class="pc bpc" id="L1077" title="1 of 4 branches missed.">		if (Character.isUpperCase(possibleType.charAt(0)) || possibleType.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1078">			return true;</span>
+<span class="fc" id="L1081">		String possibleType = tokens[tokens.length - 2];</span>
+<span class="pc bpc" id="L1082" title="1 of 4 branches missed.">		if (Character.isUpperCase(possibleType.charAt(0)) || possibleType.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1083">			return true;</span>
 		}
-<span class="fc" id="L1080">		return false;</span>
+<span class="fc" id="L1085">		return false;</span>
+	}
+
+	/**
+	 * Checks if a pattern looks like a variable declaration statement.
+	 *
+	 * &lt;p&gt;A declaration pattern has the form {@code $Type $var = $init;}
+	 * or {@code $Type $var;} where $Type is a type placeholder or FQN,
+	 * and $var is a variable name placeholder.&lt;/p&gt;
+	 *
+	 * &lt;p&gt;Examples that match:&lt;/p&gt;
+	 * &lt;ul&gt;
+	 *   &lt;li&gt;{@code $Type $var = $init;}&lt;/li&gt;
+	 *   &lt;li&gt;{@code $Type $var;}&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 *
+	 * @param trimmed the trimmed pattern text
+	 * @return {@code true} if the pattern looks like a variable declaration
+	 * @since 1.3.12
+	 */
+	private static boolean looksLikeDeclaration(String trimmed) {
+		// Must end with semicolon
+<span class="fc bfc" id="L1107" title="All 2 branches covered.">		if (!trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1108">			return false;</span>
+		}
+		// Must NOT contain parens (those are method calls/declarations)
+<span class="pc bpc" id="L1111" title="1 of 4 branches missed.">		if (trimmed.contains(&quot;(&quot;) || trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1112">			return false;</span>
+		}
+		// Check for &quot;= &quot; indicating an initializer
+		// Pattern: &quot;$Type $var = $init;&quot; or &quot;$Type $var;&quot;
+<span class="fc" id="L1116">		String withoutSemicolon = trimmed.substring(0, trimmed.length() - 1).trim();</span>
+		String declarationPart;
+<span class="fc bfc" id="L1118" title="All 2 branches covered.">		if (withoutSemicolon.contains(&quot;=&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1119">			declarationPart = withoutSemicolon.substring(0, withoutSemicolon.indexOf('=')).trim();</span>
+		} else {
+<span class="fc" id="L1121">			declarationPart = withoutSemicolon;</span>
+		}
+		// Must have exactly 2 space-separated tokens: type and name
+<span class="fc" id="L1124">		String[] tokens = declarationPart.split(&quot;\\s+&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L1125" title="1 of 2 branches missed.">		if (tokens.length != 2) {</span>
+<span class="nc" id="L1126">			return false;</span>
+		}
+		// First token must be a type: placeholder ($Type), FQN, or uppercase identifier
+<span class="fc" id="L1129">		String typeToken = tokens[0];</span>
+		// Second token must be a variable name: placeholder ($var) or lowercase identifier
+<span class="fc" id="L1131">		String nameToken = tokens[1];</span>
+<span class="fc" id="L1132">		boolean typeIsPlaceholder = typeToken.startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L1133" title="2 of 4 branches missed.">		boolean typeIsUppercase = !typeToken.isEmpty() &amp;&amp; Character.isUpperCase(typeToken.charAt(0));</span>
+<span class="fc" id="L1134">		boolean typeIsFqn = typeToken.contains(&quot;.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1135">		boolean nameIsPlaceholder = nameToken.startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L1136" title="3 of 8 branches missed.">		return (typeIsPlaceholder || typeIsUppercase || typeIsFqn)</span>
+<span class="pc bnc" id="L1137" title="All 2 branches missed.">				&amp;&amp; (nameIsPlaceholder || !nameToken.isEmpty());</span>
 	}
 	
 	/**
 	 * Java primitive types and void — used to detect method declaration patterns.
 	 */
-<span class="fc" id="L1086">	private static final Set&lt;String&gt; RETURN_TYPE_KEYWORDS = Set.of(</span>
+<span class="fc" id="L1143">	private static final Set&lt;String&gt; RETURN_TYPE_KEYWORDS = Set.of(</span>
 			&quot;void&quot;, &quot;int&quot;, &quot;long&quot;, &quot;short&quot;, &quot;byte&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 			&quot;float&quot;, &quot;double&quot;, &quot;boolean&quot;, &quot;char&quot; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	);
@@ -1103,16 +1160,16 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return {@code true} if the content is a fix function reference
 	 */
 	private static boolean isFixFunctionReference(String content) {
-<span class="pc bpc" id="L1106" title="1 of 2 branches missed.">		if (content.isEmpty()) {</span>
-<span class="nc" id="L1107">			return false;</span>
+<span class="pc bpc" id="L1163" title="1 of 2 branches missed.">		if (content.isEmpty()) {</span>
+<span class="nc" id="L1164">			return false;</span>
 		}
 		// Fix function references must not have leading/trailing whitespace
 		// This distinguishes &lt;?fixName?&gt; from &lt;? code ?&gt; (embedded Java)
-<span class="fc bfc" id="L1111" title="All 2 branches covered.">		if (Character.isWhitespace(content.charAt(0))</span>
-<span class="pc bpc" id="L1112" title="1 of 2 branches missed.">				|| Character.isWhitespace(content.charAt(content.length() - 1))) {</span>
-<span class="fc" id="L1113">			return false;</span>
+<span class="fc bfc" id="L1168" title="All 2 branches covered.">		if (Character.isWhitespace(content.charAt(0))</span>
+<span class="pc bpc" id="L1169" title="1 of 2 branches missed.">				|| Character.isWhitespace(content.charAt(content.length() - 1))) {</span>
+<span class="fc" id="L1170">			return false;</span>
 		}
-<span class="fc" id="L1115">		return isValidJavaIdentifier(content);</span>
+<span class="fc" id="L1172">		return isValidJavaIdentifier(content);</span>
 	}
 
 	/**
@@ -1122,18 +1179,18 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return {@code true} if the text is a valid Java identifier
 	 */
 	static boolean isValidJavaIdentifier(String text) {
-<span class="pc bpc" id="L1125" title="2 of 4 branches missed.">		if (text == null || text.isEmpty()) {</span>
-<span class="nc" id="L1126">			return false;</span>
+<span class="pc bpc" id="L1182" title="2 of 4 branches missed.">		if (text == null || text.isEmpty()) {</span>
+<span class="nc" id="L1183">			return false;</span>
 		}
-<span class="pc bpc" id="L1128" title="1 of 2 branches missed.">		if (!Character.isJavaIdentifierStart(text.charAt(0))) {</span>
-<span class="nc" id="L1129">			return false;</span>
+<span class="pc bpc" id="L1185" title="1 of 2 branches missed.">		if (!Character.isJavaIdentifierStart(text.charAt(0))) {</span>
+<span class="nc" id="L1186">			return false;</span>
 		}
-<span class="fc bfc" id="L1131" title="All 2 branches covered.">		for (int i = 1; i &lt; text.length(); i++) {</span>
-<span class="pc bpc" id="L1132" title="1 of 2 branches missed.">			if (!Character.isJavaIdentifierPart(text.charAt(i))) {</span>
-<span class="nc" id="L1133">				return false;</span>
+<span class="fc bfc" id="L1188" title="All 2 branches covered.">		for (int i = 1; i &lt; text.length(); i++) {</span>
+<span class="pc bpc" id="L1189" title="1 of 2 branches missed.">			if (!Character.isJavaIdentifierPart(text.charAt(i))) {</span>
+<span class="nc" id="L1190">				return false;</span>
 			}
 		}
-<span class="fc" id="L1136">		return true;</span>
+<span class="fc" id="L1193">		return true;</span>
 	}
 	
 	/**
@@ -1150,9 +1207,9 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 		 * @param lineNumber the line number where the error occurred
 		 */
 		public HintParseException(String message, int lineNumber) {
-<span class="fc" id="L1153">			super(message + &quot; (line &quot; + lineNumber + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1154">			this.lineNumber = lineNumber;</span>
-<span class="fc" id="L1155">		}</span>
+<span class="fc" id="L1210">			super(message + &quot; (line &quot; + lineNumber + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1211">			this.lineNumber = lineNumber;</span>
+<span class="fc" id="L1212">		}</span>
 		
 		/**
 		 * Returns the line number where the error occurred.
@@ -1160,7 +1217,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 		 * @return the line number
 		 */
 		public int getLineNumber() {
-<span class="fc" id="L1163">			return lineNumber;</span>
+<span class="fc" id="L1220">			return lineNumber;</span>
 		}
 	}
 }

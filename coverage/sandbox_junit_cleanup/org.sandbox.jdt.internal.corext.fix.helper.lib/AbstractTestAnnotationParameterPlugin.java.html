@@ -38,7 +38,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
  *   &lt;li&gt;{@link #getPreview(boolean)} - Preview for UI&lt;/li&gt;
  * &lt;/ul&gt;
  */
-<span class="fc" id="L41">public abstract class AbstractTestAnnotationParameterPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="nc" id="L41">public abstract class AbstractTestAnnotationParameterPlugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
 	/**
 	 * Returns the parameter name to look for in @Test annotation.
@@ -49,41 +49,41 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L52">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
-<span class="fc" id="L53">		HelperVisitorFactory.forAnnotation(ORG_JUNIT_TEST)</span>
-<span class="fc" id="L54">			.in(compilationUnit)</span>
-<span class="fc" id="L55">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L56">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">				if (visited instanceof NormalAnnotation) {</span>
-<span class="fc" id="L58">					return processTestAnnotation(fixcore, operations, (NormalAnnotation) visited, aholder);</span>
+<span class="nc" id="L52">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
+<span class="nc" id="L53">		HelperVisitorFactory.forAnnotation(ORG_JUNIT_TEST)</span>
+<span class="nc" id="L54">			.in(compilationUnit)</span>
+<span class="nc" id="L55">			.excluding(nodesprocessed)</span>
+<span class="nc" id="L56">			.processEach(dataHolder, (visited, aholder) -&gt; {</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">				if (visited instanceof NormalAnnotation) {</span>
+<span class="nc" id="L58">					return processTestAnnotation(fixcore, operations, (NormalAnnotation) visited, aholder);</span>
 				}
 <span class="nc" id="L60">				return true;</span>
 			});
-<span class="fc" id="L62">	}</span>
+<span class="nc" id="L62">	}</span>
 
 	private boolean processTestAnnotation(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, NormalAnnotation node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 		
-<span class="fc" id="L68">		MemberValuePair targetPair = null;</span>
+<span class="nc" id="L68">		MemberValuePair targetPair = null;</span>
 		
-<span class="fc" id="L70">		List&lt;MemberValuePair&gt; values = node.values();</span>
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		for (MemberValuePair pair : values) {</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">			if (getParameterName().equals(pair.getName().getIdentifier())) {</span>
-<span class="fc" id="L73">				targetPair = pair;</span>
-<span class="fc" id="L74">				break;</span>
+<span class="nc" id="L70">		List&lt;MemberValuePair&gt; values = node.values();</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">		for (MemberValuePair pair : values) {</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">			if (getParameterName().equals(pair.getName().getIdentifier())) {</span>
+<span class="nc" id="L73">				targetPair = pair;</span>
+<span class="nc" id="L74">				break;</span>
 			}
 		}
 		
-<span class="pc bpc" id="L78" title="2 of 4 branches missed.">		if (targetPair != null &amp;&amp; validateParameter(targetPair)) {</span>
-<span class="fc" id="L79">			JunitHolder mh = new JunitHolder();</span>
-<span class="fc" id="L80">			mh.setMinv(node);</span>
-<span class="fc" id="L81">			mh.setAdditionalInfo(targetPair);</span>
-<span class="fc" id="L82">			dataHolder.put(dataHolder.size(), mh);</span>
-<span class="fc" id="L83">			operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="nc bnc" id="L78" title="All 4 branches missed.">		if (targetPair != null &amp;&amp; validateParameter(targetPair)) {</span>
+<span class="nc" id="L79">			JunitHolder mh = new JunitHolder();</span>
+<span class="nc" id="L80">			mh.setMinv(node);</span>
+<span class="nc" id="L81">			mh.setAdditionalInfo(targetPair);</span>
+<span class="nc" id="L82">			dataHolder.put(dataHolder.size(), mh);</span>
+<span class="nc" id="L83">			operations.add(fixcore.rewrite(dataHolder));</span>
 		}
 		
-<span class="fc" id="L86">		return true;</span>
+<span class="nc" id="L86">		return true;</span>
 	}
 	
 	/**

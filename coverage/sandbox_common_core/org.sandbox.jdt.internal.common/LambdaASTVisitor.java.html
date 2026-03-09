@@ -583,10 +583,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(MemberValuePair node) {
-<span class="pc bpc" id="L586" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberValuePair)) {</span>
+<span class="nc bnc" id="L586" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberValuePair)) {</span>
 <span class="nc" id="L587">			return this.helperVisitor.testPredicate(VisitorEnum.MemberValuePair, node);</span>
 		}
-<span class="fc" id="L589">		return true;</span>
+<span class="nc" id="L589">		return true;</span>
 	}
 
 	@Override
@@ -785,18 +785,18 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(NormalAnnotation node) {
-<span class="fc bfc" id="L788" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NormalAnnotation)) {</span>
-<span class="fc" id="L789">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.NormalAnnotation);</span>
-<span class="pc bpc" id="L790" title="1 of 2 branches missed.">			if(config != null) {</span>
-<span class="fc" id="L791">				String data = config.getAnnotationName();</span>
-<span class="fc" id="L792">				String fullyQualifiedName = resolveAnnotationName(node);</span>
-<span class="pc bpc" id="L793" title="1 of 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
-<span class="fc" id="L794">					return true;</span>
+<span class="nc bnc" id="L788" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.NormalAnnotation)) {</span>
+<span class="nc" id="L789">			VisitorConfigData config = this.helperVisitor.getSupplierData().get(VisitorEnum.NormalAnnotation);</span>
+<span class="nc bnc" id="L790" title="All 2 branches missed.">			if(config != null) {</span>
+<span class="nc" id="L791">				String data = config.getAnnotationName();</span>
+<span class="nc" id="L792">				String fullyQualifiedName = resolveAnnotationName(node);</span>
+<span class="nc bnc" id="L793" title="All 4 branches missed.">				if ((data!= null) &amp;&amp; !fullyQualifiedName.equals(data)) {</span>
+<span class="nc" id="L794">					return true;</span>
 				}
 			}
-<span class="fc" id="L797">			return this.helperVisitor.testPredicate(VisitorEnum.NormalAnnotation, node);</span>
+<span class="nc" id="L797">			return this.helperVisitor.testPredicate(VisitorEnum.NormalAnnotation, node);</span>
 		}
-<span class="fc" id="L799">		return true;</span>
+<span class="nc" id="L799">		return true;</span>
 	}
 
 	@Override
@@ -1570,10 +1570,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(MemberValuePair node) {
-<span class="pc bpc" id="L1573" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberValuePair)) {</span>
+<span class="nc bnc" id="L1573" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberValuePair)) {</span>
 <span class="nc" id="L1574">			this.helperVisitor.acceptConsumer(VisitorEnum.MemberValuePair, node);</span>
 		}
-<span class="fc" id="L1576">	}</span>
+<span class="nc" id="L1576">	}</span>
 
 	@Override
 	public void endVisit(MethodRef node) {
@@ -1653,7 +1653,7 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(NormalAnnotation node) {
-<span class="pc bpc" id="L1656" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NormalAnnotation)) {</span>
+<span class="nc bnc" id="L1656" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.NormalAnnotation)) {</span>
 <span class="nc" id="L1657">			VisitorConfigData config = this.helperVisitor.getConsumerData().get(VisitorEnum.NormalAnnotation);</span>
 <span class="nc bnc" id="L1658" title="All 2 branches missed.">			if(config != null) {</span>
 <span class="nc" id="L1659">				String data = config.getAnnotationName();</span>
@@ -1664,7 +1664,7 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 			}
 <span class="nc" id="L1665">			this.helperVisitor.acceptConsumer(VisitorEnum.NormalAnnotation, node);</span>
 		}
-<span class="fc" id="L1667">	}</span>
+<span class="nc" id="L1667">	}</span>
 
 	@Override
 	public void endVisit(NullLiteral node) {

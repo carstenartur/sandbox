@@ -265,7 +265,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	private static String wrapForKind(String snippet, PatternKind kind) {
 <span class="pc bpc" id="L266" title="7 of 10 branches missed.">		return switch (kind) {</span>
 <span class="nc" id="L267">		case EXPRESSION -&gt; &quot;class _Infer { void _m() { Object _r = &quot; + snippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L268">		case STATEMENT -&gt; &quot;class _Infer { void _m() { &quot; + snippet + &quot; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L268">		case STATEMENT, DECLARATION -&gt; &quot;class _Infer { void _m() { &quot; + snippet + &quot; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L269">		case METHOD_CALL -&gt; &quot;class _Infer { void _m() { &quot; + snippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L270">		case CONSTRUCTOR -&gt; &quot;class _Infer { void _m() { Object _r = &quot; + snippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="nc" id="L271">		case ANNOTATION -&gt; snippet + &quot; class _Infer {}&quot;; //$NON-NLS-1$</span>
@@ -304,7 +304,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 			}
 <span class="nc" id="L305">			yield null;</span>
 		}
-		case STATEMENT, STATEMENT_SEQUENCE -&gt; {
+		case STATEMENT, STATEMENT_SEQUENCE, DECLARATION -&gt; {
 <span class="pc bpc" id="L308" title="1 of 2 branches missed.">			if (type.getMethods().length == 0) {</span>
 <span class="nc" id="L309">				yield null;</span>
 			}
