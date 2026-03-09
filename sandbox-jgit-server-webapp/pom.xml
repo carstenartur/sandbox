@@ -61,7 +61,7 @@
 		<dependency>
 			<groupId>org.hibernate.orm</groupId>
 			<artifactId>hibernate-core</artifactId>
-			<version>6.6.13.Final</version>
+			<version>7.2.6.Final</version>
 		</dependency>
 
 		<!-- Embedded Jetty (EE10/Jakarta EE 10) -->
