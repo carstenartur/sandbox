@@ -52,7 +52,7 @@
 		<dependency>
 			<groupId>org.hibernate.search</groupId>
 			<artifactId>hibernate-search-backend-lucene</artifactId>
-			<version>7.2.0.Final</version>
+			<version>8.2.2.Final</version>
 		</dependency>
 
 		<!-- JBoss Logging -->
