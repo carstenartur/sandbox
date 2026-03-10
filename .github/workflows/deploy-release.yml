@@ -1,4 +1,7 @@
 name: Release Workflow
+# This workflow performs a full release: version bump, build, tag, GitHub Release,
+# gh-pages deployment, and next SNAPSHOT version PR creation.
+# Trigger manually via the "Run workflow" button on the Actions tab.
 
 on:
   workflow_dispatch:
