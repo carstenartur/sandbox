@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "7a7d8f1c3d71e40b54a57675cbf6d30b6721e7e9",
-      "lastProcessedDate": "2026-03-09T04:25:42.914290163Z",
-      "totalProcessed": 3458,
+      "lastProcessedCommit": "00b9817365135ad7baf6bb16cf9c9ebcf006872d",
+      "lastProcessedDate": "2026-03-10T04:22:22.247273988Z",
+      "totalProcessed": 3503,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -419,6 +419,24 @@
           "deferredAt": "2026-03-09T04:25:31.674746927Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "7744b1ebb9582f7f915951b6ebfc4a79830e785e",
+          "message": "Bug 571024 - [performance] Avoid replaceAll(regExp,)\n\nAvoiding regular expressions for simple character replacements.\nSt",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-03-10T04:18:45.972452392Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e4611adfaeb21815d9d4d39e4bfa5a48196f2a04",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA16\n",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-03-10T04:22:22.247174443Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -434,7 +452,8 @@
         "Collections": 1,
         "Java-Modernization": 1,
         "JDT Internal Bug Fix": 1,
-        "Logging Simplification": 1
+        "Logging Simplification": 1,
+        "Robustness/Defensive Programming": 1
       },
       "exhaustedCategories": []
     },
@@ -487,5 +506,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 13431
+  "globalTotalProcessed": 13476
 }
