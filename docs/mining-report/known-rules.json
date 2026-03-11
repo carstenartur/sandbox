@@ -11,6 +11,39 @@
       "sourceCommit": "c1c989f6c7f6d8d058bbbf089b250ca1c3d327f1",
       "status": "DISCOVERED",
       "hintFile": "collections.sandbox-hint"
+    },
+    {
+      "id": "string-api-this-commit-replaces-string-replaceall-n",
+      "category": "String-API",
+      "dslRule": "java.lang.String.replaceAll(\"\\\\n\", $replacement)\n\u003d\u003e java.lang.String.replace(\"\\\\n\", $replacement)\n;;",
+      "summary": "This commit replaces `String.replaceAll(\"\\n\", ...)` with `String.replace(\"\\n\", ...)`. Since `\"\\n\"` is a literal string and not a regex pattern requiring special interpretation, `String.replace()` is semantically equivalent and more performant as it avoids regex overhead. This is a safe 1:1 replacement, directly implementable as a DSL rule.",
+      "discoveredAt": "2026-03-11",
+      "discoveredInRun": 13692,
+      "sourceCommit": "e4611adfaeb21815d9d4d39e4bfa5a48196f2a04",
+      "status": "DISCOVERED",
+      "hintFile": "string-modernization.sandbox-hint"
+    },
+    {
+      "id": "deprecation-this-commit-replaces-deprecated-new-floa",
+      "category": "Deprecation",
+      "dslRule": "new java.lang.Float($x)\n\u003d\u003e java.lang.Float.valueOf($x)\n;;\n\nnew java.lang.Double($x)\n\u003d\u003e java.lang.Double.valueOf($x)\n;;",
+      "summary": "This commit replaces deprecated `new Float(float)` and `new Double(double)` constructors with their respective `Float.valueOf(float)` and `Double.valueOf(double)` factory methods. This is a standard modernization pattern to avoid deprecated API usage. The transformations are already covered by existing DSL rules in `deprecated-api.sandbox-hint` and `performance.sandbox-hint`.",
+      "discoveredAt": "2026-03-11",
+      "discoveredInRun": 13692,
+      "sourceCommit": "5cfa0ed0ca53f38d0574bcab31fda8225c7ef761",
+      "status": "DISCOVERED",
+      "hintFile": "deprecated-api.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-the-commit-replaces-ast-jls15-with-ast-j",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS15\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS_Latest\n;;",
+      "summary": "The commit replaces `AST.JLS15` with `AST.JLS_Latest` when creating an `ASTParser`. This is a common modernization pattern in JDT development to ensure the parser always uses the latest supported Java Language Specification version, avoiding hardcoded versions and improving forward compatibility. It\u0027s a direct, unconditional constant replacement that can be fully automated.",
+      "discoveredAt": "2026-03-11",
+      "discoveredInRun": 13692,
+      "sourceCommit": "5a1165f14f197472183f53e939b8c77ffcd965aa",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
     }
   ]
 }

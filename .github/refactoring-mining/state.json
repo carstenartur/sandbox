@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "00b9817365135ad7baf6bb16cf9c9ebcf006872d",
-      "lastProcessedDate": "2026-03-10T04:22:22.247273988Z",
-      "totalProcessed": 3503,
+      "lastProcessedCommit": "14e23d4926d839a278fd9abaeee1e6084c3e6f01",
+      "lastProcessedDate": "2026-03-11T04:17:45.962438444Z",
+      "totalProcessed": 3719,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -430,11 +430,29 @@
           "maxRetries": 3
         },
         {
-          "hash": "e4611adfaeb21815d9d4d39e4bfa5a48196f2a04",
-          "message": "Merge branch \u0027master\u0027 into BETA_JAVA16\n",
-          "diffLines": 14,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-03-10T04:22:22.247174443Z",
+          "hash": "34929f1c228d3386f97bcbf8696572f27bb44da5",
+          "message": "Bug 570690 - [16] DOM AST Support for JEP 394: Pattern Matching for instanceof (final)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-11T04:13:21.796692641Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "cec0a287b5a459f4cc7bae17178fe496fdf9bfa6",
+          "message": "Bug 568291 - [16] Remove JCP disclaimers from code, UI and marketplace",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-11T04:14:08.713099694Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fd6db01a1ee874ef9fe027d48fc549331ceea29a",
+          "message": "Merge branch \u0027BETA_JAVA16\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-11T04:14:08.741031860Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -447,13 +465,18 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 3,
+        "JDT Internal Refactoring": 4,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 1,
         "JDT Internal Bug Fix": 1,
         "Logging Simplification": 1,
-        "Robustness/Defensive Programming": 1
+        "Robustness/Defensive Programming": 1,
+        "String-API": 1,
+        "Deprecation": 1,
+        "Eclipse API Migration": 1,
+        "Lambda Simplification": 1,
+        "Clean-up Bug Fix": 1
       },
       "exhaustedCategories": []
     },
@@ -506,5 +529,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 13476
+  "globalTotalProcessed": 13692
 }
