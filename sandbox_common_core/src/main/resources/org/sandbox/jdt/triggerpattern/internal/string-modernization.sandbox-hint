@@ -1,30 +1,3 @@
-<!id: string-modernization>
-<!description: Modernize String API usage with newer methods>
-<!severity: info>
-<!minJavaVersion: 8>
-<!tags: modernization, string>
-
-// str.indexOf(str2) != -1 → str.contains(str2)
-$x.indexOf($y) != -1
-=> $x.contains($y)
-;;
-
-// str.indexOf(str2) >= 0 → str.contains(str2)
-$x.indexOf($y) >= 0
-=> $x.contains($y)
-;;
-
-// "".equals(str) — hint to use isEmpty() when str is known non-null
-"Consider using isEmpty() instead of equals with empty string":
-"".equals($x) :: isNonNull($x)
-;;
-
-// Hint-only: strip() vs trim() for Java 11+ — only for String type
-"Consider using strip() instead of trim() for Unicode-aware whitespace removal (Java 11+)":
-$x.trim() :: sourceVersionGE(11) && instanceof($x, "java.lang.String")
-;;
-
-// Hint-only: String.replaceAll with literal → String.replace (avoids regex overhead)
-"Consider using String.replace(...) instead of replaceAll(...) when using a literal pattern (avoids regex overhead)":
-$str.replaceAll($literal, $replacement) :: instanceof($str, "java.lang.String") && isStringLiteral($literal) && !isRegexp($literal) && isStringLiteral($replacement)
+java.lang.String.replaceAll("\\n", $replacement)
+=> java.lang.String.replace("\\n", $replacement)
 ;;

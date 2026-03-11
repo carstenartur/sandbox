@@ -1,50 +1,7 @@
-<!id: deprecated-api>
-<!description: Replace deprecated Java API calls with modern alternatives>
-<!severity: warning>
-<!minJavaVersion: 9>
-<!tags: deprecation, migration>
-
-// new Boolean(x) → Boolean.valueOf(x)
-new java.lang.Boolean($x)
-=> java.lang.Boolean.valueOf($x)
-;;
-
-// new Integer(x) → Integer.valueOf(x)
-new java.lang.Integer($x)
-=> java.lang.Integer.valueOf($x)
-;;
-
-// new Long(x) → Long.valueOf(x)
-new java.lang.Long($x)
-=> java.lang.Long.valueOf($x)
-;;
-
-// new Double(x) → Double.valueOf(x)
-new java.lang.Double($x)
-=> java.lang.Double.valueOf($x)
-;;
-
-// new Float(x) → Float.valueOf(x)
 new java.lang.Float($x)
 => java.lang.Float.valueOf($x)
 ;;
 
-// new Character(x) → Character.valueOf(x)
-new java.lang.Character($x)
-=> java.lang.Character.valueOf($x)
-;;
-
-// new Short(x) → Short.valueOf(x)
-new java.lang.Short($x)
-=> java.lang.Short.valueOf($x)
-;;
-
-// new Byte(x) → Byte.valueOf(x)
-new java.lang.Byte($x)
-=> java.lang.Byte.valueOf($x)
-;;
-
-// Hint-only: new URL(String) is deprecated since Java 20 — use URI-based construction
-"Consider replacing deprecated URL(String) constructor with new URI(String).toURL() (Java 20+). Note: this changes checked exception from MalformedURLException to URISyntaxException":
-new java.net.URL($url) :: sourceVersionGE(20)
+new java.lang.Double($x)
+=> java.lang.Double.valueOf($x)
 ;;
