@@ -44,6 +44,61 @@
       "sourceCommit": "5a1165f14f197472183f53e939b8c77ffcd965aa",
       "status": "DISCOVERED",
       "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-deprecates-the-ast-jls-lates",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS_Latest\n\u003d\u003e org.eclipse.jdt.core.dom.AST.getJLSLatest()\n;;",
+      "summary": "This commit deprecates the `AST.JLS_Latest` constant and introduces a `getJLSLatest()` method as its replacement. The code changes consistently replace the constant with the new method invocation. This is a direct, unconditional API replacement that can be fully automated with a TriggerPattern DSL rule. The transformation improves API usage by moving to the recommended getter method over a deprecated constant.",
+      "discoveredAt": "2026-03-12",
+      "discoveredInRun": 13900,
+      "sourceCommit": "8d9d27b673e4966fc2f33893f07b7c255c420a17",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-is-a-merge-commit-the-primary-code",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS_Latest\n\u003d\u003e org.eclipse.jdt.core.dom.AST.getJLSLatest()\n;;",
+      "summary": "This is a merge commit. The primary code transformation pattern is the replacement of the deprecated `AST.JLS_Latest` constant with the `AST.getJLSLatest()` method, which is identical to the pattern observed and analyzed in Commit 0. Other changes in the diff relate to internal API evolution (e.g., updating JLS levels, adding `@since` tags) and are not generalizable into DSL rules.",
+      "discoveredAt": "2026-03-12",
+      "discoveredInRun": 13900,
+      "sourceCommit": "efd3be17a511ff6ece6d7fab4ca16b5287bcbe6f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-replaces-stringbuffer-with-s",
+      "category": "Performance",
+      "dslRule": "new java.lang.StringBuffer() :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder()\n;;\n\nnew java.lang.StringBuffer($capacity) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($capacity)\n;;\n\nnew java.lang.StringBuffer($str) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($str)\n;;",
+      "summary": "This commit replaces `StringBuffer` with `StringBuilder` for local variable initializations. `StringBuilder` is a more performant, unsynchronized alternative suitable when thread-safety is not required. The transformation is guarded by `isAssignedToLocalVariable()` to ensure semantic correctness. This is a GREEN transformation, already covered by existing rules in `stringbuffer-to-stringbuilder.sandbox-hint`.",
+      "discoveredAt": "2026-03-12",
+      "discoveredInRun": 13900,
+      "sourceCommit": "3138688638914066253caf1a36b821c2d17ec8fa",
+      "status": "DISCOVERED",
+      "hintFile": "stringbuffer-to-stringbuilder.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-the-commit-deprecates-org-eclipse-jdt-co",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS16\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS_Latest\n;;",
+      "summary": "The commit deprecates `org.eclipse.jdt.core.dom.AST.JLS16` and suggests using `AST.JLS_Latest`. This is a direct, constant-to-constant replacement for modernizing JDT AST usage, ensuring the parser uses the latest supported Java Language Specification version. It is directly implementable as a DSL rule and aligns with an existing pattern for `JLS15`.",
+      "discoveredAt": "2026-03-12",
+      "discoveredInRun": 13900,
+      "sourceCommit": "f388c0f330c2f9e62c22fa006504319208b7f5c0",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-replaces-multiple-instances",
+      "category": "Performance",
+      "dslRule": "new java.lang.StringBuffer() :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder()\n;;\n\nnew java.lang.StringBuffer($capacity) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($capacity)\n;;\n\nnew java.lang.StringBuffer($str) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($str)\n;;",
+      "summary": "This commit replaces multiple instances of `java.lang.StringBuffer` with `java.lang.StringBuilder` in various JDT Core DOM classes. This is a common performance optimization, as `StringBuilder` is unsynchronized and faster than `StringBuffer` when thread safety is not a concern. The changes observed are for local variables, where `StringBuilder` is safe to use. This transformation pattern is already covered by existing DSL rules in `stringbuffer-to-stringbuilder.sandbox-hint`, which use the `isAssignedToLocalVariable()` guard to ensure semantic correctness, preventing changes where thread-safety might be required.",
+      "discoveredAt": "2026-03-12",
+      "discoveredInRun": 13900,
+      "sourceCommit": "290ddf183c41d2f1054cc030cc5ed08b806471fb",
+      "status": "DISCOVERED",
+      "hintFile": "stringbuffer-to-stringbuilder.sandbox-hint"
     }
   ]
 }
