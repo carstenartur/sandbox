@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "14e23d4926d839a278fd9abaeee1e6084c3e6f01",
-      "lastProcessedDate": "2026-03-11T04:17:45.962438444Z",
-      "totalProcessed": 3719,
+      "lastProcessedCommit": "5734e6af8588329da60535da9600c840a1f84dea",
+      "lastProcessedDate": "2026-03-12T04:21:35.288023928Z",
+      "totalProcessed": 3927,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -455,6 +455,51 @@
           "deferredAt": "2026-03-11T04:14:08.741031860Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "58e496e94689961fc9b268ef7314bda7fe578f4a",
+          "message": "Bug 573941 - [17][switch pattern][ast dom] AST DOM changes for JEP 406",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:19:38.944811519Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "87e350400c3a7d43be13201711e30b6362530a5b",
+          "message": "Revert \"Bug 573941 - [17][switch pattern][ast dom] AST DOM changes for JEP 406\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:19:38.961341826Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e5ce37ef547e0df9caf65afe4f4cf6d76488e36a",
+          "message": "Bug 573941 - [17][switch pattern][ast dom] AST DOM changes for JEP 406",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:19:56.512878789Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f8768b6899a6a2ccc560388e8854ed8a3391ad7e",
+          "message": "Bug 575890 - [17] Remove Beta disclaimers in JDT.Core",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:21:13.004796224Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bb70f2ed26d59005ce6d53ed3852d9fbd59f716a",
+          "message": "Merge remote-tracking branch \u0027origin/BETA_JAVA17\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:21:13.040230035Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -474,9 +519,11 @@
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
         "Deprecation": 1,
-        "Eclipse API Migration": 1,
+        "Eclipse API Migration": 4,
         "Lambda Simplification": 1,
-        "Clean-up Bug Fix": 1
+        "Clean-up Bug Fix": 1,
+        "Performance": 2,
+        "Try-with-Resources": 1
       },
       "exhaustedCategories": []
     },
@@ -529,5 +576,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 13692
+  "globalTotalProcessed": 13900
 }
