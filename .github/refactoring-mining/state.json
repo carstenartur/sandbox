@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "5734e6af8588329da60535da9600c840a1f84dea",
-      "lastProcessedDate": "2026-03-12T04:21:35.288023928Z",
-      "totalProcessed": 3927,
+      "lastProcessedCommit": "b4764d09d0267206715faa62fcc8486bd60e96cd",
+      "lastProcessedDate": "2026-03-13T04:20:28.301848132Z",
+      "totalProcessed": 4107,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -500,6 +500,42 @@
           "deferredAt": "2026-03-12T04:21:13.040230035Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "df306199ee19c4901db26c04130c3cb6ef685a81",
+          "message": "Bug 576978 - Use LF as line endings",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-13T04:15:39.192173804Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "98f7e89ad55dee7c08d20df173f22a4690599133",
+          "message": "Bug 577544 - [18] Merge from master to BETA_JAVA18",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-13T04:16:03.798620929Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6f1972e75c51563ec8a12b37c8519ad15f1daf23",
+          "message": "Bug 578242 - [18] DOM AST support for JEP 413",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-13T04:16:34.809301668Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c0124251d58d7d5f50d358d589825a08bd4755e2",
+          "message": "Bug 578608 - [18] [DOM AST]Support for Regions and Multiple tags on Text element in JavaDoc from DOM",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-13T04:18:39.344204065Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -510,7 +546,7 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 4,
+        "JDT Internal Refactoring": 8,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 1,
@@ -576,5 +612,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 13900
+  "globalTotalProcessed": 14080
 }
