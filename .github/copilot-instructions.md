@@ -1,6 +1,4 @@
-# GitHub Copilot Coding Agent Instructions
-
-Keep these instructions short. The agent has limited context budget.
+# GitHub Copilot Instructions for Sandbox Project
 
 ## Environment Setup
 
@@ -15,8 +13,10 @@ export PATH=$JAVA_HOME/bin:$PATH
 # Most tests require xvfb
 xvfb-run --auto-servernum mvn test -Dtest=TestClass -pl module_name_test
 
-# Exception: sandbox_common_test runs without xvfb
+# Exception: these run without xvfb
 mvn test -pl sandbox_common_test
+mvn test -pl sandbox_mining_core
+mvn test -pl sandbox-functional-converter-core
 ```
 
 ## Critical Rules
@@ -36,9 +36,14 @@ mvn -T 1C verify                    # Fast dev build
 mvn -Pproduct,repo -T 1C verify     # Full build
 ```
 
-## For More Details
+## Reference Files — Read Only When Relevant to Your Task
 
-See these reference files (read only if needed for your specific task):
-- `.github/copilot-ref-architecture.md` — Module structure, patterns, conventions
-- `.github/copilot-ref-build.md` — Build profiles, CI, coverage, troubleshooting
-- `.github/copilot-ref-lessons.md` — Past session learnings, recurring bugs, fixes
+| File | When to read |
+|------|-------------|
+| `.github/copilot-ref-guardrails.md` | Before refactoring or restructuring code |
+| `.github/copilot-ref-architecture.md` | To understand modules, packages, plugin patterns |
+| `.github/copilot-ref-build.md` | For build profiles, CI, coverage, troubleshooting |
+| `.github/copilot-ref-testing.md` | When writing or fixing tests, analyzing CI failures |
+| `.github/copilot-ref-encoding.md` | When working on `sandbox_encoding_quickfix` |
+| `.github/copilot-ref-junit.md` | When working on `sandbox_junit_cleanup` |
+| `.github/copilot-ref-lessons.md` | When hitting known bugs or recurring issues |
