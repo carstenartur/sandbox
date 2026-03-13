@@ -1,5 +1,7 @@
 # GitHub Copilot Instructions for Sandbox Project
 
+We found the copilot is unable to do anything after reading all the instructions. it is too much. End here and search for information here in case you get into trouble.
+
 ## ⚠️ FIRST: Read Learned Lessons
 
 **Before doing ANY work**, read [copilot-learned-lessons.md](.github/copilot-learned-lessons.md).
