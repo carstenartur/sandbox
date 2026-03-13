@@ -46,4 +46,6 @@ mvn -Pproduct,repo -T 1C verify     # Full build
 | `.github/copilot-ref-testing.md` | When writing or fixing tests, analyzing CI failures |
 | `.github/copilot-ref-encoding.md` | When working on `sandbox_encoding_quickfix` |
 | `.github/copilot-ref-junit.md` | When working on `sandbox_junit_cleanup` |
+| `.github/copilot-ref-functional.md` | When working on `sandbox_functional_converter` |
+| `.github/copilot-ref-plugins.md` | When working on `sandbox_platform_helper`, `sandbox_tools`, `sandbox_jface_cleanup`, or other plugins |
 | `.github/copilot-ref-lessons.md` | When hitting known bugs or recurring issues |
