@@ -1,27 +1,20 @@
 # Copilot Agent - Learned Lessons & Session Knowledge
 
-> **Purpose**: This file captures hard-won knowledge from past agent sessions.
-> Read this file ONLY when working on a task where these lessons are relevant.
-> When you learn something new or fix a recurring issue, UPDATE THIS FILE.
-
-## ⚠️ CRITICAL: Update This File
-
-When you fix a bug or discover a pattern, **add it here immediately** so future sessions
-(including after crashes) don't repeat the same mistakes. This is the agent's persistent memory.
+> **Read this when**: You hit a recurring bug, need to understand a past fix, or are working on encoding/JUnit/DSL areas.
+> When you fix a bug or discover a pattern, **UPDATE THIS FILE** so future sessions don't repeat mistakes.
 
 ---
 
 ## 1. NLS Comment Removal When Replacing String Literals
 
-**Issue**: When replacing a `StringLiteral` (e.g., `"UTF-8"`) with a non-string expression
-(e.g., `StandardCharsets.UTF_8`), the `//$NON-NLS-n$` line comment must be removed.
+**Issue**: When replacing a `StringLiteral` (e.g., `"UTF-8"`) with a non-string expression (e.g., `StandardCharsets.UTF_8`), the `//$NON-NLS-n$` line comment must be removed.
 
-**Wrong** (leaves stale NLS comment):
+**Wrong**:
 ```java
 listRewrite.replace(nodedata.visited(), callToCharsetDefaultCharset, group);
 ```
 
-**Correct** (removes NLS comment):
+**Correct**:
 ```java
 try {
     ASTNodes.replaceAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);
@@ -30,192 +23,208 @@ try {
 }
 ```
 
-**Required imports for replaceAndRemoveNLS**:
-```java
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
-import org.eclipse.jdt.internal.corext.dom.ASTNodes;
-```
+**Required imports**: `CoreException`, `JavaManipulationPlugin`, `ASTNodes`
 
-**Rule**: ANY helper that replaces a StringLiteral in its `nodedata.replace()` branch
-MUST use `ASTNodes.replaceAndRemoveNLS()`, never `listRewrite.replace()`.
+**Rule**: ANY helper that replaces a StringLiteral MUST use `ASTNodes.replaceAndRemoveNLS()`, never `listRewrite.replace()`.
 
 ---
 
 ## 2. Eclipse Import Order
 
-Eclipse/Tycho enforces a specific import order. Follow these rules:
-
 1. `java.*` and `javax.*` imports first
 2. `org.eclipse.*` imports next
 3. `org.sandbox.*` imports last
-4. Static imports at the top (before regular imports)
-5. **Never leave unused imports** — Tycho treats them as errors, not warnings
+4. Static imports at the top
+5. **Never leave unused imports** — Tycho treats them as errors
 
 ---
 
-## 3. Test Pattern Enum Structure (ExplicitEncodingPatterns*)
+## 3. Test Pattern Enum Structure
 
-All test pattern enums in `sandbox_encoding_quickfix_test` MUST have:
-
-```java
-String given;
-String expected;
-boolean skipCompileCheck;
-
-EnumName(String given, String expected) {
-    this(given, expected, true);  // default: skip compile check
-}
-
-EnumName(String given, String expected, boolean skipCompileCheck) {
-    this.given = given;
-    this.expected = expected;
-    this.skipCompileCheck = skipCompileCheck;
-}
-```
-
-**Rule**: If a test references `test.skipCompileCheck`, the enum MUST have the field and both constructors.
+All test pattern enums in `sandbox_encoding_quickfix_test` MUST have `given`, `expected`, `skipCompileCheck` fields and two constructors (2-arg defaulting skip=true, 3-arg explicit).
 
 ---
 
 ## 4. Test Expected Output Must Match Actual Cleanup Output
 
-**Never guess** what the cleanup produces. The expected output in test patterns must exactly match
-what the cleanup implementation generates, including:
-- Import ordering (Eclipse's import organizer order)
-- NLS comments (present or absent)
-- Whitespace and indentation
-- Exception declarations in method signatures (removed when no longer needed)
-
-When a test fails, check the CI log's "but was:" section to see the actual output.
+**Never guess.** Check CI log's "but was:" section. Must exactly match imports, whitespace, NLS comments, exception declarations.
 
 ---
 
 ## 5. Do NOT Modify Tests Back and Forth
 
-**Anti-pattern**: Changing test expectations to match broken implementation, then changing
-implementation, then changing tests again. This wastes time and money.
-
-**Correct approach**:
-1. Read the CI log to see actual vs expected
-2. Determine whether the **implementation** or the **test** is wrong
-3. Fix the root cause ONCE
-4. **Update this file** with the lesson learned
+Fix root cause ONCE. Read CI log → determine if implementation or test is wrong → fix once → update this file.
 
 ---
 
 ## 6. Common Encoding Cleanup Modes
 
-The encoding cleanup has three modes controlled by `MYCleanUpConstants`:
-- **KEEP_BEHAVIOR**: Replace implicit encoding with explicit `Charset.defaultCharset()` — preserves runtime behavior
-- **ENFORCE_UTF8** (INSERT_UTF8): Replace with `StandardCharsets.UTF_8` — changes behavior to always use UTF-8
-- **AGGREGATE_TO_UTF8**: Like ENFORCE_UTF8 but extracts a `private static final Charset UTF_8 = StandardCharsets.UTF_8` field
+- **KEEP_BEHAVIOR**: `Charset.defaultCharset()` — preserves runtime behavior
+- **ENFORCE_UTF8**: `StandardCharsets.UTF_8` — forces UTF-8
+- **AGGREGATE_TO_UTF8**: Like ENFORCE but extracts static field
 
 ---
 
 ## 7. When Creating New Helper Classes
 
-Every new `*ExplicitEncoding` helper class needs:
-1. `find()` method — discovers AST nodes to transform
-2. `rewrite()` method — applies the transformation using `ASTNodes.replaceAndRemoveNLS()` for replacements
-3. `getPreview()` method — generates preview text
-4. Proper imports including `CoreException`, `JavaManipulationPlugin`, `ASTNodes`
-5. Call to `removeUnsupportedEncodingException()` if the original code could throw `UnsupportedEncodingException`
+Every `*ExplicitEncoding` helper needs: `find()`, `rewrite()` (with `replaceAndRemoveNLS`), `getPreview()`, proper imports, `removeUnsupportedEncodingException()` if applicable.
 
 ---
 
-## 8. Import Order in Test Expected Output
+## 8. Import Order in Test Expected Output — Complex Reordering!
 
-**NEVER guess import ordering.** ALWAYS check the CI log's "but was:" section and copy
-the exact import order from there.
+**#1 most recurring bug.** Eclipse ImportRewrite behaves differently when imports are only added vs added+removed.
+
+- **Case 1 (only added)**: Existing imports keep original order, new imports appended
+- **Case 2 (added+removed)**: Eclipse may reposition existing imports
+
+**Rule**: NEVER guess. ALWAYS check CI log and copy exact import order.
 
 ---
 
 ## 9. Formatter Constructors Require Locale.getDefault()
 
-`java.util.Formatter` has NO 2-argument constructor `(X, Charset)`.
-All Charset-accepting constructors are 3-argument: `Formatter(X, Charset, Locale)`.
+`java.util.Formatter` has NO 2-arg `(X, Charset)` constructor. All are 3-arg: `Formatter(X, Charset, Locale)`. 
 
 ---
 
 ## 10. replaceAndRemoveNLS Conflicts with ListRewrite
 
-Cannot mix `ASTNodes.replaceAndRemoveNLS()` with `ListRewrite` operations on the same parent node.
-Use `listRewrite.replace()` + `listRewrite.insertLast()` together instead.
+Cannot mix on same parent node. `listRewrite.insertLast()` silently fails. Use `listRewrite.replace()` + `listRewrite.insertLast()` together. Only affects `FormatterExplicitEncoding`.
 
 ---
 
-## 11. ASTRewrite Queues Changes — Original AST Is Unchanged Until Apply
+## 11. Text Block Indentation for Newly-Added Imports
 
-`ASTRewrite.remove()` and `ASTRewrite.replace()` do NOT modify the original AST immediately.
-Track removal counts explicitly when inspecting the tree after queueing removals.
-
----
-
-## 12. NLS Comment Removal Must Target the LAST Comment
-
-Use `LAST_NLS_COMMENT` pattern with negative lookahead to remove the last `//$NON-NLS-n$` on a line.
+Newly-added imports in test text blocks need **fewer tabs** than existing content to match 0 leading whitespace in cleanup output.
 
 ---
 
-## 13. CRLF Line Ending Issues in Test Comparisons
+## 12. Given Input Must Also Compile When Using FullCompileCheck
 
-Normalize line endings in test framework. Use `s.replace("\r\n", "\n").replace("\r", "\n");`
-
----
-
-## 14. TriggerPattern DSL Lessons
-
-- METHOD_DECLARATION annotation rewrite uses natural method-rewrite syntax
-- `methodNameMatches` guard for regex method name filtering
-- `isStatic`/`!isStatic` guards for static vs instance methods
-- Multiline replacements: continuation lines after `=>` accumulated with `\n`
+`assertRefactoringResultAsExpectedWithFullCompileCheck` checks given input compiles BEFORE running cleanup. All types in given code must be properly imported.
 
 ---
 
-## 15. Recovered Bindings Break Annotation Matching
+## 13. ASTRewrite Queues Changes — Original AST Is Unchanged Until Apply
 
-Always check `isRecovered()` before trusting `ITypeBinding.getQualifiedName()`.
-Fall back to source-level names for recovered bindings.
-
----
-
-## 16. JUnit 3 Migration Hints Must Check Superclass
-
-Use `enclosingClassExtends("junit.framework.TestCase")` guard to avoid false positives.
+`ASTRewrite.remove()` does NOT modify AST immediately. Track removal counts explicitly.
 
 ---
 
-## 17. Hint File Placement Rules
+## 14. NLS Comment Removal Must Target the LAST Comment
+
+Use `LAST_NLS_COMMENT` pattern with negative lookahead. In `replaceTryBodyAndUnwrap()`, only apply to the statement containing the visited node.
+
+---
+
+## 15. TriggerPattern DSL: METHOD_DECLARATION Annotation Rewrite
+
+Natural method-rewrite syntax for adding annotations. `methodNameMatches` guard, `isStatic`/`!isStatic` guards, multiline replacements with `\n` joining.
+
+Key files: `BuiltInGuards.java`, `HintFileFixCore.java`, `HintFileParser.java`, `HintFileStore.java`
+
+---
+
+## 16. Recovered Bindings Break Annotation Matching
+
+Always check `isRecovered()` before trusting `ITypeBinding.getQualifiedName()`. Fall back to `annotation.getTypeName().getFullyQualifiedName()`.
+
+Affects: `LambdaASTVisitor.java` — all annotation visit/endVisit methods and field type matching.
+
+---
+
+## 17. JUnit 3 Migration Hints Must Check Superclass
+
+Use `enclosingClassExtends("junit.framework.TestCase")` guard to avoid false positives on non-TestCase classes.
+
+---
+
+## 18. CRLF Line Ending Issues in Test Comparisons
+
+Normalize with `s.replace("\r\n", "\n").replace("\r", "\n");`. Fix BOTH source files AND test framework.
+
+---
+
+## 19. Hint File (.sandbox-hint) Placement Rules
 
 - Generic libraries → `sandbox_common_core` bundled resources
-- Domain-specific libraries → respective plugin via extension point
-- NEVER duplicate hint files between modules
+- Domain-specific → respective plugin via extension point in `plugin.xml`
+- NEVER duplicate between modules
+- `sandbox_common/src/` should contain NO hint files
 
 ---
 
-## 18. Adding New BuiltInGuards — Checklist
+## 20. JUnit Cleanup Plugin Architecture
+
+- `JUNIT_CLEANUP_4_SUITE` is NOT mapped — enabling it has no effect
+- `JUNIT_CLEANUP_4_RUNWITH` controls `RunWithJUnitPlugin`
+- `RUNWITH_ENCLOSED`, `RUNWITH_THEORIES`, `RUNWITH_CATEGORIES` always active when JUNIT_CLEANUP enabled
+
+---
+
+## 21. ThrowingRunnableJUnitPlugin Already Handles ParameterizedType
+
+Check if features are already implemented before re-implementing. `@Disabled` messages may be outdated.
+
+---
+
+## 22. Generic Type Parameter Method Call Migration (.run() → .execute())
+
+4 strategies for resolving ThrowingRunnable through generics. Enhanced `isThrowingRunnableType()` checks erasure, type variable bounds, capture bindings, interfaces, superclass.
+
+---
+
+## 23. DslExplanationGuardSyncTest — New Guards Require Doc Update
+
+After adding guards to `BuiltInGuards.registerAll()`, update `dsl-explanation.md` in BOTH `sandbox_common_core` and `sandbox_mining_core`.
+
+---
+
+## 24. TriggerPatternEngine Type Hierarchy — Use Visited Set
+
+Any method that recursively walks `getSuperclass()`/`getInterfaces()` MUST use `Set<String> visited` to prevent infinite recursion.
+
+---
+
+## 25. Adding New BuiltInGuards — Complete Checklist
 
 1. Register in `BuiltInGuards.registerAll()`
 2. Update `testAllBuiltInGuardsRegistered` test
-3. Add to `dsl-explanation.md` in BOTH `sandbox_common_core` and `sandbox_mining_core`
+3. Add to `dsl-explanation.md` in BOTH modules
 
 ---
 
-## 19. AstProcessorBuilder: Chaining is SCOPED
+## 26. HintFileParser Lazy Initialization Pattern
 
-Chained `onXxx()` calls create scoped visitors (each runs inside previous match).
-Use separate `AstProcessorBuilder` instances for independent visitors.
-
----
-
-## 20. Mining Core Modules Are Plain Maven JARs
-
-`sandbox_mining_core` and `sandbox_common_core` use `maven-compiler-plugin`, no Xvfb needed.
+Use `volatile` + double-checked locking for cached reflection data.
 
 ---
 
-## 21. Whitespace Normalization in Tests
+## 27. Per-Rule Metadata in DSL — @id: and @severity:
 
-Normalize: line endings, tabs→spaces, trailing whitespace, blank lines.
-ALWAYS check CI logs for actual output before writing expected test strings.
+`@id:` and `@severity:` lines before source pattern in rule block. NOT comments. Consumed by `buildRule()`.
+
+---
+
+## 28. AstProcessorBuilder: Chaining is SCOPED
+
+Chained `onXxx()` calls create scoped visitors. Use separate builder instances for independent visitors.
+
+---
+
+## 29. Mining Core: Brace Balance in MiningCli.java
+
+Count braces before committing. Flat indentation makes scope hard to track.
+
+---
+
+## 30. Mining Core: New Modules Are Plain Maven JARs
+
+`sandbox_mining_core` and `sandbox_common_core` use `maven-compiler-plugin`, no Xvfb needed. SpotBugs runs during compile.
+
+---
+
+## 31. Whitespace Normalization in Refactoring Tests
+
+Normalize: line endings, tabs→spaces, trailing whitespace, blank lines. ALWAYS check CI logs for actual output.
