@@ -99,6 +99,17 @@
       "sourceCommit": "290ddf183c41d2f1054cc030cc5ed08b806471fb",
       "status": "DISCOVERED",
       "hintFile": "stringbuffer-to-stringbuilder.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-support-for-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "supportedOnlyIn17()\n\u003d\u003e supportedOnlyIn18()\n;;",
+      "summary": "This commit introduces support for Java Language Specification 18 (JLS18) within the Eclipse JDT Core DOM API. The most direct and generalizable pattern for a DSL rule is the mechanical replacement of calls to the internal `supportedOnlyIn17()` method with `supportedOnlyIn18()`. This is a straightforward method call replacement that directly reflects the API modernization for handling JLS version checks. Other changes, such as adding constants (`JLS18`) or updating field initializers (`JLS_INTERNAL_Latest \u003d JLS17` to `JLS18`), are not directly expressible as DSL expression transformations.",
+      "discoveredAt": "2026-03-13",
+      "discoveredInRun": 14080,
+      "sourceCommit": "66115de462f67f145f71fbe530cd8bad0265eaf5",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
     }
   ]
 }
