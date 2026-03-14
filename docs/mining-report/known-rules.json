@@ -110,6 +110,39 @@
       "sourceCommit": "66115de462f67f145f71fbe530cd8bad0265eaf5",
       "status": "DISCOVERED",
       "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-simplifies-the-logic-for-obt",
+      "category": "Eclipse API Migration",
+      "dslRule": "$javaProject.getProject().getWorkspace().getRoot().getLocation().toString() + $javaProject.getPath().toString()\n\u003d\u003e $javaProject.getProject().getLocation().toString()\n;;",
+      "summary": "This commit simplifies the logic for obtaining a project path in JDT Core, replacing a lengthy concatenation of `IWorkspaceRoot.getLocation().toString()` and `IProject.getPath().toString()` with a direct call to `IProject.getLocation().toString()`. This is a straightforward API modernization that improves readability and reduces verbosity, directly implementable as a DSL rule. No source version guard is needed as `IProject.getLocation()` is an older, well-established API.",
+      "discoveredAt": "2026-03-14",
+      "discoveredInRun": 14232,
+      "sourceCommit": "854c076154847359df98d22fb312722d0655027c",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-deprecations.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-replaces-ipath-tostring-with",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.core.runtime.IPath.toString() :: instanceof($path, \"org.eclipse.core.runtime.IPath\")\n\u003d\u003e $path.toOSString()\n;;",
+      "summary": "This commit replaces `IPath.toString()` with `IPath.toOSString()` when retrieving a project\u0027s location. `toOSString()` provides the path in the native operating system format, which is typically more appropriate for file system operations and prevents potential issues with internal path representations, as implied by the NPE fix in the commit message. The rule will guard on `instanceof($path, \"org.eclipse.core.runtime.IPath\")` to ensure it only applies to Eclipse `IPath` objects. This is a direct, semantically safer replacement.",
+      "discoveredAt": "2026-03-14",
+      "discoveredInRun": 14232,
+      "sourceCommit": "a5b99904062239a3369d38c56bd932f1f1b5dd6a",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-deprecates-the-ast-jls18-con",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS18\n\u003d\u003e org.eclipse.jdt.core.dom.AST.getJLSLatest()\n;;",
+      "summary": "This commit deprecates the `AST.JLS18` constant in the Eclipse JDT Core DOM API and updates the internal \u0027latest\u0027 JLS level to JLS19. The proposed rule automates the replacement of the deprecated `org.eclipse.jdt.core.dom.AST.JLS18` constant with the recommended `org.eclipse.jdt.core.dom.AST.getJLSLatest()` method, ensuring clients use the most up-to-date API for obtaining the latest supported Java Language Specification level. This aligns with standard JDT API modernization practices.",
+      "discoveredAt": "2026-03-14",
+      "discoveredInRun": 14232,
+      "sourceCommit": "cf0103a88196aa13018546d2dd89ae6fa0728971",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-deprecations.sandbox-hint"
     }
   ]
 }
