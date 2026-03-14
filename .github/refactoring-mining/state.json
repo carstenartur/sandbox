@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "b4764d09d0267206715faa62fcc8486bd60e96cd",
-      "lastProcessedDate": "2026-03-13T04:20:28.301848132Z",
-      "totalProcessed": 4107,
+      "lastProcessedCommit": "f2e62adf8a978a714a377b7dd04df4470e30bbd3",
+      "lastProcessedDate": "2026-03-14T04:18:40.040630267Z",
+      "totalProcessed": 4259,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -536,6 +536,33 @@
           "deferredAt": "2026-03-13T04:18:39.344204065Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "d3a80f1f9b2f8ae1a0044470e640c4fd56289a5f",
+          "message": "Bug 577723 - [18] Remove JCP disclaimers from code, UI and marketplace",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-14T04:14:04.033616603Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b1754bad44aaf79b2977b6721b0705e761e04595",
+          "message": "Bug 577682 - Merge remote-tracking branch \u0027origin/BETA_JAVA18\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-14T04:14:04.082860471Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b50dbb7b0ee50919ce82832b18ea609119129440",
+          "message": "RecordPattern DOM AST changes (#174)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-14T04:17:33.381451971Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -546,7 +573,7 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 8,
+        "JDT Internal Refactoring": 9,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 1,
@@ -555,7 +582,7 @@
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
         "Deprecation": 1,
-        "Eclipse API Migration": 4,
+        "Eclipse API Migration": 7,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 1,
         "Performance": 2,
@@ -612,5 +639,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 14080
+  "globalTotalProcessed": 14232
 }
