@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "f2e62adf8a978a714a377b7dd04df4470e30bbd3",
-      "lastProcessedDate": "2026-03-14T04:18:40.040630267Z",
-      "totalProcessed": 4259,
+      "lastProcessedCommit": "8af442b9d90c46f6d43085c7b622c8689d651819",
+      "lastProcessedDate": "2026-03-15T04:40:19.152039117Z",
+      "totalProcessed": 4675,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -563,6 +563,87 @@
           "deferredAt": "2026-03-14T04:17:33.381451971Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "a31ce93959ddf80823e1ad1d3c656ae3d50e3ed7",
+          "message": "Adding new JavaDocTextElement after carving out AbstractTextElement (#328)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:21.024743562Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fcf57ddae7e15a28a572f3021acd0f725d2fef2b",
+          "message": "Merge branch \u0027master\u0027 into merge_master after 4.25 RC1",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:35.740801374Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "beb3fcc0c9739215d018f8e710cac66645ebdb54",
+          "message": "Merge pull request #357 from sravanlakkimsetti/merge_master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:35.782433920Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c453562a668ae55480cb807ac80c609b5587e458",
+          "message": "Revert \"Merge master\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:44.185600619Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c629d6bbecf94f42dbc352301f30a47d6578c4e9",
+          "message": "Merge pull request #361 from eclipse-jdt/revert-357-merge_master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:44.211155585Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e2a23afd9eb20521e4cc8e7d41f8cca636cd256f",
+          "message": "Merge pull request #362 from sravanlakkimsetti/merge_master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:44.225469761Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ecd24c483047682ca28164ff8c2db365b2826a47",
+          "message": "Revert \"Revert \"Merge master\"\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:44.296405641Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0668a4b0b63f6e76e1b92e6b4431628a9bfc6ecc",
+          "message": "Merge branch \u0027BETA_JAVA20\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:37:11.466819370Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "802a7b27b14c2b4356d9181a469906a7d428c570",
+          "message": "Merge pull request #898 from iloveeclipse/master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:37:32.030073893Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -573,7 +654,7 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 9,
+        "JDT Internal Refactoring": 11,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 1,
@@ -582,9 +663,9 @@
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
         "Deprecation": 1,
-        "Eclipse API Migration": 7,
+        "Eclipse API Migration": 9,
         "Lambda Simplification": 1,
-        "Clean-up Bug Fix": 1,
+        "Clean-up Bug Fix": 2,
         "Performance": 2,
         "Try-with-Resources": 1
       },
@@ -639,5 +720,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 14232
+  "globalTotalProcessed": 14648
 }
