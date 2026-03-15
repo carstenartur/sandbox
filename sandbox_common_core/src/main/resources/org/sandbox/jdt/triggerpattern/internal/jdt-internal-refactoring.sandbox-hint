@@ -1,0 +1,3 @@
+$flattener.visitList($node, org.eclipse.jdt.core.dom.RecordDeclaration.BODY_DECLARATIONS_PROPERTY, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, java.lang.String.valueOf(';'), org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
+=> $flattener.visitList($node, org.eclipse.jdt.core.dom.RecordDeclaration.BODY_DECLARATIONS_PROPERTY, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
+;;

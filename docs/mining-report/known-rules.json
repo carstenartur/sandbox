@@ -143,6 +143,50 @@
       "sourceCommit": "cf0103a88196aa13018546d2dd89ae6fa0728971",
       "status": "DISCOVERED",
       "hintFile": "eclipse-api-deprecations.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-deprecates-org-eclipse-jdt-c",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS19\n\u003d\u003e org.eclipse.jdt.core.dom.AST.getJLSLatest()\n;;",
+      "summary": "This commit deprecates `org.eclipse.jdt.core.dom.AST.JLS19` and updates internal constants to support Java 20. The transformation automates the replacement of the deprecated constant with the recommended `org.eclipse.jdt.core.dom.AST.getJLSLatest()` method. This ensures clients use the most up-to-date API for obtaining the latest supported Java Language Specification level and is a direct 1:1 replacement pattern, aligning with existing JDT API modernization rules.",
+      "discoveredAt": "2026-03-15",
+      "discoveredInRun": 14648,
+      "sourceCommit": "df58185d686a2ea2ca4f4031acac61ed5e26723e",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-deprecations.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-updates-internal-eclipse-jdt",
+      "category": "Eclipse API Migration",
+      "dslRule": "supportedOnlyIn19()\n\u003d\u003e supportedOnlyIn20()\n;;",
+      "summary": "This commit updates internal Eclipse JDT Core DOM API calls from `supportedOnlyIn19()` to `supportedOnlyIn20()` to reflect the advancement to Java Language Specification 20 for preview features. This is a direct 1:1 method call replacement, aligning with a recurring pattern of internal JDT API modernization seen in previous JLS version bumps (e.g., JLS17 to JLS18). The rule applies to internal JDT components and does not require a `sourceVersionGE` guard as it\u0027s an internal API modernization rather than a new Java language feature. Other changes like copyright updates or adding JCP notices are not generalizable transformation patterns.",
+      "discoveredAt": "2026-03-15",
+      "discoveredInRun": 14648,
+      "sourceCommit": "3057b7b9f31d9b397d7dd8855fee9f85d199169c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-part-of-a-merge-into-a-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$flattener.visitList($node, org.eclipse.jdt.core.dom.RecordDeclaration.BODY_DECLARATIONS_PROPERTY, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, java.lang.String.valueOf(\u0027;\u0027), org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)\n\u003d\u003e $flattener.visitList($node, org.eclipse.jdt.core.dom.RecordDeclaration.BODY_DECLARATIONS_PROPERTY, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)\n;;",
+      "summary": "This commit, part of a merge into a Java 21 branch, refactors an internal JDT utility method call within `ASTRewriteFlattener`. It simplifies the `visitList` method call by removing redundant separator (`String.valueOf(\u0027;\u0027)`) and suffix (`Util.EMPTY_STRING`) arguments when flattening `RecordDeclaration` body declarations. This change implies that the `visitList` implementation or its default behavior for this specific property now implicitly handles these elements, improving internal code clarity and potentially performance. This is a direct 1:1 API call replacement and a strong candidate for an automated DSL rule. The `minJavaVersion` for the hint file should be set to 16 due to the `RecordDeclaration` context, but no `sourceVersionGE` guard is needed in the rule itself as it\u0027s an internal JDT refactoring pattern, not an API that was introduced in a specific Java version.",
+      "discoveredAt": "2026-03-15",
+      "discoveredInRun": 14648,
+      "sourceCommit": "6f294077d70dfb6539e37adda43d33addfbc9251",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-part-of-a-merge-into-a-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$flattener.visitList($node, org.eclipse.jdt.core.dom.RecordDeclaration.BODY_DECLARATIONS_PROPERTY, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, java.lang.String.valueOf(\u0027;\u0027), org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)\n\u003d\u003e $flattener.visitList($node, org.eclipse.jdt.core.dom.RecordDeclaration.BODY_DECLARATIONS_PROPERTY, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)\n;;",
+      "summary": "This commit, part of a merge into a Java 21 branch, is identical to Commit 0. It refactors an internal JDT utility method call within `ASTRewriteFlattener`. It simplifies the `visitList` method call by removing redundant separator (`String.valueOf(\u0027;\u0027)`) and suffix (`Util.EMPTY_STRING`) arguments when flattening `RecordDeclaration` body declarations. This change implies that the `visitList` implementation or its default behavior for this specific property now implicitly handles these elements, improving internal code clarity and potentially performance. This is a direct 1:1 API call replacement and a strong candidate for an automated DSL rule. The `minJavaVersion` for the hint file should be set to 16 due to the `RecordDeclaration` context, but no `sourceVersionGE` guard is needed in the rule itself as it\u0027s an internal JDT refactoring pattern, not an new Java API that was introduced in a specific Java version.",
+      "discoveredAt": "2026-03-15",
+      "discoveredInRun": 14648,
+      "sourceCommit": "2841fde7cbe1bc57a98aab1d98110a862fc6c5df",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
