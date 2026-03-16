@@ -1,68 +1,55 @@
 {
-  "totalProcessed": 28,
-  "relevant": 5,
-  "irrelevant": 23,
+  "totalProcessed": 23,
+  "relevant": 13,
+  "irrelevant": 10,
   "duplicates": 1,
-  "green": 4,
-  "yellow": 0,
-  "red": 1,
+  "green": 5,
+  "yellow": 2,
+  "red": 6,
   "irrelevantReasons": {
-    "This is a merge commit primarily reflecting internal JDT DOM parser API evolution and bug fixes/enhancements, specifically related to DocComment parsing and NodeFinder\u0027s scanner creation. The changes involve method signature adjustments, internal variable renames, conditional logic for AST node creation, and using project-specific compiler options. These are highly specific to JDT\u0027s internal implementation and do not represent generalizable code transformation patterns for end-user Java code.": 1,
-    "This commit introduces support for block comments in external snippets within JDT\u0027s DocCommentParser. It involves method overloading, conditional AST node creation (newJavaDocTextElement vs newTextElement), type widening in an instanceof check, and internal method replacement. These changes are specific to the JDT core\u0027s parsing infrastructure and are not generalizable patterns for transforming typical Java source code.": 1,
-    "This commit updates an internal constant value (`RECORD_PATTERN`) in the Eclipse JDT Core DOM API. It represents an internal version number for an AST node type and is not a pattern for transforming user-written Java code or a common API usage.": 1,
-    "The commit removes specific beta disclaimers from Javadoc comments and updates `@since` tags for internal JDT API (JLS19, RecordPattern). These are changes to documentation and metadata, not to executable Java code logic or its structure. The TriggerPattern DSL is designed for transforming Java code expressions, statements, method declarations, or annotations, but not Javadoc content or arbitrary multi-line comments.": 1,
-    "This commit primarily updates Javadoc `@since` tags and other internal API metadata. These are documentation/versioning changes, not functional code transformations that can be generalized into a DSL rule.": 1,
-    "This commit is a merge commit that includes the `@since` tag updates from commit 0, along with the removal of specific preview feature disclaimers from Javadoc comments. These are metadata and comment cleanups, not functional code transformations that can be generalized into a DSL rule.": 1,
-    "This commit primarily involves internal API evolution within the Eclipse JDT Core DOM to support Java 20 record patterns. It deprecates AST structural properties and methods (e.g., `RIGHT_OPERAND_PROPERTY`, `getRightOperand()`) and introduces new ones (e.g., `PATTERN_PROPERTY`, `getPattern()`) for `PatternInstanceofExpression`. These changes are about how the AST itself is constructed and manipulated internally, not about transforming user-written Java code. The conditional logic for JLS versions and preview features within AST conversion and rewrite classes is not a pattern for user code, nor is it expressible as a direct DSL rewrite.": 1,
-    "This commit adds `@SuppressWarnings(\"deprecation\")` annotations to two internal JDT methods (`ASTMatcher.match` and `NaiveASTFlattener.visit`). This is done to suppress compiler warnings generated due to the API deprecations introduced in Commit 0. These are internal code maintenance changes for the JDT project itself, not a reusable pattern for transforming end-user Java code. Adding `@SuppressWarnings` is generally not a cleanup pattern, and removing them (when unnecessary) would require semantic analysis not available in the DSL.": 1,
-    "This commit removes \u0027early-draft specification\u0027 disclaimers and updates Javadoc `@since` tags from `BETA_JAVA20` to stable `3.33` across multiple JDT DOM files. This is a documentation and Javadoc cleanup activity, not a functional code transformation that would apply to end-user Java projects. The TriggerPattern DSL is designed for source code refactorings, not for managing comments or Javadoc within the JDT source itself.": 1,
-    "This commit continues the cleanup from Commit 2, specifically removing the `BETA_JAVA20` suffix from `@since` tags in `PatternInstanceofExpression.java`. Like the previous commit, this is a Javadoc correction, marking features as stable rather than beta. It is not a functional code change or a pattern that applies to user Java code, and therefore irrelevant for TriggerPattern DSL mining.": 1,
-    "This commit introduces internal Eclipse JDT DOM API changes to support a new Java language feature (Enhanced For with Record Patterns). It is not a code transformation pattern for user code, but rather an update to the parsing infrastructure. The TriggerPattern DSL is designed for transforming user code, not for modifying the JDT\u0027s internal AST.": 1,
-    "This commit is a bug fix for internal Eclipse JDT DOM API handling of AST node types. It ensures that the correct class is returned for the newly introduced AST node type. It is not a code transformation pattern for user code and is an internal fix to the parsing infrastructure.": 1,
-    "This commit updates `@since` Javadoc tags and internal API version constants within the JDT DOM after a merge related to Java 20 support. It\u0027s a metadata and versioning change, not a code transformation pattern for user code.": 1,
-    "This commit modifies the internal logic of the Eclipse JDT Core DOM\u0027s ImportRewriteAnalyzer to correctly position import statements after header comments when no package statement is present. It is an internal fix to the JDT\u0027s code formatting and rewrite engine, not a user-facing code transformation pattern that can be expressed or suggested by the TriggerPattern DSL.": 1,
-    "This commit fixes how the Eclipse JDT Core AST converter (`ASTConverter`) handles Java 20 preview features, specifically record patterns in enhanced for loops and instanceof expressions, when preview features are disabled. It\u0027s an internal bug fix for the compiler/parser\u0027s error recovery mechanism and does not represent a code transformation pattern for user code.": 1,
-    "This commit introduces internal API support for JDK 20 within the Eclipse JDT Core DOM (adding constants and map entries for JLS20). It does not represent a code transformation pattern that end-users would apply to their own Java code. It\u0027s an internal framework evolution, not a user-facing cleanup or refactoring.": 1,
-    "This commit primarily involves internal updates to the Eclipse JDT Core DOM API to introduce support for Java Language Specification 21 (JLS21). It adds new constants, updates internal version checks in various AST-related classes (e.g., AST, ASTConverter, ASTNode, Pattern classes, ASTRewriteAnalyzer, ASTRewriteFlattener), and modifies internal logic to handle JLS21 features. These are not code transformation patterns for user code; they represent internal API evolution and infrastructure updates within the JDT itself.": 1,
-    "The commit only updates `@since` tags for internal JDT API constants and methods (AST.JLS21 and ASTNode.supportedOnlyIn21()). These are metadata changes within the JDT Core API and do not represent a reusable code transformation pattern for end-user code. Therefore, it is not applicable for DSL rule mining.": 1,
-    "This commit fixes an internal bug in the Eclipse JDT ASTRewriteFlattener, specifically how it serializes RecordDeclaration body declarations. It removes an unnecessary semicolon that was being inserted. This is an internal fix to the JDT\u0027s own code generation logic, not a transformation pattern that can be applied to user Java code via the TriggerPattern DSL. The DSL operates on matching and transforming Java source code constructs, not on modifying the internal behavior of JDT\u0027s AST visitors or flatteners.": 1,
-    "This commit is an internal refactoring and bug fix within the Eclipse JDT Core, specifically in the ASTConverter. It modifies error handling for operator conversion to prevent `IllegalArgumentException` and provides more verbose error messages for unsupported operator IDs. This is not a code transformation pattern that would be applied to user-written Java code.": 1,
-    "This commit changes internal Eclipse JDT Core DOM API logic related to promoting Java 21 preview features (pattern switch, record patterns, pattern instanceof) to standard features. It involves removing internal `isPreviewEnabled()` checks and adjusting API level comparisons within JDT\u0027s AST processing and flattening components. These are not transformations that can be applied to user-written Java code, nor can they be generalized into TriggerPattern DSL rules.": 1,
-    "This is a merge commit that introduces two sets of changes, both internal to the Eclipse JDT\u0027s AST processing and flattening logic. The first change modifies `ASTConverter` to handle specific operator IDs by throwing an `IllegalArgumentException` rather than returning `null`. The second modifies `ASTRewriteFlattener` to refine how `YieldStatement` nodes are represented as source code, especially for implicit yields. Neither of these changes are transformations that apply to typical user Java code, and thus cannot be generalized into TriggerPattern DSL rules.": 1,
-    "The commit contains internal Eclipse JDT Core DOM API changes related to AST conversion (`ASTConverter.java`) and pretty-printing of specific AST nodes (`ASTRewriteFlattener.java` for `YieldStatement`). These are internal infrastructure changes within the JDT and do not represent a generalizable code transformation pattern that would be applied to user-written Java code.": 1
+    "The commit removes specific multi-line Javadoc comments and \u0027BETA\u0027 tags from `@since` annotations. These are changes to documentation and metadata, not code transformations that alter API usage or runtime behavior. The TriggerPattern DSL is not designed for matching and rewriting Javadoc comments or parts of annotations.": 1,
+    "This commit updates internal JDT Core DOM API definitions, specifically incrementing the \u0027@since\u0027 tag for \u0027JLS21\u0027 and \u0027supportedOnlyIn21()\u0027 and likely adjusting internal compiler version references. These are not code transformations that would apply to user code; they are internal API management changes within Eclipse JDT itself.": 1,
+    "This commit fixes internal JDT AST matching logic for Java 21 Pattern Matching for instanceof, rather than defining a reusable code transformation pattern for user Java code. The DSL is designed for user code transformations, not for modifying the JDT\u0027s internal AST visitor logic or introducing new internal API logic based on AST levels.": 1,
+    "This commit fixes an internal implementation detail of the JDT\u0027s ASTRewriteAnalyzer, specifically how it identifies the end of a YieldStatement (part of switch expressions). It changes the token lookup from \u0027break\u0027 to \u0027SEMICOLON\u0027. This is a bug fix/refinement within the JDT core itself, not a transformation pattern for user-written Java code that can be expressed by the TriggerPattern DSL.": 1,
+    "This commit is a Javadoc-only fix, correcting malformed HTML tags within comments. The TriggerPattern DSL is designed for transforming executable Java code, not Javadoc comments.": 1,
+    "This commit only updates a Javadoc comment from `StringBuffer` to `StringBuilder`. It is a documentation fix, not a code transformation pattern that modifies executable code.": 1,
+    "The commit exclusively contains Javadoc formatting fixes, which are not code transformations and cannot be expressed as TriggerPattern DSL rules.": 1,
+    "This commit fixes an internal bug in the Eclipse JDT Core DOM API\u0027s cloning mechanism (Dimension.java). It ensures that the source range information (start position and length) is explicitly set when a Dimension AST node is cloned. This is a fix to the JDT infrastructure itself, not a transformation that can be applied to user-written Java code via a pattern-matching DSL rule.": 1,
+    "This commit removes a redundant internal conversion call within the Eclipse JDT ASTConverter. It\u0027s a highly specific internal refactoring related to how JDT\u0027s AST handles template expressions, not a generalizable transformation pattern for user-written Java code. The DSL is designed for transforming user code, not for modifying JDT\u0027s internal compiler/AST logic.": 1,
+    "This commit withdraws internal JDT support for record patterns in enhanced for loops within the ASTConverter. This is a change to JDT\u0027s internal AST parsing and conversion logic, effectively a rollback or adjustment of how a specific language feature is represented internally by the compiler. It is not a pattern for transforming user-written Java code and therefore falls outside the scope of what the TriggerPattern DSL is designed to address.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 28,
-      "relevant": 5,
-      "green": 4,
-      "yellow": 0,
-      "red": 1
+      "totalProcessed": 23,
+      "relevant": 13,
+      "green": 5,
+      "yellow": 2,
+      "red": 6
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-15",
-      "processed": 28,
-      "relevant": 5
+      "date": "2026-03-16",
+      "processed": 23,
+      "relevant": 13
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-15T04:34:14.058Z",
-    "completedAt": "2026-03-15T04:40:19.706280059Z",
-    "durationSeconds": 365,
+    "startedAt": "2026-03-16T04:41:27.489Z",
+    "completedAt": "2026-03-16T04:48:13.397587834Z",
+    "durationSeconds": 405,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 68,
+    "deferredCommits": 72,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-15T04:35:35.701510772Z",
-    "latestEvaluation": "2026-03-15T04:40:19.151728690Z",
-    "earliestCommitDate": "2022-08-23T12:52:06Z",
-    "latestCommitDate": "2023-08-30T08:15:32Z"
+    "earliestEvaluation": "2026-03-16T04:42:53.232858458Z",
+    "latestEvaluation": "2026-03-16T04:48:12.855802791Z",
+    "earliestCommitDate": "2023-09-05T06:51:13Z",
+    "latestCommitDate": "2024-01-30T12:00:11Z"
   }
 }

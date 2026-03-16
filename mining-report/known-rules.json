@@ -187,6 +187,61 @@
       "sourceCommit": "2841fde7cbe1bc57a98aab1d98110a862fc6c5df",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-replaces-the-direct-instanti",
+      "category": "Eclipse API Migration",
+      "dslRule": "new org.eclipse.jdt.internal.compiler.problem.InvalidInputException()\n\u003d\u003e org.eclipse.jdt.internal.compiler.parser.Scanner.invalidInput()\n;;",
+      "summary": "This commit replaces the direct instantiation of `org.eclipse.jdt.internal.compiler.problem.InvalidInputException` with a call to its designated factory method `org.eclipse.jdt.internal.compiler.parser.Scanner.invalidInput()`. This change addresses an \u0027illegally instantiates\u0027 warning, aligning with the `@noinstantiate` annotation on `InvalidInputException`. This is a straightforward 1:1 replacement of a constructor call with a static method call, which is directly expressible as a GREEN TriggerPattern DSL rule. No specific source version guard is required as it\u0027s an internal JDT API modernization and doesn\u0027t rely on new Java language features beyond the baseline.",
+      "discoveredAt": "2026-03-16",
+      "discoveredInRun": 14892,
+      "sourceCommit": "ef6ff8ab770e68bbd0c737ea7981fbe2d624e9cc",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-deprecations.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-applies-the-convert-stringbu",
+      "category": "Performance",
+      "dslRule": "new java.lang.StringBuffer() :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder()\n;;\n\nnew java.lang.StringBuffer($capacity) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($capacity)\n;;\n\nnew java.lang.StringBuffer($str) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($str)\n;;",
+      "summary": "This commit applies the \u0027Convert StringBuffer to StringBuilder\u0027 cleanup across several JDT Core DOM classes. The primary pattern involves replacing `new StringBuffer(...)` constructor calls with `new StringBuilder(...)`. This is a well-known performance optimization, as `StringBuilder` is unsynchronized and generally faster when thread safety is not required. The transformation is semantically safe for local variables, which is handled by the `isAssignedToLocalVariable()` guard. This pattern is already fully covered by existing DSL rules in `stringbuffer-to-stringbuilder.sandbox-hint` and has been previously proposed. A secondary pattern involves changing `StringBuffer` parameter types in method declarations to `StringBuilder`. This specific type replacement within a method signature is currently not directly supported by the DSL\u0027s `MethodDeclaration` patterns, which are primarily for adding annotations. However, the core \u0027StringBuffer to StringBuilder\u0027 conversion for constructor calls is a direct match and a duplicate of existing rules, therefore classified as GREEN.",
+      "discoveredAt": "2026-03-16",
+      "discoveredInRun": 14892,
+      "sourceCommit": "2e12221c4f8a5bec47d22ada885210ff36a79c57",
+      "status": "DISCOVERED",
+      "hintFile": "stringbuffer-to-stringbuilder.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-compi",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt-internal-field-to-getter*/\n/*!description: Refactor internal JDT compiler AST classes to use getter methods instead of direct field access.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\n\n// StringLiteralConcatenation.literals -\u003e .getLiterals()\n$literal.literals :: instanceof($literal, \"org.eclipse.jdt.internal.compiler.ast.StringLiteralConcatenation\")\n\u003d\u003e $literal.getLiterals()\n;;\n\n// StringLiteral.source -\u003e .source()\n$expression.source :: instanceof($expression, \"org.eclipse.jdt.internal.compiler.ast.StringLiteral\")\n\u003d\u003e $expression.source()\n;;",
+      "summary": "This commit refactors internal JDT compiler AST classes by replacing direct field accesses (`.literals`, `.source`) with their corresponding getter method calls (`.getLiterals()`, `.source()`). This aligns with the principle of encapsulating internal data via accessors. The pattern `literal.counter` to `stringLiterals.length` is more complex as it involves an intermediate local variable derived from the original object, which is beyond the scope of simple pattern matching for the current DSL. However, the direct field-to-method replacements are straightforward and directly implementable.",
+      "discoveredAt": "2026-03-16",
+      "discoveredInRun": 14892,
+      "sourceCommit": "45b012d08e929c86e3f1feb62808ac7ad3ec488f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-introduces-support-for-java",
+      "category": "Eclipse API Migration",
+      "dslRule": "supportedOnlyIn21()\n\u003d\u003e supportedOnlyIn22()\n;;",
+      "summary": "This commit introduces support for Java Language Specification 22 (JLS22) within the Eclipse JDT Core DOM API. The most generalizable code transformation is the update of internal JDT API version checks, specifically replacing calls to `supportedOnlyIn21()` with `supportedOnlyIn22()` in classes like `StringTemplateExpression`. This is a direct 1:1 method call replacement, fully supported by the TriggerPattern DSL, and aligns with existing internal JDT API modernization patterns.",
+      "discoveredAt": "2026-03-16",
+      "discoveredInRun": 14892,
+      "sourceCommit": "31ef12dd145f22210d90dc53596f0799d420482b",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-part-of-a-merge-into-a-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "// Replace direct field access with getter for StringLiteralConcatenation.literals\n$literal.literals :: instanceof($literal, \"org.eclipse.jdt.internal.compiler.ast.StringLiteralConcatenation\")\n\u003d\u003e $literal.getLiterals()\n;;\n\n// Replace direct field access with getter for StringLiteral.source\n$stringLiteral.source :: instanceof($stringLiteral, \"org.eclipse.jdt.internal.compiler.ast.StringLiteral\")\n\u003d\u003e $stringLiteral.source()\n;;\n\n// Replace direct field access with length of getter result for StringLiteralConcatenation.counter\n$literal.counter :: instanceof($literal, \"org.eclipse.jdt.internal.compiler.ast.StringLiteralConcatenation\")\n\u003d\u003e $literal.getLiterals().length\n;;\n\n// Remove redundant cast to IBinaryType for getElementInfo() on BinaryType\n(org.eclipse.jdt.internal.compiler.env.IBinaryType) $binaryType.getElementInfo() :: instanceof($binaryType, \"org.eclipse.jdt.internal.core.BinaryType\")\n\u003d\u003e $binaryType.getElementInfo()\n;;",
+      "summary": "This commit, part of a merge into a Java 22 branch, includes several internal API modernizations within the Eclipse JDT Core DOM. Specifically, it replaces direct field accesses (`literal.literals`, `expression.source`, `literal.counter`) with corresponding getter method calls (`literal.getLiterals()`, `expression.source()`, `literal.getLiterals().length`) to improve encapsulation of internal AST types like `StringLiteralConcatenation` and `StringLiteral`. Additionally, a redundant cast to `IBinaryType` is removed for the `getElementInfo()` method on `BinaryType`. Other changes involve removing internal AST conversion logic for `StringTemplate` and `EnhancedForWithRecordPattern`, which are structural code removals and not directly expressible as DSL rules. The identified patterns are simple 1:1 replacements, making them directly implementable as DSL rules for internal JDT refactoring.",
+      "discoveredAt": "2026-03-16",
+      "discoveredInRun": 14892,
+      "sourceCommit": "e0bb48db2172cb9146bc8deb31c871b62e58f5ba",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
