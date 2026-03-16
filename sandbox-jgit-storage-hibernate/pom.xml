@@ -47,7 +47,7 @@
 		<dependency>
 			<groupId>org.hibernate.search</groupId>
 			<artifactId>hibernate-search-mapper-orm</artifactId>
-			<version>7.2.0.Final</version>
+			<version>8.2.2.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate.search</groupId>
