@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "8af442b9d90c46f6d43085c7b622c8689d651819",
-      "lastProcessedDate": "2026-03-15T04:40:19.152039117Z",
-      "totalProcessed": 4675,
+      "lastProcessedCommit": "4869388c3389ea51ff492a1129f1c442521c18da",
+      "lastProcessedDate": "2026-03-16T04:48:12.856129593Z",
+      "totalProcessed": 4919,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -644,6 +644,42 @@
           "deferredAt": "2026-03-15T04:37:32.030073893Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "dee4eb5e069d1c304085dcef0260a2a40984bfe3",
+          "message": "Merge remote-tracking branch \u0027upstream/BETA_JAVA21\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-16T04:42:53.334332656Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c983f425332d9075622a445914c249a2344645b3",
+          "message": "Merge the Java 21 work from BETA_JAVA21 to master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-16T04:42:53.374827055Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1d8ff450bfe80c447cab1d595caf006a55bb1cd6",
+          "message": "Use diamond operator in jdt.core repo",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-16T04:45:31.090107325Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aa1a02d82b31a8ecfdd7aed71ecd79178299735e",
+          "message": "JEP 430 - DOM API and converter changes for String Template expressions (#1684)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-16T04:46:02.158483336Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -654,7 +690,7 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 11,
+        "JDT Internal Refactoring": 14,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 1,
@@ -663,11 +699,16 @@
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
         "Deprecation": 1,
-        "Eclipse API Migration": 9,
+        "Eclipse API Migration": 11,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 2,
-        "Performance": 2,
-        "Try-with-Resources": 1
+        "Performance": 4,
+        "Try-with-Resources": 1,
+        "Logging Modernization": 1,
+        "Internal JDT Refactoring": 1,
+        "Bug Fix": 1,
+        "Exception Handling": 2,
+        "Type System Improvement": 1
       },
       "exhaustedCategories": []
     },
@@ -720,5 +761,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 14648
+  "globalTotalProcessed": 14892
 }
