@@ -1,3 +1,3 @@
-org.eclipse.jdt.core.dom.AST.JLS19
-=> org.eclipse.jdt.core.dom.AST.getJLSLatest()
+new org.eclipse.jdt.internal.compiler.problem.InvalidInputException()
+=> org.eclipse.jdt.internal.compiler.parser.Scanner.invalidInput()
 ;;
