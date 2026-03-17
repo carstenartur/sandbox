@@ -242,6 +242,28 @@
       "sourceCommit": "e0bb48db2172cb9146bc8deb31c871b62e58f5ba",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-replaces-an-internal-jdt-cor",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$unit.compilationResult.getProblems()\n\u003d\u003e $unit.compilationResult.getCUProblems()\n;;",
+      "summary": "This commit replaces an internal JDT Core method call, `unit.compilationResult.getProblems()`, with `unit.compilationResult.getCUProblems()` in `ASTConverter.java`. This change is an internal refactoring to take advantage of problem filtering and is a direct 1:1 method call replacement. It is directly implementable as a GREEN TriggerPattern DSL rule without any guards beyond the baseline Java 8, as it\u0027s an internal API modernization rather than a new Java language feature.",
+      "discoveredAt": "2026-03-17",
+      "discoveredInRun": 15068,
+      "sourceCommit": "c648d35069922c6cebf7dbd773d7fe509f3c3afa",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-an-inconsistency-in-th",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "this.binding.type.genericTypeSignature()\n\u003d\u003e org.eclipse.jdt.core.Signature.createTypeSignature(this.binding.type.signableName(), true).toCharArray()\n;;",
+      "summary": "This commit fixes an inconsistency in the type signature format returned by `VariableBinding.getJavaElement()`. It replaces a call to `this.binding.type.genericTypeSignature()` with `Signature.createTypeSignature(this.binding.type.signableName(), true).toCharArray()`. This is a direct, unconditional 1:1 replacement of one method call chain with another. This pattern is easily expressible in the TriggerPattern DSL and is a good candidate for a GREEN rule to modernize internal JDT API usage. No specific `sourceVersionGE` guard is needed as it\u0027s an internal API modernization and doesn\u0027t rely on new Java language features beyond the baseline.",
+      "discoveredAt": "2026-03-17",
+      "discoveredInRun": 15068,
+      "sourceCommit": "1d9311597dc1718d25e4063c1acf5cfbe809400a",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
