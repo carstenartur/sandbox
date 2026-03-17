@@ -1,55 +1,56 @@
 {
-  "totalProcessed": 23,
-  "relevant": 13,
-  "irrelevant": 10,
-  "duplicates": 1,
-  "green": 5,
-  "yellow": 2,
-  "red": 6,
+  "totalProcessed": 22,
+  "relevant": 11,
+  "irrelevant": 11,
+  "duplicates": 0,
+  "green": 2,
+  "yellow": 1,
+  "red": 8,
   "irrelevantReasons": {
-    "The commit removes specific multi-line Javadoc comments and \u0027BETA\u0027 tags from `@since` annotations. These are changes to documentation and metadata, not code transformations that alter API usage or runtime behavior. The TriggerPattern DSL is not designed for matching and rewriting Javadoc comments or parts of annotations.": 1,
-    "This commit updates internal JDT Core DOM API definitions, specifically incrementing the \u0027@since\u0027 tag for \u0027JLS21\u0027 and \u0027supportedOnlyIn21()\u0027 and likely adjusting internal compiler version references. These are not code transformations that would apply to user code; they are internal API management changes within Eclipse JDT itself.": 1,
-    "This commit fixes internal JDT AST matching logic for Java 21 Pattern Matching for instanceof, rather than defining a reusable code transformation pattern for user Java code. The DSL is designed for user code transformations, not for modifying the JDT\u0027s internal AST visitor logic or introducing new internal API logic based on AST levels.": 1,
-    "This commit fixes an internal implementation detail of the JDT\u0027s ASTRewriteAnalyzer, specifically how it identifies the end of a YieldStatement (part of switch expressions). It changes the token lookup from \u0027break\u0027 to \u0027SEMICOLON\u0027. This is a bug fix/refinement within the JDT core itself, not a transformation pattern for user-written Java code that can be expressed by the TriggerPattern DSL.": 1,
-    "This commit is a Javadoc-only fix, correcting malformed HTML tags within comments. The TriggerPattern DSL is designed for transforming executable Java code, not Javadoc comments.": 1,
-    "This commit only updates a Javadoc comment from `StringBuffer` to `StringBuilder`. It is a documentation fix, not a code transformation pattern that modifies executable code.": 1,
-    "The commit exclusively contains Javadoc formatting fixes, which are not code transformations and cannot be expressed as TriggerPattern DSL rules.": 1,
-    "This commit fixes an internal bug in the Eclipse JDT Core DOM API\u0027s cloning mechanism (Dimension.java). It ensures that the source range information (start position and length) is explicitly set when a Dimension AST node is cloned. This is a fix to the JDT infrastructure itself, not a transformation that can be applied to user-written Java code via a pattern-matching DSL rule.": 1,
-    "This commit removes a redundant internal conversion call within the Eclipse JDT ASTConverter. It\u0027s a highly specific internal refactoring related to how JDT\u0027s AST handles template expressions, not a generalizable transformation pattern for user-written Java code. The DSL is designed for transforming user code, not for modifying JDT\u0027s internal compiler/AST logic.": 1,
-    "This commit withdraws internal JDT support for record patterns in enhanced for loops within the ASTConverter. This is a change to JDT\u0027s internal AST parsing and conversion logic, effectively a rollback or adjustment of how a specific language feature is represented internally by the compiler. It is not a pattern for transforming user-written Java code and therefore falls outside the scope of what the TriggerPattern DSL is designed to address.": 1
+    "This commit fixes a typo in a Javadoc comment. TriggerPattern DSL rules are designed for transforming executable Java code, not for fixing documentation or comments. This change does not affect the runtime behavior or structure of the code.": 1,
+    "This commit modifies the internal ASTConverter logic within Eclipse JDT Core. It\u0027s a structural change related to how RecordPattern AST nodes are processed internally during compilation. This is not a generalizable code transformation pattern that would be applied to end-user Java code, and thus falls outside the scope of TriggerPattern DSL rules.": 1,
+    "This commit adds `ASTNode.PATTERN_INSTANCEOF_EXPRESSION` to an internal switch statement in `DefaultBindingResolver.java`. This is a bug fix/enhancement for the JDT\u0027s own AST binding resolution mechanism, ensuring that type bindings are correctly resolved for pattern matching \u0027instanceof\u0027 expressions. It\u0027s an internal compiler implementation detail, not a code transformation applicable to user code.": 1,
+    "All changes are internal JDT DOM API updates, optimizations, or typo fixes that are not applicable to general Java source code transformations. They modify the internal representation of language constructs (e.g., pattern matching) within the JDT compiler/DOM, but do not provide a user-facing transformation pattern.": 1,
+    "This commit introduces internal architectural support for a new AST node type (`EitherOrMultiPattern`) within the Eclipse JDT DOM, enabling it to represent new Java language features like multiple patterns in `case` statements. It does not provide any specific code transformation pattern that could be applied to user code using the TriggerPattern DSL. These are internal changes to the JDT\u0027s parsing and AST representation capabilities.": 1,
+    "The commit only updates Javadoc \u0027@since\u0027 tags. This is a metadata change and does not involve any executable code transformation that can be generalized into a TriggerPattern DSL rule.": 1,
+    "This commit exclusively modifies Javadoc comments to update their formatting from old HTML-like tags (`\u003cpre\u003e\u003ccode\u003e...\u003c/code\u003e\u003c/pre\u003e`) to the modern `\u003cpre\u003e{@code ...}\u003c/pre\u003e` block. This is a documentation-only change and does not involve transforming executable Java code or API usage, which is the focus of the TriggerPattern DSL.": 1,
+    "This commit changes Javadoc formatting (HTML-style `\u003ccode\u003e\u003cpre\u003e` tags to Javadoc `@code` blocks within `\u003cpre\u003e`). The TriggerPattern DSL is designed for transforming Java code expressions, statements, and declarations, not for Javadoc comment updates or documentation formatting.": 1,
+    "This commit modifies internal JDT AST conversion logic to correctly support a new Java language feature (JEP 447 Super After Statement). It\u0027s an internal change to the compiler\u0027s AST representation, not a generalizable code transformation pattern that users would apply to their own source code, nor does it relate to API deprecation, performance, or style.": 1,
+    "This commit removes multi-line beta disclaimers (comments) from several internal JDT Core DOM classes. The TriggerPattern DSL is designed for structural code transformations (API replacements, refactorings, etc.), not for managing or removing comments/disclaimers. Therefore, this change is not suitable for a DSL rule.": 1,
+    "This commit fixes an internal bug in JDT\u0027s type signature computation for anonymous types and \u0027var\u0027 declarations within the `org.eclipse.jdt.core.dom.VariableBinding` class. It\u0027s a change within the JDT compiler\u0027s internal logic, not a transformation pattern applicable to user source code. The TriggerPattern DSL is designed for source-to-source transformations, not internal JDT infrastructure fixes.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 23,
-      "relevant": 13,
-      "green": 5,
-      "yellow": 2,
-      "red": 6
+      "totalProcessed": 22,
+      "relevant": 11,
+      "green": 2,
+      "yellow": 1,
+      "red": 8
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-16",
-      "processed": 23,
-      "relevant": 13
+      "date": "2026-03-17",
+      "processed": 22,
+      "relevant": 11
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-16T04:41:27.489Z",
-    "completedAt": "2026-03-16T04:48:13.397587834Z",
-    "durationSeconds": 405,
+    "startedAt": "2026-03-17T04:21:12.003Z",
+    "completedAt": "2026-03-17T04:27:29.257260244Z",
+    "durationSeconds": 377,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 72,
+    "deferredCommits": 76,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-16T04:42:53.232858458Z",
-    "latestEvaluation": "2026-03-16T04:48:12.855802791Z",
-    "earliestCommitDate": "2023-09-05T06:51:13Z",
-    "latestCommitDate": "2024-01-30T12:00:11Z"
+    "earliestEvaluation": "2026-03-17T04:22:32.102132667Z",
+    "latestEvaluation": "2026-03-17T04:27:28.958397051Z",
+    "earliestCommitDate": "2024-02-08T05:55:49Z",
+    "latestCommitDate": "2024-03-29T16:05:00Z"
   }
 }
