@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "4869388c3389ea51ff492a1129f1c442521c18da",
-      "lastProcessedDate": "2026-03-16T04:48:12.856129593Z",
-      "totalProcessed": 4919,
+      "lastProcessedCommit": "2e89a1dff891036f629a9bbc43ac3e4f1b8a87da",
+      "lastProcessedDate": "2026-03-17T04:27:28.958821873Z",
+      "totalProcessed": 5095,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -680,6 +680,42 @@
           "deferredAt": "2026-03-16T04:46:02.158483336Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "21f8969a3ad24c3c9aae08d799a7acf1cee769c7",
+          "message": "[JEP-445] Grammar, parser and AST for unnamed classes",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-17T04:24:22.908850374Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a5c1a0d0441f796508a8df87acce894faf241163",
+          "message": "Merge commit \u00274e46b78c91fee91dba084d8c4326c47c2d26be52\u0027 into BETA_JAVA22",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-17T04:25:06.312500112Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "df543ef70f9f270d476c58fdfb3d9451907d6e89",
+          "message": "Merge remote-tracking branch \u0027origin/BETA_JAVA22\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-17T04:26:25.578304709Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b2705b00e91be7b06d36d75bdd6e052450991021",
+          "message": "Merge pull request #2181 from jarthana/master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-17T04:26:25.598738620Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -690,7 +726,7 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 14,
+        "JDT Internal Refactoring": 23,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 1,
@@ -708,7 +744,9 @@
         "Internal JDT Refactoring": 1,
         "Bug Fix": 1,
         "Exception Handling": 2,
-        "Type System Improvement": 1
+        "Type System Improvement": 1,
+        "Code Style": 1,
+        "JDT Internal Formatting/Rewrite": 1
       },
       "exhaustedCategories": []
     },
@@ -761,5 +799,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 14892
+  "globalTotalProcessed": 15068
 }
