@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "2e89a1dff891036f629a9bbc43ac3e4f1b8a87da",
-      "lastProcessedDate": "2026-03-17T04:27:28.958821873Z",
-      "totalProcessed": 5095,
+      "lastProcessedCommit": "b7ffba305f7b6792dae85197175d1c49e02c6eca",
+      "lastProcessedDate": "2026-03-18T04:33:20.255810602Z",
+      "totalProcessed": 5319,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -716,6 +716,51 @@
           "deferredAt": "2026-03-17T04:26:25.598738620Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "73ff8a5363260940265a62f40cf998051a1f7799",
+          "message": "[23] Remove String Template preview feature #2353 (#2362)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:28:37.721841896Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ac81e89eca51bf80016e59e49fdc9fddbbead291",
+          "message": "[Patterns][DOM/AST] Withdraw class EnhancedForWithRecordPattern (#2397)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:29:24.850367019Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "93f5bd2fe6cf5dbd2f8767f99a56739a8662a91e",
+          "message": "Merge remote-tracking branch \u0027upstream/master\u0027 into BETA_JAVA23",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:29:24.869118575Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "07c9984a89001c1c1197b542579c1615211e58ee",
+          "message": "An extension point allowing third parties to override source to dom tree implementations (#2560)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:32:36.701900094Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ee35373d90b32a90abcd9c2427b2319b22279407",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA23",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:32:36.891830325Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -726,7 +771,7 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 23,
+        "JDT Internal Refactoring": 30,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 1,
@@ -746,7 +791,9 @@
         "Exception Handling": 2,
         "Type System Improvement": 1,
         "Code Style": 1,
-        "JDT Internal Formatting/Rewrite": 1
+        "JDT Internal Formatting/Rewrite": 1,
+        "JDT Internal Architecture": 2,
+        "JDT Internal API Management": 1
       },
       "exhaustedCategories": []
     },
@@ -799,5 +846,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 15068
+  "globalTotalProcessed": 15292
 }
