@@ -264,6 +264,83 @@
       "sourceCommit": "1d9311597dc1718d25e4063c1acf5cfbe809400a",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-renames-the-internal-jdt-ast",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.core.dom.UnnamedClass\n\u003d\u003e org.eclipse.jdt.core.dom.ImplicitTypeDeclaration\n;;\n\nnew org.eclipse.jdt.core.dom.UnnamedClass($ast)\n\u003d\u003e new org.eclipse.jdt.core.dom.ImplicitTypeDeclaration($ast)\n;;",
+      "summary": "This commit renames the internal JDT AST class \u0027UnnamedClass\u0027 to \u0027ImplicitTypeDeclaration\u0027 across multiple files in the JDT Core DOM. This is a mechanical type renaming and constructor call replacement that is directly expressible and fully automatable using TriggerPattern DSL rules. It enhances clarity and aligns with internal JDT API evolution for new language features (unnamed classes, previewed in Java 21). The rules target direct type references (which cover occurrences in variable declarations, method signatures, instanceof checks, and Class literals like `.class`) and constructor calls. No `sourceVersionGE` guard is needed within the rules themselves as it\u0027s an internal JDT API modernization, not a new Java language feature API.",
+      "discoveredAt": "2026-03-18",
+      "discoveredInRun": 15292,
+      "sourceCommit": "151278cad84e3456cc72006f51799cc24cad3d94",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-support-for-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "supportedOnlyIn22()\n\u003d\u003e supportedOnlyIn23()\n;;",
+      "summary": "This commit introduces support for Java Language Specification 23 (JLS23) within the Eclipse JDT Core DOM API. The most generalizable code transformation is the update of internal JDT API version checks, specifically replacing calls to `supportedOnlyIn22()` with `supportedOnlyIn23()` in classes like `StringTemplateExpression`. This is a direct 1:1 method call replacement, fully supported by the TriggerPattern DSL, and aligns with existing internal JDT API modernization patterns.",
+      "discoveredAt": "2026-03-18",
+      "discoveredInRun": 15292,
+      "sourceCommit": "3e78c6e69a239a51d3d4e7c8c070ec488ce9fa89",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-a-bug-in-jdt-s-interna",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "safeSubtreeMatch($node.typeParameters(), $o.typeParameters())\n\u003d\u003e safeSubtreeListMatch($node.typeParameters(), $o.typeParameters())\n;;\n\nsafeSubtreeMatch($node.recordComponents(), $o.recordComponents())\n\u003d\u003e safeSubtreeListMatch($node.recordComponents(), $o.recordComponents())\n;;",
+      "summary": "This commit fixes a bug in JDT\u0027s internal ASTMatcher, specifically for `RecordDeclaration` nodes (introduced in Java 16). It replaces `safeSubtreeMatch()` with `safeSubtreeListMatch()` for `typeParameters()` and `recordComponents()`, indicating these are collections that require list-based matching. This is a direct 1:1 method call replacement, highly suitable for a TriggerPattern DSL rule. The rules ensure the internal AST comparison correctly handles these parts of a record declaration. The minimum Java version for the hint file would be 16 due to `RecordDeclaration` context, but no `sourceVersionGE` guard is required in the rule itself as it\u0027s an internal JDT API fix rather than a new Java language feature.",
+      "discoveredAt": "2026-03-18",
+      "discoveredInRun": 15292,
+      "sourceCommit": "9446e88d790bbb9cbc6ea19e8e15aaf15731c9d0",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-removes-several-redundant-ca",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt-remove-redundant-astnode-cast*/\n/*!description: Remove redundant (ASTNode) casts when the expression is already an ASTNode subtype.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, performance*/\n(org.eclipse.jdt.core.dom.ASTNode) $expression :: subtypeOf($expression, \"org.eclipse.jdt.core.dom.ASTNode\")\n\u003d\u003e $expression\n;;\n\n/*!id: jdt-remove-redundant-typedec-cast*/\n/*!description: Remove redundant (TypeDeclaration) cast when the expression is already proven to be of that type by context (e.g., instanceof guard).*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, performance*/\n(org.eclipse.jdt.core.dom.TypeDeclaration) $var :: subtypeOf($var, \"org.eclipse.jdt.core.dom.TypeDeclaration\")\n\u003d\u003e $var\n;;\n\n/*!id: jdt-remove-redundant-annotypedec-cast*/\n/*!description: Remove redundant (AnnotationTypeDeclaration) cast when the expression is already proven to be of that type by context (e.g., instanceof guard).*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, performance*/\n(org.eclipse.jdt.core.dom.AnnotationTypeDeclaration) $var :: subtypeOf($var, \"org.eclipse.jdt.core.dom.AnnotationTypeDeclaration\")\n\u003d\u003e $var\n;;",
+      "summary": "This commit removes several redundant casts from internal JDT DOM cloning and binding resolution methods. These casts (e.g., `(ASTNode) obj.method()`, `(TypeDeclaration) var`) are no longer necessary due to compiler improvements in type inference and flow analysis, or because the expression\u0027s static type is already compatible. This is a common cleanup pattern. The `subtypeOf` guard allows for creation of general rules to remove such casts where the expression\u0027s type is already a subtype of the cast\u0027s target type. The proposed rules cover redundant casts to `ASTNode`, `TypeDeclaration`, and `AnnotationTypeDeclaration`.",
+      "discoveredAt": "2026-03-18",
+      "discoveredInRun": 15292,
+      "sourceCommit": "836cb191c99784ca46421d7a6b87b54d90738477",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-architecture-the-commit-refactors-internal-jdt-ast-lo",
+      "category": "JDT Internal Architecture",
+      "dslRule": "$apiLevel \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS21 \u0026\u0026 $previewEnabled\n\u003d\u003e $apiLevel \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS22\n;;",
+      "summary": "The commit refactors internal JDT AST logic by updating the condition for `EitherOr_MultiPattern` from requiring `JLS21` and `previewEnabled` to simply `JLS22`. This is an internal API modernization, aligning with the evolution of Java Language Specification support within JDT. It is a direct expression replacement, which is implementable as a DSL rule.",
+      "discoveredAt": "2026-03-18",
+      "discoveredInRun": 15292,
+      "sourceCommit": "ead14897397c24e86c6489563393f728f94bf7e9",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-a-merge-into-a-java-23-branch",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "// Remove redundant (ASTNode) cast before clone(target) calls on JDT AST nodes\n(org.eclipse.jdt.core.dom.ASTNode) $expr.clone($target)\n\u003d\u003e $expr.clone($target)\n;;\n\n// Remove redundant casts to TypeDeclaration before resolveBinding() if already known to be TypeDeclaration\n((org.eclipse.jdt.core.dom.TypeDeclaration) $d).resolveBinding() :: instanceof($d, \"org.eclipse.jdt.core.dom.TypeDeclaration\")\n\u003d\u003e $d.resolveBinding()\n;;\n\n// Remove redundant casts to AnnotationTypeDeclaration before resolveBinding() if already known to be AnnotationTypeDeclaration\n((org.eclipse.jdt.core.dom.AnnotationTypeDeclaration) $d).resolveBinding() :: instanceof($d, \"org.eclipse.jdt.core.dom.AnnotationTypeDeclaration\")\n\u003d\u003e $d.resolveBinding()\n;;",
+      "summary": "The commit, a merge into a Java 23 branch, includes several internal JDT refactorings primarily focused on removing redundant casts in AST node cloning and binding resolution logic. Patterns include removing `(ASTNode)` casts before `.clone(target)` calls (e.g., `((ASTNode) getQualifier()).clone(target)` -\u003e `getQualifier().clone(target)`) and removing explicit casts to `TypeDeclaration` or `AnnotationTypeDeclaration` within `instanceof` guarded blocks (e.g., `((TypeDeclaration) d).resolveBinding()` -\u003e `d.resolveBinding()`). These are mechanical, type-safe cleanups within JDT\u0027s internal AST manipulation, directly expressible as multiple DSL rules.",
+      "discoveredAt": "2026-03-18",
+      "discoveredInRun": 15292,
+      "sourceCommit": "1b14b6955404b9f9ab3718a946402665b027c357",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-the-internal-astre",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt-internal-astrequestor-resolver*/\n/*!description: Refactors ASTRequestor to use Function for binding resolution, replacing direct CompilationUnitResolver access. Updates field references and method calls to align with internal API change.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\n\n// Replace method invocation: this.compilationUnitResolver.createBinding($bindingKey) -\u003e this.additionalBindingResolver.apply($bindingKey)\n@id: jdt.internal.astrequestor.createBinding.to.apply\nthis.compilationUnitResolver.createBinding($bindingKey)\n\u003d\u003e this.additionalBindingResolver.apply($bindingKey)\n;;\n\n// Replace assignment: $astRequestor.compilationUnitResolver \u003d this -\u003e $astRequestor.additionalBindingResolver \u003d this::createBinding\n@id: jdt.internal.astrequestor.assign.this.to.methodref\n$astRequestor.compilationUnitResolver \u003d this\n\u003d\u003e $astRequestor.additionalBindingResolver \u003d this::createBinding\n;;\n\n// Replace assignment: $astRequestor.compilationUnitResolver \u003d null -\u003e $astRequestor.additionalBindingResolver \u003d null\n@id: jdt.internal.astrequestor.assign.null\n$astRequestor.compilationUnitResolver \u003d null\n\u003d\u003e $astRequestor.additionalBindingResolver \u003d null\n;;",
+      "summary": "This commit refactors the internal `ASTRequestor` class in JDT Core. It replaces a direct field reference to `CompilationUnitResolver` with a `Function\u003cString, IBinding\u003e` to allow for more flexible binding resolution, enhancing encapsulation. This involves renaming the field, changing its type, and updating its usage from a direct method call (`.createBinding()`) to a functional interface call (`.apply()`), as well as adjusting assignment statements. The transformation relies on Java 8 features (functional interfaces, method references). These are direct 1:1 API replacements and are fully expressible as a set of GREEN TriggerPattern DSL rules, matching specific expressions and assignments to perform the modernization.",
+      "discoveredAt": "2026-03-18",
+      "discoveredInRun": 15292,
+      "sourceCommit": "3c3b2c07a998915f567d83a93e398983cd185372",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
