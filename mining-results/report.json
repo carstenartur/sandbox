@@ -17,8 +17,23 @@
         "matches": 11,
         "rules": 2
       },
+      "eclipse.platform": {
+        "files": 0,
+        "matches": 0,
+        "rules": 0
+      },
+      "eclipse.platform.text": {
+        "files": 0,
+        "matches": 0,
+        "rules": 0
+      },
+      "eclipse.platform.debug": {
+        "files": 0,
+        "matches": 0,
+        "rules": 0
+      },
       "sandbox": {
-        "files": 842,
+        "files": 917,
         "matches": 0,
         "rules": 0
       }
@@ -1065,5 +1080,8 @@
     }
   ],
   "errors": {
+    "eclipse.platform": "Remote branch 'main' not found in upstream origin",
+    "eclipse.platform.text": "Remote branch 'main' not found in upstream origin",
+    "eclipse.platform.debug": "Remote branch 'main' not found in upstream origin"
   }
 }

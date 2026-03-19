@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-03-02
+# Refactoring Mining Report — 2026-03-19
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -6,7 +6,10 @@
 | eclipse.jdt.core | 227 | 85 | 1 |
 | eclipse.jdt.ui | 1468 | 31 | 2 |
 | eclipse.platform.ui | 1144 | 11 | 2 |
-| sandbox | 842 | 0 | 0 |
+| eclipse.platform ⚠️ | 0 | 0 | 0 |
+| eclipse.platform.text ⚠️ | 0 | 0 | 0 |
+| eclipse.platform.debug ⚠️ | 0 | 0 | 0 |
+| sandbox | 917 | 0 | 0 |
 
 ## Details
 ### eclipse.jdt.core
@@ -149,3 +152,10 @@
 #### Rule: `performance` → `Unnecessary String constructor`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/preferences/WorkingCopyPreferences.java:382` — `new String(Base64.encode(value))`
 
+
+## Errors
+The following repositories encountered errors during scanning:
+
+- **eclipse.platform**: `Remote branch 'main' not found in upstream origin`
+- **eclipse.platform.text**: `Remote branch 'main' not found in upstream origin`
+- **eclipse.platform.debug**: `Remote branch 'main' not found in upstream origin`
