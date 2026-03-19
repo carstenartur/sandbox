@@ -341,6 +341,61 @@
       "sourceCommit": "3c3b2c07a998915f567d83a93e398983cd185372",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-internal-eclipse-jdt",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_3\n\u003d\u003e org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()\n;;",
+      "summary": "This commit updates internal Eclipse JDT Core logic, replacing the constant `org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_3` with a call to `org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()`. This is a direct 1:1 replacement of an internal JDT constant with a static method, aiming to align with internal API best practices and improve maintainability for source level determination. The transformation is simple, unconditional, and fully implementable as a GREEN TriggerPattern DSL rule without any special guards, as it\u0027s an internal JDT API modernization and does not depend on the external project\u0027s Java version beyond the baseline Java 8.",
+      "discoveredAt": "2026-03-19",
+      "discoveredInRun": 15500,
+      "sourceCommit": "3da0f427125c61ddaaec3b8c9bbc64c354f0c77c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-a-merge-into-a-java-23-branc",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_3\n\u003d\u003e org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()\n;;",
+      "summary": "This commit, a merge into a Java 23 branch, includes an internal JDT refactoring in `CompilationUnitResolver.java`. It replaces the hardcoded `org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_3` constant with a dynamic call to `org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()` for determining the default source level. This is a direct 1:1 constant-to-method-call replacement, which is a GREEN transformation, improving internal API robustness by using a more flexible method to determine the baseline JDK level. Other changes in `ASTConverter.java` and `DefaultBindingResolver.java` involve modifications to conditional logic and complex expression replacements within `if` blocks, which are not directly expressible as simple pattern-replacement DSL rules (RED).",
+      "discoveredAt": "2026-03-19",
+      "discoveredInRun": 15500,
+      "sourceCommit": "707447ae4f39a327fd0c46e84434e092607311e9",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-compi",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.bindingresolver.remove-bogus-subarray*/\n/*!description: Removes redundant CharOperation.subarray(array, 0, array.length) calls which are equivalent to using the array directly, improving clarity and efficiency.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, performance*/\norg.eclipse.jdt.internal.compiler.util.CharOperation.subarray($array, 0, $array.length)\n\u003d\u003e $array\n;;\n\n/*!id: jdt.internal.bindingresolver.isstatic-to-modifiers-localvar-subarray*/\n/*!description: Replaces the \u0027isStatic\u0027 boolean local variable and removes the bogus CharOperation.subarray() call in Scope.getImport, modernizing API usage to \u0027importReference.modifiers\u0027.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\nthis.scope.getImport(org.eclipse.jdt.internal.compiler.util.CharOperation.subarray($importReference.tokens, 0, $importReference.tokens.length), true, isStatic)\n\u003d\u003e this.scope.getImport($importReference.tokens, true, $importReference.modifiers)\n;;\n\n/*!id: jdt.internal.bindingresolver.isstatic-to-modifiers-localvar*/\n/*!description: Replaces the \u0027isStatic\u0027 boolean local variable with \u0027importReference.modifiers\u0027 in Scope.getImport method calls, reflecting internal API modernization.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\nthis.scope.getImport($importReference.tokens, false, isStatic)\n\u003d\u003e this.scope.getImport($importReference.tokens, false, $importReference.modifiers)\n;;\n\n/*!id: jdt.internal.bindingresolver.isstatic-methodcall-to-modifiers*/\n/*!description: Replaces \u0027importReference.isStatic()\u0027 method call with \u0027importReference.modifiers\u0027 field in Scope.getImport calls, reflecting internal API modernization from boolean flag to int bitmask.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\norg.eclipse.jdt.internal.compiler.lookup.Scope.getImport($tokens, $onDemand, $importReference.isStatic())\n\u003d\u003e org.eclipse.jdt.internal.compiler.lookup.Scope.getImport($tokens, $onDemand, $importReference.modifiers)\n;;",
+      "summary": "This commit refactors internal JDT compiler code to generalize from a boolean `isStatic` flag to an integer `modifiers` bitmask when resolving import bindings. It also removes redundant `CharOperation.subarray` calls used to \u0027extract\u0027 the entire array, replacing them with direct array references. The `dslRule` includes four separate rules to cover all instances in the diff: one general rule to simplify `CharOperation.subarray($array, 0, $array.length)` to `$array`, and three specific rules targeting `Scope.getImport` method calls to replace the boolean `isStatic` (local variable or method call) with `importReference.modifiers`. These are mechanical 1:1 replacements of expressions in argument positions, making them fully implementable as GREEN TriggerPattern DSL rules.",
+      "discoveredAt": "2026-03-19",
+      "discoveredInRun": 15500,
+      "sourceCommit": "4e4e4fd5cfe85786cb578bfd896c3424053afb34",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-updates-internal-eclipse-jdt",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS23\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS24\n;;",
+      "summary": "This commit updates internal Eclipse JDT Core DOM API constants to reflect support for Java Language Specification 24 (JLS24). The primary pattern is updating the `JLS_INTERNAL_Latest` field from `JLS23` to `JLS24`. This is a direct 1:1 constant replacement within an assignment expression, which is fully supported and directly expressible as a GREEN TriggerPattern DSL rule. No `sourceVersionGE` guard is needed as it\u0027s an internal JDT refactoring, not dependent on new Java language features for its application. The `minJavaVersion` for the hint file should be 8.",
+      "discoveredAt": "2026-03-19",
+      "discoveredInRun": 15500,
+      "sourceCommit": "2ba50f80f57b8d545ca71a6acd7fa026f41ad432",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-an-internal-jdt-core",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$statement.isExpr\n\u003d\u003e $statement.isSwitchRule\n;;",
+      "summary": "This commit updates an internal JDT Core DOM API, replacing the `isExpr` field with `isSwitchRule` on a `statement` object within the `ASTConverter`. This change streamlines internal error handling for Switch Expressions by using a more semantically precise property. This is a direct 1:1 expression replacement, suitable for a GREEN TriggerPattern DSL rule. The rule will automatically update the field access wherever the `statement.isExpr` pattern is matched in this internal context. No `sourceVersionGE` guard is necessary in the rule itself, as this is an internal refactoring of JDT\u0027s own codebase, not a migration to a new public Java API.",
+      "discoveredAt": "2026-03-19",
+      "discoveredInRun": 15500,
+      "sourceCommit": "d0af8a481c95d1088fdaddabd2110e6f10b125e7",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

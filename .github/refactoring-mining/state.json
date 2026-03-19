@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "b7ffba305f7b6792dae85197175d1c49e02c6eca",
-      "lastProcessedDate": "2026-03-18T04:33:20.255810602Z",
-      "totalProcessed": 5319,
+      "lastProcessedCommit": "d0af8a481c95d1088fdaddabd2110e6f10b125e7",
+      "lastProcessedDate": "2026-03-19T04:31:28.898356991Z",
+      "totalProcessed": 5527,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -761,6 +761,24 @@
           "deferredAt": "2026-03-18T04:32:36.891830325Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "f8fb58210e5a04aa17773fe757e7e02b2b9ac5cd",
+          "message": "Merge branch \u0027BETA_JAVA23\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-19T04:28:43.625903957Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "983f530a7889db194c64f9dcf2ff2f8172771cb6",
+          "message": "Merge pull request #2979 from jarthana/master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-19T04:28:55.672019919Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -771,16 +789,16 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 30,
+        "JDT Internal Refactoring": 36,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 1,
-        "JDT Internal Bug Fix": 1,
+        "JDT Internal Bug Fix": 5,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
         "Deprecation": 1,
-        "Eclipse API Migration": 11,
+        "Eclipse API Migration": 12,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 2,
         "Performance": 4,
@@ -792,7 +810,7 @@
         "Type System Improvement": 1,
         "Code Style": 1,
         "JDT Internal Formatting/Rewrite": 1,
-        "JDT Internal Architecture": 2,
+        "JDT Internal Architecture": 3,
         "JDT Internal API Management": 1
       },
       "exhaustedCategories": []
@@ -846,5 +864,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 15292
+  "globalTotalProcessed": 15500
 }
