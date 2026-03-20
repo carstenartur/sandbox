@@ -396,6 +396,72 @@
       "sourceCommit": "d0af8a481c95d1088fdaddabd2110e6f10b125e7",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-a-merge-into-a-java-24-branc",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$statement.isExpr\n\u003d\u003e $statement.isSwitchRule\n;;",
+      "summary": "This commit, a merge into a Java 24 branch, primarily contains internal Eclipse JDT Core DOM refactorings. The key code transformation is the replacement of the `statement.isExpr` property with `statement.isSwitchRule` in `ASTConverter.java`. This is a direct 1:1 expression replacement that modernizes internal JDT handling of Switch Expressions/Rules (introduced in Java 14+). This specific transformation is a duplicate of an existing DSL rule already present in `jdt-internal-refactoring.sandbox-hint`. Other changes, such as adding/removing `if` statements within loops or fixing a trailing newline, are structural changes not directly expressible as pattern-based DSL rules.",
+      "discoveredAt": "2026-03-20",
+      "discoveredInRun": 15732,
+      "sourceCommit": "26c6b87c76b0edb654151f5e6f3549c0953b70ba",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-a-merge-into-a-java-24-branc",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$statement.isExpr\n\u003d\u003e $statement.isSwitchRule\n;;",
+      "summary": "This commit, a merge into a Java 24 branch, includes several internal JDT refactorings. The primary pattern suitable for a DSL rule is the replacement of `statement.isExpr` with `statement.isSwitchRule` in `ASTConverter.java`. This is a direct 1:1 property replacement, streamlining internal handling of Switch Expressions. This exact pattern has been previously identified and exists as a GREEN DSL rule in `jdt-internal-refactoring.sandbox-hint`. Other changes, such as removing or adding conditional `if` blocks (`if (importReference.isImplicit()) continue;` and `if(internalAnnotation \u003d\u003d null) continue;`), are structural changes to control flow and are not directly expressible as simple pattern-based DSL rules (RED).",
+      "discoveredAt": "2026-03-20",
+      "discoveredInRun": 15732,
+      "sourceCommit": "03fdaf2cf0e27258b826a14e7296aa953025919f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-jdt-core",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.typepattern.setpatternvariable-replacement\n@severity: info\norg.eclipse.jdt.core.dom.TypePattern.$typePattern.setPatternVariable(org.eclipse.jdt.core.dom.SingleVariableDeclaration $variable)\n\u003d\u003e org.eclipse.jdt.core.dom.TypePattern.$typePattern.internalSetPatternVariable($variable)\n;;\n\n@id: jdt.internal.typepattern.getpatternvariable-to-getpatternvariable2\n@severity: info\n$node.getPatternVariable().accept($this)\n:: instanceof($node, \"org.eclipse.jdt.core.dom.TypePattern\") \u0026\u0026 sourceVersionGE(22)\n\u003d\u003e $node.getPatternVariable2().accept($this)\n;;",
+      "summary": "This commit modernizes internal JDT Core DOM API usage related to `TypePattern` to support newer Java Language Specifications (JLS22+). It addresses two key patterns: 1) Replacing the deprecated `TypePattern.setPatternVariable(SingleVariableDeclaration)` method with its internal synonym `internalSetPatternVariable`. This handles an internal deprecation transition. 2) Updating calls from `TypePattern.getPatternVariable()` to `TypePattern.getPatternVariable2()` in contexts where the JLS API level is Java 22 or higher. Both are direct 1:1 method invocation replacements and are fully expressible as GREEN TriggerPattern DSL rules. Other structural changes within `TypePattern` (field declarations, complex ternary expressions in `clone0`/`treeSize`) are not directly suitable for simple DSL rules.",
+      "discoveredAt": "2026-03-20",
+      "discoveredInRun": 15732,
+      "sourceCommit": "fb44704c5c92f466c5cb300f395ce0d0b8583f8d",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-new-utility-metho",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "// Modernize internal JDT AST level check in internalSet method\n// Replaces an explicit, potentially always-false, range check with a more robust check against the new ALL_VERSIONS list.\n@id: jdt.internal.ast.level-check-modernization-internalset\n$level \u003c org.eclipse.jdt.core.dom.AST.JLS2_INTERNAL \u0026\u0026 $level \u003e org.eclipse.jdt.core.dom.AST.JLS_Latest\n\u003d\u003e !org.eclipse.jdt.core.dom.AST.ALL_VERSIONS.contains($level)\n;;\n\n// Modernize internal JDT AST level check in getCompliance method\n// Replaces an explicit, potentially always-false, range check with a more robust check against the new ALL_VERSIONS list.\n@id: jdt.internal.ast.level-check-modernization-getcompliance\n$astLevel \u003c org.eclipse.jdt.core.dom.AST.JLS2 \u0026\u0026 $astLevel \u003e org.eclipse.jdt.core.dom.AST.getJLSLatest()\n\u003d\u003e !org.eclipse.jdt.core.dom.AST.getAllVersions().contains($astLevel)\n;;",
+      "summary": "This commit introduces new utility methods for querying supported Java Language Specification (JLS) versions within the Eclipse JDT Core DOM API. The most generalizable code transformations are two direct expression replacements that modernize internal JDT AST level checking logic. They replace complex conditional checks (e.g., `$level \u003c JLS2_INTERNAL \u0026\u0026 $level \u003e JLS_Latest`) with a simplified, centralized validation using the newly introduced `!ALL_VERSIONS.contains($level)` method call. This improves the robustness and maintainability of JDT\u0027s internal API for handling JLS versions. Both patterns are simple 1:1 expression replacements, making them fully implementable as GREEN TriggerPattern DSL rules. The more complex structural changes (replacing an entire `if-switch` block with a single `if` statement) are not supported by the current DSL.",
+      "discoveredAt": "2026-03-20",
+      "discoveredInRun": 15732,
+      "sourceCommit": "cc53f07cd7606bd9d54fae67bb49779ec9c526d5",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-internal-jdt-core-do",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.jlsversion.rangecheck.to.contains.ast\n$level \u003c org.eclipse.jdt.core.dom.AST.JLS2_INTERNAL \u0026\u0026 $level \u003e org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest\n\u003d\u003e !org.eclipse.jdt.core.dom.AST.getAllVersions().contains($level)\n;;\n\n@id: jdt.internal.jlsversion.rangecheck.to.contains.domastutil\n$astLevel \u003c org.eclipse.jdt.core.dom.AST.JLS2 \u0026\u0026 $astLevel \u003e org.eclipse.jdt.core.dom.AST.getJLSLatest()\n\u003d\u003e !org.eclipse.jdt.core.dom.AST.getAllVersions().contains($astLevel)\n;;",
+      "summary": "This commit updates internal JDT Core DOM API logic, replacing conditional range checks for JLS levels (e.g., `$level \u003c JLS_OLD \u0026\u0026 $level \u003e JLS_NEW`) with a more modern and robust check using `!AST.getAllVersions().contains($level)`. This improves the API\u0027s internal consistency and maintainability by leveraging a centrally managed list of supported versions. The two patterns found are direct, unconditional expression replacements and are fully implementable as GREEN TriggerPattern DSL rules. Other changes in the commit, such as structural code additions (e.g., `if` statements, `for` loops) or method body rewrites in `ASTConverter` and `DOMASTUtil`, are beyond the current DSL\u0027s capabilities (RED).",
+      "discoveredAt": "2026-03-20",
+      "discoveredInRun": 15732,
+      "sourceCommit": "4052fa8ceef34dc8dc5a074ba8f7b004e7d52c05",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-refactors-internal-jdt-core",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "org.eclipse.jdt.core.dom.CompilationUnitResolver.resolve($elements, $apiLevel, $compilerOptions, $project, $owner, $flags, $monitor)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTParser.resolve($elements, $apiLevel, $compilerOptions, $project, $owner, $flags, this.unitResolver, $monitor)\n;;",
+      "summary": "This commit refactors internal JDT Core DOM API by ensuring calls to ASTParser.createBindings use the correct unit resolver. It replaces a static method call to `CompilationUnitResolver.resolve` with a call to the newly introduced static `ASTParser.resolve` method, adding `this.unitResolver` as a new argument. This is a direct 1:1 method call replacement with an argument addition, fully expressible as a GREEN TriggerPattern DSL rule for internal JDT API modernization and bug fixing.",
+      "discoveredAt": "2026-03-20",
+      "discoveredInRun": 15732,
+      "sourceCommit": "af8eae0a1535512fd543f194e3097c1d409db2a9",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
