@@ -1,3 +1,3 @@
-$statement.isExpr
-=> $statement.isSwitchRule
+org.eclipse.jdt.core.dom.CompilationUnitResolver.resolve($elements, $apiLevel, $compilerOptions, $project, $owner, $flags, $monitor)
+=> org.eclipse.jdt.core.dom.ASTParser.resolve($elements, $apiLevel, $compilerOptions, $project, $owner, $flags, this.unitResolver, $monitor)
 ;;
