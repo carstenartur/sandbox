@@ -45,7 +45,7 @@
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
 			<artifactId>org.eclipse.jdt.core</artifactId>
-			<version>3.44.0</version>
+			<version>3.45.0</version>
 		</dependency>
 		
 		<!-- Eclipse JDT UI for helper classes like ASTNodes, ScopeAnalyzer -->
