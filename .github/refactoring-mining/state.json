@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "8a1b391d3c656b58efca481d2c1dfb5ddb53ff30",
-      "lastProcessedDate": "2026-03-20T04:22:51.678842680Z",
-      "totalProcessed": 5759,
+      "lastProcessedCommit": "ddea4ea90cef3a60de5765d02c25e265b7489948",
+      "lastProcessedDate": "2026-03-21T04:13:20.549080168Z",
+      "totalProcessed": 5907,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -779,6 +779,24 @@
           "deferredAt": "2026-03-19T04:28:55.672019919Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "5b5a17b4d15383cafccdf7911c880c170e7abb6b",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-21T04:09:00.530745103Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "80a4a864e693f8446a56c117b8785cf980fa1390",
+          "message": "Represent scanner tokens as enums internally (#3303) (#3772)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-21T04:09:43.912784145Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -789,7 +807,7 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 45,
+        "JDT Internal Refactoring": 57,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 1,
@@ -798,13 +816,13 @@
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
         "Deprecation": 1,
-        "Eclipse API Migration": 12,
+        "Eclipse API Migration": 14,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 2,
         "Performance": 4,
         "Try-with-Resources": 1,
         "Logging Modernization": 1,
-        "Internal JDT Refactoring": 1,
+        "Internal JDT Refactoring": 2,
         "Bug Fix": 1,
         "Exception Handling": 2,
         "Type System Improvement": 1,
@@ -865,5 +883,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 15732
+  "globalTotalProcessed": 15880
 }
