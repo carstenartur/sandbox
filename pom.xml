@@ -21,6 +21,27 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<license.licenseName>epl_v1</license.licenseName>
 		<bouncycastle.version>1.83</bouncycastle.version>
+		<assertj.version>3.27.7</assertj.version>
+		<bnd.version>7.2.1</bnd.version>
+		<caffeine.version>3.1.8</caffeine.version>
+		<djl.version>0.36.0</djl.version>
+		<!-- Pin ONNX Runtime native version: 1.21.1 (from DJL 0.36.0) fails
+		     DLL init on Windows; 1.19.0 (from DJL 0.31.1) works. -->
+		<onnxruntime.version>1.19.0</onnxruntime.version>
+		<eclipse-jdt-core.version>3.44.0</eclipse-jdt-core.version>
+		<gson.version>2.13.2</gson.version>
+		<hibernate.version>6.6.13.Final</hibernate.version>
+		<hibernate-search.version>7.2.0.Final</hibernate-search.version>
+		<jetty.version>12.1.7</jetty.version>
+		<jgit.version>7.5.0.202512021534-r</jgit.version>
+		<jmh.version>1.37</jmh.version>
+		<maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+		<maven-jar-plugin.version>3.5.0</maven-jar-plugin.version>
+		<maven-shade-plugin.version>3.6.1</maven-shade-plugin.version>
+		<maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
+		<maven-surefire-report-plugin.version>3.5.5</maven-surefire-report-plugin.version>
+		<slf4j.version>2.0.17</slf4j.version>
+		<snakeyaml.version>2.6</snakeyaml.version>
 	</properties>
 	<modules>
 		<module>sandbox-functional-converter-core</module>
@@ -285,7 +306,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.15.0</version>
+				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
 					<release>${java-version}</release>
 				</configuration>
@@ -352,7 +373,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-report-plugin</artifactId>
-				<version>3.5.5</version>
+				<version>${maven-surefire-report-plugin.version}</version>
 				<configuration>
 					<showSuccess>true</showSuccess>
 					<linkXRef>false</linkXRef>
@@ -680,6 +701,133 @@
 				<version>${bouncycastle.version}</version>
 			</dependency>
 
+			<!-- Third-party dependencies (shared across modules) -->
+			<dependency>
+				<groupId>org.eclipse.jgit</groupId>
+				<artifactId>org.eclipse.jgit</artifactId>
+				<version>${jgit.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.jgit</groupId>
+				<artifactId>org.eclipse.jgit.http.server</artifactId>
+				<version>${jgit.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.jdt</groupId>
+				<artifactId>org.eclipse.jdt.core</artifactId>
+				<version>${eclipse-jdt-core.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.jdt</groupId>
+				<artifactId>ecj</artifactId>
+				<version>${eclipse-jdt-core.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.code.gson</groupId>
+				<artifactId>gson</artifactId>
+				<version>${gson.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>${slf4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-nop</artifactId>
+				<version>${slf4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-simple</artifactId>
+				<version>${slf4j.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.yaml</groupId>
+				<artifactId>snakeyaml</artifactId>
+				<version>${snakeyaml.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.assertj</groupId>
+				<artifactId>assertj-core</artifactId>
+				<version>${assertj.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.orm</groupId>
+				<artifactId>hibernate-core</artifactId>
+				<version>${hibernate.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.orm</groupId>
+				<artifactId>hibernate-hikaricp</artifactId>
+				<version>${hibernate.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.orm</groupId>
+				<artifactId>hibernate-jcache</artifactId>
+				<version>${hibernate.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.search</groupId>
+				<artifactId>hibernate-search-mapper-orm</artifactId>
+				<version>${hibernate-search.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.search</groupId>
+				<artifactId>hibernate-search-backend-lucene</artifactId>
+				<version>${hibernate-search.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.github.ben-manes.caffeine</groupId>
+				<artifactId>caffeine</artifactId>
+				<version>${caffeine.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.github.ben-manes.caffeine</groupId>
+				<artifactId>jcache</artifactId>
+				<version>${caffeine.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.openjdk.jmh</groupId>
+				<artifactId>jmh-core</artifactId>
+				<version>${jmh.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.openjdk.jmh</groupId>
+				<artifactId>jmh-generator-annprocess</artifactId>
+				<version>${jmh.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.jetty.ee10</groupId>
+				<artifactId>jetty-ee10-servlet</artifactId>
+				<version>${jetty.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-session</artifactId>
+				<version>${jetty.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ai.djl</groupId>
+				<artifactId>api</artifactId>
+				<version>${djl.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ai.djl.huggingface</groupId>
+				<artifactId>tokenizers</artifactId>
+				<version>${djl.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ai.djl.onnxruntime</groupId>
+				<artifactId>onnxruntime-engine</artifactId>
+				<version>${djl.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.microsoft.onnxruntime</groupId>
+				<artifactId>onnxruntime</artifactId>
+				<version>${onnxruntime.version}</version>
+			</dependency>
+
 		</dependencies>
 	</dependencyManagement>
 	<!--	-->
@@ -790,7 +938,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-surefire-report-plugin</artifactId>
-						<version>3.5.5</version>
+						<version>${maven-surefire-report-plugin.version}</version>
 						<executions>
 							<execution>
 								<id>generate-test-report</id>

@@ -22,9 +22,6 @@
 		<maven.compiler.target>21</maven.compiler.target>
 		<maven.compiler.release>21</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<junit.version>6.0.3</junit.version>
-		<assertj.version>3.27.7</assertj.version>
-		<jacoco-version>0.8.14</jacoco-version>
 		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
 		<tycho.mode>maven</tycho.mode>
 	</properties>
@@ -41,7 +38,7 @@
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
 			<artifactId>org.eclipse.jdt.core</artifactId>
-			<version>3.45.0</version>
+			<version>${eclipse-jdt-core.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		
@@ -49,7 +46,6 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter</artifactId>
-			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		
@@ -67,7 +63,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.15.0</version>
+				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
 					<release>21</release>
 				</configuration>
@@ -76,7 +72,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.5</version>
+				<version>${maven-surefire-plugin.version}</version>
 			</plugin>
 			
 			<!-- JaCoCo for code coverage -->
@@ -104,7 +100,7 @@
 			<plugin>
 				<groupId>biz.aQute.bnd</groupId>
 				<artifactId>bnd-maven-plugin</artifactId>
-				<version>7.2.1</version>
+				<version>${bnd.version}</version>
 				<executions>
 					<execution>
 						<goals>
@@ -120,7 +116,7 @@
 				<!-- Use 3.3.0: versions 3.4.0+ use maven-archiver with session-scoped injection
 				     that conflicts with Tycho extensions in M2E, causing
 				     "Cannot access session scope outside of a scoping block" -->
-				<version>3.5.0</version>
+				<version>${maven-jar-plugin.version}</version>
 				<configuration>
 					<archive>
 						<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
