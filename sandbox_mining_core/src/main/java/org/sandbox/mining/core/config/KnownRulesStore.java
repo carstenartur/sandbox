@@ -26,8 +26,6 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 
 /**
