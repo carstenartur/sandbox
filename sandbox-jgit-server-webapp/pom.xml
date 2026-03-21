@@ -22,10 +22,7 @@
 		<maven.compiler.target>21</maven.compiler.target>
 		<maven.compiler.release>21</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<jacoco-version>0.8.14</jacoco-version>
 		<tycho.mode>maven</tycho.mode>
-		<jetty.version>12.1.7</jetty.version>
-		<jgit.version>7.5.0.202512021534-r</jgit.version>
 	</properties>
 
 	<dependencies>
@@ -54,14 +51,14 @@
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
 			<artifactId>org.eclipse.jdt.core</artifactId>
-			<version>3.44.0</version>
+			<version>${eclipse-jdt-core.version}</version>
 		</dependency>
 
 		<!-- Hibernate ORM -->
 		<dependency>
 			<groupId>org.hibernate.orm</groupId>
 			<artifactId>hibernate-core</artifactId>
-			<version>6.6.13.Final</version>
+			<version>${hibernate.version}</version>
 		</dependency>
 
 		<!-- Embedded Jetty (EE10/Jakarta EE 10) -->
@@ -88,7 +85,7 @@
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
-			<version>2.13.1</version>
+			<version>${gson.version}</version>
 		</dependency>
 
 		<!-- MSSQL JDBC driver (runtime, for production use) -->
@@ -103,12 +100,12 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>2.0.16</version>
+			<version>${slf4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
-			<version>2.0.17</version>
+			<version>${slf4j.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 
@@ -140,7 +137,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.15.0</version>
+				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
 					<release>21</release>
 				</configuration>
@@ -149,7 +146,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.5</version>
+				<version>${maven-surefire-plugin.version}</version>
 			</plugin>
 
 			<!-- JaCoCo for code coverage -->
@@ -177,7 +174,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.6.0</version>
+				<version>${maven-shade-plugin.version}</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
