@@ -462,6 +462,83 @@
       "sourceCommit": "af8eae0a1535512fd543f194e3097c1d409db2a9",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-eclipse",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.typepattern.setpatternvariable-replacement\n@severity: info\norg.eclipse.jdt.core.dom.TypePattern.$typePattern.setPatternVariable(org.eclipse.jdt.core.dom.SingleVariableDeclaration $variable)\n\u003d\u003e org.eclipse.jdt.core.dom.TypePattern.$typePattern.internalSetPatternVariable($variable)\n;;\n\n@id: jdt.internal.typepattern.getpatternvariable-to-getpatternvariable2\n@severity: info\n$node.getPatternVariable().accept($this)\n:: instanceof($node, \"org.eclipse.jdt.core.dom.TypePattern\") \u0026\u0026 sourceVersionGE(22)\n\u003d\u003e $node.getPatternVariable2().accept($this)\n;;",
+      "summary": "This commit modernizes internal Eclipse JDT Core DOM API usage for `TypePattern` by introducing `patternVariable2` and associated getters/setters for Java 22+. It deprecates `setPatternVariable(SingleVariableDeclaration)` and uses an internal synonym, `internalSetPatternVariable`, to avoid deprecation warnings. It also updates internal consumers (`ASTConverter`, `NaiveASTFlattener`) to use the new `getPatternVariable2()` method when the API level is JLS22 or higher. The core transformation patterns—replacing the deprecated `setPatternVariable` call with its internal alternative and migrating `getPatternVariable()` to `getPatternVariable2()` with a JLS22+ guard—are direct, mechanical replacements. These patterns have been identified and proposed previously, with this commit being their original source.",
+      "discoveredAt": "2026-03-21",
+      "discoveredInRun": 15880,
+      "sourceCommit": "2b79f7dc1f10f8d18a404a680b7eee39c3d683c9",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-refactors-internal-jdt-ast-ha",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$methodDeclaration instanceof org.eclipse.jdt.core.dom.CompactConstructorDeclaration\n\u003d\u003e $methodDeclaration.isCompactConstructor()\n;;",
+      "summary": "The commit refactors internal JDT AST handling of compact constructors for Records classes. It replaces an \u0027instanceof\u0027 check against the internal type `CompactConstructorDeclaration` with a dedicated `isCompactConstructor()` method call on the `methodDeclaration` object. This improves encapsulation and internal API design within JDT. Since Records (and thus compact constructors) were introduced in Java 16, the source version for this context is Java 16. This is a direct 1:1 expression replacement, making it a strong candidate for a GREEN TriggerPattern DSL rule. It will be added to `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-03-21",
+      "discoveredInRun": 15880,
+      "sourceCommit": "89e70ced128ca704cc8ee7ffbfa0a812d341e5b8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-updates-the-internal-jls-int",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS23\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS24\n;;",
+      "summary": "This commit updates the internal `JLS_INTERNAL_Latest` constant from `JLS23` to `JLS24` within the Eclipse JDT Core DOM API. This is a direct, unconditional constant replacement in an assignment statement, which is a common pattern for JDT internal API modernization and ensures the parser uses the latest supported Java Language Specification. This exact pattern has been previously identified and exists as a GREEN DSL rule in `jdt-api-modernization.sandbox-hint`. Other changes involve adding `JLS24` constants and updating internal version maps, which are supporting infrastructural changes for JLS24 support rather than generalizable transformation patterns.",
+      "discoveredAt": "2026-03-21",
+      "discoveredInRun": 15880,
+      "sourceCommit": "f3590a3a0ce5041be2039967bceddd36a09588c9",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-a-merge-of-the-beta-java24-b",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS23\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS24\n;;",
+      "summary": "This commit, a merge of the `BETA_JAVA24` branch, is identical to Commit 0. It updates the internal `JLS_INTERNAL_Latest` constant from `JLS23` to `JLS24` within the Eclipse JDT Core DOM API. This is a direct, unconditional constant replacement in an assignment statement, which is a common pattern for JDT internal API modernization and ensures the parser uses the latest supported Java Language Specification. This exact pattern has been previously identified and exists as a GREEN DSL rule in `jdt-api-modernization.sandbox-hint`. Other changes involve adding `JLS24` constants and updating internal version maps, which are supporting infrastructural changes for JLS24 support rather than generalizable transformation patterns.",
+      "discoveredAt": "2026-03-21",
+      "discoveredInRun": 15880,
+      "sourceCommit": "8f8a13db729446d9e48ac2ddb592ff054f6469d3",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-the-internal-jls-int",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS24\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS25\n;;",
+      "summary": "This commit updates the internal `JLS_INTERNAL_Latest` constant from `JLS24` to `JLS25` in `AST.java`, reflecting support for Java Language Specification 25 within the Eclipse JDT Core DOM API. This is a direct 1:1 constant replacement within an assignment expression. It\u0027s a recurring internal JDT API modernization pattern, fully supported by the TriggerPattern DSL, and can be implemented as a GREEN rule. No `sourceVersionGE` guard is needed as it\u0027s an internal JDT refactoring, not dependent on new Java language features for its application. The rule effectively updates the assignment from the previous JLS version to the new one.",
+      "discoveredAt": "2026-03-21",
+      "discoveredInRun": 15880,
+      "sourceCommit": "81575c8d352e1bd6e54970cb13f6b91ceccb3300",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-removes-dead-code-branches-a",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.jls.jdk13.to.firstsupported*/\n/*!description: Replaces the internal JDT constant ClassFileConstants.JDK1_3 with CompilerOptions.getFirstSupportedJdkLevel() to standardize baseline JLS version determination.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\norg.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_3\n\u003d\u003e org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()\n;;\n\n/*!id: jdt.internal.jls.jdk18.to.firstsupported*/\n/*!description: Replaces the internal JDT constant ClassFileConstants.JDK1_8 with CompilerOptions.getFirstSupportedJdkLevel() to standardize baseline JLS version determination.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\norg.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_8\n\u003d\u003e org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()\n;;",
+      "summary": "This commit removes dead code branches and unifies internal JDT Core DOM API usage for Java Language Specification (JLS) baseline version checks. It replaces direct references to `ClassFileConstants.JDK1_3` and `ClassFileConstants.JDK1_8` with `CompilerOptions.getFirstSupportedJdkLevel()`. These are direct 1:1 constant-to-method-call replacements and are fully expressible as GREEN TriggerPattern DSL rules. Other changes, such as the removal of `if` conditions, are structural changes that are not directly expressible as pattern-based DSL rules in the current DSL, but the core modernization is captured.",
+      "discoveredAt": "2026-03-21",
+      "discoveredInRun": 15880,
+      "sourceCommit": "ee9b9bb6c644493bbb49301e586c5d830399a1d5",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-eclipse",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.jdk1_8.to.firstsupportedjdklevel\n@severity: info\norg.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_8\n\u003d\u003e org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()\n;;\n\n@id: jdt.internal.jdk1_5.to.firstsupportedjdklevel\n@severity: info\norg.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_5\n\u003d\u003e org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()\n;;",
+      "summary": "This commit modernizes internal Eclipse JDT Core logic by consistently replacing hardcoded `ClassFileConstants.JDK1_X` values (specifically `JDK1_3`, `JDK1_5`, and `JDK1_8`) with a call to `org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()`. This improves internal API consistency and maintainability by using a dynamic method to determine the baseline JDK level. While the rule for `JDK1_3` has been previously proposed, new rules are generated for `JDK1_8` and `JDK1_5` following the same pattern. Other changes involving structural modifications (removing `if` statements, replacing `switch` blocks, or single line insertions) are not suitable for expression-based DSL rules.",
+      "discoveredAt": "2026-03-21",
+      "discoveredInRun": 15880,
+      "sourceCommit": "974e9803821d19c2ffad87437871a338fbe5924c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

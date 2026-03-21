@@ -1,3 +1,11 @@
-org.eclipse.jdt.core.dom.CompilationUnitResolver.resolve($elements, $apiLevel, $compilerOptions, $project, $owner, $flags, $monitor)
-=> org.eclipse.jdt.core.dom.ASTParser.resolve($elements, $apiLevel, $compilerOptions, $project, $owner, $flags, this.unitResolver, $monitor)
+@id: jdt.internal.jdk1_8.to.firstsupportedjdklevel
+@severity: info
+org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_8
+=> org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()
+;;
+
+@id: jdt.internal.jdk1_5.to.firstsupportedjdklevel
+@severity: info
+org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_5
+=> org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()
 ;;
