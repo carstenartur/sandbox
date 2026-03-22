@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "ddea4ea90cef3a60de5765d02c25e265b7489948",
-      "lastProcessedDate": "2026-03-21T04:13:20.549080168Z",
-      "totalProcessed": 5907,
+      "lastProcessedCommit": "30eadf5ccf6ec4cd0881b81927d8b8699a060f50",
+      "lastProcessedDate": "2026-03-22T04:28:52.710139915Z",
+      "totalProcessed": 6107,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -797,6 +797,33 @@
           "deferredAt": "2026-03-21T04:09:43.912784145Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "24a15bf3c165b7e1ae7fb575d7748bd5b6dafc55",
+          "message": "Add import module support to ImportRewrite (#4313)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-22T04:27:18.918882525Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f25c58d5f3ca16a7a8a26a8ab98864e48d408488",
+          "message": "Merge branch \u0027BETA_JAVA25\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-22T04:27:30.098724334Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "187b1d1b53963b8ff74a6967dde73a8737e3eb94",
+          "message": "Merge from BETA_JAVA25 to master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-22T04:27:41.478475240Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -807,16 +834,16 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 57,
+        "JDT Internal Refactoring": 66,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
-        "Java-Modernization": 1,
-        "JDT Internal Bug Fix": 10,
+        "Java-Modernization": 2,
+        "JDT Internal Bug Fix": 13,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
         "Deprecation": 1,
-        "Eclipse API Migration": 14,
+        "Eclipse API Migration": 15,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 2,
         "Performance": 4,
@@ -830,7 +857,8 @@
         "JDT Internal Formatting/Rewrite": 1,
         "JDT Internal Architecture": 3,
         "JDT Internal API Management": 1,
-        "Error Handling Improvement": 1
+        "Error Handling Improvement": 1,
+        "Java Modernization": 4
       },
       "exhaustedCategories": []
     },
@@ -883,5 +911,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 15880
+  "globalTotalProcessed": 16080
 }

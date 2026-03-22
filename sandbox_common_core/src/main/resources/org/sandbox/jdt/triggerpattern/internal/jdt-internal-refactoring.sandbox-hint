@@ -1,11 +1,7 @@
-@id: jdt.internal.jdk1_8.to.firstsupportedjdklevel
-@severity: info
-org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_8
-=> org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()
-;;
-
-@id: jdt.internal.jdk1_5.to.firstsupportedjdklevel
-@severity: info
-org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK1_5
-=> org.eclipse.jdt.internal.compiler.impl.CompilerOptions.getFirstSupportedJdkLevel()
+/*!id: jdt.internal.astmatcher.typepattern.getpatternvariable-to-getpatternvariable2*/
+/*!description: Modernize ASTMatcher logic for TypePattern to use getPatternVariable2() for JLS22+ to reflect API evolution.*/
+/*!severity: info*/
+/*!minJavaVersion: 16*/
+safeSubtreeMatch($node.getPatternVariable(), $o.getPatternVariable()) :: instanceof($node, "org.eclipse.jdt.core.dom.TypePattern") && instanceof($o, "org.eclipse.jdt.core.dom.TypePattern") && sourceVersionGE(22)
+=> safeSubtreeMatch($node.getPatternVariable2(), $o.getPatternVariable2())
 ;;
