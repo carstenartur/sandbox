@@ -26,8 +26,6 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 
 /**
@@ -42,15 +40,15 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 public class KnownRulesStore {
 
 	/** Status of a known rule. */
-<span class="fc" id="L45">	public enum RuleStatus {</span>
+<span class="fc" id="L43">	public enum RuleStatus {</span>
 		/** Discovered by mining but not yet implemented as a .sandbox-hint file. */
-<span class="fc" id="L47">		DISCOVERED,</span>
+<span class="fc" id="L45">		DISCOVERED,</span>
 		/** Implemented as a .sandbox-hint rule. */
-<span class="fc" id="L49">		IMPLEMENTED,</span>
+<span class="fc" id="L47">		IMPLEMENTED,</span>
 		/** Manually rejected by a reviewer. */
-<span class="fc" id="L51">		REJECTED,</span>
+<span class="fc" id="L49">		REJECTED,</span>
 		/** Requires a DSL language extension before it can be implemented. */
-<span class="fc" id="L53">		NEEDS_DSL_EXTENSION</span>
+<span class="fc" id="L51">		NEEDS_DSL_EXTENSION</span>
 	}
 
 	/**
@@ -68,63 +66,63 @@ public class KnownRulesStore {
 		private String hintFile;
 
 		/** No-arg constructor for Gson. */
-<span class="fc" id="L71">		public KnownRule() {</span>
-<span class="fc" id="L72">		}</span>
+<span class="fc" id="L69">		public KnownRule() {</span>
+<span class="fc" id="L70">		}</span>
 
 		public KnownRule(String id, String category, String dslRule, String summary,
 				String discoveredAt, int discoveredInRun, String sourceCommit,
-<span class="fc" id="L76">				RuleStatus status, String hintFile) {</span>
-<span class="fc" id="L77">			this.id = id;</span>
-<span class="fc" id="L78">			this.category = category;</span>
-<span class="fc" id="L79">			this.dslRule = dslRule;</span>
-<span class="fc" id="L80">			this.summary = summary;</span>
-<span class="fc" id="L81">			this.discoveredAt = discoveredAt;</span>
-<span class="fc" id="L82">			this.discoveredInRun = discoveredInRun;</span>
-<span class="fc" id="L83">			this.sourceCommit = sourceCommit;</span>
-<span class="fc" id="L84">			this.status = status;</span>
-<span class="fc" id="L85">			this.hintFile = hintFile;</span>
-<span class="fc" id="L86">		}</span>
+<span class="fc" id="L74">				RuleStatus status, String hintFile) {</span>
+<span class="fc" id="L75">			this.id = id;</span>
+<span class="fc" id="L76">			this.category = category;</span>
+<span class="fc" id="L77">			this.dslRule = dslRule;</span>
+<span class="fc" id="L78">			this.summary = summary;</span>
+<span class="fc" id="L79">			this.discoveredAt = discoveredAt;</span>
+<span class="fc" id="L80">			this.discoveredInRun = discoveredInRun;</span>
+<span class="fc" id="L81">			this.sourceCommit = sourceCommit;</span>
+<span class="fc" id="L82">			this.status = status;</span>
+<span class="fc" id="L83">			this.hintFile = hintFile;</span>
+<span class="fc" id="L84">		}</span>
 
-<span class="nc" id="L88">		public String getId() { return id; }</span>
-<span class="nc" id="L89">		public void setId(String id) { this.id = id; }</span>
-<span class="fc" id="L90">		public String getCategory() { return category; }</span>
-<span class="nc" id="L91">		public void setCategory(String category) { this.category = category; }</span>
-<span class="fc" id="L92">		public String getDslRule() { return dslRule; }</span>
-<span class="nc" id="L93">		public void setDslRule(String dslRule) { this.dslRule = dslRule; }</span>
-<span class="fc" id="L94">		public String getSummary() { return summary; }</span>
-<span class="nc" id="L95">		public void setSummary(String summary) { this.summary = summary; }</span>
-<span class="nc" id="L96">		public String getDiscoveredAt() { return discoveredAt; }</span>
-<span class="nc" id="L97">		public void setDiscoveredAt(String discoveredAt) { this.discoveredAt = discoveredAt; }</span>
-<span class="nc" id="L98">		public int getDiscoveredInRun() { return discoveredInRun; }</span>
-<span class="nc" id="L99">		public void setDiscoveredInRun(int discoveredInRun) { this.discoveredInRun = discoveredInRun; }</span>
-<span class="fc" id="L100">		public String getSourceCommit() { return sourceCommit; }</span>
-<span class="nc" id="L101">		public void setSourceCommit(String sourceCommit) { this.sourceCommit = sourceCommit; }</span>
-<span class="fc" id="L102">		public RuleStatus getStatus() { return status; }</span>
-<span class="nc" id="L103">		public void setStatus(RuleStatus status) { this.status = status; }</span>
-<span class="nc" id="L104">		public String getHintFile() { return hintFile; }</span>
-<span class="nc" id="L105">		public void setHintFile(String hintFile) { this.hintFile = hintFile; }</span>
+<span class="nc" id="L86">		public String getId() { return id; }</span>
+<span class="nc" id="L87">		public void setId(String id) { this.id = id; }</span>
+<span class="fc" id="L88">		public String getCategory() { return category; }</span>
+<span class="nc" id="L89">		public void setCategory(String category) { this.category = category; }</span>
+<span class="fc" id="L90">		public String getDslRule() { return dslRule; }</span>
+<span class="nc" id="L91">		public void setDslRule(String dslRule) { this.dslRule = dslRule; }</span>
+<span class="fc" id="L92">		public String getSummary() { return summary; }</span>
+<span class="nc" id="L93">		public void setSummary(String summary) { this.summary = summary; }</span>
+<span class="nc" id="L94">		public String getDiscoveredAt() { return discoveredAt; }</span>
+<span class="nc" id="L95">		public void setDiscoveredAt(String discoveredAt) { this.discoveredAt = discoveredAt; }</span>
+<span class="nc" id="L96">		public int getDiscoveredInRun() { return discoveredInRun; }</span>
+<span class="nc" id="L97">		public void setDiscoveredInRun(int discoveredInRun) { this.discoveredInRun = discoveredInRun; }</span>
+<span class="fc" id="L98">		public String getSourceCommit() { return sourceCommit; }</span>
+<span class="nc" id="L99">		public void setSourceCommit(String sourceCommit) { this.sourceCommit = sourceCommit; }</span>
+<span class="fc" id="L100">		public RuleStatus getStatus() { return status; }</span>
+<span class="nc" id="L101">		public void setStatus(RuleStatus status) { this.status = status; }</span>
+<span class="nc" id="L102">		public String getHintFile() { return hintFile; }</span>
+<span class="nc" id="L103">		public void setHintFile(String hintFile) { this.hintFile = hintFile; }</span>
 	}
 
 	/**
 	 * Root JSON structure for known-rules.json.
 	 */
-<span class="fc" id="L111">	static class KnownRulesData {</span>
-<span class="fc" id="L112">		int version = 1;</span>
-<span class="fc" id="L113">		List&lt;KnownRule&gt; rules = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L109">	static class KnownRulesData {</span>
+<span class="fc" id="L110">		int version = 1;</span>
+<span class="fc" id="L111">		List&lt;KnownRule&gt; rules = new ArrayList&lt;&gt;();</span>
 	}
 
-<span class="fc" id="L116">	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();</span>
+<span class="fc" id="L114">	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();</span>
 
 	private final KnownRulesData data;
 
 	/** Creates a new empty store. */
-<span class="fc" id="L121">	public KnownRulesStore() {</span>
-<span class="fc" id="L122">		this.data = new KnownRulesData();</span>
-<span class="fc" id="L123">	}</span>
+<span class="fc" id="L119">	public KnownRulesStore() {</span>
+<span class="fc" id="L120">		this.data = new KnownRulesData();</span>
+<span class="fc" id="L121">	}</span>
 
-<span class="fc" id="L125">	private KnownRulesStore(KnownRulesData data) {</span>
-<span class="fc" id="L126">		this.data = data;</span>
-<span class="fc" id="L127">	}</span>
+<span class="fc" id="L123">	private KnownRulesStore(KnownRulesData data) {</span>
+<span class="fc" id="L124">		this.data = data;</span>
+<span class="fc" id="L125">	}</span>
 
 	/**
 	 * Loads the store from a JSON file, or returns a new empty store if the file
@@ -135,16 +133,16 @@ public class KnownRulesStore {
 	 * @throws IOException if the file cannot be read
 	 */
 	public static KnownRulesStore load(Path path) throws IOException {
-<span class="fc bfc" id="L138" title="All 2 branches covered.">		if (!Files.exists(path)) {</span>
-<span class="fc" id="L139">			return new KnownRulesStore();</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (!Files.exists(path)) {</span>
+<span class="fc" id="L137">			return new KnownRulesStore();</span>
 		}
 		try {
-<span class="fc" id="L142">			String json = Files.readString(path, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L143">			KnownRulesData loaded = GSON.fromJson(json, KnownRulesData.class);</span>
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">			return new KnownRulesStore(loaded != null ? loaded : new KnownRulesData());</span>
-<span class="fc" id="L145">		} catch (Exception e) {</span>
-<span class="fc" id="L146">			System.err.println(&quot;Warning: could not load known-rules.json: &quot; + e.getMessage()); //$NON-NLS-1$</span>
-<span class="fc" id="L147">			return new KnownRulesStore();</span>
+<span class="fc" id="L140">			String json = Files.readString(path, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L141">			KnownRulesData loaded = GSON.fromJson(json, KnownRulesData.class);</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">			return new KnownRulesStore(loaded != null ? loaded : new KnownRulesData());</span>
+<span class="fc" id="L143">		} catch (Exception e) {</span>
+<span class="fc" id="L144">			System.err.println(&quot;Warning: could not load known-rules.json: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L145">			return new KnownRulesStore();</span>
 		}
 	}
 
@@ -155,19 +153,19 @@ public class KnownRulesStore {
 	 * @throws IOException if the file cannot be written
 	 */
 	public void save(Path path) throws IOException {
-<span class="fc" id="L158">		Path parent = path.getParent();</span>
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		if (parent != null) {</span>
-<span class="fc" id="L160">			Files.createDirectories(parent);</span>
+<span class="fc" id="L156">		Path parent = path.getParent();</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		if (parent != null) {</span>
+<span class="fc" id="L158">			Files.createDirectories(parent);</span>
 		}
-<span class="fc" id="L162">		Path fileName = path.getFileName();</span>
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		if (fileName == null) {</span>
-<span class="nc" id="L164">			throw new IOException(&quot;Cannot save known rules to a root path&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L160">		Path fileName = path.getFileName();</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		if (fileName == null) {</span>
+<span class="nc" id="L162">			throw new IOException(&quot;Cannot save known rules to a root path&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L166">		Path tmpFile = path.resolveSibling(fileName + &quot;.tmp&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L167">		String json = GSON.toJson(data);</span>
-<span class="fc" id="L168">		Files.writeString(tmpFile, json, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L169">		Files.move(tmpFile, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);</span>
-<span class="fc" id="L170">	}</span>
+<span class="fc" id="L164">		Path tmpFile = path.resolveSibling(fileName + &quot;.tmp&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L165">		String json = GSON.toJson(data);</span>
+<span class="fc" id="L166">		Files.writeString(tmpFile, json, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L167">		Files.move(tmpFile, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);</span>
+<span class="fc" id="L168">	}</span>
 
 	/**
 	 * Returns all known rules.
@@ -175,7 +173,7 @@ public class KnownRulesStore {
 	 * @return unmodifiable list of known rules
 	 */
 	public List&lt;KnownRule&gt; getRules() {
-<span class="fc" id="L178">		return List.copyOf(data.rules);</span>
+<span class="fc" id="L176">		return List.copyOf(data.rules);</span>
 	}
 
 	/**
@@ -184,7 +182,7 @@ public class KnownRulesStore {
 	 * @return count
 	 */
 	public int size() {
-<span class="fc" id="L187">		return data.rules.size();</span>
+<span class="fc" id="L185">		return data.rules.size();</span>
 	}
 
 	/**
@@ -194,7 +192,7 @@ public class KnownRulesStore {
 	 * @return true if a rule from this commit is already known
 	 */
 	public boolean containsCommit(String commitHash) {
-<span class="fc" id="L197">		return data.rules.stream().anyMatch(r -&gt; commitHash.equals(r.sourceCommit));</span>
+<span class="fc" id="L195">		return data.rules.stream().anyMatch(r -&gt; commitHash.equals(r.sourceCommit));</span>
 	}
 
 	/**
@@ -206,29 +204,29 @@ public class KnownRulesStore {
 	 * @return the number of newly registered rules
 	 */
 	public int registerFromEvaluations(List&lt;CommitEvaluation&gt; evaluations, int runNumber) {
-<span class="fc" id="L209">		int added = 0;</span>
-<span class="fc bfc" id="L210" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
-<span class="fc bfc" id="L211" title="All 2 branches covered.">			if (!isGreenAndValid(eval)) {</span>
-<span class="fc" id="L212">				continue;</span>
+<span class="fc" id="L207">		int added = 0;</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">			if (!isGreenAndValid(eval)) {</span>
+<span class="fc" id="L210">				continue;</span>
 			}
-<span class="fc bfc" id="L214" title="All 2 branches covered.">			if (containsCommit(eval.commitHash())) {</span>
-<span class="fc" id="L215">				continue;</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">			if (containsCommit(eval.commitHash())) {</span>
+<span class="fc" id="L213">				continue;</span>
 			}
-<span class="fc" id="L217">			String ruleId = buildRuleId(eval);</span>
-<span class="fc" id="L218">			KnownRule rule = new KnownRule(</span>
+<span class="fc" id="L215">			String ruleId = buildRuleId(eval);</span>
+<span class="fc" id="L216">			KnownRule rule = new KnownRule(</span>
 					ruleId,
-<span class="fc" id="L220">					eval.category(),</span>
-<span class="fc" id="L221">					eval.dslRule(),</span>
-<span class="fc" id="L222">					eval.summary(),</span>
-<span class="fc" id="L223">					LocalDate.now().toString(),</span>
+<span class="fc" id="L218">					eval.category(),</span>
+<span class="fc" id="L219">					eval.dslRule(),</span>
+<span class="fc" id="L220">					eval.summary(),</span>
+<span class="fc" id="L221">					LocalDate.now().toString(),</span>
 					runNumber,
-<span class="fc" id="L225">					eval.commitHash(),</span>
+<span class="fc" id="L223">					eval.commitHash(),</span>
 					RuleStatus.DISCOVERED,
-<span class="fc" id="L227">					eval.targetHintFile());</span>
-<span class="fc" id="L228">			data.rules.add(rule);</span>
-<span class="fc" id="L229">			added++;</span>
-<span class="fc" id="L230">		}</span>
-<span class="fc" id="L231">		return added;</span>
+<span class="fc" id="L225">					eval.targetHintFile());</span>
+<span class="fc" id="L226">			data.rules.add(rule);</span>
+<span class="fc" id="L227">			added++;</span>
+<span class="fc" id="L228">		}</span>
+<span class="fc" id="L229">		return added;</span>
 	}
 
 	/**
@@ -237,24 +235,24 @@ public class KnownRulesStore {
 	 * @return summary string, or empty string if no rules are known
 	 */
 	public String formatForPrompt() {
-<span class="fc bfc" id="L240" title="All 2 branches covered.">		if (data.rules.isEmpty()) {</span>
-<span class="fc" id="L241">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">		if (data.rules.isEmpty()) {</span>
+<span class="fc" id="L239">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L243">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L244">		sb.append('[');</span>
-<span class="fc bfc" id="L245" title="All 2 branches covered.">		for (int i = 0; i &lt; data.rules.size(); i++) {</span>
-<span class="fc" id="L246">			KnownRule r = data.rules.get(i);</span>
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">			if (i &gt; 0) {</span>
-<span class="nc" id="L248">				sb.append(',');</span>
+<span class="fc" id="L241">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L242">		sb.append('[');</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">		for (int i = 0; i &lt; data.rules.size(); i++) {</span>
+<span class="fc" id="L244">			KnownRule r = data.rules.get(i);</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">			if (i &gt; 0) {</span>
+<span class="nc" id="L246">				sb.append(',');</span>
 			}
-<span class="fc" id="L250">			sb.append(&quot;\n  {\&quot;id\&quot;:\&quot;&quot;).append(escape(r.id)) //$NON-NLS-1$</span>
-<span class="fc" id="L251">			  .append(&quot;\&quot;,\&quot;category\&quot;:\&quot;&quot;).append(escape(r.category)) //$NON-NLS-1$</span>
-<span class="fc" id="L252">			  .append(&quot;\&quot;,\&quot;summary\&quot;:\&quot;&quot;).append(escape(r.summary)) //$NON-NLS-1$</span>
-<span class="fc" id="L253">			  .append(&quot;\&quot;,\&quot;dslRule\&quot;:\&quot;&quot;).append(escape(r.dslRule)) //$NON-NLS-1$</span>
-<span class="fc" id="L254">			  .append(&quot;\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L248">			sb.append(&quot;\n  {\&quot;id\&quot;:\&quot;&quot;).append(escape(r.id)) //$NON-NLS-1$</span>
+<span class="fc" id="L249">			  .append(&quot;\&quot;,\&quot;category\&quot;:\&quot;&quot;).append(escape(r.category)) //$NON-NLS-1$</span>
+<span class="fc" id="L250">			  .append(&quot;\&quot;,\&quot;summary\&quot;:\&quot;&quot;).append(escape(r.summary)) //$NON-NLS-1$</span>
+<span class="fc" id="L251">			  .append(&quot;\&quot;,\&quot;dslRule\&quot;:\&quot;&quot;).append(escape(r.dslRule)) //$NON-NLS-1$</span>
+<span class="fc" id="L252">			  .append(&quot;\&quot;}&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L256">		sb.append(&quot;\n]&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L257">		return sb.toString();</span>
+<span class="fc" id="L254">		sb.append(&quot;\n]&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L255">		return sb.toString();</span>
 	}
 
 	/**
@@ -263,51 +261,51 @@ public class KnownRulesStore {
 	 * @return map of commitHash → ruleId
 	 */
 	public Map&lt;String, String&gt; getCommitHashIndex() {
-<span class="fc" id="L266">		Map&lt;String, String&gt; index = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L267" title="All 2 branches covered.">		for (KnownRule rule : data.rules) {</span>
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">			if (rule.sourceCommit != null) {</span>
-<span class="fc" id="L269">				index.put(rule.sourceCommit, rule.id);</span>
+<span class="fc" id="L264">		Map&lt;String, String&gt; index = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">		for (KnownRule rule : data.rules) {</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">			if (rule.sourceCommit != null) {</span>
+<span class="fc" id="L267">				index.put(rule.sourceCommit, rule.id);</span>
 			}
-<span class="fc" id="L271">		}</span>
-<span class="fc" id="L272">		return index;</span>
+<span class="fc" id="L269">		}</span>
+<span class="fc" id="L270">		return index;</span>
 	}
 
 	private static boolean isGreenAndValid(CommitEvaluation eval) {
-<span class="pc bpc" id="L276" title="2 of 4 branches missed.">		if (eval == null || !eval.relevant()) {</span>
-<span class="nc" id="L277">			return false;</span>
+<span class="pc bpc" id="L274" title="2 of 4 branches missed.">		if (eval == null || !eval.relevant()) {</span>
+<span class="nc" id="L275">			return false;</span>
 		}
-<span class="fc bfc" id="L279" title="All 2 branches covered.">		if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {</span>
-<span class="fc" id="L280">			return false;</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">		if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {</span>
+<span class="fc" id="L278">			return false;</span>
 		}
-<span class="pc bpc" id="L282" title="1 of 4 branches missed.">		if (eval.dslRule() == null || eval.dslRule().isBlank()) {</span>
-<span class="fc" id="L283">			return false;</span>
+<span class="pc bpc" id="L280" title="1 of 4 branches missed.">		if (eval.dslRule() == null || eval.dslRule().isBlank()) {</span>
+<span class="fc" id="L281">			return false;</span>
 		}
-<span class="fc" id="L285">		return &quot;VALID&quot;.equals(eval.dslValidationResult()); //$NON-NLS-1$</span>
+<span class="fc" id="L283">		return &quot;VALID&quot;.equals(eval.dslValidationResult()); //$NON-NLS-1$</span>
 	}
 
 	private static String buildRuleId(CommitEvaluation eval) {
-<span class="pc bpc" id="L289" title="1 of 2 branches missed.">		String category = eval.category() != null ? eval.category().toLowerCase().replace(' ', '-') : &quot;unknown&quot;; //$NON-NLS-1$</span>
-<span class="pc bpc" id="L290" title="1 of 2 branches missed.">		String summary = eval.summary() != null</span>
-<span class="fc" id="L291">				? eval.summary().toLowerCase().replaceAll(&quot;[^a-z0-9]+&quot;, &quot;-&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc" id="L292">				: &quot;rule&quot;; //$NON-NLS-1$</span>
-<span class="pc bpc" id="L293" title="1 of 2 branches missed.">		if (summary.length() &gt; 40) {</span>
-<span class="nc" id="L294">			summary = summary.substring(0, 40);</span>
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">		String category = eval.category() != null ? eval.category().toLowerCase().replace(' ', '-') : &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">		String summary = eval.summary() != null</span>
+<span class="fc" id="L289">				? eval.summary().toLowerCase().replaceAll(&quot;[^a-z0-9]+&quot;, &quot;-&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc" id="L290">				: &quot;rule&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L291" title="1 of 2 branches missed.">		if (summary.length() &gt; 40) {</span>
+<span class="nc" id="L292">			summary = summary.substring(0, 40);</span>
 		}
-<span class="pc bpc" id="L296" title="1 of 2 branches missed.">		if (summary.endsWith(&quot;-&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L297">			summary = summary.substring(0, summary.length() - 1);</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">		if (summary.endsWith(&quot;-&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L295">			summary = summary.substring(0, summary.length() - 1);</span>
 		}
-<span class="fc" id="L299">		return category + &quot;-&quot; + summary; //$NON-NLS-1$</span>
+<span class="fc" id="L297">		return category + &quot;-&quot; + summary; //$NON-NLS-1$</span>
 	}
 
 	private static String escape(String s) {
-<span class="pc bpc" id="L303" title="1 of 2 branches missed.">		if (s == null) {</span>
-<span class="nc" id="L304">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">		if (s == null) {</span>
+<span class="nc" id="L302">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L306">		return s.replace(&quot;\\&quot;, &quot;\\\\&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L307">				.replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L308">				.replace(&quot;\n&quot;, &quot;\\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L309">				.replace(&quot;\r&quot;, &quot;\\r&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L310">				.replace(&quot;\t&quot;, &quot;\\t&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L304">		return s.replace(&quot;\\&quot;, &quot;\\\\&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L305">				.replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L306">				.replace(&quot;\n&quot;, &quot;\\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L307">				.replace(&quot;\r&quot;, &quot;\\r&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L308">				.replace(&quot;\t&quot;, &quot;\\t&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
