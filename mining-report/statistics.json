@@ -1,52 +1,49 @@
 {
   "totalProcessed": 22,
-  "relevant": 15,
-  "irrelevant": 7,
-  "duplicates": 3,
+  "relevant": 18,
+  "irrelevant": 4,
+  "duplicates": 2,
   "green": 7,
-  "yellow": 0,
-  "red": 8,
+  "yellow": 2,
+  "red": 9,
   "irrelevantReasons": {
-    "This commit modifies the internal implementation of the JDT `ASTRewriteAnalyzer` and `ASTRewriteFormatter` to introduce a concept of \u0027minimum indent in spaces\u0027 during code formatting and rewriting. These are core architectural changes to the code transformation engine itself, not patterns that would be applied by a TriggerPattern DSL rule to user code. The DSL is designed for describing transformations on Java source code, not for modifying the underlying formatting/rewriting logic of the JDT tooling. Therefore, it is not relevant for DSL mining.": 1,
-    "This commit is a direct revert of Commit 0. Since Commit 0 was an internal architectural change to the JDT code transformation engine (not a transformation pattern for user code), its revert also falls into the same category of not being relevant for TriggerPattern DSL mining. It undoes changes to the tooling\u0027s internal behavior rather than providing a new code transformation pattern.": 1,
-    "This commit involves internal architectural refactoring and bug fixes within the Eclipse JDT AST rewrite and formatting engine. It introduces new parameters to internal methods and modifies control flow to support minimum indentation, which is not a generalizable code transformation pattern for user code. These are changes to the code transformation engine itself, rather than new transformations for user-written Java code.": 1,
-    "This commit only updates a Javadoc \u0027@since\u0027 tag, which is a metadata change and not a code transformation pattern suitable for DSL rule mining.": 1,
-    "This commit is an internal bug fix in the JDT parser\u0027s comment handling logic. It adds a specific statement to manage internal parser state (`this.inlineReturnOpenBraces\u003d 0;`) within an `else` block, which is not a generalizable code transformation pattern for user-facing source code. The TriggerPattern DSL is not designed for inserting statements into control flow or manipulating internal parser state variables.": 1,
-    "This commit is an internal refactoring and bug fix within the JDT `ASTConverter` related to how record class fields (state description components) are processed. It involves structural changes to conditional logic by removing an `if` condition and an `else` block, implying a change in internal handling of record components. The TriggerPattern DSL is designed for matching and replacing expressions, method calls, constructors, and annotations, but does not support arbitrary structural modifications to control flow statements (like removing `if` conditions or `else` branches) or internal compiler logic.": 1,
-    "This commit is a revert of a previous commit (7a29182e7373be30b90bf03a2064b34d134269df). As such, it does not introduce a new, forward-looking transformation pattern suitable for mining. It simply restores the prior internal JDT logic due to build failures.": 1
+    "The commit only updates a Javadoc `@since` tag. This is a metadata/documentation change, not a code transformation pattern that modifies executable logic or structure. Therefore, it is not suitable for a TriggerPattern DSL rule.": 1,
+    "This commit adds a new interface (`IModuleBindingExtended`) and a new method (`getRequiredTransitiveModules()`) to an existing internal JDT binding class (`ModuleBinding`), extending the JDT DOM API. It is an API extension, not a code transformation or refactoring pattern that can be generalized into a DSL rule.": 1,
+    "This commit removes specific multi-line comments (BETA disclaimers). The TriggerPattern DSL is designed for transforming Java AST nodes (expressions, statements, declarations, annotations) and does not provide mechanisms to match, remove, or modify arbitrary comments directly. Comments are typically stripped during the initial parsing phase before rule matching occurs.": 1,
+    "The commit only updates `@since` Javadoc tags for internal JDT API constants and methods. It does not involve any code logic changes, API replacements, or refactoring patterns that can be expressed as a TriggerPattern DSL rule.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
       "totalProcessed": 22,
-      "relevant": 15,
+      "relevant": 18,
       "green": 7,
-      "yellow": 0,
-      "red": 8
+      "yellow": 2,
+      "red": 9
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-21",
+      "date": "2026-03-22",
       "processed": 22,
-      "relevant": 15
+      "relevant": 18
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-21T04:07:13.425Z",
-    "completedAt": "2026-03-21T04:13:20.840959166Z",
-    "durationSeconds": 367,
+    "startedAt": "2026-03-22T04:22:01.160Z",
+    "completedAt": "2026-03-22T04:28:53.474632981Z",
+    "durationSeconds": 412,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 85,
+    "deferredCommits": 88,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-21T04:08:36.157030337Z",
-    "latestEvaluation": "2026-03-21T04:13:20.548731059Z",
-    "earliestCommitDate": "2025-02-05T19:22:31Z",
-    "latestCommitDate": "2025-05-28T08:34:01Z"
+    "earliestEvaluation": "2026-03-22T04:23:38.226663515Z",
+    "latestEvaluation": "2026-03-22T04:28:52.709772322Z",
+    "earliestCommitDate": "2025-06-10T10:29:14Z",
+    "latestCommitDate": "2025-10-21T19:13:31Z"
   }
 }
