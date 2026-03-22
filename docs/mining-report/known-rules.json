@@ -539,6 +539,83 @@
       "sourceCommit": "974e9803821d19c2ffad87437871a338fbe5924c",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-removes-a-redundant-cast-fie",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.remove-redundant-fieldbinding-cast\n@severity: info\n(org.eclipse.jdt.internal.compiler.lookup.FieldBinding) $binding :: subtypeOf($binding, \"org.eclipse.jdt.internal.compiler.lookup.FieldBinding\")\n\u003d\u003e $binding\n;;",
+      "summary": "This commit removes a redundant cast `(FieldBinding)` before calling `isDeprecated()` on `this.binding` within JDT\u0027s `VariableBinding` class. In the context of the `if (isField())` guard, `this.binding` is guaranteed to be a `FieldBinding`. Since the `isDeprecated()` method is available on the `Binding` superclass (which `FieldBinding` extends), the explicit cast is unnecessary. This transformation is a direct removal of a redundant cast that can be implemented as a TriggerPattern DSL rule using the `subtypeOf` guard to ensure semantic safety, aligning with previous JDT internal refactoring patterns for redundant cast removal.",
+      "discoveredAt": "2026-03-22",
+      "discoveredInRun": 16080,
+      "sourceCommit": "b761350f8aede7b7f1bd0a0d50209e3788acb588",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-is-a-merge-that-includes-two",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt-remove-redundant-fieldbinding-cast*/\n/*!description: Remove redundant (FieldBinding) cast when the expression is already known to be of that type.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, performance*/\n(org.eclipse.jdt.internal.compiler.lookup.FieldBinding) $expression :: subtypeOf($expression, \"org.eclipse.jdt.internal.compiler.lookup.FieldBinding\")\n\u003d\u003e $expression\n;;",
+      "summary": "This commit is a merge that includes two distinct changes. The first change, in `VariableBinding.java`, removes a redundant cast `(FieldBinding)` from `((FieldBinding) this.binding).isDeprecated()` to `this.binding.isDeprecated()`. This is a straightforward redundant cast removal, where the expression\u0027s type is already known to be a subtype of the cast target, making it a GREEN transformation. The second change, in `ASTRewriteAnalyzer.java`, involves a structural refactoring of an `if-else` block, including moving statements and modifying conditional logic, which is not expressible with the current DSL (RED). The proposed DSL rule captures the redundant cast removal.",
+      "discoveredAt": "2026-03-22",
+      "discoveredInRun": 16080,
+      "sourceCommit": "edea652d3008963dcf563d2f4bcea5b37eb5f283",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-contains-two-distinct-change",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.binding.remove.redundant.fieldbinding.cast\n@severity: info\n(org.eclipse.jdt.internal.compiler.lookup.FieldBinding) $var :: subtypeOf($var, \"org.eclipse.jdt.internal.compiler.lookup.FieldBinding\")\n\u003d\u003e $var\n;;",
+      "summary": "This commit contains two distinct changes. The first change, in `VariableBinding.java`, removes a redundant cast `(FieldBinding)` from a method invocation, simplifying `((FieldBinding) this.binding).isDeprecated()` to `this.binding.isDeprecated()`. This is a straightforward type-safe cleanup and is fully expressible as a GREEN TriggerPattern DSL rule using the `subtypeOf` guard. The rule matches the cast expression and replaces it with the uncasted variable, assuming the variable\u0027s type is already a subtype of the cast\u0027s target type. The second change, in `ASTRewriteAnalyzer.java`, refactors conditional logic around `EnumConstantDeclaration` handling. It effectively makes a `rewriteNode` call unconditional, which was previously guarded by an `isChanged()` check. This involves restructuring `if` statements and modifying control flow, which is beyond the current capabilities of the DSL for pattern-based transformations (RED). Since a directly implementable GREEN pattern is found, the commit is classified as GREEN, focusing on the cast removal. No `sourceVersionGE` guard is needed for the DSL rule as it\u0027s an internal JDT API refactoring not tied to a specific external Java language feature version beyond the baseline Java 8.",
+      "discoveredAt": "2026-03-22",
+      "discoveredInRun": 16080,
+      "sourceCommit": "fbf88ef9ea875b1aea178ca6e25bc8cacc88d07f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-an-internal-bug-in-jdt",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.astmatcher.typepattern.getpatternvariable-to-getpatternvariable2*/\n/*!description: Modernize ASTMatcher logic for TypePattern to use getPatternVariable2() for JLS22+ to reflect API evolution.*/\n/*!severity: info*/\n/*!minJavaVersion: 16*/\nsafeSubtreeMatch($node.getPatternVariable(), $o.getPatternVariable()) :: instanceof($node, \"org.eclipse.jdt.core.dom.TypePattern\") \u0026\u0026 instanceof($o, \"org.eclipse.jdt.core.dom.TypePattern\") \u0026\u0026 sourceVersionGE(22)\n\u003d\u003e safeSubtreeMatch($node.getPatternVariable2(), $o.getPatternVariable2())\n;;",
+      "summary": "This commit fixes an internal bug in JDT\u0027s `ASTMatcher` for `TypePattern` nodes. It conditionally uses `getPatternVariable()` or `getPatternVariable2()` based on the `AST.apiLevel`. Specifically, for Java Language Specification 22 (JLS22) and higher, it switches to `getPatternVariable2()`. This is a direct 1:1 method call replacement, guarded by a `sourceVersionGE(22)` check and `instanceof` guards for the `TypePattern` class, making it a GREEN transformation. While a similar pattern for `getPatternVariable()` was previously proposed for an `accept()` method call, this rule targets a different call site (`safeSubtreeMatch()`) for the same underlying API modernization.",
+      "discoveredAt": "2026-03-22",
+      "discoveredInRun": 16080,
+      "sourceCommit": "e71fea3f5bc4882745a556c328efb640af8ba1c9",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-is-a-merge-that-incorporates",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.astmatcher.typepattern.getpatternvariable-to-getpatternvariable2*/\n/*!description: Modernize ASTMatcher logic for TypePattern to use getPatternVariable2() for JLS22+ to reflect API evolution.*/\n/*!severity: info*/\n/*!minJavaVersion: 16*/\nsafeSubtreeMatch($node.getPatternVariable(), $o.getPatternVariable()) :: instanceof($node, \"org.eclipse.jdt.core.dom.TypePattern\") \u0026\u0026 instanceof($o, \"org.eclipse.jdt.core.dom.TypePattern\") \u0026\u0026 sourceVersionGE(22)\n\u003d\u003e safeSubtreeMatch($node.getPatternVariable2(), $o.getPatternVariable2())\n;;",
+      "summary": "This commit is a merge that incorporates the exact same code changes as Commit 0 (e71fea3f5bc4882745a556c328efb640af8ba1c9). It updates the `ASTMatcher` logic for `TypePattern` nodes, conditionally using `getPatternVariable()` or `getPatternVariable2()` based on the `AST.apiLevel`, specifically for JLS22 and higher. Since the code change is identical, this commit is classified as a duplicate of Commit 0 and therefore also a GREEN transformation.",
+      "discoveredAt": "2026-03-22",
+      "discoveredInRun": 16080,
+      "sourceCommit": "86c5f284fce9a4fa19c6502276eb64f25a07c400",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-refactors-the-internal-jdt-c",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.IModuleBindingExtended\n\u003d\u003e org.eclipse.jdt.core.dom.IModuleBinding\n;;",
+      "summary": "This commit refactors the internal JDT Core DOM API by deleting the `IModuleBindingExtended` interface and moving its single method, `getRequiredTransitiveModules()`, to the `IModuleBinding` interface. Consequently, all usages of the `IModuleBindingExtended` type in client code must be updated to `IModuleBinding`. This is a direct 1:1 type replacement pattern, suitable for a GREEN TriggerPattern DSL rule. The rule will replace `IModuleBindingExtended` with `IModuleBinding` wherever it appears as a type reference (e.g., in variable declarations, casts, `instanceof` checks). No specific `sourceVersionGE` guard is needed as it\u0027s an internal JDT API refactoring and doesn\u0027t rely on new Java language features beyond the baseline Java 8.",
+      "discoveredAt": "2026-03-22",
+      "discoveredInRun": 16080,
+      "sourceCommit": "0826d9d1505577c8b25d28fafcd67a42247fd3ad",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-the-internal-jls-int",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS25\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest \u003d org.eclipse.jdt.core.dom.AST.JLS26\n;;",
+      "summary": "This commit updates the internal `JLS_INTERNAL_Latest` constant from `JLS25` to `JLS26` in `AST.java`, reflecting support for Java Language Specification 26 within the Eclipse JDT Core DOM API. This is a direct 1:1 constant replacement within an assignment expression. It\u0027s a recurring internal JDT API modernization pattern, fully supported by the TriggerPattern DSL, and can be implemented as a GREEN rule. No `sourceVersionGE` guard is needed as it\u0027s an internal JDT refactoring, not dependent on new Java language features for its application. The rule effectively updates the assignment from the previous JLS version to the new one. Other changes in the commit, such as adding new JLS26 constants to lists and maps, are infrastructural and not directly expressible as pattern-based DSL rules.",
+      "discoveredAt": "2026-03-22",
+      "discoveredInRun": 16080,
+      "sourceCommit": "c51ad2569177c1336e4e68dcb3353639c4992ec6",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
     }
   ]
 }
