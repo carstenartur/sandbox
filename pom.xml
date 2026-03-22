@@ -19,6 +19,9 @@
 		<java-execenv>JavaSE-21</java-execenv>
 		<spotbugs-version>4.9.8.2</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>${java-version}</maven.compiler.source>
+		<maven.compiler.target>${java-version}</maven.compiler.target>
+		<maven.compiler.release>${java-version}</maven.compiler.release>
 		<license.licenseName>epl_v1</license.licenseName>
 		<bouncycastle.version>1.83</bouncycastle.version>
 		<assertj.version>3.27.7</assertj.version>
