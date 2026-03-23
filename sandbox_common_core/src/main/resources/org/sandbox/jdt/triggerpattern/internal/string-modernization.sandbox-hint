@@ -1,3 +1,25 @@
+<!id: string-modernization>
+<!description: Modernize String API usage with simpler alternatives>
+<!severity: info>
+<!tags: modernization, string>
+
+// replaceAll with literal newline → replace (no regex needed)
+java.lang.String.replaceAll("\\n", $replacement)
+=> java.lang.String.replace("\\n", $replacement)
+;;
+
+// replaceAll with literal tab → replace (no regex needed)
+java.lang.String.replaceAll("\\t", $replacement)
+=> java.lang.String.replace("\\t", $replacement)
+;;
+
+// replaceAll with literal carriage return → replace (no regex needed)
+java.lang.String.replaceAll("\\r", $replacement)
+=> java.lang.String.replace("\\r", $replacement)
+;;
+
+// --- New rules from mining (2026-03-23) ---
+
 $str.indexOf($sub) != -1
 => $str.contains($sub)
 ;;
