@@ -616,6 +616,83 @@
       "sourceCommit": "c51ad2569177c1336e4e68dcb3353639c4992ec6",
       "status": "DISCOVERED",
       "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-clean",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.internal.corext.dom.ASTNodes.getParent($node, org.eclipse.jdt.core.dom.TypeDeclaration.class)\n\u003d\u003e $node.getParent() instanceof org.eclipse.jdt.core.dom.TypeDeclaration ? (org.eclipse.jdt.core.dom.TypeDeclaration) $node.getParent() : null\n;;",
+      "summary": "This commit refactors internal JDT cleanup code by replacing a recursive AST parent lookup (`ASTNodes.getParent`) with a direct parent check (`node.getParent() instanceof TypeDeclaration`). This is a direct 1:1 expression replacement, suitable for a GREEN DSL rule. It modernizes internal JDT AST traversal logic to be more precise for specific cleanups. The rule uses an instanceof check and a cast in the replacement to maintain type correctness, which is supported by the DSL.",
+      "discoveredAt": "2026-03-23",
+      "discoveredInRun": 16208,
+      "sourceCommit": "1c4e623f9e8b390fd8e3dc21dbad3afcd2f841db",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-replaces-the-deprecated-new",
+      "category": "Performance",
+      "dslRule": "@id: boolean.constructor.to.valueof.booleanexpression\nnew java.lang.Boolean($val) :: !instanceof($val, \"java.lang.String\")\n\u003d\u003e java.lang.Boolean.valueOf($val)\n;;",
+      "summary": "This commit replaces the deprecated `new Boolean(boolean_expression)` constructor with `Boolean.valueOf(boolean_expression)`. This is a performance optimization and deprecation fix, as `Boolean.valueOf()` can return cached instances. While similar rules exist for boolean literals (`true`/`false`) and string arguments, this rule is specifically for general boolean expressions and is guarded to not conflict with string-based constructor replacements. This is a direct 1:1 replacement, fully implementable as a GREEN TriggerPattern DSL rule and will be added to `performance.sandbox-hint`.",
+      "discoveredAt": "2026-03-23",
+      "discoveredInRun": 16208,
+      "sourceCommit": "c4a4eba4bb22f2a309763c117b1d4cae3cb5f19e",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "string-api-this-commit-consistently-replaces-variou",
+      "category": "String-API",
+      "dslRule": "$str.indexOf($sub) !\u003d -1\n\u003d\u003e $str.contains($sub)\n;;\n\n$str.indexOf($sub) \u003d\u003d -1\n\u003d\u003e !$str.contains($sub)\n;;\n\n$str.indexOf($sub) \u003e\u003d 0\n\u003d\u003e $str.contains($sub)\n;;\n\n$str.indexOf($sub) \u003c 0\n\u003d\u003e !$str.contains($sub)\n;;",
+      "summary": "This commit consistently replaces various forms of `String.indexOf(...)` comparisons (e.g., `!\u003d -1`, `\u003d\u003d -1`, `\u003e\u003d 0`, `\u003c 0`) with the more concise and readable `String.contains(...)` or its negation. `String.contains()` was introduced in Java 1.5, which is well before the Java 8 baseline, so no `sourceVersionGE` guard is required. These are direct, semantically equivalent expression replacements that enhance code readability and are fully supported by the TriggerPattern DSL, making this a GREEN transformation. The rules would be added to the `string-modernization.sandbox-hint` file.",
+      "discoveredAt": "2026-03-23",
+      "discoveredInRun": 16208,
+      "sourceCommit": "c510644ad83ce9fbba16d8ebf7dd1b2a30b37b26",
+      "status": "DISCOVERED",
+      "hintFile": "string-modernization.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-this-commit-replaces-calls-to-system-get",
+      "category": "Java-Modernization",
+      "dslRule": "System.getProperty(\"line.separator\")\n\u003d\u003e System.lineSeparator()\n;;",
+      "summary": "This commit replaces calls to `System.getProperty(\"line.separator\")` with `System.lineSeparator()`. The `System.lineSeparator()` method, introduced in Java 7, offers a more direct and secure way to obtain the platform\u0027s line separator as it bypasses potential security manager checks. As Java 7 is below the Java 8 baseline, no `sourceVersionGE` guard is needed. This is a straightforward, unconditional API replacement that improves code quality, making it a GREEN transformation. It can be implemented as a simple DSL rule and added to the `misc.sandbox-hint` file.",
+      "discoveredAt": "2026-03-23",
+      "discoveredInRun": 16208,
+      "sourceCommit": "dcd7bfa823c79b5573f06e6c3d6bfebeeea66d8e",
+      "status": "DISCOVERED",
+      "hintFile": "misc.sandbox-hint"
+    },
+    {
+      "id": "performance-the-commit-replaces-boolean-valueof-true",
+      "category": "Performance",
+      "dslRule": "java.lang.Boolean.valueOf(true)\n\u003d\u003e java.lang.Boolean.TRUE\n;;\n\njava.lang.Boolean.valueOf(false)\n\u003d\u003e java.lang.Boolean.FALSE\n;;",
+      "summary": "The commit replaces `Boolean.valueOf(true)` with `Boolean.TRUE` (and implicitly `Boolean.valueOf(false)` with `Boolean.FALSE`). This is a direct 1:1 expression replacement that improves readability and uses pre-cached `Boolean` instances. This pattern is easily implementable as two separate GREEN TriggerPattern DSL rules and should be added to `performance.sandbox-hint` alongside similar existing rules for `new Boolean(...)` constructors. No `sourceVersionGE` guard is needed as these APIs predate Java 8.",
+      "discoveredAt": "2026-03-23",
+      "discoveredInRun": 16208,
+      "sourceCommit": "aaa99a90b2f92cccafaf954a1097e814675f8ff3",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-api-evolution-this-commit-modifies-internal-eclipse-jd",
+      "category": "JDT Internal API Evolution",
+      "dslRule": "/*!id: jdt.internal.codecomplete.add-timeoutmonitor*/\n/*!description: Add a CompletionTimeoutProgressMonitor to cu.codeComplete() calls for internal JDT content assist.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, api-evolution*/\norg.eclipse.jdt.core.ICompilationUnit.$cu.codeComplete($offset, $requestor)\n\u003d\u003e $cu.codeComplete($offset, $requestor, new org.eclipse.jdt.internal.ui.text.CompletionTimeoutProgressMonitor())\n;;\n\norg.eclipse.jdt.core.ICompilationUnit.$cu.codeComplete($offset, $requestor, $existingMonitor)\n\u003d\u003e $cu.codeComplete($offset, $requestor, new org.eclipse.jdt.internal.ui.text.CompletionTimeoutProgressMonitor())\n;;",
+      "summary": "This commit modifies internal Eclipse JDT Core components to pass a `CompletionTimeoutProgressMonitor` to `ICompilationUnit.codeComplete()` method calls. This is a direct 1:1 method call replacement, adding a new argument (a constructor invocation) to existing method calls. The DSL can directly express this pattern. The `CompletionTimeoutProgressMonitor` is a newly introduced internal class within this commit, making this an internal JDT API evolution. No `sourceVersionGE` guard is needed as it\u0027s an internal JDT change not tied to a specific external Java language feature version beyond the baseline Java 8.",
+      "discoveredAt": "2026-03-23",
+      "discoveredInRun": 16208,
+      "sourceCommit": "7caac19e21a5febaf9eb1afd6a2077c7ab48a975",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "collection-performance-this-commit-introduces-a-new-eclipse-jdt",
+      "category": "Collection Performance",
+      "dslRule": "$map.keySet().size()\n\u003d\u003e $map.size()\n;;\n\n$map.values().size()\n\u003d\u003e $map.size()\n;;\n\n$map.keySet().isEmpty()\n\u003d\u003e $map.isEmpty()\n;;\n\n$map.values().isEmpty()\n\u003d\u003e $map.isEmpty()\n;;\n\n$map.keySet().clear()\n\u003d\u003e $map.clear()\n;;\n\n$map.values().clear()\n\u003d\u003e $map.clear()\n;;\n\n$map.keySet().remove($k) :: elementKindMatches(\"\", \"EXPRESSION_STATEMENT\")\n\u003d\u003e $map.remove($k)\n;;",
+      "summary": "This commit introduces a new Eclipse JDT cleanup, \u0027MapMethodCleanUp\u0027, that optimizes Java Map usage by replacing inefficient calls on \u0027keySet()\u0027 or \u0027values()\u0027 with direct, more concise and performant methods on the Map itself. This includes transformations like `map.keySet().size()` to `map.size()`, `map.keySet().isEmpty()` to `map.isEmpty()`, `map.keySet().clear()` to `map.clear()`, and `map.keySet().remove(key)` to `map.remove(key)` (when the return value is not used). While `map.keySet().contains()` to `map.containsKey()` and `map.values().contains()` to `map.containsValue()` are already covered by existing DSL rules, the other patterns are new and directly expressible in the TriggerPattern DSL. The `remove()` transformation requires a guard to ensure semantic safety, checking that the method invocation is an expression statement (i.e., its return value is ignored), which is supported by `elementKindMatches`.",
+      "discoveredAt": "2026-03-23",
+      "discoveredInRun": 16208,
+      "sourceCommit": "1ad504353002ae3031c9447ec31a684f5f0c57e3",
+      "status": "DISCOVERED",
+      "hintFile": "collection-performance.sandbox-hint"
     }
   ]
 }

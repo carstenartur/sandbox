@@ -190,10 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "30eadf5ccf6ec4cd0881b81927d8b8699a060f50",
-      "lastProcessedDate": "2026-03-22T04:28:52.710139915Z",
-      "totalProcessed": 6107,
-      "status": "CATCHING_UP",
+      "lastProcessedDate": "2026-03-23T04:33:03.436563374Z",
+      "totalProcessed": 6175,
+      "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
           "hash": "488811f5b30befaaae3f5995fcfa0b0505629e6e",
@@ -829,12 +828,14 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 0,
-      "completedEpochs": [],
+      "currentEpoch": 1,
+      "completedEpochs": [
+        "2020-01-01 to 2026-01-01"
+      ],
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 66,
+        "JDT Internal Refactoring": 69,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 2,
@@ -858,20 +859,68 @@
         "JDT Internal Architecture": 3,
         "JDT Internal API Management": 1,
         "Error Handling Improvement": 1,
-        "Java Modernization": 4
+        "Java Modernization": 4,
+        "JDT Internal API Evolution": 2
       },
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 0,
+      "lastProcessedCommit": "d84d32357508979ea16dc8a870b2db7c87b5997f",
+      "lastProcessedDate": "2026-03-23T04:38:20.265937854Z",
+      "totalProcessed": 60,
       "status": "CATCHING_UP",
-      "deferredCommits": [],
+      "deferredCommits": [
+        {
+          "hash": "c80a0ed5358fd6caf3f92e129276abba94329c19",
+          "message": "Bug 531061 - Asynchronous/non-blocking Java completion",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-23T04:34:42.508908933Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "370be844759aef0cc8d76309a999a0aca2b2f8cc",
+          "message": "Bug 550394 - [cleanup \u0026 saveaction] Simplify lambda expressions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-23T04:37:47.243469779Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a3c629b52383f910fe6ded17e0ad7dab97c476a8",
+          "message": "Revert \"Bug 550394 - [cleanup \u0026 saveaction] Simplify lambda expressions\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-23T04:37:47.245785446Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
       "currentEpoch": 0,
       "completedEpochs": [],
-      "categoryHitCounts": {},
+      "categoryHitCounts": {
+        "Eclipse Specific": 1,
+        "JDT Internal Refactoring": 5,
+        "Code Simplification": 1,
+        "Performance": 2,
+        "JDT Internal Bug Fix": 2,
+        "Clean-up Bug Fix": 2,
+        "Try-with-Resources": 1,
+        "JDT UI Feature Implementation": 1,
+        "Resource Management": 1,
+        "JFace API Modernization": 1,
+        "String-API": 1,
+        "Java-Modernization": 2,
+        "Performance Optimization": 1,
+        "JDT Internal API Evolution": 1,
+        "Collection Performance": 1,
+        "Null-Safety": 1
+      },
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
@@ -911,5 +960,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 16080
+  "globalTotalProcessed": 16208
 }
