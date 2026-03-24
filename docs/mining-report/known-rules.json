@@ -693,6 +693,28 @@
       "sourceCommit": "1ad504353002ae3031c9447ec31a684f5f0c57e3",
       "status": "DISCOVERED",
       "hintFile": "collection-performance.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modifies-an-internal-jdt-sup",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "super($paths, $initialFileNames)\n\u003d\u003e super($paths, $initialFileNames, false)\n;;",
+      "summary": "This commit modifies an internal JDT super-constructor call `super(paths, initialFileNames)` by adding a `false` argument, resulting in `super(paths, initialFileNames, false)`. This is a direct 1:1 replacement of a constructor invocation pattern, which is fully supported and directly expressible as a TriggerPattern DSL rule. This change reflects an internal API evolution within JDT for handling external annotations. The rule is suitable for inclusion in `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-03-24",
+      "discoveredInRun": 16468,
+      "sourceCommit": "e8a92b10517fc0e6b59559ac009096fb50176b96",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-a-bug-in-jdt-s-interna",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.importname.simple-name-extraction*/\n/*!description: Replaces manual simple name extraction from a qualified name with Signature.getSimpleName() for robustness.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\n$qualifiedName.substring($containerName.length() + 1)\n\u003d\u003e org.eclipse.jdt.core.Signature.getSimpleName($qualifiedName)\n;;\n\n/*!id: jdt.internal.importname.qualified-name-construction*/\n/*!description: Adjusts qualified name construction in ImportName to correctly handle types from the default package (empty container name).*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\nthis.qualifiedName \u003d this.containerName + \".\" + this.simpleName\n\u003d\u003e this.qualifiedName \u003d $containerName.isEmpty() ? $simpleName : $containerName + \".\" + $simpleName\n;;",
+      "summary": "This commit fixes a bug in JDT\u0027s internal import rewrite logic where unqualified types from the default package were handled incorrectly. It includes two distinct, directly implementable transformations: 1. Replacing a manual substring operation for simple name extraction with `Signature.getSimpleName()`. This improves robustness and correctness. 2. Modifying the construction of the qualified name to use a ternary operator, correctly handling cases where the container name is empty (default package). Both changes are direct 1:1 expression replacements that enhance internal JDT API usage and can be fully automated with TriggerPattern DSL rules. The more complex structural changes in `OnDemandComputer.java` are not expressible by the current DSL.",
+      "discoveredAt": "2026-03-24",
+      "discoveredInRun": 16468,
+      "sourceCommit": "d5ff27f4ac6567ec3845ab2a4c87d426d2f2009e",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

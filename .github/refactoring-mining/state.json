@@ -190,8 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedDate": "2026-03-23T04:33:03.436563374Z",
-      "totalProcessed": 6175,
+      "lastProcessedCommit": "f4e74d70f4887f5aa91dac7da4ca9525dd9faf46",
+      "lastProcessedDate": "2026-03-24T04:29:03.385028647Z",
+      "totalProcessed": 6435,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -835,11 +836,11 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 69,
+        "JDT Internal Refactoring": 76,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
-        "Java-Modernization": 2,
-        "JDT Internal Bug Fix": 13,
+        "Java-Modernization": 3,
+        "JDT Internal Bug Fix": 22,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
@@ -847,7 +848,7 @@
         "Eclipse API Migration": 15,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 2,
-        "Performance": 4,
+        "Performance": 5,
         "Try-with-Resources": 1,
         "Logging Modernization": 1,
         "Internal JDT Refactoring": 2,
@@ -859,8 +860,9 @@
         "JDT Internal Architecture": 3,
         "JDT Internal API Management": 1,
         "Error Handling Improvement": 1,
-        "Java Modernization": 4,
-        "JDT Internal API Evolution": 2
+        "Java Modernization": 5,
+        "JDT Internal API Evolution": 2,
+        "JDT Internal Performance": 1
       },
       "exhaustedCategories": []
     },
@@ -960,5 +962,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 16208
+  "globalTotalProcessed": 16468
 }
