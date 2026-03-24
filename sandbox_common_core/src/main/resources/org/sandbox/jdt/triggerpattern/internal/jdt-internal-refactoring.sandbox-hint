@@ -1,12 +1,17 @@
-/*!id: jdt.internal.codecomplete.add-timeoutmonitor*/
-/*!description: Add a CompletionTimeoutProgressMonitor to cu.codeComplete() calls for internal JDT content assist.*/
+/*!id: jdt.internal.importname.simple-name-extraction*/
+/*!description: Replaces manual simple name extraction from a qualified name with Signature.getSimpleName() for robustness.*/
 /*!severity: info*/
 /*!minJavaVersion: 8*/
-/*!tags: jdt, internal, api-evolution*/
-org.eclipse.jdt.core.ICompilationUnit.$cu.codeComplete($offset, $requestor)
-=> $cu.codeComplete($offset, $requestor, new org.eclipse.jdt.internal.ui.text.CompletionTimeoutProgressMonitor())
+/*!tags: jdt, internal, refactoring*/
+$qualifiedName.substring($containerName.length() + 1)
+=> org.eclipse.jdt.core.Signature.getSimpleName($qualifiedName)
 ;;
 
-org.eclipse.jdt.core.ICompilationUnit.$cu.codeComplete($offset, $requestor, $existingMonitor)
-=> $cu.codeComplete($offset, $requestor, new org.eclipse.jdt.internal.ui.text.CompletionTimeoutProgressMonitor())
+/*!id: jdt.internal.importname.qualified-name-construction*/
+/*!description: Adjusts qualified name construction in ImportName to correctly handle types from the default package (empty container name).*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+this.qualifiedName = this.containerName + "." + this.simpleName
+=> this.qualifiedName = $containerName.isEmpty() ? $simpleName : $containerName + "." + $simpleName
 ;;
