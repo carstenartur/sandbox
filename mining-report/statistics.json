@@ -1,45 +1,34 @@
 {
-  "totalProcessed": 34,
-  "relevant": 29,
-  "irrelevant": 5,
-  "duplicates": 2,
-  "green": 7,
-  "yellow": 0,
-  "red": 22,
+  "totalProcessed": 21,
+  "relevant": 20,
+  "irrelevant": 1,
+  "duplicates": 0,
+  "green": 2,
+  "yellow": 2,
+  "red": 16,
   "irrelevantReasons": {
-    "This commit introduces a new API method (IPackageBinding.findTypeBinding) and performs internal refactoring within JDT\u0027s ImportRewrite to use new helper methods for module-related package queries. These changes are specific to JDT\u0027s internal API evolution and implementation, not generalizable code transformation patterns for end-user Java code.": 1,
-    "This commit primarily adds a new public API method (`ImportRewrite.removeModuleImport`) and refines an existing internal conditional logic (`curr.isOnDemand() \u0026\u0026 !Modifier.isModule(curr.getModifiers())`) within JDT\u0027s `ImportRewrite`. Neither of these changes represents a generalizable code transformation pattern for end-user Java code. The DSL is not designed for API additions or for modifying highly specific internal conditional logic.": 1,
-    "This commit fixes a Javadoc syntax error by adjusting HTML paragraph tags (`\u003cp\u003e`) within a comment block in `IPackageBinding.java`. The TriggerPattern DSL is designed for transforming Java *code* (expressions, statements, declarations), not for correcting or modifying documentation/comments.": 1,
-    "The commit only updates a Javadoc `@since` tag. This is a metadata change, not a code transformation that modifies the behavior or structure of the Java code. Therefore, it cannot be generalized into a TriggerPattern DSL rule.": 1,
-    "The commit performs a general whitespace cleanup (removing unnecessary blank lines and trailing spaces), which is a formatting concern. The TriggerPattern DSL is designed for structural code transformations (e.g., API replacements, refactorings), not for arbitrary whitespace normalization or removal. This functionality is typically handled by dedicated code formatters or whitespace cleanup tools within an IDE, not by pattern-matching DSL rules.": 1
+    "This commit fixes an internal bug in the Eclipse JDT ASTParser\u0027s logic for constructing the Abstract Syntax Tree (AST) from source code. It modifies how the parser handles explicit constructor calls (e.g., super() or this()) when parsing code snippets in K_STATEMENTS mode, ensuring they are correctly added to the AST. This is a change to the internal tool\u0027s implementation for building the AST, not a transformation pattern applied to user-written Java code. Therefore, it is not applicable for generalization into a TriggerPattern DSL rule.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 9,
-      "relevant": 5,
-      "green": 0,
-      "yellow": 0,
-      "red": 5
-    },
-    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 25,
-      "relevant": 24,
-      "green": 7,
-      "yellow": 0,
-      "red": 17
+      "totalProcessed": 21,
+      "relevant": 20,
+      "green": 2,
+      "yellow": 2,
+      "red": 16
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-23",
-      "processed": 34,
-      "relevant": 29
+      "date": "2026-03-24",
+      "processed": 21,
+      "relevant": 20
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-23T04:30:24.823Z",
-    "completedAt": "2026-03-23T04:38:21.535644463Z",
-    "durationSeconds": 476,
+    "startedAt": "2026-03-24T04:21:46.887Z",
+    "completedAt": "2026-03-24T04:29:03.996268173Z",
+    "durationSeconds": 437,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -49,9 +38,9 @@
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-23T04:31:48.237598471Z",
-    "latestEvaluation": "2026-03-23T04:38:20.265469555Z",
-    "earliestCommitDate": "2019-06-01T20:55:58Z",
-    "latestCommitDate": "2025-12-04T12:42:44Z"
+    "earliestEvaluation": "2026-03-24T04:23:05.187381434Z",
+    "latestEvaluation": "2026-03-24T04:29:03.384616295Z",
+    "earliestCommitDate": "2015-01-05T05:02:03Z",
+    "latestCommitDate": "2015-08-17T14:37:11Z"
   }
 }
