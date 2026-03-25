@@ -1,3 +1,13 @@
+// collection-performance.sandbox-hint — Collection performance patterns
+// Replaces verbose collection operations with more efficient alternatives
+
+<!id: collection-performance>
+<!description: Collection performance improvement patterns>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: collections, performance>
+
+
 $map.keySet().size()
 => $map.size()
 ;;
