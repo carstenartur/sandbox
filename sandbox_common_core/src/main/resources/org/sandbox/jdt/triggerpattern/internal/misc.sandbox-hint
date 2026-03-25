@@ -1,3 +1,17 @@
+// misc.sandbox-hint — Miscellaneous improvement patterns
+// Various code modernization and cleanup patterns
+
+<!id: misc>
+<!description: Miscellaneous code improvement patterns>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: misc, modernization>
+
+
 System.getProperty("line.separator")
 => System.lineSeparator()
+;;
+
+$x.toString()
+=> String.valueOf($x)
 ;;

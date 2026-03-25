@@ -1,7 +1,29 @@
+// performance.sandbox-hint — Performance improvement patterns
+// Replaces verbose constructs with more efficient alternatives
+
+<!id: performance>
+<!description: Performance improvement patterns>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: performance>
+
+
 java.lang.Boolean.valueOf(true)
 => java.lang.Boolean.TRUE
 ;;
 
 java.lang.Boolean.valueOf(false)
 => java.lang.Boolean.FALSE
+;;
+
+java.lang.Integer.valueOf(0)
+=> java.lang.Integer.ZERO
+;;
+
+java.lang.Integer.parseInt($str)
+=> java.lang.Integer.valueOf($str)
+;;
+
+new java.lang.String($str)
+=> $str
 ;;

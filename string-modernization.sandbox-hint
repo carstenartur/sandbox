@@ -1,6 +1,3 @@
-// string-modernization.sandbox-hint — String API modernization patterns
-// Replaces verbose string operations with modern equivalents
-
 <!id: string-modernization>
 <!description: String API modernization patterns>
 <!severity: info>
