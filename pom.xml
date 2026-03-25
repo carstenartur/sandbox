@@ -31,7 +31,7 @@
 		<!-- Pin ONNX Runtime native version: 1.21.1 (from DJL 0.36.0) fails
 		     DLL init on Windows; 1.19.0 (from DJL 0.31.1) works. -->
 		<onnxruntime.version>1.19.0</onnxruntime.version>
-		<eclipse-jdt-core.version>3.44.0</eclipse-jdt-core.version>
+		<eclipse-jdt-core.version>3.45.0</eclipse-jdt-core.version>
 		<gson.version>2.13.2</gson.version>
 		<hibernate.version>6.6.13.Final</hibernate.version>
 		<hibernate-search.version>7.2.0.Final</hibernate-search.version>
