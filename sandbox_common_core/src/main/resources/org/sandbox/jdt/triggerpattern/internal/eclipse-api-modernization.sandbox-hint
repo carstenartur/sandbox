@@ -1,3 +1,7 @@
+org.eclipse.core.runtime.IPath.toString() :: instanceof($path, "org.eclipse.core.runtime.IPath")
+=> $path.toOSString()
+;;
+
 new org.eclipse.core.runtime.SubProgressMonitor($monitor, $amount)
 => org.eclipse.core.runtime.SubMonitor.convert($monitor, $amount)
 ;;
