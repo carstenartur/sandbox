@@ -1,3 +1,21 @@
+/*!id: jdt.internal.importname.simple-name-extraction*/
+/*!description: Replaces manual simple name extraction from a qualified name with Signature.getSimpleName() for robustness.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+$qualifiedName.substring($containerName.length() + 1)
+=> org.eclipse.jdt.core.Signature.getSimpleName($qualifiedName)
+;;
+
+/*!id: jdt.internal.importname.qualified-name-construction*/
+/*!description: Adjusts qualified name construction in ImportName to correctly handle types from the default package (empty container name).*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+this.qualifiedName = this.containerName + "." + this.simpleName
+=> this.qualifiedName = $containerName.isEmpty() ? $simpleName : $containerName + "." + $simpleName
+;;
+
 /*!id: jdt.internal.nameenvironment.super.findtype.modules.chararr-chararr*/
 /*!description: Updates internal JDT NameEnvironmentWithProgress.super.findType method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method's signature has already been updated to include the $modules parameter.*/
 /*!severity: info*/
