@@ -1,46 +1,47 @@
 {
-  "totalProcessed": 21,
+  "totalProcessed": 22,
   "relevant": 20,
-  "irrelevant": 1,
+  "irrelevant": 2,
   "duplicates": 0,
-  "green": 2,
-  "yellow": 2,
+  "green": 4,
+  "yellow": 0,
   "red": 16,
   "irrelevantReasons": {
-    "This commit fixes an internal bug in the Eclipse JDT ASTParser\u0027s logic for constructing the Abstract Syntax Tree (AST) from source code. It modifies how the parser handles explicit constructor calls (e.g., super() or this()) when parsing code snippets in K_STATEMENTS mode, ensuring they are correctly added to the AST. This is a change to the internal tool\u0027s implementation for building the AST, not a transformation pattern applied to user-written Java code. Therefore, it is not applicable for generalization into a TriggerPattern DSL rule.": 1
+    "The commit introduces a new API method to an interface (`isIntersectionType`) and its implementations, along with internal logic to handle intersection types within `ITypeBinding`. These are structural API additions and internal implementation changes, not code transformation patterns directly expressible by the TriggerPattern DSL which focuses on expression or declaration replacements.": 1,
+    "This commit is a revert of a previous commit (c746ac6ae60dd73c0e681419d361cf16b338a627). It restores the older API usage, so it does not introduce a new code transformation pattern suitable for DSL mining.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 21,
+      "totalProcessed": 22,
       "relevant": 20,
-      "green": 2,
-      "yellow": 2,
+      "green": 4,
+      "yellow": 0,
       "red": 16
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-24",
-      "processed": 21,
+      "date": "2026-03-25",
+      "processed": 22,
       "relevant": 20
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-24T04:21:46.887Z",
-    "completedAt": "2026-03-24T04:29:03.996268173Z",
-    "durationSeconds": 437,
+    "startedAt": "2026-03-25T04:22:58.711Z",
+    "completedAt": "2026-03-25T04:30:13.950837933Z",
+    "durationSeconds": 435,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 91,
+    "deferredCommits": 90,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-24T04:23:05.187381434Z",
-    "latestEvaluation": "2026-03-24T04:29:03.384616295Z",
-    "earliestCommitDate": "2015-01-05T05:02:03Z",
-    "latestCommitDate": "2015-08-17T14:37:11Z"
+    "earliestEvaluation": "2026-03-25T04:24:30.185477757Z",
+    "latestEvaluation": "2026-03-25T04:30:13.376802976Z",
+    "earliestCommitDate": "2015-08-27T05:02:25Z",
+    "latestCommitDate": "2016-04-18T05:30:03Z"
   }
 }
