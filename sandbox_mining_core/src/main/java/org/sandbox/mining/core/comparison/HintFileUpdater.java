@@ -227,10 +227,6 @@ public class HintFileUpdater {
 			if (trimmed.startsWith("/*") || trimmed.startsWith("*")) { //$NON-NLS-1$ //$NON-NLS-2$
 				continue;
 			}
-			// Skip hint-only description strings
-			if (trimmed.startsWith("\")) { //$NON-NLS-1$
-				continue;
-			}
 			if (sb.length() > 0) {
 				sb.append('\n');
 			}
