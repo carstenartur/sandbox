@@ -1,0 +1,3 @@
+@java.lang.SuppressWarnings("rawtypes")
+=> @java.lang.SuppressWarnings({"rawtypes"})
+;;
