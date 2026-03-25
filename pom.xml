@@ -26,7 +26,7 @@
 		<bouncycastle.version>1.83</bouncycastle.version>
 		<assertj.version>3.27.7</assertj.version>
 		<bnd.version>7.2.1</bnd.version>
-		<caffeine.version>3.1.8</caffeine.version>
+		<caffeine.version>3.2.3</caffeine.version>
 		<djl.version>0.36.0</djl.version>
 		<!-- Pin ONNX Runtime native version: 1.21.1 (from DJL 0.36.0) fails
 		     DLL init on Windows; 1.19.0 (from DJL 0.31.1) works. -->
