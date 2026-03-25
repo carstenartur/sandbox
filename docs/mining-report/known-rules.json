@@ -715,6 +715,50 @@
       "sourceCommit": "d5ff27f4ac6567ec3845ab2a4c87d426d2f2009e",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-replaces-the-deprecated-new",
+      "category": "Eclipse API Migration",
+      "dslRule": "new org.eclipse.core.runtime.SubProgressMonitor($monitor, $amount)\n\u003d\u003e org.eclipse.core.runtime.SubMonitor.convert($monitor, $amount)\n;;",
+      "summary": "This commit replaces the deprecated `new SubProgressMonitor(...)` constructor with the static factory method `SubMonitor.convert(...)`. This is a direct 1:1 API modernization pattern, improving consistency and robustness in Eclipse progress monitoring. It is fully expressible as a GREEN TriggerPattern DSL rule. No source version guard is needed as `SubProgressMonitor` and `SubMonitor` predate Java 8.",
+      "discoveredAt": "2026-03-25",
+      "discoveredInRun": 16808,
+      "sourceCommit": "c746ac6ae60dd73c0e681419d361cf16b338a627",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "code-style-/-annotation-this-commit-changes-the-suppresswarnings",
+      "category": "Code Style / Annotation",
+      "dslRule": "@java.lang.SuppressWarnings(\"rawtypes\")\n\u003d\u003e @java.lang.SuppressWarnings({\"rawtypes\"})\n;;",
+      "summary": "This commit changes the `@SuppressWarnings` annotation from a single string literal argument (`\"rawtypes\"`) to a single-element array initializer (`{\"rawtypes\"}`). This is a stylistic refactoring to enforce consistency, often done to prepare for adding multiple suppressed warnings. The transformation is a direct 1:1 replacement of an annotation attribute format, making it directly implementable as a GREEN TriggerPattern DSL rule. No source version guard is needed as this is a general Java language feature available since the baseline.",
+      "discoveredAt": "2026-03-25",
+      "discoveredInRun": 16808,
+      "sourceCommit": "ebae4a072a25f281333be279d1611b96602328af",
+      "status": "DISCOVERED",
+      "hintFile": "code-style.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-api-evolution-this-commit-implements-support-for-the-j",
+      "category": "JDT Internal API Evolution",
+      "dslRule": "/*!id: jdt.internal.nameenvironment.super.findtype.modules.chararr-chararr*/\n/*!description: Updates internal JDT NameEnvironmentWithProgress.super.findType method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method\u0027s signature has already been updated to include the $modules parameter.*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\nsuper.findType($typeName, $packageName) :: sourceVersionGE(9)\n\u003d\u003e super.findType($typeName, $packageName, $modules)\n;;\n\n/*!id: jdt.internal.nameenvironment.super.findtype.modules.chararrarr*/\n/*!description: Updates internal JDT NameEnvironmentWithProgress.super.findType method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method\u0027s signature has already been updated to include the $modules parameter.*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\nsuper.findType($compoundName) :: sourceVersionGE(9)\n\u003d\u003e super.findType($compoundName, $modules)\n;;\n\n/*!id: jdt.internal.nameenvironment.super.ispackage.modules*/\n/*!description: Updates internal JDT NameEnvironmentWithProgress.super.isPackage method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method\u0027s signature has already been updated to include the $modules parameter.*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\nsuper.isPackage($compoundName, $packageName) :: sourceVersionGE(9)\n\u003d\u003e super.isPackage($compoundName, $packageName, $modules)\n;;\n\n/*!id: jdt.internal.packagebinding.findtype.nullmodules*/\n/*!description: Updates internal JDT PackageBinding.nameEnvironment.findType call to explicitly pass null for the new IModule[] modules argument.*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\nnameEnvironment.findType(org.eclipse.jdt.internal.compiler.lookup.TypeConstants.PACKAGE_INFO_NAME, this.binding.compoundName) :: sourceVersionGE(9)\n\u003d\u003e nameEnvironment.findType(org.eclipse.jdt.internal.compiler.lookup.TypeConstants.PACKAGE_INFO_NAME, this.binding.compoundName, null)\n;;",
+      "summary": "This commit implements support for the Java 9 module system in the ECJ compiler, primarily by modifying internal JDT `findType` and `isPackage` methods to accept an `IModule[] modules` argument. This involves updating method signatures (which the DSL cannot do) and then adjusting internal method calls (like `super` calls and `nameEnvironment.findType`) to pass this new argument. The DSL rules target these direct method call argument additions, including explicitly passing `null` where appropriate. The rules assume the enclosing method\u0027s signature has been manually updated to introduce the `$modules` parameter.",
+      "discoveredAt": "2026-03-25",
+      "discoveredInRun": 16808,
+      "sourceCommit": "033efc6403f41d932c0f94ff84523386aece0e2b",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "deprecation-this-commit-replaces-constructor-calls-f",
+      "category": "Deprecation",
+      "dslRule": "new java.lang.Integer($x)\n\u003d\u003e java.lang.Integer.valueOf($x)\n;;\n\nnew java.lang.Byte($x)\n\u003d\u003e java.lang.Byte.valueOf($x)\n;;\n\nnew java.lang.Short($x)\n\u003d\u003e java.lang.Short.valueOf($x)\n;;\n\nnew java.lang.Character($x)\n\u003d\u003e java.lang.Character.valueOf($x)\n;;\n\nnew java.lang.Long($x)\n\u003d\u003e java.lang.Long.valueOf($x)\n;;",
+      "summary": "This commit replaces constructor calls for primitive wrapper types (Byte, Short, Character, Integer, Long) with their `valueOf()` factory methods when the argument is the corresponding primitive type. This is a common performance optimization and deprecation fix, as `valueOf()` can return cached instances and is generally preferred over constructors for these types. The transformations for `Float` and `Double` primitive constructors already exist in `deprecated-api.sandbox-hint`; this proposal adds the missing, analogous rules for `Integer`, `Byte`, `Short`, `Character`, and `Long`.",
+      "discoveredAt": "2026-03-25",
+      "discoveredInRun": 16808,
+      "sourceCommit": "6cb38423959485832f6b2b451a0cc3345d452e56",
+      "status": "DISCOVERED",
+      "hintFile": "deprecated-api.sandbox-hint"
     }
   ]
 }

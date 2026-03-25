@@ -1,7 +1,19 @@
-new java.lang.Float($x)
-=> java.lang.Float.valueOf($x)
+new java.lang.Integer($x)
+=> java.lang.Integer.valueOf($x)
 ;;
 
-new java.lang.Double($x)
-=> java.lang.Double.valueOf($x)
+new java.lang.Byte($x)
+=> java.lang.Byte.valueOf($x)
+;;
+
+new java.lang.Short($x)
+=> java.lang.Short.valueOf($x)
+;;
+
+new java.lang.Character($x)
+=> java.lang.Character.valueOf($x)
+;;
+
+new java.lang.Long($x)
+=> java.lang.Long.valueOf($x)
 ;;

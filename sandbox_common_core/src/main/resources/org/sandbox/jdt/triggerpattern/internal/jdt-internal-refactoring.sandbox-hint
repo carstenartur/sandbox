@@ -1,17 +1,31 @@
-/*!id: jdt.internal.importname.simple-name-extraction*/
-/*!description: Replaces manual simple name extraction from a qualified name with Signature.getSimpleName() for robustness.*/
+/*!id: jdt.internal.nameenvironment.super.findtype.modules.chararr-chararr*/
+/*!description: Updates internal JDT NameEnvironmentWithProgress.super.findType method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method's signature has already been updated to include the $modules parameter.*/
 /*!severity: info*/
-/*!minJavaVersion: 8*/
-/*!tags: jdt, internal, refactoring*/
-$qualifiedName.substring($containerName.length() + 1)
-=> org.eclipse.jdt.core.Signature.getSimpleName($qualifiedName)
+/*!minJavaVersion: 9*/
+super.findType($typeName, $packageName) :: sourceVersionGE(9)
+=> super.findType($typeName, $packageName, $modules)
 ;;
 
-/*!id: jdt.internal.importname.qualified-name-construction*/
-/*!description: Adjusts qualified name construction in ImportName to correctly handle types from the default package (empty container name).*/
+/*!id: jdt.internal.nameenvironment.super.findtype.modules.chararrarr*/
+/*!description: Updates internal JDT NameEnvironmentWithProgress.super.findType method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method's signature has already been updated to include the $modules parameter.*/
 /*!severity: info*/
-/*!minJavaVersion: 8*/
-/*!tags: jdt, internal, refactoring*/
-this.qualifiedName = this.containerName + "." + this.simpleName
-=> this.qualifiedName = $containerName.isEmpty() ? $simpleName : $containerName + "." + $simpleName
+/*!minJavaVersion: 9*/
+super.findType($compoundName) :: sourceVersionGE(9)
+=> super.findType($compoundName, $modules)
+;;
+
+/*!id: jdt.internal.nameenvironment.super.ispackage.modules*/
+/*!description: Updates internal JDT NameEnvironmentWithProgress.super.isPackage method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method's signature has already been updated to include the $modules parameter.*/
+/*!severity: info*/
+/*!minJavaVersion: 9*/
+super.isPackage($compoundName, $packageName) :: sourceVersionGE(9)
+=> super.isPackage($compoundName, $packageName, $modules)
+;;
+
+/*!id: jdt.internal.packagebinding.findtype.nullmodules*/
+/*!description: Updates internal JDT PackageBinding.nameEnvironment.findType call to explicitly pass null for the new IModule[] modules argument.*/
+/*!severity: info*/
+/*!minJavaVersion: 9*/
+nameEnvironment.findType(org.eclipse.jdt.internal.compiler.lookup.TypeConstants.PACKAGE_INFO_NAME, this.binding.compoundName) :: sourceVersionGE(9)
+=> nameEnvironment.findType(org.eclipse.jdt.internal.compiler.lookup.TypeConstants.PACKAGE_INFO_NAME, this.binding.compoundName, null)
 ;;
