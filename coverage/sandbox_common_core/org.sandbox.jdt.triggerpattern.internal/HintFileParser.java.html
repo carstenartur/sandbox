@@ -1021,7 +1021,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="fc" id="L1021">			return PatternKind.METHOD_DECLARATION;</span>
 		}
 		// Method call: contains '(' and '.' or is a simple name with parens
-<span class="pc bpc" id="L1024" title="1 of 6 branches missed.">		if (trimmed.contains(&quot;(&quot;) &amp;&amp; trimmed.contains(&quot;)&quot;) &amp;&amp; !trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="pc bpc" id="L1024" title="2 of 6 branches missed.">		if (trimmed.contains(&quot;(&quot;) &amp;&amp; trimmed.contains(&quot;)&quot;) &amp;&amp; !trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 <span class="fc" id="L1025">			return PatternKind.METHOD_CALL;</span>
 		}
 		// Variable declaration: &quot;$Type $var = $init;&quot; or &quot;$Type $var;&quot;
@@ -1108,8 +1108,8 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="fc" id="L1108">			return false;</span>
 		}
 		// Must NOT contain parens (those are method calls/declarations)
-<span class="pc bpc" id="L1111" title="1 of 4 branches missed.">		if (trimmed.contains(&quot;(&quot;) || trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1112">			return false;</span>
+<span class="pc bpc" id="L1111" title="2 of 4 branches missed.">		if (trimmed.contains(&quot;(&quot;) || trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1112">			return false;</span>
 		}
 		// Check for &quot;= &quot; indicating an initializer
 		// Pattern: &quot;$Type $var = $init;&quot; or &quot;$Type $var;&quot;

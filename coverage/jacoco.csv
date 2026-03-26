@@ -711,7 +711,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,Dsl
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,PatternParser,68,688,43,67,30,172,42,24,0,11
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileParser.GuardSplit,0,16,0,2,0,2,0,3,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,PlaceholderAstMatcher,336,1259,108,184,88,293,90,89,2,28
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileParser,132,2142,64,294,27,494,59,148,0,24
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileParser,134,2140,66,292,28,493,61,146,0,24
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,EmbeddedJavaCompiler.CompilationResult,11,75,0,8,3,12,1,8,1,4
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,GuardExpressionParser.ParseState,0,9,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,GuardExpressionParser,118,745,31,87,22,126,29,45,0,15
@@ -764,7 +764,7 @@ sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.git,RepoCloner,23,0,0,0,5
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.config,RepoEntry,23,33,3,1,5,13,3,7,1,7
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.config,MiningConfig,46,182,9,17,13,45,12,15,5,9
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,GapEntry,0,18,0,0,0,1,0,1,0,1
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,HintFileUpdater,44,165,14,28,11,40,12,13,0,4
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,HintFileUpdater,189,176,48,30,45,43,32,14,2,5
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,DeltaReport,3,430,6,24,1,87,6,20,0,11
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,GapCategory,10,108,5,9,5,25,5,10,0,2
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
