@@ -759,6 +759,39 @@
       "sourceCommit": "6cb38423959485832f6b2b451a0cc3345d452e56",
       "status": "DISCOVERED",
       "hintFile": "deprecated-api.sandbox-hint"
+    },
+    {
+      "id": "deprecation-this-commit-a-merge-into-a-java-9-branch",
+      "category": "Deprecation",
+      "dslRule": "@id: deprecation.wrapper.constructor.to.valueof.integer\n@severity: info\nnew java.lang.Integer($x)\n\u003d\u003e java.lang.Integer.valueOf($x)\n;;\n\n@id: deprecation.wrapper.constructor.to.valueof.byte\n@severity: info\nnew java.lang.Byte($x)\n\u003d\u003e java.lang.Byte.valueOf($x)\n;;\n\n@id: deprecation.wrapper.constructor.to.valueof.short\n@severity: info\nnew java.lang.Short($x)\n\u003d\u003e java.lang.Short.valueOf($x)\n;;\n\n@id: deprecation.wrapper.constructor.to.valueof.character\n@severity: info\nnew java.lang.Character($x)\n\u003d\u003e java.lang.Character.valueOf($x)\n;;\n\n@id: deprecation.wrapper.constructor.to.valueof.long\n@severity: info\nnew java.lang.Long($x)\n\u003d\u003e java.lang.Long.valueOf($x)\n;;",
+      "summary": "This commit, a merge into a Java 9 branch, includes a systematic replacement of primitive wrapper type constructors (e.g., `new Integer(int)`) with their static factory methods (e.g., `Integer.valueOf(int)`). This is a standard deprecation fix and performance optimization, as `valueOf()` methods can return cached instances. This pattern is highly reusable and directly implementable as GREEN TriggerPattern DSL rules. \n\nOther changes in the commit involve: \n1. Replacing a source range length calculation with a call to a newly introduced private instance helper method (`checkLength`) in `ASTConverter.java`. This is RED because the DSL cannot directly call private instance methods or assume their existence without them being explicitly defined as `@FixFunction` in an embedded code block. \n2. Modifications to method signatures and complex conditional logic in `NameEnvironmentWithProgress.java` and `ASTRewriteAnalyzer.java`, and the introduction of new internal constants/fields in `ASTRewriteFormatter.java`. These are RED as they involve structural changes, new declarations, and control flow modifications not supported by the DSL. \n\nHowever, the primitive wrapper constructor replacement is a clean, reusable pattern, classifying the commit as GREEN based on this strong pattern.",
+      "discoveredAt": "2026-03-26",
+      "discoveredInRun": 17335,
+      "sourceCommit": "4e8fd267d13b9420f2d9e17a5d99ed6aafd02ab0",
+      "status": "DISCOVERED",
+      "hintFile": "deprecated-api.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-eclipse",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astparser.jls8.to.jls9\n@severity: info\norg.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS8) :: sourceVersionGE(9)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS9)\n;;\n\n@id: jdt.internal.naiveastflattener.tryresources.castwidening\n@severity: info\n(org.eclipse.jdt.core.dom.VariableDeclarationExpression) $it.next() :: sourceVersionGE(9)\n\u003d\u003e (org.eclipse.jdt.core.dom.Expression) $it.next()\n;;",
+      "summary": "This commit modernizes internal Eclipse JDT Core DOM API to support Java 9 features, specifically the enhancement to try-with-resources statements allowing \u0027effectively final\u0027 resource variables. Two generalizable patterns are identified: 1. Updating internal `ASTParser.newParser()` calls from `AST.JLS8` to `AST.JLS9` to reflect the new language level support. 2. Widening an internal cast in `NaiveASTFlattener` from `VariableDeclarationExpression` to `Expression` for resources within a `TryStatement` iterator, aligning with the expanded type support in JLS9. Both are direct 1:1 expression replacements, suitable for GREEN TriggerPattern DSL rules with a `sourceVersionGE(9)` guard as they relate to Java 9 features. The Javadoc updates and the change from `JLS8` to `JLS8_INTERNAL` are not generalized into DSL rules due to their documentation or highly internal nature.",
+      "discoveredAt": "2026-03-26",
+      "discoveredInRun": 17335,
+      "sourceCommit": "5b554299cb005ff0153d8fe479bc087dc19a19ce",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-an-internal-bug-in-jdt",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "$pStmt.declarationEnd - $pStmt.declarationSourceStart + 1 :: instanceof($pStmt, \"org.eclipse.jdt.internal.compiler.ast.TypeDeclaration\")\n\u003d\u003e $pStmt.declarationSourceEnd - $pStmt.declarationSourceStart + 1\n;;",
+      "summary": "This commit fixes an internal bug in JDT\u0027s `ASTConverter` related to code completion, specifically correcting the calculation of a source range. It replaces `pStmt.declarationEnd` with `pStmt.declarationSourceEnd` within an arithmetic expression. This is a direct 1:1 expression replacement, suitable for a GREEN TriggerPattern DSL rule. The rule ensures type safety by guarding on the `$pStmt` variable being an instance of `org.eclipse.jdt.internal.compiler.ast.TypeDeclaration`, based on the context of the `ASTConverter` method. This internal JDT modernization improves the correctness of source range calculations.",
+      "discoveredAt": "2026-03-26",
+      "discoveredInRun": 17335,
+      "sourceCommit": "abeb50d80fba3afdf6ed08a22bb6a3c8c46f12af",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

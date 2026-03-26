@@ -1,47 +1,48 @@
 {
-  "totalProcessed": 22,
-  "relevant": 20,
-  "irrelevant": 2,
+  "totalProcessed": 18,
+  "relevant": 15,
+  "irrelevant": 3,
   "duplicates": 0,
-  "green": 4,
-  "yellow": 0,
-  "red": 16,
+  "green": 3,
+  "yellow": 1,
+  "red": 11,
   "irrelevantReasons": {
-    "The commit introduces a new API method to an interface (`isIntersectionType`) and its implementations, along with internal logic to handle intersection types within `ITypeBinding`. These are structural API additions and internal implementation changes, not code transformation patterns directly expressible by the TriggerPattern DSL which focuses on expression or declaration replacements.": 1,
-    "This commit is a revert of a previous commit (c746ac6ae60dd73c0e681419d361cf16b338a627). It restores the older API usage, so it does not introduce a new code transformation pattern suitable for DSL mining.": 1
+    "This commit modifies internal Eclipse JDT Core DOM API logic within ASTConverter.java to handle try-with-resources statements more robustly across different JLS versions (up to JLS8), specifically in the context of bug 488659, which concerns effectively-final variables. The changes involve restructuring an internal switch statement and refining how resources are converted into VariableDeclarationExpressions. These are internal architectural adjustments to JDT\u0027s AST parsing mechanism, not generalizable code transformation patterns for end-user applications.": 1,
+    "This commit extends internal Eclipse JDT Core DOM API support for Java 9\u0027s try-with-resources feature, specifically allowing effectively-final expressions (NameReference, FieldReference) as resources. It introduces JLS9 constants, updates AST node constructors and property descriptors, and modifies the ASTConverter to process these new resource types. These are deep internal changes to how JDT\u0027s AST represents and processes Java 9+ syntax, rather than a pattern-based transformation that an end-user would apply to their source code for refactoring or modernization.": 1,
+    "The commit modifies Javadoc comments and metadata (e.g., @deprecated tags, element type descriptions), not executable Java code. The TriggerPattern DSL is designed to match and transform active code patterns, not documentation.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 22,
-      "relevant": 20,
-      "green": 4,
-      "yellow": 0,
-      "red": 16
+      "totalProcessed": 18,
+      "relevant": 15,
+      "green": 3,
+      "yellow": 1,
+      "red": 11
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-25",
-      "processed": 22,
-      "relevant": 20
+      "date": "2026-03-26",
+      "processed": 18,
+      "relevant": 15
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-25T04:22:58.711Z",
-    "completedAt": "2026-03-25T04:30:13.950837933Z",
-    "durationSeconds": 435,
+    "startedAt": "2026-03-26T04:34:43.526Z",
+    "completedAt": "2026-03-26T04:42:00.412549613Z",
+    "durationSeconds": 436,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 90,
+    "deferredCommits": 88,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-25T04:24:30.185477757Z",
-    "latestEvaluation": "2026-03-25T04:30:13.376802976Z",
-    "earliestCommitDate": "2015-08-27T05:02:25Z",
-    "latestCommitDate": "2016-04-18T05:30:03Z"
+    "earliestEvaluation": "2026-03-26T04:36:05.519196333Z",
+    "latestEvaluation": "2026-03-26T04:41:59.774133540Z",
+    "earliestCommitDate": "2016-04-21T16:52:30Z",
+    "latestCommitDate": "2017-01-09T10:19:48Z"
   }
 }
