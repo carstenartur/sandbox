@@ -17,3 +17,33 @@ new java.lang.Character($x)
 new java.lang.Long($x)
 => java.lang.Long.valueOf($x)
 ;;
+
+@id: deprecation.wrapper.constructor.to.valueof.integer
+@severity: info
+new java.lang.Integer($x)
+=> java.lang.Integer.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.byte
+@severity: info
+new java.lang.Byte($x)
+=> java.lang.Byte.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.short
+@severity: info
+new java.lang.Short($x)
+=> java.lang.Short.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.character
+@severity: info
+new java.lang.Character($x)
+=> java.lang.Character.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.long
+@severity: info
+new java.lang.Long($x)
+=> java.lang.Long.valueOf($x)
+;;

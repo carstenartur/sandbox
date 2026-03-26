@@ -47,3 +47,19 @@ super.isPackage($compoundName, $packageName) :: sourceVersionGE(9)
 nameEnvironment.findType(org.eclipse.jdt.internal.compiler.lookup.TypeConstants.PACKAGE_INFO_NAME, this.binding.compoundName) :: sourceVersionGE(9)
 => nameEnvironment.findType(org.eclipse.jdt.internal.compiler.lookup.TypeConstants.PACKAGE_INFO_NAME, this.binding.compoundName, null)
 ;;
+
+@id: jdt.internal.astparser.jls8.to.jls9
+@severity: info
+org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS8) :: sourceVersionGE(9)
+=> org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS9)
+;;
+
+@id: jdt.internal.naiveastflattener.tryresources.castwidening
+@severity: info
+(org.eclipse.jdt.core.dom.VariableDeclarationExpression) $it.next() :: sourceVersionGE(9)
+=> (org.eclipse.jdt.core.dom.Expression) $it.next()
+;;
+
+$pStmt.declarationEnd - $pStmt.declarationSourceStart + 1 :: instanceof($pStmt, "org.eclipse.jdt.internal.compiler.ast.TypeDeclaration")
+=> $pStmt.declarationSourceEnd - $pStmt.declarationSourceStart + 1
+;;
