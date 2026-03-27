@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*********************************************************************
  * Copyright (c) 2025 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -10,7 +10,7 @@
  *
  * Contributors:
  *     Carsten Hammer
- *******************************************************************************/
+ *************************************************************************/
 package org.sandbox.mining.report;
 
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public class MiningReport {
 	 * A single match found during scanning.
 	 */
 	public record MatchEntry(String repoName, String hintFile, String ruleName, String filePath, int line,
-			String matchedCode, String suggestedReplacement) {
+								String matchedCode, String suggestedReplacement) {
 	}
 
 	private final List<MatchEntry> matches = new ArrayList<>();
@@ -38,7 +38,7 @@ public class MiningReport {
 	 * Adds a match entry to the report.
 	 */
 	public void addMatch(String repoName, String hintFile, String ruleName, String filePath, int line,
-			String matchedCode, String suggestedReplacement) {
+							String matchedCode, String suggestedReplacement) {
 		matches.add(new MatchEntry(repoName, hintFile, ruleName, filePath, line, matchedCode, suggestedReplacement));
 	}
 
@@ -99,10 +99,14 @@ public class MiningReport {
 	}
 
 	/**
-	 * Returns the number of distinct rules that matched.
+	 * Returns the number of distinct rules that matched for a given repository.
+	 * Rules are distinguished by the combination of hint file and rule name,
+	 * so that rules from different hint files are counted separately even if
+	 * they share the same description.
 	 */
 	public long getDistinctRuleCount(String repoName) {
-		return matches.stream().filter(m -> m.repoName().equals(repoName)).map(MatchEntry::ruleName).distinct().count();
+		return matches.stream().filter(m -> m.repoName().equals(repoName))
+				.map(m -> m.hintFile() + "\0" + m.ruleName()).distinct().count();
 	}
 
 	/**
