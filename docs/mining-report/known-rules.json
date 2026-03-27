@@ -792,6 +792,105 @@
       "sourceCommit": "abeb50d80fba3afdf6ed08a22bb6a3c8c46f12af",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-the-internal-impo",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.importrewrite.addimport.2arg-to-4arg-delegation*/\n/*!description: Updates internal delegation for 2-argument ImportRewrite.addImport to use new 4-argument overload, passing TypeLocation.UNKNOWN. This rule targets the \u0027return addImport(binding, ast, this.defaultContext);\u0027 line inside the 2-arg public method.*/\n@severity: info\norg.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.addImport($binding, $ast, this.defaultContext)\n:: inClass(\"org.eclipse.jdt.core.dom.rewrite.ImportRewrite\") \u0026\u0026 inMethod(\"addImport\") \u0026\u0026 paramCount(2)\n\u003d\u003e $this.addImport($binding, $ast, this.defaultContext, org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation.UNKNOWN)\n;;\n\n/*!id: jdt.internal.importrewrite.addimport.3arg-to-4arg-delegation*/\n/*!description: Updates internal delegation for 3-argument ImportRewrite.addImport to use new 4-argument overload, passing TypeLocation.UNKNOWN. This rule targets the \u0027return addImport(binding, ast, context);\u0027 line inside the 3-arg public method.*/\n@severity: info\norg.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.addImport($binding, $ast, $context)\n:: inClass(\"org.eclipse.jdt.core.dom.rewrite.ImportRewrite\") \u0026\u0026 inMethod(\"addImport\") \u0026\u0026 paramCount(3)\n\u003d\u003e $this.addImport($binding, $ast, $context, org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation.UNKNOWN)\n;;\n\n/*!id: jdt.internal.importrewrite.addimport.callsite.addannotation*/\n/*!description: Adds TypeLocation.OTHER argument to the internal addImport call within ImportRewrite.addAnnotation. This rule targets the specific addImport invocation inside the addAnnotation method.*/\n@severity: info\norg.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.addImport($annotation.getAnnotationType(), $ast, $context)\n:: inClass(\"org.eclipse.jdt.core.dom.rewrite.ImportRewrite\") \u0026\u0026 inMethod(\"addAnnotation\")\n\u003d\u003e $this.addImport($annotation.getAnnotationType(), $ast, $context, org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation.OTHER)\n;;",
+      "summary": "This commit modernizes the internal `ImportRewrite` API in JDT Core by introducing a new `TypeLocation` enum and updating various `addImport` and related internal method calls to include this new argument. This enhances support for JSR 308 type annotations and improves type annotation filtering within the JDT\u0027s import management. Specifically, it modifies the internal delegation of 2- and 3-argument `addImport` methods to a new 4-argument overload, passing `TypeLocation.UNKNOWN`. Additionally, specific internal calls to `addImport` (e.g., within `addAnnotation`) are updated to pass context-specific `TypeLocation` values like `TypeLocation.OTHER`. The changes in `ImportRewriteAnalyzer.java` involve structural modifications (method signature changes to `throws JavaModelException` and multi-line logic for region determination) which are not expressible by DSL rules (RED). However, the core `ImportRewrite.java` changes involve straightforward argument additions to internal method calls, which are fully expressible as GREEN TriggerPattern DSL rules, enhancing internal JDT API usage for Java 9+ features. The `sourceVersion` is set to 9 due to the merge into a `BETA_JAVA9` branch, indicating alignment with Java 9 features, although the rules target internal JDT API evolution.",
+      "discoveredAt": "2026-03-27",
+      "discoveredInRun": 17575,
+      "sourceCommit": "ff41eeb55d39b8f9b47de5e7d807dc1e2c3bf749",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-the-internal-jdt-a",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.moduledeclaration.modifiers-to-annotations-method*/\n/*!description: Updates internal JDT AST consumers to use ModuleDeclaration.annotations() instead of the deprecated ModuleDeclaration.modifiers().*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\n/*!tags: jdt, internal, refactoring, java9*/\norg.eclipse.jdt.core.dom.ModuleDeclaration.$node.modifiers() :: sourceVersionGE(9)\n\u003d\u003e org.eclipse.jdt.core.dom.ModuleDeclaration.$node.annotations()\n;;\n\n/*!id: jdt.internal.moduledeclaration.modifiers-property-to-annotations-property*/\n/*!description: Updates internal JDT AST consumers to use ModuleDeclaration.ANNOTATIONS_PROPERTY instead of the deprecated ModuleDeclaration.MODIFIERS_PROPERTY.*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\n/*!tags: jdt, internal, refactoring, java9*/\norg.eclipse.jdt.core.dom.ModuleDeclaration.MODIFIERS_PROPERTY :: sourceVersionGE(9)\n\u003d\u003e org.eclipse.jdt.core.dom.ModuleDeclaration.ANNOTATIONS_PROPERTY\n;;",
+      "summary": "This commit refactors the internal JDT AST representation of `ModuleDeclaration` (Java 9+). It separates the \u0027open\u0027 modifier into its own boolean property (`isOpen`) and renames the list of `IExtendedModifier`s to specifically a list of `Annotation`s. The generalizable patterns are the replacement of method calls `$node.modifiers()` with `$node.annotations()` on `ModuleDeclaration` instances, and the replacement of static field references `ModuleDeclaration.MODIFIERS_PROPERTY` with `ModuleDeclaration.ANNOTATIONS_PROPERTY`. These are direct 1:1 API substitutions for internal JDT types, making them fully implementable as GREEN TriggerPattern DSL rules. Other changes, such as adding new statements (`moduleDecl.setOpen(...)`), modifying complex boolean expressions, or performing complex AST rewrite logic (e.g., in `ASTRewriteAnalyzer`), are not expressible by the current DSL and are therefore RED.",
+      "discoveredAt": "2026-03-27",
+      "discoveredInRun": 17575,
+      "sourceCommit": "ae97ac694e955dc1bf1945de177e641b2fb93ea5",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-primarily-involves-structura",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.modulebinding.uses.to.getuses\n@severity: info\nthis.binding.uses :: sourceVersionGE(9)\n\u003d\u003e this.binding.getUses()\n;;",
+      "summary": "This commit primarily involves structural refactoring of the internal `IModuleBinding` interface and `ModuleBinding` class to support Java 9 modules, including adding a nested `Service` class, changing method signatures for `getServices()`, and removing `getImplementations()`. These structural changes are not directly expressible in the TriggerPattern DSL. However, one specific change—the replacement of a direct field access `this.binding.uses` with a method call `this.binding.getUses()`—is a direct 1:1 expression replacement. This specific part of the modernization is fully implementable as a GREEN TriggerPattern DSL rule with a `sourceVersionGE(9)` guard, reflecting internal JDT API evolution for module support. The rule ensures that internal code adapts to the new accessor pattern for module uses.",
+      "discoveredAt": "2026-03-27",
+      "discoveredInRun": 17575,
+      "sourceCommit": "eda21b35f9c2448dc52766f9b2303fc96f610e69",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-a-bug-unsupportedopera",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astconverter.moduledecl.jls9check\n@severity: info\nthis.scanner.sourceLevel \u003c org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK9 :: sourceVersionGE(9)\n\u003d\u003e this.scanner.sourceLevel \u003c org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK9 || this.ast.apiLevel \u003c org.eclipse.jdt.core.dom.AST.JLS9_INTERNAL\n;;",
+      "summary": "This commit fixes a bug (UnsupportedOperationException) in `ASTConverter.java` by adding an additional condition to an existing `if` statement. The change modifies a boolean expression from `this.scanner.sourceLevel \u003c ClassFileConstants.JDK9` to `this.scanner.sourceLevel \u003c ClassFileConstants.JDK9 || this.ast.apiLevel \u003c AST.JLS9_INTERNAL`. This is a direct 1:1 expression replacement within a conditional statement, which is fully supported by the TriggerPattern DSL. The rule is guarded by `sourceVersionGE(9)` to ensure it applies in contexts where Java 9 features are relevant for JDT\u0027s internal AST conversion logic, classifying it as a GREEN transformation.",
+      "discoveredAt": "2026-03-27",
+      "discoveredInRun": 17575,
+      "sourceCommit": "255fe8d2c334853dddf802f64ec964eb8fceb945",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-eclipse-j",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.moduledeclaration.astconverter.settype-to-setname*/\n/*!description: Updates internal JDT DOM ASTConverter logic to use name-based setters for ModuleDirective nodes, replacing type-based setters.*/\n/*!severity: info*/\n$moduleDirective.setType(this.convertType($typeRef)) :: (instanceof($moduleDirective, \"org.eclipse.jdt.core.dom.UsesDirective\") || instanceof($moduleDirective, \"org.eclipse.jdt.core.dom.ProvidesDirective\"))\n\u003d\u003e $moduleDirective.setName(this.convert($typeRef))\n;;\n\n/*!id: jdt.internal.moduledeclaration.astconverter.implementations-addtype-to-addname*/\n/*!description: Updates internal JDT DOM ASTConverter logic for ProvidesDirective to use name-based additions for implementations, replacing type-based additions.*/\n/*!severity: info*/\n$providesDirective.implementations().add(this.convertType($typeRef)) :: instanceof($providesDirective, \"org.eclipse.jdt.core.dom.ProvidesDirective\")\n\u003d\u003e $providesDirective.implementations().add(this.convert($typeRef))\n;;\n\n/*!id: jdt.internal.moduledeclaration.astmatcher.gettype-to-getname*/\n/*!description: Updates internal JDT DOM ASTMatcher logic to use name-based getters for ModuleDirective nodes, replacing type-based getters.*/\n/*!severity: info*/\n$node.getType() :: (instanceof($node, \"org.eclipse.jdt.core.dom.UsesDirective\") || instanceof($node, \"org.eclipse.jdt.core.dom.ProvidesDirective\"))\n\u003d\u003e $node.getName()\n;;\n\n/*!id: jdt.internal.moduledeclaration.naiveastflattener.gettype-to-getname*/\n/*!description: Updates internal JDT DOM NaiveASTFlattener logic to use name-based getters for ModuleDirective nodes, replacing type-based getters.*/\n/*!severity: info*/\n$node.getType().accept($this)\n\u003d\u003e $node.getName().accept($this)\n;;\n\n/*!id: jdt.internal.moduledeclaration.providesdirective.type-property-to-services-property*/\n/*!description: Updates internal JDT DOM ProvidesDirective.TYPE_PROPERTY to ProvidesDirective.SERVICES_PROPERTY.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.ProvidesDirective.TYPE_PROPERTY\n\u003d\u003e org.eclipse.jdt.core.dom.ProvidesDirective.SERVICES_PROPERTY\n;;\n\n/*!id: jdt.internal.moduledeclaration.usesdirective.type-property-to-name-property*/\n/*!description: Updates internal JDT DOM UsesDirective.TYPE_PROPERTY to UsesDirective.NAME_PROPERTY.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.UsesDirective.TYPE_PROPERTY\n\u003d\u003e org.eclipse.jdt.core.dom.UsesDirective.NAME_PROPERTY\n;;",
+      "summary": "This commit refactors internal Eclipse JDT DOM API for `ModuleDeclaration` directive nodes (`UsesDirective`, `ProvidesDirective`) introduced in Java 9. It changes the conceptual structural property from `Type` to `Name` and consequently updates internal accessor methods (`getType()` to `getName()`, `setType(...)` to `setName(...)`) and `ChildPropertyDescriptor` references (`TYPE_PROPERTY` to `SERVICES_PROPERTY` or `NAME_PROPERTY`). These are direct 1:1 API replacements of method calls or static field accesses, fully supported by GREEN TriggerPattern DSL rules with appropriate `instanceof` guards and `sourceVersionGE(9)`.",
+      "discoveredAt": "2026-03-27",
+      "discoveredInRun": 17575,
+      "sourceCommit": "c25c4f04f68c018d3cbdcf09d3d2959b4fe80ef1",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-is-a-follow-up-to-the-previo",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.moduledeclaration.providesdirective.services-property-to-name-property*/\n/*!description: Aligns internal JDT DOM ProvidesDirective.SERVICES_PROPERTY to ProvidesDirective.NAME_PROPERTY after a previous refactoring.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.ProvidesDirective.SERVICES_PROPERTY\n\u003d\u003e org.eclipse.jdt.core.dom.ProvidesDirective.NAME_PROPERTY\n;;",
+      "summary": "This commit is a follow-up to the previous refactoring, specifically aligning internal property descriptor names in `ProvidesDirective.java`. It renames `ProvidesDirective.SERVICES_PROPERTY` to `ProvidesDirective.NAME_PROPERTY` and updates all references in `ProvidesDirective`, `ASTRewriteAnalyzer`, and `ASTRewriteFlattener`. This is a direct 1:1 replacement of a static field reference, making it a GREEN TriggerPattern DSL rule. It applies to Java 9+ due to the context of module declarations. This rule builds on the previous changes where `TYPE_PROPERTY` was first renamed to `SERVICES_PROPERTY`.",
+      "discoveredAt": "2026-03-27",
+      "discoveredInRun": 17575,
+      "sourceCommit": "fb7ce3086c77c917467ac03c8833e1e37efeebe1",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-renames-the-method-getopenpa",
+      "category": "Eclipse API Migration",
+      "dslRule": "@id: eclipse.jdt.dom.imodulebinding.getopenpackages.to.getopenedpackages\n@severity: info\norg.eclipse.jdt.core.dom.IModuleBinding.$moduleBinding.getOpenPackages() :: sourceVersionGE(9)\n\u003d\u003e $moduleBinding.getOpenedPackages()\n;;",
+      "summary": "This commit renames the method `getOpenPackages()` to `getOpenedPackages()` in the `org.eclipse.jdt.core.dom.IModuleBinding` interface and its implementation. While the DSL cannot directly rename method declarations, it can automatically replace all call sites of the deprecated method. The proposed DSL rule replaces calls to the old method with the new one, guarding on Java 9+ source versions as module bindings were introduced in JLS9. This is a direct, semantically equivalent API modernization and a strong candidate for a GREEN transformation.",
+      "discoveredAt": "2026-03-27",
+      "discoveredInRun": 17575,
+      "sourceCommit": "52d86f1f74f710e8a956efc685f3f0da75fbf5a1",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-a-bug-in-jdt-s-interna",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.compilationunit.replace-package-property-with-module-property.prereplacechild\n@severity: info\n$cu.preReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUnit.PACKAGE_PROPERTY) :: sourceVersionGE(9)\n\u003d\u003e $cu.preReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUnit.MODULE_PROPERTY)\n;;\n\n@id: jdt.internal.compilationunit.replace-package-property-with-module-property.postreplacechild\n@severity: info\n$cu.postReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUnit.PACKAGE_PROPERTY) :: sourceVersionGE(9)\n\u003d\u003e $cu.postReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUnit.MODULE_PROPERTY)\n;;",
+      "summary": "This commit fixes a bug in JDT\u0027s internal DOM AST by replacing an incorrect property constant `PACKAGE_PROPERTY` with the correct `MODULE_PROPERTY` when handling `ModuleDeclaration` objects within `CompilationUnit`. The change occurs as an argument to `preReplaceChild` and `postReplaceChild` method calls. This is a direct, targeted constant replacement within specific method arguments, fully expressible as two separate GREEN TriggerPattern DSL rules. The rules are guarded by `sourceVersionGE(9)` as `ModuleDeclaration` is a Java 9 feature, and fall under the \u0027JDT Internal Refactoring\u0027 category.",
+      "discoveredAt": "2026-03-27",
+      "discoveredInRun": 17575,
+      "sourceCommit": "86d402639a07b4f761f9edfea9752f9b5e2fe89d",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-several-internal",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.modulebinding.compilerbinding.field.rename*/\n/*!description: Replaces moduleDeclaration.moduleBinding with moduleDeclaration.binding for consistency in JDT internal compiler AST.*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\n/*!tags: jdt, internal, refactoring*/\n$moduleDeclaration.moduleBinding :: instanceof($moduleDeclaration, \"org.eclipse.jdt.internal.compiler.ast.ModuleDeclaration\")\n\u003d\u003e $moduleDeclaration.binding\n;;\n\n/*!id: jdt.internal.modulebinding.isopen.field.to.method*/\n/*!description: Converts direct field access to isOpen to method call binding.isOpen() for encapsulation in JDT internal ModuleBinding.*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\n/*!tags: jdt, internal, refactoring*/\n$binding.isOpen :: instanceof($binding, \"org.eclipse.jdt.internal.compiler.lookup.ModuleBinding\")\n\u003d\u003e $binding.isOpen()\n;;\n\n/*!id: jdt.internal.namelookup.findmodule.add.tochararray*/\n/*!description: Modifies NameLookup.findModule() call to pass module name as char array for internal JDT module system lookup.*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\n/*!tags: jdt, internal, refactoring*/\n$nameLookup.findModule($name) :: instanceof($nameLookup, \"org.eclipse.jdt.internal.core.NameLookup\")\n\u003d\u003e $nameLookup.findModule($name.toCharArray())\n;;\n\n/*!id: jdt.internal.modulebinding.getallrequiredmodules.to.getrequires*/\n/*!description: Renames internal JDT ModuleBinding.getAllRequiredModules() to getRequires() for API consistency with JLS9.*/\n/*!severity: info*/\n/*!minJavaVersion: 9*/\n/*!tags: jdt, internal, refactoring*/\n$binding.getAllRequiredModules() :: instanceof($binding, \"org.eclipse.jdt.internal.compiler.lookup.ModuleBinding\")\n\u003d\u003e $binding.getRequires()\n;;",
+      "summary": "This commit modernizes several internal JDT APIs related to Java 9 module bindings, addressing `Bug 517808`. Key patterns include replacing `$moduleDeclaration.moduleBinding` with `$moduleDeclaration.binding`, converting the `$binding.isOpen` field to a `$binding.isOpen()` method call, updating `nameLookup.findModule($name)` to `nameLookup.findModule($name.toCharArray())`, and renaming `$binding.getAllRequiredModules()` to `$binding.getRequires()`. These are direct 1:1 expression replacements that are fully expressible as TriggerPattern DSL rules, enhancing internal JDT API consistency. More complex refactorings involving streams or method signature changes in `NameEnvironmentWithProgress` are not suitable for the DSL.",
+      "discoveredAt": "2026-03-27",
+      "discoveredInRun": 17575,
+      "sourceCommit": "905307ba95aeaa4570286fd98cd5fee0aa7ea5d7",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

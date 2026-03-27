@@ -5,3 +5,9 @@ org.eclipse.core.runtime.IPath.toString() :: instanceof($path, "org.eclipse.core
 new org.eclipse.core.runtime.SubProgressMonitor($monitor, $amount)
 => org.eclipse.core.runtime.SubMonitor.convert($monitor, $amount)
 ;;
+
+@id: eclipse.jdt.dom.imodulebinding.getopenpackages.to.getopenedpackages
+@severity: info
+org.eclipse.jdt.core.dom.IModuleBinding.$moduleBinding.getOpenPackages() :: sourceVersionGE(9)
+=> $moduleBinding.getOpenedPackages()
+;;
