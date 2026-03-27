@@ -63,3 +63,154 @@ org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS8) 
 $pStmt.declarationEnd - $pStmt.declarationSourceStart + 1 :: instanceof($pStmt, "org.eclipse.jdt.internal.compiler.ast.TypeDeclaration")
 => $pStmt.declarationSourceEnd - $pStmt.declarationSourceStart + 1
 ;;
+
+/*!id: jdt.internal.importrewrite.addimport.2arg-to-4arg-delegation*/
+/*!description: Updates internal delegation for 2-argument ImportRewrite.addImport to use new 4-argument overload, passing TypeLocation.UNKNOWN. This rule targets the 'return addImport(binding, ast, this.defaultContext);' line inside the 2-arg public method.*/
+@severity: info
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.addImport($binding, $ast, this.defaultContext)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("addImport") && paramCount(2)
+=> $this.addImport($binding, $ast, this.defaultContext, org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation.UNKNOWN)
+;;
+
+/*!id: jdt.internal.importrewrite.addimport.3arg-to-4arg-delegation*/
+/*!description: Updates internal delegation for 3-argument ImportRewrite.addImport to use new 4-argument overload, passing TypeLocation.UNKNOWN. This rule targets the 'return addImport(binding, ast, context);' line inside the 3-arg public method.*/
+@severity: info
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.addImport($binding, $ast, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("addImport") && paramCount(3)
+=> $this.addImport($binding, $ast, $context, org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation.UNKNOWN)
+;;
+
+/*!id: jdt.internal.importrewrite.addimport.callsite.addannotation*/
+/*!description: Adds TypeLocation.OTHER argument to the internal addImport call within ImportRewrite.addAnnotation. This rule targets the specific addImport invocation inside the addAnnotation method.*/
+@severity: info
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.addImport($annotation.getAnnotationType(), $ast, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("addAnnotation")
+=> $this.addImport($annotation.getAnnotationType(), $ast, $context, org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation.OTHER)
+;;
+
+/*!id: jdt.internal.moduledeclaration.modifiers-to-annotations-method*/
+/*!description: Updates internal JDT AST consumers to use ModuleDeclaration.annotations() instead of the deprecated ModuleDeclaration.modifiers().*/
+/*!severity: info*/
+/*!minJavaVersion: 9*/
+/*!tags: jdt, internal, refactoring, java9*/
+org.eclipse.jdt.core.dom.ModuleDeclaration.$node.modifiers() :: sourceVersionGE(9)
+=> org.eclipse.jdt.core.dom.ModuleDeclaration.$node.annotations()
+;;
+
+/*!id: jdt.internal.moduledeclaration.modifiers-property-to-annotations-property*/
+/*!description: Updates internal JDT AST consumers to use ModuleDeclaration.ANNOTATIONS_PROPERTY instead of the deprecated ModuleDeclaration.MODIFIERS_PROPERTY.*/
+/*!severity: info*/
+/*!minJavaVersion: 9*/
+/*!tags: jdt, internal, refactoring, java9*/
+org.eclipse.jdt.core.dom.ModuleDeclaration.MODIFIERS_PROPERTY :: sourceVersionGE(9)
+=> org.eclipse.jdt.core.dom.ModuleDeclaration.ANNOTATIONS_PROPERTY
+;;
+
+@id: jdt.internal.modulebinding.uses.to.getuses
+@severity: info
+this.binding.uses :: sourceVersionGE(9)
+=> this.binding.getUses()
+;;
+
+@id: jdt.internal.astconverter.moduledecl.jls9check
+@severity: info
+this.scanner.sourceLevel < org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK9 :: sourceVersionGE(9)
+=> this.scanner.sourceLevel < org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK9 || this.ast.apiLevel < org.eclipse.jdt.core.dom.AST.JLS9_INTERNAL
+;;
+
+/*!id: jdt.internal.moduledeclaration.astconverter.settype-to-setname*/
+/*!description: Updates internal JDT DOM ASTConverter logic to use name-based setters for ModuleDirective nodes, replacing type-based setters.*/
+/*!severity: info*/
+$moduleDirective.setType(this.convertType($typeRef)) :: (instanceof($moduleDirective, "org.eclipse.jdt.core.dom.UsesDirective") || instanceof($moduleDirective, "org.eclipse.jdt.core.dom.ProvidesDirective"))
+=> $moduleDirective.setName(this.convert($typeRef))
+;;
+
+/*!id: jdt.internal.moduledeclaration.astconverter.implementations-addtype-to-addname*/
+/*!description: Updates internal JDT DOM ASTConverter logic for ProvidesDirective to use name-based additions for implementations, replacing type-based additions.*/
+/*!severity: info*/
+$providesDirective.implementations().add(this.convertType($typeRef)) :: instanceof($providesDirective, "org.eclipse.jdt.core.dom.ProvidesDirective")
+=> $providesDirective.implementations().add(this.convert($typeRef))
+;;
+
+/*!id: jdt.internal.moduledeclaration.astmatcher.gettype-to-getname*/
+/*!description: Updates internal JDT DOM ASTMatcher logic to use name-based getters for ModuleDirective nodes, replacing type-based getters.*/
+/*!severity: info*/
+$node.getType() :: (instanceof($node, "org.eclipse.jdt.core.dom.UsesDirective") || instanceof($node, "org.eclipse.jdt.core.dom.ProvidesDirective"))
+=> $node.getName()
+;;
+
+/*!id: jdt.internal.moduledeclaration.naiveastflattener.gettype-to-getname*/
+/*!description: Updates internal JDT DOM NaiveASTFlattener logic to use name-based getters for ModuleDirective nodes, replacing type-based getters.*/
+/*!severity: info*/
+$node.getType().accept($this)
+=> $node.getName().accept($this)
+;;
+
+/*!id: jdt.internal.moduledeclaration.providesdirective.type-property-to-services-property*/
+/*!description: Updates internal JDT DOM ProvidesDirective.TYPE_PROPERTY to ProvidesDirective.SERVICES_PROPERTY.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.ProvidesDirective.TYPE_PROPERTY
+=> org.eclipse.jdt.core.dom.ProvidesDirective.SERVICES_PROPERTY
+;;
+
+/*!id: jdt.internal.moduledeclaration.usesdirective.type-property-to-name-property*/
+/*!description: Updates internal JDT DOM UsesDirective.TYPE_PROPERTY to UsesDirective.NAME_PROPERTY.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.UsesDirective.TYPE_PROPERTY
+=> org.eclipse.jdt.core.dom.UsesDirective.NAME_PROPERTY
+;;
+
+/*!id: jdt.internal.moduledeclaration.providesdirective.services-property-to-name-property*/
+/*!description: Aligns internal JDT DOM ProvidesDirective.SERVICES_PROPERTY to ProvidesDirective.NAME_PROPERTY after a previous refactoring.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.ProvidesDirective.SERVICES_PROPERTY
+=> org.eclipse.jdt.core.dom.ProvidesDirective.NAME_PROPERTY
+;;
+
+@id: jdt.internal.compilationunit.replace-package-property-with-module-property.prereplacechild
+@severity: info
+$cu.preReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUnit.PACKAGE_PROPERTY) :: sourceVersionGE(9)
+=> $cu.preReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUnit.MODULE_PROPERTY)
+;;
+
+@id: jdt.internal.compilationunit.replace-package-property-with-module-property.postreplacechild
+@severity: info
+$cu.postReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUnit.PACKAGE_PROPERTY) :: sourceVersionGE(9)
+=> $cu.postReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUnit.MODULE_PROPERTY)
+;;
+
+/*!id: jdt.internal.modulebinding.compilerbinding.field.rename*/
+/*!description: Replaces moduleDeclaration.moduleBinding with moduleDeclaration.binding for consistency in JDT internal compiler AST.*/
+/*!severity: info*/
+/*!minJavaVersion: 9*/
+/*!tags: jdt, internal, refactoring*/
+$moduleDeclaration.moduleBinding :: instanceof($moduleDeclaration, "org.eclipse.jdt.internal.compiler.ast.ModuleDeclaration")
+=> $moduleDeclaration.binding
+;;
+
+/*!id: jdt.internal.modulebinding.isopen.field.to.method*/
+/*!description: Converts direct field access to isOpen to method call binding.isOpen() for encapsulation in JDT internal ModuleBinding.*/
+/*!severity: info*/
+/*!minJavaVersion: 9*/
+/*!tags: jdt, internal, refactoring*/
+$binding.isOpen :: instanceof($binding, "org.eclipse.jdt.internal.compiler.lookup.ModuleBinding")
+=> $binding.isOpen()
+;;
+
+/*!id: jdt.internal.namelookup.findmodule.add.tochararray*/
+/*!description: Modifies NameLookup.findModule() call to pass module name as char array for internal JDT module system lookup.*/
+/*!severity: info*/
+/*!minJavaVersion: 9*/
+/*!tags: jdt, internal, refactoring*/
+$nameLookup.findModule($name) :: instanceof($nameLookup, "org.eclipse.jdt.internal.core.NameLookup")
+=> $nameLookup.findModule($name.toCharArray())
+;;
+
+/*!id: jdt.internal.modulebinding.getallrequiredmodules.to.getrequires*/
+/*!description: Renames internal JDT ModuleBinding.getAllRequiredModules() to getRequires() for API consistency with JLS9.*/
+/*!severity: info*/
+/*!minJavaVersion: 9*/
+/*!tags: jdt, internal, refactoring*/
+$binding.getAllRequiredModules() :: instanceof($binding, "org.eclipse.jdt.internal.compiler.lookup.ModuleBinding")
+=> $binding.getRequires()
+;;
