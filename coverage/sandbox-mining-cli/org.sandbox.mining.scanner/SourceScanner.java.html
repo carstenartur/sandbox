@@ -10,7 +10,7 @@
  *
  * Contributors:
  *     Carsten Hammer
- *******************************************************************************/
+ ******************************************************************************/
 package org.sandbox.mining.scanner;
 
 import java.io.IOException;
@@ -108,31 +108,31 @@ public class SourceScanner {
 	 */
 	public MiningReport scan(String repoName, Path rootDir, List&lt;String&gt; subPaths, List&lt;HintFile&gt; hintFiles)
 			throws IOException {
-<span class="nc" id="L111">		MiningReport report = new MiningReport();</span>
-<span class="nc" id="L112">		List&lt;Path&gt; javaFiles = findJavaFiles(rootDir, subPaths);</span>
-<span class="nc" id="L113">		report.addFileCount(repoName, javaFiles.size());</span>
+<span class="nc" id="L111">			MiningReport report = new MiningReport();</span>
+<span class="nc" id="L112">			List&lt;Path&gt; javaFiles = findJavaFiles(rootDir, subPaths);</span>
+<span class="nc" id="L113">			report.addFileCount(repoName, javaFiles.size());</span>
 
-<span class="nc bnc" id="L115" title="All 2 branches missed.">		for (HintFile hintFile : hintFiles) {</span>
-<span class="nc" id="L116">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">			for (HintFile hintFile : hintFiles) {</span>
+<span class="nc" id="L116">				BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
 
-<span class="nc bnc" id="L118" title="All 2 branches missed.">			for (Path javaFile : javaFiles) {</span>
-<span class="nc" id="L119">				String source = Files.readString(javaFile, StandardCharsets.UTF_8);</span>
-<span class="nc" id="L120">				CompilationUnit cu = parser.parse(source);</span>
-<span class="nc" id="L121">				List&lt;TransformationResult&gt; results = processor.process(cu);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">				for (Path javaFile : javaFiles) {</span>
+<span class="nc" id="L119">					String source = Files.readString(javaFile, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L120">					CompilationUnit cu = parser.parse(source);</span>
+<span class="nc" id="L121">					List&lt;TransformationResult&gt; results = processor.process(cu);</span>
 
-<span class="nc bnc" id="L123" title="All 2 branches missed.">				for (TransformationResult result : results) {</span>
-<span class="nc" id="L124">					String relativePath = rootDir.relativize(javaFile).toString();</span>
-<span class="nc" id="L125">					int line = cu.getLineNumber(result.match().getOffset());</span>
-<span class="nc bnc" id="L126" title="All 2 branches missed.">					String hintFileName = hintFile.getId() != null ? hintFile.getId() : &quot;unknown&quot;;</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">					String ruleName = result.rule().getDescription() != null ? result.rule().getDescription()</span>
-<span class="nc" id="L128">							: &quot;unnamed&quot;;</span>
-<span class="nc" id="L129">					report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">							result.hasReplacement() ? result.replacement() : null);</span>
-<span class="nc" id="L131">				}</span>
-<span class="nc" id="L132">			}</span>
-<span class="nc" id="L133">		}</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">					for (TransformationResult result : results) {</span>
+<span class="nc" id="L124">						String relativePath = rootDir.relativize(javaFile).toString();</span>
+<span class="nc" id="L125">						int line = cu.getLineNumber(result.match().getOffset());</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">						String hintFileName = hintFile.getId() != null ? hintFile.getId() : &quot;unknown&quot;;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">						String ruleName = result.rule().getDescription() != null ? result.rule().getDescription()</span>
+<span class="nc" id="L128">								: hintFileName;</span>
+<span class="nc" id="L129">						report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">								result.hasReplacement() ? result.replacement() : null);</span>
+<span class="nc" id="L131">					}</span>
+<span class="nc" id="L132">				}</span>
+<span class="nc" id="L133">			}</span>
 
-<span class="nc" id="L135">		return report;</span>
+<span class="nc" id="L135">			return report;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
