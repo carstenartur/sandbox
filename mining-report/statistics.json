@@ -1,38 +1,36 @@
 {
-  "totalProcessed": 28,
-  "relevant": 23,
-  "irrelevant": 5,
-  "duplicates": 1,
-  "green": 9,
-  "yellow": 1,
-  "red": 13,
+  "totalProcessed": 22,
+  "relevant": 19,
+  "irrelevant": 3,
+  "duplicates": 0,
+  "green": 5,
+  "yellow": 2,
+  "red": 12,
   "irrelevantReasons": {
-    "The commit introduces a structural refactoring of internal JDT logic within `ImportRewriteAnalyzer.java`. It replaces a single conditional assignment with a multi-statement `while` loop that directly accesses a character buffer to determine a region\u0027s end. This change involves control flow modification and low-level buffer manipulation, which are not expressible as a pattern-based TriggerPattern DSL rule. It\u0027s an internal bug fix for whitespace handling rather than a generalizable code transformation.": 1,
-    "The commit primarily involves adding new method declarations for AST visitors, adding new entries to an internal map (`endingTokens`), adding new `case` labels to a `switch` statement for `ASTNode.MODULE_DECLARATION`, and updating Javadoc comments with `@noextend`, `@noinstantiate` annotations. These are structural code changes and documentation updates, which are beyond the current capabilities of the TriggerPattern DSL for pattern-based code transformations. The DSL cannot generate new methods, add elements to collections/maps during initialization, or modify control flow structures like `switch` statements by adding new cases.": 1,
-    "This commit modifies Javadoc comments, specifically adjusting descriptions for structural properties related to ModuleDeclaration. The TriggerPattern DSL is designed for Java *code* transformations, not for modifying documentation or comments. Therefore, this change cannot be expressed as a DSL rule.": 1,
-    "This commit adds Javadoc comments, specifically a `\u003cp\u003e` tag indicating that results from various `IModuleBinding` methods are in no particular order. The TriggerPattern DSL is designed for Java *code* transformations, not for adding or modifying documentation or comments. Therefore, this change cannot be expressed as a DSL rule.": 1,
-    "Javadoc and metadata updates only; no code transformation pattern.": 1
+    "The commit only modifies a TODO comment within the source code. It does not introduce any functional code changes, API usage patterns, or structural refactorings that could be generalized into a TriggerPattern DSL rule.": 1,
+    "The commit modifies only a comment, which is not a code transformation and thus not applicable for TriggerPattern DSL rule generation.": 1,
+    "This commit changes only a Javadoc comment (`@since` tag) for an internal JDT constant. It is not a code transformation and does not introduce any patterns suitable for a TriggerPattern DSL rule.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 28,
-      "relevant": 23,
-      "green": 9,
-      "yellow": 1,
-      "red": 13
+      "totalProcessed": 22,
+      "relevant": 19,
+      "green": 5,
+      "yellow": 2,
+      "red": 12
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-27",
-      "processed": 28,
-      "relevant": 23
+      "date": "2026-03-28",
+      "processed": 22,
+      "relevant": 19
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-27T04:35:36.704Z",
-    "completedAt": "2026-03-27T04:44:25.692516776Z",
-    "durationSeconds": 528,
+    "startedAt": "2026-03-28T04:23:06.044Z",
+    "completedAt": "2026-03-28T04:29:56.627705682Z",
+    "durationSeconds": 410,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -42,9 +40,9 @@
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-27T04:37:07.056443913Z",
-    "latestEvaluation": "2026-03-27T04:44:25.144717596Z",
-    "earliestCommitDate": "2017-01-29T16:17:42Z",
-    "latestCommitDate": "2017-07-05T10:53:14Z"
+    "earliestEvaluation": "2026-03-28T04:24:41.557538286Z",
+    "latestEvaluation": "2026-03-28T04:29:56.320770295Z",
+    "earliestCommitDate": "2017-07-06T15:32:40Z",
+    "latestCommitDate": "2017-12-08T23:15:50Z"
   }
 }

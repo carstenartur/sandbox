@@ -891,6 +891,61 @@
       "sourceCommit": "905307ba95aeaa4570286fd98cd5fee0aa7ea5d7",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-modul",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.modulebinding.services.to.getservices\n@severity: info\nthis.binding.services :: sourceVersionGE(9)\n\u003d\u003e this.binding.getServices()\n;;",
+      "summary": "This commit refactors internal JDT `ModuleBinding` to replace direct field access of `this.binding.services` with a method call `this.binding.getServices()`. This is a standard encapsulation pattern for internal API modernization, specifically related to Java 9 module support. The transformation is a direct 1:1 expression replacement and is fully expressible as a GREEN TriggerPattern DSL rule with a Java 9+ source version guard.",
+      "discoveredAt": "2026-03-28",
+      "discoveredInRun": 17947,
+      "sourceCommit": "370ddc614308b880713c9bfd1740772f1eaad0a3",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-525712-by-replacin",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "new org.eclipse.jdt.internal.compiler.batch.BasicCompilationUnit($source, $names, $fileName, this.project) :: sourceVersionGE(9)\n\u003d\u003e new org.eclipse.jdt.internal.compiler.batch.BasicCompilationUnit($source, $names, $fileName, this.typeRoot)\n;;",
+      "summary": "This commit fixes Bug 525712 by replacing the fourth argument of the `BasicCompilationUnit` constructor from `this.project` (an `IJavaProject`) to `this.typeRoot` (an `ITypeRoot`) within `ASTParser.java`. This is an internal JDT API modernization, ensuring more precise context for compilation unit creation, especially relevant for Java 9 module-info files. The change is a direct 1:1 constructor argument replacement, making it a GREEN transformation, fully expressible as a TriggerPattern DSL rule for Java 9+ projects.",
+      "discoveredAt": "2026-03-28",
+      "discoveredInRun": 17947,
+      "sourceCommit": "6c3016cf68922155d6706382dc256eb4b63fe001",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-519884-by-extendin",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$packageBinding \u003d\u003d null :: sourceVersionGE(9)\n\u003d\u003e $packageBinding \u003d\u003d null || $packageBinding instanceof org.eclipse.jdt.internal.compiler.lookup.ProblemPackageBinding\n;;",
+      "summary": "This commit fixes Bug 519884 by extending a null check for `packageBinding` with an additional check for `instanceof ProblemPackageBinding` within `DefaultBindingResolver.java`. This prevents a NullPointerException when processing problematic package bindings, particularly in Java 9+ contexts. The change is a direct 1:1 replacement of a boolean expression, making it a GREEN transformation, fully expressible as a TriggerPattern DSL rule for Java 9+ projects. The import of `ProblemPackageBinding` is implicitly handled by the DSL\u0027s FQN usage.",
+      "discoveredAt": "2026-03-28",
+      "discoveredInRun": 17947,
+      "sourceCommit": "8b85d3ba8a0eaa716e73cc98a56d236167165ee0",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-a-nullpointerexception",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "$packageBinding \u003d\u003d null\n\u003d\u003e $packageBinding \u003d\u003d null || $packageBinding instanceof org.eclipse.jdt.internal.compiler.lookup.ProblemPackageBinding\n;;",
+      "summary": "This commit fixes a NullPointerException in JDT\u0027s internal PackageBinding resolution by modifying a conditional expression. It extends the null check to also verify if the package binding is an instance of `ProblemPackageBinding`. This is a direct 1:1 boolean expression replacement that improves the robustness of internal JDT logic, making it fully expressible as a GREEN TriggerPattern DSL rule. No specific source version guard is required as it\u0027s an internal JDT API fix rather than a new Java language feature.",
+      "discoveredAt": "2026-03-28",
+      "discoveredInRun": 17947,
+      "sourceCommit": "ff3f6801ef7808440437852d63cf8055d31a7b81",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-517261-by-modifyin",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astrewriteanalyzer.requiresdirective.extra-space-fix\n@severity: info\nrewriteNodeList($node, org.eclipse.jdt.core.dom.RequiresDirective.MODIFIERS_PROPERTY, $pos, java.lang.String.valueOf(\u0027 \u0027), java.lang.String.valueOf(\u0027 \u0027), java.lang.String.valueOf(\u0027 \u0027)) :: sourceVersionGE(9)\n\u003d\u003e rewriteNodeList($node, org.eclipse.jdt.core.dom.RequiresDirective.MODIFIERS_PROPERTY, $pos, java.lang.String.valueOf(\u0027 \u0027), java.lang.String.valueOf(\u0027 \u0027))\n;;",
+      "summary": "This commit fixes Bug 517261 by modifying an internal `rewriteNodeList` method call within JDT\u0027s `ASTRewriteAnalyzer`. It removes a redundant `String.valueOf(\u0027 \u0027)` argument that was causing an extra space to be added after `requires` statements in Java 9+ module declarations. This is a direct 1:1 method call argument reduction, a common pattern for fixing formatting bugs in AST rewriting. The transformation is fully expressible as a GREEN TriggerPattern DSL rule, guarded by `sourceVersionGE(9)` as it pertains to Java 9 module syntax. It will be added to `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-03-28",
+      "discoveredInRun": 17947,
+      "sourceCommit": "49c3f7ebc6434f57db589e0963dffb13f530d4c2",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
