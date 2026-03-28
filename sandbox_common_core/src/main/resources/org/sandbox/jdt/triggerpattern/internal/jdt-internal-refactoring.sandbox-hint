@@ -214,3 +214,27 @@ $nameLookup.findModule($name) :: instanceof($nameLookup, "org.eclipse.jdt.intern
 $binding.getAllRequiredModules() :: instanceof($binding, "org.eclipse.jdt.internal.compiler.lookup.ModuleBinding")
 => $binding.getRequires()
 ;;
+
+@id: jdt.internal.modulebinding.services.to.getservices
+@severity: info
+this.binding.services :: sourceVersionGE(9)
+=> this.binding.getServices()
+;;
+
+new org.eclipse.jdt.internal.compiler.batch.BasicCompilationUnit($source, $names, $fileName, this.project) :: sourceVersionGE(9)
+=> new org.eclipse.jdt.internal.compiler.batch.BasicCompilationUnit($source, $names, $fileName, this.typeRoot)
+;;
+
+$packageBinding == null :: sourceVersionGE(9)
+=> $packageBinding == null || $packageBinding instanceof org.eclipse.jdt.internal.compiler.lookup.ProblemPackageBinding
+;;
+
+$packageBinding == null
+=> $packageBinding == null || $packageBinding instanceof org.eclipse.jdt.internal.compiler.lookup.ProblemPackageBinding
+;;
+
+@id: jdt.internal.astrewriteanalyzer.requiresdirective.extra-space-fix
+@severity: info
+rewriteNodeList($node, org.eclipse.jdt.core.dom.RequiresDirective.MODIFIERS_PROPERTY, $pos, java.lang.String.valueOf(' '), java.lang.String.valueOf(' '), java.lang.String.valueOf(' ')) :: sourceVersionGE(9)
+=> rewriteNodeList($node, org.eclipse.jdt.core.dom.RequiresDirective.MODIFIERS_PROPERTY, $pos, java.lang.String.valueOf(' '), java.lang.String.valueOf(' '))
+;;
