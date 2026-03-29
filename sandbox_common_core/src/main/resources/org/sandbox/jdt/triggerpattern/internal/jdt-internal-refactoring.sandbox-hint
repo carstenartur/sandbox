@@ -238,3 +238,25 @@ $packageBinding == null
 rewriteNodeList($node, org.eclipse.jdt.core.dom.RequiresDirective.MODIFIERS_PROPERTY, $pos, java.lang.String.valueOf(' '), java.lang.String.valueOf(' '), java.lang.String.valueOf(' ')) :: sourceVersionGE(9)
 => rewriteNodeList($node, org.eclipse.jdt.core.dom.RequiresDirective.MODIFIERS_PROPERTY, $pos, java.lang.String.valueOf(' '), java.lang.String.valueOf(' '))
 ;;
+
+new org.eclipse.jdt.core.dom.PackageBinding($packageBinding, this)
+=> $packageBinding instanceof org.eclipse.jdt.internal.compiler.lookup.ProblemPackageBinding ? new org.eclipse.jdt.core.dom.RecoveredPackageBinding($packageBinding, this) : new org.eclipse.jdt.core.dom.PackageBinding($packageBinding, this)
+;;
+
+@id: jdt.internal.astmatcher.match-usesdirective-typefix
+@severity: error
+!(other instanceof org.eclipse.jdt.core.dom.UnionType) :: sourceVersionGE(9)
+=> !(other instanceof org.eclipse.jdt.core.dom.UsesDirective)
+;;
+
+@id: jdt.internal.requiresdirective.modulemodifier-cast-fix
+@severity: error
+((org.eclipse.jdt.core.dom.Modifier) $x).getKeyword().toFlagValue() :: sourceVersionGE(9)
+=> ((org.eclipse.jdt.core.dom.ModuleModifier) $x).getKeyword().toFlagValue()
+;;
+
+@id: jdt.internal.astparser.jls9.to.jls10
+@severity: info
+org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS9) :: sourceVersionGE(10)
+=> org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10)
+;;

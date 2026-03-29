@@ -1,3 +1,9 @@
 org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest = org.eclipse.jdt.core.dom.AST.JLS25
 => org.eclipse.jdt.core.dom.AST.JLS_INTERNAL_Latest = org.eclipse.jdt.core.dom.AST.JLS26
 ;;
+
+@id: jdt.internal.astparser.jls9.to.jls10
+@severity: info
+org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS9) :: sourceVersionGE(10)
+=> org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10)
+;;
