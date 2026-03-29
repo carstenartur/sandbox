@@ -1,36 +1,43 @@
 {
-  "totalProcessed": 22,
-  "relevant": 19,
-  "irrelevant": 3,
+  "totalProcessed": 21,
+  "relevant": 11,
+  "irrelevant": 10,
   "duplicates": 0,
-  "green": 5,
-  "yellow": 2,
-  "red": 12,
+  "green": 4,
+  "yellow": 0,
+  "red": 7,
   "irrelevantReasons": {
-    "The commit only modifies a TODO comment within the source code. It does not introduce any functional code changes, API usage patterns, or structural refactorings that could be generalized into a TriggerPattern DSL rule.": 1,
-    "The commit modifies only a comment, which is not a code transformation and thus not applicable for TriggerPattern DSL rule generation.": 1,
-    "This commit changes only a Javadoc comment (`@since` tag) for an internal JDT constant. It is not a code transformation and does not introduce any patterns suitable for a TriggerPattern DSL rule.": 1
+    "The commit only contains Javadoc updates, explaining how to use `ASTParser` correctly for `module-info.java` files. There are no actual code transformations that could be generalized into a DSL rule.": 1,
+    "The commit only adds Javadoc comments to clarify API usage; it does not contain any code transformation patterns that could be generalized into a DSL rule. Documentation changes are not within the scope of code transformation DSLs.": 1,
+    "The commit primarily involves Javadoc updates and a structural code change (adding a try-catch block) which cannot be expressed by the TriggerPattern DSL.": 1,
+    "This commit exclusively contains copyright year updates and the addition of JCP early-draft specification notices. These are metadata and comment changes, not code transformations that alter the logic or structure of the Java code.": 1,
+    "Documentation update (Javadoc @since tag), not a code transformation pattern.": 1,
+    "The commit only changes Javadoc `@since` tags and adds an internal comment; it does not contain any code transformation patterns relevant for DSL rule mining.": 1,
+    "The commit involves removing early-draft specification disclaimers and updating `@since` tags in Javadoc comments across multiple JDT Core DOM files. These are metadata and comment changes, not actual code transformations that alter the functional behavior or structure of the Java code. Therefore, no reusable TriggerPattern DSL rule can be extracted from this commit.": 1,
+    "This commit only adds Javadoc documentation; it does not contain any code transformation patterns that can be generalized into a DSL rule.": 1,
+    "This commit only adds Javadoc documentation and updates a copyright year; it does not contain any code transformation patterns that can be generalized into a DSL rule.": 1,
+    "The commit involves internal refactoring of Eclipse JDT\u0027s AST construction and internal API logic (specifically for the \u0027var\u0027 keyword handling within SimpleType and ASTConverter). This does not translate into a reusable pattern for user-facing code transformations. The DSL is intended for transforming user code, not for modifying JDT\u0027s internal implementation details.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 22,
-      "relevant": 19,
-      "green": 5,
-      "yellow": 2,
-      "red": 12
+      "totalProcessed": 21,
+      "relevant": 11,
+      "green": 4,
+      "yellow": 0,
+      "red": 7
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-28",
-      "processed": 22,
-      "relevant": 19
+      "date": "2026-03-29",
+      "processed": 21,
+      "relevant": 11
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-28T04:23:06.044Z",
-    "completedAt": "2026-03-28T04:29:56.627705682Z",
-    "durationSeconds": 410,
+    "startedAt": "2026-03-29T04:38:34.872Z",
+    "completedAt": "2026-03-29T04:45:34.622989382Z",
+    "durationSeconds": 419,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -40,9 +47,9 @@
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-28T04:24:41.557538286Z",
-    "latestEvaluation": "2026-03-28T04:29:56.320770295Z",
-    "earliestCommitDate": "2017-07-06T15:32:40Z",
-    "latestCommitDate": "2017-12-08T23:15:50Z"
+    "earliestEvaluation": "2026-03-29T04:39:50.814845356Z",
+    "latestEvaluation": "2026-03-29T04:45:34.078909984Z",
+    "earliestCommitDate": "2018-01-11T10:02:07Z",
+    "latestCommitDate": "2018-03-30T06:36:42Z"
   }
 }

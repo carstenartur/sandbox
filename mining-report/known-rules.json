@@ -946,6 +946,50 @@
       "sourceCommit": "49c3f7ebc6434f57db589e0963dffb13f530d4c2",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-518794-which-addre",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "new org.eclipse.jdt.core.dom.PackageBinding($packageBinding, this)\n\u003d\u003e $packageBinding instanceof org.eclipse.jdt.internal.compiler.lookup.ProblemPackageBinding ? new org.eclipse.jdt.core.dom.RecoveredPackageBinding($packageBinding, this) : new org.eclipse.jdt.core.dom.PackageBinding($packageBinding, this)\n;;",
+      "summary": "This commit fixes bug 518794, which addresses API problems with module bindings in the JDT DOM AST. It refactors the `DefaultBindingResolver.getPackageBinding` method to provide more precise handling for `ProblemPackageBinding` instances. Instead of unconditionally creating a `PackageBinding`, the code now explicitly checks if a `packageBinding` is a `ProblemPackageBinding` and, if so, constructs a `RecoveredPackageBinding` via a ternary operator. This is a direct replacement of a simple constructor invocation with a conditional ternary expression, introducing a new internal binding type for robust error handling. This change improves the correctness of JDT\u0027s internal binding resolution, especially in the context of Java 9+ module systems. The transformation is directly expressible as a TriggerPattern DSL rule. Note that a related change in this commit removes a `ProblemPackageBinding` check from an `if` condition, which is the reverse of a previously proposed DSL rule, indicating the earlier rule might have been overly broad in this specific internal context.",
+      "discoveredAt": "2026-03-29",
+      "discoveredInRun": 18219,
+      "sourceCommit": "6e48e7452f9d3fd547df120347e72a0e2b28b562",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-two-distinct-classcast",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "@id: jdt.internal.astmatcher.match-usesdirective-typefix\n@severity: error\n!(other instanceof org.eclipse.jdt.core.dom.UnionType) :: sourceVersionGE(9)\n\u003d\u003e !(other instanceof org.eclipse.jdt.core.dom.UsesDirective)\n;;\n\n@id: jdt.internal.requiresdirective.modulemodifier-cast-fix\n@severity: error\n((org.eclipse.jdt.core.dom.Modifier) $x).getKeyword().toFlagValue() :: sourceVersionGE(9)\n\u003d\u003e ((org.eclipse.jdt.core.dom.ModuleModifier) $x).getKeyword().toFlagValue()\n;;",
+      "summary": "This commit fixes two distinct `ClassCastException` bugs in JDT Core DOM\u0027s AST matching and module directive handling, as reported by SpotBugs. The first change in `ASTMatcher.java` corrects an `instanceof` check from `UnionType` to `UsesDirective` within the `match(UsesDirective, Object)` method. The second change in `RequiresDirective.java` corrects a cast from `Modifier` to `ModuleModifier` when computing modifier flags. Both are direct 1:1 expression replacements, addressing internal JDT API usage for Java 9+ module-related AST nodes. They are fully implementable as GREEN TriggerPattern DSL rules, enhancing the robustness and correctness of internal JDT logic. The rules are guarded by `sourceVersionGE(9)` to align with the introduction of Java modules.",
+      "discoveredAt": "2026-03-29",
+      "discoveredInRun": 18219,
+      "sourceCommit": "bd6454631407e0e709d9e9d18a3bf3e1aecf2242",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-support-for-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astparser.jls9.to.jls10\n@severity: info\norg.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS9) :: sourceVersionGE(10)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10)\n;;",
+      "summary": "This commit introduces support for Java 10 (\u0027var\u0027 local-variable type inference) in the Eclipse JDT Core DOM API. The most generalizable code transformation is updating calls to `ASTParser.newParser()` from using `AST.JLS9` to `AST.JLS10`. This ensures the internal `ImportRewrite` logic (and potentially other clients) uses the correct AST API level for Java 10 features. This is a direct 1:1 constant replacement, making it a GREEN transformation. It\u0027s an internal JDT API modernization, so the rule is guarded by `sourceVersionGE(10)`. Other changes, such as new `isVar()` methods, constant additions, and deprecation javadoc updates, are not directly expressible as DSL pattern transformations.",
+      "discoveredAt": "2026-03-29",
+      "discoveredInRun": 18219,
+      "sourceCommit": "5a00095afd30a8b1c1a4da0131c18ca10d0d2ad3",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-merge-commit-introduces-support-for",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astparser.jls9.to.jls10\n@severity: info\norg.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS9) :: sourceVersionGE(10)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10)\n;;",
+      "summary": "This merge commit introduces support for Java Language Specification 10 (JLS10) within the Eclipse JDT Core DOM API. The most generalizable pattern for a DSL rule is the mechanical replacement of `ASTParser.newParser(AST.JLS9)` with `ASTParser.newParser(AST.JLS10)`. This is a direct 1:1 expression replacement, reflecting an internal JDT API modernization. The rule is guarded by `sourceVersionGE(10)` as it targets projects compiling with Java 10 or higher where JLS10 features are available. Other changes in the commit, such as the addition of `isVar()` methods, internal `unsupportedBelow10()` guards, and structural updates to AST parsing logic, are new API introductions or internal architectural changes not suitable for pattern-based DSL rules. A change to `DefaultBindingResolver.java` (`packageBinding \u003d\u003d null` to `packageBinding \u003d\u003d null || packageBinding instanceof ProblemPackageBinding`) is a duplicate of an existing DSL rule.",
+      "discoveredAt": "2026-03-29",
+      "discoveredInRun": 18219,
+      "sourceCommit": "9546f62f3065238a1d1e23f5e6b627106cf310bb",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
