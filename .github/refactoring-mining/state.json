@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "6f556c76a69aeda176203bc132d4174f69e9ee9a",
-      "lastProcessedDate": "2026-03-29T04:45:34.079330393Z",
-      "totalProcessed": 8186,
+      "lastProcessedCommit": "017075321ccc7c722968d2edb6391c64c46bb8c4",
+      "lastProcessedDate": "2026-03-30T04:54:03.528115356Z",
+      "totalProcessed": 8518,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -282,15 +282,6 @@
           "diffLines": 502,
           "reason": "DIFF_TOO_LARGE",
           "deferredAt": "2026-03-01T04:25:19.942660189Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "867c2e5b22ec99c6d56015365d4fef3c3a7038e9",
-          "message": "Fix warning about deprecated AST10 level.\n\nChange-Id: I23b54277a5acabab580adff76e29f26432a2fd0e\nSigned-off-by: Jay Artha",
-          "diffLines": 14,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-03-03T04:20:16.993849973Z",
           "retryCount": 0,
           "maxRetries": 3
         },
@@ -809,11 +800,11 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 124,
+        "JDT Internal Refactoring": 128,
         "Unnecessary Annotation Removal": 1,
         "Collections": 1,
         "Java-Modernization": 4,
-        "JDT Internal Bug Fix": 41,
+        "JDT Internal Bug Fix": 43,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
@@ -821,7 +812,7 @@
         "Eclipse API Migration": 20,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 2,
-        "Performance": 5,
+        "Performance": 6,
         "Try-with-Resources": 1,
         "Logging Modernization": 1,
         "Internal JDT Refactoring": 2,
@@ -830,11 +821,11 @@
         "Type System Improvement": 1,
         "Code Style": 1,
         "JDT Internal Formatting/Rewrite": 1,
-        "JDT Internal Architecture": 5,
+        "JDT Internal Architecture": 7,
         "JDT Internal API Management": 1,
         "Error Handling Improvement": 1,
         "Java Modernization": 5,
-        "JDT Internal API Evolution": 9,
+        "JDT Internal API Evolution": 10,
         "JDT Internal Performance": 1,
         "Concurrency": 1,
         "Code Style / Annotation": 1
@@ -937,5 +928,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 18219
+  "globalTotalProcessed": 18551
 }
