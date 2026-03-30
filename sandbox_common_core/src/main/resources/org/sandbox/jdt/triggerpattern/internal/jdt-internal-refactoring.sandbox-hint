@@ -260,3 +260,21 @@ new org.eclipse.jdt.core.dom.PackageBinding($packageBinding, this)
 org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS9) :: sourceVersionGE(10)
 => org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10)
 ;;
+
+@id: jdt.internal.simplename.var-clone-jls10-compliance-fix
+@severity: info
+this.ast.apiLevel >= org.eclipse.jdt.core.dom.AST.JLS10_INTERNAL
+=> this.ast.apiLevel >= org.eclipse.jdt.core.dom.AST.JLS10_INTERNAL && Long.compare(this.ast.scanner.complianceLevel, 10) >= 0
+;;
+
+@id: jdt.internal.astparser.jls10.to.jls11
+@severity: info
+org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10) :: sourceVersionGE(11)
+=> org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS11)
+;;
+
+@id: jdt.internal.compiler.classfileconstants.jdk11.to.getcompliancelevel
+@severity: info
+org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK11
+=> org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.getComplianceLevelForJavaVersion(org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.MAJOR_VERSION_11)
+;;

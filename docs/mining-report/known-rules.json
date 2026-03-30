@@ -990,6 +990,61 @@
       "sourceCommit": "9546f62f3065238a1d1e23f5e6b627106cf310bb",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-addresses-bug-533210-fixing",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.simplename.var-clone-jls10-compliance-fix\n@severity: info\nthis.ast.apiLevel \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS10_INTERNAL\n\u003d\u003e this.ast.apiLevel \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS10_INTERNAL \u0026\u0026 Long.compare(this.ast.scanner.complianceLevel, 10) \u003e\u003d 0\n;;",
+      "summary": "This commit addresses Bug 533210, fixing syntax highlighting for the \u0027var\u0027 keyword in JDT when the project\u0027s compliance level is less than Java 10. The core pattern implementable as a DSL rule is the modification of a boolean expression within the `SimpleName.java` clone method. This change adds a check for `ast.scanner.complianceLevel` to ensure \u0027var\u0027 related properties are only set when the compliance level is Java 10 or higher. This is a direct 1:1 expression replacement that enhances the correctness of JDT\u0027s internal AST handling for Java 10 features, preventing incorrect keyword coloring. Other changes in the commit involve structural additions of conditional blocks, which are not directly expressible by the current DSL.",
+      "discoveredAt": "2026-03-30",
+      "discoveredInRun": 18551,
+      "sourceCommit": "17f843244d722f7543dc33e0f4ea19424b12c6b0",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-internal-jdt-api-usa",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astparser.jls10.to.jls11\n@severity: info\norg.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10) :: sourceVersionGE(11)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS11)\n;;",
+      "summary": "This commit updates internal JDT API usage by replacing `ASTParser.newParser(AST.JLS10)` with `ASTParser.newParser(AST.JLS11)`. This is a direct 1:1 constant replacement, reflecting the modernization of JDT\u0027s internal AST API to support Java 11. The transformation is fully expressible as a GREEN TriggerPattern DSL rule with a `sourceVersionGE(11)` guard, aligning with existing JLS version update rules in `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-03-30",
+      "discoveredInRun": 18551,
+      "sourceCommit": "867c2e5b22ec99c6d56015365d4fef3c3a7038e9",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-an-internal-eclip",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.compiler.classfileconstants.jdk11.to.getcompliancelevel\n@severity: info\norg.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK11\n\u003d\u003e org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.getComplianceLevelForJavaVersion(org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.MAJOR_VERSION_11)\n;;",
+      "summary": "This commit modernizes an internal Eclipse JDT Core DOM API by replacing the hardcoded `ClassFileConstants.JDK11` constant with a call to `ClassFileConstants.getComplianceLevelForJavaVersion(ClassFileConstants.MAJOR_VERSION_11)`. This standardizes the way JLS compliance levels are obtained internally for consistency and future version bumps. This is a direct 1:1 expression replacement, making it a GREEN transformation that can be fully automated with a TriggerPattern DSL rule. No specific `sourceVersionGE` guard is needed as this is an internal refactoring, not tied to a particular external Java language feature version beyond the baseline Java 8.",
+      "discoveredAt": "2026-03-30",
+      "discoveredInRun": 18551,
+      "sourceCommit": "16556df1333d28a75c12bcf4ecab2b391a2aa23c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-replaces-redundant-new-strin",
+      "category": "Performance",
+      "dslRule": "new java.lang.String($str)\n\u003d\u003e $str\n;;",
+      "summary": "This commit replaces redundant `new String(String)` constructor calls with the original `String` reference. The commit message highlights that in Java 8+ this constructor often reuses internal character arrays, making the explicit new String object unnecessary and a potential performance/memory waste. This is a straightforward 1:1 expression replacement that improves code efficiency. The rule for `new java.lang.String($str)` -\u003e `$str` is already present in `performance.sandbox-hint`, covering this transformation.",
+      "discoveredAt": "2026-03-30",
+      "discoveredInRun": 18551,
+      "sourceCommit": "fdff0425910a362eb56ee6287e38ac65a2bbe647",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-support-for-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astparser.jls10.to.jls11\n@severity: info\norg.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10) :: sourceVersionGE(11)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS11)\n;;",
+      "summary": "This commit introduces support for Java Language Specification 11 (JLS11) within the Eclipse JDT Core DOM API. The primary generalizable transformation is the update of `ASTParser.newParser(AST.JLS10)` to `ASTParser.newParser(AST.JLS11)`. This ensures internal JDT components correctly use the latest available AST API level for parsing. This is a direct, 1:1 constant replacement within a method call and is fully implementable as a GREEN TriggerPattern DSL rule. The rule is guarded by `sourceVersionGE(11)` as it pertains to Java 11 features. Other changes in the commit, such as new method definitions (`unsupportedBelow11()`) or structural updates to switch statements, are not suitable for pattern-based DSL rules.",
+      "discoveredAt": "2026-03-30",
+      "discoveredInRun": 18551,
+      "sourceCommit": "3ccd57c481cc77b3726464874886fdf9669c7a5c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-api-modernization.sandbox-hint"
     }
   ]
 }
