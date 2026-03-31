@@ -1045,6 +1045,94 @@
       "sourceCommit": "3ccd57c481cc77b3726464874886fdf9669c7a5c",
       "status": "DISCOVERED",
       "hintFile": "jdt-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-dom-ast-support-f",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.switchcase.getexpression2.to.getexpressions*/\n/*!description: Updates internal JDT DOM AST accessors for SwitchCase, renaming getExpression2() to getExpressions() for Java 12+ Switch Expressions support.*/\n/*!severity: info*/\n/*!minJavaVersion: 12*/\norg.eclipse.jdt.core.dom.SwitchCase.$node.getExpression2() :: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.core.dom.SwitchCase.$node.getExpressions()\n;;",
+      "summary": "This commit introduces DOM AST support for Switch Expressions, particularly updating how expressions are stored and accessed in `SwitchCase` nodes for Java 12+. The most direct and generalizable pattern for a DSL rule is the mechanical replacement of method calls to `SwitchCase.getExpression2()` with `SwitchCase.getExpressions()`. This is a direct 1:1 method call replacement, guarded by `sourceVersionGE(12)` to align with the introduction of Switch Expressions. Other changes, such as modifying complex conditional logic in `ASTConverter` for populating the `SwitchCase` based on JLS level, or internal field renamings, are not directly expressible as simple pattern-based DSL rules, but the core API usage update is. This transformation is GREEN as it can be fully automated by the DSL.",
+      "discoveredAt": "2026-03-31",
+      "discoveredInRun": 18767,
+      "sourceCommit": "f7b7264efd96a9b892819e046d340c8667b196d2",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-adds-a-deprecated-tag-to-swi",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY\n;;",
+      "summary": "This commit adds a `@deprecated` tag to `SwitchCase.EXPRESSION_PROPERTY`, indicating it is replaced by `EXPRESSION_2_PROPERTY` for JLS 12 (Switch Expressions). While the commit itself only adds the deprecation Javadoc, the implied transformation is to migrate usages from the deprecated property to its modern replacement. This is a direct 1:1 constant replacement, fully implementable as a GREEN TriggerPattern DSL rule. The rule is guarded by `sourceVersionGE(12)` as `EXPRESSION_2_PROPERTY` is relevant for Java 12 and later, aligning with JDT internal API modernization for new Java language features.",
+      "discoveredAt": "2026-03-31",
+      "discoveredInRun": 18767,
+      "sourceCommit": "d16ad4fd28f95cfb3e1a581cc94a8a4ab680b451",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-bug-542558-refactors-the-int",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.switchcase.setisexpr.to.setswitchlabeledrule\n@severity: info\norg.eclipse.jdt.core.dom.SwitchCase.$switchCase.setIsExpr($expression)\n:: sourceVersionGE(12)\n\u003d\u003e $switchCase.setSwitchLabeledRule($expression)\n;;\n\n@id: jdt.internal.switchcase.isexpr.to.isswitchlabeledrule\n@severity: info\norg.eclipse.jdt.core.dom.SwitchCase.$node.isExpr()\n:: sourceVersionGE(12)\n\u003d\u003e $node.isSwitchLabeledRule()\n;;\n\n@id: jdt.internal.switchcase.expression2property.to.expressions2property\n@severity: info\norg.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY\n:: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.core.dom.SwitchCase.EXPRESSIONS2_PROPERTY\n;;\n\n@id: jdt.internal.switchcase.expressions.nodelist.constructor.arg.update\n@severity: info\nnew org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY)\n:: sourceVersionGE(12)\n\u003d\u003e new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.SwitchCase.EXPRESSIONS2_PROPERTY)\n;;\n\n@id: jdt.internal.switchcase.property.comparison.update\n@severity: info\n$property \u003d\u003d org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY\n:: sourceVersionGE(12)\n\u003d\u003e $property \u003d\u003d org.eclipse.jdt.core.dom.SwitchCase.EXPRESSIONS2_PROPERTY\n;;",
+      "summary": "This commit (Bug 542558) refactors the internal Eclipse JDT DOM AST API to support Java 12 Switch Expressions. It renames the \u0027isExpr\u0027 boolean property\u0027s setter method `setIsExpr()` to `setSwitchLabeledRule()` and its getter method `isExpr()` to `isSwitchLabeledRule()`. Additionally, it renames the associated static property descriptor `EXPRESSION_2_PROPERTY` to `EXPRESSIONS2_PROPERTY` and updates its usages in `NodeList` constructors and equality checks. These are direct 1:1 replacements of method calls, static field accesses, and constructor arguments, making them fully expressible as multiple GREEN TriggerPattern DSL rules. The rules are guarded by `sourceVersionGE(12)` as they pertain to Java 12 language features within JDT\u0027s internal AST logic. The DSL does not support renaming field or method declarations directly, but it effectively handles all call site and reference updates.",
+      "discoveredAt": "2026-03-31",
+      "discoveredInRun": 18767,
+      "sourceCommit": "c4361ca3580b61ee11849f79c1b838c245b6cad8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-jdt-core",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.switchcase.setexpression.to.internalsetexpression*/\n/*!description: Replaces direct calls to deprecated SwitchCase.setExpression() with the internal helper to manage deprecation warnings.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.SwitchCase.$switchCase.setExpression($exp) :: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTConverter.internalSetExpression($switchCase, $exp)\n;;\n\n/*!id: jdt.internal.astmatcher.deprecatedswitchexpression.to.helper*/\n/*!description: Replaces direct usage of SwitchCase.getExpression() within ASTMatcher\u0027s subtree match with an internal helper method to manage deprecation warnings.*/\n/*!severity: info*/\nsafeSubtreeMatch(org.eclipse.jdt.core.dom.SwitchCase.$node.getExpression(), org.eclipse.jdt.core.dom.SwitchCase.$o.getExpression()) :: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTMatcher.compareDeprecatedSwitchExpression($node, $o)\n;;\n\n/*!id: jdt.internal.naiveastflattener.switchexpression.to.helper*/\n/*!description: Replaces direct usage of SwitchCase.getExpression() with an internal helper method in NaiveASTFlattener to manage deprecation warnings.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.SwitchCase.$node.getExpression().accept($this) :: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.internal.core.dom.NaiveASTFlattener.getSwitchExpression($node).accept($this)\n;;\n\n/*!id: jdt.internal.astrewriteanalyzer.switchexpression_property.to.internal*/\n/*!description: Replaces direct reference to deprecated SwitchCase.EXPRESSION_PROPERTY with the internal static field to manage deprecation warnings.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.INTERNAL_SWITCH_EXPRESSION_PROPERTY\n;;\n\n/*!id: jdt.internal.astrewriteflattener.switchexpression_property.to.internal*/\n/*!description: Replaces direct reference to deprecated SwitchCase.EXPRESSION_PROPERTY with the internal static field in ASTRewriteFlattener to manage deprecation warnings.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener.INTERNAL_SWITCH_EXPRESSION_PROPERTY\n;;",
+      "summary": "This commit modernizes internal JDT Core DOM API usage related to Java 12 Switch Expressions. It replaces direct calls to `SwitchCase.setExpression()`, `SwitchCase.getExpression()`, and references to `SwitchCase.EXPRESSION_PROPERTY` with newly introduced internal helper methods (`ASTConverter.internalSetExpression`, `ASTMatcher.compareDeprecatedSwitchExpression`, `NaiveASTFlattener.getSwitchExpression`) or internal static fields (`ASTRewriteAnalyzer.INTERNAL_SWITCH_EXPRESSION_PROPERTY`, `ASTRewriteFlattener.INTERNAL_SWITCH_EXPRESSION_PROPERTY`). This pattern effectively hides deprecation warnings for internal JDT usage of older API elements. All transformations are direct 1:1 expression replacements and are fully implementable as GREEN TriggerPattern DSL rules, guarded by `sourceVersionGE(12)` due to the context of Switch Expressions.",
+      "discoveredAt": "2026-03-31",
+      "discoveredInRun": 18767,
+      "sourceCommit": "2dfafebe5b2de626769e9d808a8e65372af7e071",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-internal-eclipse-jdt",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.switchcase.getexpressions-to-expressions*/\n/*!description: Updates internal JDT DOM API calls from SwitchCase.getExpressions() to SwitchCase.expressions() for Java 12 Switch Expressions support.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.SwitchCase.$switchCase.getExpressions() :: sourceVersionGE(12)\n\u003d\u003e $switchCase.expressions()\n;;",
+      "summary": "This commit updates internal Eclipse JDT Core DOM API usage for Java 12 Switch Expressions. It consistently renames the method `SwitchCase.getExpressions()` to `SwitchCase.expressions()` across multiple internal JDT classes (ASTConverter, ASTMatcher, SwitchCase, NaiveASTFlattener). This is a direct 1:1 method call replacement, ensuring internal consistency and proper handling of Java 12 features, and is fully expressible as a GREEN TriggerPattern DSL rule with a Java 12 source version guard.",
+      "discoveredAt": "2026-03-31",
+      "discoveredInRun": 18767,
+      "sourceCommit": "4e22de6b5c96cb008d4a18fa7ee6a605ce7e9a06",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-support-for-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astmatcher.breakstatement.implicit\n@severity: info\nreturn ( $node.getAST().apiLevel \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL \u0026\u0026 $node.getExpression() !\u003d null ? safeSubtreeMatch($node.getExpression(), $o.getExpression()) : safeSubtreeMatch($node.getLabel(), $o.getLabel()));\n:: inClass(\"org.eclipse.jdt.core.dom.ASTMatcher\") \u0026\u0026 inMethod(\"match\") \u0026\u0026 sourceVersionGE(12)\n\u003d\u003e return ( $node.getAST().apiLevel \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL \u0026\u0026 $node.getExpression() !\u003d null ? safeSubtreeMatch($node.getExpression(), $o.getExpression()) \u0026\u0026 $node.isImplicit() \u003d\u003d $o.isImplicit() : safeSubtreeMatch($node.getLabel(), $o.getLabel()));\n;;",
+      "summary": "This commit introduces support for Java 12 features related to `break` statements (implicit breaks, breaks with expressions) within the Eclipse JDT Core DOM API. While many changes involve structural code additions (new fields/methods, `if` blocks) or complex control flow modifications in `ASTConverter`, `NaiveASTFlattener`, and `ASTRewriteAnalyzer` (which are RED for the DSL), one specific pattern in `ASTMatcher.java` is a direct 1:1 expression replacement. It extends an existing boolean comparison within a `return` statement\u0027s ternary expression to include a check for the `isImplicit()` property of the `BreakStatement` nodes. This specific transformation is fully implementable as a GREEN TriggerPattern DSL rule with appropriate `inClass()`, `inMethod()`, and `sourceVersionGE(12)` guards, targeting `JLS12_INTERNAL` contexts. The rule ensures that `ASTMatcher` correctly compares these new aspects of `BreakStatement` nodes.",
+      "discoveredAt": "2026-03-31",
+      "discoveredInRun": 18767,
+      "sourceCommit": "43541b77de66d1f23001f9a275cadab89c71232a",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-an-internal-bug-in-jdt",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$expr instanceof org.eclipse.jdt.internal.compiler.ast.Expression :: sourceVersionGE(12)\n\u003d\u003e $expr instanceof org.eclipse.jdt.internal.compiler.ast.Expression \u0026\u0026 ((org.eclipse.jdt.internal.compiler.ast.Expression) $expr).isTrulyExpression()\n;;",
+      "summary": "This commit fixes an internal bug in JDT\u0027s ASTConverter and DefaultBindingResolver for Java 12 by modifying conditional logic. It extends `instanceof Expression` checks with `\u0026\u0026 ((Expression) body).isTrulyExpression()` to accurately identify true expressions vs. expressions used as statements. This is a direct 1:1 expression replacement that enhances the correctness of JDT\u0027s internal AST handling for Java 12 features. The transformation is fully implementable as a GREEN TriggerPattern DSL rule with a `sourceVersionGE(12)` guard, targeting the internal boolean expression.",
+      "discoveredAt": "2026-03-31",
+      "discoveredInRun": 18767,
+      "sourceCommit": "5040f6ff9b6ab12c8739a42311afe091b0a4f5e2",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-addresses-bug-542558-by-upda",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astrewriteanalyzer.switchcase.property.update.1\n@severity: info\norg.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.INTERNAL_SWITCH_EXPRESSION_PROPERTY\n;;\n\n@id: jdt.internal.astrewriteanalyzer.switchcase.property.update.2\n@severity: info\norg.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)\n\u003d\u003e org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener.INTERNAL_SWITCH_EXPRESSION_PROPERTY\n;;",
+      "summary": "This commit addresses Bug 542558 by updating internal JDT `ASTRewriteAnalyzer` and `ASTRewriteFlattener` classes. It replaces references to `org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY` with `INTERNAL_SWITCH_EXPRESSION_PROPERTY` (or `org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener.INTERNAL_SWITCH_EXPRESSION_PROPERTY` in the second file). This is an internal JDT API modernization related to Java 12\u0027s switch expressions, improving internal consistency. The replacement of a constant with another constant is a direct 1:1 change, fully expressible as two separate GREEN TriggerPattern DSL rules, guarded by `sourceVersionGE(12)`. A significant portion of the `ASTRewriteAnalyzer` was commented out, which is a structural change not expressible by the DSL.",
+      "discoveredAt": "2026-03-31",
+      "discoveredInRun": 18767,
+      "sourceCommit": "3cf29182299fae1c4e72594077187c5cc7ea5552",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
