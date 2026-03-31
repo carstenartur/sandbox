@@ -278,3 +278,115 @@ org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10)
 org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK11
 => org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.getComplianceLevelForJavaVersion(org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.MAJOR_VERSION_11)
 ;;
+
+/*!id: jdt.internal.switchcase.getexpression2.to.getexpressions*/
+/*!description: Updates internal JDT DOM AST accessors for SwitchCase, renaming getExpression2() to getExpressions() for Java 12+ Switch Expressions support.*/
+/*!severity: info*/
+/*!minJavaVersion: 12*/
+org.eclipse.jdt.core.dom.SwitchCase.$node.getExpression2() :: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.SwitchCase.$node.getExpressions()
+;;
+
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY
+;;
+
+@id: jdt.internal.switchcase.setisexpr.to.setswitchlabeledrule
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.$switchCase.setIsExpr($expression)
+:: sourceVersionGE(12)
+=> $switchCase.setSwitchLabeledRule($expression)
+;;
+
+@id: jdt.internal.switchcase.isexpr.to.isswitchlabeledrule
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.$node.isExpr()
+:: sourceVersionGE(12)
+=> $node.isSwitchLabeledRule()
+;;
+
+@id: jdt.internal.switchcase.expression2property.to.expressions2property
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY
+:: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.SwitchCase.EXPRESSIONS2_PROPERTY
+;;
+
+@id: jdt.internal.switchcase.expressions.nodelist.constructor.arg.update
+@severity: info
+new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY)
+:: sourceVersionGE(12)
+=> new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.SwitchCase.EXPRESSIONS2_PROPERTY)
+;;
+
+@id: jdt.internal.switchcase.property.comparison.update
+@severity: info
+$property == org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY
+:: sourceVersionGE(12)
+=> $property == org.eclipse.jdt.core.dom.SwitchCase.EXPRESSIONS2_PROPERTY
+;;
+
+/*!id: jdt.internal.switchcase.setexpression.to.internalsetexpression*/
+/*!description: Replaces direct calls to deprecated SwitchCase.setExpression() with the internal helper to manage deprecation warnings.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.SwitchCase.$switchCase.setExpression($exp) :: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.ASTConverter.internalSetExpression($switchCase, $exp)
+;;
+
+/*!id: jdt.internal.astmatcher.deprecatedswitchexpression.to.helper*/
+/*!description: Replaces direct usage of SwitchCase.getExpression() within ASTMatcher's subtree match with an internal helper method to manage deprecation warnings.*/
+/*!severity: info*/
+safeSubtreeMatch(org.eclipse.jdt.core.dom.SwitchCase.$node.getExpression(), org.eclipse.jdt.core.dom.SwitchCase.$o.getExpression()) :: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.ASTMatcher.compareDeprecatedSwitchExpression($node, $o)
+;;
+
+/*!id: jdt.internal.naiveastflattener.switchexpression.to.helper*/
+/*!description: Replaces direct usage of SwitchCase.getExpression() with an internal helper method in NaiveASTFlattener to manage deprecation warnings.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.SwitchCase.$node.getExpression().accept($this) :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.NaiveASTFlattener.getSwitchExpression($node).accept($this)
+;;
+
+/*!id: jdt.internal.astrewriteanalyzer.switchexpression_property.to.internal*/
+/*!description: Replaces direct reference to deprecated SwitchCase.EXPRESSION_PROPERTY with the internal static field to manage deprecation warnings.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.INTERNAL_SWITCH_EXPRESSION_PROPERTY
+;;
+
+/*!id: jdt.internal.astrewriteflattener.switchexpression_property.to.internal*/
+/*!description: Replaces direct reference to deprecated SwitchCase.EXPRESSION_PROPERTY with the internal static field in ASTRewriteFlattener to manage deprecation warnings.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener.INTERNAL_SWITCH_EXPRESSION_PROPERTY
+;;
+
+/*!id: jdt.internal.switchcase.getexpressions-to-expressions*/
+/*!description: Updates internal JDT DOM API calls from SwitchCase.getExpressions() to SwitchCase.expressions() for Java 12 Switch Expressions support.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.SwitchCase.$switchCase.getExpressions() :: sourceVersionGE(12)
+=> $switchCase.expressions()
+;;
+
+@id: jdt.internal.astmatcher.breakstatement.implicit
+@severity: info
+return ( $node.getAST().apiLevel >= org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL && $node.getExpression() != null ? safeSubtreeMatch($node.getExpression(), $o.getExpression()) : safeSubtreeMatch($node.getLabel(), $o.getLabel()));
+:: inClass("org.eclipse.jdt.core.dom.ASTMatcher") && inMethod("match") && sourceVersionGE(12)
+=> return ( $node.getAST().apiLevel >= org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL && $node.getExpression() != null ? safeSubtreeMatch($node.getExpression(), $o.getExpression()) && $node.isImplicit() == $o.isImplicit() : safeSubtreeMatch($node.getLabel(), $o.getLabel()));
+;;
+
+$expr instanceof org.eclipse.jdt.internal.compiler.ast.Expression :: sourceVersionGE(12)
+=> $expr instanceof org.eclipse.jdt.internal.compiler.ast.Expression && ((org.eclipse.jdt.internal.compiler.ast.Expression) $expr).isTrulyExpression()
+;;
+
+@id: jdt.internal.astrewriteanalyzer.switchcase.property.update.1
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.INTERNAL_SWITCH_EXPRESSION_PROPERTY
+;;
+
+@id: jdt.internal.astrewriteanalyzer.switchcase.property.update.2
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener.INTERNAL_SWITCH_EXPRESSION_PROPERTY
+;;
