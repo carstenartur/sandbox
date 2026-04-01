@@ -390,3 +390,75 @@ org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
 org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
 => org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener.INTERNAL_SWITCH_EXPRESSION_PROPERTY
 ;;
+
+/*!id: jdt.internal.naiveastflattener.switchrule.arrow-space*/
+/*!description: Adds a space before the '->' in switch labeled rules within NaiveASTFlattener for JLS12+ to align with formatter settings.*/
+@severity: info
+$node.isSwitchLabeledRule() ? "->" : ":" :: sourceVersionGE(12)
+=> $node.isSwitchLabeledRule() ? " ->" : ":"
+;;
+
+/*!id: jdt.internal.astrewriteflattener.switchrule.arrow-space*/
+/*!description: Adds a space before the '->' in switch labeled rules within ASTRewriteFlattener for JLS12+ to align with formatter settings.*/
+@severity: info
+getBooleanAttribute($node, org.eclipse.jdt.core.dom.SwitchCase.SWITCH_LABELED_RULE_PROPERTY) ? "->" : ":" :: sourceVersionGE(12)
+=> getBooleanAttribute($node, org.eclipse.jdt.core.dom.SwitchCase.SWITCH_LABELED_RULE_PROPERTY) ? " ->" : ":"
+;;
+
+/*!id: jdt.internal.astrewriteanalyzer.switchlistrewriter.to.labeledrule*/
+/*!description: Replaces the instantiation of SwitchListRewriter with SwitchListLabeledRuleRewriter for JLS12+ switch expression formatting within ASTRewriteAnalyzer.*/
+@severity: info
+new org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.SwitchListRewriter($insertIndent) :: sourceVersionGE(12)
+=> new org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.SwitchListLabeledRuleRewriter($insertIndent)
+;;
+
+@id: jdt.internal.breakstatement.clone.label-to-expression
+@severity: info
+(org.eclipse.jdt.core.dom.Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree($target, $this.getLabel()) :: sourceVersionGE(12)
+=> (org.eclipse.jdt.core.dom.Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree($target, $this.getExpression())
+;;
+
+/*!id: jdt.internal.ast.newast.add.previewflag.default*/
+/*!description: Modernizes AST.newAST(int) calls to include the new 'previewEnabled' flag, defaulting to false as per the API deprecation and replacement. This rule handles the direct deprecation of AST.newAST(int) by explicitly calling AST.newAST(int, boolean).*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.AST.newAST($level)
+=> org.eclipse.jdt.core.dom.AST.newAST($level, false)
+;;
+
+/*!id: jdt.internal.ast.jls13.to.jls12*/
+/*!description: Updates internal JDT AST API references from JLS13 to JLS12, correcting the recommended AST level for certain operations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.AST.JLS13
+=> org.eclipse.jdt.core.dom.AST.JLS12
+;;
+
+/*!id: jdt.internal.ast.add-previewenabled-jls12*/
+/*!description: Updates internal JDT AST traversal logic for Java 12+ features by adding a check for AST.isPreviewEnabled(). Targets AST.JLS12 API level checks.*/
+/*!severity: info*/
+$node.getAST().apiLevel() >= org.eclipse.jdt.core.dom.AST.JLS12
+:: sourceVersionGE(12) && (instanceof($node, "org.eclipse.jdt.core.dom.BreakStatement") || instanceof($node, "org.eclipse.jdt.core.dom.SwitchCase"))
+=> $node.getAST().apiLevel() >= org.eclipse.jdt.core.dom.AST.JLS12 && $node.getAST().isPreviewEnabled()
+;;
+
+/*!id: jdt.internal.ast.add-previewenabled-jls12-internal*/
+/*!description: Updates internal JDT AST traversal logic for Java 12+ features by adding a check for AST.isPreviewEnabled(). Targets AST.JLS12_INTERNAL API level checks.*/
+/*!severity: info*/
+$node.getAST().apiLevel() >= org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL
+:: sourceVersionGE(12) && (instanceof($node, "org.eclipse.jdt.core.dom.BreakStatement") || instanceof($node, "org.eclipse.jdt.core.dom.SwitchCase"))
+=> $node.getAST().apiLevel() >= org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL && $node.getAST().isPreviewEnabled()
+;;
+
+/*!id: jdt.internal.ast.remove-ispreviewenabled-check*/
+/*!description: Removes explicit checks for AST.isPreviewEnabled() from internal JDT Core DOM conditional logic. This effectively makes handling of Java 12+ features, previously guarded by the preview flag, unconditional, reflecting a revert of previous behavior.*/
+/*!severity: info*/
+/*!minJavaVersion: 12*/
+/*!tags: jdt, internal, refactoring, java12, preview*/
+org.eclipse.jdt.core.dom.AST.$astVar.isPreviewEnabled()
+=> true
+;;
+
+@id: jdt.internal.astconverter.yieldstatement.previewcheck
+@severity: info
+this.ast.apiLevel != org.eclipse.jdt.core.dom.AST.JLS13_INTERNAL
+=> !this.ast.isPreviewEnabled()
+;;
