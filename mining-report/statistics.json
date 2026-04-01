@@ -1,43 +1,38 @@
 {
-  "totalProcessed": 26,
-  "relevant": 16,
-  "irrelevant": 10,
+  "totalProcessed": 19,
+  "relevant": 14,
+  "irrelevant": 5,
   "duplicates": 0,
-  "green": 8,
+  "green": 7,
   "yellow": 0,
-  "red": 9,
+  "red": 7,
   "irrelevantReasons": {
-    "This commit adds new API usage guards (`unsupportedBelow12()`) and comments to method bodies. It is a structural modification to the internal API, not a transformation of existing code that can be generalized into a pattern-based DSL rule.": 1,
-    "This commit consists solely of Javadoc and comment updates to the Eclipse JDT Core DOM API, specifically around `SwitchCase` to reflect Java 12 Switch Expressions features. There are no actual code changes that can be generalized into a transformation rule.": 1,
-    "This commit is a Javadoc comment fix, not a functional code transformation. The TriggerPattern DSL is designed for transforming Java code, not for correcting documentation syntax.": 1,
-    "The commit only removes a blank line, which is a whitespace change and not a semantic code transformation pattern that can be generalized into a DSL rule.": 1,
-    "This commit introduces new AST properties and internal methods (`SWITCH_LABELED_RULE_PROPERTY`, `internalGetSetBooleanProperty`) to the `SwitchCase` AST node to support Java 12 Switch Expressions within the JDT DOM API. It\u0027s an internal API evolution and structural change to the AST model itself (adding fields and methods, modifying static initializers, and inserting internal `preValueChange`/`postValueChange` calls), not a transformation pattern for user code. The DSL cannot express adding new fields, methods, or modifying static initializers/method bodies at this granular, structural level.": 1,
-    "This commit modifies internal JDT AST rewriting and flattening logic (`ASTRewriteAnalyzer.java`, `ASTRewriteFlattener.java`) to correctly handle the syntax of Java 12 Switch Expressions (specifically the `-\u003e` vs `:` distinction). The changes involve complex conditional logic, internal `TextEditGroup` operations for removing/inserting text based on token types, scanner lookups, and restructuring `StringBuilder` `append` calls within internal visitor methods. These operations are deeply integrated into JDT\u0027s AST processing and are beyond the capabilities of the current TriggerPattern DSL, which focuses on expression-level pattern matching and replacement, not low-level text manipulation or complex control flow within rewrite engines.": 1,
-    "This commit removes multi-line JCP disclaimers, which are comments, from various JDT Core DOM files. The TriggerPattern DSL is designed for transforming Java code based on AST patterns, not for modifying or removing arbitrary text within comments or Javadoc. Therefore, this commit does not represent a code transformation pattern suitable for the DSL.": 1,
-    "This commit continues the work of removing JCP disclaimers (comments) and also modifies \u0027@since\u0027 tags in Javadoc comments by removing \u0027BETA_JAVA_12\u0027. The TriggerPattern DSL does not target Javadoc content for pattern matching and transformation. Its focus is on Java code constructs represented by the AST. Therefore, this is not a suitable pattern for the DSL.": 1,
-    "This commit updates version numbers within Javadoc comments, specifically changing \u0027@since 3.17\u0027 to \u0027@since 3.18\u0027. As with the previous commits, the TriggerPattern DSL does not operate on Javadoc content for transformation purposes, only on executable Java code constructs in the AST. Therefore, this is not a relevant change for DSL mining.": 1,
-    "The commit addresses Javadoc errors by removing redundant \u0027\u003cp\u003e\u0027 tags. This is a documentation formatting change, not a code transformation that alters Java syntax, semantics, or API usage. The TriggerPattern DSL is designed for refactoring Java code, not for modifying Javadoc comment structure.": 1
+    "This commit introduces new constant declarations for Javadoc tags. The TriggerPattern DSL is designed for code transformations (pattern matching and replacement), not for generating new API definitions or adding new constant declarations to existing classes. Therefore, it does not represent a reusable code transformation pattern that the DSL can automate.": 1,
+    "The commit only changes Javadoc comments (`@since` tag). It does not involve any functional code transformation, API usage change, or structural modification that could be generalized into a TriggerPattern DSL rule.": 1,
+    "The commit exclusively modifies Javadoc comments to update supported JDK and JLS versions. This is not a code transformation pattern suitable for the TriggerPattern DSL.": 1,
+    "The commit only removes empty \u003cp\u003e tags from Javadoc comments. The TriggerPattern DSL is designed for transforming Java code constructs (expressions, statements, annotations), not Javadoc content or other non-code elements.": 1,
+    "Documentation/Javadoc formatting change, not a code transformation that alters runtime behavior or structure of executable code.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 26,
-      "relevant": 16,
-      "green": 8,
+      "totalProcessed": 19,
+      "relevant": 14,
+      "green": 7,
       "yellow": 0,
-      "red": 9
+      "red": 7
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-03-31",
-      "processed": 26,
-      "relevant": 16
+      "date": "2026-04-01",
+      "processed": 19,
+      "relevant": 14
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-03-31T04:37:59.700Z",
-    "completedAt": "2026-03-31T04:47:48.621530401Z",
-    "durationSeconds": 588,
+    "startedAt": "2026-04-01T04:48:27.686Z",
+    "completedAt": "2026-04-01T04:58:23.443265848Z",
+    "durationSeconds": 595,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -47,9 +42,9 @@
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-03-31T04:39:23.333078491Z",
-    "latestEvaluation": "2026-03-31T04:47:48.322821196Z",
-    "earliestCommitDate": "2018-12-04T22:32:52Z",
-    "latestCommitDate": "2019-03-27T21:10:19Z"
+    "earliestEvaluation": "2026-04-01T04:49:45.847117738Z",
+    "latestEvaluation": "2026-04-01T04:58:22.905750285Z",
+    "earliestCommitDate": "2019-04-17T19:41:59Z",
+    "latestCommitDate": "2019-11-07T07:53:19Z"
   }
 }

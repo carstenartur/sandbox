@@ -1133,6 +1133,83 @@
       "sourceCommit": "3cf29182299fae1c4e72594077187c5cc7ea5552",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-addresses-bug-546146-by-upda",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.naiveastflattener.switchrule.arrow-space*/\n/*!description: Adds a space before the \u0027-\u003e\u0027 in switch labeled rules within NaiveASTFlattener for JLS12+ to align with formatter settings.*/\n@severity: info\n$node.isSwitchLabeledRule() ? \"-\u003e\" : \":\" :: sourceVersionGE(12)\n\u003d\u003e $node.isSwitchLabeledRule() ? \" -\u003e\" : \":\"\n;;\n\n/*!id: jdt.internal.astrewriteflattener.switchrule.arrow-space*/\n/*!description: Adds a space before the \u0027-\u003e\u0027 in switch labeled rules within ASTRewriteFlattener for JLS12+ to align with formatter settings.*/\n@severity: info\ngetBooleanAttribute($node, org.eclipse.jdt.core.dom.SwitchCase.SWITCH_LABELED_RULE_PROPERTY) ? \"-\u003e\" : \":\" :: sourceVersionGE(12)\n\u003d\u003e getBooleanAttribute($node, org.eclipse.jdt.core.dom.SwitchCase.SWITCH_LABELED_RULE_PROPERTY) ? \" -\u003e\" : \":\"\n;;\n\n/*!id: jdt.internal.astrewriteanalyzer.switchlistrewriter.to.labeledrule*/\n/*!description: Replaces the instantiation of SwitchListRewriter with SwitchListLabeledRuleRewriter for JLS12+ switch expression formatting within ASTRewriteAnalyzer.*/\n@severity: info\nnew org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.SwitchListRewriter($insertIndent) :: sourceVersionGE(12)\n\u003d\u003e new org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.SwitchListLabeledRuleRewriter($insertIndent)\n;;",
+      "summary": "This commit addresses Bug 546146 by updating JDT\u0027s internal AST rewriting and flattening components to respect formatter settings for Java 12 Switch Expressions/Rules. It introduces a space before the `-\u003e` token in switch labeled rules and replaces the `SwitchListRewriter` with a new `SwitchListLabeledRuleRewriter` class for improved formatting control. Three distinct patterns are identified as directly implementable GREEN DSL rules: two for replacing the string literal `\"-\u003e\"` with `\" -\u003e\"` within ternary expressions in `NaiveASTFlattener` and `ASTRewriteFlattener`, and one for replacing the `SwitchListRewriter` constructor with `SwitchListLabeledRuleRewriter` in `ASTRewriteAnalyzer`. All rules are guarded by `sourceVersionGE(12)` as they pertain to JLS12 features. Other changes, such as visibility modifications, the introduction of a new inner class, and complex conditional `if-else` blocks for instantiation, are structural and beyond the current DSL\u0027s capabilities (RED parts of the commit).",
+      "discoveredAt": "2026-04-01",
+      "discoveredInRun": 18983,
+      "sourceCommit": "370706729e5939ce2b98d8283385374cd4917cfd",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-includes-a-fix-for-java-12-r",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.breakstatement.clone.label-to-expression\n@severity: info\n(org.eclipse.jdt.core.dom.Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree($target, $this.getLabel()) :: sourceVersionGE(12)\n\u003d\u003e (org.eclipse.jdt.core.dom.Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree($target, $this.getExpression())\n;;",
+      "summary": "This commit includes a fix for Java 12 related to `BreakStatement` cloning. Specifically, in `BreakStatement.java`, the `clone0` method was incorrectly copying the `label` expression instead of the `expression` associated with the break statement when the API level supports JLS12+. The transformation replaces `getLabel()` with `getExpression()` as an argument to `ASTNode.copySubtree()`. This is a direct 1:1 expression replacement within an internal JDT method, guarded by `sourceVersionGE(12)`, making it a strong candidate for a GREEN TriggerPattern DSL rule. The Javadoc change in `AST.java` is not a code transformation.",
+      "discoveredAt": "2026-04-01",
+      "discoveredInRun": 18983,
+      "sourceCommit": "f2af09d20abaf8b41c46f76f71d194c1800d8fca",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-support-for-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.ast.newast.add.previewflag.default*/\n/*!description: Modernizes AST.newAST(int) calls to include the new \u0027previewEnabled\u0027 flag, defaulting to false as per the API deprecation and replacement. This rule handles the direct deprecation of AST.newAST(int) by explicitly calling AST.newAST(int, boolean).*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.AST.newAST($level)\n\u003d\u003e org.eclipse.jdt.core.dom.AST.newAST($level, false)\n;;",
+      "summary": "This commit introduces support for Java preview features in the JDT Core DOM AST API, primarily by adding a `boolean previewEnabled` parameter to `AST` constructors and `AST.newAST()` factory methods. The generalizable pattern is the replacement of the deprecated `AST.newAST(int)` method with the new `AST.newAST(int, boolean)` by implicitly passing `false` for the `previewEnabled` flag. This ensures clients use the updated API. While some internal usages derive the `previewEnabled` flag from compiler options (requiring more complex, context-specific rules), the direct replacement for the deprecated public API is a straightforward and automatable transformation. The `sourceVersion` is set to 13 as the new API is specifically for JLS13 Beta.",
+      "discoveredAt": "2026-04-01",
+      "discoveredInRun": 18983,
+      "sourceCommit": "1d58555841ff864b4a406f5a0c2f38db486aa6a8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-is-a-follow-up-to-the-introd",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.ast.jls13.to.jls12*/\n/*!description: Updates internal JDT AST API references from JLS13 to JLS12, correcting the recommended AST level for certain operations.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.AST.JLS13\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS12\n;;",
+      "summary": "This commit is a follow-up to the introduction of AST API for preview features. It primarily updates references to the `AST.JLS13` constant to `AST.JLS12` within Javadoc, deprecation messages, and suggested API usage in the `AST.java` file. This is a direct 1:1 constant replacement, indicating a correction in the targeted JLS level for internal JDT API evolution. This mechanical update is fully expressible as a TriggerPattern DSL rule. No specific `sourceVersionGE` guard is needed in the rule itself as it targets internal constant definitions, not new Java language features.",
+      "discoveredAt": "2026-04-01",
+      "discoveredInRun": 18983,
+      "sourceCommit": "235d033c53538724b68f25cfb45c9c57c97cba3a",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-modifies-several-internal-jdt",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.ast.add-previewenabled-jls12*/\n/*!description: Updates internal JDT AST traversal logic for Java 12+ features by adding a check for AST.isPreviewEnabled(). Targets AST.JLS12 API level checks.*/\n/*!severity: info*/\n$node.getAST().apiLevel() \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS12\n:: sourceVersionGE(12) \u0026\u0026 (instanceof($node, \"org.eclipse.jdt.core.dom.BreakStatement\") || instanceof($node, \"org.eclipse.jdt.core.dom.SwitchCase\"))\n\u003d\u003e $node.getAST().apiLevel() \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS12 \u0026\u0026 $node.getAST().isPreviewEnabled()\n;;\n\n/*!id: jdt.internal.ast.add-previewenabled-jls12-internal*/\n/*!description: Updates internal JDT AST traversal logic for Java 12+ features by adding a check for AST.isPreviewEnabled(). Targets AST.JLS12_INTERNAL API level checks.*/\n/*!severity: info*/\n$node.getAST().apiLevel() \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL\n:: sourceVersionGE(12) \u0026\u0026 (instanceof($node, \"org.eclipse.jdt.core.dom.BreakStatement\") || instanceof($node, \"org.eclipse.jdt.core.dom.SwitchCase\"))\n\u003d\u003e $node.getAST().apiLevel() \u003e\u003d org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL \u0026\u0026 $node.getAST().isPreviewEnabled()\n;;",
+      "summary": "The commit modifies several internal JDT AST traversal and rewrite classes (`NaiveASTFlattener`, `ASTRewriteAnalyzer`, `ASTRewriteFlattener`). It updates conditional checks related to Java 12 features (like Switch Expressions and `break` with value) by adding `\u0026\u0026 node.getAST().isPreviewEnabled()` to existing conditions that already check `node.getAST().apiLevel() \u003e\u003d JLS12` or `JLS12_INTERNAL`. This ensures that these features are only processed when preview features are explicitly enabled. This is a direct, mechanical modification of boolean expressions within `if` conditions, making it fully expressible as two GREEN TriggerPattern DSL rules. The rules target `apiLevel` checks against `AST.JLS12` and `AST.JLS12_INTERNAL`, adding the `isPreviewEnabled()` check, and are guarded by `sourceVersionGE(12)` and `instanceof` checks to confine their application to relevant AST nodes. The `minJavaVersion` for the hint file should be 12.",
+      "discoveredAt": "2026-04-01",
+      "discoveredInRun": 18983,
+      "sourceCommit": "357185ef691b346646bc98aa38ba4950222dbc6a",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-is-a-revert-that-removes-nod",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.ast.remove-ispreviewenabled-check*/\n/*!description: Removes explicit checks for AST.isPreviewEnabled() from internal JDT Core DOM conditional logic. This effectively makes handling of Java 12+ features, previously guarded by the preview flag, unconditional, reflecting a revert of previous behavior.*/\n/*!severity: info*/\n/*!minJavaVersion: 12*/\n/*!tags: jdt, internal, refactoring, java12, preview*/\norg.eclipse.jdt.core.dom.AST.$astVar.isPreviewEnabled()\n\u003d\u003e true\n;;",
+      "summary": "This commit is a revert that removes `\u0026\u0026 node.getAST().isPreviewEnabled()` conditions from various internal JDT Core DOM components (`NaiveASTFlattener`, `ASTRewriteAnalyzer`, `ASTRewriteFlattener`). This change effectively makes the internal handling of Java 12+ preview features (e.g., Break Statements with expressions, Switch Expressions) unconditional, regardless of whether preview features are enabled in the project. A single TriggerPattern DSL rule replacing `org.eclipse.jdt.core.dom.AST.$astVar.isPreviewEnabled()` with `true` semantically achieves this, simplifying the conditional logic in all affected locations. This is a direct expression replacement, fully supported by the DSL, and aligns with internal JDT API modernization related to Java 12 features.",
+      "discoveredAt": "2026-04-01",
+      "discoveredInRun": 18983,
+      "sourceCommit": "e4fe6ea66ca018ddb36a728587b87392d8f5c0b8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-core",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astconverter.yieldstatement.previewcheck\n@severity: info\nthis.ast.apiLevel !\u003d org.eclipse.jdt.core.dom.AST.JLS13_INTERNAL\n\u003d\u003e !this.ast.isPreviewEnabled()\n;;",
+      "summary": "This commit refactors internal JDT Core DOM API logic within `ASTConverter.java`. It replaces a direct check against `AST.JLS13_INTERNAL` for `YieldStatement` handling with a more general and maintainable call to `this.ast.isPreviewEnabled()`. This is a direct 1:1 expression replacement that modernizes how JDT internally determines if preview features are active. It is fully expressible as a GREEN TriggerPattern DSL rule, improving internal code clarity and consistency. The rule targets internal JDT API usage and does not require a `sourceVersionGE` guard, beyond the baseline Java 8, as it is an internal refactoring rather than a migration to a new public Java language feature.",
+      "discoveredAt": "2026-04-01",
+      "discoveredInRun": 18983,
+      "sourceCommit": "55f0650606275cab67b539f058d1e4130fba021e",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
