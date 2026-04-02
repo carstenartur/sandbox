@@ -1,0 +1,111 @@
+/*!id: jdt.internal.formatter.versioner.currentversion.update*/
+/*!description: Updates the internal formatter profile version from VERSION_18 to VERSION_19.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION = org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_18
+=> org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION = org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_19
+;;
+
+/*!id: jdt.internal.formatter.record.indentation.type-to-record*/
+/*!description: Maps old formatter indentation settings for types to new settings for record declarations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INDENT_BODY_DECLARATIONS_COMPARE_TO_TYPE_HEADER :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INDENT_BODY_DECLARATIONS_COMPARE_TO_RECORD_HEADER
+;;
+
+/*!id: jdt.internal.formatter.record.braces.typedecl-to-recorddecl*/
+/*!description: Maps old formatter brace position settings for type declarations to new settings for record declarations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_BRACE_POSITION_FOR_TYPE_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_BRACE_POSITION_FOR_RECORD_DECLARATION
+;;
+
+/*!id: jdt.internal.formatter.record.braces.constdecl-to-recordconst*/
+/*!description: Maps old formatter brace position settings for constructor declarations to new settings for record constructors.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_BRACE_POSITION_FOR_CONSTRUCTOR_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_BRACE_POSITION_FOR_RECORD_CONSTRUCTOR
+;;
+
+/*!id: jdt.internal.formatter.record.parentheses.methoddecl-to-recorddecl*/
+/*!description: Maps old formatter parentheses position settings for method declarations to new settings for record declarations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_PARENTHESES_POSITIONS_IN_METHOD_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_PARENTHESES_POSITIONS_IN_RECORD_DECLARATION
+;;
+
+/*!id: jdt.internal.formatter.record.whitespace.paren-methoddecl-to-recorddecl.before*/
+/*!description: Maps old formatter whitespace settings before opening parentheses in method declarations to new settings for record declarations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_OPENING_PAREN_IN_METHOD_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_OPENING_PAREN_IN_RECORD_DECLARATION
+;;
+
+/*!id: jdt.internal.formatter.record.whitespace.paren-methoddecl-to-recorddecl.after*/
+/*!description: Maps old formatter whitespace settings after opening parentheses in method declarations to new settings for record declarations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_AFTER_OPENING_PAREN_IN_METHOD_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_AFTER_OPENING_PAREN_IN_RECORD_DECLARATION
+;;
+
+/*!id: jdt.internal.formatter.record.whitespace.paren-methoddecl-to-recorddecl.beforeclosing*/
+/*!description: Maps old formatter whitespace settings before closing parentheses in method declarations to new settings for record declarations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_CLOSING_PAREN_IN_METHOD_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_CLOSING_PAREN_IN_RECORD_DECLARATION
+;;
+
+/*!id: jdt.internal.formatter.record.whitespace.comma-methoddecl-to-recordcomp.before*/
+/*!description: Maps old formatter whitespace settings before comma in method declaration parameters to new settings for record components.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_COMMA_IN_METHOD_DECLARATION_PARAMETERS :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_COMMA_IN_RECORD_COMPONENTS
+;;
+
+/*!id: jdt.internal.formatter.record.whitespace.comma-methoddecl-to-recordcomp.after*/
+/*!description: Maps old formatter whitespace settings after comma in method declaration parameters to new settings for record components.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_AFTER_COMMA_IN_METHOD_DECLARATION_PARAMETERS :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_AFTER_COMMA_IN_RECORD_COMPONENTS
+;;
+
+/*!id: jdt.internal.formatter.record.whitespace.brace-methoddecl-to-recorddecl*/
+/*!description: Maps old formatter whitespace settings before opening brace in method declarations to new settings for record declarations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_OPENING_BRACE_IN_METHOD_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_OPENING_BRACE_IN_RECORD_DECLARATION
+;;
+
+/*!id: jdt.internal.formatter.record.whitespace.brace-constdecl-to-recordconst*/
+/*!description: Maps old formatter whitespace settings before opening brace in constructor declarations to new settings for record constructors.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_OPENING_BRACE_IN_CONSTRUCTOR_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_INSERT_SPACE_BEFORE_OPENING_BRACE_IN_RECORD_CONSTRUCTOR
+;;
+
+/*!id: jdt.internal.formatter.record.newlines.typedecl-to-recorddecl*/
+/*!description: Maps old formatter newline settings for type declarations to new settings for record declarations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_KEEP_TYPE_DECLARATION_ON_ONE_LINE :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_KEEP_RECORD_DECLARATION_ON_ONE_LINE
+;;
+
+/*!id: jdt.internal.formatter.record.newlines.methodbody-to-recordconstbody*/
+/*!description: Maps old formatter newline settings for method bodies on one line to new settings for record constructors on one line.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_KEEP_METHOD_BODY_ON_ONE_LINE :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_KEEP_RECORD_CONSTRUCTOR_ON_ONE_LINE
+;;
+
+/*!id: jdt.internal.formatter.record.alignment.params-to-recordcomp*/
+/*!description: Maps old formatter alignment settings for parameters in constructor declarations to new settings for record components.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_PARAMETERS_IN_CONSTRUCTOR_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_RECORD_COMPONENTS
+;;
+
+/*!id: jdt.internal.formatter.record.alignment.superinterfaces-to-recordsuperinterfaces*/
+/*!description: Maps old formatter alignment settings for superinterfaces in type declarations to new settings for superinterfaces in record declarations.*/
+/*!severity: info*/
+org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_SUPERINTERFACES_IN_TYPE_DECLARATION :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_SUPERINTERFACES_IN_RECORD_DECLARATION
+;;

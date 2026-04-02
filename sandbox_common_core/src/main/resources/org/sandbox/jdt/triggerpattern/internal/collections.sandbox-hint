@@ -59,3 +59,7 @@ new java.util.Vector($capacity) :: isAssignedToLocalVariable()
 new java.util.Vector($collection) :: isAssignedToLocalVariable()
 => new java.util.ArrayList<>($collection)
 ;;
+
+$v.addElement($child) :: instanceof($v, "java.util.Vector") && elementKindMatches("", "EXPRESSION_STATEMENT")
+=> $v.add($child)
+;;

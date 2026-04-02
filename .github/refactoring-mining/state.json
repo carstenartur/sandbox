@@ -190,9 +190,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "cdd08aac020e5e5719baf6a64e149fa8b80a633b",
-      "lastProcessedDate": "2026-04-01T04:58:22.906809541Z",
-      "totalProcessed": 8950,
+      "lastProcessedDate": "2026-04-02T04:35:00.403812845Z",
+      "totalProcessed": 9027,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -793,18 +792,19 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 1,
+      "currentEpoch": 2,
       "completedEpochs": [
-        "2020-01-01 to 2026-01-01"
+        "2020-01-01 to 2026-01-01",
+        "2015-01-01 to 2020-01-01"
       ],
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 151,
+        "JDT Internal Refactoring": 154,
         "Unnecessary Annotation Removal": 1,
         "Collections": 2,
         "Java-Modernization": 5,
-        "JDT Internal Bug Fix": 45,
+        "JDT Internal Bug Fix": 46,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
@@ -833,9 +833,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "d84d32357508979ea16dc8a870b2db7c87b5997f",
-      "lastProcessedDate": "2026-03-23T04:38:20.265937854Z",
-      "totalProcessed": 60,
+      "lastProcessedCommit": "86d2764bcb0a4c37c9865a2df7655dab5665b951",
+      "lastProcessedDate": "2026-04-02T04:41:49.381314742Z",
+      "totalProcessed": 140,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -864,6 +864,33 @@
           "deferredAt": "2026-03-23T04:37:47.245785446Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "326d1e2ea7464b4dc05c9e4df20375ddd8dc33dd",
+          "message": "Bug 553473 - [14] Create Menu item and New Wizard for creation of a Record",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-02T04:36:17.399807301Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "32e1a8524a2a17a479a14b2007c9725fba14d13d",
+          "message": "Bug 550394 - [cleanup \u0026 saveaction] Simplify lambda expressions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-02T04:37:28.236655718Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "952dcc27cdfe6b939cd9075a4fef1f56281e5159",
+          "message": "Bug 553111 - [quick fix] Add missing module-info Javadoc tags",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-02T04:40:44.658314987Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -873,12 +900,12 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 5,
+        "JDT Internal Refactoring": 10,
         "Code Simplification": 1,
         "Performance": 2,
-        "JDT Internal Bug Fix": 2,
-        "Clean-up Bug Fix": 2,
-        "Try-with-Resources": 1,
+        "JDT Internal Bug Fix": 4,
+        "Clean-up Bug Fix": 3,
+        "Try-with-Resources": 2,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 1,
         "JFace API Modernization": 1,
@@ -887,7 +914,11 @@
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
-        "Null-Safety": 1
+        "Null-Safety": 1,
+        "Lambda-Simplification": 1,
+        "Architectural Refactoring": 1,
+        "Collections": 1,
+        "JDT Internal Feature Enhancement": 4
       },
       "exhaustedCategories": []
     },
@@ -928,5 +959,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 18983
+  "globalTotalProcessed": 19140
 }

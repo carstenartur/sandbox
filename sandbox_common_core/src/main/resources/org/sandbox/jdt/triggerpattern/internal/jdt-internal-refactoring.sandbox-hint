@@ -462,3 +462,21 @@ org.eclipse.jdt.core.dom.AST.$astVar.isPreviewEnabled()
 this.ast.apiLevel != org.eclipse.jdt.core.dom.AST.JLS13_INTERNAL
 => !this.ast.isPreviewEnabled()
 ;;
+
+@id: jdt.internal.ast.ispreviewenabled.jls13.to.jls14
+@severity: info
+this.apiLevel == org.eclipse.jdt.core.dom.AST.JLS13_INTERNAL && this.previewEnabled
+=> this.apiLevel == org.eclipse.jdt.core.dom.AST.JLS14_INTERNAL && this.previewEnabled
+;;
+
+@id: jdt.internal.textblock.jls13-to-jls14
+@severity: info
+org.eclipse.jdt.core.dom.AST.JLS13_INTERNAL :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.dom.AST.JLS14_INTERNAL
+;;
+
+@id: jdt.internal.textblock.supportedonlyin13-to-14
+@severity: info
+supportedOnlyIn13() :: sourceVersionGE(14)
+=> supportedOnlyIn14()
+;;
