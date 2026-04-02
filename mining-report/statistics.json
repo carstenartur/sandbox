@@ -1,50 +1,59 @@
 {
-  "totalProcessed": 19,
-  "relevant": 14,
-  "irrelevant": 5,
-  "duplicates": 0,
-  "green": 7,
+  "totalProcessed": 27,
+  "relevant": 20,
+  "irrelevant": 7,
+  "duplicates": 2,
+  "green": 5,
   "yellow": 0,
-  "red": 7,
+  "red": 15,
   "irrelevantReasons": {
-    "This commit introduces new constant declarations for Javadoc tags. The TriggerPattern DSL is designed for code transformations (pattern matching and replacement), not for generating new API definitions or adding new constant declarations to existing classes. Therefore, it does not represent a reusable code transformation pattern that the DSL can automate.": 1,
-    "The commit only changes Javadoc comments (`@since` tag). It does not involve any functional code transformation, API usage change, or structural modification that could be generalized into a TriggerPattern DSL rule.": 1,
-    "The commit exclusively modifies Javadoc comments to update supported JDK and JLS versions. This is not a code transformation pattern suitable for the TriggerPattern DSL.": 1,
-    "The commit only removes empty \u003cp\u003e tags from Javadoc comments. The TriggerPattern DSL is designed for transforming Java code constructs (expressions, statements, annotations), not Javadoc content or other non-code elements.": 1,
-    "Documentation/Javadoc formatting change, not a code transformation that alters runtime behavior or structure of executable code.": 1
+    "The commit only adds JCP early-draft specification boilerplate comments to multiple files. This is a documentation/metadata change in the JDT\u0027s own source code, not a code transformation pattern applicable to user code.": 1,
+    "This commit introduces new UI strings and preference keys for a new compiler warning related to null analysis. It involves adding new constants, UI components (comboboxes), and modifying resource bundle files (.properties). The TriggerPattern DSL is designed for pattern matching and replacement of existing Java code structures, not for introducing new declarations, UI elements, or modifying non-Java files. Therefore, this commit does not contain patterns suitable for DSL transformation rules.": 1,
+    "This commit adds new key-value pairs to an NLS (.properties) file. The TriggerPattern DSL is designed for Java code transformations (AST manipulation) and does not operate on or modify .properties files.": 1,
+    "The commit only updates a Javadoc comment to reflect a change in the AST API level from JLS13 to JLS14. It does not modify any executable Java code. The TriggerPattern DSL is designed for code transformations, not documentation updates.": 1,
+    "The commit solely involves whitespace removal (extra blank lines, trailing spaces) which is a code formatting concern, not a semantic code transformation suitable for the TriggerPattern DSL.": 1,
+    "This commit modifies an NLS .properties file, which is a resource file and not Java source code. The TriggerPattern DSL is designed for Java code transformations (AST-based).": 1,
+    "This commit introduces new internal preference management logic and API for disabling code assist categories by default. It involves structural additions of new methods, internal fields, and modifications to string preference values. These are internal JDT feature implementations and configuration changes, not generalizable code transformations that can be applied to user code via a TriggerPattern DSL rule.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 19,
-      "relevant": 14,
-      "green": 7,
+      "totalProcessed": 5,
+      "relevant": 4,
+      "green": 2,
       "yellow": 0,
-      "red": 7
+      "red": 2
+    },
+    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
+      "totalProcessed": 22,
+      "relevant": 16,
+      "green": 3,
+      "yellow": 0,
+      "red": 13
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-01",
-      "processed": 19,
-      "relevant": 14
+      "date": "2026-04-02",
+      "processed": 27,
+      "relevant": 20
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-01T04:48:27.686Z",
-    "completedAt": "2026-04-01T04:58:23.443265848Z",
-    "durationSeconds": 595,
+    "startedAt": "2026-04-02T04:31:21.019Z",
+    "completedAt": "2026-04-02T04:41:50.622723210Z",
+    "durationSeconds": 629,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 87,
+    "deferredCommits": 90,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-01T04:49:45.847117738Z",
-    "latestEvaluation": "2026-04-01T04:58:22.905750285Z",
-    "earliestCommitDate": "2019-04-17T19:41:59Z",
-    "latestCommitDate": "2019-11-07T07:53:19Z"
+    "earliestEvaluation": "2026-04-02T04:32:54.717619683Z",
+    "latestEvaluation": "2026-04-02T04:41:49.380933588Z",
+    "earliestCommitDate": "2018-10-24T03:56:17Z",
+    "latestCommitDate": "2020-03-11T07:17:39Z"
   }
 }
