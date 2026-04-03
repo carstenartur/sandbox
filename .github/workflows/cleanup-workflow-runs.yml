@@ -24,7 +24,7 @@ on:
         description: 'Maximum number of runs to delete per execution (prevents rate limiting)'
         required: false
         type: number
-        default: 100
+        default: 300
 
 permissions:
   actions: write  # Required to delete workflow runs
