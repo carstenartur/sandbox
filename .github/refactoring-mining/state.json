@@ -190,8 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedDate": "2026-04-02T04:35:00.403812845Z",
-      "totalProcessed": 9027,
+      "lastProcessedCommit": "e0b5c970ed9aa51bf986a012e855c8fbd34c85c4",
+      "lastProcessedDate": "2026-04-03T04:41:31.526592665Z",
+      "totalProcessed": 9239,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -787,6 +788,15 @@
           "deferredAt": "2026-03-26T04:41:04.422397950Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "07ab76f69fbeeb2f2fd54cdf3d01ee69344b9ae0",
+          "message": "HEAD - Fix for 206391",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-03T04:36:25.191133248Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -800,11 +810,11 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 154,
+        "JDT Internal Refactoring": 163,
         "Unnecessary Annotation Removal": 1,
         "Collections": 2,
         "Java-Modernization": 5,
-        "JDT Internal Bug Fix": 46,
+        "JDT Internal Bug Fix": 50,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
@@ -812,11 +822,11 @@
         "Eclipse API Migration": 20,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 2,
-        "Performance": 6,
+        "Performance": 8,
         "Try-with-Resources": 1,
         "Logging Modernization": 1,
         "Internal JDT Refactoring": 2,
-        "Bug Fix": 2,
+        "Bug Fix": 3,
         "Exception Handling": 3,
         "Type System Improvement": 1,
         "Code Style": 1,
@@ -828,7 +838,8 @@
         "JDT Internal API Evolution": 11,
         "JDT Internal Performance": 1,
         "Concurrency": 1,
-        "Code Style / Annotation": 1
+        "Code Style / Annotation": 1,
+        "Error Handling / Logging": 1
       },
       "exhaustedCategories": []
     },
@@ -959,5 +970,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 19140
+  "globalTotalProcessed": 19352
 }

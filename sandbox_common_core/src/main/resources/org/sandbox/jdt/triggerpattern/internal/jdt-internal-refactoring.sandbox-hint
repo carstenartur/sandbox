@@ -480,3 +480,23 @@ org.eclipse.jdt.core.dom.AST.JLS13_INTERNAL :: sourceVersionGE(14)
 supportedOnlyIn13() :: sourceVersionGE(14)
 => supportedOnlyIn14()
 ;;
+
+/*!id: jdt.internal.performance.empty-string-constructor-to-constant*/
+/*!description: Replaces the no-argument String constructor with the internal Util.EMPTY_STRING constant for performance and consistency.*/
+/*!severity: info*/
+new java.lang.String()
+=> org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING
+;;
+
+/*!id: jdt.internal.importrewrite.concatenate-name-to-util*/
+/*!description: Replaces internal concatenateName helper with Util.concatenateName to standardize name concatenation in ImportRewrite.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+concatenateName($arg1, $arg2)
+=> org.eclipse.jdt.internal.core.util.Util.concatenateName($arg1, $arg2, '.')
+;;
+
+new org.eclipse.jdt.internal.core.dom.rewrite.ImportRewriteAnalyzer($cu, $root, $importOrder, $threshold, $staticThreshold, $restoreExistingImports)
+=> new org.eclipse.jdt.internal.core.dom.rewrite.ImportRewriteAnalyzer($cu, $root, $importOrder, $threshold, $staticThreshold, $restoreExistingImports, this.useContextToFilterImplicitImports)
+;;
