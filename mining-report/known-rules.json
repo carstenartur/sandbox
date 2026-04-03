@@ -1254,6 +1254,61 @@
       "sourceCommit": "d17729180beb68a11218aa64027226484e33df7b",
       "status": "DISCOVERED",
       "hintFile": "jdt-formatter-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-cleans-up-internal-jdt-code",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.performance.empty-string-constructor-to-constant*/\n/*!description: Replaces the no-argument String constructor with the internal Util.EMPTY_STRING constant for performance and consistency.*/\n/*!severity: info*/\nnew java.lang.String()\n\u003d\u003e org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING\n;;",
+      "summary": "This commit cleans up internal JDT code by replacing `new String()` (the no-argument constructor for an empty string) with `org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING`. This is a performance optimization, avoiding unnecessary object creation, and improves code style by using a constant. The pattern is a direct 1:1 expression replacement, suitable for a GREEN TriggerPattern DSL rule. While `performance.sandbox-hint` has a rule `new String($str) \u003d\u003e $str;` for string literals, this targets the distinct no-argument constructor. Structural changes in `ImportRewriteAnalyzer.java` related to `if` condition refactoring are not expressible by the DSL (RED).",
+      "discoveredAt": "2026-04-03",
+      "discoveredInRun": 19352,
+      "sourceCommit": "4308596b1c1f07fe83eab35ed5a705ab67283da2",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-described-as-reverting-findb",
+      "category": "Performance",
+      "dslRule": "org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING\n\u003d\u003e new java.lang.String()\n;;",
+      "summary": "This commit, described as \u0027Reverting findbugs changes\u0027, introduces the replacement of the internal JDT constant `org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING` with `new java.lang.String()`. This is a direct 1:1 expression replacement. While `new String()` typically creates a new object and `EMPTY_STRING` is a cached constant (making the replacement less efficient from a performance perspective), it is a valid, automatable code transformation. The structural changes in `ImportRewriteAnalyzer.java` involving complex conditional logic are not expressible by the DSL. The rule targets the `EMPTY_STRING` constant replacement.",
+      "discoveredAt": "2026-04-03",
+      "discoveredInRun": 19352,
+      "sourceCommit": "4732df192beaa38106d940c4bfeefb54a9e4a1cf",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-described-as-findbugs-change",
+      "category": "Performance",
+      "dslRule": "new java.lang.String()\n\u003d\u003e org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING\n;;",
+      "summary": "This commit, described as \u0027findbugs changes\u0027, includes a performance and code style improvement. It replaces redundant no-argument `new String()` constructor calls with the constant `org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING`. This avoids unnecessary object creation, a common pattern flagged by static analysis tools like FindBugs, and is a direct, semantically equivalent expression replacement. This pattern is fully implementable as a GREEN TriggerPattern DSL rule. A secondary change involves removing a redundant outer `if` condition in `ImportRewriteAnalyzer.java`, which is a structural control flow refinement not directly expressible by the current DSL.",
+      "discoveredAt": "2026-04-03",
+      "discoveredInRun": 19352,
+      "sourceCommit": "be3dcae21029dbb3f453eca15686a37b37ddca01",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-core",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.importrewrite.concatenate-name-to-util*/\n/*!description: Replaces internal concatenateName helper with Util.concatenateName to standardize name concatenation in ImportRewrite.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\nconcatenateName($arg1, $arg2)\n\u003d\u003e org.eclipse.jdt.internal.core.util.Util.concatenateName($arg1, $arg2, \u0027.\u0027)\n;;",
+      "summary": "This commit refactors internal JDT Core DOM\u0027s `ImportRewrite` class by replacing calls to a deprecated private helper method `concatenateName()` with the public utility method `org.eclipse.jdt.internal.core.util.Util.concatenateName()`. The new utility method takes an additional character argument for the separator. This is a direct 1:1 method call replacement with an added argument, which is fully supported by the TriggerPattern DSL, making it a GREEN transformation. The DSL rule will match calls to the old private method and replace them with the new utility method, including the literal `.` character as the third argument.",
+      "discoveredAt": "2026-04-03",
+      "discoveredInRun": 19352,
+      "sourceCommit": "f0a2b85aaf6b088579e27d2ecfb4517d7d426ed6",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-the-internal-impor",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "new org.eclipse.jdt.internal.core.dom.rewrite.ImportRewriteAnalyzer($cu, $root, $importOrder, $threshold, $staticThreshold, $restoreExistingImports)\n\u003d\u003e new org.eclipse.jdt.internal.core.dom.rewrite.ImportRewriteAnalyzer($cu, $root, $importOrder, $threshold, $staticThreshold, $restoreExistingImports, this.useContextToFilterImplicitImports)\n;;",
+      "summary": "This commit refactors the internal `ImportRewriteAnalyzer` constructor call within JDT Core. It modifies the constructor invocation from 6 arguments to 7, introducing a `useContextToFilterImplicitImports` boolean flag directly into the constructor. Consequently, a redundant setter method call for this flag is removed. This change consolidates initialization logic and improves internal API consistency. The pattern is a direct 1:1 constructor argument modification, fully expressible and automatable as a GREEN TriggerPattern DSL rule. It targets an internal JDT API evolution and does not require a `sourceVersionGE` guard beyond the baseline Java 8.",
+      "discoveredAt": "2026-04-03",
+      "discoveredInRun": 19352,
+      "sourceCommit": "15fa59f515a70009e6cbf51fc1f1e76b789612ec",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

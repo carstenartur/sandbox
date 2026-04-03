@@ -1,59 +1,52 @@
 {
-  "totalProcessed": 27,
-  "relevant": 20,
+  "totalProcessed": 24,
+  "relevant": 17,
   "irrelevant": 7,
-  "duplicates": 2,
+  "duplicates": 0,
   "green": 5,
-  "yellow": 0,
-  "red": 15,
+  "yellow": 1,
+  "red": 11,
   "irrelevantReasons": {
-    "The commit only adds JCP early-draft specification boilerplate comments to multiple files. This is a documentation/metadata change in the JDT\u0027s own source code, not a code transformation pattern applicable to user code.": 1,
-    "This commit introduces new UI strings and preference keys for a new compiler warning related to null analysis. It involves adding new constants, UI components (comboboxes), and modifying resource bundle files (.properties). The TriggerPattern DSL is designed for pattern matching and replacement of existing Java code structures, not for introducing new declarations, UI elements, or modifying non-Java files. Therefore, this commit does not contain patterns suitable for DSL transformation rules.": 1,
-    "This commit adds new key-value pairs to an NLS (.properties) file. The TriggerPattern DSL is designed for Java code transformations (AST manipulation) and does not operate on or modify .properties files.": 1,
-    "The commit only updates a Javadoc comment to reflect a change in the AST API level from JLS13 to JLS14. It does not modify any executable Java code. The TriggerPattern DSL is designed for code transformations, not documentation updates.": 1,
-    "The commit solely involves whitespace removal (extra blank lines, trailing spaces) which is a code formatting concern, not a semantic code transformation suitable for the TriggerPattern DSL.": 1,
-    "This commit modifies an NLS .properties file, which is a resource file and not Java source code. The TriggerPattern DSL is designed for Java code transformations (AST-based).": 1,
-    "This commit introduces new internal preference management logic and API for disabling code assist categories by default. It involves structural additions of new methods, internal fields, and modifications to string preference values. These are internal JDT feature implementations and configuration changes, not generalizable code transformations that can be applied to user code via a TriggerPattern DSL rule.": 1
+    "This commit only updates copyright years in file headers, which is a metadata change and does not represent a code transformation pattern suitable for DSL mining.": 1,
+    "This commit only updates copyright headers in source files, which is a metadata change and not a code transformation pattern suitable for a TriggerPattern DSL rule. No functional code changes are present.": 1,
+    "The commit introduces new internal fields, methods, and complex conditional logic primarily to refactor how implicit imports are filtered within JDT\u0027s `ImportRewrite` mechanism. These changes are deeply internal to the JDT Core DOM API and involve structural modifications and advanced internal logic that cannot be expressed as simple, generalizable TriggerPattern DSL rules for end-user code. There are no direct 1:1 public API replacements suitable for the DSL.": 1,
+    "The commit fixes a typo in a Javadoc comment (`plafform` to `platform`). This is a documentation change, not a code transformation, and cannot be generalized into a TriggerPattern DSL rule.": 1,
+    "The commit only contains changes to Javadoc comments (e.g., updating copyright years, adding {@link} references, fixing typos). The TriggerPattern DSL is designed for code transformations, not Javadoc updates.": 1,
+    "The commit only contains changes to Javadoc comments (e.g., updating copyright years, adding {@link} references). The TriggerPattern DSL is designed for code transformations, not Javadoc updates.": 1,
+    "This commit only contains updates to Javadoc comments and a single line comment, reflecting an internal API name change (`getTargetSourceRangeComputer` to `getExtendedSourceRangeComputer`) for `ASTRewrite`\u0027s source range computer. There are no functional code transformations or patterns that can be generalized into a DSL rule. It is purely documentation and comment maintenance.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 5,
-      "relevant": 4,
-      "green": 2,
-      "yellow": 0,
-      "red": 2
-    },
-    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 22,
-      "relevant": 16,
-      "green": 3,
-      "yellow": 0,
-      "red": 13
+      "totalProcessed": 24,
+      "relevant": 17,
+      "green": 5,
+      "yellow": 1,
+      "red": 11
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-02",
-      "processed": 27,
-      "relevant": 20
+      "date": "2026-04-03",
+      "processed": 24,
+      "relevant": 17
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-02T04:31:21.019Z",
-    "completedAt": "2026-04-02T04:41:50.622723210Z",
-    "durationSeconds": 629,
+    "startedAt": "2026-04-03T04:31:38.978Z",
+    "completedAt": "2026-04-03T04:41:32.048917255Z",
+    "durationSeconds": 593,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 90,
+    "deferredCommits": 91,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-02T04:32:54.717619683Z",
-    "latestEvaluation": "2026-04-02T04:41:49.380933588Z",
-    "earliestCommitDate": "2018-10-24T03:56:17Z",
-    "latestCommitDate": "2020-03-11T07:17:39Z"
+    "earliestEvaluation": "2026-04-03T04:33:02.419579818Z",
+    "latestEvaluation": "2026-04-03T04:41:31.526181458Z",
+    "earliestCommitDate": "2010-01-06T15:23:43Z",
+    "latestCommitDate": "2010-03-18T17:32:57Z"
   }
 }
