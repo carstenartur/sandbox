@@ -27,3 +27,11 @@ java.lang.Integer.parseInt($str)
 new java.lang.String($str)
 => $str
 ;;
+
+org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING
+=> new java.lang.String()
+;;
+
+new java.lang.String()
+=> org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING
+;;
