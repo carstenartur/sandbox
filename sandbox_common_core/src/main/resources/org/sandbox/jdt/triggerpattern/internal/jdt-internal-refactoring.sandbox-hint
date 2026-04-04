@@ -500,3 +500,43 @@ concatenateName($arg1, $arg2)
 new org.eclipse.jdt.internal.core.dom.rewrite.ImportRewriteAnalyzer($cu, $root, $importOrder, $threshold, $staticThreshold, $restoreExistingImports)
 => new org.eclipse.jdt.internal.core.dom.rewrite.ImportRewriteAnalyzer($cu, $root, $importOrder, $threshold, $staticThreshold, $restoreExistingImports, this.useContextToFilterImplicitImports)
 ;;
+
+/*!id: jdt.internal.typo.nameenviroment.to.nameenvironment*/
+/*!description: Fixes a typo in internal JDT API names, replacing 'Enviroment' with 'Environment' for both the interface and class. Improves code correctness and consistency.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, typo*/
+org.eclipse.jdt.internal.core.INameEnviromentWithProgress
+=> org.eclipse.jdt.internal.core.INameEnvironmentWithProgress
+;;
+
+org.eclipse.jdt.core.dom.NameEnviromentWithProgress
+=> org.eclipse.jdt.core.dom.NameEnvironmentWithProgress
+;;
+
+/*!id: jdt.internal.astnode.hashmap.capacity-and-type-update*/
+/*!description: Updates internal ASTNode property storage, changing HashMap constructor capacity and widening local variable type.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+java.util.HashMap $m = new java.util.HashMap(2)
+=> java.util.Map $m = new java.util.HashMap(3)
+;;
+
+/*!id: jdt.internal.astnode.hashmap.cast-widening*/
+/*!description: Widens an internal cast from (HashMap) to (Map) for ASTNode properties.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+(java.util.HashMap) $expr
+=> (java.util.Map) $expr
+;;
+
+/*!id: jdt.internal.rewritemodifiers.packagenode-annotations*/
+/*!description: Updates internal JDT ASTRewriteAnalyzer to use rewriteModifiers2 for PackageDeclaration annotations, simplifying the rewriteNodeList call by removing redundant string arguments.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+rewriteNodeList($node, org.eclipse.jdt.core.dom.PackageDeclaration.ANNOTATIONS_PROPERTY, $pos, "", " ")
+=> rewriteModifiers2($node, org.eclipse.jdt.core.dom.PackageDeclaration.ANNOTATIONS_PROPERTY, $pos)
+;;

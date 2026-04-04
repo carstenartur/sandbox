@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "e0b5c970ed9aa51bf986a012e855c8fbd34c85c4",
-      "lastProcessedDate": "2026-04-03T04:41:31.526592665Z",
-      "totalProcessed": 9239,
+      "lastProcessedCommit": "bce0dbd9dd489d3038652b337b4b76bb1f2246a4",
+      "lastProcessedDate": "2026-04-04T04:30:20.230952474Z",
+      "totalProcessed": 9595,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -797,6 +797,15 @@
           "deferredAt": "2026-04-03T04:36:25.191133248Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "96939eb0492ec1cb13ddd5bdcba40000acf3e910",
+          "message": "HEAD - Fix for 328115",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-04T04:30:04.320818504Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -810,11 +819,11 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 163,
+        "JDT Internal Refactoring": 172,
         "Unnecessary Annotation Removal": 1,
         "Collections": 2,
         "Java-Modernization": 5,
-        "JDT Internal Bug Fix": 50,
+        "JDT Internal Bug Fix": 55,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
@@ -829,7 +838,7 @@
         "Bug Fix": 3,
         "Exception Handling": 3,
         "Type System Improvement": 1,
-        "Code Style": 1,
+        "Code Style": 2,
         "JDT Internal Formatting/Rewrite": 1,
         "JDT Internal Architecture": 9,
         "JDT Internal API Management": 1,
@@ -839,7 +848,9 @@
         "JDT Internal Performance": 1,
         "Concurrency": 1,
         "Code Style / Annotation": 1,
-        "Error Handling / Logging": 1
+        "Error Handling / Logging": 1,
+        "API Modernization": 1,
+        "Eclipse API Modernization": 1
       },
       "exhaustedCategories": []
     },
@@ -970,5 +981,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 19352
+  "globalTotalProcessed": 19708
 }
