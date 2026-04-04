@@ -1309,6 +1309,39 @@
       "sourceCommit": "15fa59f515a70009e6cbf51fc1f1e76b789612ec",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-a-simple-typo-from-env",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.typo.nameenviroment.to.nameenvironment*/\n/*!description: Fixes a typo in internal JDT API names, replacing \u0027Enviroment\u0027 with \u0027Environment\u0027 for both the interface and class. Improves code correctness and consistency.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, typo*/\norg.eclipse.jdt.internal.core.INameEnviromentWithProgress\n\u003d\u003e org.eclipse.jdt.internal.core.INameEnvironmentWithProgress\n;;\n\norg.eclipse.jdt.core.dom.NameEnviromentWithProgress\n\u003d\u003e org.eclipse.jdt.core.dom.NameEnvironmentWithProgress\n;;",
+      "summary": "This commit fixes a simple typo from \u0027Enviroment\u0027 to \u0027Environment\u0027 in the names of an internal JDT interface (`INameEnvironmentWithProgress`) and its corresponding class (`NameEnvironmentWithProgress`). The change affects import statements, variable declarations, and constructor invocations. This is a direct 1:1 replacement of fully qualified names and is fully implementable as a GREEN TriggerPattern DSL rule. The DSL implicitly handles updating all references (imports, type usages, `new` expressions) when the FQN is replaced. Two separate rules are provided for the interface and the class.",
+      "discoveredAt": "2026-04-04",
+      "discoveredInRun": 19708,
+      "sourceCommit": "44c1c470b0c8ef16ec270452a9bc7b0a267cf8d1",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-325131-by-refactor",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.astnode.hashmap.capacity-and-type-update*/\n/*!description: Updates internal ASTNode property storage, changing HashMap constructor capacity and widening local variable type.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\njava.util.HashMap $m \u003d new java.util.HashMap(2)\n\u003d\u003e java.util.Map $m \u003d new java.util.HashMap(3)\n;;\n\n/*!id: jdt.internal.astnode.hashmap.cast-widening*/\n/*!description: Widens an internal cast from (HashMap) to (Map) for ASTNode properties.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\n(java.util.HashMap) $expr\n\u003d\u003e (java.util.Map) $expr\n;;",
+      "summary": "This commit fixes Bug 325131 by refactoring how `ASTNode` and `ASTRewrite` manage internal properties. The generalizable changes include: 1. Updating a specific `HashMap` constructor call to change its initial capacity from 2 to 3 and widening the declared type of the local variable from `HashMap` to `Map`. 2. Widening an internal cast from `(HashMap)` to `(Map)`. Other changes like Javadoc updates, adding new fields/methods, or complex `if-else` restructuring are not suitable for DSL rules. The two identified patterns are direct, 1:1 expression/type replacements, making them fully expressible as GREEN TriggerPattern DSL rules for internal JDT modernization.",
+      "discoveredAt": "2026-04-04",
+      "discoveredInRun": 19708,
+      "sourceCommit": "874cc60b34062d184abafc157c764e3af128769a",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-an-internal-jdt-as",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.rewritemodifiers.packagenode-annotations*/\n/*!description: Updates internal JDT ASTRewriteAnalyzer to use rewriteModifiers2 for PackageDeclaration annotations, simplifying the rewriteNodeList call by removing redundant string arguments.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\nrewriteNodeList($node, org.eclipse.jdt.core.dom.PackageDeclaration.ANNOTATIONS_PROPERTY, $pos, \"\", \" \")\n\u003d\u003e rewriteModifiers2($node, org.eclipse.jdt.core.dom.PackageDeclaration.ANNOTATIONS_PROPERTY, $pos)\n;;",
+      "summary": "This commit refactors an internal JDT `ASTRewriteAnalyzer` method call. It replaces `rewriteNodeList(node, PackageDeclaration.ANNOTATIONS_PROPERTY, pos, \"\", \" \")` with a more concise `rewriteModifiers2(node, PackageDeclaration.ANNOTATIONS_PROPERTY, pos)`. This is a direct 1:1 method call replacement, removing redundant string literal arguments, which improves internal API usage and code clarity. It is fully expressible as a GREEN TriggerPattern DSL rule, targeting internal JDT refactoring.",
+      "discoveredAt": "2026-04-04",
+      "discoveredInRun": 19708,
+      "sourceCommit": "bce0dbd9dd489d3038652b337b4b76bb1f2246a4",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
