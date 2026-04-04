@@ -1,52 +1,50 @@
 {
-  "totalProcessed": 24,
+  "totalProcessed": 22,
   "relevant": 17,
-  "irrelevant": 7,
+  "irrelevant": 5,
   "duplicates": 0,
-  "green": 5,
-  "yellow": 1,
-  "red": 11,
+  "green": 3,
+  "yellow": 0,
+  "red": 14,
   "irrelevantReasons": {
-    "This commit only updates copyright years in file headers, which is a metadata change and does not represent a code transformation pattern suitable for DSL mining.": 1,
-    "This commit only updates copyright headers in source files, which is a metadata change and not a code transformation pattern suitable for a TriggerPattern DSL rule. No functional code changes are present.": 1,
-    "The commit introduces new internal fields, methods, and complex conditional logic primarily to refactor how implicit imports are filtered within JDT\u0027s `ImportRewrite` mechanism. These changes are deeply internal to the JDT Core DOM API and involve structural modifications and advanced internal logic that cannot be expressed as simple, generalizable TriggerPattern DSL rules for end-user code. There are no direct 1:1 public API replacements suitable for the DSL.": 1,
-    "The commit fixes a typo in a Javadoc comment (`plafform` to `platform`). This is a documentation change, not a code transformation, and cannot be generalized into a TriggerPattern DSL rule.": 1,
-    "The commit only contains changes to Javadoc comments (e.g., updating copyright years, adding {@link} references, fixing typos). The TriggerPattern DSL is designed for code transformations, not Javadoc updates.": 1,
-    "The commit only contains changes to Javadoc comments (e.g., updating copyright years, adding {@link} references). The TriggerPattern DSL is designed for code transformations, not Javadoc updates.": 1,
-    "This commit only contains updates to Javadoc comments and a single line comment, reflecting an internal API name change (`getTargetSourceRangeComputer` to `getExtendedSourceRangeComputer`) for `ASTRewrite`\u0027s source range computer. There are no functional code transformations or patterns that can be generalized into a DSL rule. It is purely documentation and comment maintenance.": 1
+    "This commit only updates copyright years in a file header comment. It does not involve any Java code transformations or patterns that can be generalized into a TriggerPattern DSL rule.": 1,
+    "This commit only adds javadoc comments explaining how to configure compiler options for AST parsing. It is a documentation change, not a code transformation.": 1,
+    "This commit only adds a javadoc comment block to the `setSource` method, providing further explanation on compiler options needed for parsing. It is a documentation change, not a code transformation.": 1,
+    "The commit only contains Javadoc changes, which are not code transformations expressible as DSL rules.": 1,
+    "The commit only contains a spelling correction within Javadoc comments. The TriggerPattern DSL is designed for Java code transformations (expressions, statements, annotations, declarations) and explicitly states that comments are stripped before rule parsing. Therefore, this change cannot be expressed or detected by the DSL.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 24,
+      "totalProcessed": 22,
       "relevant": 17,
-      "green": 5,
-      "yellow": 1,
-      "red": 11
+      "green": 3,
+      "yellow": 0,
+      "red": 14
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-03",
-      "processed": 24,
+      "date": "2026-04-04",
+      "processed": 22,
       "relevant": 17
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-03T04:31:38.978Z",
-    "completedAt": "2026-04-03T04:41:32.048917255Z",
-    "durationSeconds": 593,
+    "startedAt": "2026-04-04T04:20:17.867Z",
+    "completedAt": "2026-04-04T04:30:20.755069132Z",
+    "durationSeconds": 602,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 91,
+    "deferredCommits": 92,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-03T04:33:02.419579818Z",
-    "latestEvaluation": "2026-04-03T04:41:31.526181458Z",
-    "earliestCommitDate": "2010-01-06T15:23:43Z",
-    "latestCommitDate": "2010-03-18T17:32:57Z"
+    "earliestEvaluation": "2026-04-04T04:21:38.965124678Z",
+    "latestEvaluation": "2026-04-04T04:30:20.230233026Z",
+    "earliestCommitDate": "2010-03-27T02:26:17Z",
+    "latestCommitDate": "2010-10-22T20:15:04Z"
   }
 }
