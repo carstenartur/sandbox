@@ -540,3 +540,23 @@ java.util.HashMap $m = new java.util.HashMap(2)
 rewriteNodeList($node, org.eclipse.jdt.core.dom.PackageDeclaration.ANNOTATIONS_PROPERTY, $pos, "", " ")
 => rewriteModifiers2($node, org.eclipse.jdt.core.dom.PackageDeclaration.ANNOTATIONS_PROPERTY, $pos)
 ;;
+
+/*!id: jdt.internal.recoveredtypebinding.getcompilationunit.to.gettype*/
+/*!description: Refines internal JDT RecoveredTypeBinding logic by getting the specific IType from the ICompilationUnit.*/
+/*!severity: info*/
+((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(getInternalName() + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java)
+:: inClass("org.eclipse.jdt.core.dom.RecoveredTypeBinding")
+=> ((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(getInternalName() + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java).getType(getName())
+;;
+
+/*!id: jdt.internal.typebinding.getcompilationunit.to.gettype*/
+/*!description: Refines internal JDT TypeBinding logic by getting the specific IType from the ICompilationUnit.*/
+/*!severity: info*/
+((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(new java.lang.String(this.binding.sourceName()) + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java)
+:: inClass("org.eclipse.jdt.core.dom.TypeBinding")
+=> ((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(new java.lang.String(this.binding.sourceName()) + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java).getType(getName())
+;;
+
+org.eclipse.jdt.internal.compiler.ast.Expression type = $expression.type;
+=> org.eclipse.jdt.internal.compiler.ast.TypeReference type = $expression.type;
+;;

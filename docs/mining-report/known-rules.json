@@ -1342,6 +1342,28 @@
       "sourceCommit": "bce0dbd9dd489d3038652b337b4b76bb1f2246a4",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fix-for-333710-fixes-a-bug-i",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.recoveredtypebinding.getcompilationunit.to.gettype*/\n/*!description: Refines internal JDT RecoveredTypeBinding logic by getting the specific IType from the ICompilationUnit.*/\n/*!severity: info*/\n((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(getInternalName() + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java)\n:: inClass(\"org.eclipse.jdt.core.dom.RecoveredTypeBinding\")\n\u003d\u003e ((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(getInternalName() + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java).getType(getName())\n;;\n\n/*!id: jdt.internal.typebinding.getcompilationunit.to.gettype*/\n/*!description: Refines internal JDT TypeBinding logic by getting the specific IType from the ICompilationUnit.*/\n/*!severity: info*/\n((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(new java.lang.String(this.binding.sourceName()) + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java)\n:: inClass(\"org.eclipse.jdt.core.dom.TypeBinding\")\n\u003d\u003e ((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(new java.lang.String(this.binding.sourceName()) + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java).getType(getName())\n;;",
+      "summary": "This commit, \u0027Fix for 333710\u0027, fixes a bug in JDT\u0027s internal `RecoveredTypeBinding` and `TypeBinding` classes. It refines the resolution of type elements from a `PackageFragment` by appending `.getType(this.getName())` to an existing method call chain (e.g., `getCompilationUnit(...)` becomes `getCompilationUnit(...).getType(...)`). This ensures that the specific `IType` is returned rather than just the `ICompilationUnit`. Two distinct, yet similar, transformations are identified based on the arguments to `getCompilationUnit()`. Both are direct, mechanical transformations of method call chains, fully expressible as GREEN TriggerPattern DSL rules. The rules utilize `inClass` guards to ensure they apply within the correct class context, allowing unqualified method calls like `getInternalName()` and `getName()` to correctly resolve to `this.getInternalName()` and `this.getName()` respectively. The `minJavaVersion` for the hint file will be 8 as these are internal JDT API fixes from 2011, not tied to newer Java language features.",
+      "discoveredAt": "2026-04-05",
+      "discoveredInRun": 20016,
+      "sourceCommit": "99e4df2949efc34d2761be7fafc5129385421683",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-an-internal-bug-bug-33",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "org.eclipse.jdt.internal.compiler.ast.Expression type \u003d $expression.type;\n\u003d\u003e org.eclipse.jdt.internal.compiler.ast.TypeReference type \u003d $expression.type;\n;;",
+      "summary": "This commit fixes an internal bug (Bug 338118) in JDT\u0027s `ASTConverter` class. It changes the declared type of a local variable named `type` from `org.eclipse.jdt.internal.compiler.ast.Expression` to `org.eclipse.jdt.internal.compiler.ast.TypeReference` within the `convert(CastExpression)` method. This correction aligns the variable\u0027s type with its semantic role, enabling the removal of a conditional `if-else` block and an internal helper method (`convertToType`). The proposed DSL rule directly replaces this specific local variable declaration, including its initializer, which is sufficiently precise for this internal JDT API fix.",
+      "discoveredAt": "2026-04-05",
+      "discoveredInRun": 20016,
+      "sourceCommit": "630841750ec7fd372d10d6a06da2b09122e947d0",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
