@@ -560,3 +560,40 @@ rewriteNodeList($node, org.eclipse.jdt.core.dom.PackageDeclaration.ANNOTATIONS_P
 org.eclipse.jdt.internal.compiler.ast.Expression type = $expression.type;
 => org.eclipse.jdt.internal.compiler.ast.TypeReference type = $expression.type;
 ;;
+
+/*!id: jdt.internal.ast.newarraytype.allow-array-elementtype*/
+/*!description: Corrects the AST.newArrayType(Type, int) method to allow array types as the element type, fixing an internal validation bug.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, bugfix, refactoring*/
+org.eclipse.jdt.core.dom.Type.$elementType == null || org.eclipse.jdt.core.dom.Type.$elementType.isArrayType()
+=> org.eclipse.jdt.core.dom.Type.$elementType == null
+;;
+
+/*!id: jdt.internal.ast.remove-cycle-creation-javadoc*/
+/*!description: Removes redundant 'a cycle in would be created' Javadoc comments from various AST node creation methods, as these checks are handled internally or not applicable.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, documentation*/
+"<li>a cycle in would be created</li>"
+=> ""
+;;
+
+/*!id: jdt.internal.ast.remove-elementtype-is-arraytype-javadoc*/
+/*!description: Removes specific 'element type is an array type' constraint from ArrayType Javadoc, reflecting the corrected API behavior.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, documentation*/
+"<li>the element type is an array type</li>"
+=> ""
+;;
+
+@id: jdt.internal.bindingresolver.gettypeorpackage.to.getonlypackage
+@severity: info
+this.scope.getTypeOrPackage(org.eclipse.jdt.internal.compiler.util.CharOperation.subarray($importReference.tokens, 0, $importReference.tokens.length))
+=> this.scope.getOnlyPackage(org.eclipse.jdt.internal.compiler.util.CharOperation.subarray($importReference.tokens, 0, $importReference.tokens.length))
+;;
+
+org.eclipse.jdt.core.dom.AST.JLS3_INTERNAL
+=> org.eclipse.jdt.core.dom.AST.JLS3
+;;
