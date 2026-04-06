@@ -52,7 +52,7 @@
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
 			<artifactId>org.eclipse.jdt.ui</artifactId>
-			<version>3.36.0</version>
+			<version>3.37.0</version>
 		</dependency>
 		
 		<!-- We don't need Eclipse Platform dependencies for standalone ASTParser tests -->
