@@ -1364,6 +1364,39 @@
       "sourceCommit": "630841750ec7fd372d10d6a06da2b09122e947d0",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-357259-by-allowing",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.ast.newarraytype.allow-array-elementtype*/\n/*!description: Corrects the AST.newArrayType(Type, int) method to allow array types as the element type, fixing an internal validation bug.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, bugfix, refactoring*/\norg.eclipse.jdt.core.dom.Type.$elementType \u003d\u003d null || org.eclipse.jdt.core.dom.Type.$elementType.isArrayType()\n\u003d\u003e org.eclipse.jdt.core.dom.Type.$elementType \u003d\u003d null\n;;\n\n/*!id: jdt.internal.ast.remove-cycle-creation-javadoc*/\n/*!description: Removes redundant \u0027a cycle in would be created\u0027 Javadoc comments from various AST node creation methods, as these checks are handled internally or not applicable.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, documentation*/\n\"\u003cli\u003ea cycle in would be created\u003c/li\u003e\"\n\u003d\u003e \"\"\n;;\n\n/*!id: jdt.internal.ast.remove-elementtype-is-arraytype-javadoc*/\n/*!description: Removes specific \u0027element type is an array type\u0027 constraint from ArrayType Javadoc, reflecting the corrected API behavior.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, documentation*/\n\"\u003cli\u003ethe element type is an array type\u003c/li\u003e\"\n\u003d\u003e \"\"\n;;",
+      "summary": "This commit fixes Bug 357259 by allowing array types as the element type in `AST.newArrayType(Type, int)`. This involves simplifying a boolean condition from `elementType \u003d\u003d null || elementType.isArrayType()` to `elementType \u003d\u003d null`. This is a direct 1:1 expression replacement and can be fully automated as a GREEN TriggerPattern DSL rule. Additionally, the commit removes several redundant Javadoc comments about \u0027cycle creation\u0027 and the \u0027element type is an array type\u0027 constraint, which are also expressible as separate GREEN DSL rules targeting string literal replacements within Javadoc. The rules are suitable for the `jdt-internal-refactoring.sandbox-hint` file.",
+      "discoveredAt": "2026-04-06",
+      "discoveredInRun": 20424,
+      "sourceCommit": "2aafd163940041eceef8b780ff91e2b7a2e51bfb",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-fixes-bug-357471-in-jdt-s-int",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.bindingresolver.gettypeorpackage.to.getonlypackage\n@severity: info\nthis.scope.getTypeOrPackage(org.eclipse.jdt.internal.compiler.util.CharOperation.subarray($importReference.tokens, 0, $importReference.tokens.length))\n\u003d\u003e this.scope.getOnlyPackage(org.eclipse.jdt.internal.compiler.util.CharOperation.subarray($importReference.tokens, 0, $importReference.tokens.length))\n;;",
+      "summary": "The commit fixes Bug 357471 in JDT\u0027s internal `DefaultBindingResolver` by replacing the `scope.getTypeOrPackage()` method call with `scope.getOnlyPackage()`. This change ensures more precise package binding resolution and is a direct, unconditional 1:1 method call replacement. The pattern is fully expressible in the TriggerPattern DSL as a GREEN transformation, enhancing the correctness of internal JDT API usage. No specific `sourceVersionGE` guard is required as it\u0027s an internal refactoring, not tied to a new external Java language feature beyond the baseline Java 8.",
+      "discoveredAt": "2026-04-06",
+      "discoveredInRun": 20424,
+      "sourceCommit": "bf51a4aa47223fadb7f3b17b32863e3b3b80475e",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-fixed-bug-371732-deprecate-as",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.core.dom.AST.JLS3_INTERNAL\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS3\n;;",
+      "summary": "The commit \u0027Fixed bug 371732: Deprecate AST.JLS3\u0027 refactors internal Eclipse JDT Core DOM API usage. Specifically, the previously public (now package-private) constant `org.eclipse.jdt.core.dom.AST.JLS3_INTERNAL` is being replaced by references to `org.eclipse.jdt.core.dom.AST.JLS3`. While internal JDT classes introduce local, deprecated synonyms to manage this, the most generalizable and automatable transformation for external consumers (or for internal consistency at a higher level) is to directly replace the usage of `AST.JLS3_INTERNAL` with `AST.JLS3`. This is a direct 1:1 constant replacement, improving API consistency and addressing deprecation for JLS3 (Java 1.5) support within JDT. The rule is suitable for inclusion in `jdt-internal-refactoring.sandbox-hint` and applies to projects with a Java 8 baseline.",
+      "discoveredAt": "2026-04-06",
+      "discoveredInRun": 20424,
+      "sourceCommit": "d7f649048f20a2b7da85ffb34af89adc6b577de1",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
