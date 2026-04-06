@@ -1,44 +1,40 @@
 {
-  "totalProcessed": 22,
-  "relevant": 11,
-  "irrelevant": 11,
+  "totalProcessed": 20,
+  "relevant": 13,
+  "irrelevant": 7,
   "duplicates": 0,
-  "green": 2,
+  "green": 4,
   "yellow": 0,
-  "red": 10,
+  "red": 9,
   "irrelevantReasons": {
-    "The commit only updates copyright headers and adds bug references to Javadoc comments. It does not contain any functional code changes or refactorings that could be generalized into a transformation rule.": 1,
-    "This commit only modifies Javadoc comments and a copyright year. The TriggerPattern DSL is for code transformations, not documentation changes.": 1,
-    "Purely documentation/Javadoc formatting and copyright update, no code transformation pattern.": 1,
-    "This commit involves significant internal refactoring of AST conversion logic within JDT, including extracting complex switch statements into helper methods and simplifying object creation logic based on internal parser behavior. These are deep structural and control flow changes that cannot be expressed as pattern-based DSL rules.": 1,
-    "This commit exclusively modifies Javadoc comments in `Statement.java` to improve formatting by using {@link} tags and shorthand for listing subclasses. It does not change any executable Java code, and thus is not relevant for generating TriggerPattern DSL rules.": 1,
-    "The commit only modifies Javadoc comments within an interface and does not include any executable code transformations (Java syntax or AST structure changes) that can be generalized into a DSL rule.": 1,
-    "This commit primarily updates copyright years, fixes a typo in Javadoc comments, and adds new empty `visit` and `endVisit` methods for the `Modifier` AST node in `DefaultASTVisitor`. Adding new methods to a class is a structural change that cannot be expressed as a pattern-based TriggerPattern DSL rule. The DSL focuses on transforming existing expressions, statements, or annotations, not defining new method declarations. The typo fix is also not a code transformation pattern.": 1,
-    "This commit is a direct revert of the previous commit (Commit 0). It removes two `visit` and `endVisit` methods for the `Modifier` AST node from `DefaultASTVisitor.java`. Similar to adding methods, removing entire method declarations is a structural change that falls outside the scope of pattern-based TriggerPattern DSL rules, which focus on transforming existing code constructs (expressions, statements, method calls, annotations).": 1,
-    "This commit re-introduces the two `visit` and `endVisit` methods for the `Modifier` AST node in `DefaultASTVisitor.java` (effectively undoing Commit 1, which reverted Commit 0\u0027s changes). Additionally, it adds a new `visit(Modifier node)` method to `DefaultCommentMapper.java`. As explained for Commit 0, adding new methods to existing classes is a structural code modification that cannot be expressed as a pattern-based TriggerPattern DSL rule. The DSL\u0027s capabilities are focused on transforming existing code patterns.": 1,
-    "All code changes in this commit are limited to Javadoc comments (fixing typos and updating copyright year). The TriggerPattern DSL targets Java code transformations (expressions, statements, declarations, annotations), not Javadoc or other non-code text.": 1,
-    "The commit only modifies Javadoc comments to clarify internal logic, without any changes to executable code. It does not introduce any transformation patterns suitable for a DSL rule.": 1
+    "Purely stylistic/formatting change, no semantic code transformation pattern to extract.": 1,
+    "This commit primarily involves Javadoc updates and renaming a local method parameter. The core change (renaming a parameter in a method signature and its usages within the method body) is a structural refactoring that cannot be generalized or directly expressed as a pattern-based TriggerPattern DSL rule. The DSL focuses on expression and statement transformations, not renaming of declared method parameters.": 1,
+    "The change is a typo fix (\u0027descendents\u0027 to \u0027descendants\u0027) within a Javadoc comment and an update to a copyright year. The TriggerPattern DSL is designed for Java code transformations and explicitly strips all comments (including Javadoc) before rule parsing. Therefore, this change cannot be expressed as a DSL rule.": 1,
+    "This commit is a merge commit containing only trivial, non-code-transforming changes (a copyright year update and a typo fix in a Javadoc comment). These are not generalizable into reusable TriggerPattern DSL rules.": 1,
+    "Javadoc documentation changes only, no code transformation.": 1,
+    "This commit only contains changes to Javadoc comments and a copyright year, not actual Java code transformations. The TriggerPattern DSL is designed for transforming Java source code, not documentation.": 1,
+    "This commit adds a specific internal compiler option setting (`compilerOptions.ignoreSourceFolderWarningOption \u003d true;`) as a fix for a bug in ASTParser. This is a highly specific internal configuration change within the Eclipse JDT compiler implementation, rather than a generalizable code transformation pattern applicable to typical Java projects. It is not a code modernization, performance improvement, or common refactoring that users would apply. Therefore, it is not suitable for a reusable TriggerPattern DSL rule.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 22,
-      "relevant": 11,
-      "green": 2,
+      "totalProcessed": 20,
+      "relevant": 13,
+      "green": 4,
       "yellow": 0,
-      "red": 10
+      "red": 9
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-05",
-      "processed": 22,
-      "relevant": 11
+      "date": "2026-04-06",
+      "processed": 20,
+      "relevant": 13
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-05T03:08:54.173Z",
-    "completedAt": "2026-04-05T03:18:48.281769982Z",
-    "durationSeconds": 594,
+    "startedAt": "2026-04-06T03:10:37.301Z",
+    "completedAt": "2026-04-06T03:20:27.597599140Z",
+    "durationSeconds": 590,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -48,9 +44,9 @@
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-05T03:10:16.179988935Z",
-    "latestEvaluation": "2026-04-05T03:18:47.730905378Z",
-    "earliestCommitDate": "2010-10-29T16:09:50Z",
-    "latestCommitDate": "2011-04-25T22:58:30Z"
+    "earliestEvaluation": "2026-04-06T03:12:00.545632694Z",
+    "latestEvaluation": "2026-04-06T03:20:27.017271629Z",
+    "earliestCommitDate": "2011-08-16T19:11:34Z",
+    "latestCommitDate": "2012-04-30T11:46:18Z"
   }
 }
