@@ -597,3 +597,30 @@ this.scope.getTypeOrPackage(org.eclipse.jdt.internal.compiler.util.CharOperation
 org.eclipse.jdt.core.dom.AST.JLS3_INTERNAL
 => org.eclipse.jdt.core.dom.AST.JLS3
 ;;
+
+@id: jdt.internal.typebinding.gettypearguments-to-gettypecount
+@severity: info
+this.getTypeArguments($typeReference)
+=> this.getTypeCount($typeReference)
+;;
+
+/*!id: jdt.internal.methoddecl.thrownexceptions.property.ischanged*/
+/*!description: Updates internal JDT ASTRewriteAnalyzer's usage of MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY to conditionally use THROWN_EXCEPTION_TYPES_PROPERTY for JLS8+ API levels, improving AST consistency for method throws clauses.*/
+/*!severity: info*/
+isChanged($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY)
+=> isChanged($node, $node.getAST().apiLevel() < org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY)
+;;
+
+/*!id: jdt.internal.methoddecl.thrownexceptions.property.rewritenodelist*/
+/*!description: Updates internal JDT ASTRewriteAnalyzer's usage in rewriteNodeList to conditionally use MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY for JLS8+ API levels, ensuring correct rewriting of method throws clauses.*/
+/*!severity: info*/
+rewriteNodeList($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY, $pos, " throws ", ", ")
+=> rewriteNodeList($node, $node.getAST().apiLevel() < org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY, $pos, " throws ", ", ")
+;;
+
+/*!id: jdt.internal.methoddecl.thrownexceptions.property.visitlist*/
+/*!description: Updates internal JDT ASTRewriteFlattener's usage in visitList to conditionally use MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY for JLS8+ API levels, ensuring correct flattening of method throws clauses.*/
+/*!severity: info*/
+visitList($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY, java.lang.String.valueOf(','), " throws ", org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
+=> visitList($node, $node.getAST().apiLevel() < org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY, java.lang.String.valueOf(','), " throws ", org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
+;;
