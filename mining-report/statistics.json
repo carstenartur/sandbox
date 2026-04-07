@@ -1,52 +1,49 @@
 {
-  "totalProcessed": 20,
-  "relevant": 13,
-  "irrelevant": 7,
+  "totalProcessed": 25,
+  "relevant": 21,
+  "irrelevant": 4,
   "duplicates": 0,
   "green": 4,
   "yellow": 0,
-  "red": 9,
+  "red": 17,
   "irrelevantReasons": {
-    "Purely stylistic/formatting change, no semantic code transformation pattern to extract.": 1,
-    "This commit primarily involves Javadoc updates and renaming a local method parameter. The core change (renaming a parameter in a method signature and its usages within the method body) is a structural refactoring that cannot be generalized or directly expressed as a pattern-based TriggerPattern DSL rule. The DSL focuses on expression and statement transformations, not renaming of declared method parameters.": 1,
-    "The change is a typo fix (\u0027descendents\u0027 to \u0027descendants\u0027) within a Javadoc comment and an update to a copyright year. The TriggerPattern DSL is designed for Java code transformations and explicitly strips all comments (including Javadoc) before rule parsing. Therefore, this change cannot be expressed as a DSL rule.": 1,
-    "This commit is a merge commit containing only trivial, non-code-transforming changes (a copyright year update and a typo fix in a Javadoc comment). These are not generalizable into reusable TriggerPattern DSL rules.": 1,
-    "Javadoc documentation changes only, no code transformation.": 1,
-    "This commit only contains changes to Javadoc comments and a copyright year, not actual Java code transformations. The TriggerPattern DSL is designed for transforming Java source code, not documentation.": 1,
-    "This commit adds a specific internal compiler option setting (`compilerOptions.ignoreSourceFolderWarningOption \u003d true;`) as a fix for a bug in ASTParser. This is a highly specific internal configuration change within the Eclipse JDT compiler implementation, rather than a generalizable code transformation pattern applicable to typical Java projects. It is not a code modernization, performance improvement, or common refactoring that users would apply. Therefore, it is not suitable for a reusable TriggerPattern DSL rule.": 1
+    "This commit modifies an internal string literal that serves as an example within the JDT formatter\u0027s configuration. It\u0027s a fix to the formatter\u0027s internal behavior and heuristics for newline insertion, not a code transformation applicable to user-facing Java patterns. Therefore, it\u0027s not a suitable candidate for a TriggerPattern DSL rule.": 1,
+    "Fixes only documentation typos, no code transformation patterns.": 1,
+    "The commit primarily involves Javadoc documentation updates (clarifying exceptions, fixing typos, adding @deprecated notes). These are not code transformations that modify the runtime behavior or structure of the Java code, and thus are not suitable for TriggerPattern DSL rules.": 1,
+    "This commit consists solely of Javadoc updates (changing \u0027child type\u0027 to \u0027element type\u0027, removing \u003cCODE\u003e tags, and updating a copyright year) and thus does not contain any functional code transformations or patterns suitable for DSL mining.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 20,
-      "relevant": 13,
+      "totalProcessed": 25,
+      "relevant": 21,
       "green": 4,
       "yellow": 0,
-      "red": 9
+      "red": 17
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-06",
-      "processed": 20,
-      "relevant": 13
+      "date": "2026-04-07",
+      "processed": 25,
+      "relevant": 21
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-06T03:10:37.301Z",
-    "completedAt": "2026-04-06T03:20:27.597599140Z",
-    "durationSeconds": 590,
+    "startedAt": "2026-04-07T03:09:05.111Z",
+    "completedAt": "2026-04-07T03:18:47.952101456Z",
+    "durationSeconds": 582,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 92,
+    "deferredCommits": 96,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-06T03:12:00.545632694Z",
-    "latestEvaluation": "2026-04-06T03:20:27.017271629Z",
-    "earliestCommitDate": "2011-08-16T19:11:34Z",
-    "latestCommitDate": "2012-04-30T11:46:18Z"
+    "earliestEvaluation": "2026-04-07T03:11:09.146203288Z",
+    "latestEvaluation": "2026-04-07T03:18:47.673554218Z",
+    "earliestCommitDate": "2013-01-03T06:17:33Z",
+    "latestCommitDate": "2013-03-02T06:20:38Z"
   }
 }

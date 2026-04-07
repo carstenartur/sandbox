@@ -1397,6 +1397,28 @@
       "sourceCommit": "d7f649048f20a2b7da85ffb34af89adc6b577de1",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-395886-by-refactor",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.typebinding.gettypearguments-to-gettypecount\n@severity: info\nthis.getTypeArguments($typeReference)\n\u003d\u003e this.getTypeCount($typeReference)\n;;",
+      "summary": "This commit fixes Bug 395886 by refactoring how internal JDT DOM AST counts type arguments and annotations for `ParameterizedQualifiedTypeReference` nodes. The most generalizable DSL pattern is the renaming of the internal method `DefaultBindingResolver.getTypeArguments()` to `getTypeCount()` and updating its call site. This is a direct method call replacement that improves internal JDT API consistency and correctness for handling Java 8 type annotations. Other changes involving structural modifications to AST conversion and flattening logic are not suitable for pattern-based DSL rules.",
+      "discoveredAt": "2026-04-07",
+      "discoveredInRun": 20988,
+      "sourceCommit": "c0d8ddbb4b72e166c7dc81eb807bc47fd1beaa74",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-jdt-ast",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.methoddecl.thrownexceptions.property.ischanged*/\n/*!description: Updates internal JDT ASTRewriteAnalyzer\u0027s usage of MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY to conditionally use THROWN_EXCEPTION_TYPES_PROPERTY for JLS8+ API levels, improving AST consistency for method throws clauses.*/\n/*!severity: info*/\nisChanged($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY)\n\u003d\u003e isChanged($node, $node.getAST().apiLevel() \u003c org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY)\n;;\n\n/*!id: jdt.internal.methoddecl.thrownexceptions.property.rewritenodelist*/\n/*!description: Updates internal JDT ASTRewriteAnalyzer\u0027s usage in rewriteNodeList to conditionally use MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY for JLS8+ API levels, ensuring correct rewriting of method throws clauses.*/\n/*!severity: info*/\nrewriteNodeList($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY, $pos, \" throws \", \", \")\n\u003d\u003e rewriteNodeList($node, $node.getAST().apiLevel() \u003c org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY, $pos, \" throws \", \", \")\n;;\n\n/*!id: jdt.internal.methoddecl.thrownexceptions.property.visitlist*/\n/*!description: Updates internal JDT ASTRewriteFlattener\u0027s usage in visitList to conditionally use MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY for JLS8+ API levels, ensuring correct flattening of method throws clauses.*/\n/*!severity: info*/\nvisitList($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY, java.lang.String.valueOf(\u0027,\u0027), \" throws \", org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)\n\u003d\u003e visitList($node, $node.getAST().apiLevel() \u003c org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY, java.lang.String.valueOf(\u0027,\u0027), \" throws \", org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)\n;;",
+      "summary": "This commit modernizes internal JDT AST rewriting and flattening logic for `MethodDeclaration`\u0027s \u0027throws\u0027 clause. It introduces a conditional check (ternary operator) to dynamically select between `MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY` (for pre-JLS8 API levels) and `MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY` (for JLS8+ API levels). This ensures that the AST rewrite correctly handles the representation of thrown exceptions as types, not just names, in modern Java. The DSL rules implement this by replacing each usage of the old property with the full conditional ternary expression. This is a direct expression replacement, fully supported by the DSL, and improves internal JDT API consistency and correctness. The rules are added to the `jdt-internal-refactoring.sandbox-hint` file with a `minJavaVersion` of 8.",
+      "discoveredAt": "2026-04-07",
+      "discoveredInRun": 20988,
+      "sourceCommit": "d22cc5d84178d171847e96f4fb5b97fb98c95448",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
