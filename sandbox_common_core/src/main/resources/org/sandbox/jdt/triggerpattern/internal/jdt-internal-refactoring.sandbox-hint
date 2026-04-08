@@ -624,3 +624,68 @@ rewriteNodeList($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTI
 visitList($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY, java.lang.String.valueOf(','), " throws ", org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
 => visitList($node, $node.getAST().apiLevel() < org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY, java.lang.String.valueOf(','), " throws ", org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
 ;;
+
+/*!id: jdt.internal.methoddecl.extraDimensions.property.rename*/
+/*!description: Updates internal JDT DOM API, renaming MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY to MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY to reflect JLS8 AST structure review.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY
+;;
+
+/*!id: jdt.internal.methoddecl.extraDimensions.nodelist.constructor.update*/
+/*!description: Updates internal JDT DOM ASTNode.NodeList constructor calls to use the new MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY.*/
+/*!severity: info*/
+new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY) :: sourceVersionGE(8)
+=> new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY)
+;;
+
+/*!id: jdt.internal.variabledecl.extradimensions2.stringliteral.update*/
+/*!description: Updates internal JDT DOM, renaming the string literal 'extraDimensions' to 'extraDimensions2' within the ChildListPropertyDescriptor constructor call in internalExtraDimensions2PropertyFactory for VariableDeclaration.*/
+/*!severity: info*/
+new org.eclipse.jdt.core.dom.ChildListPropertyDescriptor($nodeClass, "extraDimensions", org.eclipse.jdt.core.dom.ExtraDimension.class, $cycleRisk) :: inClass("org.eclipse.jdt.core.dom.VariableDeclaration") && inMethod("internalExtraDimensions2PropertyFactory") && sourceVersionGE(8)
+=> new org.eclipse.jdt.core.dom.ChildListPropertyDescriptor($nodeClass, "extraDimensions2", org.eclipse.jdt.core.dom.ExtraDimension.class, $cycleRisk)
+;;
+
+/*!id: jdt.internal.variabledeclfragment.extradimensions.tomanufactory*/
+/*!description: Replaces the direct SimplePropertyDescriptor instantiation for VariableDeclarationFragment.EXTRA_DIMENSIONS_PROPERTY with a call to the internal factory method internalExtraDimensionsPropertyFactory.*/
+/*!severity: info*/
+new org.eclipse.jdt.core.dom.SimplePropertyDescriptor(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class, "extraDimensions", int.class, org.eclipse.jdt.core.dom.ASTNode.MANDATORY) :: inClass("org.eclipse.jdt.core.dom.VariableDeclarationFragment") && sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.VariableDeclarationFragment.internalExtraDimensionsPropertyFactory(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class)
+;;
+
+/*!id: jdt.internal.variabledeclfragment.extradimensions2.tomanufactory*/
+/*!description: Replaces the direct ChildListPropertyDescriptor instantiation for VariableDeclarationFragment.EXTRA_DIMENSIONS2_PROPERTY with a call to the internal factory method internalExtraDimensions2PropertyFactory.*/
+/*!severity: info*/
+new org.eclipse.jdt.core.dom.ChildListPropertyDescriptor(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class, "extraDimensions", org.eclipse.jdt.core.dom.ExtraDimension.class, org.eclipse.jdt.core.dom.ASTNode.NO_CYCLE_RISK) :: inClass("org.eclipse.jdt.core.dom.VariableDeclarationFragment") && sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.VariableDeclarationFragment.internalExtraDimensions2PropertyFactory(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class)
+;;
+
+@id: jdt.internal.methoddecl.thrownexceptions.to.helper
+@severity: info
+$node.thrownExceptions() :: instanceof($node, "org.eclipse.jdt.core.dom.MethodDeclaration") && sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.ASTConverter.internalThownExceptions($node)
+;;
+
+@id: jdt.internal.astparser.jls4.to.jls8
+@severity: info
+org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS4) :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS8)
+;;
+
+@id: jdt.internal.ast.jls4.to.jls4_internal
+@severity: info
+org.eclipse.jdt.core.dom.AST.JLS4 :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.AST.JLS4_INTERNAL
+;;
+
+@id: jdt.internal.modifier.isdefaultmethod-to-isdefault.static
+@severity: info
+org.eclipse.jdt.core.dom.Modifier.isDefaultMethod($flags) :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.Modifier.isDefault($flags)
+;;
+
+@id: jdt.internal.modifier.isdefaultmethod-to-isdefault.instance
+@severity: info
+$modifier.isDefaultMethod() :: instanceof($modifier, "org.eclipse.jdt.core.dom.Modifier") && sourceVersionGE(8)
+=> $modifier.isDefault()
+;;

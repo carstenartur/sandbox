@@ -1419,6 +1419,61 @@
       "sourceCommit": "d22cc5d84178d171847e96f4fb5b97fb98c95448",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-renames-the-internal-jdt-dom",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.methoddecl.extraDimensions.property.rename*/\n/*!description: Updates internal JDT DOM API, renaming MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY to MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY to reflect JLS8 AST structure review.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY :: sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY\n;;\n\n/*!id: jdt.internal.methoddecl.extraDimensions.nodelist.constructor.update*/\n/*!description: Updates internal JDT DOM ASTNode.NodeList constructor calls to use the new MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY.*/\n/*!severity: info*/\nnew org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY) :: sourceVersionGE(8)\n\u003d\u003e new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY)\n;;",
+      "summary": "This commit renames the internal JDT DOM AST property `MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY` to `MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY` and updates all its references and usages within `MethodDeclaration.java`, `ASTRewriteAnalyzer.java`, and `ASTRewriteFlattener.java`. This is a direct 1:1 replacement of a static field reference and an identifier within a constructor argument. It is a mechanical, semantically safe change that can be fully automated with two TriggerPattern DSL rules. The rules are guarded by `sourceVersionGE(8)` as they pertain to JLS8 AST structure.",
+      "discoveredAt": "2026-04-08",
+      "discoveredInRun": 21144,
+      "sourceCommit": "31085e35ec6546fd0ce14d2c37082b7385a37318",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-continues-the-jls8-ast-struc",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.variabledecl.extradimensions2.stringliteral.update*/\n/*!description: Updates internal JDT DOM, renaming the string literal \u0027extraDimensions\u0027 to \u0027extraDimensions2\u0027 within the ChildListPropertyDescriptor constructor call in internalExtraDimensions2PropertyFactory for VariableDeclaration.*/\n/*!severity: info*/\nnew org.eclipse.jdt.core.dom.ChildListPropertyDescriptor($nodeClass, \"extraDimensions\", org.eclipse.jdt.core.dom.ExtraDimension.class, $cycleRisk) :: inClass(\"org.eclipse.jdt.core.dom.VariableDeclaration\") \u0026\u0026 inMethod(\"internalExtraDimensions2PropertyFactory\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e new org.eclipse.jdt.core.dom.ChildListPropertyDescriptor($nodeClass, \"extraDimensions2\", org.eclipse.jdt.core.dom.ExtraDimension.class, $cycleRisk)\n;;\n\n/*!id: jdt.internal.variabledeclfragment.extradimensions.tomanufactory*/\n/*!description: Replaces the direct SimplePropertyDescriptor instantiation for VariableDeclarationFragment.EXTRA_DIMENSIONS_PROPERTY with a call to the internal factory method internalExtraDimensionsPropertyFactory.*/\n/*!severity: info*/\nnew org.eclipse.jdt.core.dom.SimplePropertyDescriptor(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class, \"extraDimensions\", int.class, org.eclipse.jdt.core.dom.ASTNode.MANDATORY) :: inClass(\"org.eclipse.jdt.core.dom.VariableDeclarationFragment\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.core.dom.VariableDeclarationFragment.internalExtraDimensionsPropertyFactory(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class)\n;;\n\n/*!id: jdt.internal.variabledeclfragment.extradimensions2.tomanufactory*/\n/*!description: Replaces the direct ChildListPropertyDescriptor instantiation for VariableDeclarationFragment.EXTRA_DIMENSIONS2_PROPERTY with a call to the internal factory method internalExtraDimensions2PropertyFactory.*/\n/*!severity: info*/\nnew org.eclipse.jdt.core.dom.ChildListPropertyDescriptor(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class, \"extraDimensions\", org.eclipse.jdt.core.dom.ExtraDimension.class, org.eclipse.jdt.core.dom.ASTNode.NO_CYCLE_RISK) :: inClass(\"org.eclipse.jdt.core.dom.VariableDeclarationFragment\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.core.dom.VariableDeclarationFragment.internalExtraDimensions2PropertyFactory(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class)\n;;",
+      "summary": "This commit continues the JLS8 AST structure review, focusing on `SingleVariableDeclaration.java`, `VariableDeclaration.java`, and `VariableDeclarationFragment.java`. It involves renaming a string literal argument in a `ChildListPropertyDescriptor` constructor within an internal factory method (`internalExtraDimensions2PropertyFactory`). Additionally, it updates the initializers for `VariableDeclarationFragment.EXTRA_DIMENSIONS_PROPERTY` and `VariableDeclarationFragment.EXTRA_DIMENSIONS2_PROPERTY` from direct `new ...` calls to invocations of their respective internal factory methods (`internalExtraDimensionsPropertyFactory` and `internalExtraDimensions2PropertyFactory`). These are mechanical, semantically safe changes consisting of string literal replacements in constructor arguments and expression replacements for field initializers. The transformation can be fully automated with three TriggerPattern DSL rules, each guarded by `sourceVersionGE(8)` and `inClass`/`inMethod` where appropriate.",
+      "discoveredAt": "2026-04-08",
+      "discoveredInRun": 21144,
+      "sourceCommit": "9bafd098a4f01cb487df1e23626d9ca01b29c273",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-internal-static-h",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.methoddecl.thrownexceptions.to.helper\n@severity: info\n$node.thrownExceptions() :: instanceof($node, \"org.eclipse.jdt.core.dom.MethodDeclaration\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTConverter.internalThownExceptions($node)\n;;",
+      "summary": "This commit introduces internal static helper methods `internalThownExceptions` and `thrownExceptions` to wrap calls to the deprecated `MethodDeclaration.thrownExceptions()` method. This is done to avoid deprecation warnings within JDT\u0027s own codebase when compiling with JLS8 or later. The DSL rule captures this internal encapsulation by replacing direct calls to `node.thrownExceptions()` with a call to the new internal helper method (`ASTConverter.internalThownExceptions($node)`). This is a direct method call replacement, aligning with internal JDT API modernization practices for deprecation management. Other changes, such as modifying method declarations to be static, are not directly supported by the DSL.",
+      "discoveredAt": "2026-04-08",
+      "discoveredInRun": 21144,
+      "sourceCommit": "6bc11449bdc77b64b2e9fa71343f1b205e63ae9f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-deprecates-ast-jls4-and-syst",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astparser.jls4.to.jls8\n@severity: info\norg.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS4) :: sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS8)\n;;\n\n@id: jdt.internal.ast.jls4.to.jls4_internal\n@severity: info\norg.eclipse.jdt.core.dom.AST.JLS4 :: sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS4_INTERNAL\n;;",
+      "summary": "This commit deprecates `AST.JLS4` and systematically updates its internal usages within JDT Core DOM. Two generalizable patterns emerge: 1) Calls to `ASTParser.newParser(AST.JLS4)` are updated to `ASTParser.newParser(AST.JLS8)` to reflect the latest recommended AST level. 2) Direct references to `AST.JLS4` within internal JDT code (e.g., in `ASTConverter`, `ASTMatcher` conditions, `Type` property descriptor arrays) are replaced with `AST.JLS4_INTERNAL`, an internal synonym, to alleviate deprecation warnings. Both transformations are direct 1:1 constant replacements, making them fully expressible as TriggerPattern DSL rules for Java 8+ projects. Javadoc updates are not covered by DSL rules.",
+      "discoveredAt": "2026-04-08",
+      "discoveredInRun": 21144,
+      "sourceCommit": "e8ece6af8318a12ec7ce6a4cfeae9e9119159fb6",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-renames-the-internal-jdt-dom",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.modifier.isdefaultmethod-to-isdefault.static\n@severity: info\norg.eclipse.jdt.core.dom.Modifier.isDefaultMethod($flags) :: sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.core.dom.Modifier.isDefault($flags)\n;;\n\n@id: jdt.internal.modifier.isdefaultmethod-to-isdefault.instance\n@severity: info\n$modifier.isDefaultMethod() :: instanceof($modifier, \"org.eclipse.jdt.core.dom.Modifier\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e $modifier.isDefault()\n;;",
+      "summary": "This commit renames the internal JDT DOM `Modifier.isDefaultMethod()` and `Modifier.isDefaultMethod(flags)` to `Modifier.isDefault()` and `Modifier.isDefault(flags)` respectively. This API modernization clarifies the method\u0027s purpose in supporting Java 8 default methods in interfaces, making the API more general. Both are direct 1:1 method call replacements, fully expressible as GREEN TriggerPattern DSL rules with a Java 8 source version guard, as the related JLS feature (default methods) was introduced in Java 8.",
+      "discoveredAt": "2026-04-08",
+      "discoveredInRun": 21144,
+      "sourceCommit": "ac894da9b0ea3c039ce6982330527517abe54897",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

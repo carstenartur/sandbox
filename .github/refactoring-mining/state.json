@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "c35f48a470f9475e0b73c6c14c2a26ca2378ab58",
-      "lastProcessedDate": "2026-04-07T03:18:47.673962973Z",
-      "totalProcessed": 10875,
+      "lastProcessedCommit": "e3d1a6cf758d351b80734729b068cc97373e684d",
+      "lastProcessedDate": "2026-04-08T03:19:23.860651773Z",
+      "totalProcessed": 11031,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -842,6 +842,33 @@
           "deferredAt": "2026-04-07T03:13:28.332622576Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "85d82ef92c86e257cfcb71c0ec95b6b64432a5cb",
+          "message": "Fixed Bug 399793 - [1.8][dom ast] Add a new node type for compiler node LambdaExpression",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-08T03:10:37.900923463Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "11bdf7ee83fa535bb4e922a4f202eec91a5eb529",
+          "message": "Bug 404986: [dom ast] Add a debug option to verify proper nesting of ASTNodes",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-08T03:17:20.212321587Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2c5129ccdeb3bec0116f7310eb4a5f7c456e0788",
+          "message": "Bug 404986: [dom ast] Add a debug option to verify proper nesting of ASTNodes",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-08T03:17:20.222849503Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -855,11 +882,11 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 196,
+        "JDT Internal Refactoring": 205,
         "Unnecessary Annotation Removal": 1,
         "Collections": 2,
         "Java-Modernization": 5,
-        "JDT Internal Bug Fix": 70,
+        "JDT Internal Bug Fix": 79,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
@@ -876,18 +903,18 @@
         "Type System Improvement": 1,
         "Code Style": 2,
         "JDT Internal Formatting/Rewrite": 1,
-        "JDT Internal Architecture": 9,
+        "JDT Internal Architecture": 11,
         "JDT Internal API Management": 1,
         "Error Handling Improvement": 1,
         "Java Modernization": 5,
         "JDT Internal API Evolution": 11,
         "JDT Internal Performance": 1,
-        "Concurrency": 1,
+        "Concurrency": 2,
         "Code Style / Annotation": 1,
         "Error Handling / Logging": 1,
         "API Modernization": 1,
         "Eclipse API Modernization": 1,
-        "Null-Safety": 1,
+        "Null-Safety": 2,
         "JDT Internal Feature Implementation": 4
       },
       "exhaustedCategories": []
@@ -1019,5 +1046,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 20988
+  "globalTotalProcessed": 21144
 }
