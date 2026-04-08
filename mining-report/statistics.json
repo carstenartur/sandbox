@@ -1,49 +1,46 @@
 {
-  "totalProcessed": 25,
-  "relevant": 21,
-  "irrelevant": 4,
+  "totalProcessed": 23,
+  "relevant": 22,
+  "irrelevant": 1,
   "duplicates": 0,
-  "green": 4,
+  "green": 5,
   "yellow": 0,
   "red": 17,
   "irrelevantReasons": {
-    "This commit modifies an internal string literal that serves as an example within the JDT formatter\u0027s configuration. It\u0027s a fix to the formatter\u0027s internal behavior and heuristics for newline insertion, not a code transformation applicable to user-facing Java patterns. Therefore, it\u0027s not a suitable candidate for a TriggerPattern DSL rule.": 1,
-    "Fixes only documentation typos, no code transformation patterns.": 1,
-    "The commit primarily involves Javadoc documentation updates (clarifying exceptions, fixing typos, adding @deprecated notes). These are not code transformations that modify the runtime behavior or structure of the Java code, and thus are not suitable for TriggerPattern DSL rules.": 1,
-    "This commit consists solely of Javadoc updates (changing \u0027child type\u0027 to \u0027element type\u0027, removing \u003cCODE\u003e tags, and updating a copyright year) and thus does not contain any functional code transformations or patterns suitable for DSL mining.": 1
+    "This commit primarily introduces internal Eclipse JDT DOM AST support for Java 8 Lambda Expressions, rather than a generalizable code transformation pattern. It involves adding new AST node types and their associated methods (match, visit, endVisit), reordering methods within files, updating internal property descriptors, and a minor simplification in `treeSize()` calculation for the new node type. These are foundational changes for a new language feature within the AST, not patterns for transforming existing user code or recurring internal refactorings.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 25,
-      "relevant": 21,
-      "green": 4,
+      "totalProcessed": 23,
+      "relevant": 22,
+      "green": 5,
       "yellow": 0,
       "red": 17
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-07",
-      "processed": 25,
-      "relevant": 21
+      "date": "2026-04-08",
+      "processed": 23,
+      "relevant": 22
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-07T03:09:05.111Z",
-    "completedAt": "2026-04-07T03:18:47.952101456Z",
-    "durationSeconds": 582,
+    "startedAt": "2026-04-08T03:09:30.212Z",
+    "completedAt": "2026-04-08T03:19:24.211870742Z",
+    "durationSeconds": 593,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 96,
+    "deferredCommits": 99,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-07T03:11:09.146203288Z",
-    "latestEvaluation": "2026-04-07T03:18:47.673554218Z",
-    "earliestCommitDate": "2013-01-03T06:17:33Z",
-    "latestCommitDate": "2013-03-02T06:20:38Z"
+    "earliestEvaluation": "2026-04-08T03:10:54.347655585Z",
+    "latestEvaluation": "2026-04-08T03:19:23.859807198Z",
+    "earliestCommitDate": "2013-02-26T15:59:21Z",
+    "latestCommitDate": "2013-04-15T00:09:17Z"
   }
 }
