@@ -689,3 +689,10 @@ org.eclipse.jdt.core.dom.Modifier.isDefaultMethod($flags) :: sourceVersionGE(8)
 $modifier.isDefaultMethod() :: instanceof($modifier, "org.eclipse.jdt.core.dom.Modifier") && sourceVersionGE(8)
 => $modifier.isDefault()
 ;;
+
+/*!id: jdt.internal.typebinding.add.intersectioncasttype.condition*/
+/*!description: Extends a boolean condition in TypeBinding to include 'isIntersectionCastType()' when handling new Java 8 intersection types.*/
+/*!severity: info*/
+isAnonymous() || this.binding.isLocalType() :: sourceVersionGE(8) && inClass("org.eclipse.jdt.core.dom.TypeBinding")
+=> isAnonymous() || this.binding.isLocalType() || this.binding.isIntersectionCastType()
+;;
