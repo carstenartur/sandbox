@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "e3d1a6cf758d351b80734729b068cc97373e684d",
-      "lastProcessedDate": "2026-04-08T03:19:23.860651773Z",
-      "totalProcessed": 11031,
+      "lastProcessedCommit": "a7206b9a1db9f42c4d02bfbc442f9a8443757f7a",
+      "lastProcessedDate": "2026-04-09T03:19:44.661629777Z",
+      "totalProcessed": 11192,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -869,6 +869,78 @@
           "deferredAt": "2026-04-08T03:17:20.222849503Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "23d1bc466b4877bf5eceb83f88acf63af19c0d70",
+          "message": "better formatting of annotations on varargs",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:10:23.696704701Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aade06a7dde9bdd68930bb7332e79ee5b41e5db9",
+          "message": "Bug 395612: [1.8] Implement AST Rewrite for Receiver",
+          "diffLines": 30,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:10:23.697352255Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "acc3e872f413b4237eeb7d6d9e3f49d61ce6d84c",
+          "message": "cleanup for bug 399792 - [1.8][dom ast] AST APIs should support casts with intersection types",
+          "diffLines": 395,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:12:24.612453256Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6a514a348b687707873fde0f6184e6b09d1607ee",
+          "message": "AST#createInstance(..) can also fail due to bad API level",
+          "diffLines": 33,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:12:24.612541790Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e6029c8b1adfe1296ee554ed42f00e5a663cecbf",
+          "message": "Bug 217966: Flags#toString API deserves improvements",
+          "diffLines": 42,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:12:24.612592636Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d3d92e370789aaaed8a46c804d74e3cb2b4bb167",
+          "message": "Fix for bug 404489 - [1.8][dom ast] Incorrect conversion of JSR308 TYPE_USE annotations on qualified name",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-09T03:12:24.636123104Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a9a2f610dbfd1c80acbe2670e60eb850641763f6",
+          "message": "Fix for bug 403810 - [1.8] @since tags need adjusting",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-09T03:12:53.027949040Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "80351fb8a54757084b1b27c49cb8b0584bf78834",
+          "message": "Bug 399794: [1.8][dom ast] Add a new node type for the compiler node ReferenceExpression",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-09T03:18:43.341483268Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -882,11 +954,11 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 205,
+        "JDT Internal Refactoring": 215,
         "Unnecessary Annotation Removal": 1,
         "Collections": 2,
         "Java-Modernization": 5,
-        "JDT Internal Bug Fix": 79,
+        "JDT Internal Bug Fix": 83,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
@@ -903,7 +975,7 @@
         "Type System Improvement": 1,
         "Code Style": 2,
         "JDT Internal Formatting/Rewrite": 1,
-        "JDT Internal Architecture": 11,
+        "JDT Internal Architecture": 14,
         "JDT Internal API Management": 1,
         "Error Handling Improvement": 1,
         "Java Modernization": 5,
@@ -1046,5 +1118,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 21144
+  "globalTotalProcessed": 21305
 }

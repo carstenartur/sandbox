@@ -1474,6 +1474,17 @@
       "sourceCommit": "ac894da9b0ea3c039ce6982330527517abe54897",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-support-for-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.typebinding.add.intersectioncasttype.condition*/\n/*!description: Extends a boolean condition in TypeBinding to include \u0027isIntersectionCastType()\u0027 when handling new Java 8 intersection types.*/\n/*!severity: info*/\nisAnonymous() || this.binding.isLocalType() :: sourceVersionGE(8) \u0026\u0026 inClass(\"org.eclipse.jdt.core.dom.TypeBinding\")\n\u003d\u003e isAnonymous() || this.binding.isLocalType() || this.binding.isIntersectionCastType()\n;;",
+      "summary": "This commit introduces support for Java 8\u0027s intersection types in the JDT DOM AST. While most changes are structural (new classes, methods, complex AST node creation, switch case additions) and are not expressible by the DSL, a specific pattern in `TypeBinding.java` is a direct modification of a boolean expression. It extends the condition `isAnonymous() || this.binding.isLocalType()` to include `|| this.binding.isIntersectionCastType()`. This is a direct expression replacement, making it a GREEN transformation that modernizes internal JDT API usage for new Java language features.",
+      "discoveredAt": "2026-04-09",
+      "discoveredInRun": 21305,
+      "sourceCommit": "a2a0577109951f3af96b6ee7e6f23d457b52d52d",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
