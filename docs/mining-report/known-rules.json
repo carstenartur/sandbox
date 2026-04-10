@@ -1485,6 +1485,39 @@
       "sourceCommit": "a2a0577109951f3af96b6ee7e6f23d457b52d52d",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-an-internal-jdt-bug-re",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.bindingresolver.lambda-refexpr-binding-to-methodbinding*/\n/*!description: Updates internal JDT DefaultBindingResolver to use getMethodBinding() instead of direct \u0027binding\u0027 field access for LambdaExpression and ReferenceExpression, improving encapsulation and correctness for resolved method parameters.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, bugfix*/\norg.eclipse.jdt.internal.compiler.ast.LambdaExpression.$lambdaExpression.binding\n:: instanceof($lambdaExpression, \"org.eclipse.jdt.internal.compiler.ast.LambdaExpression\")\n\u003d\u003e $lambdaExpression.getMethodBinding()\n;;\n\norg.eclipse.jdt.internal.compiler.ast.ReferenceExpression.$referenceExpression.binding\n:: instanceof($referenceExpression, \"org.eclipse.jdt.internal.compiler.ast.ReferenceExpression\")\n\u003d\u003e $referenceExpression.getMethodBinding()\n;;",
+      "summary": "This commit fixes an internal JDT bug related to incorrect method binding parameters for LambdaExpression and ReferenceExpression. It replaces direct field access `.binding` with a dedicated getter method `.getMethodBinding()` on internal compiler AST nodes (`org.eclipse.jdt.internal.compiler.ast.LambdaExpression`, `org.eclipse.jdt.internal.compiler.ast.ReferenceExpression`). This is a direct 1:1 expression replacement that improves internal API encapsulation and corrects binding resolution for Java 8 features. The transformation is highly reusable for internal JDT modernization and is fully implementable as two GREEN TriggerPattern DSL rules, each with an `instanceof` guard, targeting the respective internal AST node types.",
+      "discoveredAt": "2026-04-10",
+      "discoveredInRun": 21636,
+      "sourceCommit": "f5937020c6b957eed03745f57cfee671f23dd9b8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-replaces-direct-and-comparis",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.internal.compiler.lookup.TypeBinding $x \u003d\u003d org.eclipse.jdt.internal.compiler.lookup.TypeBinding $y :: sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.internal.compiler.lookup.TypeBinding.equalsEquals($x, $y)\n;;\n\norg.eclipse.jdt.internal.compiler.lookup.TypeBinding $x !\u003d org.eclipse.jdt.internal.compiler.lookup.TypeBinding $y :: sourceVersionGE(8)\n\u003d\u003e !org.eclipse.jdt.internal.compiler.lookup.TypeBinding.equalsEquals($x, $y)\n;;",
+      "summary": "This commit replaces direct \u0027\u003d\u003d\u0027 and \u0027!\u003d\u0027 comparisons of internal JDT `TypeBinding` instances with calls to the static utility method `org.eclipse.jdt.internal.compiler.lookup.TypeBinding.equalsEquals()`. This is an internal JDT API modernization to ensure correct comparison of `TypeBinding` objects, especially in Java 8 contexts where simple reference equality might not be sufficient. The transformation is a direct 1:1 expression replacement and is fully expressible as two separate GREEN TriggerPattern DSL rules: one for \u0027\u003d\u003d\u0027 and one for \u0027!\u003d\u0027, both guarded by \u0027sourceVersionGE(8)\u0027 to align with the commit\u0027s context.",
+      "discoveredAt": "2026-04-10",
+      "discoveredInRun": 21636,
+      "sourceCommit": "72578ba43287462a0c91a7de026e07610ac80a95",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-addresses-bug-419748-by-refa",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.methoddecl.receivertype.propertydescriptor.type*/\n/*!description: Updates the type of the \u0027receiverType\u0027 property descriptor in MethodDeclaration from AnnotatableType.class to Type.class, aligning with JLS8 AST structure.*/\n/*!severity: info*/\nnew org.eclipse.jdt.core.dom.ChildPropertyDescriptor(org.eclipse.jdt.core.dom.MethodDeclaration.class, \"receiverType\", org.eclipse.jdt.core.dom.AnnotatableType.class, $optional, $noCycleRisk) :: sourceVersionGE(8) \u0026\u0026 inClass(\"org.eclipse.jdt.core.dom.MethodDeclaration\")\n\u003d\u003e new org.eclipse.jdt.core.dom.ChildPropertyDescriptor(org.eclipse.jdt.core.dom.MethodDeclaration.class, \"receiverType\", org.eclipse.jdt.core.dom.Type.class, $optional, $noCycleRisk)\n;;\n\n/*!id: jdt.internal.methoddecl.receivertype.cast*/\n/*!description: Replaces casts to (AnnotatableType) with (Type) for receiver types in MethodDeclaration, aligning with JLS8 AST structure and removing a redundant internal type.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.dom.AnnotatableType) $expression :: sourceVersionGE(8) \u0026\u0026 inClass(\"org.eclipse.jdt.core.dom.MethodDeclaration\")\n\u003d\u003e (org.eclipse.jdt.core.dom.Type) $expression\n;;",
+      "summary": "This commit addresses Bug 419748 by refactoring internal JDT Core DOM API usage related to Java 8 MethodDeclaration receiver types. It replaces references to `AnnotatableType` with `Type` in the `ChildPropertyDescriptor` initialization and in explicit casts within `setReceiverType` and `clone0` methods. This aligns the internal AST model with the final JLS8 specification, which made `Type` itself capable of carrying annotations, rendering `AnnotatableType` redundant. The changes are direct 1:1 replacements of type literals and type casts, making them fully expressible as GREEN TriggerPattern DSL rules. The rules are guarded by `sourceVersionGE(8)` and `inClass` checks to ensure precision for internal JDT API modernization.",
+      "discoveredAt": "2026-04-10",
+      "discoveredInRun": 21636,
+      "sourceCommit": "56279d048bf630d57d8fac349861b864730cf774",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

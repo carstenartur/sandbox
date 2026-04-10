@@ -696,3 +696,40 @@ $modifier.isDefaultMethod() :: instanceof($modifier, "org.eclipse.jdt.core.dom.M
 isAnonymous() || this.binding.isLocalType() :: sourceVersionGE(8) && inClass("org.eclipse.jdt.core.dom.TypeBinding")
 => isAnonymous() || this.binding.isLocalType() || this.binding.isIntersectionCastType()
 ;;
+
+/*!id: jdt.internal.bindingresolver.lambda-refexpr-binding-to-methodbinding*/
+/*!description: Updates internal JDT DefaultBindingResolver to use getMethodBinding() instead of direct 'binding' field access for LambdaExpression and ReferenceExpression, improving encapsulation and correctness for resolved method parameters.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, bugfix*/
+org.eclipse.jdt.internal.compiler.ast.LambdaExpression.$lambdaExpression.binding
+:: instanceof($lambdaExpression, "org.eclipse.jdt.internal.compiler.ast.LambdaExpression")
+=> $lambdaExpression.getMethodBinding()
+;;
+
+org.eclipse.jdt.internal.compiler.ast.ReferenceExpression.$referenceExpression.binding
+:: instanceof($referenceExpression, "org.eclipse.jdt.internal.compiler.ast.ReferenceExpression")
+=> $referenceExpression.getMethodBinding()
+;;
+
+org.eclipse.jdt.internal.compiler.lookup.TypeBinding $x == org.eclipse.jdt.internal.compiler.lookup.TypeBinding $y :: sourceVersionGE(8)
+=> org.eclipse.jdt.internal.compiler.lookup.TypeBinding.equalsEquals($x, $y)
+;;
+
+org.eclipse.jdt.internal.compiler.lookup.TypeBinding $x != org.eclipse.jdt.internal.compiler.lookup.TypeBinding $y :: sourceVersionGE(8)
+=> !org.eclipse.jdt.internal.compiler.lookup.TypeBinding.equalsEquals($x, $y)
+;;
+
+/*!id: jdt.internal.methoddecl.receivertype.propertydescriptor.type*/
+/*!description: Updates the type of the 'receiverType' property descriptor in MethodDeclaration from AnnotatableType.class to Type.class, aligning with JLS8 AST structure.*/
+/*!severity: info*/
+new org.eclipse.jdt.core.dom.ChildPropertyDescriptor(org.eclipse.jdt.core.dom.MethodDeclaration.class, "receiverType", org.eclipse.jdt.core.dom.AnnotatableType.class, $optional, $noCycleRisk) :: sourceVersionGE(8) && inClass("org.eclipse.jdt.core.dom.MethodDeclaration")
+=> new org.eclipse.jdt.core.dom.ChildPropertyDescriptor(org.eclipse.jdt.core.dom.MethodDeclaration.class, "receiverType", org.eclipse.jdt.core.dom.Type.class, $optional, $noCycleRisk)
+;;
+
+/*!id: jdt.internal.methoddecl.receivertype.cast*/
+/*!description: Replaces casts to (AnnotatableType) with (Type) for receiver types in MethodDeclaration, aligning with JLS8 AST structure and removing a redundant internal type.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.dom.AnnotatableType) $expression :: sourceVersionGE(8) && inClass("org.eclipse.jdt.core.dom.MethodDeclaration")
+=> (org.eclipse.jdt.core.dom.Type) $expression
+;;
