@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "a7206b9a1db9f42c4d02bfbc442f9a8443757f7a",
-      "lastProcessedDate": "2026-04-09T03:19:44.661629777Z",
-      "totalProcessed": 11192,
+      "lastProcessedCommit": "8263b1bf4e0979f16664b3ec7a3f63f9c444d8c1",
+      "lastProcessedDate": "2026-04-10T03:26:06.055931052Z",
+      "totalProcessed": 11523,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -941,6 +941,213 @@
           "deferredAt": "2026-04-09T03:18:43.341483268Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "c0d735bb59d0292c44074a58c867bfe7a8670833",
+          "message": "Fix for Bug 407131 [1.8][dom ast]ASTRewrite support for\nReferenceExpression nodes family",
+          "diffLines": 163,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:11:31.837407375Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e25c9b26d300c446da4be62b1b00d52eb2940f61",
+          "message": "Bug 405517: [1.8] IMethod#getFlags() and IMethodBinding#getModifiers(): What about default flags?",
+          "diffLines": 49,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:12:46.360564298Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b3031b3455034eac76b444fd20cbebeea6a2f5ff",
+          "message": "Fix for 417659 - [dom][ast][1.8] test failures - ast structure - when debug tracing is on (fixes 5 rewrite failures)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-10T03:13:02.984449433Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1ca61ba390ea54fcabd09223853d7a3d6816c249",
+          "message": "[1.8] Cleanups to DOM ArrayType conversion work",
+          "diffLines": 104,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:11.528778840Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5663a1e0521003a6152962cf3fce8cc9ca6a4647",
+          "message": "Fixed Bug 418096 - [1.8][compiler] Misattribution of annotations with C\nstyle array declarations\n\nSigned-off-by: ssankar",
+          "diffLines": 80,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:11.528850805Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c611850252ecccb24f660547467e0d555dd4fb70",
+          "message": "Fixed remaining issue in Bug 418096 - [1.8][compiler] Misattribution of\nannotations with C style array declarations",
+          "diffLines": 58,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:11.528884639Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8d3c2646ec0224ab936125ae7e1adde5786e1231",
+          "message": "1.8, minor cleanup",
+          "diffLines": 37,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:11.528939312Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bea430fec612168745d91278c4d6f4fccc5c2fd4",
+          "message": "Fix for Bug 413592 - [1.8] Default method not formatted via\nASTRewriteFormatter\n\nSigned-off-by: Anirban Chakraborty \u003canc",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:36.872067525Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "80b12656ac31b339fd22081301db662b77277ac4",
+          "message": "Bug 418924: [dom ast] ASTRewrite should allow removing left and right operands of infix expression",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:15:54.274243071Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "43bf242c384a6b4ad5daf26c5b4617ec68564235",
+          "message": "Bug 413569 comment 30: renamed ExtraDimension node to Dimension",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-10T03:15:54.334578889Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f7827a25b6388e441fee9e49f93f5e181fbb94ca",
+          "message": "[1.8] Tag identity comparisons with //$IDENTITY-COMPARISON$",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:17:29.731227817Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6c3b6971f88c7f6d5be3c70fdaf936700dc7f94b",
+          "message": "Bug 419748: [1.8][dom ast] MethodDeclaration\u0027s receiverType cannot be AnnotatableType",
+          "diffLines": 58,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:17:44.181813746Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "66b64feede726295fd7895916d71772cc3c15672",
+          "message": "Javadocs",
+          "diffLines": 57,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:19:23.672506133Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4c909758dccf4ee3c4897b3d8d65f492795c9578",
+          "message": "Bug 420413: [1.8] AST#newArrayType(Type, int) should allow to create zero-dimension array",
+          "diffLines": 91,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:19:36.248100227Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e56e767173dc5b5ba970e3e7ca9256e9541ebffc",
+          "message": "Bug 413569 [1.8][dom ast] AST for annotated multi-dimensional array type\nis not well-formed review",
+          "diffLines": 114,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:07.034361434Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "071c3a7154f042f1dac67e366b91c1f1b510f2e9",
+          "message": "Bug 420458: [1.8][dom ast] JLS8 ASTParser gives up on multi-dimensional array reference in Javadoc",
+          "diffLines": 52,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:07.034414634Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "db9f959a935f205a7a7a5ac245a707865595ee87",
+          "message": "Bug 420458: [1.8][dom ast] JLS8 ASTParser gives up on multi-dimensional array reference in Javadoc",
+          "diffLines": 16,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:07.034434081Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0d3451e9a7c942ed5f2531f8cbfba408096982ef",
+          "message": "Bug 395886: [1.8][DOM/AST] Withdraw annotations property from Name nodes.",
+          "diffLines": 25,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:07.034455802Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "91f3edc5382142e13f8351418b65563536c6670f",
+          "message": "identify the invalid identifier in the IllegalArgumentException",
+          "diffLines": 26,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:47.661184498Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2077a29bc8cfe42c01e5c07aa5d0c90e2eceb36b",
+          "message": "Fix for 417659 - [dom][ast][1.8] test failures - ast structure - when\ndebug tracing is on (fixes a failure)",
+          "diffLines": 47,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:21:11.707406277Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ba2b33c0750d6d7311c1eadcadc15015d0ae8f36",
+          "message": "417659 Bug 417659 Fix for 417659 - [dom][ast][1.8] test failures - ast\nstructure - when\ndebug tracing is on (see comment",
+          "diffLines": 93,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:22:30.302255686Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "57b3e1abeb63c771e6bdc37b05f8550c215d97c4",
+          "message": "Javadoc fixes",
+          "diffLines": 192,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:22:30.302377595Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b19e9753b2440fbc565e94b25c4419c1ce3ce1f2",
+          "message": "Bug 414113 [1.8] Method Binding for default method has abstract modifier\ninstead of default",
+          "diffLines": 30,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:26:06.055822288Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -954,7 +1161,7 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 215,
+        "JDT Internal Refactoring": 220,
         "Unnecessary Annotation Removal": 1,
         "Collections": 2,
         "Java-Modernization": 5,
@@ -975,11 +1182,11 @@
         "Type System Improvement": 1,
         "Code Style": 2,
         "JDT Internal Formatting/Rewrite": 1,
-        "JDT Internal Architecture": 14,
+        "JDT Internal Architecture": 15,
         "JDT Internal API Management": 1,
         "Error Handling Improvement": 1,
         "Java Modernization": 5,
-        "JDT Internal API Evolution": 11,
+        "JDT Internal API Evolution": 12,
         "JDT Internal Performance": 1,
         "Concurrency": 2,
         "Code Style / Annotation": 1,
@@ -1118,5 +1325,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 21305
+  "globalTotalProcessed": 21636
 }
