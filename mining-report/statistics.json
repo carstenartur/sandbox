@@ -1,53 +1,47 @@
 {
-  "totalProcessed": 25,
-  "relevant": 17,
-  "irrelevant": 8,
+  "totalProcessed": 9,
+  "relevant": 7,
+  "irrelevant": 2,
   "duplicates": 0,
-  "green": 2,
+  "green": 3,
   "yellow": 0,
-  "red": 15,
+  "red": 4,
   "irrelevantReasons": {
-    "All changes in this commit are confined to Javadoc comments, copyright notices, and an import statement. There are no actual code transformations (expression, statement, or declaration replacements) that can be generalized into a TriggerPattern DSL rule.": 1,
-    "The commit only updates Javadoc and `@see` tags in internal JDT classes. There are no executable code transformations that can be generalized into a DSL rule.": 1,
-    "This commit adds internal AST visitor logic within JDT\u0027s ASTRewriteAnalyzer and ASTRewriteFlattener to support a specific AST node type (PackageQualifiedType) for Java 8 type annotations. This is an internal JDT implementation detail, not a code transformation pattern that applies to user code.": 1,
-    "This commit only updates copyright years in Javadoc comments and license headers, which is not a code transformation pattern relevant for DSL mining.": 1,
-    "The changes are primarily Javadoc updates (converting \u003ccode\u003e to {@link}, adding explanatory text, and removing a @noreference tag) and an import statement. These are not code transformations directly supported by the TriggerPattern DSL, which focuses on modifying executable Java code constructs like expressions, statements, and declarations, not Javadoc content or tags.": 1,
-    "This commit only updates a copyright year in a multi-line comment. This is a documentation/metadata change, not a code transformation pattern that the TriggerPattern DSL is designed to handle.": 1,
-    "The commit primarily involves Javadoc updates, adding \u0027final\u0027 modifiers to internal methods, and removing internal methods. These are not code transformation patterns expressible by the TriggerPattern DSL.": 1,
-    "This commit only contains Javadoc fixes, which are documentation changes and do not represent code transformations that alter program behavior or structure. Therefore, it is not applicable for generating a TriggerPattern DSL rule.": 1
+    "This commit introduces new API (isFunctionalInterface method) and its implementations, rather than transforming existing code patterns. The TriggerPattern DSL is designed for pattern-matching and rewriting existing code, not for defining new API elements (interfaces, method declarations, or their concrete implementations).": 1,
+    "The commit introduces a new API method (`getDeclaredReceiverType()`) to an interface (`IMethodBinding`) and provides its implementation in a class (`MethodBinding`). The TriggerPattern DSL is designed for pattern matching and replacement of existing code usage, not for defining new API or implementing new methods. There is no existing code pattern being transformed into a new one.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 25,
-      "relevant": 17,
-      "green": 2,
+      "totalProcessed": 9,
+      "relevant": 7,
+      "green": 3,
       "yellow": 0,
-      "red": 15
+      "red": 4
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-09",
-      "processed": 25,
-      "relevant": 17
+      "date": "2026-04-10",
+      "processed": 9,
+      "relevant": 7
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-09T03:09:00.805Z",
-    "completedAt": "2026-04-09T03:19:45.211673551Z",
-    "durationSeconds": 644,
+    "startedAt": "2026-04-10T03:10:19.316Z",
+    "completedAt": "2026-04-10T03:26:06.611845776Z",
+    "durationSeconds": 947,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
-    "apiCallsMade": 18,
-    "deferredCommits": 107,
+    "apiCallsMade": 8,
+    "deferredCommits": 130,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-09T03:10:42.559109207Z",
-    "latestEvaluation": "2026-04-09T03:19:44.661155233Z",
-    "earliestCommitDate": "2013-04-16T15:14:51Z",
-    "latestCommitDate": "2013-07-01T14:29:22Z"
+    "earliestEvaluation": "2026-04-10T03:12:06.325477480Z",
+    "latestEvaluation": "2026-04-10T03:19:10.957105569Z",
+    "earliestCommitDate": "2013-07-29T08:32:37Z",
+    "latestCommitDate": "2013-10-22T11:17:25Z"
   }
 }
