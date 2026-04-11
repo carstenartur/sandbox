@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "8263b1bf4e0979f16664b3ec7a3f63f9c444d8c1",
-      "lastProcessedDate": "2026-04-10T03:26:06.055931052Z",
-      "totalProcessed": 11523,
+      "lastProcessedCommit": "641f1c4bb35d7a1ed42a954deff417eac24d11cb",
+      "lastProcessedDate": "2026-04-11T03:18:07.892919221Z",
+      "totalProcessed": 11803,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -1141,11 +1141,11 @@
           "maxRetries": 3
         },
         {
-          "hash": "b19e9753b2440fbc565e94b25c4419c1ce3ce1f2",
-          "message": "Bug 414113 [1.8] Method Binding for default method has abstract modifier\ninstead of default",
-          "diffLines": 30,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-04-10T03:26:06.055822288Z",
+          "hash": "25dbd9e17c7b6920dccf1b458296dbbe00f382de",
+          "message": "Fix for Bug 418979 [1.8][dom ast] Bad source ranges for annotated QualifiedType as type of ParameterizedType",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-11T03:14:35.998494624Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -1161,16 +1161,16 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 220,
+        "JDT Internal Refactoring": 226,
         "Unnecessary Annotation Removal": 1,
         "Collections": 2,
         "Java-Modernization": 5,
-        "JDT Internal Bug Fix": 83,
+        "JDT Internal Bug Fix": 85,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
         "Deprecation": 3,
-        "Eclipse API Migration": 20,
+        "Eclipse API Migration": 21,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 3,
         "Performance": 8,
@@ -1194,7 +1194,9 @@
         "API Modernization": 1,
         "Eclipse API Modernization": 1,
         "Null-Safety": 2,
-        "JDT Internal Feature Implementation": 4
+        "JDT Internal Feature Implementation": 4,
+        "Internal JDT Annotation": 1,
+        "Concurrency / Thread-Safety": 1
       },
       "exhaustedCategories": []
     },
@@ -1325,5 +1327,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 21636
+  "globalTotalProcessed": 21916
 }

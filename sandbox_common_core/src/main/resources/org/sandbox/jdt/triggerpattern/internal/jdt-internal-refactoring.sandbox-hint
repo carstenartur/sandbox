@@ -733,3 +733,45 @@ new org.eclipse.jdt.core.dom.ChildPropertyDescriptor(org.eclipse.jdt.core.dom.Me
 (org.eclipse.jdt.core.dom.AnnotatableType) $expression :: sourceVersionGE(8) && inClass("org.eclipse.jdt.core.dom.MethodDeclaration")
 => (org.eclipse.jdt.core.dom.Type) $expression
 ;;
+
+@id: jdt.internal.methodbinding.add-default-modifier
+@severity: info
+org.eclipse.jdt.core.dom.Modifier.STRICTFP :: inClass("org.eclipse.jdt.core.dom.MethodBinding") && sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.Modifier.STRICTFP | org.eclipse.jdt.core.dom.Modifier.DEFAULT
+;;
+
+@id: jdt.internal.astrewriteanalyzer.rewriteextradimensionsinfo.whitespace
+@severity: info
+rewriteNodeList($node, $property, $pos, " ", " ")
+=> rewriteNodeList($node, $property, $pos, " ", "")
+;;
+
+@id: jdt.internal.astrewriteanalyzer.arraytype.visit.to.helper
+@severity: info
+rewriteNodeList($node, org.eclipse.jdt.core.dom.ArrayType.DIMENSIONS_PROPERTY, $pos, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, " ")
+:: inClass("org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer") && inMethod("visit")
+=> rewriteArrayTypeDimensions($node, $pos)
+;;
+
+@id: jdt.internal.astrewriteflattener.arraytype.visitlist.whitespace
+@severity: info
+visitList($node, org.eclipse.jdt.core.dom.ArrayType.DIMENSIONS_PROPERTY, java.lang.String.valueOf(' '), org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, java.lang.String.valueOf(' '))
+:: inClass("org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener")
+=> visitList($node, org.eclipse.jdt.core.dom.ArrayType.DIMENSIONS_PROPERTY, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
+;;
+
+/*!id: jdt.internal.compiler.lambdaexpression.arguments-to-method*/
+/*!description: Updates internal JDT ASTConverter to use lambda.arguments() method instead of direct field access on LambdaExpression.*/
+/*!severity: info*/
+/*!tags: jdt, internal, refactoring*/
+$lambda.arguments :: instanceof($lambda, "org.eclipse.jdt.internal.compiler.ast.LambdaExpression")
+=> $lambda.arguments()
+;;
+
+/*!id: jdt.internal.compiler.lambdaexpression.body-to-method*/
+/*!description: Updates internal JDT ASTConverter to use lambda.body() method instead of direct field access on LambdaExpression.*/
+/*!severity: info*/
+/*!tags: jdt, internal, refactoring*/
+$lambda.body :: instanceof($lambda, "org.eclipse.jdt.internal.compiler.ast.LambdaExpression")
+=> $lambda.body()
+;;

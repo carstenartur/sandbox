@@ -1,3 +1,11 @@
 new org.eclipse.jdt.internal.compiler.problem.InvalidInputException()
 => org.eclipse.jdt.internal.compiler.parser.Scanner.invalidInput()
 ;;
+
+/*!id: jdt.api.deprecated.getdeclaredmodifiers*/
+/*!description: Replace deprecated ITypeBinding.getDeclaredModifiers() with getModifiers().*/
+/*!severity: warning*/
+org.eclipse.jdt.core.dom.ITypeBinding.$typeBinding.getDeclaredModifiers()
+:: instanceof($typeBinding, "org.eclipse.jdt.core.dom.ITypeBinding")
+=> $typeBinding.getModifiers()
+;;
