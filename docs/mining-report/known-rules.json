@@ -1518,6 +1518,61 @@
       "sourceCommit": "56279d048bf630d57d8fac349861b864730cf774",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-414113-by-adding-m",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.methodbinding.add-default-modifier\n@severity: info\norg.eclipse.jdt.core.dom.Modifier.STRICTFP :: inClass(\"org.eclipse.jdt.core.dom.MethodBinding\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.core.dom.Modifier.STRICTFP | org.eclipse.jdt.core.dom.Modifier.DEFAULT\n;;",
+      "summary": "This commit fixes Bug 414113 by adding `Modifier.DEFAULT` to the `VALID_MODIFIERS` constant in `MethodBinding.java`. This ensures that Java 8 default methods are correctly recognized by the JDT DOM AST, preventing them from being erroneously marked with an abstract modifier. This is a direct 1:1 expression replacement within a specific internal JDT class, making it suitable for a GREEN TriggerPattern DSL rule. The rule will replace `Modifier.STRICTFP` with `Modifier.STRICTFP | Modifier.DEFAULT` within the `MethodBinding` class context for Java 8 and higher projects, enhancing the correctness of JDT\u0027s internal AST representation.",
+      "discoveredAt": "2026-04-11",
+      "discoveredInRun": 21916,
+      "sourceCommit": "b19e9753b2440fbc565e94b25c4419c1ce3ce1f2",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-the-commit-deprecates-itypebinding-getde",
+      "category": "Eclipse API Migration",
+      "dslRule": "/*!id: jdt.api.deprecated.getdeclaredmodifiers*/\n/*!description: Replace deprecated ITypeBinding.getDeclaredModifiers() with getModifiers().*/\n/*!severity: warning*/\norg.eclipse.jdt.core.dom.ITypeBinding.$typeBinding.getDeclaredModifiers()\n:: instanceof($typeBinding, \"org.eclipse.jdt.core.dom.ITypeBinding\")\n\u003d\u003e $typeBinding.getModifiers()\n;;",
+      "summary": "The commit deprecates `ITypeBinding.getDeclaredModifiers()` and updates Javadoc to recommend `ITypeBinding.getModifiers()`, as the former always delegated to the latter. The proposed DSL rule automates this direct 1:1 method call replacement, guarded by an `instanceof` check to ensure the target is an `ITypeBinding`. This improves API adherence by replacing deprecated usage with the recommended alternative. No `sourceVersionGE` guard is needed as the relevant APIs predate Java 8. The rule is for a public JDT Core DOM API.",
+      "discoveredAt": "2026-04-11",
+      "discoveredInRun": 21916,
+      "sourceCommit": "c0b5895abd09ac3472890c9dbd43d2aa66a43571",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-deprecations.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-417923-addressing",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astrewriteanalyzer.rewriteextradimensionsinfo.whitespace\n@severity: info\nrewriteNodeList($node, $property, $pos, \" \", \" \")\n\u003d\u003e rewriteNodeList($node, $property, $pos, \" \", \"\")\n;;\n\n@id: jdt.internal.astrewriteanalyzer.arraytype.visit.to.helper\n@severity: info\nrewriteNodeList($node, org.eclipse.jdt.core.dom.ArrayType.DIMENSIONS_PROPERTY, $pos, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, \" \")\n:: inClass(\"org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer\") \u0026\u0026 inMethod(\"visit\")\n\u003d\u003e rewriteArrayTypeDimensions($node, $pos)\n;;\n\n@id: jdt.internal.astrewriteflattener.arraytype.visitlist.whitespace\n@severity: info\nvisitList($node, org.eclipse.jdt.core.dom.ArrayType.DIMENSIONS_PROPERTY, java.lang.String.valueOf(\u0027 \u0027), org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, java.lang.String.valueOf(\u0027 \u0027))\n:: inClass(\"org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener\")\n\u003d\u003e visitList($node, org.eclipse.jdt.core.dom.ArrayType.DIMENSIONS_PROPERTY, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)\n;;",
+      "summary": "This commit fixes Bug 417923, addressing whitespace requirements for Java 8 type annotations on array types within JDT\u0027s internal `NaiveASTFlattener` and `ASTRewriteAnalyzer`/`ASTRewriteFlattener` components. Several parts involve complex structural changes (conditional logic, new helper methods, explicit text removal/insertion) which are not expressible in the DSL (RED). However, three distinct patterns involve direct, mechanical replacements of string literals or method calls within argument lists. These include fixing an empty string argument in `rewriteNodeList`, replacing a `rewriteNodeList` call with `rewriteArrayTypeDimensions`, and standardizing `visitList` arguments in `ASTRewriteFlattener`. These patterns are fully expressible as GREEN TriggerPattern DSL rules, enhancing the correctness of JDT\u0027s internal AST rendering for Java 8 features. The `minJavaVersion` for the hint file is 8 as it pertains to Java 8 type annotation support.",
+      "discoveredAt": "2026-04-11",
+      "discoveredInRun": 21916,
+      "sourceCommit": "cd7ab76e97bbde2dfa388ac94141efed3a1c5385",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-405134-by-refactor",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.compiler.lambdaexpression.arguments-to-method*/\n/*!description: Updates internal JDT ASTConverter to use lambda.arguments() method instead of direct field access on LambdaExpression.*/\n/*!severity: info*/\n/*!tags: jdt, internal, refactoring*/\n$lambda.arguments :: instanceof($lambda, \"org.eclipse.jdt.internal.compiler.ast.LambdaExpression\")\n\u003d\u003e $lambda.arguments()\n;;\n\n/*!id: jdt.internal.compiler.lambdaexpression.body-to-method*/\n/*!description: Updates internal JDT ASTConverter to use lambda.body() method instead of direct field access on LambdaExpression.*/\n/*!severity: info*/\n/*!tags: jdt, internal, refactoring*/\n$lambda.body :: instanceof($lambda, \"org.eclipse.jdt.internal.compiler.ast.LambdaExpression\")\n\u003d\u003e $lambda.body()\n;;",
+      "summary": "This commit fixes Bug 405134 by refactoring internal JDT Core DOM\u0027s `ASTConverter`. It replaces direct field accesses `lambda.arguments` and `lambda.body` with their corresponding getter method calls `lambda.arguments()` and `lambda.body()` on `org.eclipse.jdt.internal.compiler.ast.LambdaExpression` objects. This improves encapsulation and internal API consistency for handling lambda bodies in the compiler AST, particularly relevant for multilevel lambdas in Java 8. This is a direct field-to-method replacement, suitable for two separate GREEN TriggerPattern DSL rules, each guarded by an `instanceof` check for `LambdaExpression`. The rules will be added to `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-04-11",
+      "discoveredInRun": 21916,
+      "sourceCommit": "31f5d8c3352dfd40743cbafcdc19d9f5e7640d54",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "concurrency-/-thread-safety-this-commit-fixes-bug-418580-an-asynchro",
+      "category": "Concurrency / Thread-Safety",
+      "dslRule": "new java.util.HashMap()\n\u003d\u003e new java.util.concurrent.ConcurrentHashMap()\n;;",
+      "summary": "This commit fixes Bug 418580, an asynchronous access bug leading to an infinite loop in `HashMap.getEntry`, by replacing `new HashMap()` with `new ConcurrentHashMap()` within the internal `BindingTables` constructor. This is a critical thread-safety fix, making the collection thread-safe. The transformation is a direct 1:1 replacement of a constructor call, suitable for a GREEN TriggerPattern DSL rule. No source version guard is needed as `ConcurrentHashMap` exists since Java 5, well before the Java 8 baseline. This pattern is highly reusable for fixing concurrency issues by upgrading collection types.",
+      "discoveredAt": "2026-04-11",
+      "discoveredInRun": 21916,
+      "sourceCommit": "c4b36d06173d8e97d900cc6848a6ef22d1e840e1",
+      "status": "DISCOVERED",
+      "hintFile": "concurrency.sandbox-hint"
     }
   ]
 }
