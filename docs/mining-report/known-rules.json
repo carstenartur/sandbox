@@ -1573,6 +1573,61 @@
       "sourceCommit": "c4b36d06173d8e97d900cc6848a6ef22d1e840e1",
       "status": "DISCOVERED",
       "hintFile": "concurrency.sandbox-hint"
+    },
+    {
+      "id": "concurrency-/-thread-safety-this-commit-fixes-a-concurrency-bug-bug",
+      "category": "Concurrency / Thread-Safety",
+      "dslRule": "new java.util.HashMap()\n\u003d\u003e new java.util.concurrent.ConcurrentHashMap()\n;;",
+      "summary": "This commit fixes a concurrency bug (Bug 418580) by replacing `new HashMap()` with `new ConcurrentHashMap()` in the `BindingTables` constructor. `HashMap` is not thread-safe, and asynchronous access led to an infinite loop. `ConcurrentHashMap` provides thread-safe operations. This is a direct, 1:1 constructor replacement that is fully implementable as a GREEN TriggerPattern DSL rule. The rule already exists in `concurrency.sandbox-hint` and has been previously proposed, making this a duplicate.",
+      "discoveredAt": "2026-04-12",
+      "discoveredInRun": 22160,
+      "sourceCommit": "a6585bad0d98e698a5f87d043a6edca3334c865d",
+      "status": "DISCOVERED",
+      "hintFile": "concurrency.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-support-for-jls8",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.importrewrite.newannotation.createtype-to-addimport.annotationtype*/\n/*!description: Updates internal ImportRewrite.newAnnotation to use addImport for annotation types, replacing calls to a removed private createType helper.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.createType(null, $annotationType, $ast, $context)\n:: inClass(\"org.eclipse.jdt.core.dom.rewrite.ImportRewrite\") \u0026\u0026 inMethod(\"newAnnotation\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e $this.addImport($annotationType, $ast, $context)\n;;\n\n/*!id: jdt.internal.importrewrite.createannotationvalue.createtype-to-addimport.typebinding*/\n/*!description: Updates internal ImportRewrite.createAnnotationValue to use addImport for type bindings, replacing calls to a removed private createType helper.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.createType(null, $typeBinding, $ast, $context)\n:: inClass(\"org.eclipse.jdt.core.dom.rewrite.ImportRewrite\") \u0026\u0026 inMethod(\"createAnnotationValue\") \u0026\u0026 instanceof($typeBinding, \"org.eclipse.jdt.core.dom.ITypeBinding\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e $this.addImport($typeBinding, $ast, $context)\n;;\n\n/*!id: jdt.internal.importrewrite.createannotationvalue.createtype-to-addimport.variabletype*/\n/*!description: Updates internal ImportRewrite.createAnnotationValue to use addImport for variable types, replacing calls to a removed private createType helper.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.createType(null, $variable.getType(), $ast, $context)\n:: inClass(\"org.eclipse.jdt.core.dom.rewrite.ImportRewrite\") \u0026\u0026 inMethod(\"createAnnotationValue\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e $this.addImport($variable.getType(), $ast, $context)\n;;",
+      "summary": "This commit introduces support for JLS8 type annotations, especially on array dimensions, in JDT\u0027s internal `ImportRewrite` mechanism. It primarily involves a deep internal refactoring of the `ImportRewrite#addImport` method, which is not directly expressible by the DSL. However, a clear and recurring pattern emerges in the associated helper methods (`newAnnotation`, `createAnnotationValue`). These helpers were previously calling a private `createType` method (which is now removed) and are updated to directly call the public `addImport` method of the `ImportRewrite` class. The proposed DSL rules capture these three distinct 1:1 method call substitutions, enhancing encapsulation and consistency in JDT\u0027s internal handling of Java 8 type annotations. The rules are guarded by `inClass` and `inMethod` to ensure they apply only to this specific internal refactoring context, and `sourceVersionGE(8)` to align with the JLS8 context mentioned in the commit.",
+      "discoveredAt": "2026-04-12",
+      "discoveredInRun": 22160,
+      "sourceCommit": "42a20f90363fe2e676c07d56364d6cc6b90a9458",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-an-internal-jdt-api-in",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.typeparameter.annotations-to-modifiers-method*/\n/*!description: Updates internal JDT TypeParameter API calls from annotations() to modifiers() to align with JLS8 AST structure for type annotations.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\n$typeParameter.annotations() :: instanceof($typeParameter, \"org.eclipse.jdt.core.dom.TypeParameter\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e $typeParameter.modifiers()\n;;\n\n/*!id: jdt.internal.typeparameter.annotations-to-modifiers-property*/\n/*!description: Updates internal JDT TypeParameter API constant from ANNOTATIONS_PROPERTY to MODIFIERS_PROPERTY to align with JLS8 AST structure for type annotations.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\norg.eclipse.jdt.core.dom.TypeParameter.ANNOTATIONS_PROPERTY :: sourceVersionGE(8)\n\u003d\u003e org.eclipse.jdt.core.dom.TypeParameter.MODIFIERS_PROPERTY\n;;",
+      "summary": "This commit fixes an internal JDT API inconsistency by replacing references from `TypeParameter.annotations()` to `TypeParameter.modifiers()` and `TypeParameter.ANNOTATIONS_PROPERTY` to `TypeParameter.MODIFIERS_PROPERTY`. This modernization aligns internal JDT AST handling of Java 8 type annotations with the more general `IExtendedModifier` structure. The changes are direct 1:1 replacements of method calls and static field references, making them fully expressible as two separate GREEN TriggerPattern DSL rules. The rules are guarded by `sourceVersionGE(8)` to reflect their relevance for Java 8 and later.",
+      "discoveredAt": "2026-04-12",
+      "discoveredInRun": 22160,
+      "sourceCommit": "7974f4a5911052c39ead36f51d3952ab684e5130",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-importrewrite-to-i",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.importrewrite.newannotation.to.addannotation.ibinding*/\n/*!description: Updates internal calls from newAnnotation to addAnnotation in ImportRewrite, reordering arguments for the new public API.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.newAnnotation($ast, $annotationBinding, $context)\n:: inClass(\"org.eclipse.jdt.core.dom.rewrite.ImportRewrite\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e $this.addAnnotation($annotationBinding, $ast, $context)\n;;\n\n/*!id: jdt.internal.importrewrite.newannotationvalue.to.addannotation.value*/\n/*!description: Updates internal calls from newAnnotationValue to addAnnotation in ImportRewrite, for consistent internal helper naming.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.newAnnotationValue($ast, $value, $context)\n:: inClass(\"org.eclipse.jdt.core.dom.rewrite.ImportRewrite\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e $this.addAnnotation($ast, $value, $context)\n;;",
+      "summary": "This commit refactors `ImportRewrite` to introduce a new public `addAnnotation` API and consolidates internal helper logic by renaming existing private methods (`newAnnotation`, `newAnnotationValue`) to `addAnnotation`. All call sites of the old methods are updated to use the new `addAnnotation` method, including argument reordering for the public API. This improves API consistency and encapsulation. The transformations are direct 1:1 method call replacements, fully expressible as GREEN TriggerPattern DSL rules with a Java 8 source version guard, and will be added to `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-04-12",
+      "discoveredInRun": 22160,
+      "sourceCommit": "78310b6881d29e4104dd5ac0bf79c342409c9931",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modifies-an-internal-string",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "\"void m(\" :: inClass(\"org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFormatter\")\n\u003d\u003e \"void m(final \"\n;;",
+      "summary": "This commit modifies an internal string literal within JDT\u0027s ASTRewriteFormatter, changing a template string from \"void m(\" to \"void m(final \". This is an internal JDT refactoring to support new formatting options related to type annotations (Java 8+). The change is a direct 1:1 string literal replacement. While highly specific to JDT\u0027s internal codebase, it is precisely expressible as a GREEN TriggerPattern DSL rule using an \u0027inClass\u0027 guard to ensure strict context matching. The rule effectively updates this internal formatter template string, with a source version of Java 8 as type annotations were introduced then.",
+      "discoveredAt": "2026-04-12",
+      "discoveredInRun": 22160,
+      "sourceCommit": "cd140389e1d0cdca9f232f9b33d1b09e90034b22",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
