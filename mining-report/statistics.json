@@ -1,42 +1,41 @@
 {
-  "totalProcessed": 20,
-  "relevant": 11,
-  "irrelevant": 9,
-  "duplicates": 0,
-  "green": 6,
-  "yellow": 1,
-  "red": 4,
+  "totalProcessed": 22,
+  "relevant": 14,
+  "irrelevant": 8,
+  "duplicates": 1,
+  "green": 5,
+  "yellow": 0,
+  "red": 9,
   "irrelevantReasons": {
-    "This commit modifies the internal implementation of the Eclipse JDT ASTRewrite engine to correctly handle the removal of left and right operands of an InfixExpression during refactoring. It is an internal infrastructure change, not a transformation pattern applicable to user code that can be expressed as a TriggerPattern DSL rule.": 1,
-    "The commit exclusively updates Javadoc comments to clarify API usage and limitations, which are not code transformations suitable for TriggerPattern DSL rules.": 1,
-    "This commit introduces a new API method (`isEffectivelyFinal()`) to IVariableBinding and its implementations, reflecting a Java 8 language feature. It defines new functionality rather than transforming existing code patterns, and therefore cannot be expressed as a TriggerPattern DSL rule.": 1,
-    "The commit only modifies Javadoc comments to clarify AST representations of qualified types. It does not involve any actual Java code transformations (expressions, statements, or declarations).": 1,
-    "The commit reorders method declarations, internal switch cases, and AST node type IDs within JDT\u0027s internal DOM API. These are structural refactorings and do not involve pattern-based code transformations that the TriggerPattern DSL can address.": 1,
-    "The commit primarily removes a block of commented-out and empty lines. This is a cleanup of dead/commented code, not a code transformation pattern that can be generalized into a DSL rule.": 1,
-    "Changes are solely Javadoc comments and copyright updates, which do not represent code transformations suitable for a DSL rule.": 1,
-    "This commit primarily contains Javadoc updates and minor textual changes in comments across several JDT DOM API interfaces and classes. It clarifies rules for ITypeBinding equality and type annotation semantics introduced in JLS8. There are no executable code transformations (e.g., changing expressions, method calls, statements, or variable declarations) that can be generalized into a TriggerPattern DSL rule.": 1,
-    "This commit exclusively contains further Javadoc updates and minor textual clarifications in comments, specifically refining the documentation for IBinding keys and ITypeBinding type annotations related to JLS8 type annotation semantics. No executable code transformations are present that can be generalized into a TriggerPattern DSL rule.": 1
+    "The commit exclusively modifies Javadoc comments to clarify API usage and limitations. The TriggerPattern DSL is designed for transforming executable Java code, not documentation. Therefore, this commit does not present any patterns suitable for DSL rules.": 1,
+    "This commit contains only Javadoc and comment changes, which do not represent code transformations suitable for TriggerPattern DSL rules.": 1,
+    "This commit involves changes solely to Javadoc comments within the IBinding.java interface. The TriggerPattern DSL is designed for Java code transformations (e.g., refactoring expressions, statements, annotations), not for modifying documentation text. Therefore, this change is not relevant for DSL rule mining.": 1,
+    "This commit is about an API definition change (removal of a method from an interface and its implementations), not a code transformation pattern. The TriggerPattern DSL is designed for transforming existing code at call sites or declarations, not for detecting and applying structural API removals or for modifying API definitions themselves. If there were widespread usages of the removed method, a hint rule to flag them might be relevant, but the commit itself doesn\u0027t provide such a transformation.": 1,
+    "The provided diff for this commit only contains changes to Javadoc comments (removing a description of \u0027default\u0027 modifiers from IBinding.java). These are documentation changes, not code transformations that can be generalized into a TriggerPattern DSL rule.": 1,
+    "The commit consists solely of Javadoc/comment updates and copyright year changes, which are not code transformations suitable for TriggerPattern DSL rules.": 1,
+    "This commit introduces a new API method (getFunctionalInterfaceMethod) to an interface (ITypeBinding) and provides its implementation in concrete classes (RecoveredTypeBinding, TypeBinding). The TriggerPattern DSL is designed for transforming existing code patterns, not for generating or adding new API definitions and their implementations, especially those involving control flow and complex binding resolution logic in method bodies. This is an API evolution/addition, not a reusable code transformation pattern.": 1,
+    "The commit primarily involves Javadoc updates and a complex structural change to an if-else block. The Javadoc changes are documentation, not code transformations. The code changes involve adding new conditional logic and restructuring control flow within a method, which is beyond the capabilities of the current TriggerPattern DSL for pattern-based replacements. The DSL does not support arbitrary restructuring of `if`/`else` blocks or insertion of complex new conditional statements.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 20,
-      "relevant": 11,
-      "green": 6,
-      "yellow": 1,
-      "red": 4
+      "totalProcessed": 22,
+      "relevant": 14,
+      "green": 5,
+      "yellow": 0,
+      "red": 9
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-11",
-      "processed": 20,
-      "relevant": 11
+      "date": "2026-04-12",
+      "processed": 22,
+      "relevant": 14
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-11T03:07:36.930Z",
-    "completedAt": "2026-04-11T03:18:08.416854951Z",
-    "durationSeconds": 631,
+    "startedAt": "2026-04-12T03:09:58.870Z",
+    "completedAt": "2026-04-12T03:21:37.372118054Z",
+    "durationSeconds": 698,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -46,9 +45,9 @@
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-11T03:09:03.185420387Z",
-    "latestEvaluation": "2026-04-11T03:18:07.892359676Z",
-    "earliestCommitDate": "2013-10-08T14:25:29Z",
-    "latestCommitDate": "2014-01-27T22:10:50Z"
+    "earliestEvaluation": "2026-04-12T03:11:19.030180442Z",
+    "latestEvaluation": "2026-04-12T03:21:36.815394867Z",
+    "earliestCommitDate": "2013-11-13T11:51:30Z",
+    "latestCommitDate": "2014-02-24T10:12:55Z"
   }
 }
