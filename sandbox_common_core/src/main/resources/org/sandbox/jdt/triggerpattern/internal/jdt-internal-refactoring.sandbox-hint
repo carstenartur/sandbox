@@ -775,3 +775,65 @@ $lambda.arguments :: instanceof($lambda, "org.eclipse.jdt.internal.compiler.ast.
 $lambda.body :: instanceof($lambda, "org.eclipse.jdt.internal.compiler.ast.LambdaExpression")
 => $lambda.body()
 ;;
+
+/*!id: jdt.internal.importrewrite.newannotation.createtype-to-addimport.annotationtype*/
+/*!description: Updates internal ImportRewrite.newAnnotation to use addImport for annotation types, replacing calls to a removed private createType helper.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.createType(null, $annotationType, $ast, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("newAnnotation") && sourceVersionGE(8)
+=> $this.addImport($annotationType, $ast, $context)
+;;
+
+/*!id: jdt.internal.importrewrite.createannotationvalue.createtype-to-addimport.typebinding*/
+/*!description: Updates internal ImportRewrite.createAnnotationValue to use addImport for type bindings, replacing calls to a removed private createType helper.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.createType(null, $typeBinding, $ast, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("createAnnotationValue") && instanceof($typeBinding, "org.eclipse.jdt.core.dom.ITypeBinding") && sourceVersionGE(8)
+=> $this.addImport($typeBinding, $ast, $context)
+;;
+
+/*!id: jdt.internal.importrewrite.createannotationvalue.createtype-to-addimport.variabletype*/
+/*!description: Updates internal ImportRewrite.createAnnotationValue to use addImport for variable types, replacing calls to a removed private createType helper.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.createType(null, $variable.getType(), $ast, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("createAnnotationValue") && sourceVersionGE(8)
+=> $this.addImport($variable.getType(), $ast, $context)
+;;
+
+/*!id: jdt.internal.typeparameter.annotations-to-modifiers-method*/
+/*!description: Updates internal JDT TypeParameter API calls from annotations() to modifiers() to align with JLS8 AST structure for type annotations.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+$typeParameter.annotations() :: instanceof($typeParameter, "org.eclipse.jdt.core.dom.TypeParameter") && sourceVersionGE(8)
+=> $typeParameter.modifiers()
+;;
+
+/*!id: jdt.internal.typeparameter.annotations-to-modifiers-property*/
+/*!description: Updates internal JDT TypeParameter API constant from ANNOTATIONS_PROPERTY to MODIFIERS_PROPERTY to align with JLS8 AST structure for type annotations.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+org.eclipse.jdt.core.dom.TypeParameter.ANNOTATIONS_PROPERTY :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.TypeParameter.MODIFIERS_PROPERTY
+;;
+
+/*!id: jdt.internal.importrewrite.newannotation.to.addannotation.ibinding*/
+/*!description: Updates internal calls from newAnnotation to addAnnotation in ImportRewrite, reordering arguments for the new public API.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.newAnnotation($ast, $annotationBinding, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && sourceVersionGE(8)
+=> $this.addAnnotation($annotationBinding, $ast, $context)
+;;
+
+/*!id: jdt.internal.importrewrite.newannotationvalue.to.addannotation.value*/
+/*!description: Updates internal calls from newAnnotationValue to addAnnotation in ImportRewrite, for consistent internal helper naming.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.newAnnotationValue($ast, $value, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && sourceVersionGE(8)
+=> $this.addAnnotation($ast, $value, $context)
+;;
+
+"void m(" :: inClass("org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFormatter")
+=> "void m(final "
+;;
