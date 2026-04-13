@@ -190,9 +190,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "0d09a2966f3cebfb8d6601000e2b64259fed7dd8",
-      "lastProcessedDate": "2026-04-12T03:21:36.815733771Z",
-      "totalProcessed": 12047,
+      "lastProcessedCommit": "8ea3733ceae7c22e4ddb546c96d5313b2b0833d4",
+      "lastProcessedDate": "2026-04-13T03:30:21.784823729Z",
+      "totalProcessed": 12519,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -1161,16 +1161,16 @@
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 238,
+        "JDT Internal Refactoring": 242,
         "Unnecessary Annotation Removal": 1,
         "Collections": 2,
         "Java-Modernization": 5,
-        "JDT Internal Bug Fix": 86,
+        "JDT Internal Bug Fix": 90,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
         "Deprecation": 3,
-        "Eclipse API Migration": 21,
+        "Eclipse API Migration": 22,
         "Lambda Simplification": 1,
         "Clean-up Bug Fix": 3,
         "Performance": 8,
@@ -1327,5 +1327,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 22160
+  "globalTotalProcessed": 22632
 }

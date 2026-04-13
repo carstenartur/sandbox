@@ -1628,6 +1628,72 @@
       "sourceCommit": "cd140389e1d0cdca9f232f9b33d1b09e90034b22",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-deprecates-itypebinding-getd",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.jdt.core.dom.ITypeBinding.$typeBinding.getDeclaredModifiers()\n:: instanceof($typeBinding, \"org.eclipse.jdt.core.dom.ITypeBinding\")\n\u003d\u003e $typeBinding.getModifiers()\n;;",
+      "summary": "This commit deprecates `ITypeBinding.getDeclaredModifiers()` and updates Javadoc to recommend `ITypeBinding.getModifiers()`, as the former always delegated to the latter. The transformation involves replacing calls to the deprecated method with the recommended one. This pattern is a direct 1:1 method call replacement, fully supported by the TriggerPattern DSL, and is already implemented in `eclipse-api-deprecations.sandbox-hint` and was previously proposed.",
+      "discoveredAt": "2026-04-13",
+      "discoveredInRun": 22632,
+      "sourceCommit": "167a40c3a1b0d7aeb6058206acf2741ae6a47a5f",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-deprecations.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-an-internal-bug-bug-43",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.methodbinding.annotation-target-fix\n@severity: info\n$isConstructor \u0026\u0026 ($metaTagBits \u0026 org.eclipse.jdt.internal.compiler.lookup.TagBits.AnnotationForConstructor) \u003d\u003d 0\n:: inClass(\"org.eclipse.jdt.core.dom.MethodBinding\")\n\u003d\u003e $isConstructor \u0026\u0026 ($metaTagBits \u0026 org.eclipse.jdt.internal.compiler.lookup.TagBits.AnnotationForConstructor) \u003d\u003d 0 \u0026\u0026 (($metaTagBits \u0026 org.eclipse.jdt.internal.compiler.lookup.TagBits.AnnotationTargetMASK) !\u003d 0)\n;;",
+      "summary": "This commit fixes an internal bug (Bug 431810) in JDT\u0027s `MethodBinding` class where constructor annotations were incorrectly filtered. It modifies a boolean conditional expression to include an additional check for `AnnotationTargetMASK`, ensuring that only annotations with a specific target mask (excluding TYPE_USE if not explicitly for constructor) are considered for constructors. This is a direct 1:1 expression replacement, fully supported by the TriggerPattern DSL, and improves the correctness of JDT\u0027s internal AST processing for annotations. The rule is guarded by `inClass(\"org.eclipse.jdt.core.dom.MethodBinding\")` to target the specific internal context.",
+      "discoveredAt": "2026-04-13",
+      "discoveredInRun": 22632,
+      "sourceCommit": "b37b35b6931149654f122100957e976afd95264d",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-bug-426977-a-classcast",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "@id: jdt.internal.astconverter.typedec.cce.fix\n@severity: error\n$result \u003d\u003d null\n:: inClass(\"org.eclipse.jdt.core.dom.ASTConverter\")\n\u003d\u003e $result \u003d\u003d null || !($result instanceof org.eclipse.jdt.core.dom.TypeDeclaration)\n;;",
+      "summary": "This commit fixes Bug 426977, a ClassCastException in JDT\u0027s internal ASTConverter. It refines an existing null check in an \u0027if\u0027 statement by adding an additional condition: \u0027|| !(result instanceof TypeDeclaration)\u0027. This prevents AnnotationTypeDeclaration from being incorrectly treated as a TypeDeclaration, enhancing the robustness of JDT\u0027s internal AST processing. This is a direct 1:1 replacement of a boolean expression, fully implementable as a GREEN TriggerPattern DSL rule with a class-specific guard. The rule applies to internal JDT code and thus doesn\u0027t require a sourceVersionGE guard beyond the baseline Java 8.",
+      "discoveredAt": "2026-04-13",
+      "discoveredInRun": 22632,
+      "sourceCommit": "b652b7fd3a65d4ba23b1274ed0c9b6a3e193e11c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-jdt-core",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.typebinding.unannotated-boolean*/\n/*!description: Updates internal TypeBinding.unannotated() calls to include a boolean argument for handling null type annotations, reflecting JLS8 API changes.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, null-annotations, java8*/\n$typeBinding.unannotated() :: instanceof($typeBinding, \"org.eclipse.jdt.internal.compiler.lookup.TypeBinding\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e $typeBinding.unannotated(false)\n;;",
+      "summary": "This commit modernizes internal JDT Core DOM API usage by changing calls to `TypeBinding.unannotated()` to `TypeBinding.unannotated(false)`. This explicitly instructs the method to remove only null type annotations, aligning with Java 8\u0027s enhanced handling of null type annotations and improving API clarity. This is a direct 1:1 method call replacement with an added argument, which is fully expressible as a GREEN TriggerPattern DSL rule. The rule will be guarded by `sourceVersionGE(8)` as it pertains to Java 8 language features and an `instanceof` check to ensure the target is a `TypeBinding`.",
+      "discoveredAt": "2026-04-13",
+      "discoveredInRun": 22632,
+      "sourceCommit": "1ab17a7eba14d35875267cc7b416da000a14dc1e",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-jdt-api",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.typebinding.unannotated.remove-boolean-arg*/\n/*!description: Modernizes internal JDT TypeBinding.unannotated() method calls by removing the now-redundant boolean argument, aligning with internal API simplification for Java 8+ type annotations.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, java8*/\n$typeBinding.unannotated(false) :: instanceof($typeBinding, \"org.eclipse.jdt.internal.compiler.lookup.TypeBinding\") \u0026\u0026 sourceVersionGE(8)\n\u003d\u003e $typeBinding.unannotated()\n;;",
+      "summary": "This commit modernizes internal JDT API calls to `TypeBinding.unannotated()` by removing a redundant `false` boolean argument. This simplification aligns with internal JDT API evolution related to Java 8 type annotations and nullability analysis. The change is a direct 1:1 method call modification (argument removal) and is fully expressible as a GREEN TriggerPattern DSL rule, applicable for Java 8 and higher projects within the JDT Core codebase.",
+      "discoveredAt": "2026-04-13",
+      "discoveredInRun": 22632,
+      "sourceCommit": "8913fe5c78a14de5e97c4d6b801f5ed8424bf8a8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-a-bug-bug-446746-in-jd",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "@id: jdt.internal.astconverter.retrieverightbrace.adjust-bodyend\n@severity: info\nretrieveRightBrace($expr.bodyEnd, $declarationSourceEnd)\n:: inClass(\"org.eclipse.jdt.core.dom.ASTConverter\") \u0026\u0026 (instanceof($expr, \"org.eclipse.jdt.internal.compiler.ast.MethodDeclaration\") || instanceof($expr, \"org.eclipse.jdt.internal.compiler.ast.AnonymousTypeDeclaration\"))\n\u003d\u003e retrieveRightBrace($expr.bodyEnd + 1, $declarationSourceEnd)\n;;",
+      "summary": "This commit fixes a bug (Bug 446746) in JDT\u0027s internal `ASTConverter` related to wrong node range calculation for enum constant declarations with bodies. It adjusts the start position used for `retrieveRightBrace()` calls by adding `+ 1` to the `bodyEnd` argument in two specific contexts: `MethodDeclaration.bodyEnd` and `AnonymousTypeDeclaration.bodyEnd`. This is a direct 1:1 expression replacement within method arguments, which is fully implementable as a GREEN TriggerPattern DSL rule. The rule uses an `inClass` guard to ensure it applies within the `ASTConverter` class and `instanceof` guards to constrain the `$expr` placeholder to the relevant internal compiler AST node types. Other changes in the commit, such as the removal of the `retrieveEndBlockPosition` method and the modification of `retrieveProperRightBracketPosition`\u0027s signature, are structural changes (method deletion, signature change, new overload) that are not directly expressible by the current DSL (RED parts of the commit).",
+      "discoveredAt": "2026-04-13",
+      "discoveredInRun": 22632,
+      "sourceCommit": "0eaa2ed8772f78cbf0083fde09091e98f1f6a2b1",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
