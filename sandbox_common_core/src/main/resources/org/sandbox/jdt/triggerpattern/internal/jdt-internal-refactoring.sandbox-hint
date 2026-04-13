@@ -837,3 +837,42 @@ org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.newAnnotationValue($ast, $v
 "void m(" :: inClass("org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFormatter")
 => "void m(final "
 ;;
+
+@id: jdt.internal.methodbinding.annotation-target-fix
+@severity: info
+$isConstructor && ($metaTagBits & org.eclipse.jdt.internal.compiler.lookup.TagBits.AnnotationForConstructor) == 0
+:: inClass("org.eclipse.jdt.core.dom.MethodBinding")
+=> $isConstructor && ($metaTagBits & org.eclipse.jdt.internal.compiler.lookup.TagBits.AnnotationForConstructor) == 0 && (($metaTagBits & org.eclipse.jdt.internal.compiler.lookup.TagBits.AnnotationTargetMASK) != 0)
+;;
+
+@id: jdt.internal.astconverter.typedec.cce.fix
+@severity: error
+$result == null
+:: inClass("org.eclipse.jdt.core.dom.ASTConverter")
+=> $result == null || !($result instanceof org.eclipse.jdt.core.dom.TypeDeclaration)
+;;
+
+/*!id: jdt.internal.typebinding.unannotated-boolean*/
+/*!description: Updates internal TypeBinding.unannotated() calls to include a boolean argument for handling null type annotations, reflecting JLS8 API changes.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, null-annotations, java8*/
+$typeBinding.unannotated() :: instanceof($typeBinding, "org.eclipse.jdt.internal.compiler.lookup.TypeBinding") && sourceVersionGE(8)
+=> $typeBinding.unannotated(false)
+;;
+
+/*!id: jdt.internal.typebinding.unannotated.remove-boolean-arg*/
+/*!description: Modernizes internal JDT TypeBinding.unannotated() method calls by removing the now-redundant boolean argument, aligning with internal API simplification for Java 8+ type annotations.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, java8*/
+$typeBinding.unannotated(false) :: instanceof($typeBinding, "org.eclipse.jdt.internal.compiler.lookup.TypeBinding") && sourceVersionGE(8)
+=> $typeBinding.unannotated()
+;;
+
+@id: jdt.internal.astconverter.retrieverightbrace.adjust-bodyend
+@severity: info
+retrieveRightBrace($expr.bodyEnd, $declarationSourceEnd)
+:: inClass("org.eclipse.jdt.core.dom.ASTConverter") && (instanceof($expr, "org.eclipse.jdt.internal.compiler.ast.MethodDeclaration") || instanceof($expr, "org.eclipse.jdt.internal.compiler.ast.AnonymousTypeDeclaration"))
+=> retrieveRightBrace($expr.bodyEnd + 1, $declarationSourceEnd)
+;;
