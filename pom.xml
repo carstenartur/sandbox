@@ -33,7 +33,7 @@
 		<onnxruntime.version>1.24.3</onnxruntime.version>
 		<eclipse-jdt-core.version>3.45.0</eclipse-jdt-core.version>
 		<gson.version>2.13.2</gson.version>
-		<hibernate.version>6.6.13.Final</hibernate.version>
+		<hibernate.version>7.3.1.Final</hibernate.version>
 		<hibernate-search.version>7.2.0.Final</hibernate-search.version>
 		<jetty.version>12.1.7</jetty.version>
 		<jgit.version>7.6.0.202603022253-r</jgit.version>
