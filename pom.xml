@@ -25,7 +25,7 @@
 		<license.licenseName>epl_v1</license.licenseName>
 		<bouncycastle.version>1.83</bouncycastle.version>
 		<assertj.version>3.27.7</assertj.version>
-		<bnd.version>7.2.1</bnd.version>
+		<bnd.version>7.2.3</bnd.version>
 		<caffeine.version>3.2.3</caffeine.version>
 		<djl.version>0.36.0</djl.version>
 		<!-- Pin ONNX Runtime native version: 1.21.1 (from DJL 0.36.0) fails
