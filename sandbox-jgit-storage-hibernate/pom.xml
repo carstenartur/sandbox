@@ -53,7 +53,7 @@
 		<dependency>
 			<groupId>org.jboss.logging</groupId>
 			<artifactId>jboss-logging</artifactId>
-			<version>3.6.0.Final</version>
+			<version>3.6.3.Final</version>
 		</dependency>
 
 		<!-- Eclipse Compiler for Java (ECJ) for tokenizing Java source -->
