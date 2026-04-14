@@ -1,58 +1,56 @@
 {
-  "totalProcessed": 22,
-  "relevant": 9,
-  "irrelevant": 13,
+  "totalProcessed": 26,
+  "relevant": 22,
+  "irrelevant": 4,
   "duplicates": 1,
-  "green": 6,
+  "green": 4,
   "yellow": 0,
-  "red": 3,
+  "red": 18,
   "irrelevantReasons": {
-    "The commit modifies internal JDT DOM API definitions (removes a method, refines Javadoc) rather than transforming usage patterns in client code. No concrete code transformation pattern is present.": 1,
-    "The commit only updates Javadoc documentation within ITypeBinding.java. There are no code changes that can be generalized into a transformation rule.": 1,
-    "The commit only updates Javadoc documentation within ArrayType.java and ITypeBinding.java. There are no code changes that can be generalized into a transformation rule.": 1,
-    "This commit only fixes Javadoc @since tags, which is a documentation change and not a Java code transformation. The TriggerPattern DSL is designed for transforming executable Java code, not for Javadoc or comment modifications.": 1,
-    "The commit contains only Javadoc changes (grammatical corrections and internal link updates), which are not code transformations suitable for DSL rules.": 1,
-    "The commit contains only a Javadoc tag correction (@returns to @return) and a copyright year update. These are not code transformations suitable for DSL rules.": 1,
-    "The commit only contains copyright year updates and Javadoc comment removals, which are documentation/metadata changes, not code transformations relevant for DSL rule generation.": 1,
-    "The commit consists solely of Javadoc updates and a minor whitespace fix within a comment, with no actual code transformations that can be generalized into a DSL rule.": 1,
-    "The commit only contains Javadoc typo fixes (adding periods, removing trailing spaces) and no actual Java code transformations. The TriggerPattern DSL is for code transformations, not documentation formatting.": 1,
-    "The commit addresses Bug 438875 by setting correct project/file encodings and using Unix line delimiters. The diff shows no actual code changes to the Java logic; it appears to be a cosmetic/metadata change affecting line endings or file encoding, which does not translate into a code transformation pattern for the DSL.": 1,
-    "This commit only modifies Javadoc comments and a copyright year. The TriggerPattern DSL is designed for transforming executable Java code, not documentation or metadata. Therefore, no reusable code transformation pattern can be extracted.": 1,
-    "The commit primarily involves Javadoc updates, adding `@noextend` and `@noimplement` meta-annotations, and changing the visibility of an internal interface from package-private to public. These are documentation changes, API metadata additions, and a structural modification (visibility) to a declaration, which are not directly expressible as reusable code transformation patterns in the current TriggerPattern DSL.": 1,
-    "Changes are purely within Javadoc comments and copyright information. The TriggerPattern DSL is designed for transforming executable Java code, not for modifying documentation text.": 1
+    "The change is an update to a Javadoc comment and a copyright year, not a transformation of executable Java code.": 1,
+    "The commit only modifies Javadoc tags (@since, @noextend, @noreference). The TriggerPattern DSL is designed for Java code transformations (expressions, statements, annotations) and does not directly support pattern matching or rewriting Javadoc comments or tags. Other changes mentioned in the commit message regarding bundle versions and dependency versions are build-related and not code transformations.": 1,
+    "The commit only removes a single trailing whitespace character. The TriggerPattern DSL is designed for semantic code transformations based on AST patterns, not for raw text or whitespace-only changes. Such formatting issues are typically handled by code formatters or IDE save actions.": 1,
+    "Deletion of an internal component, not a code transformation pattern to be applied to user code. The DSL is designed for transforming existing code, not for removing internal IDE components.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 22,
-      "relevant": 9,
-      "green": 6,
+      "totalProcessed": 8,
+      "relevant": 7,
+      "green": 2,
       "yellow": 0,
-      "red": 3
+      "red": 5
+    },
+    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
+      "totalProcessed": 18,
+      "relevant": 15,
+      "green": 2,
+      "yellow": 0,
+      "red": 13
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-13",
-      "processed": 22,
-      "relevant": 9
+      "date": "2026-04-14",
+      "processed": 26,
+      "relevant": 22
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-13T03:11:23.213Z",
-    "completedAt": "2026-04-13T03:30:22.322987525Z",
-    "durationSeconds": 1139,
+    "startedAt": "2026-04-14T03:09:41.315Z",
+    "completedAt": "2026-04-14T03:29:21.383622338Z",
+    "durationSeconds": 1180,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 130,
+    "deferredCommits": 131,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-13T03:12:43.113554751Z",
-    "latestEvaluation": "2026-04-13T03:30:21.783751260Z",
-    "earliestCommitDate": "2014-02-27T23:58:12Z",
-    "latestCommitDate": "2014-10-14T00:03:10Z"
+    "earliestEvaluation": "2026-04-14T03:11:01.654927534Z",
+    "latestEvaluation": "2026-04-14T03:29:20.159520911Z",
+    "earliestCommitDate": "2014-10-15T15:22:46Z",
+    "latestCommitDate": "2020-03-20T09:07:40Z"
   }
 }
