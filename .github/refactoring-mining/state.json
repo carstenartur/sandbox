@@ -190,9 +190,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "lastProcessedCommit": "8ea3733ceae7c22e4ddb546c96d5313b2b0833d4",
-      "lastProcessedDate": "2026-04-13T03:30:21.784823729Z",
-      "totalProcessed": 12519,
+      "lastProcessedDate": "2026-04-14T03:17:38.732912618Z",
+      "totalProcessed": 12662,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -1153,19 +1152,20 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 2,
+      "currentEpoch": 3,
       "completedEpochs": [
         "2020-01-01 to 2026-01-01",
-        "2015-01-01 to 2020-01-01"
+        "2015-01-01 to 2020-01-01",
+        "2010-01-01 to 2015-01-01"
       ],
       "categoryHitCounts": {
         "JDT AST Infrastructure": 2,
         "JDT Language Support": 3,
-        "JDT Internal Refactoring": 242,
+        "JDT Internal Refactoring": 247,
         "Unnecessary Annotation Removal": 1,
         "Collections": 2,
         "Java-Modernization": 5,
-        "JDT Internal Bug Fix": 90,
+        "JDT Internal Bug Fix": 92,
         "Logging Simplification": 1,
         "Robustness/Defensive Programming": 1,
         "String-API": 1,
@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "86d2764bcb0a4c37c9865a2df7655dab5665b951",
-      "lastProcessedDate": "2026-04-02T04:41:49.381314742Z",
-      "totalProcessed": 140,
+      "lastProcessedCommit": "49c611431cd6f60abfc6e55d67aa21ae7d1dcc31",
+      "lastProcessedDate": "2026-04-14T03:29:20.160099101Z",
+      "totalProcessed": 188,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1259,6 +1259,15 @@
           "deferredAt": "2026-04-02T04:40:44.658314987Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "b05b51e95b4bbe3a056e4dbf4d0af90d0fa27024",
+          "message": "Bug 548309 - Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-14T03:27:02.609635039Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1268,10 +1277,10 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 10,
+        "JDT Internal Refactoring": 11,
         "Code Simplification": 1,
-        "Performance": 2,
-        "JDT Internal Bug Fix": 4,
+        "Performance": 3,
+        "JDT Internal Bug Fix": 6,
         "Clean-up Bug Fix": 3,
         "Try-with-Resources": 2,
         "JDT UI Feature Implementation": 1,
@@ -1282,11 +1291,16 @@
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
-        "Null-Safety": 1,
+        "Null-Safety": 2,
         "Lambda-Simplification": 1,
         "Architectural Refactoring": 1,
-        "Collections": 1,
-        "JDT Internal Feature Enhancement": 4
+        "Collections": 2,
+        "JDT Internal Feature Enhancement": 4,
+        "Clean-up Enhancement": 1,
+        "Internal Refactoring": 2,
+        "Loop Modernization": 4,
+        "JDT UI Bug Fix": 1,
+        "Type Inference": 1
       },
       "exhaustedCategories": []
     },
@@ -1327,5 +1341,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 22632
+  "globalTotalProcessed": 22823
 }

@@ -876,3 +876,45 @@ retrieveRightBrace($expr.bodyEnd, $declarationSourceEnd)
 :: inClass("org.eclipse.jdt.core.dom.ASTConverter") && (instanceof($expr, "org.eclipse.jdt.internal.compiler.ast.MethodDeclaration") || instanceof($expr, "org.eclipse.jdt.internal.compiler.ast.AnonymousTypeDeclaration"))
 => retrieveRightBrace($expr.bodyEnd + 1, $declarationSourceEnd)
 ;;
+
+@id: jdt.internal.refactoring.rename-intersectiontypebinding.type
+org.eclipse.jdt.internal.compiler.lookup.IntersectionCastTypeBinding
+=> org.eclipse.jdt.internal.compiler.lookup.IntersectionTypeBinding18
+;;
+
+@id: jdt.internal.refactoring.rename-intersectiontypebinding.constant
+org.eclipse.jdt.internal.compiler.lookup.Binding.INTERSECTION_CAST_TYPE
+=> org.eclipse.jdt.internal.compiler.lookup.Binding.INTERSECTION_TYPE18
+;;
+
+@id: jdt.internal.refactoring.rename-intersectiontypebinding.method
+$binding.isIntersectionCastType() :: instanceof($binding, "org.eclipse.jdt.internal.compiler.lookup.Binding") && inClass("org.eclipse.jdt.core.dom.TypeBinding")
+=> $binding.isIntersectionType18()
+;;
+
+/*!id: jdt.internal.bindingcomparator.capturebinding.position-to-end*/
+/*!description: Updates internal JDT BindingComparator logic to compare 'end' property instead of 'position' for CaptureBinding, enhancing robustness of wildcard capture handling.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, bugfix*/
+$captureBinding.position == $captureBinding2.position :: inClass("org.eclipse.jdt.core.dom.BindingComparator")
+=> $captureBinding.end == $captureBinding2.end
+;;
+
+/*!id: jdt.internal.typebinding.capture.add-argument*/
+/*!description: Adds a new integer argument to the internal TypeBinding.capture() method call, enhancing robustness for wildcard captures.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, bugfix*/
+$expressionType.capture($scope, 0) :: inClass("org.eclipse.jdt.core.dom.TypeBinding")
+=> $expressionType.capture($scope, 0, 0)
+;;
+
+@id: jdt.internal.checks.validatemodifiesfiles.addmonitor
+@severity: info
+org.eclipse.jdt.internal.corext.util.Checks.validateModifiesFiles($files, $context)
+=> org.eclipse.jdt.internal.corext.util.Checks.validateModifiesFiles($files, $context, pm)
+;;
+
+// Note: This rule assumes 'pm' is an IProgressMonitor variable available in the scope.
+// The commit also implies similar changes for 'Checks.validateEdit()'.

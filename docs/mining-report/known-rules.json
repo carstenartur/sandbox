@@ -1694,6 +1694,50 @@
       "sourceCommit": "0eaa2ed8772f78cbf0083fde09091e98f1f6a2b1",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-renames-the-internal-jdt-com",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.refactoring.rename-intersectiontypebinding.type\norg.eclipse.jdt.internal.compiler.lookup.IntersectionCastTypeBinding\n\u003d\u003e org.eclipse.jdt.internal.compiler.lookup.IntersectionTypeBinding18\n;;\n\n@id: jdt.internal.refactoring.rename-intersectiontypebinding.constant\norg.eclipse.jdt.internal.compiler.lookup.Binding.INTERSECTION_CAST_TYPE\n\u003d\u003e org.eclipse.jdt.internal.compiler.lookup.Binding.INTERSECTION_TYPE18\n;;\n\n@id: jdt.internal.refactoring.rename-intersectiontypebinding.method\n$binding.isIntersectionCastType() :: instanceof($binding, \"org.eclipse.jdt.internal.compiler.lookup.Binding\") \u0026\u0026 inClass(\"org.eclipse.jdt.core.dom.TypeBinding\")\n\u003d\u003e $binding.isIntersectionType18()\n;;",
+      "summary": "This commit renames the internal JDT compiler type `IntersectionCastTypeBinding` to `IntersectionTypeBinding18` to align with Java 8\u0027s intersection type naming convention. It updates all occurrences, including import statements, `switch` case constants, explicit type casts, and method calls (e.g., `isIntersectionCastType()` to `isIntersectionType18()`). These are direct 1:1 replacements of FQNs, constants, and method invocations, making them fully expressible as GREEN TriggerPattern DSL rules for internal JDT API modernization. The rules are applicable for Java 8 and higher projects, targeting specific internal JDT components.",
+      "discoveredAt": "2026-04-14",
+      "discoveredInRun": 22823,
+      "sourceCommit": "ac33227f5aefea8ca107e0dff1e50be7a78ccf5b",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-448792-by-making-t",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.bindingcomparator.capturebinding.position-to-end*/\n/*!description: Updates internal JDT BindingComparator logic to compare \u0027end\u0027 property instead of \u0027position\u0027 for CaptureBinding, enhancing robustness of wildcard capture handling.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, bugfix*/\n$captureBinding.position \u003d\u003d $captureBinding2.position :: inClass(\"org.eclipse.jdt.core.dom.BindingComparator\")\n\u003d\u003e $captureBinding.end \u003d\u003d $captureBinding2.end\n;;\n\n/*!id: jdt.internal.typebinding.capture.add-argument*/\n/*!description: Adds a new integer argument to the internal TypeBinding.capture() method call, enhancing robustness for wildcard captures.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, bugfix*/\n$expressionType.capture($scope, 0) :: inClass(\"org.eclipse.jdt.core.dom.TypeBinding\")\n\u003d\u003e $expressionType.capture($scope, 0, 0)\n;;",
+      "summary": "This commit fixes Bug 448792 by making two internal JDT API adjustments. The first updates a comparison logic from `position` to `end` for `CaptureBinding` objects in `BindingComparator.java`. The second adds an argument to `expressionType.capture()` in `TypeBinding.java`. Both are direct 1:1 expression replacements within internal JDT classes, making them fully expressible as GREEN TriggerPattern DSL rules for internal JDT modernization. The rules are guarded by `inClass` to ensure context. The `minJavaVersion` for the hint file is 8 as the bug is related to the Java 1.8 compiler.",
+      "discoveredAt": "2026-04-14",
+      "discoveredInRun": 22823,
+      "sourceCommit": "4e5b524e8fed0a2f038362e79ac7bed8b62bd551",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "collections-this-commit-modernizes-map-api-usage-by",
+      "category": "Collections",
+      "dslRule": "$map.keySet().size()\n\u003d\u003e $map.size()\n;;",
+      "summary": "This commit modernizes Map API usage by replacing `map.keySet().size()` with `map.size()` in several files. This is a performance and readability improvement, as `map.size()` directly returns the size of the map, avoiding the intermediate creation of a `Set` for the keys. This is a direct 1:1 expression replacement and is already covered by an existing rule in `collection-performance.sandbox-hint`. Therefore, it is classified as GREEN and duplicates an existing rule.",
+      "discoveredAt": "2026-04-14",
+      "discoveredInRun": 22823,
+      "sourceCommit": "a641b02b414b129480cf84474b8e2a043c02937e",
+      "status": "DISCOVERED",
+      "hintFile": "collection-performance.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-addresses-bug-560302-by-modif",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.checks.validatemodifiesfiles.addmonitor\n@severity: info\norg.eclipse.jdt.internal.corext.util.Checks.validateModifiesFiles($files, $context)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.Checks.validateModifiesFiles($files, $context, pm)\n;;\n\n// Note: This rule assumes \u0027pm\u0027 is an IProgressMonitor variable available in the scope.\n// The commit also implies similar changes for \u0027Checks.validateEdit()\u0027.",
+      "summary": "The commit addresses Bug 560302 by modifying internal JDT refactoring processors to ensure resources are in sync. The core pattern is adding an `IProgressMonitor` parameter (named `pm` in the calling context) to existing calls of `org.eclipse.jdt.internal.corext.util.Checks.validateModifiesFiles()`. This is a direct 1:1 argument addition to a method call, which is fully expressible as a GREEN TriggerPattern DSL rule. The rule will automatically add the `pm` argument, assuming an `IProgressMonitor` variable with that name is available in the current scope. Other changes in `ElementValidator.java` involve adding new control flow (an `if` block) and statements (`resource.refreshLocal`), which are not directly expressible as pattern-based replacements in the current DSL (RED).",
+      "discoveredAt": "2026-04-14",
+      "discoveredInRun": 22823,
+      "sourceCommit": "a0db34f217cb097920063c40c4cf24fbae61aba2",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
