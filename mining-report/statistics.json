@@ -1,56 +1,12 @@
 {
-  "totalProcessed": 26,
-  "relevant": 22,
-  "irrelevant": 4,
-  "duplicates": 1,
-  "green": 4,
+  "totalProcessed": 0,
+  "relevant": 0,
+  "irrelevant": 0,
+  "duplicates": 0,
+  "green": 0,
   "yellow": 0,
-  "red": 18,
-  "irrelevantReasons": {
-    "The change is an update to a Javadoc comment and a copyright year, not a transformation of executable Java code.": 1,
-    "The commit only modifies Javadoc tags (@since, @noextend, @noreference). The TriggerPattern DSL is designed for Java code transformations (expressions, statements, annotations) and does not directly support pattern matching or rewriting Javadoc comments or tags. Other changes mentioned in the commit message regarding bundle versions and dependency versions are build-related and not code transformations.": 1,
-    "The commit only removes a single trailing whitespace character. The TriggerPattern DSL is designed for semantic code transformations based on AST patterns, not for raw text or whitespace-only changes. Such formatting issues are typically handled by code formatters or IDE save actions.": 1,
-    "Deletion of an internal component, not a code transformation pattern to be applied to user code. The DSL is designed for transforming existing code, not for removing internal IDE components.": 1
-  },
-  "perRepository": {
-    "https://github.com/eclipse-jdt/eclipse.jdt.core": {
-      "totalProcessed": 8,
-      "relevant": 7,
-      "green": 2,
-      "yellow": 0,
-      "red": 5
-    },
-    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 18,
-      "relevant": 15,
-      "green": 2,
-      "yellow": 0,
-      "red": 13
-    }
-  },
-  "dailyProgress": [
-    {
-      "date": "2026-04-14",
-      "processed": 26,
-      "relevant": 22
-    }
-  ],
-  "runMetadata": {
-    "startedAt": "2026-04-14T03:09:41.315Z",
-    "completedAt": "2026-04-14T03:29:21.383622338Z",
-    "durationSeconds": 1180,
-    "llmProvider": "GeminiClient",
-    "llmModel": "gemini-2.5-flash",
-    "batchSize": 200,
-    "commitsPerRequest": 4,
-    "apiCallsMade": 18,
-    "deferredCommits": 131,
-    "permanentlySkipped": 0
-  },
-  "timeWindow": {
-    "earliestEvaluation": "2026-04-14T03:11:01.654927534Z",
-    "latestEvaluation": "2026-04-14T03:29:20.159520911Z",
-    "earliestCommitDate": "2014-10-15T15:22:46Z",
-    "latestCommitDate": "2020-03-20T09:07:40Z"
-  }
+  "red": 0,
+  "irrelevantReasons": {},
+  "perRepository": {},
+  "dailyProgress": []
 }
