@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "49c611431cd6f60abfc6e55d67aa21ae7d1dcc31",
-      "lastProcessedDate": "2026-04-14T03:29:20.160099101Z",
-      "totalProcessed": 188,
+      "lastProcessedCommit": "4b2499a58db21796001ba593acf120b51e3a1466",
+      "lastProcessedDate": "2026-04-15T03:13:53.224379055Z",
+      "totalProcessed": 200,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1268,6 +1268,15 @@
           "deferredAt": "2026-04-14T03:27:02.609635039Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "a1f5fa062403b3348a75ae63b17446f0011715a3",
+          "message": "Bug 548309 - Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-15T03:11:31.633184332Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1279,7 +1288,7 @@
         "Eclipse Specific": 1,
         "JDT Internal Refactoring": 11,
         "Code Simplification": 1,
-        "Performance": 3,
+        "Performance": 4,
         "JDT Internal Bug Fix": 6,
         "Clean-up Bug Fix": 3,
         "Try-with-Resources": 2,
@@ -1300,7 +1309,9 @@
         "Internal Refactoring": 2,
         "Loop Modernization": 4,
         "JDT UI Bug Fix": 1,
-        "Type Inference": 1
+        "Type Inference": 1,
+        "Architecture Migration": 1,
+        "Code Style": 1
       },
       "exhaustedCategories": []
     },
@@ -1341,5 +1352,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 22823
+  "globalTotalProcessed": 22835
 }
