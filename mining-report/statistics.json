@@ -1,12 +1,51 @@
 {
-  "totalProcessed": 0,
-  "relevant": 0,
-  "irrelevant": 0,
-  "duplicates": 0,
-  "green": 0,
-  "yellow": 0,
-  "red": 0,
-  "irrelevantReasons": {},
-  "perRepository": {},
-  "dailyProgress": []
+  "totalProcessed": 36,
+  "relevant": 30,
+  "irrelevant": 6,
+  "duplicates": 1,
+  "green": 13,
+  "yellow": 2,
+  "red": 15,
+  "irrelevantReasons": {
+    "This commit only modifies a `.properties` file (resource bundle text). It is not a Java code transformation and thus irrelevant for a Java code transformation DSL.": 1,
+    "Adds new logic to an internal JDT postfix completion AST visitor. This is an IDE feature implementation (AST analysis for a specific UI function) rather than a code transformation pattern for existing user code.": 1,
+    "Internal refactoring of an Eclipse JDT AST visitor logic (PostfixCompletionProposalComputer) to handle MethodInvocation and SuperMethodInvocation uniformly as Expressions. This is an internal framework change, not a transformation pattern for end-user code.": 1,
+    "Internal logic modification within an Eclipse JDT UI auto-edit strategy. It adds a conditional check to disable smart insertion of braces/semicolons in non-default partitions (e.g., string literals). This is a change to the IDE\u0027s behavior, not a code transformation pattern for end-user Java code.": 1,
+    "The commit adds a UI configuration line (a method call to `intent()`) within an Eclipse JDT preference page. This is a change to the JDT\u0027s own UI and configuration, not a transformation pattern applicable to general Java code that the DSL is designed to detect and rewrite.": 1,
+    "The commit message \u0027Remove unnecessary array creation for varargs\u0027 suggests a code transformation. However, the actual diff provided only shows changes in whitespace and line breaks within existing `MessageFormat.format` calls. It does not show any `new Object[] { ... }` being removed or any other semantic code change that could be generalized into a DSL rule. The transformation described in the commit message is a type of cleanup, but the provided diff lines do not exhibit the pattern for mining.": 1
+  },
+  "perRepository": {
+    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
+      "totalProcessed": 36,
+      "relevant": 30,
+      "green": 13,
+      "yellow": 2,
+      "red": 15
+    }
+  },
+  "dailyProgress": [
+    {
+      "date": "2026-04-16",
+      "processed": 36,
+      "relevant": 30
+    }
+  ],
+  "runMetadata": {
+    "startedAt": "2026-04-16T03:10:14.614Z",
+    "completedAt": "2026-04-16T03:29:25.232565446Z",
+    "durationSeconds": 1150,
+    "llmProvider": "GeminiClient",
+    "llmModel": "gemini-2.5-flash",
+    "batchSize": 200,
+    "commitsPerRequest": 4,
+    "apiCallsMade": 18,
+    "deferredCommits": 132,
+    "permanentlySkipped": 0
+  },
+  "timeWindow": {
+    "earliestEvaluation": "2026-04-16T03:12:38.531629179Z",
+    "latestEvaluation": "2026-04-16T03:29:24.604542754Z",
+    "earliestCommitDate": "2018-03-02T05:06:45Z",
+    "latestCommitDate": "2020-04-27T06:38:53Z"
+  }
 }
