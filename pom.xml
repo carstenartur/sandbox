@@ -23,7 +23,7 @@
 		<maven.compiler.target>${java-version}</maven.compiler.target>
 		<maven.compiler.release>${java-version}</maven.compiler.release>
 		<license.licenseName>epl_v1</license.licenseName>
-		<bouncycastle.version>1.83</bouncycastle.version>
+		<bouncycastle.version>1.84</bouncycastle.version>
 		<assertj.version>3.27.7</assertj.version>
 		<bnd.version>7.2.3</bnd.version>
 		<caffeine.version>3.2.3</caffeine.version>
