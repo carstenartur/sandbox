@@ -1,0 +1,9 @@
+$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_NONUITHREAD_COMPUTATION, false)
+=> $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_NONUITHREAD_COMPUTATION, true)
+;;
+
+@id: eclipse.jdt.ui.preference.release.restore-default
+@severity: info
+setDefaultValue(PREF_RELEASE, DISABLED)
+=> setDefaultValue(PREF_RELEASE, complianceOptions.get(PREF_RELEASE.getName()) != null ? complianceOptions.get(PREF_RELEASE.getName()) : DISABLED)
+;;

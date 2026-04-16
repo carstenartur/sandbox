@@ -1,0 +1,7 @@
+($x == null && $y == null) || ($x != null && $x.equals($y))
+=> java.util.Objects.equals($x, $y)
+;;
+
+($x == null && $y != null) || ($x != null && !$x.equals($y))
+=> !java.util.Objects.equals($x, $y)
+;;
