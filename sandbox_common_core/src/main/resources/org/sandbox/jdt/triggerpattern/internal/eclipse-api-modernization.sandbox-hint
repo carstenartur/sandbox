@@ -11,3 +11,17 @@ new org.eclipse.core.runtime.SubProgressMonitor($monitor, $amount)
 org.eclipse.jdt.core.dom.IModuleBinding.$moduleBinding.getOpenPackages() :: sourceVersionGE(9)
 => $moduleBinding.getOpenedPackages()
 ;;
+
+/*!id: eclipse.ide.geteditordescriptor.file.add-allowinteractive*/
+/*!description: Updates deprecated IDE.getEditorDescriptor(IFile) to IDE.getEditorDescriptor(IFile, boolean allowUnassociated, boolean allowInteractive), passing true and false respectively.*/
+/*!severity: info*/
+org.eclipse.ui.ide.IDE.getEditorDescriptor($file).getId()
+=> org.eclipse.ui.ide.IDE.getEditorDescriptor($file, true, false).getId()
+;;
+
+/*!id: eclipse.ide.geteditordescriptor.name.add-allowinteractive*/
+/*!description: Updates deprecated IDE.getEditorDescriptor(String name) to IDE.getEditorDescriptor(String name, boolean allowUnassociated, boolean allowInteractive), passing true and false respectively.*/
+/*!severity: info*/
+org.eclipse.ui.ide.IDE.getEditorDescriptor($name).getId()
+=> org.eclipse.ui.ide.IDE.getEditorDescriptor($name, true, false).getId()
+;;

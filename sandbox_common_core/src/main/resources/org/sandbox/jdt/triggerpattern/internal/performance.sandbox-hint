@@ -35,3 +35,63 @@ org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING
 new java.lang.String()
 => org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING
 ;;
+
+/*!id: java.lang.varargs.remove-redundant-class-array*/
+/*!description: Removes redundant new Class[] array creation when used as a varargs argument to Class.getConstructor().*/
+/*!severity: info*/
+new java.lang.Class[] { $arg$ }
+=> $arg$
+;;
+
+/*!id: java.lang.varargs.remove-redundant-object-array*/
+/*!description: Removes redundant new Object[] array creation when used as a varargs argument (e.g., in Constructor.newInstance(), MessageFormat.format()).*/
+/*!severity: info*/
+new java.lang.Object[] { $arg$ }
+=> $arg$
+;;
+
+/*!id: java.lang.varargs.remove-redundant-string-array*/
+/*!description: Removes redundant new String[] array creation when used as a varargs argument (e.g., in Arrays.asList(), Combo.setItems()).*/
+/*!severity: info*/
+new java.lang.String[] { $arg$ }
+=> $arg$
+;;
+
+/*!id: java.lang.varargs.remove-redundant-object-array-method-invoke*/
+/*!description: Removes redundant new Object[] array creation when used as a varargs argument to Method.invoke().*/
+/*!severity: info*/
+java.lang.reflect.Method.$method.invoke($obj, new java.lang.Object[] { $arg$ })
+=> $method.invoke($obj, $arg$)
+;;
+
+/*!id: java.util.arrays.aslist.remove-redundant-string-array*/
+/*!description: Simplifies Arrays.asList(new String[] { ... }) to Arrays.asList(...) in varargs contexts.*/
+/*!severity: info*/
+java.util.Arrays.asList(new java.lang.String[] { $args$ })
+=> java.util.Arrays.asList($args$)
+;;
+
+/*!id: java.text.messageformat.format.remove-redundant-object-array*/
+/*!description: Simplifies MessageFormat.format(..., new Object[] { ... }) to MessageFormat.format(..., ...) in varargs contexts.*/
+/*!severity: info*/
+java.text.MessageFormat.format($pattern, new java.lang.Object[] { $args$ })
+=> java.text.MessageFormat.format($pattern, $args$)
+;;
+
+/*!id: org.eclipse.jface.viewers.StructuredViewer.setinitialselections.remove-redundant-object-array*/
+/*!description: Removes redundant new Object[] array creation when used as a single argument for StructuredViewer.setInitialSelections().*/
+/*!severity: info*/
+$viewer.setInitialSelections(new java.lang.Object[] { $selection })
+=> $viewer.setInitialSelections($selection)
+;;
+
+/*!id: org.eclipse.swt.widgets.Combo.setitems.remove-redundant-string-array*/
+/*!description: Simplifies Combo.setItems(new String[] { ... }) to Combo.setItems(...) in varargs contexts.*/
+/*!severity: info*/
+$combo.setItems(new java.lang.String[] { $items$ })
+=> $combo.setItems($items$)
+;;
+
+java.lang.Integer.valueOf($int_expr).toString()
+=> java.lang.Integer.toString($int_expr)
+;;

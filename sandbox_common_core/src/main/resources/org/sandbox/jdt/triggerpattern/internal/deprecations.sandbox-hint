@@ -61,3 +61,7 @@ java.lang.Runtime.getRuntime().exec($cmd)
 "Class.newInstance() is deprecated — use Constructor.newInstance() instead":
 java.lang.Class.forName($name).newInstance() :: sourceVersionGE(9)
 ;;
+
+java.lang.Boolean.valueOf($str).booleanValue()
+=> java.lang.Boolean.parseBoolean($str)
+;;

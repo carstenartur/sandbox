@@ -1738,6 +1738,138 @@
       "sourceCommit": "a0db34f217cb097920063c40c4cf24fbae61aba2",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-this-commit-modernizes-various-and-compa",
+      "category": "Java-Modernization",
+      "dslRule": "org.eclipse.jdt.core.dom.ITypeBinding $str1 \u003d\u003d org.eclipse.jdt.core.dom.ITypeBinding $str2 :: instanceof($str1, \"java.lang.String\") \u0026\u0026 instanceof($str2, \"java.lang.String\")\n\u003d\u003e java.util.Objects.equals($str1, $str2)\n;;\n\norg.eclipse.jdt.core.dom.ITypeBinding $str1 !\u003d org.eclipse.jdt.core.dom.ITypeBinding $str2 :: instanceof($str1, \"java.lang.String\") \u0026\u0026 instanceof($str2, \"java.lang.String\")\n\u003d\u003e !java.util.Objects.equals($str1, $str2)\n;;\n\n$obj1.equals($obj2) :: !isNullLiteral($obj1) \u0026\u0026 !isStringLiteral($obj1) \u0026\u0026 instanceof($obj1, \"java.lang.Object\") \u0026\u0026 instanceof($obj2, \"java.lang.Object\")\n\u003d\u003e java.util.Objects.equals($obj1, $obj2)\n;;\n\n$obj1 \u003d\u003d $obj2 :: !instanceof($obj1, \"java.lang.String\") \u0026\u0026 instanceof($obj1, \"java.lang.Object\") \u0026\u0026 !instanceof($obj2, \"java.lang.String\") \u0026\u0026 instanceof($obj2, \"java.lang.Object\")\n\u003d\u003e java.util.Objects.equals($obj1, $obj2)\n;;\n\n$obj1 !\u003d $obj2 :: !instanceof($obj1, \"java.lang.String\") \u0026\u0026 instanceof($obj1, \"java.lang.Object\") \u0026\u0026 !instanceof($obj2, \"java.lang.String\") \u0026\u0026 instanceof($obj2, \"java.lang.Object\")\n\u003d\u003e !java.util.Objects.equals($obj1, $obj2)\n;;",
+      "summary": "This commit modernizes various `\u003d\u003d` and `!\u003d` comparisons for String and Object types to use `java.util.Objects.equals()` for improved null safety and correctness. It also converts existing `.equals()` calls to `Objects.equals()` for consistency. The transformation is applicable to Java 7+ environments (baseline 8) and is fully expressible as a set of GREEN TriggerPattern DSL rules. The rules differentiate between String comparisons (where `\u003d\u003d` is often a bug) and general Object comparisons, as well as converting existing `.equals()` calls. The rules specifically target non-primitive types by using `instanceof(\"java.lang.Object\")`.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "331e7ddb83fb6a8ee0372cf69a8ba3742e007a6a",
+      "status": "DISCOVERED",
+      "hintFile": "string-object-compare.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-changes-the-default-value-of",
+      "category": "Eclipse API Configuration",
+      "dslRule": "$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_NONUITHREAD_COMPUTATION, false)\n\u003d\u003e $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_NONUITHREAD_COMPUTATION, true)\n;;",
+      "summary": "This commit changes the default value of the `CODEASSIST_NONUITHREAD_COMPUTATION` preference from `false` to `true` in `PreferenceConstants.java`. This is a direct 1:1 replacement of a boolean literal within a method call, which is fully supported by the TriggerPattern DSL. This is a GREEN transformation.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "cd5a13bf9a3ed0fb63e5ebe4948e6d9c0b692d17",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-a-typo-in-the-fcomplie",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.typo.fcomplierreleasecheck.to.fcompilerreleasecheck\n@severity: info\nfComplierReleaseCheck\n\u003d\u003e fCompilerReleaseCheck\n;;",
+      "summary": "This commit fixes a typo in the `fComplierReleaseCheck` field name to `fCompilerReleaseCheck` across its declaration and all usages in `ComplianceConfigurationBlock.java`. The TriggerPattern DSL can directly replace the identifier for this field wherever it is used within the class. This is a simple 1:1 identifier replacement, which is fully supported and classified as GREEN.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "7632219417ad2101f7b889d2e72b0d7cf6ec1d19",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-fixes-a-bug-bug-560150-in-jd",
+      "category": "Eclipse API Configuration",
+      "dslRule": "@id: eclipse.jdt.ui.preference.release.restore-default\n@severity: info\nsetDefaultValue(PREF_RELEASE, DISABLED)\n\u003d\u003e setDefaultValue(PREF_RELEASE, complianceOptions.get(PREF_RELEASE.getName()) !\u003d null ? complianceOptions.get(PREF_RELEASE.getName()) : DISABLED)\n;;",
+      "summary": "This commit fixes a bug (Bug 560150) in JDT\u0027s `ComplianceConfigurationBlock` where the \u0027Use --release\u0027 option\u0027s default value was not correctly restored when performing defaults. It replaces a hardcoded `DISABLED` constant as an argument to `setDefaultValue()` with a ternary expression that dynamically retrieves the actual default value from the `complianceOptions` map, falling back to `DISABLED` if `null`. This ensures the preference\u0027s default behavior is properly maintained. This is a direct 1:1 expression replacement of a method argument, making it fully implementable as a GREEN TriggerPattern DSL rule. Other changes involve adding new methods and overriding `performDefaults()`, which are structural changes not expressible by the DSL.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "3a79a0211571fa1f28143e35a4c028143dc9b729",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "null-safety-the-commit-replaces-verbose-null-safe-ob",
+      "category": "Null-Safety",
+      "dslRule": "($x \u003d\u003d null \u0026\u0026 $y \u003d\u003d null) || ($x !\u003d null \u0026\u0026 $x.equals($y))\n\u003d\u003e java.util.Objects.equals($x, $y)\n;;\n\n($x \u003d\u003d null \u0026\u0026 $y !\u003d null) || ($x !\u003d null \u0026\u0026 !$x.equals($y))\n\u003d\u003e !java.util.Objects.equals($x, $y)\n;;",
+      "summary": "The commit replaces verbose null-safe object equality comparisons (e.g., `(A \u003d\u003d null \u0026\u0026 B \u003d\u003d null) || (A !\u003d null \u0026\u0026 A.equals(B))`) with the more concise and readable `java.util.Objects.equals(A, B)`, and its negative form (`!Objects.equals(A, B)`). This is a standard Java modernization pattern to improve null safety and readability, as `Objects.equals()` (introduced in Java 7) handles `null` arguments gracefully. The transformations are direct 1:1 expression replacements and are fully implementable as two GREEN TriggerPattern DSL rules. The existing `CPListElementAttribute.java` change is a structural simplification using already present `Objects.equals` calls, which is out of scope for this specific pattern.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "5f4b2a337e6710c3d3a8335e208e1aab5be0ab24",
+      "status": "DISCOVERED",
+      "hintFile": "null-safety.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-systematically-removes-redun",
+      "category": "Performance",
+      "dslRule": "/*!id: java.lang.varargs.remove-redundant-class-array*/\n/*!description: Removes redundant new Class[] array creation when used as a varargs argument to Class.getConstructor().*/\n/*!severity: info*/\nnew java.lang.Class[] { $arg$ }\n\u003d\u003e $arg$\n;;\n\n/*!id: java.lang.varargs.remove-redundant-object-array*/\n/*!description: Removes redundant new Object[] array creation when used as a varargs argument (e.g., in Constructor.newInstance(), MessageFormat.format()).*/\n/*!severity: info*/\nnew java.lang.Object[] { $arg$ }\n\u003d\u003e $arg$\n;;\n\n/*!id: java.lang.varargs.remove-redundant-string-array*/\n/*!description: Removes redundant new String[] array creation when used as a varargs argument (e.g., in Arrays.asList(), Combo.setItems()).*/\n/*!severity: info*/\nnew java.lang.String[] { $arg$ }\n\u003d\u003e $arg$\n;;\n\n/*!id: java.lang.varargs.remove-redundant-object-array-method-invoke*/\n/*!description: Removes redundant new Object[] array creation when used as a varargs argument to Method.invoke().*/\n/*!severity: info*/\njava.lang.reflect.Method.$method.invoke($obj, new java.lang.Object[] { $arg$ })\n\u003d\u003e $method.invoke($obj, $arg$)\n;;\n\n/*!id: java.util.arrays.aslist.remove-redundant-string-array*/\n/*!description: Simplifies Arrays.asList(new String[] { ... }) to Arrays.asList(...) in varargs contexts.*/\n/*!severity: info*/\njava.util.Arrays.asList(new java.lang.String[] { $args$ })\n\u003d\u003e java.util.Arrays.asList($args$)\n;;\n\n/*!id: java.text.messageformat.format.remove-redundant-object-array*/\n/*!description: Simplifies MessageFormat.format(..., new Object[] { ... }) to MessageFormat.format(..., ...) in varargs contexts.*/\n/*!severity: info*/\njava.text.MessageFormat.format($pattern, new java.lang.Object[] { $args$ })\n\u003d\u003e java.text.MessageFormat.format($pattern, $args$)\n;;\n\n/*!id: org.eclipse.jface.viewers.StructuredViewer.setinitialselections.remove-redundant-object-array*/\n/*!description: Removes redundant new Object[] array creation when used as a single argument for StructuredViewer.setInitialSelections().*/\n/*!severity: info*/\n$viewer.setInitialSelections(new java.lang.Object[] { $selection })\n\u003d\u003e $viewer.setInitialSelections($selection)\n;;\n\n/*!id: org.eclipse.swt.widgets.Combo.setitems.remove-redundant-string-array*/\n/*!description: Simplifies Combo.setItems(new String[] { ... }) to Combo.setItems(...) in varargs contexts.*/\n/*!severity: info*/\n$combo.setItems(new java.lang.String[] { $items$ })\n\u003d\u003e $combo.setItems($items$)\n;;",
+      "summary": "This commit systematically removes redundant array creations (`new Type[] { ... }`) when used as varargs arguments to methods and constructors. This is a common performance and code style cleanup, as the array is implicitly created by the Java compiler for varargs. The patterns include `Class.getConstructor(...)`, `Constructor.newInstance(...)`, `Arrays.asList(...)`, `MessageFormat.format(...)`, `setInitialSelections(...)` and `Combo.setItems(...)`. Each specific replacement is a direct 1:1 expression transformation and can be fully automated by the TriggerPattern DSL. Since varargs were introduced in Java 5, no explicit `sourceVersionGE` guard is needed beyond the Java 8 baseline. The `dslRule` field contains multiple rules to cover the different contexts found in the diff.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "78f6768d1f2554da7209b1c60c10c12fd7944fa3",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-modernizes-the-usage-of-org",
+      "category": "Eclipse API Migration",
+      "dslRule": "/*!id: eclipse.ide.geteditordescriptor.file.add-allowinteractive*/\n/*!description: Updates deprecated IDE.getEditorDescriptor(IFile) to IDE.getEditorDescriptor(IFile, boolean allowUnassociated, boolean allowInteractive), passing true and false respectively.*/\n/*!severity: info*/\norg.eclipse.ui.ide.IDE.getEditorDescriptor($file).getId()\n\u003d\u003e org.eclipse.ui.ide.IDE.getEditorDescriptor($file, true, false).getId()\n;;\n\n/*!id: eclipse.ide.geteditordescriptor.name.add-allowinteractive*/\n/*!description: Updates deprecated IDE.getEditorDescriptor(String name) to IDE.getEditorDescriptor(String name, boolean allowUnassociated, boolean allowInteractive), passing true and false respectively.*/\n/*!severity: info*/\norg.eclipse.ui.ide.IDE.getEditorDescriptor($name).getId()\n\u003d\u003e org.eclipse.ui.ide.IDE.getEditorDescriptor($name, true, false).getId()\n;;",
+      "summary": "This commit modernizes the usage of `org.eclipse.ui.ide.IDE.getEditorDescriptor()` by replacing calls to its deprecated overloads (taking `IFile` or `String` name) with a new 3-argument overload. The new method signature includes `boolean allowUnassociated` and `boolean allowInteractive`, for which `true` and `false` are consistently passed, respectively. This is a direct 1:1 method call replacement with added literal arguments, which is fully supported by the TriggerPattern DSL. Two separate rules are provided to handle the `IFile` and `String` argument forms of the original method. This is a GREEN transformation, improving Eclipse API adherence. No specific `sourceVersionGE` guard is needed as this is an Eclipse API change, not directly tied to a new Java language feature beyond the Java 8 baseline.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "eb89a08012bfbaf5e6fcf7c4e0f4380975f45524",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "type-safety-this-commit-fixes-compiler-warnings-in-d",
+      "category": "Type Safety",
+      "dslRule": "java.lang.Object $typeNameMatch \u003d $init;\n:: $init instanceof org.eclipse.jdt.core.search.TypeNameMatch\n\u003d\u003e org.eclipse.jdt.core.search.TypeNameMatch $typeNameMatch \u003d $init;\n;;\n\njava.lang.Object $modName \u003d $init;\n:: $init instanceof java.lang.String\n\u003d\u003e java.lang.String $modName \u003d $init;\n;;",
+      "summary": "This commit fixes compiler warnings in `DefaultClasspathFixProcessor.java` by replacing `Object` as the declared type for local variables with more specific types (`TypeNameMatch` and `String`). This is a direct type replacement for local variable declarations. The transformation improves type safety and removes raw type warnings. The TriggerPattern DSL can directly implement this change by matching the `Object` declaration and replacing the type, guarded by an `instanceof` check to confirm the initializer\u0027s actual type, ensuring semantic correctness. No specific `sourceVersionGE` guard is required as this is a general Java type safety improvement and applies from the Java 8 baseline.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "4204003158c67cd8d839c20af3f2e1d20eae7e1b",
+      "status": "DISCOVERED",
+      "hintFile": "type-safety.sandbox-hint"
+    },
+    {
+      "id": "lambda-simplification-this-commit-simplifies-a-lambda-expressi",
+      "category": "Lambda-Simplification",
+      "dslRule": "$collection.stream().map($p -\u003e $p.getName()).collect($collector)\n:: instanceof($p, \"org.eclipse.core.resources.IProject\")\n\u003d\u003e $collection.stream().map(org.eclipse.core.resources.IProject::getName).collect($collector)\n;;",
+      "summary": "This commit simplifies a lambda expression `p -\u003e p.getName()` to a method reference `IProject::getName()` within a Stream API chain in `BuildpathProblemMarkerResolutionGenerator.java`. This is a standard modernization pattern that improves code readability and conciseness. The TriggerPattern DSL can directly implement this by matching the lambda pattern and replacing it with the method reference. An `instanceof` guard for the lambda parameter `$p` ensures that the transformation is type-safe and applies only when `$p` is an `IProject`. This pattern is a GREEN transformation, suitable for a new `lambda-simplification.sandbox-hint` file. It applies to Java 8 and higher, as lambdas and streams were introduced in Java 8.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "aed7ceb85e295a83bbf5d8e41b6f82a2317daafd",
+      "status": "DISCOVERED",
+      "hintFile": "lambda-simplification.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-this-commit-replaces-boolean-valueof-str",
+      "category": "Java-Modernization",
+      "dslRule": "java.lang.Boolean.valueOf($str).booleanValue()\n\u003d\u003e java.lang.Boolean.parseBoolean($str)\n;;",
+      "summary": "This commit replaces `Boolean.valueOf(String).booleanValue()` with `Boolean.parseBoolean(String)`. This is a direct, semantically equivalent replacement that avoids an unnecessary `Boolean` object creation and an extra method call, improving performance and readability. The pattern is highly reusable and directly implementable as a GREEN TriggerPattern DSL rule. `Boolean.parseBoolean()` exists since Java 1.5, so no `sourceVersionGE` guard is needed beyond the Java 8 baseline.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "65cf34668ef9c01a28ac4b1bc633295e013e5060",
+      "status": "DISCOVERED",
+      "hintFile": "deprecations.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-replaces-integer-valueof-int",
+      "category": "Performance",
+      "dslRule": "java.lang.Integer.valueOf($int_expr).toString()\n\u003d\u003e java.lang.Integer.toString($int_expr)\n;;",
+      "summary": "This commit replaces `Integer.valueOf(int).toString()` with `Integer.toString(int)`. This change avoids the creation of an unnecessary `Integer` object for a simple primitive-to-string conversion, improving performance and being more direct. It is a highly reusable and directly implementable GREEN TriggerPattern DSL rule. `Integer.toString(int)` has been available since Java 1.0, so no `sourceVersionGE` guard is required.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "d6957b27edbe0db8e1df07f173add9df32337f47",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "collections-the-commit-modernizes-the-collection-toa",
+      "category": "Collections",
+      "dslRule": "$coll.toArray(new $T[$coll.size()])\n\u003d\u003e $coll.toArray(new $T[0])\n;;",
+      "summary": "The commit modernizes the `Collection.toArray()` usage from a pre-sized array (`new T[collection.size()]`) to a zero-length array (`new T[0]`). This is a standard Java 8+ idiom for minor performance and clarity. This specific transformation pattern is already covered by an existing DSL rule in `collection-toarray.sandbox-hint` and was previously proposed. The change in the `getPreview()` method is internal to the cleanup\u0027s functionality and not a user-facing code transformation pattern suitable for a DSL rule.",
+      "discoveredAt": "2026-04-16",
+      "discoveredInRun": 22915,
+      "sourceCommit": "d7517a6bb8d1535b11e3fcfffef709bba94ac01a",
+      "status": "DISCOVERED",
+      "hintFile": "collection-toarray.sandbox-hint"
     }
   ]
 }

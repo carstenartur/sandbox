@@ -918,3 +918,9 @@ org.eclipse.jdt.internal.corext.util.Checks.validateModifiesFiles($files, $conte
 
 // Note: This rule assumes 'pm' is an IProgressMonitor variable available in the scope.
 // The commit also implies similar changes for 'Checks.validateEdit()'.
+
+@id: jdt.internal.typo.fcomplierreleasecheck.to.fcompilerreleasecheck
+@severity: info
+fComplierReleaseCheck
+=> fCompilerReleaseCheck
+;;
