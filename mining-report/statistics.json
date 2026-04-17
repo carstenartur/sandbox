@@ -1,51 +1,54 @@
 {
-  "totalProcessed": 36,
-  "relevant": 30,
-  "irrelevant": 6,
+  "totalProcessed": 31,
+  "relevant": 22,
+  "irrelevant": 9,
   "duplicates": 1,
-  "green": 13,
-  "yellow": 2,
-  "red": 15,
+  "green": 7,
+  "yellow": 1,
+  "red": 14,
   "irrelevantReasons": {
-    "This commit only modifies a `.properties` file (resource bundle text). It is not a Java code transformation and thus irrelevant for a Java code transformation DSL.": 1,
-    "Adds new logic to an internal JDT postfix completion AST visitor. This is an IDE feature implementation (AST analysis for a specific UI function) rather than a code transformation pattern for existing user code.": 1,
-    "Internal refactoring of an Eclipse JDT AST visitor logic (PostfixCompletionProposalComputer) to handle MethodInvocation and SuperMethodInvocation uniformly as Expressions. This is an internal framework change, not a transformation pattern for end-user code.": 1,
-    "Internal logic modification within an Eclipse JDT UI auto-edit strategy. It adds a conditional check to disable smart insertion of braces/semicolons in non-default partitions (e.g., string literals). This is a change to the IDE\u0027s behavior, not a code transformation pattern for end-user Java code.": 1,
-    "The commit adds a UI configuration line (a method call to `intent()`) within an Eclipse JDT preference page. This is a change to the JDT\u0027s own UI and configuration, not a transformation pattern applicable to general Java code that the DSL is designed to detect and rewrite.": 1,
-    "The commit message \u0027Remove unnecessary array creation for varargs\u0027 suggests a code transformation. However, the actual diff provided only shows changes in whitespace and line breaks within existing `MessageFormat.format` calls. It does not show any `new Object[] { ... }` being removed or any other semantic code change that could be generalized into a DSL rule. The transformation described in the commit message is a type of cleanup, but the provided diff lines do not exhibit the pattern for mining.": 1
+    "This commit is identical to Commit 1 in terms of functional code changes related to pattern discovery. The diff only shows cosmetic import reorderings or removals of already-deleted code. No new or distinct code transformation patterns are introduced.": 1,
+    "The commit adds new internal quick-fix infrastructure and problem handling logic within Eclipse JDT UI, such as adding new problem IDs to switch statements and defining new method overloads. It does not involve transforming existing application code from one form to another.": 1,
+    "This commit cleans up internal JDT UI code sample formatting within `getPreview()` methods. It removes a leading newline character from the string builder output, which is a fix for how code examples are displayed in the UI preferences, not a code transformation pattern applicable to user code.": 1,
+    "This commit modifies the internal logic of an AST visitor within JDT UI to explicitly handle ClassInstanceCreation nodes. It is not a transformation of user-written Java code, but an internal architectural change to the IDE\u0027s functionality. Thus, it cannot be expressed as a TriggerPattern DSL rule which targets Java code transformations.": 1,
+    "This commit primarily involves an import statement reorganization/removal. The `TemplateProposal` import is removed because `PostfixTemplateProposal` (which extends it) is likely in the same package, making the import redundant. The `Image` import is moved. The TriggerPattern DSL focuses on transforming code expressions and statements, not directly managing import declarations. Such changes are typically handled by an \u0027Organize Imports\u0027 cleanup in JDT itself.": 1,
+    "Specific workaround for an internal Eclipse bug related to plugin activation, not a generalizable code transformation pattern.": 1,
+    "Highly specific bug fix in internal JDT UI content assist logic (content assist behavior); not a generalizable code transformation pattern for broad reuse. This aligns with example 17 (RED) which fixes quick-fix logic.": 1,
+    "The commit primarily involves internal JDT UI code refactorings that are highly specific to the `FastJavaPartitionScanner` and `QuickFixProcessor` classes. These changes include converting an `if-else if` chain to a `switch` statement and removing specific lines of code from switch cases. These are structural modifications of internal control flow and targeted statement removals, not generalizable expression-level or API modernization patterns suitable for the TriggerPattern DSL.": 1,
+    "This commit only updates a Javadoc comment to reflect a change in the AST API level from JLS14 to JLS15. This is a documentation change, not a functional Java code transformation that would be implemented by the TriggerPattern DSL.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 36,
-      "relevant": 30,
-      "green": 13,
-      "yellow": 2,
-      "red": 15
+      "totalProcessed": 31,
+      "relevant": 22,
+      "green": 7,
+      "yellow": 1,
+      "red": 14
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-16",
-      "processed": 36,
-      "relevant": 30
+      "date": "2026-04-17",
+      "processed": 31,
+      "relevant": 22
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-16T03:10:14.614Z",
-    "completedAt": "2026-04-16T03:29:25.232565446Z",
-    "durationSeconds": 1150,
+    "startedAt": "2026-04-17T03:09:53.958Z",
+    "completedAt": "2026-04-17T03:29:11.814545894Z",
+    "durationSeconds": 1157,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 132,
+    "deferredCommits": 134,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-16T03:12:38.531629179Z",
-    "latestEvaluation": "2026-04-16T03:29:24.604542754Z",
-    "earliestCommitDate": "2018-03-02T05:06:45Z",
-    "latestCommitDate": "2020-04-27T06:38:53Z"
+    "earliestEvaluation": "2026-04-17T03:11:44.637114607Z",
+    "latestEvaluation": "2026-04-17T03:29:11.178522649Z",
+    "earliestCommitDate": "2020-02-19T21:02:03Z",
+    "latestCommitDate": "2020-06-18T07:24:54Z"
   }
 }

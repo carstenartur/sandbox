@@ -1870,6 +1870,72 @@
       "sourceCommit": "d7517a6bb8d1535b11e3fcfffef709bba94ac01a",
       "status": "DISCOVERED",
       "hintFile": "collection-toarray.sandbox-hint"
+    },
+    {
+      "id": "eclipse-jdt-internal-refactoring-this-commit-removes-the-substring-matchi",
+      "category": "Eclipse JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.codeassist.substringmatch.preference.to.flag\n@severity: info\norg.eclipse.jdt.core.JavaCore.ENABLED.equals(org.eclipse.jdt.core.JavaCore.getOption(org.eclipse.jdt.core.JavaCore.CODEASSIST_SUBSTRING_MATCH))\n\u003d\u003e org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin.CODEASSIST_SUBSTRING_MATCH_ENABLED\n;;",
+      "summary": "This commit removes the \u0027substring matching\u0027 preference from the JDT UI and replaces its usage in internal code with a direct access to a new static boolean flag (`JavaManipulationPlugin.CODEASSIST_SUBSTRING_MATCH_ENABLED`). This is a direct 1:1 expression replacement, simplifying internal preference lookup logic, and is fully implementable as a GREEN TriggerPattern DSL rule for internal JDT refactoring.",
+      "discoveredAt": "2026-04-17",
+      "discoveredInRun": 23007,
+      "sourceCommit": "49a6149e1b7e91b77c3c12271afa0b66537a56bb",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-jdt-internal-refactoring-this-commit-updates-internal-eclipse-jdt",
+      "category": "Eclipse JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.textblock.previewcheck.to.java15orhigher\n@severity: info\norg.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor.isPreviewFeatureEnabled($javaProject) :: sourceVersionGE(15)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.is15OrHigher($javaProject)\n;;",
+      "summary": "This commit updates internal Eclipse JDT UI code to reflect the standardization of Text Blocks in Java 15. It replaces calls to `PreviewFeaturesSubProcessor.isPreviewFeatureEnabled()` with `JavaModelUtil.is15OrHigher()`. This is a direct 1:1 method call replacement, modernizing how JDT internally checks for Java 15 capabilities. This is fully implementable as a GREEN TriggerPattern DSL rule for internal JDT refactoring, guarded by `sourceVersionGE(15)`.",
+      "discoveredAt": "2026-04-17",
+      "discoveredInRun": 23007,
+      "sourceCommit": "a69901540927c29e0241a6ca9e1fb86c0b015e55",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-this-commit-fixes-bug-563209-by-providin",
+      "category": "Java-Modernization",
+      "dslRule": "return $expr; :: sourceVersionGE(14)\n\u003d\u003e yield $expr;\n;;",
+      "summary": "This commit fixes Bug 563209 by providing a quick fix to replace `return` statements with `yield` statements inside switch expressions. This is a direct 1:1 statement replacement, where `return $expr;` becomes `yield $expr;`. This transformation is a core modernization for Java 14+ Switch Expressions, improving code conciseness and aligning with modern Java idioms. The TriggerPattern DSL can directly express this pattern as a statement-level replacement, guarded by `sourceVersionGE(14)` to ensure compatibility with Java 14 and later. The proposed rule would automate this change, effectively replacing parts of the imperative Java quick-fix logic.",
+      "discoveredAt": "2026-04-17",
+      "discoveredInRun": 23007,
+      "sourceCommit": "c0612f4ff2216edc785485f9eaf138e13f279c3a",
+      "status": "DISCOVERED",
+      "hintFile": "modernize-java14.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-bug-563285-a-classcast",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "(org.eclipse.jdt.core.dom.TypeDeclaration) $expr\n:: inClass(\"org.eclipse.jdt.internal.ui.text.correction.proposals.InitializeFinalFieldProposal\")\n\u003d\u003e (org.eclipse.jdt.core.dom.AbstractTypeDeclaration) $expr\n;;",
+      "summary": "This commit fixes Bug 563285, a ClassCastException in `InitializeFinalFieldProposal`, by widening a cast from `(TypeDeclaration)` to `(AbstractTypeDeclaration)`. This change allows the internal code to correctly handle `EnumDeclaration`s, which are `AbstractTypeDeclaration`s but not `TypeDeclaration`s. This is a direct 1:1 expression replacement of a cast. The TriggerPattern DSL can implement this as a GREEN rule by matching the specific cast pattern and replacing the target type, using an `inClass` guard to ensure it applies only within the problematic internal JDT class. The DSL also implicitly handles import management for `AbstractTypeDeclaration`.",
+      "discoveredAt": "2026-04-17",
+      "discoveredInRun": 23007,
+      "sourceCommit": "359efe357dd13123570f8cccc80bd94425e65350",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "arrays-this-commit-replaces-java-util-objects-e",
+      "category": "Arrays",
+      "dslRule": "@id: arrays.compare.object-equals-to-arrays-equals\n@severity: warning\njava.util.Objects.equals($array1, $array2)\n:: instanceof($array1, \"java.lang.Object[]\") \u0026\u0026 instanceof($array2, \"java.lang.Object[]\")\n\u003d\u003e java.util.Arrays.equals($array1, $array2)\n;;",
+      "summary": "This commit replaces `java.util.Objects.equals()` with `java.util.Arrays.equals()` when comparing two array-type expressions within `VarCleanUp.java`. Using `Objects.equals()` for arrays only performs reference equality, which is almost always a bug when comparing array contents. `Arrays.equals()` performs element-wise comparison, which is the semantically correct approach. This is a highly reusable pattern for fixing a common correctness bug and improving code clarity. The transformation is a direct 1:1 expression replacement, with `instanceof` guards ensuring that both arguments are indeed array types. `Arrays.equals()` has existed since Java 1.5 and `Objects.equals()` since Java 7, so for a Java 8 baseline, no `sourceVersionGE` guard is needed in the rule itself. This pattern is fully expressible in the TriggerPattern DSL and is classified as GREEN, suitable for the `arrays.sandbox-hint` file.",
+      "discoveredAt": "2026-04-17",
+      "discoveredInRun": 23007,
+      "sourceCommit": "8eaa054da54392f99b36205f9daf880717fcebd2",
+      "status": "DISCOVERED",
+      "hintFile": "arrays.sandbox-hint"
+    },
+    {
+      "id": "internal-bug-fix-(eclipse-specific)-this-commit-fixes-a-ui-layout-bug-in-jdt",
+      "category": "Internal Bug Fix (Eclipse-specific)",
+      "dslRule": "Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? -2 : 3\n\u003d\u003e Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? 4 : 3\n;;",
+      "summary": "This commit fixes a UI layout bug in JDT\u0027s `OptionsConfigurationBlock` by changing a literal integer value (`-2` to `4`) within a ternary expression. This is a direct 1:1 replacement of a literal value within an expression, which is fully supported and can be automated as a GREEN TriggerPattern DSL rule. The rule is specific to an internal Eclipse UI class and therefore has low reusability outside of Eclipse development.",
+      "discoveredAt": "2026-04-17",
+      "discoveredInRun": 23007,
+      "sourceCommit": "a44e938cd859cc96c3b080651659d1de5a88b9e8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
