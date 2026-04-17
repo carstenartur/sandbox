@@ -26,3 +26,10 @@ $arr.clone()
 "Consider using Arrays.copyOf() instead of System.arraycopy() for full-array copies":
 System.arraycopy($src, 0, $dst, 0, $src.length)
 ;;
+
+@id: arrays.compare.object-equals-to-arrays-equals
+@severity: warning
+java.util.Objects.equals($array1, $array2)
+:: instanceof($array1, "java.lang.Object[]") && instanceof($array2, "java.lang.Object[]")
+=> java.util.Arrays.equals($array1, $array2)
+;;

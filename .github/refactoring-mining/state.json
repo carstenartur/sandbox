@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "4fd3295829fa50b7537d22c6312e61c62a66612b",
-      "lastProcessedDate": "2026-04-16T03:29:24.605227403Z",
-      "totalProcessed": 280,
+      "lastProcessedCommit": "e98abb86880971fbc8b5e5129445a039c7d27bce",
+      "lastProcessedDate": "2026-04-17T03:29:11.178823106Z",
+      "totalProcessed": 372,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1277,6 +1277,24 @@
           "deferredAt": "2026-04-15T03:11:31.633184332Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "dff18abbf1362302a3af9e898d010c1a1e4c9a5c",
+          "message": "Bug 562600 - [15] Support setting compliance to 15 in Compiler\nCompliance Page\n\nChange-Id: I3dca11be68f9f8d55248f9c4262e",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-17T03:13:00.633985055Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "51b774924c2b6f140a1d37741c7805a2a32d0230",
+          "message": "Bug 560576: [14] There should be an easy way to enable preview features\n\n\nChange-Id: I1d50b153d91d22b599c5398c93f5dc5115",
+          "diffLines": 200,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-17T03:13:00.634615446Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1286,17 +1304,17 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 13,
+        "JDT Internal Refactoring": 16,
         "Code Simplification": 1,
         "Performance": 6,
-        "JDT Internal Bug Fix": 8,
-        "Clean-up Bug Fix": 4,
+        "JDT Internal Bug Fix": 10,
+        "Clean-up Bug Fix": 7,
         "Try-with-Resources": 2,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 1,
         "JFace API Modernization": 1,
         "String-API": 1,
-        "Java-Modernization": 5,
+        "Java-Modernization": 6,
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
@@ -1323,7 +1341,14 @@
         "Eclipse UI Refactoring": 1,
         "Control Flow Modernization": 3,
         "JDT Internal Quick Fix Implementation": 1,
-        "Unnecessary Annotation Removal": 1
+        "Unnecessary Annotation Removal": 1,
+        "Eclipse JDT Internal Refactoring": 3,
+        "Code Style / Redundancy": 1,
+        "Performance Optimization / JDT Internal Refactoring": 1,
+        "Internal Bug Fix (Eclipse-specific)": 5,
+        "Clean-up Enhancement (Internal JDT)": 1,
+        "Eclipse Platform UI": 1,
+        "Arrays": 1
       },
       "exhaustedCategories": []
     },
@@ -1364,5 +1389,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 22915
+  "globalTotalProcessed": 23007
 }

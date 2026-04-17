@@ -924,3 +924,24 @@ org.eclipse.jdt.internal.corext.util.Checks.validateModifiesFiles($files, $conte
 fComplierReleaseCheck
 => fCompilerReleaseCheck
 ;;
+
+@id: jdt.internal.codeassist.substringmatch.preference.to.flag
+@severity: info
+org.eclipse.jdt.core.JavaCore.ENABLED.equals(org.eclipse.jdt.core.JavaCore.getOption(org.eclipse.jdt.core.JavaCore.CODEASSIST_SUBSTRING_MATCH))
+=> org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin.CODEASSIST_SUBSTRING_MATCH_ENABLED
+;;
+
+@id: jdt.internal.textblock.previewcheck.to.java15orhigher
+@severity: info
+org.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor.isPreviewFeatureEnabled($javaProject) :: sourceVersionGE(15)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is15OrHigher($javaProject)
+;;
+
+(org.eclipse.jdt.core.dom.TypeDeclaration) $expr
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.InitializeFinalFieldProposal")
+=> (org.eclipse.jdt.core.dom.AbstractTypeDeclaration) $expr
+;;
+
+Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? -2 : 3
+=> Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? 4 : 3
+;;
