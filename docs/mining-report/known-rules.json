@@ -1936,6 +1936,61 @@
       "sourceCommit": "a44e938cd859cc96c3b080651659d1de5a88b9e8",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "probable-bugs-this-commit-removes-a-redundant-boolean",
+      "category": "Probable Bugs",
+      "dslRule": "$x \u003d\u003d $x :: !instanceof($x, \"double\") \u0026\u0026 !instanceof($x, \"float\")\n\u003d\u003e true\n;;",
+      "summary": "This commit removes a redundant boolean comparison `e.stateMask \u003d\u003d e.stateMask` from an `if` condition. For non-floating-point types, comparing a value to itself (`$x \u003d\u003d $x`) is always true and is considered \u0027nop\u0027 code that can be safely removed or simplified to `true`. This improves code readability and correctness. The proposed rule directly replaces such redundant comparisons with `true`, explicitly excluding floating-point types to avoid conflicts with existing hints related to NaN checks.",
+      "discoveredAt": "2026-04-18",
+      "discoveredInRun": 23099,
+      "sourceCommit": "fed00aac107d27a7ed48db9f6bfab7c375bb99a9",
+      "status": "DISCOVERED",
+      "hintFile": "probable-bugs.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-ui-controls-for-f",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.formatter.versioner.currentversion.update.to.20\n/*!description: Updates the internal formatter profile version from VERSION_19 to VERSION_20.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION \u003d org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_19\n\u003d\u003e org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION \u003d org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_20\n;;",
+      "summary": "This commit introduces UI controls for formatting assertion messages, which involves adding new NLS keys/properties and configuring formatter constants. The only pattern generalizable to a DSL rule is the update of the internal formatter profile version from `VERSION_19` to `VERSION_20` in `ProfileVersioner.java`. This is a direct constant replacement, a recurring pattern in JDT internal refactoring, and is fully implementable as a GREEN TriggerPattern DSL rule. This rule extends an existing pattern for version updates in the `jdt-formatter-modernization.sandbox-hint` file. Other changes related to NLS string additions, UI binding logic, and complex map manipulation for formatter defaults are not directly expressible as simple pattern-based DSL rules.",
+      "discoveredAt": "2026-04-18",
+      "discoveredInRun": 23099,
+      "sourceCommit": "6075bfff3cead0054cadbdb662bd86ab0d7a39f7",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-formatter-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-merge-commit-contains-several-code",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.internal.ui.text.correction.SimilarElementsRequestor.getStaticImportFavorites($cu, $name, $isMethod, $favourites)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.getStaticImportFavorites($cu, $name, $isMethod, $favourites)\n;;\n\nUtil.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? -2 : 3\n\u003d\u003e Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? 4 : 3\n;;",
+      "summary": "This merge commit contains several code changes. Two significant patterns are: 1) The removal of a redundant `e.stateMask \u003d\u003d e.stateMask` condition within an `if` statement, which is a simple tautology removal. 2) The move of the static method `getStaticImportFavorites` from `SimilarElementsRequestor` to `JavaModelUtil`, resulting in a direct 1:1 method call replacement at the call site. This is a clean internal refactoring. 3) A change in a UI layout constant from `-2` to `4` in a ternary expression, which is a direct literal replacement and is a duplicate of a previously proposed rule. The method call replacement for `getStaticImportFavorites` is directly expressible as a GREEN TriggerPattern DSL rule. Other changes involve adding NLS entries, formatter configuration, and structural code removals which are not suitable for DSL rules.",
+      "discoveredAt": "2026-04-18",
+      "discoveredInRun": 23099,
+      "sourceCommit": "37f8d20cc5698b735c30302ce5906a2b6dd27603",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-this-commit-systematically-replaces-anon",
+      "category": "Java-Modernization",
+      "dslRule": "/*!id: anonymous.runnable.to.lambda*/\n/*!description: Convert anonymous Runnable to lambda expression.*/\n/*!severity: info*/\nnew java.lang.Runnable() { @java.lang.Override public void run() { $body$ } }\n\u003d\u003e () -\u003e { $body$ }\n;;\n\n/*!id: anonymous.ipreferencechangelistener.to.lambda*/\n/*!description: Convert anonymous IPreferenceChangeListener to lambda expression.*/\n/*!severity: info*/\nnew org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener() { @java.lang.Override public void preferenceChange(org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent $event) { $body$ } }\n\u003d\u003e $event -\u003e { $body$ }\n;;\n\n/*!id: anonymous.imenulistener.to.lambda*/\n/*!description: Convert anonymous IMenuListener to lambda expression.*/\n/*!severity: info*/\nnew org.eclipse.jface.action.IMenuListener() { @java.lang.Override public void menuAboutToShow(org.eclipse.jface.action.IMenuManager $manager) { $body$ } }\n\u003d\u003e $manager -\u003e { $body$ }\n;;\n\n/*!id: anonymous.iresultcollector.to.lambda*/\n/*!description: Convert anonymous IResultCollector to lambda expression.*/\n/*!severity: info*/\nnew org.eclipse.jdt.internal.ui.actions.CategoryFilterActionGroup.IResultCollector() { @java.lang.Override public boolean accept(java.lang.String[] $cats) { $body$ } }\n\u003d\u003e $cats -\u003e { $body$ }\n;;\n\n/*!id: anonymous.irunnablewithprogress.to.lambda*/\n/*!description: Convert anonymous IRunnableWithProgress to lambda expression.*/\n/*!severity: info*/\nnew org.eclipse.jface.operation.IRunnableWithProgress() { @java.lang.Override public void run(org.eclipse.core.runtime.IProgressMonitor $monitor) { $body$ } }\n\u003d\u003e $monitor -\u003e { $body$ }\n;;",
+      "summary": "This commit systematically replaces anonymous inner classes implementing Single Abstract Method (SAM) interfaces with lambda expressions. This is a common Java 8 modernization pattern that significantly improves code conciseness and readability. The transformations cover several interfaces including `Runnable`, `IPreferenceChangeListener`, `IMenuListener`, `IResultCollector`, and `IRunnableWithProgress`. The TriggerPattern DSL can implement these changes by matching the anonymous class syntax (including the `@Override` annotation and full method signature) and replacing it with the corresponding lambda expression. The DSL\u0027s support for multi-line replacements allows for the full body of the anonymous method to be transferred to the lambda body. Multiple rules are provided to cover the different interfaces and their respective method signatures.",
+      "discoveredAt": "2026-04-18",
+      "discoveredInRun": 23099,
+      "sourceCommit": "97a8a94ee42c4b1f1f62bf0bdaaf22b73a7caa90",
+      "status": "DISCOVERED",
+      "hintFile": "anonymous-to-lambda.sandbox-hint"
+    },
+    {
+      "id": "lambda-simplification-this-commit-modernizes-java-code-by-repl",
+      "category": "Lambda-Simplification",
+      "dslRule": "$call.addSelectionChangedListener($event -\u003e $instance.$targetMethod($event))\n\u003d\u003e $call.addSelectionChangedListener($instance::$targetMethod)\n;;",
+      "summary": "This commit modernizes Java code by replacing single-argument lambda expressions that simply delegate to an instance method (e.g., `event -\u003e this.method(event)`) with a method reference (e.g., `this::method`). This pattern is a common and straightforward readability improvement for functional interfaces. It is directly implementable as a TriggerPattern DSL rule. The rule will be added to `lambda-simplification.sandbox-hint`, similar to the existing `map($p -\u003e $p.getName())` to method reference conversion. Since lambdas and method references are Java 8 features, no specific `sourceVersionGE` guard is required beyond the baseline.",
+      "discoveredAt": "2026-04-18",
+      "discoveredInRun": 23099,
+      "sourceCommit": "97be82054ea0d2834f08f5a233139a5560982c01",
+      "status": "DISCOVERED",
+      "hintFile": "lambda-simplification.sandbox-hint"
     }
   ]
 }

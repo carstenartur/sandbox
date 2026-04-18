@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "e98abb86880971fbc8b5e5129445a039c7d27bce",
-      "lastProcessedDate": "2026-04-17T03:29:11.178823106Z",
-      "totalProcessed": 372,
+      "lastProcessedCommit": "9c73e66ba78d2bb74a2e040e13735fcf546236bc",
+      "lastProcessedDate": "2026-04-18T03:36:28.256158149Z",
+      "totalProcessed": 464,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1295,6 +1295,87 @@
           "deferredAt": "2026-04-17T03:13:00.634615446Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "56f2e0f569246673f60a768129c64147ae01fe47",
+          "message": "Bug 516504 - [quick fix] \"Create method\" for method reference",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-18T03:16:30.844457717Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "32458d2362ce32b7fd5725ca25c177dd9266422d",
+          "message": "Bug 565040 - extracted convert string concatenation proposals",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-18T03:16:30.849914064Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "460ea99fcce37c263ca53d0a20ceb9b57641543b",
+          "message": "Bug 561769 - [AutoRefactor immigration #15/132] [cleanup \u0026 saveaction] Precompiles the regular expressions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-18T03:22:57.424204823Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c5510140697a1a4048b32515f26c4664ea05883f",
+          "message": "Bug 516504 - [quick fix] \"Create method\" for method reference\n\n- Only allow method reference \u0027this::\u0027 or static referenc",
+          "diffLines": 117,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:28:57.815819258Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1d33941fd1af991c10120ee69bc873014204a389",
+          "message": "Bug 565387 - return of statement lambda is marked as exit point in method\n\nChange-Id: Id90509510493bf876db3e4165813e3e36",
+          "diffLines": 33,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:28:57.815905688Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "315e955d2eab8e4b28cc8c6078f40d0fb3eb1e68",
+          "message": "Bug 564416 - Use lambdas and method references cleanup on JDT UI code\n\nFor browsing, callhierarchy, preferences, working",
+          "diffLines": 123,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:32:51.503845039Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ba67eabbf1207ad025db6d9e4dbd74e95cbad904",
+          "message": "Bug 565208: Remove calls to Color.dispose\n\nAs these calls are no longer needed, remove the calls\nand related code around",
+          "diffLines": 250,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:32:51.503898568Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4a11ce46eb2e42b60f04982415c2f59f0e971fcb",
+          "message": "Bug 565846 - [15] Syntax coloring for permits\n\nChange-Id: Ie5b33136bd9da211658af48f111ddaec17ab8af9\nSigned-off-by: Kalya",
+          "diffLines": 121,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:36:28.256023869Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1ccbb768ebecd93b8e660851c1c0a852d3d9a351",
+          "message": "Bug 564416 - Use lambdas and method references cleanup on JDT UI code\n\nSeveral cases in which running the cleanup again ",
+          "diffLines": 253,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:36:28.256098508Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1304,7 +1385,7 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 16,
+        "JDT Internal Refactoring": 19,
         "Code Simplification": 1,
         "Performance": 6,
         "JDT Internal Bug Fix": 10,
@@ -1314,12 +1395,12 @@
         "Resource Management": 1,
         "JFace API Modernization": 1,
         "String-API": 1,
-        "Java-Modernization": 6,
+        "Java-Modernization": 10,
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
-        "Null-Safety": 3,
-        "Lambda-Simplification": 2,
+        "Null-Safety": 4,
+        "Lambda-Simplification": 3,
         "Architectural Refactoring": 1,
         "Collections": 3,
         "JDT Internal Feature Enhancement": 4,
@@ -1335,7 +1416,7 @@
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 2,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 1,
+        "Eclipse API Migration": 2,
         "JDT Internal Feature": 1,
         "Type Safety": 1,
         "Eclipse UI Refactoring": 1,
@@ -1348,7 +1429,14 @@
         "Internal Bug Fix (Eclipse-specific)": 5,
         "Clean-up Enhancement (Internal JDT)": 1,
         "Eclipse Platform UI": 1,
-        "Arrays": 1
+        "Arrays": 1,
+        "Probable Bugs": 1,
+        "JDT Internal Quick Fix Refactoring": 1,
+        "String API": 1,
+        "Algorithm/Sorting Logic": 1,
+        "Exception Handling": 1,
+        "UI Feature Implementation": 1,
+        "Refactoring": 1
       },
       "exhaustedCategories": []
     },
@@ -1389,5 +1477,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23007
+  "globalTotalProcessed": 23099
 }

@@ -2,3 +2,7 @@ $collection.stream().map($p -> $p.getName()).collect($collector)
 :: instanceof($p, "org.eclipse.core.resources.IProject")
 => $collection.stream().map(org.eclipse.core.resources.IProject::getName).collect($collector)
 ;;
+
+$call.addSelectionChangedListener($event -> $instance.$targetMethod($event))
+=> $call.addSelectionChangedListener($instance::$targetMethod)
+;;

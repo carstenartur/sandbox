@@ -945,3 +945,11 @@ org.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor.isPrevie
 Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? -2 : 3
 => Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? 4 : 3
 ;;
+
+org.eclipse.jdt.internal.ui.text.correction.SimilarElementsRequestor.getStaticImportFavorites($cu, $name, $isMethod, $favourites)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.getStaticImportFavorites($cu, $name, $isMethod, $favourites)
+;;
+
+Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? -2 : 3
+=> Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? 4 : 3
+;;

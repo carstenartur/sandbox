@@ -109,3 +109,10 @@ org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT
 org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_SUPERINTERFACES_IN_TYPE_DECLARATION :: sourceVersionGE(14)
 => org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_SUPERINTERFACES_IN_RECORD_DECLARATION
 ;;
+
+@id: jdt.internal.formatter.versioner.currentversion.update.to.20
+/*!description: Updates the internal formatter profile version from VERSION_19 to VERSION_20.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION = org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_19
+=> org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION = org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_20
+;;
