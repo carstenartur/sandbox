@@ -36,3 +36,7 @@ java.lang.Math.min($a, $a)
 "System.currentTimeMillis() may go backwards due to clock adjustments — consider System.nanoTime() for elapsed time":
 System.currentTimeMillis() - $start < 0
 ;;
+
+$x == $x :: !instanceof($x, "double") && !instanceof($x, "float")
+=> true
+;;
