@@ -953,3 +953,9 @@ org.eclipse.jdt.internal.ui.text.correction.SimilarElementsRequestor.getStaticIm
 Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? -2 : 3
 => Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? 4 : 3
 ;;
+
+@id: jdt.internal.modifiercorrection.rename-sealedmissingmodifierproposal
+@severity: info
+org.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addSealedMissingClassModifierProposal($context, $problem, $proposals)
+=> org.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addSealedMissingModifierProposal($context, $problem, $proposals)
+;;

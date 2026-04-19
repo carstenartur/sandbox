@@ -23,3 +23,7 @@ $str.indexOf($sub) >= 0
 $str.indexOf($sub) < 0
 => !$str.contains($sub)
 ;;
+
+$x.length() > 0
+=> !$x.isEmpty()
+;;
