@@ -1991,6 +1991,50 @@
       "sourceCommit": "97be82054ea0d2834f08f5a233139a5560982c01",
       "status": "DISCOVERED",
       "hintFile": "lambda-simplification.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-addresses-bug-565420-enhanci",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.modifiercorrection.rename-sealedmissingmodifierproposal\n@severity: info\norg.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addSealedMissingClassModifierProposal($context, $problem, $proposals)\n\u003d\u003e org.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addSealedMissingModifierProposal($context, $problem, $proposals)\n;;",
+      "summary": "This commit addresses Bug 565420, enhancing JDT\u0027s quick-fix support for Java 15+ Sealed Classes. The primary generalizable code transformation is the renaming of an internal static method call from `ModifierCorrectionSubProcessor.addSealedMissingClassModifierProposal` to `ModifierCorrectionSubProcessor.addSealedMissingModifierProposal`. This is a direct 1:1 method invocation replacement, which is fully supported by the TriggerPattern DSL. Other changes, such as modifying control flow for proposal generation or updating problem ID dispatching in `QuickFixProcessor`, are structural changes to the quick-fix implementation itself and are not directly expressible as pattern-based DSL rules. The DSL rule focuses on the automatable method call replacement.",
+      "discoveredAt": "2026-04-19",
+      "discoveredInRun": 23163,
+      "sourceCommit": "4bcf6b3497aa95917555641de97007a8b12c5ecd",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "string-api-this-commit-primarily-removes-an-unused",
+      "category": "String-API",
+      "dslRule": "$x.length() \u003e 0\n\u003d\u003e !$x.isEmpty()\n;;",
+      "summary": "This commit primarily removes an unused internal field (`fFont`) and its import, which is a \u0027Dead Code Removal\u0027 cleanup. While this specific cleanup would require usage analysis (making it a YELLOW pattern for the DSL if it were to be implemented via DSL), it is typically handled by existing Java-based JDT cleanups. The commit also introduces several code modernizations: \n1. Replacing `$x.length() \u003e 0` with `!$x.isEmpty()` for string expressions. This is a common and idiomatic string modernization (Java 6+), directly implementable as a GREEN TriggerPattern DSL rule.\n2. Reordering `equals()` calls for null safety: `variable.equals(CONSTANT)` to `CONSTANT.equals(variable)`. This is also a GREEN pattern, improving null-safety and readability.\n3. Simplifying `if (cond) return false; return expr;` to `return !cond \u0026\u0026 expr;` (and similar for `return true`). This transforms multiple statements into a single complex expression, which is generally not supported at the expression rewrite level in the current DSL (classified as RED).\n4. Adding braces to single-statement `if` blocks is a pure formatting change, not a semantic transformation (NOT_APPLICABLE for DSL rules).\n\nThe proposed DSL rule focuses on the `length() \u003e 0` to `!isEmpty()` transformation as a clear, reusable, and directly implementable pattern for string modernization, which fits well within `string-modernization.sandbox-hint`.",
+      "discoveredAt": "2026-04-19",
+      "discoveredInRun": 23163,
+      "sourceCommit": "c747263b3bcbe5e09dd8249411864842be97b667",
+      "status": "DISCOVERED",
+      "hintFile": "string-modernization.sandbox-hint"
+    },
+    {
+      "id": "code-style-this-commit-applies-logical-simplificati",
+      "category": "Code Style",
+      "dslRule": "/*!id: logical.simplification.not-equal-zero*/\n/*!description: Simplify !($expr.length() \u003d\u003d 0) to $expr.length() !\u003d 0 for improved readability.*/\n/*!severity: info*/\n!($x.length() \u003d\u003d 0)\n\u003d\u003e $x.length() !\u003d 0\n;;\n\n/*!id: logical.simplification.demorgan.or-negation*/\n/*!description: Apply De Morgan\u0027s law: !(A || B) to !A \u0026\u0026 !B.*/\n/*!severity: info*/\n!($a || $b)\n\u003d\u003e !$a \u0026\u0026 !$b\n;;\n\n/*!id: logical.simplification.demorgan.and-negation*/\n/*!description: Apply De Morgan\u0027s law: !(A \u0026\u0026 B) to !A || !B.*/\n/*!severity: info*/\n!($a \u0026\u0026 $b)\n\u003d\u003e !$a || !$b\n;;",
+      "summary": "This commit applies logical simplifications by pushing down negation in several boolean expressions. The patterns include simplifying `!($x.length() \u003d\u003d 0)` to `$x.length() !\u003d 0` and applying De Morgan\u0027s laws to `!($a || $b)` and `!($a \u0026\u0026 $b)`. All three patterns are direct, semantically equivalent transformations that improve code readability and logical clarity. They are highly reusable and directly implementable as GREEN TriggerPattern DSL rules. No existing rules cover these specific logical simplifications.",
+      "discoveredAt": "2026-04-19",
+      "discoveredInRun": 23163,
+      "sourceCommit": "e8e381f32e52c2fb11c3dc8be3bffa17d7df6833",
+      "status": "DISCOVERED",
+      "hintFile": "misc.sandbox-hint"
+    },
+    {
+      "id": "null-safety-this-commit-systematically-refactors-equ",
+      "category": "Null-Safety",
+      "dslRule": "($x \u003d\u003d null \u0026\u0026 $y !\u003d null) || ($x !\u003d null \u0026\u0026 !$x.equals($y))\n\u003d\u003e !java.util.Objects.equals($x, $y)\n;;",
+      "summary": "This commit systematically refactors `equals()` methods across multiple classes to use `java.util.Objects.equals()` for null-safe object comparison. The pattern of replacing explicit null checks combined with `.equals()` for inequality (`if (obj1 \u003d\u003d null \u0026\u0026 obj2 !\u003d null || obj1 !\u003d null \u0026\u0026 !obj1.equals(obj2)) return false;`) with `if (!Objects.equals(obj1, obj2)) return false;` is a direct, semantically equivalent modernization. This exact transformation is already covered by an existing DSL rule in `null-safety.sandbox-hint`, making this a duplicate. The required `java.util.Objects` import is handled automatically by the DSL.",
+      "discoveredAt": "2026-04-19",
+      "discoveredInRun": 23163,
+      "sourceCommit": "cc86b1fe9f1760ff41915aac50ecf9e17bd7a509",
+      "status": "DISCOVERED",
+      "hintFile": "null-safety.sandbox-hint"
     }
   ]
 }

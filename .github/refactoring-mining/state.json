@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "9c73e66ba78d2bb74a2e040e13735fcf546236bc",
-      "lastProcessedDate": "2026-04-18T03:36:28.256158149Z",
-      "totalProcessed": 464,
+      "lastProcessedCommit": "cf906e2549d142b784b722fe2efa23019977122e",
+      "lastProcessedDate": "2026-04-19T03:34:26.996604418Z",
+      "totalProcessed": 528,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1376,6 +1376,33 @@
           "deferredAt": "2026-04-18T03:36:28.256098508Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "a5e9d842f5272792d7c07d77482c07201c94535b",
+          "message": "Bug 563233 - add preview support\n\nChange-Id: I97a425f1f34b12d06ff8e157cf33c08b6f181621\nSigned-off-by: Carsten Hammer \u003cca",
+          "diffLines": 433,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-19T03:12:09.068214444Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0ad81ae0a0187770153a362c868186c63dc684b0",
+          "message": "Bug 566529 - Another unclosed stream\n\nZipFile only closed in case of an exception\n\nChange-Id: Ibddcd0262f00a39b54a2c089e",
+          "diffLines": 41,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-19T03:30:50.162343305Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "05721b15b0cf730e35b405b515cc2cffcd613e80",
+          "message": "Bug 366453 - Cleanup before fixing it\n\nChange-Id: If50c03f4b85e4e5ad3ac009589e7dc4ce9d67ef5\nSigned-off-by: Fabrice Tierc",
+          "diffLines": 346,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-19T03:34:26.996475758Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1385,21 +1412,21 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 19,
+        "JDT Internal Refactoring": 22,
         "Code Simplification": 1,
-        "Performance": 6,
+        "Performance": 7,
         "JDT Internal Bug Fix": 10,
-        "Clean-up Bug Fix": 7,
+        "Clean-up Bug Fix": 9,
         "Try-with-Resources": 2,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 1,
         "JFace API Modernization": 1,
-        "String-API": 1,
-        "Java-Modernization": 10,
+        "String-API": 2,
+        "Java-Modernization": 11,
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
-        "Null-Safety": 4,
+        "Null-Safety": 5,
         "Lambda-Simplification": 3,
         "Architectural Refactoring": 1,
         "Collections": 3,
@@ -1410,7 +1437,7 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 1,
         "Architecture Migration": 1,
-        "Code Style": 2,
+        "Code Style": 7,
         "Eclipse API Configuration": 2,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
@@ -1430,13 +1457,19 @@
         "Clean-up Enhancement (Internal JDT)": 1,
         "Eclipse Platform UI": 1,
         "Arrays": 1,
-        "Probable Bugs": 1,
+        "Probable Bugs": 3,
         "JDT Internal Quick Fix Refactoring": 1,
         "String API": 1,
         "Algorithm/Sorting Logic": 1,
         "Exception Handling": 1,
         "UI Feature Implementation": 1,
-        "Refactoring": 1
+        "Refactoring": 1,
+        "Concurrency / Thread-Safety": 1,
+        "JDT UI Feature": 1,
+        "JDT UI Internal Refactoring": 1,
+        "Code Quality": 1,
+        "Architecture Refactoring": 1,
+        "Dead Code Removal": 1
       },
       "exhaustedCategories": []
     },
@@ -1477,5 +1510,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23099
+  "globalTotalProcessed": 23163
 }
