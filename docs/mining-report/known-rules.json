@@ -2035,6 +2035,94 @@
       "sourceCommit": "cc86b1fe9f1760ff41915aac50ecf9e17bd7a509",
       "status": "DISCOVERED",
       "hintFile": "null-safety.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-introduces-a-new-java-based",
+      "category": "Performance",
+      "dslRule": "new java.lang.String($str)\n\u003d\u003e $str\n;;",
+      "summary": "This commit introduces a new Java-based cleanup `NoStringCreationCleanUp` that removes redundant `new String(String)` constructor calls when the argument is a string literal or an infix expression of strings. This is a performance optimization and readability improvement. This exact transformation pattern is already covered by an existing DSL rule in `performance.sandbox-hint` (`new java.lang.String($str) \u003d\u003e $str;;`). Therefore, this commit represents an existing, green-level transformation that is already automated by the DSL. The rule is for Java 8 baseline.",
+      "discoveredAt": "2026-04-20",
+      "discoveredInRun": 23235,
+      "sourceCommit": "e314adc8962eca3f45dcb31f34d9c0dc1b19374d",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-changes-the-default-value-of",
+      "category": "Eclipse API Configuration",
+      "dslRule": "@id: eclipse.jdt.ui.preference.codeassist.guess-method-arguments.default.enable\n@severity: info\n$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_GUESS_METHOD_ARGUMENTS, false)\n\u003d\u003e $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_GUESS_METHOD_ARGUMENTS, true)\n;;",
+      "summary": "This commit changes the default value of the `CODEASSIST_GUESS_METHOD_ARGUMENTS` preference from `false` to `true`. This is a direct 1:1 replacement of a boolean literal within a `store.setDefault()` method call, which is fully supported by the TriggerPattern DSL. This is a GREEN transformation, improving Eclipse JDT UI\u0027s default behavior for content assist.",
+      "discoveredAt": "2026-04-20",
+      "discoveredInRun": 23235,
+      "sourceCommit": "e1d5c009da10362dc6869db9dd5af324f67bc729",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-changes-the-default-value-of",
+      "category": "Eclipse API Configuration",
+      "dslRule": "@id: eclipse.jdt.ui.preference.codeassist.insert-completion.default.disable\n@severity: info\n$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_INSERT_COMPLETION, true)\n\u003d\u003e $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_INSERT_COMPLETION, false)\n;;",
+      "summary": "This commit changes the default value of the `CODEASSIST_INSERT_COMPLETION` preference from `true` to `false`. This is a direct 1:1 replacement of a boolean literal within a `store.setDefault()` method call, which is fully supported by the TriggerPattern DSL. This is a GREEN transformation, improving Eclipse JDT UI\u0027s default behavior for content assist.",
+      "discoveredAt": "2026-04-20",
+      "discoveredInRun": 23235,
+      "sourceCommit": "99db33c782589e5a9712fcade841cb6e68749230",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-is-a-direct-follow-up-to-com",
+      "category": "Eclipse API Migration",
+      "dslRule": "new org.eclipse.jdt.internal.ui.text.JavaColorManager($args$)\n\u003d\u003e new org.eclipse.jdt.internal.ui.text.JavaColorManager()\n;;",
+      "summary": "This commit is a direct follow-up to Commit 0, removing the `autoDisposeOnDisplayDispose` boolean parameter from the `JavaColorManager` constructor. This results in all call sites (`new JavaColorManager(false)` or `new JavaColorManager(autoDisposeOnDisplayDispose)`) being updated to `new JavaColorManager()`. This is a straightforward 1:1 constructor call replacement (removing an argument), which is fully supported by the TriggerPattern DSL and is classified as GREEN.",
+      "discoveredAt": "2026-04-20",
+      "discoveredInRun": 23235,
+      "sourceCommit": "f6d0e70f1abb3d6f386651f879f1be8b24c55748",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-the-internal-jdt-for",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.formatter.versioner.currentversion.update.to.21\n/*!description: Updates the internal formatter profile version from VERSION_20 to VERSION_21.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION \u003d org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_20\n\u003d\u003e org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION \u003d org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_21\n;;",
+      "summary": "This commit updates the internal JDT formatter profile version from `VERSION_20` to `VERSION_21`. This is a direct constant assignment replacement, which is a recurring internal JDT API modernization pattern. The proposed DSL rule captures this 1:1 replacement, similar to existing rules for previous version bumps, making it a GREEN transformation. Other changes involve NLS additions and structural modifications to UI components, which are not suitable for DSL rules.",
+      "discoveredAt": "2026-04-20",
+      "discoveredInRun": 23235,
+      "sourceCommit": "d53ad0c9ce83167c3bbeb354b40cc18c0aca4f1c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-formatter-modernization.sandbox-hint"
+    },
+    {
+      "id": "collections-this-commit-fixes-a-bug-in-the-varcleanu",
+      "category": "Collections",
+      "dslRule": "$coll.toArray(new $T[$coll.size()])\n\u003d\u003e $coll.toArray(new $T[0])\n;;",
+      "summary": "This commit fixes a bug in the `VarCleanUp` and includes a minor performance/style improvement within the cleanup\u0027s internal code: replacing `toArray(new CompilationUnitRewriteOperation[rewriteOperations.size()])` with `toArray(new CompilationUnitRewriteOperation[0])`. This latter pattern is a standard Java idiom for creating zero-length arrays for `toArray` methods and is already covered by an existing DSL rule in `collection-toarray.sandbox-hint`. The main bug fix for `VarCleanUp` logic itself is not expressible as a DSL rule (RED) as it modifies the cleanup\u0027s internal conditions.",
+      "discoveredAt": "2026-04-20",
+      "discoveredInRun": 23235,
+      "sourceCommit": "0e6922726da5bac5c172c16cfaeff28d5f61355e",
+      "status": "DISCOVERED",
+      "hintFile": "collection-toarray.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-clean",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.ast.semanticmatching.safesubtreematch-to-astnodes-match\n@severity: info\n$matcher.safeSubtreeMatch($expr1, $expr2) :: instanceof($matcher, \"org.eclipse.jdt.core.dom.ASTMatcher\")\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.ASTNodes.match($expr1, $expr2)\n;;\n\n@id: jdt.internal.ast.semanticmatching.private-match-to-astnodes-match\n@severity: info\nmatch($expr1, $expr2) :: inClass(\"org.eclipse.jdt.internal.ui.fix.MergeConditionalBlocksCleanUp\")\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.ASTNodes.match($expr1, $expr2)\n;;",
+      "summary": "This commit refactors internal JDT cleanup code by replacing calls to `ASTMatcher.safeSubtreeMatch()` and a private `match()` helper method with a static utility method `ASTNodes.match()`. This simplifies the internal AST matching logic, removes redundant `ASTMatcher` instantiations, and consolidates common functionality. The transformation is a direct 1:1 expression replacement and is fully implementable as two GREEN TriggerPattern DSL rules. These rules enhance internal JDT API usage for AST manipulation.",
+      "discoveredAt": "2026-04-20",
+      "discoveredInRun": 23235,
+      "sourceCommit": "2035773a3d8fbc0c8b153e921eb4b47d79f0ef60",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-systematically-updates-numer",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astnodes.replace.keepcomment\n@severity: info\n$rewrite.replace($node, $replacement, $group)\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.ASTNodes.replaceButKeepComment($rewrite, $node, $replacement, $group)\n;;\n\n@id: jdt.internal.astnodes.remove.keepcomment\n@severity: info\n$rewrite.remove($node, $group)\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.ASTNodes.removeButKeepComment($rewrite, $node, $group)\n;;",
+      "summary": "This commit systematically updates numerous internal JDT cleanup classes to use new helper methods `ASTNodes.replaceButKeepComment()` and `ASTNodes.removeButKeepComment()`. These methods are designed to preserve comments during AST manipulation, addressing a common issue in automated refactorings. This is a direct 1:1 method call replacement pattern that is highly reusable across the JDT codebase and significantly improves the quality and robustness of cleanups. It is fully implementable as two GREEN TriggerPattern DSL rules, targeting the `ASTRewrite.replace()` and `ASTRewrite.remove()` calls.",
+      "discoveredAt": "2026-04-20",
+      "discoveredInRun": 23235,
+      "sourceCommit": "392262e1cdd018d488cb6f791743755130c7a422",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

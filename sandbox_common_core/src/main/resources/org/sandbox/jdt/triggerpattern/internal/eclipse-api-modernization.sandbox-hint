@@ -25,3 +25,7 @@ org.eclipse.ui.ide.IDE.getEditorDescriptor($file).getId()
 org.eclipse.ui.ide.IDE.getEditorDescriptor($name).getId()
 => org.eclipse.ui.ide.IDE.getEditorDescriptor($name, true, false).getId()
 ;;
+
+new org.eclipse.jdt.internal.ui.text.JavaColorManager($args$)
+=> new org.eclipse.jdt.internal.ui.text.JavaColorManager()
+;;
