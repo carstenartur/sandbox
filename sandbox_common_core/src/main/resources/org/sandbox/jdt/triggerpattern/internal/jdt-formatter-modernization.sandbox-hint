@@ -116,3 +116,10 @@ org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT
 org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION = org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_19
 => org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION = org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_20
 ;;
+
+@id: jdt.internal.formatter.versioner.currentversion.update.to.21
+/*!description: Updates the internal formatter profile version from VERSION_20 to VERSION_21.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION = org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_20
+=> org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.CURRENT_VERSION = org.eclipse.jdt.internal.ui.preferences.formatter.ProfileVersioner.VERSION_21
+;;

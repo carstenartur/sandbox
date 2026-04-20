@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "cf906e2549d142b784b722fe2efa23019977122e",
-      "lastProcessedDate": "2026-04-19T03:34:26.996604418Z",
-      "totalProcessed": 528,
+      "lastProcessedCommit": "4d007753dedb661eacfa9efceba5be0ea1b3db15",
+      "lastProcessedDate": "2026-04-20T03:29:41.709398479Z",
+      "totalProcessed": 600,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1396,11 +1396,11 @@
           "maxRetries": 3
         },
         {
-          "hash": "05721b15b0cf730e35b405b515cc2cffcd613e80",
-          "message": "Bug 366453 - Cleanup before fixing it\n\nChange-Id: If50c03f4b85e4e5ad3ac009589e7dc4ce9d67ef5\nSigned-off-by: Fabrice Tierc",
-          "diffLines": 346,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-04-19T03:34:26.996475758Z",
+          "hash": "0907c34f90322319afb4bc5b03b9be511f61f934",
+          "message": "Bug 567335 - [AutoRefactor immigration #25/136] [cleanup \u0026 saveaction] Use Collection.addAll(), Collection.addAll(Arrays",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-20T03:25:35.020722037Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -1412,24 +1412,24 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 22,
-        "Code Simplification": 1,
-        "Performance": 7,
+        "JDT Internal Refactoring": 28,
+        "Code Simplification": 10,
+        "Performance": 10,
         "JDT Internal Bug Fix": 10,
-        "Clean-up Bug Fix": 9,
-        "Try-with-Resources": 2,
+        "Clean-up Bug Fix": 10,
+        "Try-with-Resources": 3,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 1,
         "JFace API Modernization": 1,
         "String-API": 2,
-        "Java-Modernization": 11,
+        "Java-Modernization": 13,
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
-        "Null-Safety": 5,
+        "Null-Safety": 6,
         "Lambda-Simplification": 3,
         "Architectural Refactoring": 1,
-        "Collections": 3,
+        "Collections": 8,
         "JDT Internal Feature Enhancement": 4,
         "Clean-up Enhancement": 1,
         "Internal Refactoring": 2,
@@ -1437,15 +1437,15 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 1,
         "Architecture Migration": 1,
-        "Code Style": 7,
-        "Eclipse API Configuration": 2,
+        "Code Style": 8,
+        "Eclipse API Configuration": 4,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 2,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 2,
+        "Eclipse API Migration": 5,
         "JDT Internal Feature": 1,
-        "Type Safety": 1,
+        "Type Safety": 2,
         "Eclipse UI Refactoring": 1,
         "Control Flow Modernization": 3,
         "JDT Internal Quick Fix Implementation": 1,
@@ -1467,9 +1467,13 @@
         "Concurrency / Thread-Safety": 1,
         "JDT UI Feature": 1,
         "JDT UI Internal Refactoring": 1,
-        "Code Quality": 1,
+        "Code Quality": 2,
         "Architecture Refactoring": 1,
-        "Dead Code Removal": 1
+        "Dead Code Removal": 2,
+        "Quick Fix Enhancement": 1,
+        "Unnecessary Code": 1,
+        "Correctness": 1,
+        "Code Correctness": 1
       },
       "exhaustedCategories": []
     },
@@ -1510,5 +1514,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23163
+  "globalTotalProcessed": 23235
 }

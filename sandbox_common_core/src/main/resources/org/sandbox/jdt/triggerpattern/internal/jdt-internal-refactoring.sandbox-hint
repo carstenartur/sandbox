@@ -959,3 +959,27 @@ Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? -2 
 org.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addSealedMissingClassModifierProposal($context, $problem, $proposals)
 => org.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addSealedMissingModifierProposal($context, $problem, $proposals)
 ;;
+
+@id: jdt.internal.ast.semanticmatching.safesubtreematch-to-astnodes-match
+@severity: info
+$matcher.safeSubtreeMatch($expr1, $expr2) :: instanceof($matcher, "org.eclipse.jdt.core.dom.ASTMatcher")
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.match($expr1, $expr2)
+;;
+
+@id: jdt.internal.ast.semanticmatching.private-match-to-astnodes-match
+@severity: info
+match($expr1, $expr2) :: inClass("org.eclipse.jdt.internal.ui.fix.MergeConditionalBlocksCleanUp")
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.match($expr1, $expr2)
+;;
+
+@id: jdt.internal.astnodes.replace.keepcomment
+@severity: info
+$rewrite.replace($node, $replacement, $group)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.replaceButKeepComment($rewrite, $node, $replacement, $group)
+;;
+
+@id: jdt.internal.astnodes.remove.keepcomment
+@severity: info
+$rewrite.remove($node, $group)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.removeButKeepComment($rewrite, $node, $group)
+;;

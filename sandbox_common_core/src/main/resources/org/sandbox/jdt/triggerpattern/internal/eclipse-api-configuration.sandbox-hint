@@ -7,3 +7,15 @@ $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_NONUITHREAD_
 setDefaultValue(PREF_RELEASE, DISABLED)
 => setDefaultValue(PREF_RELEASE, complianceOptions.get(PREF_RELEASE.getName()) != null ? complianceOptions.get(PREF_RELEASE.getName()) : DISABLED)
 ;;
+
+@id: eclipse.jdt.ui.preference.codeassist.guess-method-arguments.default.enable
+@severity: info
+$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_GUESS_METHOD_ARGUMENTS, false)
+=> $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_GUESS_METHOD_ARGUMENTS, true)
+;;
+
+@id: eclipse.jdt.ui.preference.codeassist.insert-completion.default.disable
+@severity: info
+$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_INSERT_COMPLETION, true)
+=> $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_INSERT_COMPLETION, false)
+;;
