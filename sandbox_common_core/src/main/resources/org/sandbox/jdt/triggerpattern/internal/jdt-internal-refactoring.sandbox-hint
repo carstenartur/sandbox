@@ -983,3 +983,69 @@ $rewrite.replace($node, $replacement, $group)
 $rewrite.remove($node, $group)
 => org.eclipse.jdt.internal.corext.dom.ASTNodes.removeButKeepComment($rewrite, $node, $group)
 ;;
+
+<!map JAVADOC_CONSTANTS: "PRIVATE" => PRIVATE, "PROTECTED" => PROTECTED, "PACKAGE" => PACKAGE, "PUBLIC" => PUBLIC, "USE" => USE, "NOTREE" => NOTREE, "NOINDEX" => NOINDEX, "NONAVBAR" => NONAVBAR, "NODEPRECATED" => NODEPRECATED, "NODEPRECATEDLIST" => NODEPRECATEDLIST, "VERSION" => VERSION, "AUTHOR" => AUTHOR, "SPLITINDEX" => SPLITINDEX, "STYLESHEETFILE" => STYLESHEETFILE, "OVERVIEW" => OVERVIEW, "DOCLETNAME" => DOCLETNAME, "DOCLETPATH" => DOCLETPATH, "SOURCEPATH" => SOURCEPATH, "CLASSPATH" => CLASSPATH, "DESTINATION" => DESTINATION, "OPENINBROWSER" => OPENINBROWSER, "VISIBILITY" => VISIBILITY, "PACKAGENAMES" => PACKAGENAMES, "SOURCEFILES" => SOURCEFILES, "EXTRAOPTIONS" => EXTRAOPTIONS, "VMOPTIONS" => VMOPTIONS, "TITLE" => TITLE, "HREF" => HREF, "NAME" => NAME, "PATH" => PATH, "FROMSTANDARD" => FROMSTANDARD, "ANTPATH" => ANTPATH, "SOURCE" => SOURCE>
+
+$store.#{JAVADOC_CONSTANTS} :: instanceof($store, "org.eclipse.jdt.internal.ui.javadocexport.JavadocOptionsManager")
+=> org.eclipse.jdt.internal.ui.javadocexport.JavadocOptionsManager.#{JAVADOC_CONSTANTS_VALUE}
+;;
+
+@id: jdt.internal.astnodes.oppositeinfixoperator.to.negatedinfixoperator
+@severity: info
+org.eclipse.jdt.internal.corext.dom.ASTNodes.oppositeInfixOperator($operator)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.negatedInfixOperator($operator)
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_use_blocks_always.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_USE_BLOCKS_ALWAYS
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_USE_BLOCKS_ALWAYS
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_use_blocks_never.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_USE_BLOCKS_NEVER
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_USE_BLOCKS_NEVER
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_use_blocks_no_for_return_and_throw.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_USE_BLOCKS_NO_FOR_RETURN_AND_THROW
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_USE_BLOCKS_NO_FOR_RETURN_AND_THROW
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_convert_for_loop_to_enhanced.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_CONVERT_FOR_LOOP_TO_ENHANCED
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_convert_for_loop_only_if_loop_var_used.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED
+;;
+
+@id: jdt.internal.preferences.cleanup.cleanupmessages.groupname_controlstatments.typo
+@severity: info
+org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.CodeStyleTabPage_GroupName_ControlStatments
+=> org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.CodeStyleTabPage_GroupName_ControlStatements
+;;
+
+@id: jdt.internal.javamodelutil.is18orhigher.to.is1d8orhigher
+@severity: info
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is18OrHigher($project)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d8OrHigher($project)
+;;
+
+@id: jdt.internal.javamodelutil.is17orhigher.to.is1d7orhigher
+@severity: info
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is17OrHigher($project)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)
+;;
+
+@id: jdt.internal.javamodelutil.is16orhigher.to.is1d6orhigher
+@severity: info
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is16OrHigher($compliance)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d6OrHigher($compliance)
+;;

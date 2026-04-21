@@ -95,3 +95,79 @@ $combo.setItems(new java.lang.String[] { $items$ })
 java.lang.Integer.valueOf($int_expr).toString()
 => java.lang.Integer.toString($int_expr)
 ;;
+
+new java.lang.String()
+=> ""
+;;
+
+java.lang.Boolean.TRUE
+=> true
+;;
+
+java.lang.Boolean.FALSE
+=> false
+;;
+
+new java.lang.Integer($number).toString()
+=> java.lang.Integer.toString($number)
+;;
+
+((java.lang.Integer) $number).toString()
+=> java.lang.Integer.toString($number)
+;;
+
+new java.lang.Boolean($bool).toString()
+=> java.lang.Boolean.toString($bool)
+;;
+
+((java.lang.Boolean) $bool).toString()
+=> java.lang.Boolean.toString($bool)
+;;
+
+new java.lang.Long($number).toString()
+=> java.lang.Long.toString($number)
+;;
+
+((java.lang.Long) $number).toString()
+=> java.lang.Long.toString($number)
+;;
+
+new java.lang.Double($number).toString()
+=> java.lang.Double.toString($number)
+;;
+
+((java.lang.Double) $number).toString()
+=> java.lang.Double.toString($number)
+;;
+
+new java.lang.Character($char).toString()
+=> java.lang.Character.toString($char)
+;;
+
+((java.lang.Character) $char).toString()
+=> java.lang.Character.toString($char)
+;;
+
+new java.lang.Float($number).toString()
+=> java.lang.Float.toString($number)
+;;
+
+((java.lang.Float) $number).toString()
+=> java.lang.Float.toString($number)
+;;
+
+new java.lang.Short($number).toString()
+=> java.lang.Short.toString($number)
+;;
+
+((java.lang.Short) $number).toString()
+=> java.lang.Short.toString($number)
+;;
+
+new java.lang.Byte($number).toString()
+=> java.lang.Byte.toString($number)
+;;
+
+((java.lang.Byte) $number).toString()
+=> java.lang.Byte.toString($number)
+;;
