@@ -1,48 +1,50 @@
 {
-  "totalProcessed": 44,
-  "relevant": 41,
-  "irrelevant": 3,
-  "duplicates": 4,
-  "green": 10,
-  "yellow": 5,
-  "red": 26,
+  "totalProcessed": 41,
+  "relevant": 36,
+  "irrelevant": 5,
+  "duplicates": 0,
+  "green": 11,
+  "yellow": 1,
+  "red": 23,
   "irrelevantReasons": {
-    "This commit modifies a .properties file (resource bundle), which contains string literals for UI messages. The TriggerPattern DSL is designed for Java code transformations, not for modifying non-Java resource files. Therefore, this commit is not applicable for DSL mining.": 1,
-    "The commit involves structural changes such as deleting fields, methods, and complex conditional blocks, which cannot be expressed as pattern-based DSL rules. It\u0027s an internal API cleanup rather than a generalizable code transformation.": 1,
-    "This commit only adds Javadoc comments to address a FindBugs warning about inconsistent equals/compareTo behavior. This is a documentation-only change, not a code transformation that alters executable logic or syntax. The TriggerPattern DSL is designed for code transformations, not Javadoc modifications.": 1
+    "This commit fixes a typo in a string literal message key used for UI display, not a code transformation pattern that modifies Java code logic or structure. It\u0027s an internal resource/internationalization fix.": 1,
+    "This commit modifies the internal logic for generating preview code snippets and UI messages within Eclipse JDT cleanups. It does not introduce any new code transformation patterns applicable to user Java code via the TriggerPattern DSL. The changes are internal to how the cleanup previews are constructed and displayed, not the actual code transformations applied to a user\u0027s project.": 1,
+    "This commit is purely an architectural refactoring and UI reorganization of existing cleanup preferences. It moves several cleanup options from one tab page (`UnnecessaryCodeTabPage`) to a newly created one (`DuplicateCodeTabPage`) within the Eclipse JDT UI. It does not introduce any new code transformation logic or modify existing logic. The TriggerPattern DSL is designed for code transformations, not for reorganizing UI elements or plugin configurations.": 1,
+    "This commit addresses a bug in the JDT UI\u0027s internal Java Indenter component. The changes involve modifying internal logic (adding/reassigning local variables within a switch statement) to correct indentation calculation. This is a bug fix for an internal UI rendering algorithm and does not represent a reusable code transformation pattern that would apply to general Java source code.": 1,
+    "This commit does not introduce a code transformation pattern. It refactors an existing cleanup\u0027s internal implementation (`AtomicObjectCleanUp.java`) by changing how `TextEditGroup` names are generated for improved navigation in the JDT IDE\u0027s preview, and updates the group names from a single `group` to `groupdeclaration` and `groupusage`. This change only affects the IDE\u0027s UI behavior for quick fixes, not the user\u0027s code transformation logic.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 44,
-      "relevant": 41,
-      "green": 10,
-      "yellow": 5,
-      "red": 26
+      "totalProcessed": 41,
+      "relevant": 36,
+      "green": 11,
+      "yellow": 1,
+      "red": 23
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-20",
-      "processed": 44,
-      "relevant": 41
+      "date": "2026-04-21",
+      "processed": 41,
+      "relevant": 36
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-20T03:10:41.559Z",
-    "completedAt": "2026-04-20T03:29:42.934817612Z",
-    "durationSeconds": 1141,
+    "startedAt": "2026-04-21T03:09:52.914Z",
+    "completedAt": "2026-04-21T03:30:14.798166185Z",
+    "durationSeconds": 1221,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 146,
+    "deferredCommits": 152,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-20T03:12:46.624780733Z",
-    "latestEvaluation": "2026-04-20T03:29:41.708501631Z",
-    "earliestCommitDate": "2020-08-08T17:44:55Z",
-    "latestCommitDate": "2020-10-01T17:07:05Z"
+    "earliestEvaluation": "2026-04-21T03:11:47.668679867Z",
+    "latestEvaluation": "2026-04-21T03:30:13.488980203Z",
+    "earliestCommitDate": "2020-08-28T16:14:33Z",
+    "latestCommitDate": "2020-11-04T10:25:14Z"
   }
 }

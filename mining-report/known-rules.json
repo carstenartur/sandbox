@@ -2123,6 +2123,116 @@
       "sourceCommit": "392262e1cdd018d488cb6f791743755130c7a422",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-replaces-inefficient-new-jav",
+      "category": "Performance",
+      "dslRule": "new java.lang.String()\n\u003d\u003e \"\"\n;;",
+      "summary": "This commit replaces inefficient `new java.lang.String()` constructor calls with the empty string literal `\"\"`. This is a performance optimization, avoiding unnecessary object allocation. This is a direct 1:1 expression replacement and is fully implementable as a GREEN TriggerPattern DSL rule. While a similar rule exists for replacing `new String()` with `Util.EMPTY_STRING`, this distinct pattern replaces it with the direct empty string literal `\"\"`.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "cf4fcb2c1c6119d98183bee918a89cfe2ac5fc22",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-eclipse",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "\u003c!map JAVADOC_CONSTANTS: \"PRIVATE\" \u003d\u003e PRIVATE, \"PROTECTED\" \u003d\u003e PROTECTED, \"PACKAGE\" \u003d\u003e PACKAGE, \"PUBLIC\" \u003d\u003e PUBLIC, \"USE\" \u003d\u003e USE, \"NOTREE\" \u003d\u003e NOTREE, \"NOINDEX\" \u003d\u003e NOINDEX, \"NONAVBAR\" \u003d\u003e NONAVBAR, \"NODEPRECATED\" \u003d\u003e NODEPRECATED, \"NODEPRECATEDLIST\" \u003d\u003e NODEPRECATEDLIST, \"VERSION\" \u003d\u003e VERSION, \"AUTHOR\" \u003d\u003e AUTHOR, \"SPLITINDEX\" \u003d\u003e SPLITINDEX, \"STYLESHEETFILE\" \u003d\u003e STYLESHEETFILE, \"OVERVIEW\" \u003d\u003e OVERVIEW, \"DOCLETNAME\" \u003d\u003e DOCLETNAME, \"DOCLETPATH\" \u003d\u003e DOCLETPATH, \"SOURCEPATH\" \u003d\u003e SOURCEPATH, \"CLASSPATH\" \u003d\u003e CLASSPATH, \"DESTINATION\" \u003d\u003e DESTINATION, \"OPENINBROWSER\" \u003d\u003e OPENINBROWSER, \"VISIBILITY\" \u003d\u003e VISIBILITY, \"PACKAGENAMES\" \u003d\u003e PACKAGENAMES, \"SOURCEFILES\" \u003d\u003e SOURCEFILES, \"EXTRAOPTIONS\" \u003d\u003e EXTRAOPTIONS, \"VMOPTIONS\" \u003d\u003e VMOPTIONS, \"TITLE\" \u003d\u003e TITLE, \"HREF\" \u003d\u003e HREF, \"NAME\" \u003d\u003e NAME, \"PATH\" \u003d\u003e PATH, \"FROMSTANDARD\" \u003d\u003e FROMSTANDARD, \"ANTPATH\" \u003d\u003e ANTPATH, \"SOURCE\" \u003d\u003e SOURCE\u003e\n\n$store.#{JAVADOC_CONSTANTS} :: instanceof($store, \"org.eclipse.jdt.internal.ui.javadocexport.JavadocOptionsManager\")\n\u003d\u003e org.eclipse.jdt.internal.ui.javadocexport.JavadocOptionsManager.#{JAVADOC_CONSTANTS_VALUE}\n;;",
+      "summary": "This commit modernizes internal Eclipse JDT UI by converting instance field accesses of constants in `JavadocOptionsManager` to static field accesses. This improves code style and memory efficiency for constants. The transformation from `fStore.CONSTANT_NAME` to `JavadocOptionsManager.CONSTANT_NAME` for numerous constants is a direct 1:1 expression replacement. This pattern is fully expressible as a GREEN TriggerPattern DSL rule using the `\u003c!map\u003e` directive and an `instanceof` guard, generating multiple rules for each constant.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "579e9c2689b5fa482e2585a4165218c53c5a4d21",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-introduces-a-new-jdt-cleanup",
+      "category": "Performance",
+      "dslRule": "java.lang.Boolean.TRUE\n\u003d\u003e true\n;;\n\njava.lang.Boolean.FALSE\n\u003d\u003e false\n;;",
+      "summary": "This commit introduces a new JDT cleanup `BooleanLiteralCleanUp` that replaces `Boolean.TRUE` and `Boolean.FALSE` with their primitive literal equivalents `true` and `false`. This is a direct 1:1 expression replacement that improves code readability and can offer minor performance benefits by avoiding the `Boolean` object. It is fully implementable as two separate GREEN TriggerPattern DSL rules. No `sourceVersionGE` guard is needed as these constants and primitive literals are fundamental Java features predating Java 8. This transformation is highly reusable and will be added to `performance.sandbox-hint`.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "768cd6ce5759646d33e941251f584fe5358695cb",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-introduces-a-new-java-based",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astnodes.oppositeinfixoperator.to.negatedinfixoperator\n@severity: info\norg.eclipse.jdt.internal.corext.dom.ASTNodes.oppositeInfixOperator($operator)\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.ASTNodes.negatedInfixOperator($operator)\n;;",
+      "summary": "This commit introduces a new Java-based cleanup for \u0027Redundant If Condition\u0027 (RED, as its complex logic is beyond the current DSL\u0027s capability). It also performs two minor refactorings: 1) Removes unnecessary \u0027@SuppressWarnings(\"unchecked\")\u0027 annotations from internal cleanup classes (YELLOW, as this requires semantic analysis that the DSL cannot perform). 2) Updates an internal JDT utility method call `ASTNodes.oppositeInfixOperator` to `ASTNodes.negatedInfixOperator` (GREEN, a direct 1:1 method call replacement). The proposed DSL rule captures this green-level internal method call replacement, which is a straightforward and automatable transformation for JDT\u0027s internal API modernization.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "c73bc68c4f6160040a5f8759f9038969ba554c3f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-a-typo-in-internal-jdt",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.fix.cleanupconstants.control_statments_use_blocks_always.typo\n@severity: info\norg.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_USE_BLOCKS_ALWAYS\n\u003d\u003e org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_USE_BLOCKS_ALWAYS\n;;\n\n@id: jdt.internal.fix.cleanupconstants.control_statments_use_blocks_never.typo\n@severity: info\norg.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_USE_BLOCKS_NEVER\n\u003d\u003e org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_USE_BLOCKS_NEVER\n;;\n\n@id: jdt.internal.fix.cleanupconstants.control_statments_use_blocks_no_for_return_and_throw.typo\n@severity: info\norg.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_USE_BLOCKS_NO_FOR_RETURN_AND_THROW\n\u003d\u003e org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_USE_BLOCKS_NO_FOR_RETURN_AND_THROW\n;;\n\n@id: jdt.internal.fix.cleanupconstants.control_statments_convert_for_loop_to_enhanced.typo\n@severity: info\norg.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_CONVERT_FOR_LOOP_TO_ENHANCED\n\u003d\u003e org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED\n;;\n\n@id: jdt.internal.fix.cleanupconstants.control_statments_convert_for_loop_only_if_loop_var_used.typo\n@severity: info\norg.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED\n\u003d\u003e org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED\n;;\n\n@id: jdt.internal.preferences.cleanup.cleanupmessages.groupname_controlstatments.typo\n@severity: info\norg.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.CodeStyleTabPage_GroupName_ControlStatments\n\u003d\u003e org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.CodeStyleTabPage_GroupName_ControlStatements\n;;",
+      "summary": "This commit fixes a typo in internal JDT cleanup constants, changing \u0027STATMENTS\u0027 to \u0027STATEMENTS\u0027. This is a mechanical 1:1 replacement of static field references and NLS message keys, improving internal code consistency and correctness. The rules target each specific constant for precise refactoring. It is fully expressible as GREEN TriggerPattern DSL rules and applies to the JDT\u0027s own codebase, not user code. The hint file minimum Java version is 8, as it is an internal refactoring.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "f004c1590488794d644f7088d9327f224ebfbb99",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-renames-several-internal-jav",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.javamodelutil.is18orhigher.to.is1d8orhigher\n@severity: info\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.is18OrHigher($project)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d8OrHigher($project)\n;;\n\n@id: jdt.internal.javamodelutil.is17orhigher.to.is1d7orhigher\n@severity: info\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.is17OrHigher($project)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)\n;;\n\n@id: jdt.internal.javamodelutil.is16orhigher.to.is1d6orhigher\n@severity: info\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.is16OrHigher($compliance)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d6OrHigher($compliance)\n;;",
+      "summary": "This commit renames several internal `JavaModelUtil` methods (e.g., `is18OrHigher` to `is1d8OrHigher`) to avoid potential conflicts with new Java versions. These are direct 1:1 method call replacements across multiple internal JDT UI files. The TriggerPattern DSL fully supports such method call renames, making this a GREEN transformation. Three separate rules are created for `is18OrHigher`, `is17OrHigher`, and `is16OrHigher`. As these are internal refactorings, no specific `sourceVersionGE` guard is needed within the rules, and the base `minJavaVersion` for the hint file is 8.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "64634f6725ffdcfdd08d02d5742d5032b1c65140",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "probable-bugs-this-commit-fixes-a-correctness-bug-wher",
+      "category": "Probable Bugs",
+      "dslRule": "@id: arrays.correctness.array-object-equals\n@severity: error\n!$array1.equals($array2) :: instanceof($array1, \"java.lang.Object[]\") \u0026\u0026 instanceof($array2, \"java.lang.Object[]\")\n\u003d\u003e !java.util.Arrays.equals($array1, $array2)\n;;\n\n@id: arrays.correctness.array-object-equals-positive\n@severity: error\n$array1.equals($array2) :: instanceof($array1, \"java.lang.Object[]\") \u0026\u0026 instanceof($array2, \"java.lang.Object[]\")\n\u003d\u003e java.util.Arrays.equals($array1, $array2)\n;;",
+      "summary": "This commit fixes a correctness bug where `Object.equals()` was incorrectly used to compare the contents of two arrays. Since arrays inherit `Object.equals()` which performs reference equality, this is a common pitfall. The fix replaces `!array1.equals(array2)` with `!java.util.Arrays.equals(array1, array2)` to correctly compare array contents. This is a direct 1:1 expression replacement and is highly reusable. Two DSL rules are generated to cover both the negated and non-negated forms, guarded by `instanceof(\"java.lang.Object[]\")` to ensure application to array types. The pattern is not a duplicate of existing `Objects.equals` rules.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "591c489465555590455cc09935fb25aa1d94c3d8",
+      "status": "DISCOVERED",
+      "hintFile": "probable-bugs.sandbox-hint"
+    },
+    {
+      "id": "performance-this-commit-adds-a-new-java-based-cleanu",
+      "category": "Performance",
+      "dslRule": "new java.lang.Integer($number).toString()\n\u003d\u003e java.lang.Integer.toString($number)\n;;\n\n((java.lang.Integer) $number).toString()\n\u003d\u003e java.lang.Integer.toString($number)\n;;\n\nnew java.lang.Boolean($bool).toString()\n\u003d\u003e java.lang.Boolean.toString($bool)\n;;\n\n((java.lang.Boolean) $bool).toString()\n\u003d\u003e java.lang.Boolean.toString($bool)\n;;\n\nnew java.lang.Long($number).toString()\n\u003d\u003e java.lang.Long.toString($number)\n;;\n\n((java.lang.Long) $number).toString()\n\u003d\u003e java.lang.Long.toString($number)\n;;\n\nnew java.lang.Double($number).toString()\n\u003d\u003e java.lang.Double.toString($number)\n;;\n\n((java.lang.Double) $number).toString()\n\u003d\u003e java.lang.Double.toString($number)\n;;\n\nnew java.lang.Character($char).toString()\n\u003d\u003e java.lang.Character.toString($char)\n;;\n\n((java.lang.Character) $char).toString()\n\u003d\u003e java.lang.Character.toString($char)\n;;\n\nnew java.lang.Float($number).toString()\n\u003d\u003e java.lang.Float.toString($number)\n;;\n\n((java.lang.Float) $number).toString()\n\u003d\u003e java.lang.Float.toString($number)\n;;\n\nnew java.lang.Short($number).toString()\n\u003d\u003e java.lang.Short.toString($number)\n;;\n\n((java.lang.Short) $number).toString()\n\u003d\u003e java.lang.Short.toString($number)\n;;\n\nnew java.lang.Byte($number).toString()\n\u003d\u003e java.lang.Byte.toString($number)\n;;\n\n((java.lang.Byte) $number).toString()\n\u003d\u003e java.lang.Byte.toString($number)\n;;",
+      "summary": "This commit adds a new Java-based cleanup called \u0027Primitive Serialization CleanUp\u0027 (`PrimitiveSerializationCleanUp.java`). It identifies and transforms code where a primitive value is first boxed into its wrapper type (via a deprecated constructor or an explicit cast to the wrapper type) and then `toString()` is called on the wrapper. The cleanup replaces this verbose pattern with a direct call to the static `WrapperType.toString(primitiveValue)` method. This improves readability and avoids unnecessary object creation. This pattern is broadly applicable across all primitive wrapper types. While the `Wrapper.valueOf(primitive).toString()` variant is already covered by an existing DSL rule, the `new Wrapper(primitive).toString()` and `((Wrapper)primitive).toString()` variants are new patterns introduced by this cleanup. Assuming the DSL\u0027s type inference during pattern matching correctly ensures that `$number`, `$bool`, or `$char` placeholders bind to primitive types (similar to how existing `Integer.valueOf($int_expr)` rules function), these transformations are semantically safe and directly implementable as GREEN TriggerPattern DSL rules for all primitive wrapper types: Integer, Boolean, Long, Double, Character, Float, Short, and Byte. No `sourceVersionGE` guard is needed as the `toString()` and `valueOf()` methods for primitives predate Java 8.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "f5f14be309ca126af87cb2b906aaaf4505fa746f",
+      "status": "DISCOVERED",
+      "hintFile": "performance.sandbox-hint"
+    },
+    {
+      "id": "logical-simplification-this-commit-introduces-a-new-jdt-cleanup",
+      "category": "Logical Simplification",
+      "dslRule": "/*!id: logical.simplification.double-negation.equality-both-negated*/\n/*!description: Simplify !!A \u003d\u003d !!B to A \u003d\u003d B.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x \u003d\u003d org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y\n\u003d\u003e $x \u003d\u003d $y\n;;\n\n/*!id: logical.simplification.double-negation.inequality-both-negated*/\n/*!description: Simplify !!A !\u003d !!B to A ^ B (logical XOR).*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x !\u003d org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y\n\u003d\u003e $x ^ $y\n;;\n\n/*!id: logical.simplification.double-negation.xor-left-negated*/\n/*!description: Simplify !A ^ B to A \u003d\u003d B.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x ^ $y\n\u003d\u003e $x \u003d\u003d $y\n;;\n\n/*!id: logical.simplification.double-negation.xor-right-negated*/\n/*!description: Simplify A ^ !B to A \u003d\u003d B.*/\n/*!severity: info*/\n$x ^ org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y\n\u003d\u003e $x \u003d\u003d $y\n;;",
+      "summary": "This commit introduces a new JDT cleanup that simplifies boolean expressions by reducing double negations. The patterns include converting \u0027!!A \u003d\u003d !!B\u0027 to \u0027A \u003d\u003d B\u0027, \u0027!!A !\u003d !!B\u0027 to \u0027A ^ B\u0027, and \u0027!A ^ B\u0027 (or \u0027A ^ !B\u0027) to \u0027A \u003d\u003d B\u0027. These are direct, semantically equivalent logical simplifications that improve readability and can be fully automated as multiple TriggerPattern DSL rules. This is a new, specialized form of logical simplification.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "6f4f02857c7e0b834ea14bd6d12232c432014a37",
+      "status": "DISCOVERED",
+      "hintFile": "logical-simplification.sandbox-hint"
+    },
+    {
+      "id": "null-safety-this-commit-introduces-a-new-jdt-cleanup",
+      "category": "Null-Safety",
+      "dslRule": "/*!id: null.safety.remove-redundant-null-check.instanceof*/\n/*!description: Remove redundant null check before an instanceof expression when the expression has no side effects.*/\n/*!severity: info*/\n($x !\u003d null) \u0026\u0026 ($x instanceof $Type) :: hasNoSideEffect($x)\n\u003d\u003e $x instanceof $Type\n;;\n\n/*!id: null.safety.remove-redundant-null-check.instanceof.reversed*/\n/*!description: Remove redundant null check before an instanceof expression (reversed operands) when the expression has no side effects.*/\n/*!severity: info*/\n(null !\u003d $x) \u0026\u0026 ($x instanceof $Type) :: hasNoSideEffect($x)\n\u003d\u003e $x instanceof $Type\n;;\n\n/*!id: null.safety.remove-redundant-null-check.string-equals*/\n/*!description: Remove redundant null check before \u0027String.equals()\u0027 when a string literal is the receiver and the expression has no side effects.*/\n/*!severity: info*/\n($x !\u003d null) \u0026\u0026 ($constant.equals($x)) :: hasNoSideEffect($x) \u0026\u0026 isStringLiteral($constant)\n\u003d\u003e $constant.equals($x)\n;;\n\n/*!id: null.safety.remove-redundant-null-check.string-equals.reversed*/\n/*!description: Remove redundant null check before \u0027String.equals()\u0027 (reversed operands) when a string literal is the receiver and the expression has no side effects.*/\n/*!severity: info*/\n(null !\u003d $x) \u0026\u0026 ($constant.equals($x)) :: hasNoSideEffect($x) \u0026\u0026 isStringLiteral($constant)\n\u003d\u003e $constant.equals($x)\n;;\n\n/*!id: null.safety.remove-redundant-null-check.string-equalsignorecase*/\n/*!description: Remove redundant null check before \u0027String.equalsIgnoreCase()\u0027 when a string literal is the receiver and the expression has no side effects.*/\n/*!severity: info*/\n($x !\u003d null) \u0026\u0026 ($constant.equalsIgnoreCase($x)) :: hasNoSideEffect($x) \u0026\u0026 isStringLiteral($constant)\n\u003d\u003e $constant.equalsIgnoreCase($x)\n;;\n\n/*!id: null.safety.remove-redundant-null-check.string-equalsignorecase.reversed*/\n/*!description: Remove redundant null check before \u0027String.equalsIgnoreCase()\u0027 (reversed operands) when a string literal is the receiver and the expression has no side effects.*/\n/*!severity: info*/\n(null !\u003d $x) \u0026\u0026 ($constant.equalsIgnoreCase($x)) :: hasNoSideEffect($x) \u0026\u0026 isStringLiteral($constant)\n\u003d\u003e $constant.equalsIgnoreCase($x)\n;;",
+      "summary": "This commit introduces a new JDT cleanup that removes redundant null checks before \u0027instanceof\u0027 expressions or \u0027String.equals()\u0027 (and \u0027equalsIgnoreCase()\u0027) method calls. The transformation is applied when the null-checked expression has no side effects and the subsequent expression implicitly handles nulls or has a non-null constant receiver. This improves code readability and conciseness. The patterns are fully implementable as multiple TriggerPattern DSL rules using \u0027hasNoSideEffect()\u0027 and \u0027isStringLiteral()\u0027 guards for semantic safety.",
+      "discoveredAt": "2026-04-21",
+      "discoveredInRun": 23315,
+      "sourceCommit": "a0c0bb4d688a26a44e83304232f555b741812d0e",
+      "status": "DISCOVERED",
+      "hintFile": "null-safety.sandbox-hint"
     }
   ]
 }
