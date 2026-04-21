@@ -1,0 +1,27 @@
+/*!id: logical.simplification.double-negation.equality-both-negated*/
+/*!description: Simplify !!A == !!B to A == B.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x == org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y
+=> $x == $y
+;;
+
+/*!id: logical.simplification.double-negation.inequality-both-negated*/
+/*!description: Simplify !!A != !!B to A ^ B (logical XOR).*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x != org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y
+=> $x ^ $y
+;;
+
+/*!id: logical.simplification.double-negation.xor-left-negated*/
+/*!description: Simplify !A ^ B to A == B.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x ^ $y
+=> $x == $y
+;;
+
+/*!id: logical.simplification.double-negation.xor-right-negated*/
+/*!description: Simplify A ^ !B to A == B.*/
+/*!severity: info*/
+$x ^ org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y
+=> $x == $y
+;;

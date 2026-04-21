@@ -5,3 +5,45 @@
 ($x == null && $y != null) || ($x != null && !$x.equals($y))
 => !java.util.Objects.equals($x, $y)
 ;;
+
+/*!id: null.safety.remove-redundant-null-check.instanceof*/
+/*!description: Remove redundant null check before an instanceof expression when the expression has no side effects.*/
+/*!severity: info*/
+($x != null) && ($x instanceof $Type) :: hasNoSideEffect($x)
+=> $x instanceof $Type
+;;
+
+/*!id: null.safety.remove-redundant-null-check.instanceof.reversed*/
+/*!description: Remove redundant null check before an instanceof expression (reversed operands) when the expression has no side effects.*/
+/*!severity: info*/
+(null != $x) && ($x instanceof $Type) :: hasNoSideEffect($x)
+=> $x instanceof $Type
+;;
+
+/*!id: null.safety.remove-redundant-null-check.string-equals*/
+/*!description: Remove redundant null check before 'String.equals()' when a string literal is the receiver and the expression has no side effects.*/
+/*!severity: info*/
+($x != null) && ($constant.equals($x)) :: hasNoSideEffect($x) && isStringLiteral($constant)
+=> $constant.equals($x)
+;;
+
+/*!id: null.safety.remove-redundant-null-check.string-equals.reversed*/
+/*!description: Remove redundant null check before 'String.equals()' (reversed operands) when a string literal is the receiver and the expression has no side effects.*/
+/*!severity: info*/
+(null != $x) && ($constant.equals($x)) :: hasNoSideEffect($x) && isStringLiteral($constant)
+=> $constant.equals($x)
+;;
+
+/*!id: null.safety.remove-redundant-null-check.string-equalsignorecase*/
+/*!description: Remove redundant null check before 'String.equalsIgnoreCase()' when a string literal is the receiver and the expression has no side effects.*/
+/*!severity: info*/
+($x != null) && ($constant.equalsIgnoreCase($x)) :: hasNoSideEffect($x) && isStringLiteral($constant)
+=> $constant.equalsIgnoreCase($x)
+;;
+
+/*!id: null.safety.remove-redundant-null-check.string-equalsignorecase.reversed*/
+/*!description: Remove redundant null check before 'String.equalsIgnoreCase()' (reversed operands) when a string literal is the receiver and the expression has no side effects.*/
+/*!severity: info*/
+(null != $x) && ($constant.equalsIgnoreCase($x)) :: hasNoSideEffect($x) && isStringLiteral($constant)
+=> $constant.equalsIgnoreCase($x)
+;;

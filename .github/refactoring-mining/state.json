@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "4d007753dedb661eacfa9efceba5be0ea1b3db15",
-      "lastProcessedDate": "2026-04-20T03:29:41.709398479Z",
-      "totalProcessed": 600,
+      "lastProcessedCommit": "c4c304a91f080b743bf3b0f48461045dd334f672",
+      "lastProcessedDate": "2026-04-21T03:30:13.489325730Z",
+      "totalProcessed": 680,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1403,6 +1403,60 @@
           "deferredAt": "2026-04-20T03:25:35.020722037Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "7b4291b1222ff497f5bec510115347d0b741128a",
+          "message": "Bug 567783 - [cleanup] Reuse existing code",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:19:17.687901198Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "64e5a9cab23ee26c331d3fabad5e5c83e09b6f6f",
+          "message": "Bug 567692 - [AutoRefactor immigration #31/138] [cleanup \u0026 saveaction] Objects.hash()",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:19:17.691782325Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1d2df174ec8e59c7800cf23e03c454d70f281e8a",
+          "message": "Bug 567794 - [AutoRefactor immigration #33/139] [cleanup \u0026 saveaction] String.join()",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:19:17.695507720Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "10d4ec67649ed96e0f214228fb9b3525a8c8fab4",
+          "message": "Bug 568147 - Refactor some utils of ProfileVersioner and some other constants to jdt.core.manipulation for use by jdt.ls",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:23:17.947578297Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "091732c42db3c41edf06002028b273c7c38fd28f",
+          "message": "Bug 568348 - [cleanup] Simplify lambda expression should do all changes",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:24:44.653685505Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "97bc7e2c31c6ab99f428245d96a85e1cff0703ac",
+          "message": "Bug 568472 - [AutoRefactor immigration #42/145] [cleanup \u0026 saveaction] StringBuilder (also fix properties spaces)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:28:11.254381371Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1412,32 +1466,32 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 28,
+        "JDT Internal Refactoring": 36,
         "Code Simplification": 10,
-        "Performance": 10,
-        "JDT Internal Bug Fix": 10,
-        "Clean-up Bug Fix": 10,
+        "Performance": 14,
+        "JDT Internal Bug Fix": 11,
+        "Clean-up Bug Fix": 16,
         "Try-with-Resources": 3,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 1,
         "JFace API Modernization": 1,
         "String-API": 2,
-        "Java-Modernization": 13,
+        "Java-Modernization": 14,
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
-        "Null-Safety": 6,
+        "Null-Safety": 7,
         "Lambda-Simplification": 3,
         "Architectural Refactoring": 1,
         "Collections": 8,
         "JDT Internal Feature Enhancement": 4,
-        "Clean-up Enhancement": 1,
+        "Clean-up Enhancement": 2,
         "Internal Refactoring": 2,
         "Loop Modernization": 4,
         "JDT UI Bug Fix": 1,
         "Type Inference": 1,
         "Architecture Migration": 1,
-        "Code Style": 8,
+        "Code Style": 9,
         "Eclipse API Configuration": 4,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
@@ -1457,7 +1511,7 @@
         "Clean-up Enhancement (Internal JDT)": 1,
         "Eclipse Platform UI": 1,
         "Arrays": 1,
-        "Probable Bugs": 3,
+        "Probable Bugs": 4,
         "JDT Internal Quick Fix Refactoring": 1,
         "String API": 1,
         "Algorithm/Sorting Logic": 1,
@@ -1469,11 +1523,16 @@
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 2,
         "Architecture Refactoring": 1,
-        "Dead Code Removal": 2,
+        "Dead Code Removal": 4,
         "Quick Fix Enhancement": 1,
         "Unnecessary Code": 1,
-        "Correctness": 1,
-        "Code Correctness": 1
+        "Correctness": 2,
+        "Code Correctness": 1,
+        "Code Structure Simplification": 5,
+        "Concurrency": 1,
+        "Bug Fix": 1,
+        "New Cleanup": 1,
+        "Logical Simplification": 1
       },
       "exhaustedCategories": []
     },
@@ -1514,5 +1573,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23235
+  "globalTotalProcessed": 23315
 }
