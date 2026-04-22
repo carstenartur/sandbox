@@ -1,3 +1,7 @@
 @java.lang.SuppressWarnings("rawtypes")
 => @java.lang.SuppressWarnings({"rawtypes"})
 ;;
+
+$_leftOperand + "}\n\n\n\n\n\n\n"
+=> $_leftOperand + "}\n\n\n\n\n\n"
+;;
