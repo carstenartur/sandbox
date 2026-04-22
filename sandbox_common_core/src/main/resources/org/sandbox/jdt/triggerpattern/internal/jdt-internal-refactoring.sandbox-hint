@@ -1049,3 +1049,70 @@ org.eclipse.jdt.internal.corext.util.JavaModelUtil.is17OrHigher($project)
 org.eclipse.jdt.internal.corext.util.JavaModelUtil.is16OrHigher($compliance)
 => org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d6OrHigher($compliance)
 ;;
+
+/*!id: jdt.internal.cleanup.vardefinitionsusesvisitor.remove-find*/
+/*!description: Removes redundant .find() method call on VarDefinitionsUsesVisitor after its logic was inlined into the constructor.*/
+/*!severity: info*/
+new org.eclipse.jdt.internal.ui.fix.VarDefinitionsUsesVisitor($variableBinding, $scopeNode, $includeInnerScopes).find()
+=> new org.eclipse.jdt.internal.ui.fix.VarDefinitionsUsesVisitor($variableBinding, $scopeNode, $includeInnerScopes)
+;;
+
+/*!id: jdt.internal.cleanup.varoccurrencevisitor.rename-type*/
+/*!description: Renames internal JDT cleanup type VarOccurrenceVisitor to VarConflictVisitor.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+org.eclipse.jdt.internal.corext.dom.VarOccurrenceVisitor
+=> org.eclipse.jdt.internal.corext.dom.VarConflictVisitor
+;;
+
+/*!id: jdt.internal.cleanup.varoccurrencevisitor.rename-constructor*/
+/*!description: Updates constructor calls for internal JDT cleanup type from VarOccurrenceVisitor to VarConflictVisitor.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+new org.eclipse.jdt.internal.corext.dom.VarOccurrenceVisitor($allowedVars, true)
+=> new org.eclipse.jdt.internal.corext.dom.VarConflictVisitor($allowedVars, true)
+;;
+
+/*!id: jdt.internal.cleanup.varoccurrencevisitor.rename-method*/
+/*!description: Renames method call from isVarUsed() to isVarConflicting() on internal JDT cleanup visitor.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+$varOccurrenceVisitor.isVarUsed() :: instanceof($varOccurrenceVisitor, "org.eclipse.jdt.internal.corext.dom.VarOccurrenceVisitor")
+=> $varOccurrenceVisitor.isVarConflicting()
+;;
+
+/*!id: jdt.internal.ast.jls10.to.asthelper*/
+/*!description: Consolidates internal JDT UI AST level usage by replacing AST.JLS10 with ASTHelper.JLS10 to remove deprecation warnings.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.AST.JLS10
+=> org.eclipse.jdt.internal.ui.util.ASTHelper.JLS10
+;;
+
+/*!id: jdt.internal.ast.jls8.to.asthelper*/
+/*!description: Consolidates internal JDT UI AST level usage by replacing AST.JLS8 with ASTHelper.JLS8 to remove deprecation warnings.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.AST.JLS8
+=> org.eclipse.jdt.internal.ui.util.ASTHelper.JLS8
+;;
+
+/*!id: jdt.internal.ast.jls9.to.asthelper*/
+/*!description: Consolidates internal JDT UI AST level usage by replacing AST.JLS9 with ASTHelper.JLS9 to remove deprecation warnings.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.AST.JLS9
+=> org.eclipse.jdt.internal.ui.util.ASTHelper.JLS9
+;;
+
+@id: jdt.internal.addunimplementedconstructorsaction.preventrecord
+@severity: info
+$type.getCompilationUnit() != null && !$type.isInterface() && !$type.isEnum() && !$type.isAnonymous() :: instanceof($type, "org.eclipse.jdt.core.IType") && sourceVersionGE(16)
+=> $type.getCompilationUnit() != null && !$type.isInterface() && !$type.isEnum() && !$type.isRecord() && !$type.isAnonymous()
+;;
+
+@id: jdt.internal.previewfeatures.ispreviewfeatureenabled.to.is16orhigher
+@severity: info
+org.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor.isPreviewFeatureEnabled($javaProject) :: sourceVersionGE(16)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is16OrHigher($javaProject)
+;;

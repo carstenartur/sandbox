@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "c4c304a91f080b743bf3b0f48461045dd334f672",
-      "lastProcessedDate": "2026-04-21T03:30:13.489325730Z",
-      "totalProcessed": 680,
+      "lastProcessedCommit": "56ede0729d1e19b19e56d9b6fc21010ec91b2762",
+      "lastProcessedDate": "2026-04-22T03:29:45.391257646Z",
+      "totalProcessed": 757,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1457,6 +1457,51 @@
           "deferredAt": "2026-04-21T03:28:11.254381371Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "a746f1297ff4a4364b7034ed53922a96db2651a3",
+          "message": "Bug 565447 - [15] ASTConverter showing pattern variable for\nInstanceOfExpression as final non-sealed\n\nChange-Id: I727bb6",
+          "diffLines": 36,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-22T03:12:02.437598058Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "438113dfd7d6c49f3734e2f028fdcbb689352303",
+          "message": "Bug 568609 - [cleanup] Improve the \"Replace String concatenation by StringBuilder\" rule appending",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-22T03:17:00.626821950Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "be05e73941642d62da465ee2e1d695c44bfd4311",
+          "message": "Bug 568611 - [AutoRefactor immigration #43/145] [cleanup \u0026 saveaction] Switch",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-22T03:19:09.691650627Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f14bd693b9898b109e7a703a97e10826117ea533",
+          "message": "Bug 568656 - [AutoRefactor immigration #45/145] [cleanup \u0026 saveaction] Control flow merge",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-22T03:26:51.914270240Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "16051ece96111f64ce9bea65b133c80e5bc56b30",
+          "message": "Bug 569879 - [AutoRefactor immigration #52/146] [cleanup \u0026 saveaction] Multi-catch",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-22T03:29:12.992451786Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1466,12 +1511,12 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 36,
+        "JDT Internal Refactoring": 42,
         "Code Simplification": 10,
-        "Performance": 14,
-        "JDT Internal Bug Fix": 11,
-        "Clean-up Bug Fix": 16,
-        "Try-with-Resources": 3,
+        "Performance": 15,
+        "JDT Internal Bug Fix": 13,
+        "Clean-up Bug Fix": 23,
+        "Try-with-Resources": 4,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 1,
         "JFace API Modernization": 1,
@@ -1480,7 +1525,7 @@
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
-        "Null-Safety": 7,
+        "Null-Safety": 8,
         "Lambda-Simplification": 3,
         "Architectural Refactoring": 1,
         "Collections": 8,
@@ -1491,15 +1536,15 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 1,
         "Architecture Migration": 1,
-        "Code Style": 9,
-        "Eclipse API Configuration": 4,
+        "Code Style": 13,
+        "Eclipse API Configuration": 5,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 2,
         "JDT Internal Architecture": 1,
         "Eclipse API Migration": 5,
         "JDT Internal Feature": 1,
-        "Type Safety": 2,
+        "Type Safety": 3,
         "Eclipse UI Refactoring": 1,
         "Control Flow Modernization": 3,
         "JDT Internal Quick Fix Implementation": 1,
@@ -1532,7 +1577,10 @@
         "Concurrency": 1,
         "Bug Fix": 1,
         "New Cleanup": 1,
-        "Logical Simplification": 1
+        "Logical Simplification": 3,
+        "UI Bug Fix": 3,
+        "Eclipse API Modernization": 1,
+        "Eclipse API Evolution": 1
       },
       "exhaustedCategories": []
     },
@@ -1573,5 +1621,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23315
+  "globalTotalProcessed": 23392
 }
