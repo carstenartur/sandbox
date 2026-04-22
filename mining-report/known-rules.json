@@ -2233,6 +2233,94 @@
       "sourceCommit": "a0c0bb4d688a26a44e83304232f555b741812d0e",
       "status": "DISCOVERED",
       "hintFile": "null-safety.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-clean",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.cleanup.vardefinitionsusesvisitor.remove-find*/\n/*!description: Removes redundant .find() method call on VarDefinitionsUsesVisitor after its logic was inlined into the constructor.*/\n/*!severity: info*/\nnew org.eclipse.jdt.internal.ui.fix.VarDefinitionsUsesVisitor($variableBinding, $scopeNode, $includeInnerScopes).find()\n\u003d\u003e new org.eclipse.jdt.internal.ui.fix.VarDefinitionsUsesVisitor($variableBinding, $scopeNode, $includeInnerScopes)\n;;",
+      "summary": "This commit refactors internal JDT cleanup code by inlining the `find()` method\u0027s logic into the constructor of `VarDefinitionsUsesVisitor`. Consequently, all call sites `new VarDefinitionsUsesVisitor(...).find()` are simplified to `new VarDefinitionsUsesVisitor(...)`. This is a direct 1:1 method call removal, which is a reusable pattern for internal API modernization and is fully implementable as a GREEN TriggerPattern DSL rule. The rule will be added to `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-04-22",
+      "discoveredInRun": 23392,
+      "sourceCommit": "8089212b8e4410e0a9165ab9055bd5831301cb97",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-renames-an-internal-jdt-clea",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.cleanup.varoccurrencevisitor.rename-type*/\n/*!description: Renames internal JDT cleanup type VarOccurrenceVisitor to VarConflictVisitor.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\norg.eclipse.jdt.internal.corext.dom.VarOccurrenceVisitor\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.VarConflictVisitor\n;;\n\n/*!id: jdt.internal.cleanup.varoccurrencevisitor.rename-constructor*/\n/*!description: Updates constructor calls for internal JDT cleanup type from VarOccurrenceVisitor to VarConflictVisitor.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\nnew org.eclipse.jdt.internal.corext.dom.VarOccurrenceVisitor($allowedVars, true)\n\u003d\u003e new org.eclipse.jdt.internal.corext.dom.VarConflictVisitor($allowedVars, true)\n;;\n\n/*!id: jdt.internal.cleanup.varoccurrencevisitor.rename-method*/\n/*!description: Renames method call from isVarUsed() to isVarConflicting() on internal JDT cleanup visitor.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\n$varOccurrenceVisitor.isVarUsed() :: instanceof($varOccurrenceVisitor, \"org.eclipse.jdt.internal.corext.dom.VarOccurrenceVisitor\")\n\u003d\u003e $varOccurrenceVisitor.isVarConflicting()\n;;",
+      "summary": "This commit renames an internal JDT cleanup visitor class from `VarOccurrenceVisitor` to `VarConflictVisitor` and updates its constructor calls and a specific method call (`isVarUsed()` to `isVarConflicting()`). These are direct 1:1 type, constructor, and method call replacements, fully expressible as GREEN TriggerPattern DSL rules for internal JDT refactoring. The rules ensure the internal API usage is consistent with the new naming.",
+      "discoveredAt": "2026-04-22",
+      "discoveredInRun": 23392,
+      "sourceCommit": "916e595f4b89bc8a22cea0079330b73b7b5bba0f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-systematically-replaces-call",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.astnodes.replace.keepcomment\n@severity: info\n$rewrite.replace($node, $replacement, $group)\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.ASTNodes.replaceButKeepComment($rewrite, $node, $replacement, $group)\n;;",
+      "summary": "This commit systematically replaces calls to `rewrite.replace()` with `ASTNodes.replaceButKeepComment()`. This is an internal JDT refactoring to ensure that comments above AST nodes are preserved during automated code transformations. The pattern is a direct 1:1 method call replacement and is fully supported by the TriggerPattern DSL. This specific transformation has been previously identified and exists as a GREEN DSL rule in `jdt-internal-refactoring.sandbox-hint`, making this a duplicate.",
+      "discoveredAt": "2026-04-22",
+      "discoveredInRun": 23392,
+      "sourceCommit": "335c75d05d0225c24d62725fe74432818c8f490f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "code-style-this-commit-fixes-a-ui-preview-string-in",
+      "category": "Code Style",
+      "dslRule": "$_leftOperand + \"}\\n\\n\\n\\n\\n\\n\\n\"\n\u003d\u003e $_leftOperand + \"}\\n\\n\\n\\n\\n\\n\"\n;;",
+      "summary": "This commit fixes a UI preview string in `SwitchCleanUp.java` by removing one trailing newline character from a multi-line string literal. The change is from `+ \"}\\n\\n\\n\\n\\n\\n\\n\";` to `+ \"}\\n\\n\\n\\n\\n\\n\";`. This is a direct 1:1 replacement of a specific string literal within a string concatenation expression. The TriggerPattern DSL can directly implement this by matching the infix expression and replacing the right-hand string literal, using a placeholder for the left-hand operand (`$_leftOperand`). This is a GREEN transformation, although its reusability is highly specific to this internal context.",
+      "discoveredAt": "2026-04-22",
+      "discoveredInRun": 23392,
+      "sourceCommit": "4b4b277e142c1314f82230df0b6890fa4c0c1239",
+      "status": "DISCOVERED",
+      "hintFile": "code-style.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-consolidates-internal-eclips",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.ast.jls10.to.asthelper*/\n/*!description: Consolidates internal JDT UI AST level usage by replacing AST.JLS10 with ASTHelper.JLS10 to remove deprecation warnings.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.AST.JLS10\n\u003d\u003e org.eclipse.jdt.internal.ui.util.ASTHelper.JLS10\n;;\n\n/*!id: jdt.internal.ast.jls8.to.asthelper*/\n/*!description: Consolidates internal JDT UI AST level usage by replacing AST.JLS8 with ASTHelper.JLS8 to remove deprecation warnings.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.AST.JLS8\n\u003d\u003e org.eclipse.jdt.internal.ui.util.ASTHelper.JLS8\n;;\n\n/*!id: jdt.internal.ast.jls9.to.asthelper*/\n/*!description: Consolidates internal JDT UI AST level usage by replacing AST.JLS9 with ASTHelper.JLS9 to remove deprecation warnings.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.AST.JLS9\n\u003d\u003e org.eclipse.jdt.internal.ui.util.ASTHelper.JLS9\n;;",
+      "summary": "This commit consolidates internal Eclipse JDT UI\u0027s usage of Java Language Specification (JLS) constants (e.g., AST.JLS10, AST.JLS8, AST.JLS9) by replacing them with corresponding constants from a new internal helper class, ASTHelper (e.g., ASTHelper.JLS10). This refactoring aims to centralize internal AST level usage and remove deprecation warnings. The transformation is a direct 1:1 replacement of static field accesses. Three distinct DSL rules can be generated to cover each of the replaced constants, making this a highly reusable and automatable pattern for internal JDT API modernization. No specific `sourceVersionGE` guard is needed on the rules themselves, as they target the JDT codebase\u0027s internal consistency and deprecation management rather than applying new Java language features to user code. The `minJavaVersion` for the hint file will be 8.",
+      "discoveredAt": "2026-04-22",
+      "discoveredInRun": 23392,
+      "sourceCommit": "4e5fc03e6b24d9761a6f61bc6321427ca4c5e7b6",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-prevents-the-generate-constr",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.addunimplementedconstructorsaction.preventrecord\n@severity: info\n$type.getCompilationUnit() !\u003d null \u0026\u0026 !$type.isInterface() \u0026\u0026 !$type.isEnum() \u0026\u0026 !$type.isAnonymous() :: instanceof($type, \"org.eclipse.jdt.core.IType\") \u0026\u0026 sourceVersionGE(16)\n\u003d\u003e $type.getCompilationUnit() !\u003d null \u0026\u0026 !$type.isInterface() \u0026\u0026 !$type.isEnum() \u0026\u0026 !$type.isRecord() \u0026\u0026 !$type.isAnonymous()\n;;",
+      "summary": "This commit prevents the \u0027Generate Constructors from Superclass\u0027 action in JDT UI from being applied to Java 16+ `record` types. This involves modifying a boolean conditional expression to include a check for `!type.isRecord()`. This specific expression modification is a direct 1:1 replacement, making it fully implementable as a GREEN TriggerPattern DSL rule. Other changes in the commit, such as extracting logic into a new helper method or adding `try-catch` blocks, are complex structural changes not supported by the DSL. The rule is guarded by `sourceVersionGE(16)` as `IType.isRecord()` was introduced in Java 16.",
+      "discoveredAt": "2026-04-22",
+      "discoveredInRun": 23392,
+      "sourceCommit": "bd29f93eb1406b0ef531040f9385f58ae87a7a2e",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "null-safety-this-commit-removes-redundant-null-check",
+      "category": "Null-Safety",
+      "dslRule": "($x !\u003d null) \u0026\u0026 ($x instanceof $Type) :: hasNoSideEffect($x)\n\u003d\u003e $x instanceof $Type\n;;\n\n(null !\u003d $x) \u0026\u0026 ($x instanceof $Type) :: hasNoSideEffect($x)\n\u003d\u003e $x instanceof $Type\n;;",
+      "summary": "This commit removes redundant null checks before \u0027instanceof\u0027 expressions, which is a semantically safe refactoring when the expression being checked has no side effects. This pattern is fully covered by existing TriggerPattern DSL rules \u0027null.safety.remove-redundant-null-check.instanceof\u0027 and \u0027null.safety.remove-redundant-null-check.instanceof.reversed\u0027 in \u0027null-safety.sandbox-hint\u0027, making this a duplicate.",
+      "discoveredAt": "2026-04-22",
+      "discoveredInRun": 23392,
+      "sourceCommit": "b865b1ca2b3097176927267e4ed99bbb15a4592d",
+      "status": "DISCOVERED",
+      "hintFile": "null-safety.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-promotes-java-16-features-fr",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.previewfeatures.ispreviewfeatureenabled.to.is16orhigher\n@severity: info\norg.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor.isPreviewFeatureEnabled($javaProject) :: sourceVersionGE(16)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.is16OrHigher($javaProject)\n;;",
+      "summary": "This commit promotes Java 16 features from preview to standard in JDT UI, replacing calls to \u0027PreviewFeaturesSubProcessor.isPreviewFeatureEnabled()\u0027 with \u0027JavaModelUtil.is16OrHigher()\u0027. This is a direct 1:1 method call replacement, targeting internal JDT API modernization. This pattern is a GREEN transformation, building upon a previously proposed rule, and is suitable for inclusion in \u0027jdt-internal-refactoring.sandbox-hint\u0027. While a more complex logical simplification in one file is not directly expressible as a single DSL rule, this specific method call replacement is a strong, reusable pattern.",
+      "discoveredAt": "2026-04-22",
+      "discoveredInRun": 23392,
+      "sourceCommit": "d18a49b4fd2937d51de44e8c588f55e998157cf5",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
