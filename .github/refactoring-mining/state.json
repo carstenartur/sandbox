@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "56ede0729d1e19b19e56d9b6fc21010ec91b2762",
-      "lastProcessedDate": "2026-04-22T03:29:45.391257646Z",
-      "totalProcessed": 757,
+      "lastProcessedCommit": "0375d79d6bce5f25f50ab223c84aef88b823c9b0",
+      "lastProcessedDate": "2026-04-23T03:12:10.964452160Z",
+      "totalProcessed": 761,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1577,7 +1577,7 @@
         "Concurrency": 1,
         "Bug Fix": 1,
         "New Cleanup": 1,
-        "Logical Simplification": 3,
+        "Logical Simplification": 4,
         "UI Bug Fix": 3,
         "Eclipse API Modernization": 1,
         "Eclipse API Evolution": 1
@@ -1621,5 +1621,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23392
+  "globalTotalProcessed": 23396
 }
