@@ -1,51 +1,12 @@
 {
-  "totalProcessed": 37,
-  "relevant": 31,
-  "irrelevant": 6,
-  "duplicates": 3,
-  "green": 8,
-  "yellow": 2,
-  "red": 21,
-  "irrelevantReasons": {
-    "This commit modifies an NLS properties file (UI message bundle), not Java source code. It\u0027s a change to the description of a cleanup, not the cleanup rule itself. The TriggerPattern DSL is for Java code transformations.": 1,
-    "The commit involves the deletion of an entire Java file (\u0027JavaContextResolver.java\u0027). The TriggerPattern DSL is designed for transforming existing Java code patterns within a file, not for managing file deletions or architectural changes like removing classes from a project. While the commit message mentions simplifying template variables, the primary action of deleting the source file itself is outside the scope of pattern-based code transformations.": 1,
-    "This commit adds a new default preference setting, `store.setDefault(PreferenceConstants.APPEARANCE_SORT_LIBRARY_ENTRIES_BY_NAME, true);`, rather than transforming an existing code pattern. The TriggerPattern DSL is primarily designed for finding and replacing existing code structures, not for inserting new configuration lines based on their absence. Therefore, this commit does not present a relevant code transformation pattern for DSL mining.": 1,
-    "This commit is a rollback that deletes an entire internal cleanup implementation (\u0027AtomicObjectCleanUp\u0027) and its associated UI/messages. It does not introduce a new code transformation pattern for user code, but rather removes existing internal functionality. Therefore, it is not relevant for generating new DSL rules.": 1,
-    "This commit is an internal refactoring of the Eclipse JDT UI for managing cleanups. It reorganizes existing cleanup options into a new \u0027Java Feature\u0027 tab page and removes/adds NLS messages. It does not introduce new code transformation patterns for user code. The changes involve modifying string constants, creating a new UI class, and moving method calls within the UI configuration, which are architectural/UI refactorings not suitable for TriggerPattern DSL rules.": 1,
-    "Fixes a typo in a static NLS property file, not a Java code transformation pattern. The TriggerPattern DSL is designed for Java code transformations, not for content changes in resource files.": 1
-  },
-  "perRepository": {
-    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 37,
-      "relevant": 31,
-      "green": 8,
-      "yellow": 2,
-      "red": 21
-    }
-  },
-  "dailyProgress": [
-    {
-      "date": "2026-04-22",
-      "processed": 37,
-      "relevant": 31
-    }
-  ],
-  "runMetadata": {
-    "startedAt": "2026-04-22T03:10:08.167Z",
-    "completedAt": "2026-04-22T03:29:46.690252609Z",
-    "durationSeconds": 1178,
-    "llmProvider": "GeminiClient",
-    "llmModel": "gemini-2.5-flash",
-    "batchSize": 200,
-    "commitsPerRequest": 4,
-    "apiCallsMade": 18,
-    "deferredCommits": 157,
-    "permanentlySkipped": 0
-  },
-  "timeWindow": {
-    "earliestEvaluation": "2026-04-22T03:13:46.242889790Z",
-    "latestEvaluation": "2026-04-22T03:29:45.390584790Z",
-    "earliestCommitDate": "2020-10-08T10:14:41Z",
-    "latestCommitDate": "2020-12-29T23:02:09Z"
-  }
+  "totalProcessed": 0,
+  "relevant": 0,
+  "irrelevant": 0,
+  "duplicates": 0,
+  "green": 0,
+  "yellow": 0,
+  "red": 0,
+  "irrelevantReasons": {},
+  "perRepository": {},
+  "dailyProgress": []
 }
