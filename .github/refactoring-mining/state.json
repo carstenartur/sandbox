@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "0375d79d6bce5f25f50ab223c84aef88b823c9b0",
-      "lastProcessedDate": "2026-04-23T03:12:10.964452160Z",
-      "totalProcessed": 761,
+      "lastProcessedCommit": "7e1bdce0b2558572fedb29c6edba4b46ef37a66d",
+      "lastProcessedDate": "2026-04-24T03:30:44.768835344Z",
+      "totalProcessed": 849,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1502,6 +1502,33 @@
           "deferredAt": "2026-04-22T03:29:12.992451786Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "2b83cf472a6a51733e0d08ed2918a2c53ec27082",
+          "message": "Bug 570029 - [AutoRefactor immigration #54/148] [cleanup \u0026 saveaction] Convert fields into local variables",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-24T03:19:48.771121438Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "921c6bef549bf78c71630c1802b52defe03b1e36",
+          "message": "Bug 570409 - Move switch cleanup to jdt.core.manipulation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-24T03:21:41.417398253Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "12d41031445086f94004a1acc883e6e622fbe8ee",
+          "message": "Bug 571077: [16] Merge master branch to BETA_JAVA16 branch after 570855 for Y-builds",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-24T03:29:13.192765874Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1511,16 +1538,16 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 42,
+        "JDT Internal Refactoring": 48,
         "Code Simplification": 10,
-        "Performance": 15,
+        "Performance": 18,
         "JDT Internal Bug Fix": 13,
-        "Clean-up Bug Fix": 23,
-        "Try-with-Resources": 4,
+        "Clean-up Bug Fix": 32,
+        "Try-with-Resources": 5,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 1,
         "JFace API Modernization": 1,
-        "String-API": 2,
+        "String-API": 4,
         "Java-Modernization": 14,
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
@@ -1528,15 +1555,15 @@
         "Null-Safety": 8,
         "Lambda-Simplification": 3,
         "Architectural Refactoring": 1,
-        "Collections": 8,
+        "Collections": 9,
         "JDT Internal Feature Enhancement": 4,
-        "Clean-up Enhancement": 2,
+        "Clean-up Enhancement": 3,
         "Internal Refactoring": 2,
         "Loop Modernization": 4,
         "JDT UI Bug Fix": 1,
         "Type Inference": 1,
         "Architecture Migration": 1,
-        "Code Style": 13,
+        "Code Style": 15,
         "Eclipse API Configuration": 5,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
@@ -1572,15 +1599,17 @@
         "Quick Fix Enhancement": 1,
         "Unnecessary Code": 1,
         "Correctness": 2,
-        "Code Correctness": 1,
+        "Code Correctness": 3,
         "Code Structure Simplification": 5,
-        "Concurrency": 1,
+        "Concurrency": 2,
         "Bug Fix": 1,
         "New Cleanup": 1,
-        "Logical Simplification": 4,
+        "Logical Simplification": 5,
         "UI Bug Fix": 3,
         "Eclipse API Modernization": 1,
-        "Eclipse API Evolution": 1
+        "Eclipse API Evolution": 1,
+        "Control Flow Simplification": 2,
+        "Lambda Simplification": 2
       },
       "exhaustedCategories": []
     },
@@ -1621,5 +1650,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23396
+  "globalTotalProcessed": 23484
 }

@@ -171,3 +171,78 @@ new java.lang.Byte($number).toString()
 ((java.lang.Byte) $number).toString()
 => java.lang.Byte.toString($number)
 ;;
+
+@id: performance.primitive.valueofstring.to.parseint
+java.lang.Integer.valueOf($str)
+=> java.lang.Integer.parseInt($str)
+;;
+
+@id: performance.primitive.valueofstring.to.parselong
+java.lang.Long.valueOf($str)
+=> java.lang.Long.parseLong($str)
+;;
+
+@id: performance.primitive.valueofstring.to.parseshort
+java.lang.Short.valueOf($str)
+=> java.lang.Short.parseShort($str)
+;;
+
+@id: performance.primitive.valueofstring.to.parsebyte
+java.lang.Byte.valueOf($str)
+=> java.lang.Byte.parseByte($str)
+;;
+
+@id: performance.primitive.valueofstring.to.parsefloat
+java.lang.Float.valueOf($str)
+=> java.lang.Float.parseFloat($str)
+;;
+
+@id: performance.primitive.valueofstring.to.parsedouble
+java.lang.Double.valueOf($str)
+=> java.lang.Double.parseDouble($str)
+;;
+
+@id: performance.primitive.valueofstring.to.parseboolean
+java.lang.Boolean.valueOf($str)
+=> java.lang.Boolean.parseBoolean($str)
+;;
+
+@id: performance.primitive.valueofprimitive.to.primitive.int
+java.lang.Integer.valueOf($i) :: instanceof($i, "int")
+=> $i
+;;
+
+@id: performance.primitive.valueofprimitive.to.primitive.long
+java.lang.Long.valueOf($l) :: instanceof($l, "long")
+=> $l
+;;
+
+@id: performance.primitive.valueofprimitive.to.primitive.short
+java.lang.Short.valueOf($s) :: instanceof($s, "short")
+=> $s
+;;
+
+@id: performance.primitive.valueofprimitive.to.primitive.byte
+java.lang.Byte.valueOf($b) :: instanceof($b, "byte")
+=> $b
+;;
+
+@id: performance.primitive.valueofprimitive.to.primitive.float
+java.lang.Float.valueOf($f) :: instanceof($f, "float")
+=> $f
+;;
+
+@id: performance.primitive.valueofprimitive.to.primitive.double
+java.lang.Double.valueOf($d) :: instanceof($d, "double")
+=> $d
+;;
+
+@id: performance.primitive.valueofprimitive.to.primitive.char
+java.lang.Character.valueOf($c) :: instanceof($c, "char")
+=> $c
+;;
+
+@id: performance.primitive.valueofprimitive.to.primitive.boolean
+java.lang.Boolean.valueOf($b) :: instanceof($b, "boolean")
+=> $b
+;;
