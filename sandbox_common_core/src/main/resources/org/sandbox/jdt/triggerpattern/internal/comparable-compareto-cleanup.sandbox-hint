@@ -1,0 +1,15 @@
+$x.compareTo($y) == 1 :: instanceof($x, "java.lang.Comparable")
+=> $x.compareTo($y) > 0
+;;
+
+$x.compareTo($y) == -1 :: instanceof($x, "java.lang.Comparable")
+=> $x.compareTo($y) < 0
+;;
+
+$x.compareTo($y) != 1 :: instanceof($x, "java.lang.Comparable")
+=> $x.compareTo($y) <= 0
+;;
+
+$x.compareTo($y) != -1 :: instanceof($x, "java.lang.Comparable")
+=> $x.compareTo($y) >= 0
+;;

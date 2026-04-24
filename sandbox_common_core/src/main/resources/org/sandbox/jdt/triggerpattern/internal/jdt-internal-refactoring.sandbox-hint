@@ -1116,3 +1116,95 @@ $type.getCompilationUnit() != null && !$type.isInterface() && !$type.isEnum() &&
 org.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor.isPreviewFeatureEnabled($javaProject) :: sourceVersionGE(16)
 => org.eclipse.jdt.internal.corext.util.JavaModelUtil.is16OrHigher($javaProject)
 ;;
+
+@id: jdt.internal.semantichighlighting.restrictedkeywords.to.restrictedidentifiers.type
+@severity: info
+org.eclipse.jdt.internal.ui.javaeditor.SemanticHighlightings.RestrictedKeywordsHighlighting
+=> org.eclipse.jdt.internal.ui.javaeditor.SemanticHighlightings.RestrictedIdentifiersHighlighting
+;;
+
+@id: jdt.internal.semantichighlighting.restrictedkeywords.to.restrictedidentifiers.nlskey
+@severity: info
+org.eclipse.jdt.internal.ui.preferences.PreferencesMessages.JavaEditorPreferencePage_restrictedKeywords
+=> org.eclipse.jdt.internal.ui.javaeditor.JavaEditorMessages.SemanticHighlighting_restrictedIdentifiers
+;;
+
+getParent($assignment, org.eclipse.jdt.core.dom.ParenthesizedExpression.class)
+:: inClass("org.eclipse.jdt.internal.ui.fix.PullUpAssignmentCleanUp")
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.getHighestCompatibleNode($assignment, org.eclipse.jdt.core.dom.ParenthesizedExpression.class)
+;;
+
+@id: jdt.internal.completionproposal.add-context-args
+@severity: info
+new org.eclipse.jdt.ui.text.java.JavaCompletionProposal($completion, $start, $length, $image, $label, $relevance)
+=> new org.eclipse.jdt.ui.text.java.JavaCompletionProposal($completion, $start, $length, $image, $label, $relevance, false, getInvocationContext())
+;;
+
+fName :: inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.RemoveDeclarationCorrectionProposal")
+=> fSimpleName
+;;
+
+PACKAGE :: inClass("org.eclipse.jdt.ui.wizards.NewPackageWizardPage")
+=> PACKAGE_NAME
+;;
+
+fPackageStatus :: inClass("org.eclipse.jdt.ui.wizards.NewPackageWizardPage")
+=> fPackageNameStatus
+;;
+
+@id: jdt.internal.cleanup.staticinnerclass.nullcheck
+@severity: error
+!org.eclipse.jdt.internal.corext.dom.ASTNodes.isParent($declaration, $innerClass)
+=> $declaration == null || !org.eclipse.jdt.internal.corext.dom.ASTNodes.isParent($declaration, $innerClass)
+;;
+
+@id: jdt.internal.generatenewconstructorusingfieldsaction.preventrecord
+@severity: info
+$type.getCompilationUnit() != null && !$type.isInterface() && !$type.isAnnotation() && !$type.isAnonymous() :: instanceof($type, "org.eclipse.jdt.core.IType") && sourceVersionGE(16)
+=> $type.getCompilationUnit() != null && !$type.isInterface() && !$type.isAnnotation() && !$type.isAnonymous() && !$type.isRecord()
+;;
+
+/*!id: jdt.internal.compilationunit.getoptions.insteadof.javaproject.getoptions*/
+/*!description: Modernize internal JDT API calls to retrieve options directly from ICompilationUnit instead of IJavaProject.*/
+/*!severity: info*/
+$cu.getJavaProject().getOptions($arg) :: instanceof($cu, "org.eclipse.jdt.core.ICompilationUnit")
+=> $cu.getOptions($arg)
+;;
+
+/*!id: jdt.internal.javapreferencessettings.codegenerationsettings.cuarg*/
+/*!description: Update JavaPreferencesSettings.getCodeGenerationSettings to accept ICompilationUnit directly instead of IJavaProject.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.codemanipulation.CodeGenerationSettings($cu.getJavaProject())
+:: instanceof($cu, "org.eclipse.jdt.core.ICompilationUnit")
+=> org.eclipse.jdt.internal.corext.codemanipulation.CodeGenerationSettings($cu)
+;;
+
+/*!id: jdt.internal.strings.getindentstring.cuarg*/
+/*!description: Update Strings.getIndentString to accept ICompilationUnit directly instead of IJavaProject for indentation calculations.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.java.Strings.getIndentString($lineContent, $cu.getJavaProject())
+:: instanceof($cu, "org.eclipse.jdt.core.ICompilationUnit")
+=> org.eclipse.jdt.internal.ui.java.Strings.getIndentString($lineContent, $cu)
+;;
+
+/*!id: jdt.internal.strings.changeindent.cuarg*/
+/*!description: Update Strings.changeIndent to accept ICompilationUnit directly instead of IJavaProject for indentation adjustments.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.java.Strings.changeIndent($str, $val, $cu.getJavaProject(), $indent, $delim)
+:: instanceof($cu, "org.eclipse.jdt.core.ICompilationUnit")
+=> org.eclipse.jdt.internal.ui.java.Strings.changeIndent($str, $val, $cu, $indent, $delim)
+;;
+
+/*!id: jdt.internal.codeformatterutil.getindentwidth.nullcast*/
+/*!description: Add explicit (IJavaProject) cast to null argument in CodeFormatterUtil.getIndentWidth to clarify API usage.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getIndentWidth(null)
+=> org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getIndentWidth((org.eclipse.jdt.core.IJavaProject)null)
+;;
+
+/*!id: jdt.internal.codeformatterutil.gettabwidth.nullcast*/
+/*!description: Add explicit (IJavaProject) cast to null argument in CodeFormatterUtil.getTabWidth to clarify API usage.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getTabWidth(null)
+=> org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getTabWidth((org.eclipse.jdt.core.IJavaProject)null)
+;;
