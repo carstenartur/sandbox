@@ -1,51 +1,47 @@
 {
-  "totalProcessed": 39,
-  "relevant": 33,
-  "irrelevant": 6,
-  "duplicates": 2,
-  "green": 12,
-  "yellow": 2,
-  "red": 19,
+  "totalProcessed": 41,
+  "relevant": 39,
+  "irrelevant": 2,
+  "duplicates": 6,
+  "green": 9,
+  "yellow": 5,
+  "red": 25,
   "irrelevantReasons": {
-    "The commit updates a Javadoc comment to reflect a change in the minimum AST API level supported from JLS15 to JLS16. This is a documentation change, not a code transformation pattern suitable for the TriggerPattern DSL.": 1,
-    "Changes UI text in a properties file, not Java code transformation.": 1,
-    "This commit re-enables an existing JDT cleanup feature (Pattern Matching for Instanceof) and modifies its internal implementation logic and UI configuration. It does not introduce new generalizable code transformation patterns for user code. Changes like removing `final` from a local variable are within a preview string, not actual code being transformed. Modifications to the `maybeMatchPattern` method are internal logic changes for the cleanup itself to decide *when* to apply its fix, rather than patterns to be applied by the DSL.": 1,
-    "This commit involves a highly localized renaming of a local variable and updating its cast within a specific method. This is a refactoring action that affects identifiers within a very narrow scope and is not a generalizable code transformation pattern suitable for the DSL. The commit message mentioning \u0027Java 8 features\u0027 is misleading for this specific diff.": 1,
-    "This commit adds new control flow, including variable declarations, conditional statements (\u0027if\u0027 blocks), and \u0027for\u0027 loops, to address a UI-specific bug. The DSL is not designed to insert arbitrary blocks of statements or control flow logic into existing code. It focuses on pattern matching and replacement of expressions or simple statement structures.": 1,
-    "This commit introduces a new UI tab for existing JDT cleanups and moves their configuration. It involves UI/preference refactoring, NLS string constant declarations, and class instantiation/registration changes. It does not introduce any new code transformation patterns or modify existing transformation logic directly. The DSL is not designed for UI/architectural refactorings or managing NLS constants.": 1
+    "This commit modifies NLS message keys in a `.properties` file, which are externalized strings for UI text. The TriggerPattern DSL is designed for Java code transformations, not for text changes in properties files.": 1,
+    "The commit adds new navigation functionality to the Eclipse JDT UI (Jump to Enum Constructor), not a code transformation pattern. It introduces a new internal class for AST analysis and updates existing UI components to use it.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 39,
-      "relevant": 33,
-      "green": 12,
-      "yellow": 2,
-      "red": 19
+      "totalProcessed": 41,
+      "relevant": 39,
+      "green": 9,
+      "yellow": 5,
+      "red": 25
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-24",
-      "processed": 39,
-      "relevant": 33
+      "date": "2026-04-25",
+      "processed": 41,
+      "relevant": 39
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-24T03:10:42.018Z",
-    "completedAt": "2026-04-24T03:30:46.008400105Z",
-    "durationSeconds": 1203,
+    "startedAt": "2026-04-25T03:08:37.569Z",
+    "completedAt": "2026-04-25T03:27:33.406796414Z",
+    "durationSeconds": 1135,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 160,
+    "deferredCommits": 161,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-24T03:12:52.765970255Z",
-    "latestEvaluation": "2026-04-24T03:30:44.767234845Z",
-    "earliestCommitDate": "2020-10-14T21:04:51Z",
-    "latestCommitDate": "2021-02-07T12:24:25Z"
+    "earliestEvaluation": "2026-04-25T03:10:36.081867070Z",
+    "latestEvaluation": "2026-04-25T03:27:32.117939966Z",
+    "earliestCommitDate": "2020-11-10T21:39:14Z",
+    "latestCommitDate": "2021-03-30T10:37:24Z"
   }
 }
