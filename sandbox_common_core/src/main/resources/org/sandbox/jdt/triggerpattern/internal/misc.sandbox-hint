@@ -36,3 +36,7 @@ $x.toString()
 !($a && $b)
 => !$a || !$b
 ;;
+
+$threadLocalVar.set(null) :: instanceof($threadLocalVar, "java.lang.ThreadLocal")
+=> $threadLocalVar.remove()
+;;

@@ -1208,3 +1208,43 @@ org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getIndentWidth(null)
 org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getTabWidth(null)
 => org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getTabWidth((org.eclipse.jdt.core.IJavaProject)null)
 ;;
+
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$importRewrite.addImport($type)
+=> $importRewrite.addImport((($type.getBound() != null && !$type.isUpperbound()) ? $type.getBound() : $type.getErasure()))
+;;
+
+@id: jdt.internal.quickfix.unresolvedelements.binding-null-switchcase
+@severity: error
+$binding == null
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.UnresolvedElementsSubProcessor") && sourceVersionGE(14)
+=> $binding == null && !($simpleName.getParent() instanceof org.eclipse.jdt.core.dom.SwitchCase)
+;;
+
+@id: jdt.internal.quickfix.unresolvedelements.mustbeconst-switchcase
+@severity: error
+org.eclipse.jdt.internal.ui.text.correction.ASTResolving.isInsideModifiers($simpleName)
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.UnresolvedElementsSubProcessor") && sourceVersionGE(14)
+=> org.eclipse.jdt.internal.ui.text.correction.ASTResolving.isInsideModifiers($simpleName) || ($simpleName.getParent() instanceof org.eclipse.jdt.core.dom.SwitchCase)
+;;
+
+@id: jdt.internal.asthelper.jls10.to.ast.jls10.revert
+@severity: info
+org.eclipse.jdt.internal.ui.util.ASTHelper.JLS10
+=> org.eclipse.jdt.core.dom.AST.JLS10
+;;
+
+@id: jdt.internal.asthelper.jls8.to.ast.jls8.revert
+@severity: info
+org.eclipse.jdt.internal.ui.util.ASTHelper.JLS8
+=> org.eclipse.jdt.core.dom.AST.JLS8
+;;
+
+@id: jdt.internal.asthelper.jls9.to.ast.jls9.revert
+@severity: info
+org.eclipse.jdt.internal.ui.util.ASTHelper.JLS9
+=> org.eclipse.jdt.core.dom.AST.JLS9
+;;
+
+org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.JavaFeatureTabPage_GroupName_Java15
+=> org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.JavaFeatureTabPage_GroupName_Java16
+;;
