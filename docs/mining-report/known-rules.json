@@ -2442,6 +2442,94 @@
       "sourceCommit": "7e1bdce0b2558572fedb29c6edba4b46ef37a66d",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-an-internal-jdt-cl",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$importRewrite.addImport($type)\n\u003d\u003e $importRewrite.addImport((($type.getBound() !\u003d null \u0026\u0026 !$type.isUpperbound()) ? $type.getBound() : $type.getErasure()))\n;;",
+      "summary": "This commit refactors an internal JDT cleanup\u0027s logic for generating class name text from an ITypeBinding. It replaces a simple `importRewrite.addImport(type)` call with a more complex ternary expression that correctly resolves the lower bound of a type binding, handling cases with type bounds and upper bounds. This is a direct 1:1 expression replacement within a method argument. The TriggerPattern DSL supports such replacements, including nested method calls on bound placeholders and ternary operators, making this a GREEN transformation. The rule improves the correctness of the internal cleanup\u0027s generated code.",
+      "discoveredAt": "2026-04-25",
+      "discoveredInRun": 23556,
+      "sourceCommit": "49b812ece4ded367e89f74bcac330a04145ed607",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-bug-571661-an-arrayind",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "@id: jdt.internal.quickfix.unresolvedelements.binding-null-switchcase\n@severity: error\n$binding \u003d\u003d null\n:: inClass(\"org.eclipse.jdt.internal.ui.text.correction.UnresolvedElementsSubProcessor\") \u0026\u0026 sourceVersionGE(14)\n\u003d\u003e $binding \u003d\u003d null \u0026\u0026 !($simpleName.getParent() instanceof org.eclipse.jdt.core.dom.SwitchCase)\n;;\n\n@id: jdt.internal.quickfix.unresolvedelements.mustbeconst-switchcase\n@severity: error\norg.eclipse.jdt.internal.ui.text.correction.ASTResolving.isInsideModifiers($simpleName)\n:: inClass(\"org.eclipse.jdt.internal.ui.text.correction.UnresolvedElementsSubProcessor\") \u0026\u0026 sourceVersionGE(14)\n\u003d\u003e org.eclipse.jdt.internal.ui.text.correction.ASTResolving.isInsideModifiers($simpleName) || ($simpleName.getParent() instanceof org.eclipse.jdt.core.dom.SwitchCase)\n;;",
+      "summary": "This commit fixes Bug 571661, an `ArrayIndexOutOfBoundsException` (AIOOBE) in JDT\u0027s \u0027Create Local Variable\u0027 quick fix. It modifies two boolean expressions in `UnresolvedElementsSubProcessor.java` to prevent proposals for local variables when the `SimpleName` is within a `SwitchCase` (a feature of Java 14+). The fix is implemented by inlining the logic of a newly introduced private helper method (`isParentSwitchCase`) into the conditional expressions. This direct modification of boolean expressions, including `getParent()` and `instanceof` checks, is fully supported by the TriggerPattern DSL. Two separate rules are generated to cover each modified expression, guarded by `sourceVersionGE(14)` to align with Switch Expressions\u0027 introduction.",
+      "discoveredAt": "2026-04-25",
+      "discoveredInRun": 23556,
+      "sourceCommit": "0acd3b8242feaa730f370a5920076f8e90a6f6ac",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-is-a-revert-of-a-previous-me",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.asthelper.jls10.to.ast.jls10.revert\n@severity: info\norg.eclipse.jdt.internal.ui.util.ASTHelper.JLS10\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS10\n;;\n\n@id: jdt.internal.asthelper.jls8.to.ast.jls8.revert\n@severity: info\norg.eclipse.jdt.internal.ui.util.ASTHelper.JLS8\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS8\n;;\n\n@id: jdt.internal.asthelper.jls9.to.ast.jls9.revert\n@severity: info\norg.eclipse.jdt.internal.ui.util.ASTHelper.JLS9\n\u003d\u003e org.eclipse.jdt.core.dom.AST.JLS9\n;;",
+      "summary": "This commit is a revert of a previous merge, primarily undoing the replacement of `AST.JLSX` constants with `ASTHelper.JLSX` within internal JDT UI code (e.g., `RenameJavaElementAction`, `SemanticHighlightingReconciler`). The original change aimed to consolidate AST level constants. This revert commit systematically replaces `org.eclipse.jdt.internal.ui.util.ASTHelper.JLSX` back to `org.eclipse.jdt.core.dom.AST.JLSX` for JLS8, JLS9, and JLS10. These are direct 1:1 constant replacements, fully expressible as GREEN TriggerPattern DSL rules. Multiple rules are generated to cover each JLS constant, effectively reversing previously proposed modernization rules. Other changes in the commit, such as complex `if` condition rewrites or structural AST node creation changes, are not suitable for the DSL.",
+      "discoveredAt": "2026-04-25",
+      "discoveredInRun": 23556,
+      "sourceCommit": "a3acba211e5d3f22abff8e6dc9517afa2b1f3d46",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "code-style-this-commit-introduces-a-new-jdt-cleanup",
+      "category": "Code Style",
+      "dslRule": "new $Type[] { $elements$ }\n\u003d\u003e { $elements$ }\n;;\n\nnew $Type[][] { $elements$ }\n\u003d\u003e { $elements$ }\n;;\n\nnew $Type[][][] { $elements$ }\n\u003d\u003e { $elements$ }\n;;",
+      "summary": "This commit introduces a new JDT cleanup `ArrayWithCurlyCleanUp` to replace explicit array creation syntax (`new Type[] { ... }`) with the concise curly brace initializer (`{ ... }`) when possible. This is a common code style modernization that improves readability. The pattern directly matches `new $Type[] { $elements$ }` and replaces it with `{ $elements$ }`. The DSL can directly implement this as a GREEN rule. While the Java cleanup explicitly checks for \u0027initialization of a declaration\u0027 and \u0027same type\u0027, the DSL\u0027s matching `new $Type[]` as the RHS of an assignment to a variable of type `$Type[]` implicitly handles this. To cover multi-dimensional arrays, additional rules are added for `new $Type[][]` and `new $Type[][][]`. No `sourceVersionGE` guard is needed as this is a general Java syntax feature.",
+      "discoveredAt": "2026-04-25",
+      "discoveredInRun": 23556,
+      "sourceCommit": "3a5ac3a051328007586bd11bac67419fc60c65fc",
+      "status": "DISCOVERED",
+      "hintFile": "array-initialization.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-this-commit-introduces-a-new-cleanup-to",
+      "category": "Java-Modernization",
+      "dslRule": "java.lang.Class.$Type.isInstance($object)\n\u003d\u003e $object instanceof $Type\n;;",
+      "summary": "This commit introduces a new cleanup to replace calls to `Class.isInstance(obj)` with the `instanceof` operator (`obj instanceof Type`). This is a standard modernization pattern that improves code readability and conciseness, avoiding reflection overhead when a static type check is sufficient. The transformation is a direct 1:1 expression replacement and is fully implementable as a GREEN TriggerPattern DSL rule using type placeholders for `Class` literals and general expressions for the object argument. No specific `sourceVersionGE` guard is needed as `instanceof` is a fundamental Java feature available since Java 1.0.",
+      "discoveredAt": "2026-04-25",
+      "discoveredInRun": 23556,
+      "sourceCommit": "ba27bd8dacd2937f19889dccbf871bcf64f63e39",
+      "status": "DISCOVERED",
+      "hintFile": "code-style.sandbox-hint"
+    },
+    {
+      "id": "deprecation-this-commit-introduces-a-java-based-clea",
+      "category": "Deprecation",
+      "dslRule": "@id: deprecation.wrapper.constructor.to.valueof.double.primitive\n@severity: info\nnew java.lang.Double($x) :: instanceof($x, \"double\")\n\u003d\u003e java.lang.Double.valueOf($x)\n;;\n\n@id: deprecation.wrapper.constructor.to.valueof.float.primitive\n@severity: info\nnew java.lang.Float($x) :: instanceof($x, \"float\")\n\u003d\u003e java.lang.Float.valueOf($x)\n;;\n\n@id: deprecation.wrapper.constructor.to.valueof.float.doublearg\n@severity: info\nnew java.lang.Float($x) :: instanceof($x, \"double\")\n\u003d\u003e java.lang.Float.valueOf((float)$x)\n;;\n\n@id: deprecation.wrapper.constructor.to.valueof.byte.string\n@severity: info\nnew java.lang.Byte($str) :: isStringLiteral($str)\n\u003d\u003e java.lang.Byte.valueOf($str)\n;;\n\n@id: deprecation.wrapper.constructor.to.valueof.boolean.string\n@severity: info\nnew java.lang.Boolean($str) :: isStringLiteral($str)\n\u003d\u003e java.lang.Boolean.valueOf($str)\n;;\n\n@id: deprecation.wrapper.constructor.to.primitive.byte\n@severity: info\nbyte $var \u003d new java.lang.Byte($val);\n\u003d\u003e byte $var \u003d $val;\n;;",
+      "summary": "This commit introduces a Java-based cleanup that replaces primitive wrapper constructors (`new WrapperType(...)`) with their `valueOf()` static factory methods. While many such transformations (e.g., for `Integer`, `Boolean` with primitive args) are already covered by existing DSL rules or prior proposals, new rules are identified for `new Double(double)`, `new Float(float)`, and `new Float(double)` (with an explicit cast). Additionally, rules for `new Byte(String)` and `new Boolean(String)` are proposed to use `valueOf(String)` to align with the commit\u0027s title, even though `parseXxx(String)` rules already exist in `deprecations.sandbox-hint` (representing a semantic preference for returning wrapper objects). A specific pattern to simplify `byte var \u003d new Byte((byte)0);` to `byte var \u003d (byte)0;` by removing redundant boxing for primitive assignments is also included. All these new patterns are direct expression/declaration replacements, improving performance and addressing deprecated API usage, and are fully implementable as GREEN TriggerPattern DSL rules.",
+      "discoveredAt": "2026-04-25",
+      "discoveredInRun": 23556,
+      "sourceCommit": "670d3f49634b1190d8aec209b266b97c560f11ef",
+      "status": "DISCOVERED",
+      "hintFile": "deprecated-api.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-this-commit-replaces-threadlocal-set-nul",
+      "category": "Java-Modernization",
+      "dslRule": "$threadLocalVar.set(null) :: instanceof($threadLocalVar, \"java.lang.ThreadLocal\")\n\u003d\u003e $threadLocalVar.remove()\n;;",
+      "summary": "This commit replaces `ThreadLocal.set(null)` with `ThreadLocal.remove()`. The `remove()` method is the correct API to discard cached information and prevent memory leaks, while `set(null)` still maintains a reference to the current thread. This is a straightforward, semantically correct 1:1 method call replacement, fully supported by the TriggerPattern DSL. The rule is guarded by `instanceof($threadLocalVar, \"java.lang.ThreadLocal\")` to ensure precision. No `sourceVersionGE` guard is needed as `ThreadLocal.remove()` has existed since Java 5, well before the Java 8 baseline.",
+      "discoveredAt": "2026-04-25",
+      "discoveredInRun": 23556,
+      "sourceCommit": "083e787a0b160748f93cd73b93d022d94e709e67",
+      "status": "DISCOVERED",
+      "hintFile": "misc.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-internal-jdt-ui-code",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.JavaFeatureTabPage_GroupName_Java15\n\u003d\u003e org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.JavaFeatureTabPage_GroupName_Java16\n;;",
+      "summary": "This commit updates internal JDT UI code to reflect the promotion of Pattern Matching for instanceof from Java 15 preview to Java 16 standard. The transformation involves renaming an NLS group constant from `CleanUpMessages.JavaFeatureTabPage_GroupName_Java15` to `CleanUpMessages.JavaFeatureTabPage_GroupName_Java16` at its usage sites. This is a direct, unconditional 1:1 replacement of a static field reference, fully implementable as a GREEN TriggerPattern DSL rule. Other changes involve resource file updates (not handled by DSL) and local variable renames (not generalized by DSL for this context). No `sourceVersionGE` guard is needed as this is an internal JDT refactoring.",
+      "discoveredAt": "2026-04-25",
+      "discoveredInRun": 23556,
+      "sourceCommit": "6392006434321264cf0513a501e25648096c2570",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

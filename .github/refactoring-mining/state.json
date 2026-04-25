@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "7e1bdce0b2558572fedb29c6edba4b46ef37a66d",
-      "lastProcessedDate": "2026-04-24T03:30:44.768835344Z",
-      "totalProcessed": 849,
+      "lastProcessedCommit": "e68681d355907f63d8e0a78914ade9e5ac88e930",
+      "lastProcessedDate": "2026-04-25T03:27:32.118455761Z",
+      "totalProcessed": 921,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1529,6 +1529,15 @@
           "deferredAt": "2026-04-24T03:29:13.192765874Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "37e4e7677ea4b1a03dae29db41f814a32822eb26",
+          "message": "Bug 571859 - \"Split variable declaration\" does not work with \"var\"\ndeclarations\n\nChange-Id: I53868f21e5e9d195bdea3e31233",
+          "diffLines": 113,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-25T03:23:28.241129704Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1538,21 +1547,21 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 48,
+        "JDT Internal Refactoring": 59,
         "Code Simplification": 10,
         "Performance": 18,
-        "JDT Internal Bug Fix": 13,
-        "Clean-up Bug Fix": 32,
-        "Try-with-Resources": 5,
+        "JDT Internal Bug Fix": 17,
+        "Clean-up Bug Fix": 40,
+        "Try-with-Resources": 6,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 1,
         "JFace API Modernization": 1,
-        "String-API": 4,
-        "Java-Modernization": 14,
+        "String-API": 6,
+        "Java-Modernization": 16,
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
-        "Null-Safety": 8,
+        "Null-Safety": 9,
         "Lambda-Simplification": 3,
         "Architectural Refactoring": 1,
         "Collections": 9,
@@ -1563,7 +1572,7 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 1,
         "Architecture Migration": 1,
-        "Code Style": 15,
+        "Code Style": 18,
         "Eclipse API Configuration": 5,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
@@ -1598,18 +1607,22 @@
         "Dead Code Removal": 4,
         "Quick Fix Enhancement": 1,
         "Unnecessary Code": 1,
-        "Correctness": 2,
+        "Correctness": 3,
         "Code Correctness": 3,
         "Code Structure Simplification": 5,
         "Concurrency": 2,
         "Bug Fix": 1,
         "New Cleanup": 1,
-        "Logical Simplification": 5,
+        "Logical Simplification": 6,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 1,
+        "Eclipse API Modernization": 2,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 2,
-        "Lambda Simplification": 2
+        "Lambda Simplification": 2,
+        "Eclipse UI Bug Fix": 1,
+        "Concurrency / Null-Safety": 1,
+        "Deprecation": 1,
+        "Clean-up Refactoring": 1
       },
       "exhaustedCategories": []
     },
@@ -1650,5 +1663,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23484
+  "globalTotalProcessed": 23556
 }
