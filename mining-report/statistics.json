@@ -1,47 +1,12 @@
 {
-  "totalProcessed": 41,
-  "relevant": 39,
-  "irrelevant": 2,
-  "duplicates": 6,
-  "green": 9,
-  "yellow": 5,
-  "red": 25,
-  "irrelevantReasons": {
-    "This commit modifies NLS message keys in a `.properties` file, which are externalized strings for UI text. The TriggerPattern DSL is designed for Java code transformations, not for text changes in properties files.": 1,
-    "The commit adds new navigation functionality to the Eclipse JDT UI (Jump to Enum Constructor), not a code transformation pattern. It introduces a new internal class for AST analysis and updates existing UI components to use it.": 1
-  },
-  "perRepository": {
-    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 41,
-      "relevant": 39,
-      "green": 9,
-      "yellow": 5,
-      "red": 25
-    }
-  },
-  "dailyProgress": [
-    {
-      "date": "2026-04-25",
-      "processed": 41,
-      "relevant": 39
-    }
-  ],
-  "runMetadata": {
-    "startedAt": "2026-04-25T03:08:37.569Z",
-    "completedAt": "2026-04-25T03:27:33.406796414Z",
-    "durationSeconds": 1135,
-    "llmProvider": "GeminiClient",
-    "llmModel": "gemini-2.5-flash",
-    "batchSize": 200,
-    "commitsPerRequest": 4,
-    "apiCallsMade": 18,
-    "deferredCommits": 161,
-    "permanentlySkipped": 0
-  },
-  "timeWindow": {
-    "earliestEvaluation": "2026-04-25T03:10:36.081867070Z",
-    "latestEvaluation": "2026-04-25T03:27:32.117939966Z",
-    "earliestCommitDate": "2020-11-10T21:39:14Z",
-    "latestCommitDate": "2021-03-30T10:37:24Z"
-  }
+  "totalProcessed": 0,
+  "relevant": 0,
+  "irrelevant": 0,
+  "duplicates": 0,
+  "green": 0,
+  "yellow": 0,
+  "red": 0,
+  "irrelevantReasons": {},
+  "perRepository": {},
+  "dailyProgress": []
 }
