@@ -1,12 +1,46 @@
 {
-  "totalProcessed": 0,
-  "relevant": 0,
-  "irrelevant": 0,
-  "duplicates": 0,
-  "green": 0,
+  "totalProcessed": 24,
+  "relevant": 23,
+  "irrelevant": 1,
+  "duplicates": 3,
+  "green": 4,
   "yellow": 0,
-  "red": 0,
-  "irrelevantReasons": {},
-  "perRepository": {},
-  "dailyProgress": []
+  "red": 18,
+  "irrelevantReasons": {
+    "This commit is a typo fix in an NLS message string, not a code transformation pattern affecting Java source code logic.": 1
+  },
+  "perRepository": {
+    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
+      "totalProcessed": 24,
+      "relevant": 23,
+      "green": 4,
+      "yellow": 0,
+      "red": 18
+    }
+  },
+  "dailyProgress": [
+    {
+      "date": "2026-04-27",
+      "processed": 24,
+      "relevant": 23
+    }
+  ],
+  "runMetadata": {
+    "startedAt": "2026-04-27T03:12:06.896Z",
+    "completedAt": "2026-04-27T03:34:14.222526546Z",
+    "durationSeconds": 1327,
+    "llmProvider": "GeminiClient",
+    "llmModel": "gemini-2.5-flash",
+    "batchSize": 200,
+    "commitsPerRequest": 4,
+    "apiCallsMade": 18,
+    "deferredCommits": 164,
+    "permanentlySkipped": 0
+  },
+  "timeWindow": {
+    "earliestEvaluation": "2026-04-27T03:14:11.898192134Z",
+    "latestEvaluation": "2026-04-27T03:34:13.166309323Z",
+    "earliestCommitDate": "2021-04-23T18:57:16Z",
+    "latestCommitDate": "2021-07-02T08:50:03Z"
+  }
 }
