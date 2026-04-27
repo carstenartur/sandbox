@@ -246,3 +246,67 @@ java.lang.Character.valueOf($c) :: instanceof($c, "char")
 java.lang.Boolean.valueOf($b) :: instanceof($b, "boolean")
 => $b
 ;;
+
+<!id: wrapper.to.primitive.Boolean.declaration>
+<!description: Replace Boolean wrapper local variable declaration with boolean primitive type if initializer is non-null and subsequent usages are compatible.>
+<!severity: info>
+java.lang.Boolean $var = $init;
+:: isAssignedToLocalVariable() && isNonNull($init)
+=> boolean $var = $init;
+;;
+
+<!id: wrapper.to.primitive.Byte.declaration>
+<!description: Replace Byte wrapper local variable declaration with byte primitive type if initializer is non-null and subsequent usages are compatible.>
+<!severity: info>
+java.lang.Byte $var = $init;
+:: isAssignedToLocalVariable() && isNonNull($init)
+=> byte $var = $init;
+;;
+
+<!id: wrapper.to.primitive.Short.declaration>
+<!description: Replace Short wrapper local variable declaration with short primitive type if initializer is non-null and subsequent usages are compatible.>
+<!severity: info>
+java.lang.Short $var = $init;
+:: isAssignedToLocalVariable() && isNonNull($init)
+=> short $var = $init;
+;;
+
+<!id: wrapper.to.primitive.Character.declaration>
+<!description: Replace Character wrapper local variable declaration with char primitive type if initializer is non-null and subsequent usages are compatible.>
+<!severity: info>
+java.lang.Character $var = $init;
+:: isAssignedToLocalVariable() && isNonNull($init)
+=> char $var = $init;
+;;
+
+<!id: wrapper.to.primitive.Integer.declaration>
+<!description: Replace Integer wrapper local variable declaration with int primitive type if initializer is non-null and subsequent usages are compatible.>
+<!severity: info>
+java.lang.Integer $var = $init;
+:: isAssignedToLocalVariable() && isNonNull($init)
+=> int $var = $init;
+;;
+
+<!id: wrapper.to.primitive.Long.declaration>
+<!description: Replace Long wrapper local variable declaration with long primitive type if initializer is non-null and subsequent usages are compatible.>
+<!severity: info>
+java.lang.Long $var = $init;
+:: isAssignedToLocalVariable() && isNonNull($init)
+=> long $var = $init;
+;;
+
+<!id: wrapper.to.primitive.Float.declaration>
+<!description: Replace Float wrapper local variable declaration with float primitive type if initializer is non-null and subsequent usages are compatible.>
+<!severity: info>
+java.lang.Float $var = $init;
+:: isAssignedToLocalVariable() && isNonNull($init)
+=> float $var = $init;
+;;
+
+<!id: wrapper.to.primitive.Double.declaration>
+<!description: Replace Double wrapper local variable declaration with double primitive type if initializer is non-null and subsequent usages are compatible.>
+<!severity: info>
+java.lang.Double $var = $init;
+:: isAssignedToLocalVariable() && isNonNull($init)
+=> double $var = $init;
+;;
