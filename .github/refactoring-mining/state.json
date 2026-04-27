@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "9ea81bea9a97d10480591d8322ab9217fd92cb6b",
-      "lastProcessedDate": "2026-04-26T03:23:41.560941106Z",
-      "totalProcessed": 969,
+      "lastProcessedCommit": "1b4dfb9040f7c52e52521988722cc9172b9fa6bf",
+      "lastProcessedDate": "2026-04-27T03:34:13.166693038Z",
+      "totalProcessed": 1042,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1538,6 +1538,33 @@
           "deferredAt": "2026-04-25T03:23:28.241129704Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "df6f0abaa8653d7512ded9cb1c94eb5e0025ac8e",
+          "message": "Bug 395216 - [quick fix] Access via object instead of static access",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-27T03:13:29.648489492Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f8b868140341da612bccfae70252b0ece622084d",
+          "message": "Bug 574460 - [cleanup] \"static inner class\" should ignore @Nested tests\n\n- add code to StaticInnerClassCleanUp.createFix",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-27T03:34:00.986335803Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "406d1d9e5a4be6ee21e9c268ddf029f3d88ad0e6",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA17\n\nChange-Id: I9117deab8164467b4387ca44a466e3abe9985985\n",
+          "diffLines": 359,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-27T03:34:00.986413820Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1547,21 +1574,21 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 61,
+        "JDT Internal Refactoring": 62,
         "Code Simplification": 10,
-        "Performance": 23,
-        "JDT Internal Bug Fix": 17,
-        "Clean-up Bug Fix": 46,
+        "Performance": 26,
+        "JDT Internal Bug Fix": 20,
+        "Clean-up Bug Fix": 51,
         "Try-with-Resources": 6,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 1,
         "JFace API Modernization": 1,
-        "String-API": 6,
+        "String-API": 7,
         "Java-Modernization": 17,
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 1,
         "Collection Performance": 1,
-        "Null-Safety": 9,
+        "Null-Safety": 10,
         "Lambda-Simplification": 4,
         "Architectural Refactoring": 1,
         "Collections": 9,
@@ -1570,7 +1597,7 @@
         "Internal Refactoring": 2,
         "Loop Modernization": 4,
         "JDT UI Bug Fix": 1,
-        "Type Inference": 1,
+        "Type Inference": 2,
         "Architecture Migration": 1,
         "Code Style": 21,
         "Eclipse API Configuration": 6,
@@ -1604,11 +1631,11 @@
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 2,
         "Architecture Refactoring": 1,
-        "Dead Code Removal": 4,
-        "Quick Fix Enhancement": 1,
+        "Dead Code Removal": 6,
+        "Quick Fix Enhancement": 3,
         "Unnecessary Code": 1,
         "Correctness": 3,
-        "Code Correctness": 3,
+        "Code Correctness": 4,
         "Code Structure Simplification": 5,
         "Concurrency": 2,
         "Bug Fix": 1,
@@ -1617,13 +1644,14 @@
         "UI Bug Fix": 3,
         "Eclipse API Modernization": 2,
         "Eclipse API Evolution": 1,
-        "Control Flow Simplification": 2,
+        "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
         "Eclipse UI Bug Fix": 1,
         "Concurrency / Null-Safety": 1,
         "Deprecation": 1,
         "Clean-up Refactoring": 1,
-        "Eclipse UI Modernization": 2
+        "Eclipse UI Modernization": 2,
+        "Quick Fix Bug Fix": 2
       },
       "exhaustedCategories": []
     },
@@ -1664,5 +1692,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23604
+  "globalTotalProcessed": 23677
 }
