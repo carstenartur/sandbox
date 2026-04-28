@@ -1248,3 +1248,77 @@ org.eclipse.jdt.internal.ui.util.ASTHelper.JLS9
 org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.JavaFeatureTabPage_GroupName_Java15
 => org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.JavaFeatureTabPage_GroupName_Java16
 ;;
+
+<!map CLEANUP_TAB_NAME_MAPPING: \
+"OptimizationTabPage_GroupName_Optimization" => "PerformanceTabPage_GroupName_Performance", \
+"OptimizationTabPage_CheckboxName_SingleUsedField" => "PerformanceTabPage_CheckboxName_SingleUsedField", \
+"OptimizationTabPage_CheckboxName_BreakLoop" => "PerformanceTabPage_CheckboxName_BreakLoop", \
+"OptimizationTabPage_CheckboxName_DoWhileRatherThanWhile" => "PerformanceTabPage_CheckboxName_DoWhileRatherThanWhile", \
+"OptimizationTabPage_CheckboxName_StaticInnerClass" => "PerformanceTabPage_CheckboxName_StaticInnerClass", \
+"OptimizationTabPage_CheckboxName_StringBuilder" => "PerformanceTabPage_CheckboxName_StringBuilder", \
+"OptimizationTabPage_CheckboxName_PlainReplacement" => "PerformanceTabPage_CheckboxName_PlainReplacement", \
+"OptimizationTabPage_CheckboxName_UseStringIsBlank" => "PerformanceTabPage_CheckboxName_UseStringIsBlank", \
+"OptimizationTabPage_CheckboxName_UseLazyLogicalOperator" => "PerformanceTabPage_CheckboxName_UseLazyLogicalOperator", \
+"OptimizationTabPage_CheckboxName_ValueOfRatherThanInstantiation" => "PerformanceTabPage_CheckboxName_ValueOfRatherThanInstantiation", \
+"OptimizationTabPage_CheckboxName_PrimitiveComparison" => "PerformanceTabPage_CheckboxName_PrimitiveComparison", \
+"OptimizationTabPage_CheckboxName_PrimitiveParsing" => "PerformanceTabPage_CheckboxName_PrimitiveParsing", \
+"OptimizationTabPage_CheckboxName_PrimitiveSerialization" => "PerformanceTabPage_CheckboxName_PrimitiveSerialization", \
+"OptimizationTabPage_CheckboxName_PrimitiveRatherThanWrapper" => "PerformanceTabPage_CheckboxName_PrimitiveRatherThanWrapper", \
+"OptimizationTabPage_CheckboxName_PrecompileRegEx" => "PerformanceTabPage_CheckboxName_PrecompileRegEx", \
+"OptimizationTabPage_CheckboxName_StringBufferToStringBuilder" => "PerformanceTabPage_CheckboxName_StringBufferToStringBuilder", \
+"OptimizationTabPage_CheckboxName_StringBufferToStringBuilderLocalsOnly" => "PerformanceTabPage_CheckboxName_StringBufferToStringBuilderLocalsOnly", \
+"OptimizationTabPage_CheckboxName_NoStringCreation" => "PerformanceTabPage_CheckboxName_NoStringCreation", \
+"OptimizationTabPage_CheckboxName_BooleanLiteral" => "PerformanceTabPage_CheckboxName_BooleanLiteral"\
+>
+
+@id: jdt.internal.cleanup.optimizationtab.rename.messages
+@severity: info
+org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.#{CLEANUP_TAB_NAME_MAPPING}
+=> org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.#{CLEANUP_TAB_NAME_MAPPING_VALUE}
+;;
+
+@id: jdt.internal.cleanup.optimizationtab.rename.class
+@severity: info
+org.eclipse.jdt.internal.ui.preferences.cleanup.OptimizationTabPage
+=> org.eclipse.jdt.internal.ui.preferences.cleanup.PerformanceTabPage
+;;
+
+/*!id: eclipse.jdt.ui.refactoring.rename.add-istextselection-true*/
+/*!description: Updates RefactoringAvailabilityTester.isRenameElementAvailable() calls to include the 'isTextSelection' boolean argument, setting it to 'true' in specific contexts within JDT UI refactoring actions and quick assists.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element)
+:: (inClass("org.eclipse.jdt.internal.ui.refactoring.actions.RenameJavaElementAction") && inMethod("setEnabled")) || inClass("org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor")
+=> org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element, true)
+;;
+
+/*!id: eclipse.jdt.ui.refactoring.rename.add-istextselection-param*/
+/*!description: Updates RefactoringAvailabilityTester.isRenameElementAvailable() calls to include the 'isTextSelection' boolean argument, propagating it from a method parameter in specific contexts within JDT UI refactoring actions.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element)
+:: inClass("org.eclipse.jdt.internal.ui.refactoring.actions.RenameJavaElementAction") && (inMethod("doRun", true) || inMethod("canBeRenamed", true))
+=> org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element, isTextSelection)
+;;
+
+/*!id: eclipse.jdt.ui.refactoring.rename.action.dorun-add-true*/
+/*!description: Updates RenameJavaElementAction.doRun() calls to include a 'true' boolean argument when invoked from RenameRefactoringProposal, reflecting internal API changes for text selection context.*/
+/*!severity: info*/
+$renameAction.doRun()
+:: instanceof($renameAction, "org.eclipse.jdt.internal.ui.refactoring.actions.RenameJavaElementAction") && inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.RenameRefactoringProposal")
+=> $renameAction.doRun(true)
+;;
+
+@id: jdt.internal.text.spelling.spellcheckiterator.addmonitor
+@severity: info
+new org.eclipse.jdt.internal.ui.text.spelling.SpellCheckIterator($document, $region, $locale)
+=> new org.eclipse.jdt.internal.ui.text.spelling.SpellCheckIterator($document, $region, $locale, monitor)
+;;
+
+@id: jdt.internal.text.spelling.propertiesfilespellcheckiterator.addmonitor
+@severity: info
+new org.eclipse.jdt.internal.ui.text.spelling.PropertiesFileSpellCheckIterator($document, $region, $locale)
+=> new org.eclipse.jdt.internal.ui.text.spelling.PropertiesFileSpellCheckIterator($document, $region, $locale, monitor)
+;;
+
+org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_YES
+=> org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_NO
+;;

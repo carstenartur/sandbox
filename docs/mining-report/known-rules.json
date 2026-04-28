@@ -2574,6 +2574,61 @@
       "sourceCommit": "0546fc5e83be43e316727b50b39140d2eb0c44f6",
       "status": "DISCOVERED",
       "hintFile": "stringbuffer-to-stringbuilder.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-renames-ui-labels-and-intern",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "\u003c!map CLEANUP_TAB_NAME_MAPPING: \\\n\"OptimizationTabPage_GroupName_Optimization\" \u003d\u003e \"PerformanceTabPage_GroupName_Performance\", \\\n\"OptimizationTabPage_CheckboxName_SingleUsedField\" \u003d\u003e \"PerformanceTabPage_CheckboxName_SingleUsedField\", \\\n\"OptimizationTabPage_CheckboxName_BreakLoop\" \u003d\u003e \"PerformanceTabPage_CheckboxName_BreakLoop\", \\\n\"OptimizationTabPage_CheckboxName_DoWhileRatherThanWhile\" \u003d\u003e \"PerformanceTabPage_CheckboxName_DoWhileRatherThanWhile\", \\\n\"OptimizationTabPage_CheckboxName_StaticInnerClass\" \u003d\u003e \"PerformanceTabPage_CheckboxName_StaticInnerClass\", \\\n\"OptimizationTabPage_CheckboxName_StringBuilder\" \u003d\u003e \"PerformanceTabPage_CheckboxName_StringBuilder\", \\\n\"OptimizationTabPage_CheckboxName_PlainReplacement\" \u003d\u003e \"PerformanceTabPage_CheckboxName_PlainReplacement\", \\\n\"OptimizationTabPage_CheckboxName_UseStringIsBlank\" \u003d\u003e \"PerformanceTabPage_CheckboxName_UseStringIsBlank\", \\\n\"OptimizationTabPage_CheckboxName_UseLazyLogicalOperator\" \u003d\u003e \"PerformanceTabPage_CheckboxName_UseLazyLogicalOperator\", \\\n\"OptimizationTabPage_CheckboxName_ValueOfRatherThanInstantiation\" \u003d\u003e \"PerformanceTabPage_CheckboxName_ValueOfRatherThanInstantiation\", \\\n\"OptimizationTabPage_CheckboxName_PrimitiveComparison\" \u003d\u003e \"PerformanceTabPage_CheckboxName_PrimitiveComparison\", \\\n\"OptimizationTabPage_CheckboxName_PrimitiveParsing\" \u003d\u003e \"PerformanceTabPage_CheckboxName_PrimitiveParsing\", \\\n\"OptimizationTabPage_CheckboxName_PrimitiveSerialization\" \u003d\u003e \"PerformanceTabPage_CheckboxName_PrimitiveSerialization\", \\\n\"OptimizationTabPage_CheckboxName_PrimitiveRatherThanWrapper\" \u003d\u003e \"PerformanceTabPage_CheckboxName_PrimitiveRatherThanWrapper\", \\\n\"OptimizationTabPage_CheckboxName_PrecompileRegEx\" \u003d\u003e \"PerformanceTabPage_CheckboxName_PrecompileRegEx\", \\\n\"OptimizationTabPage_CheckboxName_StringBufferToStringBuilder\" \u003d\u003e \"PerformanceTabPage_CheckboxName_StringBufferToStringBuilder\", \\\n\"OptimizationTabPage_CheckboxName_StringBufferToStringBuilderLocalsOnly\" \u003d\u003e \"PerformanceTabPage_CheckboxName_StringBufferToStringBuilderLocalsOnly\", \\\n\"OptimizationTabPage_CheckboxName_NoStringCreation\" \u003d\u003e \"PerformanceTabPage_CheckboxName_NoStringCreation\", \\\n\"OptimizationTabPage_CheckboxName_BooleanLiteral\" \u003d\u003e \"PerformanceTabPage_CheckboxName_BooleanLiteral\"\\\n\u003e\n\n@id: jdt.internal.cleanup.optimizationtab.rename.messages\n@severity: info\norg.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.#{CLEANUP_TAB_NAME_MAPPING}\n\u003d\u003e org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.#{CLEANUP_TAB_NAME_MAPPING_VALUE}\n;;\n\n@id: jdt.internal.cleanup.optimizationtab.rename.class\n@severity: info\norg.eclipse.jdt.internal.ui.preferences.cleanup.OptimizationTabPage\n\u003d\u003e org.eclipse.jdt.internal.ui.preferences.cleanup.PerformanceTabPage\n;;",
+      "summary": "This commit renames UI labels and internal class references from \"Optimization\" to \"Performance\" within the JDT cleanup preferences. This is a mechanical batch renaming of static field accesses and FQCNs. Two GREEN TriggerPattern DSL rules using a `\u003c!map\u003e` directive can automate these replacements, suitable for `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-04-28",
+      "discoveredInRun": 23757,
+      "sourceCommit": "435c10224b41643db45dfd90106b9c28347040a9",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-adds-support-for-renaming-ja",
+      "category": "Eclipse API Migration",
+      "dslRule": "/*!id: eclipse.jdt.ui.refactoring.rename.add-istextselection-true*/\n/*!description: Updates RefactoringAvailabilityTester.isRenameElementAvailable() calls to include the \u0027isTextSelection\u0027 boolean argument, setting it to \u0027true\u0027 in specific contexts within JDT UI refactoring actions and quick assists.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element)\n:: (inClass(\"org.eclipse.jdt.internal.ui.refactoring.actions.RenameJavaElementAction\") \u0026\u0026 inMethod(\"setEnabled\")) || inClass(\"org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor\")\n\u003d\u003e org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element, true)\n;;\n\n/*!id: eclipse.jdt.ui.refactoring.rename.add-istextselection-param*/\n/*!description: Updates RefactoringAvailabilityTester.isRenameElementAvailable() calls to include the \u0027isTextSelection\u0027 boolean argument, propagating it from a method parameter in specific contexts within JDT UI refactoring actions.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element)\n:: inClass(\"org.eclipse.jdt.internal.ui.refactoring.actions.RenameJavaElementAction\") \u0026\u0026 (inMethod(\"doRun\", true) || inMethod(\"canBeRenamed\", true))\n\u003d\u003e org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element, isTextSelection)\n;;\n\n/*!id: eclipse.jdt.ui.refactoring.rename.action.dorun-add-true*/\n/*!description: Updates RenameJavaElementAction.doRun() calls to include a \u0027true\u0027 boolean argument when invoked from RenameRefactoringProposal, reflecting internal API changes for text selection context.*/\n/*!severity: info*/\n$renameAction.doRun()\n:: instanceof($renameAction, \"org.eclipse.jdt.internal.ui.refactoring.actions.RenameJavaElementAction\") \u0026\u0026 inClass(\"org.eclipse.jdt.internal.ui.text.correction.proposals.RenameRefactoringProposal\")\n\u003d\u003e $renameAction.doRun(true)\n;;",
+      "summary": "This commit adds support for renaming Java modules in JDT UI. This involves modifying several internal JDT UI method calls related to rename actions and availability checks. The key patterns are the addition of a `boolean isTextSelection` argument to `RefactoringAvailabilityTester.isRenameElementAvailable()` and to `RenameJavaElementAction.doRun()`. The argument is set to `true` in some contexts (e.g., initial UI checks, quick assists) and passed from a method parameter `isTextSelection` in others (e.g., core execution logic). These are direct 1:1 method call argument additions, which are fully expressible as multiple TriggerPattern DSL rules. The `inClass` and `inMethod` guards ensure contextual application. Other changes involving new class creations (e.g., `RenameModuleWizard`), new NLS messages, or constant declarations are architectural and not pattern-based code transformations. The rules are applicable for Java 9+ due to the context of module features.",
+      "discoveredAt": "2026-04-28",
+      "discoveredInRun": 23757,
+      "sourceCommit": "97a416281125a7e07041f278e0c8a188cbf86fb6",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "ui-refactoring-this-commit-fixes-a-ui-bug-where-the-scr",
+      "category": "UI Refactoring",
+      "dslRule": "@id: eclipse.jdt.ui.fix.scrollcomposite.showfocusedcontrol\n@severity: info\n$scroll.setExpandVertical(true) :: instanceof($scroll, \"org.eclipse.swt.custom.ScrolledComposite\") \u0026\u0026 inClass(\"org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne\")\n\u003d\u003e\n$scroll.setExpandVertical(true);\n$scroll.setShowFocusedControl(true)\n;;",
+      "summary": "This commit fixes a UI bug where the scroll bar in the \u0027New Java Project\u0027 dialog doesn\u0027t scroll on a tab event. It introduces a call to `scroll.setShowFocusedControl(true)` on an `org.eclipse.swt.custom.ScrolledComposite` instance. This is a direct API call insertion that enhances UI behavior. The pattern is a direct, semantically safe addition of a method call after an existing one, fully supported by the TriggerPattern DSL\u0027s multiline replacement feature. The rule is guarded by `instanceof` and `inClass` to ensure it applies to the correct UI component and context, making it a reusable fix for similar SWT UI components. The `sourceVersion` is 8 as SWT is compatible with Java 8 baseline.",
+      "discoveredAt": "2026-04-28",
+      "discoveredInRun": 23757,
+      "sourceCommit": "c6055bbf8d0603e22509dae2f0a5d6c28d0676f9",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-jdt-ui-s-spelling",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.text.spelling.spellcheckiterator.addmonitor\n@severity: info\nnew org.eclipse.jdt.internal.ui.text.spelling.SpellCheckIterator($document, $region, $locale)\n\u003d\u003e new org.eclipse.jdt.internal.ui.text.spelling.SpellCheckIterator($document, $region, $locale, monitor)\n;;\n\n@id: jdt.internal.text.spelling.propertiesfilespellcheckiterator.addmonitor\n@severity: info\nnew org.eclipse.jdt.internal.ui.text.spelling.PropertiesFileSpellCheckIterator($document, $region, $locale)\n\u003d\u003e new org.eclipse.jdt.internal.ui.text.spelling.PropertiesFileSpellCheckIterator($document, $region, $locale, monitor)\n;;",
+      "summary": "This commit refactors JDT UI\u0027s spelling engine to pass an IProgressMonitor for cancellation. The primary automatable patterns are adding the \u0027monitor\u0027 argument to the constructors of \u0027SpellCheckIterator\u0027 and \u0027PropertiesFileSpellCheckIterator\u0027. This is a direct 1:1 argument addition to constructor calls, which is fully supported by the TriggerPattern DSL. Other changes like modifying constructor signatures, adding a new field, or modifying an existing method body (\u0027hasNext\u0027) are structural and not suitable for pattern-based DSL rules.",
+      "discoveredAt": "2026-04-28",
+      "discoveredInRun": 23757,
+      "sourceCommit": "434900c3f064307f68d98c1a551af0f32da89c12",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-jdt-internal-api-this-commit-addresses-a-ui-freeze-by-cha",
+      "category": "Eclipse JDT Internal API",
+      "dslRule": "org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_YES\n\u003d\u003e org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_NO\n;;",
+      "summary": "This commit addresses a UI freeze by changing an internal JDT constant from `SharedASTProviderCore.WAIT_YES` to `SharedASTProviderCore.WAIT_NO`. This modifies the behavior of AST retrieval to be non-blocking, improving UI responsiveness. This is a direct 1:1 constant replacement, fully implementable as a GREEN TriggerPattern DSL rule. Other changes involve adding a method overload for `findEnumConstructorTarget` and minor code formatting within an `if` condition, which are not directly expressible as pattern-based DSL transformations.",
+      "discoveredAt": "2026-04-28",
+      "discoveredInRun": 23757,
+      "sourceCommit": "ad42f86740eb7a362c118be703475daebdb89a71",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

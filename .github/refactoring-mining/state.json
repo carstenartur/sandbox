@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "1b4dfb9040f7c52e52521988722cc9172b9fa6bf",
-      "lastProcessedDate": "2026-04-27T03:34:13.166693038Z",
-      "totalProcessed": 1042,
+      "lastProcessedCommit": "a7639d781d032f11034f1032a06dbb6b77b13348",
+      "lastProcessedDate": "2026-04-28T03:31:24.512303245Z",
+      "totalProcessed": 1122,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1565,6 +1565,78 @@
           "deferredAt": "2026-04-27T03:34:00.986413820Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "4d373c515a97c14137887662a4f1ab2aa94b575d",
+          "message": "Bug 574794 - [17][quick fix] quick fix to add permitted types of a\nsealed type does not add import statement.\n\nChange-Id",
+          "diffLines": 30,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:16:11.049223934Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2e6f8ab198a5142b2a1ed202960109f3f74f59e0",
+          "message": "Bug 574073: [17] Merge master to BETA_JAVA17 branch periodically during\n4.21\n\nPost M1 - Merge remote-tracking branch \u0027or",
+          "diffLines": 172,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:16:11.049646217Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a7a6d6c6a9a3fccea21420e1a7b0b726f8b67ad6",
+          "message": "Bug 574820: [17][sealed] quick fix to add super interface should also\nadd corresponding import\n\nChange-Id: Ie405860aa6d1",
+          "diffLines": 32,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:16:11.049693335Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e0cc48d198e2d6ea58cfb63c448f1e026ca35ae2",
+          "message": "Bug 574073: [17] Merge master to BETA_JAVA17 branch periodically during 4.21",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-28T03:19:05.290008672Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5742bd6c57fe03349ea199d60573daaba3a2f096",
+          "message": "Bug 574073: [17] Merge master to BETA_JAVA17 branch periodically during 4.21",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-28T03:22:38.447015665Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "40f7464d3fb782edf064f26c47068667b230c26d",
+          "message": "Bug 571758: [preferences] Add defaults (enabled/disabled) in Type\nFilters preferences\n\nChange-Id: I75a374ffe4a8bed7ccfaa",
+          "diffLines": 130,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:25:07.729265986Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f2f186769ef6425e04eda93102f2b1fdf33da876",
+          "message": "Bug 574073: [17] Merge master to BETA_JAVA17 branch periodically during\n4.21\n\nMerge remote-tracking branch \u0027origin/maste",
+          "diffLines": 155,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:25:07.729321925Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4415189f73524cf0bfc61f0c2bc65f64f95520b2",
+          "message": "Bug 576431 - Refactor SurroundWithTryWithResouresRefactoring",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-28T03:29:55.943772610Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1574,21 +1646,21 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 62,
+        "JDT Internal Refactoring": 65,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 20,
-        "Clean-up Bug Fix": 51,
+        "JDT Internal Bug Fix": 25,
+        "Clean-up Bug Fix": 52,
         "Try-with-Resources": 6,
         "JDT UI Feature Implementation": 1,
-        "Resource Management": 1,
+        "Resource Management": 2,
         "JFace API Modernization": 1,
         "String-API": 7,
-        "Java-Modernization": 17,
+        "Java-Modernization": 18,
         "Performance Optimization": 1,
-        "JDT Internal API Evolution": 1,
+        "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
-        "Null-Safety": 10,
+        "Null-Safety": 11,
         "Lambda-Simplification": 4,
         "Architectural Refactoring": 1,
         "Collections": 9,
@@ -1605,11 +1677,11 @@
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 2,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 5,
+        "Eclipse API Migration": 6,
         "JDT Internal Feature": 1,
         "Type Safety": 3,
         "Eclipse UI Refactoring": 2,
-        "Control Flow Modernization": 3,
+        "Control Flow Modernization": 4,
         "JDT Internal Quick Fix Implementation": 1,
         "Unnecessary Annotation Removal": 1,
         "Eclipse JDT Internal Refactoring": 3,
@@ -1635,7 +1707,7 @@
         "Quick Fix Enhancement": 3,
         "Unnecessary Code": 1,
         "Correctness": 3,
-        "Code Correctness": 4,
+        "Code Correctness": 5,
         "Code Structure Simplification": 5,
         "Concurrency": 2,
         "Bug Fix": 1,
@@ -1651,7 +1723,10 @@
         "Deprecation": 1,
         "Clean-up Refactoring": 1,
         "Eclipse UI Modernization": 2,
-        "Quick Fix Bug Fix": 2
+        "Quick Fix Bug Fix": 2,
+        "UI Refactoring": 2,
+        "API Contract Compliance": 1,
+        "Eclipse JDT Internal API": 2
       },
       "exhaustedCategories": []
     },
@@ -1692,5 +1767,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23677
+  "globalTotalProcessed": 23757
 }
