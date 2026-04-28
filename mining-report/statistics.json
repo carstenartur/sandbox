@@ -1,46 +1,53 @@
 {
-  "totalProcessed": 24,
-  "relevant": 23,
-  "irrelevant": 1,
-  "duplicates": 3,
-  "green": 4,
+  "totalProcessed": 29,
+  "relevant": 21,
+  "irrelevant": 8,
+  "duplicates": 0,
+  "green": 6,
   "yellow": 0,
-  "red": 18,
+  "red": 15,
   "irrelevantReasons": {
-    "This commit is a typo fix in an NLS message string, not a code transformation pattern affecting Java source code logic.": 1
+    "This commit adds UI for a new preference, involving NLS key additions, constant declarations, array literal modification, and UI widget creation. These are not code transformation patterns for existing code.": 1,
+    "This commit only updates a Javadoc comment. It is a documentation change, not a functional code transformation that changes runtime behavior or applies a refactoring pattern.": 1,
+    "The commit involves extensive structural UI refactoring, including introducing new SWT components (ScrolledComposite), adding event listeners (ControlAdapter), overriding UI lifecycle methods (createControl, setVisible), and introducing new private helper methods. These changes are highly specific to Eclipse SWT UI architecture and cannot be generalized into reusable TriggerPattern DSL rules.": 1,
+    "This commit modifies an NLS properties file (CleanUpMessages.properties), not Java code. The TriggerPattern DSL is designed for Java code transformations (AST-based matching and rewriting).": 1,
+    "The change involves modifying a `.properties` file, which is a localization resource, not Java source code. The TriggerPattern DSL operates on Java ASTs and cannot be used to transform `.properties` files.": 1,
+    "The commit primarily involves removing boilerplate JCP disclaimers from Javadoc/comments and `.properties` files, and commenting out a block of Java code. These are not generalizable code transformation patterns suitable for the TriggerPattern DSL. The DSL cannot remove complex Javadoc blocks, comment out arbitrary code, or modify `.properties` files.": 1,
+    "The commit includes copyright year updates, adding a new constant declaration, modifying string array initializers, updating a TODO comment, changing a `.properties` file, and updating Javadoc. These are either architectural changes (adding declarations), resource file modifications, or documentation updates, none of which are generalizable code transformation patterns for the TriggerPattern DSL.": 1,
+    "The commit introduces a new UI feature and integrates it into existing JDT UI infrastructure. It\u0027s about implementing new logic for a double-click strategy for string literals and configuring it based on Java source version, rather than a general code transformation pattern for user Java code.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 24,
-      "relevant": 23,
-      "green": 4,
+      "totalProcessed": 29,
+      "relevant": 21,
+      "green": 6,
       "yellow": 0,
-      "red": 18
+      "red": 15
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-27",
-      "processed": 24,
-      "relevant": 23
+      "date": "2026-04-28",
+      "processed": 29,
+      "relevant": 21
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-27T03:12:06.896Z",
-    "completedAt": "2026-04-27T03:34:14.222526546Z",
-    "durationSeconds": 1327,
+    "startedAt": "2026-04-28T03:12:12.203Z",
+    "completedAt": "2026-04-28T03:31:25.207672502Z",
+    "durationSeconds": 1153,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 164,
+    "deferredCommits": 172,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-27T03:14:11.898192134Z",
-    "latestEvaluation": "2026-04-27T03:34:13.166309323Z",
-    "earliestCommitDate": "2021-04-23T18:57:16Z",
-    "latestCommitDate": "2021-07-02T08:50:03Z"
+    "earliestEvaluation": "2026-04-28T03:13:57.325101338Z",
+    "latestEvaluation": "2026-04-28T03:31:24.511964510Z",
+    "earliestCommitDate": "2021-01-26T01:03:28Z",
+    "latestCommitDate": "2021-10-05T08:16:58Z"
   }
 }
