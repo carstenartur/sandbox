@@ -29,3 +29,11 @@ org.eclipse.ui.ide.IDE.getEditorDescriptor($name).getId()
 new org.eclipse.jdt.internal.ui.text.JavaColorManager($args$)
 => new org.eclipse.jdt.internal.ui.text.JavaColorManager()
 ;;
+
+@id: eclipse.jdt.ui.fix.scrollcomposite.showfocusedcontrol
+@severity: info
+$scroll.setExpandVertical(true) :: instanceof($scroll, "org.eclipse.swt.custom.ScrolledComposite") && inClass("org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne")
+=>
+$scroll.setExpandVertical(true);
+$scroll.setShowFocusedControl(true)
+;;
