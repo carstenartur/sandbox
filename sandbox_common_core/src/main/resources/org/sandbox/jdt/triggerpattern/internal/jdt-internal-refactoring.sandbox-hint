@@ -1322,3 +1322,77 @@ new org.eclipse.jdt.internal.ui.text.spelling.PropertiesFileSpellCheckIterator($
 org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_YES
 => org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_NO
 ;;
+
+@id: jdt.internal.callhierarchy.expandwithconstructors.lambda-support
+@severity: info
+org.eclipse.jdt.core.IType.$type.isAnonymous() :: instanceof($type, "org.eclipse.jdt.core.IType")
+=> org.eclipse.jdt.core.IType.$type.isAnonymous() || org.eclipse.jdt.core.IType.$type.isLambda()
+;;
+
+getJavaEditor() :: inClass("org.eclipse.jdt.internal.ui.text.java.FilledArgumentNamesMethodProposal")
+=> org.eclipse.jdt.internal.ui.javaeditor.EditorUtility.getActiveJavaEditor()
+;;
+
+@id: jdt.internal.lambda.completion.fix-cursor-positioning
+@severity: error
+$fArgumentOffsets != null && getTextViewer() != null
+:: inClass("org.eclipse.jdt.internal.ui.text.java.JavaLambdaCompletionProposal")
+=> $fArgumentOffsets != null && $fArgumentOffsets.length > 0 && getTextViewer() != null
+;;
+
+@id: jdt.internal.quickassist.switchexpressionfix.rename
+@severity: info
+org.eclipse.jdt.internal.corext.fix.SwitchExpressionsFix.createConvertToSwitchExpressionFix($switchStatement)
+=> org.eclipse.jdt.internal.corext.fix.SwitchExpressionsFixCore.createConvertToSwitchExpressionFix($switchStatement)
+;;
+
+@id: jdt.internal.quickassist.getindex.to.util.getextractmethodproposal
+@severity: info
+getIndex($offset, $statements) :: inClass("org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor") && inMethod("getExtractMethodProposal")
+=> org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessorUtil.getIndex($offset, $statements)
+;;
+
+@id: jdt.internal.quickassist.getindex.to.util.getconverttoswitchexpressionproposals
+@severity: info
+getIndex($offset, $statements) :: inClass("org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor") && inMethod("getConvertToSwitchExpressionProposals")
+=> org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessorUtil.getIndex($offset, $statements)
+;;
+
+@id: jdt.internal.compliance.version17.to.version18
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_17.equals($selectedCompliance)
+=> org.eclipse.jdt.core.JavaCore.VERSION_18.equals($selectedCompliance)
+;;
+
+/*!id: jdt.internal.javadoc.gethighlightpropertyvalue.to.getpropertyvalue*/
+/*!description: Renames internal JavadocContentAccess2.getHighlightPropertyValue() to getPropertyValue() and updates its call site.*/
+/*!severity: info*/
+/*!minJavaVersion: 18*/
+/*!tags: jdt, internal, refactoring*/
+$call.getHighlightPropertyValue($prop, $tagProps) :: inClass("org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2")
+=> $call.getPropertyValue($prop, $tagProps)
+;;
+
+/*!id: jdt.internal.javadoc.stripliteral.condition.robustness*/
+/*!description: Adjusts string length check in JavadocContentAccess2.stripQuotes() for robustness, changing > 2 to >= 2.*/
+/*!severity: info*/
+/*!minJavaVersion: 18*/
+/*!tags: jdt, internal, bugfix*/
+$str.length() > 2 :: inClass("org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2") && inMethod("stripQuotes")
+=> $str.length() >= 2
+;;
+
+@id: jdt.internal.javadoc.stripquotes.singlequote-support
+@severity: info
+$str.charAt(0) == '"' && $str.charAt($length-1) == '"'
+:: inClass("org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2") && inMethod("stripQuotes")
+=> ($str.charAt(0) == '"' && $str.charAt($length-1) == '"') || ($str.charAt(0) == '\'' && $str.charAt($length-1) == '\'')
+;;
+
+/*!id: jdt.internal.problemslabeldecorator.remove-isaccessible-check*/
+/*!description: Remove redundant IResource.isAccessible() check from UI-thread method for performance.*/
+/*!severity: info*/
+resource == null || !resource.isAccessible()
+:: inClass("org.eclipse.jdt.ui.ProblemsLabelDecorator") && inMethod("computeContainerAdornmentFlags")
+=> resource == null
+;;

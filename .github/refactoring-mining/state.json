@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "a7639d781d032f11034f1032a06dbb6b77b13348",
-      "lastProcessedDate": "2026-04-28T03:31:24.512303245Z",
-      "totalProcessed": 1122,
+      "lastProcessedCommit": "b02aa6146830a2ede4d08188fb72965dce7e38b4",
+      "lastProcessedDate": "2026-04-29T03:30:34.022639265Z",
+      "totalProcessed": 1194,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1637,6 +1637,33 @@
           "deferredAt": "2026-04-28T03:29:55.943772610Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "6e7ebc5f94ab97ab7cc03792a5256a1a8b3ba605",
+          "message": "Bug 570567 - [15] \"New Interface\" and \"New Class\" wizards to be enhanced to support \"non-sealed\" modifier",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-29T03:13:08.557612876Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ccb2e7bd426fc8a8566fb743212bd80c157dd1cd",
+          "message": "Bug 576549 - [content assist] Missing proposals\n\n- re-enabled java.awt.*\n- still disable java.awt.List\n- re-enabled org.",
+          "diffLines": 53,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-29T03:15:47.245238773Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0b0a471440f810269ac1b5eff4720a003b18fece",
+          "message": "Bug 576615 - Implement Filter editing in JDT with a new custom component",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-29T03:26:27.952742259Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1646,11 +1673,11 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 65,
+        "JDT Internal Refactoring": 77,
         "Code Simplification": 10,
         "Performance": 26,
         "JDT Internal Bug Fix": 25,
-        "Clean-up Bug Fix": 52,
+        "Clean-up Bug Fix": 58,
         "Try-with-Resources": 6,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 2,
@@ -1672,12 +1699,12 @@
         "Type Inference": 2,
         "Architecture Migration": 1,
         "Code Style": 21,
-        "Eclipse API Configuration": 6,
+        "Eclipse API Configuration": 7,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 2,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 6,
+        "Eclipse API Migration": 7,
         "JDT Internal Feature": 1,
         "Type Safety": 3,
         "Eclipse UI Refactoring": 2,
@@ -1706,10 +1733,10 @@
         "Dead Code Removal": 6,
         "Quick Fix Enhancement": 3,
         "Unnecessary Code": 1,
-        "Correctness": 3,
+        "Correctness": 4,
         "Code Correctness": 5,
         "Code Structure Simplification": 5,
-        "Concurrency": 2,
+        "Concurrency": 3,
         "Bug Fix": 1,
         "New Cleanup": 1,
         "Logical Simplification": 7,
@@ -1726,7 +1753,12 @@
         "Quick Fix Bug Fix": 2,
         "UI Refactoring": 2,
         "API Contract Compliance": 1,
-        "Eclipse JDT Internal API": 2
+        "Eclipse JDT Internal API": 2,
+        "Eclipse UI Internal Logic": 2,
+        "New Feature / Validation": 1,
+        "Eclipse UI / Feature": 1,
+        "Javadoc/Code Generation": 1,
+        "New Feature / Extension": 1
       },
       "exhaustedCategories": []
     },
@@ -1767,5 +1799,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23757
+  "globalTotalProcessed": 23829
 }
