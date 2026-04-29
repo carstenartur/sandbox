@@ -1,53 +1,55 @@
 {
-  "totalProcessed": 29,
-  "relevant": 21,
-  "irrelevant": 8,
-  "duplicates": 0,
-  "green": 6,
+  "totalProcessed": 38,
+  "relevant": 28,
+  "irrelevant": 10,
+  "duplicates": 1,
+  "green": 9,
   "yellow": 0,
-  "red": 15,
+  "red": 19,
   "irrelevantReasons": {
-    "This commit adds UI for a new preference, involving NLS key additions, constant declarations, array literal modification, and UI widget creation. These are not code transformation patterns for existing code.": 1,
-    "This commit only updates a Javadoc comment. It is a documentation change, not a functional code transformation that changes runtime behavior or applies a refactoring pattern.": 1,
-    "The commit involves extensive structural UI refactoring, including introducing new SWT components (ScrolledComposite), adding event listeners (ControlAdapter), overriding UI lifecycle methods (createControl, setVisible), and introducing new private helper methods. These changes are highly specific to Eclipse SWT UI architecture and cannot be generalized into reusable TriggerPattern DSL rules.": 1,
-    "This commit modifies an NLS properties file (CleanUpMessages.properties), not Java code. The TriggerPattern DSL is designed for Java code transformations (AST-based matching and rewriting).": 1,
-    "The change involves modifying a `.properties` file, which is a localization resource, not Java source code. The TriggerPattern DSL operates on Java ASTs and cannot be used to transform `.properties` files.": 1,
-    "The commit primarily involves removing boilerplate JCP disclaimers from Javadoc/comments and `.properties` files, and commenting out a block of Java code. These are not generalizable code transformation patterns suitable for the TriggerPattern DSL. The DSL cannot remove complex Javadoc blocks, comment out arbitrary code, or modify `.properties` files.": 1,
-    "The commit includes copyright year updates, adding a new constant declaration, modifying string array initializers, updating a TODO comment, changing a `.properties` file, and updating Javadoc. These are either architectural changes (adding declarations), resource file modifications, or documentation updates, none of which are generalizable code transformation patterns for the TriggerPattern DSL.": 1,
-    "The commit introduces a new UI feature and integrates it into existing JDT UI infrastructure. It\u0027s about implementing new logic for a double-click strategy for string literals and configuring it based on Java source version, rather than a general code transformation pattern for user Java code.": 1
+    "The commit changes line endings from CR-LF to LF across files. This is a file-level formatting concern, not an AST-based code transformation pattern that the TriggerPattern DSL is designed to address. The DSL operates on Java code syntax and semantics, not file encoding or line ending characteristics.": 1,
+    "This commit primarily adds new functionality (a quick fix for static import favorites), including new classes, methods, and conditional logic to invoke them. It does not introduce a reusable code transformation pattern for existing user code. The changes are additive and extend the Eclipse JDT UI functionality.": 1,
+    "This commit adds new UI preferences and NLS entries for a new Java 17 formatting feature (permits clause). It does not involve transforming existing code patterns, but rather extending the system with new functionality.": 1,
+    "This commit adds a new UI preference and NLS entry for a JDT formatter setting. It involves modifying internal JDT UI code that configures the formatter dialog, not transforming general Java code patterns.": 1,
+    "This commit adds new NLS keys and configures new formatter preferences within the Eclipse JDT UI. It introduces configuration options for line wrapping in switch expressions, which is an internal UI/configuration change for the JDT formatter. It does not introduce any code transformation patterns for user Java code that can be generalized into TriggerPattern DSL rules.": 1,
+    "This commit adds internal support for the Javadoc `@snippet` tag (Java 18) within the Eclipse JDT UI\u0027s Javadoc rendering component. It involves adding new NLS keys, internal conditional logic, and a new private method to process this tag. These are changes to the JDT UI\u0027s internal functionality and do not represent a code transformation pattern for user Java code that can be generalized into TriggerPattern DSL rules.": 1,
+    "Purely a copyright year update in a comment, not a code transformation pattern.": 1,
+    "This commit modifies internal JDT UI code to correctly adapt IJavaElement instances to IProject within a JavaElementAdapterFactory. It involves structural changes to the adapter factory, including adding an element to a static array literal, inserting a new conditional branch into an existing method\u0027s control flow, and adding a new private helper method to encapsulate the adaptation logic. These are architectural changes to the internal framework of JDT UI, not generalizable code transformation patterns that would be applied to user code. The TriggerPattern DSL does not support modifying array literals by adding elements, inserting new if/else if blocks into existing control flow, or generating new methods. Therefore, this commit is not relevant for DSL mining.": 1,
+    "This commit adds new UI strings and registers new formatter constants for switch expressions/statements. It\u0027s an architectural change to extend the formatter configuration UI and backend, not a transformation of existing Java code. The DSL is for transforming Java code, not for generating UI strings or configuring internal framework behavior.": 1,
+    "This commit is an architectural refactoring, moving an existing cleanup implementation (`SubstringCleanUp`) between internal JDT plugins (`org.eclipse.jdt.ui` to `org.eclipse.jdt.core.manipulation`). It does not introduce a new transformation pattern for user code, but rather reorganizes existing cleanup logic. The underlying cleanup functionality, which simplifies `String.substring(startIndex, str.length())` to `String.substring(startIndex)`, is already covered by an existing DSL rule and is considered a Java-based plugin.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 29,
-      "relevant": 21,
-      "green": 6,
+      "totalProcessed": 38,
+      "relevant": 28,
+      "green": 9,
       "yellow": 0,
-      "red": 15
+      "red": 19
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-28",
-      "processed": 29,
-      "relevant": 21
+      "date": "2026-04-29",
+      "processed": 38,
+      "relevant": 28
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-28T03:12:12.203Z",
-    "completedAt": "2026-04-28T03:31:25.207672502Z",
-    "durationSeconds": 1153,
+    "startedAt": "2026-04-29T03:11:35.816Z",
+    "completedAt": "2026-04-29T03:30:35.237418600Z",
+    "durationSeconds": 1139,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 172,
+    "deferredCommits": 175,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-28T03:13:57.325101338Z",
-    "latestEvaluation": "2026-04-28T03:31:24.511964510Z",
-    "earliestCommitDate": "2021-01-26T01:03:28Z",
-    "latestCommitDate": "2021-10-05T08:16:58Z"
+    "earliestEvaluation": "2026-04-29T03:13:27.827608054Z",
+    "latestEvaluation": "2026-04-29T03:30:34.021691196Z",
+    "earliestCommitDate": "2021-03-20T23:26:43Z",
+    "latestCommitDate": "2022-02-06T09:08:58Z"
   }
 }
