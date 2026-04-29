@@ -19,3 +19,15 @@ $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_GUESS_METHOD
 $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_INSERT_COMPLETION, true)
 => $store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_INSERT_COMPLETION, false)
 ;;
+
+@id: eclipse.jdt.ui.pref.codeassist.triggers.java.width
+@severity: info
+addLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVA, 100, 4, 20)
+=> addLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVA, 100, 0, 20)
+;;
+
+@id: eclipse.jdt.ui.pref.codeassist.triggers.javadoc.width
+@severity: info
+addLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVADOC, 100, 4, 20)
+=> addLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVADOC, 100, 0, 20)
+;;

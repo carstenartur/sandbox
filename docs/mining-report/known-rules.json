@@ -2629,6 +2629,105 @@
       "sourceCommit": "ad42f86740eb7a362c118be703475daebdb89a71",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-enhances-the-eclipse-jdt-cal",
+      "category": "Eclipse API Migration",
+      "dslRule": "@id: jdt.internal.callhierarchy.expandwithconstructors.lambda-support\n@severity: info\norg.eclipse.jdt.core.IType.$type.isAnonymous() :: instanceof($type, \"org.eclipse.jdt.core.IType\")\n\u003d\u003e org.eclipse.jdt.core.IType.$type.isAnonymous() || org.eclipse.jdt.core.IType.$type.isLambda()\n;;",
+      "summary": "This commit enhances the Eclipse JDT Call Hierarchy to display lambda declarations. While most changes are structural (adding new methods, enums, and complex `if/else` blocks), one specific modification is a direct 1:1 boolean expression replacement: `type.isAnonymous()` is extended to `type.isAnonymous() || type.isLambda()`. This pattern is reusable and directly implementable as a GREEN TriggerPattern DSL rule, improving internal JDT UI consistency with Java 8 features. Lambdas were introduced in Java 8, so no explicit `sourceVersionGE` guard is needed beyond the baseline.",
+      "discoveredAt": "2026-04-29",
+      "discoveredInRun": 23829,
+      "sourceCommit": "9063fc899516a5f3d27eb495c9b19b03ac20e325",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-fixes-a-ui-layout-issue-in-j",
+      "category": "Eclipse API Configuration",
+      "dslRule": "@id: eclipse.jdt.ui.pref.codeassist.triggers.java.width\n@severity: info\naddLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVA, 100, 4, 20)\n\u003d\u003e addLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVA, 100, 0, 20)\n;;\n\n@id: eclipse.jdt.ui.pref.codeassist.triggers.javadoc.width\n@severity: info\naddLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVADOC, 100, 4, 20)\n\u003d\u003e addLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVADOC, 100, 0, 20)\n;;",
+      "summary": "This commit fixes a UI layout issue in JDT\u0027s Code Assist preferences by changing a hardcoded `width` argument (from `4` to `0`) in two `addLabelledTextField` method calls. This is a direct 1:1 literal argument replacement, fully implementable as two distinct GREEN TriggerPattern DSL rules. Other changes involving adding `else` blocks and new statements are structural and not supported by the DSL. No specific Java version guard is needed as this is a UI configuration change, not dependent on new Java language features.",
+      "discoveredAt": "2026-04-29",
+      "discoveredInRun": 23829,
+      "sourceCommit": "d6400492c03c6405c66293cffb3d129ca7556d6d",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-primarily-adds-support-for-l",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "getJavaEditor() :: inClass(\"org.eclipse.jdt.internal.ui.text.java.FilledArgumentNamesMethodProposal\")\n\u003d\u003e org.eclipse.jdt.internal.ui.javaeditor.EditorUtility.getActiveJavaEditor()\n;;",
+      "summary": "This commit primarily adds support for lambda expression completions in JDT UI, which involves creating new classes and integrating new features, and is thus not directly suitable for DSL rules. However, one specific change is a refactoring pattern: a private method `getJavaEditor()` in `FilledArgumentNamesMethodProposal` is removed, and its single call site is replaced by a call to the new static utility method `EditorUtility.getActiveJavaEditor()`. This is a direct, reusable internal refactoring pattern for centralizing utility code, making it fully expressible as a GREEN TriggerPattern DSL rule using an `inClass` guard for precision.",
+      "discoveredAt": "2026-04-29",
+      "discoveredInRun": 23829,
+      "sourceCommit": "6d1184e3d7a300acb9ebc0e93a1df294f799dcf3",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-fixes-a-cursor-positioning-bu",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.lambda.completion.fix-cursor-positioning\n@severity: error\n$fArgumentOffsets !\u003d null \u0026\u0026 getTextViewer() !\u003d null\n:: inClass(\"org.eclipse.jdt.internal.ui.text.java.JavaLambdaCompletionProposal\")\n\u003d\u003e $fArgumentOffsets !\u003d null \u0026\u0026 $fArgumentOffsets.length \u003e 0 \u0026\u0026 getTextViewer() !\u003d null\n;;",
+      "summary": "The commit fixes a cursor positioning bug in lambda completion by modifying an `if` condition. It extends an existing boolean expression by adding `fArgumentOffsets.length \u003e 0`, ensuring the link mode is only entered when the lambda actually has parameters. This is a direct boolean expression replacement, suitable for a GREEN TriggerPattern DSL rule, specifically targeting an internal JDT UI bug fix. The rule is guarded by `inClass` to ensure it applies to the correct internal component, and `sourceVersionGE(8)` because lambdas were introduced in Java 8.",
+      "discoveredAt": "2026-04-29",
+      "discoveredInRun": 23829,
+      "sourceCommit": "005b8c51ea6aa87095ba6d8097bf177cbf3030ab",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-ui-qu",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.quickassist.switchexpressionfix.rename\n@severity: info\norg.eclipse.jdt.internal.corext.fix.SwitchExpressionsFix.createConvertToSwitchExpressionFix($switchStatement)\n\u003d\u003e org.eclipse.jdt.internal.corext.fix.SwitchExpressionsFixCore.createConvertToSwitchExpressionFix($switchStatement)\n;;\n\n@id: jdt.internal.quickassist.getindex.to.util.getextractmethodproposal\n@severity: info\ngetIndex($offset, $statements) :: inClass(\"org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor\") \u0026\u0026 inMethod(\"getExtractMethodProposal\")\n\u003d\u003e org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessorUtil.getIndex($offset, $statements)\n;;\n\n@id: jdt.internal.quickassist.getindex.to.util.getconverttoswitchexpressionproposals\n@severity: info\ngetIndex($offset, $statements) :: inClass(\"org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor\") \u0026\u0026 inMethod(\"getConvertToSwitchExpressionProposals\")\n\u003d\u003e org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessorUtil.getIndex($offset, $statements)\n;;",
+      "summary": "This commit refactors internal JDT UI quick-assist logic. It renames the `SwitchExpressionsFix` class to `SwitchExpressionsFixCore` and updates its static factory method call sites. Additionally, it moves the `getIndex()` helper method from `QuickAssistProcessor` to `QuickAssistProcessorUtil` and updates all internal call sites, replacing unqualified calls with the fully qualified method from the new utility class. These are direct 1:1 replacements of class names and method calls, making them fully implementable as GREEN TriggerPattern DSL rules for internal JDT API modernization. The rules use `inClass` and `inMethod` guards for precise contextual application.",
+      "discoveredAt": "2026-04-29",
+      "discoveredInRun": 23829,
+      "sourceCommit": "ded910f2bcbf20dffbd08241327f1ac602016252",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-updates-internal-jdt-ui-compiler-prefere",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.compliance.version17.to.version18\n@severity: info\norg.eclipse.jdt.core.JavaCore.VERSION_17.equals($selectedCompliance)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_18.equals($selectedCompliance)\n;;",
+      "summary": "Updates internal JDT UI compiler preferences to allow targeting Java 18. Specifically, it replaces `JavaCore.VERSION_17.equals(...)` with `JavaCore.VERSION_18.equals(...)` in a conditional check. This is a direct, automatable constant replacement within an expression, fitting existing internal JDT API modernization patterns.",
+      "discoveredAt": "2026-04-29",
+      "discoveredInRun": 23829,
+      "sourceCommit": "5620d66a15f868203bca68da1774e53ebf55ed38",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-adds-support-for-the-replace",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.javadoc.gethighlightpropertyvalue.to.getpropertyvalue*/\n/*!description: Renames internal JavadocContentAccess2.getHighlightPropertyValue() to getPropertyValue() and updates its call site.*/\n/*!severity: info*/\n/*!minJavaVersion: 18*/\n/*!tags: jdt, internal, refactoring*/\n$call.getHighlightPropertyValue($prop, $tagProps) :: inClass(\"org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2\")\n\u003d\u003e $call.getPropertyValue($prop, $tagProps)\n;;\n\n/*!id: jdt.internal.javadoc.stripliteral.condition.robustness*/\n/*!description: Adjusts string length check in JavadocContentAccess2.stripQuotes() for robustness, changing \u003e 2 to \u003e\u003d 2.*/\n/*!severity: info*/\n/*!minJavaVersion: 18*/\n/*!tags: jdt, internal, bugfix*/\n$str.length() \u003e 2 :: inClass(\"org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2\") \u0026\u0026 inMethod(\"stripQuotes\")\n\u003d\u003e $str.length() \u003e\u003d 2\n;;",
+      "summary": "This commit adds support for the \u0027@replace\u0027 markup within Javadoc \u0027@snippet\u0027 tags (Java 18+). It involves renaming an internal helper method \u0027getHighlightPropertyValue\u0027 to \u0027getPropertyValue\u0027 and updating its call sites, and modifying a boolean expression in the \u0027stripQuotes\u0027 method from \u0027str.length() \u003e 2\u0027 to \u0027str.length() \u003e\u003d 2\u0027 for robustness. These are direct 1:1 method call and expression replacements, fully supported by the TriggerPattern DSL. Other changes, such as adding try-catch blocks and moving/duplicating complex logic between methods, are structural and not expressible in the current DSL. The two identified patterns are highly reusable for internal JDT API modernization and are classified as GREEN. The minimum Java version for the hint file is 18 due to the context of supporting Java 18 Javadoc features.",
+      "discoveredAt": "2026-04-29",
+      "discoveredInRun": 23829,
+      "sourceCommit": "727cbc157e6618ed7df7d6db183fa02e0836d367",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-578370-by-enhancin",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.javadoc.stripquotes.singlequote-support\n@severity: info\n$str.charAt(0) \u003d\u003d \u0027\"\u0027 \u0026\u0026 $str.charAt($length-1) \u003d\u003d \u0027\"\u0027\n:: inClass(\"org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2\") \u0026\u0026 inMethod(\"stripQuotes\")\n\u003d\u003e ($str.charAt(0) \u003d\u003d \u0027\"\u0027 \u0026\u0026 $str.charAt($length-1) \u003d\u003d \u0027\"\u0027) || ($str.charAt(0) \u003d\u003d \u0027\\\u0027\u0027 \u0026\u0026 $str.charAt($length-1) \u003d\u003d \u0027\\\u0027\u0027)\n;;",
+      "summary": "This commit fixes Bug 578370 by enhancing an internal JDT Javadoc processing utility method (`stripQuotes`) to correctly handle property values wrapped in single quotes in addition to double quotes. The rule replaces a boolean condition `str.charAt(0) \u003d\u003d \u0027\"\u0027 \u0026\u0026 str.charAt(length-1) \u003d\u003d \u0027\"\u0027` with an extended version that includes an OR clause for single quotes. This is a direct 1:1 expression replacement within a method, fully implementable as a GREEN TriggerPattern DSL rule with `inClass` and `inMethod` guards for precision. The change improves the robustness of JDT\u0027s internal Javadoc parsing.",
+      "discoveredAt": "2026-04-29",
+      "discoveredInRun": 23829,
+      "sourceCommit": "50b39b772f2821e0b325a33e7faebd20de539621",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-optimizes-the-internal-compu",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.problemslabeldecorator.remove-isaccessible-check*/\n/*!description: Remove redundant IResource.isAccessible() check from UI-thread method for performance.*/\n/*!severity: info*/\nresource \u003d\u003d null || !resource.isAccessible()\n:: inClass(\"org.eclipse.jdt.ui.ProblemsLabelDecorator\") \u0026\u0026 inMethod(\"computeContainerAdornmentFlags\")\n\u003d\u003e resource \u003d\u003d null\n;;",
+      "summary": "This commit optimizes the internal `computeContainerAdornmentFlags` method in `ProblemsLabelDecorator.java` by removing a redundant `!resource.isAccessible()` check from an `if` condition. This prevents unnecessary blocking calls on the UI thread, improving responsiveness. The transformation is a direct 1:1 boolean expression replacement and is fully implementable as a GREEN TriggerPattern DSL rule, guarded by `inClass` and `inMethod` to ensure precise application to the internal JDT UI code.",
+      "discoveredAt": "2026-04-29",
+      "discoveredInRun": 23829,
+      "sourceCommit": "b02aa6146830a2ede4d08188fb72965dce7e38b4",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
