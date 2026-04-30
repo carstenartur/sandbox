@@ -2728,6 +2728,83 @@
       "sourceCommit": "b02aa6146830a2ede4d08188fb72965dce7e38b4",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-replaces-calls-to-tagprop-get",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.javadoc.tagproperty.getvalue-to-getstringvalue*/\n/*!description: Replace TagProperty.getValue() with TagProperty.getStringValue() to support JEP 413 (DOM AST for Javadoc tags with properties) in JLS18+.*/\n/*!severity: info*/\n/*!minJavaVersion: 18*/\n/*!tags: jdt, internal, refactoring, java18*/\n$tagProp.getValue() :: instanceof($tagProp, \"org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2.TagProperty\") \u0026\u0026 sourceVersionGE(18)\n\u003d\u003e $tagProp.getStringValue()\n;;",
+      "summary": "The commit replaces calls to `$tagProp.getValue()` with `$tagProp.getStringValue()` on instances of `JavadocContentAccess2.TagProperty` within `JavadocContentAccess2.java`. This change is an internal JDT UI refactoring to support JEP 413 (DOM AST support for Javadoc tags with properties) for Java 18 and higher. It is a direct 1:1 method call replacement, enhancing internal API correctness and is fully expressible as a GREEN TriggerPattern DSL rule. The rule is guarded by an `instanceof` check for the specific internal type and a `sourceVersionGE(18)` check to align with the JEP\u0027s introduction.",
+      "discoveredAt": "2026-04-30",
+      "discoveredInRun": 23897,
+      "sourceCommit": "7784c0b99b305b73ab2e0d552f5cd0e4ed6461ae",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "ui-enhancement-this-commit-addresses-bug-497947-by-modi",
+      "category": "UI Enhancement",
+      "dslRule": "org.eclipse.jdt.ui.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element)\n\u003d\u003e org.eclipse.jdt.ui.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element, 200)\n;;",
+      "summary": "This commit addresses Bug 497947 by modifying an internal JDT UI method call to `ImagesOnFileSystemRegistry.getImageURL(IJavaElement)`. It adds a `zoom` argument (with value `200`) to request a high-resolution version of icons for Javadoc hovers, improving display quality on Retina screens. This is a direct 1:1 method call replacement with an added literal argument, which is fully expressible as a GREEN TriggerPattern DSL rule. Other changes in the commit, such as introducing new method overloads and modifying their bodies, are structural and not directly implementable via expression-based DSL rules.",
+      "discoveredAt": "2026-04-30",
+      "discoveredInRun": 23897,
+      "sourceCommit": "ed2dbf6574c773d5367e4b647dd71cfe107602c7",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-is-a-merge-with-multiple-int",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.javadochover.getimageurl.add-zoom\n@severity: info\norg.eclipse.jdt.internal.ui.java.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element)\n\u003d\u003e org.eclipse.jdt.internal.ui.java.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element, 200)\n;;",
+      "summary": "This commit is a merge with multiple internal JDT refactorings. While many changes are structural (variable reordering, method overloading) and not expressible by the DSL, one specific pattern is a direct, automatable method call replacement. It adds a literal \u0027200\u0027 argument to an internal \u0027getImageURL\u0027 method call within \u0027JavadocHover.java\u0027, which is fully supported by the TriggerPattern DSL. The rule is categorized as JDT Internal Refactoring and improves internal API consistency.",
+      "discoveredAt": "2026-04-30",
+      "discoveredInRun": 23897,
+      "sourceCommit": "9f10b33df84e8514240c016c57112bf507a390cb",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-removes-the-internal-stripqu",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "stripQuotes($arg) :: inClass(\"org.eclipse.jdt.internal.ui.text.javadoc.JavaDocSnippetStringEvaluator\")\n\u003d\u003e $arg\n;;",
+      "summary": "This commit removes the internal `stripQuotes` helper method and all its call sites, simplifying `stripQuotes($arg)` to `$arg`. This is because Javadoc `@snippet` values (for `@highlight`, `@link`, `@replace`) now directly support identifiers, removing the need for quoting. This is a direct 1:1 method call replacement, fully expressible as a GREEN TriggerPattern DSL rule. The rule will be added to `jdt-internal-refactoring.sandbox-hint` and applies to Java 18+ contexts.",
+      "discoveredAt": "2026-04-30",
+      "discoveredInRun": 23897,
+      "sourceCommit": "90b0c04e12707399fc2044b9a18abb1d07ef509f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-a-bug-in-the-reduceind",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "ASTNodes.getUnparenthesedExpression(ASTNodeFactory.negate($ast, $rewrite, $visited.getExpression(), true))\n\u003d\u003e ASTNodeFactory.negateAndUnwrap($ast, $rewrite, $visited.getExpression(), true, true)\n;;",
+      "summary": "This commit fixes a bug in the `ReduceIndentationCleanUp` by replacing an internal method call chain. Specifically, `ASTNodes.getUnparenthesedExpression(ASTNodeFactory.negate(ast, rewrite, visited.getExpression(), true))` is replaced with `ASTNodeFactory.negateAndUnwrap(ast, rewrite, visited.getExpression(), true, true)`. This is a direct 1:1 method call replacement, including its arguments, which is fully supported by the TriggerPattern DSL. It improves the correctness of an existing JDT cleanup and is a strong candidate for a GREEN rule to modernize internal JDT API usage.",
+      "discoveredAt": "2026-04-30",
+      "discoveredInRun": 23897,
+      "sourceCommit": "27a08295166d155c129577762d9cd7736ca732dd",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-this-commit-modernizes-the-way-the-defau",
+      "category": "Java-Modernization",
+      "dslRule": "System.getProperty(\"file.encoding\")\n\u003d\u003e java.nio.charset.Charset.defaultCharset().displayName()\n;;",
+      "summary": "This commit modernizes the way the default file encoding is retrieved by replacing `System.getProperty(\"file.encoding\")` with `java.nio.charset.Charset.defaultCharset().displayName()`. This is a direct 1:1 expression replacement that improves robustness and clarity, as `System.getProperty` can be problematic. The `Charset.defaultCharset()` and `displayName()` APIs are available since Java 5, which is before the Java 8 baseline, so no `sourceVersionGE` guard is needed. This is a GREEN transformation, suitable for the `misc.sandbox-hint` file, similar to how `System.getProperty(\"line.separator\")` is replaced by `System.lineSeparator()`.",
+      "discoveredAt": "2026-04-30",
+      "discoveredInRun": 23897,
+      "sourceCommit": "36c69c917687226d7e82b12f99c3e3f878fc06e6",
+      "status": "DISCOVERED",
+      "hintFile": "misc.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-addresses-a-bug-in-method-re",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.refactoring.renameuserinterfacemanager.swap-starter-class*/\n/*!description: Updates RenameUserInterfaceManager to use RenameUserInterfaceStarter instead of RenameMethodUserInterfaceStarter for method refactoring processors.*/\n/*!severity: info*/\nput($ProcessorType, org.eclipse.jdt.internal.ui.refactoring.reorg.RenameMethodUserInterfaceStarter.class, $WizardType)\n\u003d\u003e put($ProcessorType, org.eclipse.jdt.internal.ui.refactoring.reorg.RenameUserInterfaceStarter.class, $WizardType)\n;;",
+      "summary": "This commit addresses a bug in method renaming. The primary architectural change involves the deletion of `RenameMethodUserInterfaceStarter.java` and a significant rewrite of node finding/sorting logic in `RenameLinkedMode.java` to support generic method overriding. These structural and complex logic changes are beyond the current DSL capabilities. However, a simpler, automatable pattern is identified in `RenameUserInterfaceManager.java`, where `RenameMethodUserInterfaceStarter.class` is replaced by `RenameUserInterfaceStarter.class` for two specific `put` method calls. This is a direct 1:1 type reference replacement in method arguments, fully expressible as a GREEN TriggerPattern DSL rule. The rule targets an internal JDT API modernization and does not rely on new Java language features beyond the baseline Java 8.",
+      "discoveredAt": "2026-04-30",
+      "discoveredInRun": 23897,
+      "sourceCommit": "c8ab3558cf8d482557e53d04f26e2713535580ed",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

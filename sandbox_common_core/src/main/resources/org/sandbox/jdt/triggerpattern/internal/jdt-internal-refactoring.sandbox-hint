@@ -1396,3 +1396,33 @@ resource == null || !resource.isAccessible()
 :: inClass("org.eclipse.jdt.ui.ProblemsLabelDecorator") && inMethod("computeContainerAdornmentFlags")
 => resource == null
 ;;
+
+/*!id: jdt.internal.javadoc.tagproperty.getvalue-to-getstringvalue*/
+/*!description: Replace TagProperty.getValue() with TagProperty.getStringValue() to support JEP 413 (DOM AST for Javadoc tags with properties) in JLS18+.*/
+/*!severity: info*/
+/*!minJavaVersion: 18*/
+/*!tags: jdt, internal, refactoring, java18*/
+$tagProp.getValue() :: instanceof($tagProp, "org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2.TagProperty") && sourceVersionGE(18)
+=> $tagProp.getStringValue()
+;;
+
+@id: jdt.internal.javadochover.getimageurl.add-zoom
+@severity: info
+org.eclipse.jdt.internal.ui.java.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element)
+=> org.eclipse.jdt.internal.ui.java.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element, 200)
+;;
+
+stripQuotes($arg) :: inClass("org.eclipse.jdt.internal.ui.text.javadoc.JavaDocSnippetStringEvaluator")
+=> $arg
+;;
+
+ASTNodes.getUnparenthesedExpression(ASTNodeFactory.negate($ast, $rewrite, $visited.getExpression(), true))
+=> ASTNodeFactory.negateAndUnwrap($ast, $rewrite, $visited.getExpression(), true, true)
+;;
+
+/*!id: jdt.internal.refactoring.renameuserinterfacemanager.swap-starter-class*/
+/*!description: Updates RenameUserInterfaceManager to use RenameUserInterfaceStarter instead of RenameMethodUserInterfaceStarter for method refactoring processors.*/
+/*!severity: info*/
+put($ProcessorType, org.eclipse.jdt.internal.ui.refactoring.reorg.RenameMethodUserInterfaceStarter.class, $WizardType)
+=> put($ProcessorType, org.eclipse.jdt.internal.ui.refactoring.reorg.RenameUserInterfaceStarter.class, $WizardType)
+;;

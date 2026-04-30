@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "b02aa6146830a2ede4d08188fb72965dce7e38b4",
-      "lastProcessedDate": "2026-04-29T03:30:34.022639265Z",
-      "totalProcessed": 1194,
+      "lastProcessedCommit": "2f43b570e00b3ee662ee763a116dc617dae89e6c",
+      "lastProcessedDate": "2026-04-30T03:32:00.253380585Z",
+      "totalProcessed": 1262,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1664,6 +1664,42 @@
           "deferredAt": "2026-04-29T03:26:27.952742259Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "fac9c282c7a2699a65179a3d40fa7042dcc6a367",
+          "message": "Bug 578948 - [18][javadoc] incorrect handling of overlapping multiple annotations within @snippet",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-30T03:24:56.538576676Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "686e6f8d1961a506077f3fc0f0a4ca368897d13b",
+          "message": "Bug 576615 : fix to use the defaults value, when they are requested, and show the saved values, if not\n\nChange-Id: I18b6",
+          "diffLines": 32,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-30T03:26:56.842710645Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b664510ccf77e2b6e2c292bb24ddfe2d234d4b01",
+          "message": "Bug 577682 - [18] Release Activities.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-30T03:29:26.851352871Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5b3ce4393966dc797e4fe8171ea78c072632a204",
+          "message": "Bug 569562 - use double-check locking idiom for performance",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-30T03:29:26.854251409Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1673,17 +1709,17 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 77,
+        "JDT Internal Refactoring": 87,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 25,
-        "Clean-up Bug Fix": 58,
+        "JDT Internal Bug Fix": 29,
+        "Clean-up Bug Fix": 62,
         "Try-with-Resources": 6,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 2,
         "JFace API Modernization": 1,
         "String-API": 7,
-        "Java-Modernization": 18,
+        "Java-Modernization": 19,
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
@@ -1697,7 +1733,7 @@
         "Loop Modernization": 4,
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
-        "Architecture Migration": 1,
+        "Architecture Migration": 2,
         "Code Style": 21,
         "Eclipse API Configuration": 7,
         "Javadoc Generation Enhancement": 1,
@@ -1730,7 +1766,7 @@
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 2,
         "Architecture Refactoring": 1,
-        "Dead Code Removal": 6,
+        "Dead Code Removal": 7,
         "Quick Fix Enhancement": 3,
         "Unnecessary Code": 1,
         "Correctness": 4,
@@ -1741,7 +1777,7 @@
         "New Cleanup": 1,
         "Logical Simplification": 7,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 2,
+        "Eclipse API Modernization": 3,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -1758,7 +1794,11 @@
         "New Feature / Validation": 1,
         "Eclipse UI / Feature": 1,
         "Javadoc/Code Generation": 1,
-        "New Feature / Extension": 1
+        "New Feature / Extension": 1,
+        "Internal Bug Fix": 3,
+        "UI Enhancement": 3,
+        "Javadoc API Enhancement": 2,
+        "Code Clean-Up": 1
       },
       "exhaustedCategories": []
     },
@@ -1799,5 +1839,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23829
+  "globalTotalProcessed": 23897
 }

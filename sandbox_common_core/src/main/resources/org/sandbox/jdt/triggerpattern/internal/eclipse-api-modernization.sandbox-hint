@@ -37,3 +37,7 @@ $scroll.setExpandVertical(true) :: instanceof($scroll, "org.eclipse.swt.custom.S
 $scroll.setExpandVertical(true);
 $scroll.setShowFocusedControl(true)
 ;;
+
+org.eclipse.jdt.ui.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element)
+=> org.eclipse.jdt.ui.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element, 200)
+;;
