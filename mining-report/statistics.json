@@ -1,51 +1,47 @@
 {
-  "totalProcessed": 37,
-  "relevant": 31,
-  "irrelevant": 6,
+  "totalProcessed": 42,
+  "relevant": 40,
+  "irrelevant": 2,
   "duplicates": 1,
-  "green": 8,
-  "yellow": 1,
-  "red": 22,
+  "green": 6,
+  "yellow": 0,
+  "red": 34,
   "irrelevantReasons": {
-    "This commit is a specific fix for an internal build compilation error (WIP bug) and involves a very minor change from a character literal to a string literal, along with an NLS marker. It does not represent a generalizable code transformation pattern for user code.": 1,
-    "This commit is a direct revert of commit `db1d377b4869d60dd8af299d3a04901684c91a98`. Since the original commit was not relevant for DSL mining, its revert is also not relevant.": 1,
-    "The commit only changes string literals within a .properties file, which is a resource file, not Java code. The TriggerPattern DSL is designed for Java code transformations.": 1,
-    "This commit introduces a new quick assist feature in JDT UI, which involves adding new methods and classes, and modifying control flow. The TriggerPattern DSL is for transforming existing code, not for defining new IDE features or structural additions of this complexity.": 1,
-    "The primary changes involve removing multi-line Javadoc-like block comments and commenting out blocks of Java code, neither of which is directly supported by the TriggerPattern DSL for code transformation. The DSL can replace string literals within Javadoc, but not the entire block comment structure itself. Changes in `.properties` files are also outside the scope of the Java code transformation DSL.": 1,
-    "This commit is a partial revert of Commit 0, restoring the deleted `RenameMethodUserInterfaceStarter.java` file and reversing the `RenameUserInterfaceManager` changes. While technically a transformation, generating rules for reverts of specific internal changes is generally not useful for broad-purpose DSL mining.": 1
+    "This commit fixes a typo in a Javadoc comment, which is not a code transformation pattern suitable for TriggerPattern DSL rules. The DSL targets Java code logic and structure, not documentation text.": 1,
+    "This commit introduces new UI components, internal logic, and refactors an existing feature\u0027s implementation (from action-based to direct utility calls). It involves adding new methods, new classes, complex conditional logic, UI setup, and replacing entire functional blocks. There are no simple pattern-to-replacement code transformations that can be generalized into a reusable TriggerPattern DSL rule.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 37,
-      "relevant": 31,
-      "green": 8,
-      "yellow": 1,
-      "red": 22
+      "totalProcessed": 42,
+      "relevant": 40,
+      "green": 6,
+      "yellow": 0,
+      "red": 34
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-04-30",
-      "processed": 37,
-      "relevant": 31
+      "date": "2026-05-01",
+      "processed": 42,
+      "relevant": 40
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-04-30T03:12:26.563Z",
-    "completedAt": "2026-04-30T03:32:01.571375328Z",
-    "durationSeconds": 1175,
+    "startedAt": "2026-05-01T03:11:54.536Z",
+    "completedAt": "2026-05-01T03:32:21.861333848Z",
+    "durationSeconds": 1227,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 179,
+    "deferredCommits": 181,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-04-30T03:14:33.651693769Z",
-    "latestEvaluation": "2026-04-30T03:32:00.252165769Z",
-    "earliestCommitDate": "2018-10-28T19:37:41Z",
-    "latestCommitDate": "2022-03-28T21:07:18Z"
+    "earliestEvaluation": "2026-05-01T03:13:36.435624052Z",
+    "latestEvaluation": "2026-05-01T03:32:20.607571490Z",
+    "earliestCommitDate": "2018-08-31T18:02:10Z",
+    "latestCommitDate": "2022-07-29T08:47:12Z"
   }
 }

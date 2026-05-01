@@ -2805,6 +2805,72 @@
       "sourceCommit": "c8ab3558cf8d482557e53d04f26e2713535580ed",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-ui-fi",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.fix.convertloopfix.to.core.wrapped*/\n/*!description: Updates internal JDT UI cleanup to use ConvertLoopFixCore wrapped in CleanUpFixWrapper.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.corext.fix.ConvertLoopFix.createCleanUp($compilationUnit, $convertForLoops, $convertForLoops2, $useFinal, $checkIfLoopVarUsed)\n\u003d\u003e org.eclipse.jdt.internal.ui.fix.CleanUpFixWrapper.create(org.eclipse.jdt.internal.corext.fix.ConvertLoopFixCore.createCleanUp($compilationUnit, $convertForLoops, $convertForLoops2, $useFinal, $checkIfLoopVarUsed))\n;;\n\n/*!id: jdt.internal.fix.convertloopfix.createconvertforloopenhanced.to.core*/\n/*!description: Updates internal JDT UI cleanup to use ConvertLoopFixCore.createConvertForLoopToEnhancedFix.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.corext.fix.ConvertLoopFix.createConvertForLoopToEnhancedFix($context, $forStatement)\n\u003d\u003e org.eclipse.jdt.internal.corext.fix.ConvertLoopFixCore.createConvertForLoopToEnhancedFix($context, $forStatement)\n;;\n\n/*!id: jdt.internal.fix.convertloopfix.createconvertiterableloopenhanced.to.core*/\n/*!description: Updates internal JDT UI cleanup to use ConvertLoopFixCore.createConvertIterableLoopToEnhancedFix.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.corext.fix.ConvertLoopFix.createConvertIterableLoopToEnhancedFix($context, $forStatement)\n\u003d\u003e org.eclipse.jdt.internal.corext.fix.ConvertLoopFixCore.createConvertIterableLoopToEnhancedFix($context, $forStatement)\n;;\n\n/*!id: jdt.internal.fix.codestylefix.createindirectaccesstostatic.to.core*/\n/*!description: Updates internal JDT UI correction to use CodeStyleFixCore.createIndirectAccessToStaticFix with an IProblemLocationCore cast.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.corext.fix.CodeStyleFix.createIndirectAccessToStaticFix($astRoot, $problem)\n\u003d\u003e org.eclipse.jdt.internal.corext.fix.CodeStyleFixCore.createIndirectAccessToStaticFix($astRoot, (org.eclipse.jdt.internal.ui.text.correction.IProblemLocationCore)$problem)\n;;\n\n/*!id: jdt.internal.fix.codestylefix.createnonstaticaccessfixes.to.core*/\n/*!description: Updates internal JDT UI correction to use CodeStyleFixCore.createNonStaticAccessFixes with an IProblemLocationCore cast.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.corext.fix.CodeStyleFix.createNonStaticAccessFixes($astRoot, $problem)\n\u003d\u003e org.eclipse.jdt.internal.corext.fix.CodeStyleFixCore.createNonStaticAccessFixes($astRoot, (org.eclipse.jdt.internal.ui.text.correction.IProblemLocationCore)$problem)\n;;\n\n/*!id: jdt.internal.fix.codestylefix.createaddfieldqualifierfix.to.core*/\n/*!description: Updates internal JDT UI correction to use CodeStyleFixCore.createAddFieldQualifierFix with an IProblemLocationCore cast.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.corext.fix.CodeStyleFix.createAddFieldQualifierFix($astRoot, $problem)\n\u003d\u003e org.eclipse.jdt.internal.corext.fix.CodeStyleFixCore.createAddFieldQualifierFix($astRoot, (org.eclipse.jdt.internal.ui.text.correction.IProblemLocationCore)$problem)\n;;",
+      "summary": "This commit refactors internal JDT UI fix and correction classes by renaming `*Fix` to `*FixCore` and, in some cases, wrapping the result in `CleanUpFixWrapper.create()` or adding an explicit cast to an argument. These are direct 1:1 replacements of method calls, some involving class name changes in the receiver, wrapping the entire expression, or adding an explicit cast to an argument. This is an internal JDT API modernization and cleanup, fully expressible as multiple GREEN TriggerPattern DSL rules.",
+      "discoveredAt": "2026-05-01",
+      "discoveredInRun": 23981,
+      "sourceCommit": "0d690e2fef46b8cf1f86dc488614b800ad6e9297",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-internal-api-evolution-this-commit-involves-several-changes-add",
+      "category": "Eclipse Internal API Evolution",
+      "dslRule": "@id: jdt.internal.newcuusingwizardproposal.add-semantic-highlighting-flag.package\n@severity: info\nnew org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity) :: instanceof($typeContainer, \"org.eclipse.jdt.core.IPackageFragment\")\n\u003d\u003e new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity, true)\n;;\n\n@id: jdt.internal.newcuusingwizardproposal.add-semantic-highlighting-flag.type\n@severity: info\nnew org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity) :: instanceof($typeContainer, \"org.eclipse.jdt.core.IType\")\n\u003d\u003e new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity, false)\n;;",
+      "summary": "This commit involves several changes: adding a new method to `JavaEditor`, modifying a constructor signature in `NewCUUsingWizardProposal`, and adding an `if` block with internal logic. While these structural changes are not directly DSL-implementable (RED), a key part of the commit is the modification of existing call sites for the `NewCUUsingWizardProposal` constructor. These calls are updated to include a new boolean argument, with its value (`true` or `false`) determined by the type of an existing argument (`IPackageFragment` or `IType`). This specific pattern of adding a new argument to a constructor call, conditionally based on existing arguments, is a direct 1:1 expression replacement and is fully supported by the TriggerPattern DSL with `instanceof` guards, making it a GREEN transformation.",
+      "discoveredAt": "2026-05-01",
+      "discoveredInRun": 23981,
+      "sourceCommit": "8cde88f9bb0403de8370ce7796364cc1007cf72d",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-updates-internal-jdt-ui-comp",
+      "category": "Eclipse API Configuration",
+      "dslRule": "@id: jdt.internal.compliance.version18.to.version19\n@severity: info\norg.eclipse.jdt.core.JavaCore.VERSION_18.equals($selectedCompliance)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_19.equals($selectedCompliance)\n;;",
+      "summary": "This commit updates internal JDT UI compiler preferences to allow targeting Java 19. Specifically, it adds \u0027VERSION_19\u0027 to compliance arrays and updates a conditional check from `JavaCore.VERSION_18.equals(...)` to `JavaCore.VERSION_19.equals(...)`. This is a direct, automatable constant replacement within an expression, fitting existing internal JDT API modernization patterns.",
+      "discoveredAt": "2026-05-01",
+      "discoveredInRun": 23981,
+      "sourceCommit": "715913be6ac7a0ab26df301e3bcb462d8384b335",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refines-the-default-executio",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.newjavaprojectwizard.ee.comparison\n@severity: info\n$defaultCC.endsWith($eeCompliance)\n:: inClass(\"org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne\") \u0026\u0026 inMethod(\"getDefaultExecutionEnvironmentId\")\n\u003d\u003e $defaultCC.equals($eeCompliance)\n;;\n\n@id: jdt.internal.newjavaprojectwizard.ee.default\n@severity: info\nreturn \"JavaSE-1.7\";\n:: inClass(\"org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne\") \u0026\u0026 inMethod(\"getDefaultExecutionEnvironmentId\")\n\u003d\u003e return \"JavaSE-11\";\n;;",
+      "summary": "This commit refines the default execution environment selection logic and updates the default Java version in the New Java Project wizard. Specifically, it changes a string comparison from `endsWith()` to `equals()` for execution environment compliance, enforcing a stricter match. Additionally, it updates the hardcoded default execution environment from \u0027JavaSE-1.7\u0027 to \u0027JavaSE-11\u0027. Both are internal changes to the Eclipse JDT UI codebase, aiming to fix the default EE. These are direct 1:1 expression replacements, fully implementable as two distinct TriggerPattern DSL rules with `inClass` and `inMethod` guards, and are categorized as JDT Internal Refactoring.",
+      "discoveredAt": "2026-05-01",
+      "discoveredInRun": 23981,
+      "sourceCommit": "2b85b8e32467a20705dcf2939296bc2bdbf7cd8f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-improves-the-dark-theme-on-w",
+      "category": "Eclipse API Migration",
+      "dslRule": "org.eclipse.swt.widgets.TabFolder\n\u003d\u003e org.eclipse.swt.custom.CTabFolder\n;;\n\norg.eclipse.swt.widgets.TabItem\n\u003d\u003e org.eclipse.swt.custom.CTabItem\n;;\n\nnew org.eclipse.swt.widgets.TabFolder($composite, $style)\n\u003d\u003e new org.eclipse.swt.custom.CTabFolder($composite, $style)\n;;\n\nnew org.eclipse.swt.widgets.TabItem($folder, $style)\n\u003d\u003e new org.eclipse.swt.custom.CTabItem($folder, $style)\n;;",
+      "summary": "This commit improves the dark theme on Windows by migrating `TabFolder` and `TabItem` usage to `CTabFolder` and `CTabItem` in `BuildPathsBlock.java` and `ModuleDependenciesPage.java`. This is a systematic replacement of SWT widget types, including type references, constructor invocations, and casts. These are direct 1:1 API replacements that enhance UI aesthetics and adhere to modern SWT practices. The transformation is fully expressible as a set of GREEN TriggerPattern DSL rules, as the DSL supports type replacements and constructor invocations. The addition of `folder.setSelection(0)` is a single statement insertion directly related to the new widget and can be handled as a minor side-effect or separate transformation, but the core type migration is the dominant pattern.",
+      "discoveredAt": "2026-05-01",
+      "discoveredInRun": 23981,
+      "sourceCommit": "e9a363598dc2355db48afd1addec8caaac43c17f",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-replaces-a-hardcoded-double-newline-stri",
+      "category": "Java-Modernization",
+      "dslRule": "$str1 + \"\\n\\n\" + $str2\n\u003d\u003e $str1 + System.lineSeparator()+System.lineSeparator() + $str2\n;;",
+      "summary": "Replaces a hardcoded double newline string literal (`\"\\n\\n\"`) with the platform-independent `System.lineSeparator()` repeated twice within a string concatenation. This is a direct expression replacement, improving portability and readability, and is fully implementable as a GREEN TriggerPattern DSL rule.",
+      "discoveredAt": "2026-05-01",
+      "discoveredInRun": 23981,
+      "sourceCommit": "c68d9d9f053cdbc52fe2e5d667b649d034dc1467",
+      "status": "DISCOVERED",
+      "hintFile": "misc.sandbox-hint"
     }
   ]
 }
