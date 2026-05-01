@@ -41,3 +41,19 @@ $scroll.setShowFocusedControl(true)
 org.eclipse.jdt.ui.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element)
 => org.eclipse.jdt.ui.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element, 200)
 ;;
+
+org.eclipse.swt.widgets.TabFolder
+=> org.eclipse.swt.custom.CTabFolder
+;;
+
+org.eclipse.swt.widgets.TabItem
+=> org.eclipse.swt.custom.CTabItem
+;;
+
+new org.eclipse.swt.widgets.TabFolder($composite, $style)
+=> new org.eclipse.swt.custom.CTabFolder($composite, $style)
+;;
+
+new org.eclipse.swt.widgets.TabItem($folder, $style)
+=> new org.eclipse.swt.custom.CTabItem($folder, $style)
+;;

@@ -44,3 +44,7 @@ $threadLocalVar.set(null) :: instanceof($threadLocalVar, "java.lang.ThreadLocal"
 System.getProperty("file.encoding")
 => java.nio.charset.Charset.defaultCharset().displayName()
 ;;
+
+$str1 + "\n\n" + $str2
+=> $str1 + System.lineSeparator()+System.lineSeparator() + $str2
+;;

@@ -1426,3 +1426,77 @@ ASTNodes.getUnparenthesedExpression(ASTNodeFactory.negate($ast, $rewrite, $visit
 put($ProcessorType, org.eclipse.jdt.internal.ui.refactoring.reorg.RenameMethodUserInterfaceStarter.class, $WizardType)
 => put($ProcessorType, org.eclipse.jdt.internal.ui.refactoring.reorg.RenameUserInterfaceStarter.class, $WizardType)
 ;;
+
+/*!id: jdt.internal.fix.convertloopfix.to.core.wrapped*/
+/*!description: Updates internal JDT UI cleanup to use ConvertLoopFixCore wrapped in CleanUpFixWrapper.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.fix.ConvertLoopFix.createCleanUp($compilationUnit, $convertForLoops, $convertForLoops2, $useFinal, $checkIfLoopVarUsed)
+=> org.eclipse.jdt.internal.ui.fix.CleanUpFixWrapper.create(org.eclipse.jdt.internal.corext.fix.ConvertLoopFixCore.createCleanUp($compilationUnit, $convertForLoops, $convertForLoops2, $useFinal, $checkIfLoopVarUsed))
+;;
+
+/*!id: jdt.internal.fix.convertloopfix.createconvertforloopenhanced.to.core*/
+/*!description: Updates internal JDT UI cleanup to use ConvertLoopFixCore.createConvertForLoopToEnhancedFix.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.fix.ConvertLoopFix.createConvertForLoopToEnhancedFix($context, $forStatement)
+=> org.eclipse.jdt.internal.corext.fix.ConvertLoopFixCore.createConvertForLoopToEnhancedFix($context, $forStatement)
+;;
+
+/*!id: jdt.internal.fix.convertloopfix.createconvertiterableloopenhanced.to.core*/
+/*!description: Updates internal JDT UI cleanup to use ConvertLoopFixCore.createConvertIterableLoopToEnhancedFix.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.fix.ConvertLoopFix.createConvertIterableLoopToEnhancedFix($context, $forStatement)
+=> org.eclipse.jdt.internal.corext.fix.ConvertLoopFixCore.createConvertIterableLoopToEnhancedFix($context, $forStatement)
+;;
+
+/*!id: jdt.internal.fix.codestylefix.createindirectaccesstostatic.to.core*/
+/*!description: Updates internal JDT UI correction to use CodeStyleFixCore.createIndirectAccessToStaticFix with an IProblemLocationCore cast.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.fix.CodeStyleFix.createIndirectAccessToStaticFix($astRoot, $problem)
+=> org.eclipse.jdt.internal.corext.fix.CodeStyleFixCore.createIndirectAccessToStaticFix($astRoot, (org.eclipse.jdt.internal.ui.text.correction.IProblemLocationCore)$problem)
+;;
+
+/*!id: jdt.internal.fix.codestylefix.createnonstaticaccessfixes.to.core*/
+/*!description: Updates internal JDT UI correction to use CodeStyleFixCore.createNonStaticAccessFixes with an IProblemLocationCore cast.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.fix.CodeStyleFix.createNonStaticAccessFixes($astRoot, $problem)
+=> org.eclipse.jdt.internal.corext.fix.CodeStyleFixCore.createNonStaticAccessFixes($astRoot, (org.eclipse.jdt.internal.ui.text.correction.IProblemLocationCore)$problem)
+;;
+
+/*!id: jdt.internal.fix.codestylefix.createaddfieldqualifierfix.to.core*/
+/*!description: Updates internal JDT UI correction to use CodeStyleFixCore.createAddFieldQualifierFix with an IProblemLocationCore cast.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.fix.CodeStyleFix.createAddFieldQualifierFix($astRoot, $problem)
+=> org.eclipse.jdt.internal.corext.fix.CodeStyleFixCore.createAddFieldQualifierFix($astRoot, (org.eclipse.jdt.internal.ui.text.correction.IProblemLocationCore)$problem)
+;;
+
+@id: jdt.internal.newcuusingwizardproposal.add-semantic-highlighting-flag.package
+@severity: info
+new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity) :: instanceof($typeContainer, "org.eclipse.jdt.core.IPackageFragment")
+=> new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity, true)
+;;
+
+@id: jdt.internal.newcuusingwizardproposal.add-semantic-highlighting-flag.type
+@severity: info
+new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity) :: instanceof($typeContainer, "org.eclipse.jdt.core.IType")
+=> new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity, false)
+;;
+
+@id: jdt.internal.compliance.version18.to.version19
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_18.equals($selectedCompliance)
+=> org.eclipse.jdt.core.JavaCore.VERSION_19.equals($selectedCompliance)
+;;
+
+@id: jdt.internal.newjavaprojectwizard.ee.comparison
+@severity: info
+$defaultCC.endsWith($eeCompliance)
+:: inClass("org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne") && inMethod("getDefaultExecutionEnvironmentId")
+=> $defaultCC.equals($eeCompliance)
+;;
+
+@id: jdt.internal.newjavaprojectwizard.ee.default
+@severity: info
+return "JavaSE-1.7";
+:: inClass("org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne") && inMethod("getDefaultExecutionEnvironmentId")
+=> return "JavaSE-11";
+;;
