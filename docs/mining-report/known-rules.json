@@ -2871,6 +2871,116 @@
       "sourceCommit": "c68d9d9f053cdbc52fe2e5d667b649d034dc1467",
       "status": "DISCOVERED",
       "hintFile": "misc.sandbox-hint"
+    },
+    {
+      "id": "api-migration-this-commit-replaces-com-ibm-icu-text-ut",
+      "category": "API-Migration",
+      "dslRule": "\u003c!id: icu.utf16.issurrogate-to-character.issurrogate\u003e\n\u003c!description: Replace com.ibm.icu.text.UTF16.isSurrogate() with java.lang.Character.isSurrogate() for platform compatibility.\u003e\n\u003c!severity: info\u003e\n\u003c!minJavaVersion: 8\u003e\n\u003c!tags: api-migration, icu4j\u003e\n\ncom.ibm.icu.text.UTF16.isSurrogate($c)\n\u003d\u003e java.lang.Character.isSurrogate($c)\n;;",
+      "summary": "This commit replaces `com.ibm.icu.text.UTF16.isSurrogate()` with `java.lang.Character.isSurrogate()`. This is a direct 1:1 method call replacement motivated by compatibility issues with the ICU4J library, promoting reliance on standard Java APIs. `Character.isSurrogate()` exists since Java 5, so no specific Java version guard is needed beyond the Java 8 baseline. The transformation is fully automatable and classified as GREEN. A new hint file, `icu-migration.sandbox-hint`, is suggested to group future ICU4J-related migrations.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "7bd15e04e92e2ac52fca7a50e193b66c8bce67af",
+      "status": "DISCOVERED",
+      "hintFile": "icu-migration.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-jdt-ui-j",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.javadoc.textelement-to-abstracttextelement.type-replace*/\n/*!description: Replaces references to TextElement with AbstractTextElement in JDT internal Javadoc snippet evaluation. This is a type widening/modernization for internal AST types.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\norg.eclipse.jdt.core.dom.TextElement\n\u003d\u003e org.eclipse.jdt.core.dom.AbstractTextElement\n;;\n\n/*!id: jdt.internal.javadoc.textelement-to-abstracttextelement.instanceof-replace*/\n/*!description: Replaces instanceof checks for TextElement with AbstractTextElement in JDT internal Javadoc snippet evaluation.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\n$fragment instanceof org.eclipse.jdt.core.dom.TextElement\n\u003d\u003e $fragment instanceof org.eclipse.jdt.core.dom.AbstractTextElement\n;;\n\n/*!id: jdt.internal.javadoc.textelement-to-abstracttextelement.cast-replace*/\n/*!description: Replaces casts to TextElement with AbstractTextElement in JDT internal Javadoc snippet evaluation.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\n(org.eclipse.jdt.core.dom.TextElement) $fragment\n\u003d\u003e (org.eclipse.jdt.core.dom.AbstractTextElement) $fragment\n;;",
+      "summary": "This commit modernizes internal JDT UI Javadoc snippet evaluation by replacing direct references to `org.eclipse.jdt.core.dom.TextElement` with its supertype `org.eclipse.jdt.core.dom.AbstractTextElement`. This includes updates to import statements, `instanceof` checks, and type casts. This is a direct, semantically safe type migration that improves internal API consistency and extensibility. The transformation is fully expressible as three GREEN TriggerPattern DSL rules: one for type references, one for `instanceof` checks, and one for type casts, all targeting the specific internal JDT DOM types.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "054cfef225a81a6958a61deb10484577d8de9ef0",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-ui-co",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.core.dom.TextElement\n\u003d\u003e org.eclipse.jdt.core.dom.AbstractTextElement\n;;",
+      "summary": "This commit refactors internal JDT UI code by replacing the `TextElement` class with `AbstractTextElement` in `JavaDocSnippetStringEvaluator.java`. This includes updating imports, `instanceof` checks, type casts, and local variable declarations. This is a direct 1:1 type replacement pattern, fully expressible as a GREEN TriggerPattern DSL rule. A single rule replacing the `TextElement` FQN with `AbstractTextElement` FQN will cover all occurrences in the diff (imports, `instanceof` checks, casts, local variable declarations, and method parameters). This improves internal API consistency and robustness. The `sourceVersion` is 8 as it\u0027s an internal refactoring and not dependent on new Java language features.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "55fb6b66747da85ba9b204a151cce1ed051d18be",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-improves-internal-jdt-code-b",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.cleanup.remove-redundant-ancestor-cast.statement*/\n/*!description: Removes redundant (Statement) cast from ASTNodes.getFirstAncestorOrNull when the variable is already declared as Statement.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.dom.Statement) org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Statement.class)\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Statement.class)\n;;\n\n/*!id: jdt.internal.cleanup.remove-redundant-ancestor-cast.variabledeclarationstatement*/\n/*!description: Removes redundant (VariableDeclarationStatement) cast from ASTNodes.getFirstAncestorOrNull when the variable is already declared as VariableDeclarationStatement.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.dom.VariableDeclarationStatement) org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.VariableDeclarationStatement.class)\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.VariableDeclarationStatement.class)\n;;\n\n/*!id: jdt.internal.cleanup.remove-redundant-ancestor-cast.fielddeclaration*/\n/*!description: Removes redundant (FieldDeclaration) cast from ASTNodes.getFirstAncestorOrNull when the variable is already declared as FieldDeclaration.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.dom.FieldDeclaration) org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.FieldDeclaration.class)\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.FieldDeclaration.class)\n;;\n\n/*!id: jdt.internal.cleanup.refine-local-variable-type.assignment*/\n/*!description: Refines local variable declaration type from ASTNode to Assignment when the initializer is ASTNodes.getFirstAncestorOrNull(..., Assignment.class).*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.ASTNode $assignNode \u003d org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Assignment.class);\n\u003d\u003e org.eclipse.jdt.core.dom.Assignment $assignNode \u003d org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Assignment.class);\n;;",
+      "summary": "This commit improves internal JDT code by removing redundant casts from the result of `ASTNodes.getFirstAncestorOrNull()` calls when the variable is already declared with the target type. It also refines the declared type of a local variable from `ASTNode` to `Assignment` when initialized by `ASTNodes.getFirstAncestorOrNull(..., Assignment.class)`. These changes enhance type safety and readability, leveraging the generic return types of the utility method. The transformations are direct 1:1 expression or declaration replacements, making them fully implementable as GREEN TriggerPattern DSL rules for internal JDT modernization.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "cb1093315376859558a838c6934880f87921d816",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-internal-jdt-ui-pref",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.compliance.version18.to.version19\n@severity: info\norg.eclipse.jdt.core.JavaCore.VERSION_18.equals($selectedCompliance)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_19.equals($selectedCompliance)\n;;\n\n@id: jdt.internal.newjavaprojectwizard.ee.comparison\n@severity: info\n$defaultCC.endsWith($eeCompliance)\n:: inClass(\"org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne\") \u0026\u0026 inMethod(\"getDefaultExecutionEnvironmentId\")\n\u003d\u003e $defaultCC.equals($eeCompliance)\n;;\n\n@id: jdt.internal.newjavaprojectwizard.ee.default\n@severity: info\nreturn \"JavaSE-1.7\";\n:: inClass(\"org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne\") \u0026\u0026 inMethod(\"getDefaultExecutionEnvironmentId\")\n\u003d\u003e return \"JavaSE-11\";\n;;",
+      "summary": "This commit updates internal JDT UI preferences for Java compliance and default execution environments. It specifically changes the target compliance version from 18 to 19, modifies an execution environment string comparison from \u0027endsWith\u0027 to \u0027equals\u0027 for stricter matching, and updates the hardcoded default execution environment from \u0027JavaSE-1.7\u0027 to \u0027JavaSE-11\u0027. These are direct 1:1 expression and literal replacements, fully implementable as DSL rules for internal JDT modernization.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "a3feb8aa2c67b6ae4d4ea635256ac01e1014a4c7",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-this-commit-adds-checks-for-data-urls-to",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "/*!id: jdt.internal.browser.location.aboutblank-to-dataurl*/\n/*!description: Extends the \u0027about:blank\u0027 location check to include \u0027data:\u0027 URLs for Edge browser compatibility when setText() is used. This fixes an internal JDT UI bug. (Pattern 1 of 2)*/\n/*!severity: error*/\n\"about:blank\".equals($locVar) :: instanceof($locVar, \"java.lang.String\")\n\u003d\u003e \"about:blank\".equals($locVar) || $locVar.startsWith(\"data:\")\n;;\n\n/*!id: jdt.internal.browser.location.external-link-guard*/\n/*!description: Adds a guard for \u0027data:\u0027 URLs when handling external links in the browser to prevent incorrect processing for Edge browser setText() calls. This fixes an internal JDT UI bug. (Pattern 2 of 2)*/\n/*!severity: error*/\n$handler.handleExternalLink(new java.net.URL($locVar), $eventDisplay) :: instanceof($locVar, \"java.lang.String\")\n\u003d\u003e !$locVar.startsWith(\"data:\") \u0026\u0026 $handler.handleExternalLink(new java.net.URL($locVar), $eventDisplay)\n;;",
+      "summary": "This commit adds checks for \u0027data:\u0027 URLs to an internal Eclipse JDT UI browser component (`JavaElementLinks.java`) to address a bug with Edge browser\u0027s `setText()` behavior. Two distinct patterns are identified: extending an existing `String.equals()` check with an `|| $locVar.startsWith(\"data:\")` condition, and adding a `!$locVar.startsWith(\"data:\") \u0026\u0026` prefix to an existing method call in a conditional context. Both are direct boolean expression modifications, making them fully implementable as GREEN TriggerPattern DSL rules. These rules enhance the robustness of internal JDT UI logic by patching a browser-specific quirk. The rules will be added to a new hint file, `jdt-internal-ui-browser-fixes.sandbox-hint`.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "939c9911577144372fff1d15b8211c49012ff221",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-ui-browser-fixes.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-this-commit-introduces-ui-for-configurin",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "@id: eclipse.jdt.ui.buildpathdialogaccess.externalannotations.addjavaprojectarg.null\n@severity: info\norg.eclipse.jdt.ui.wizards.BuildPathDialogAccess.configureExternalAnnotationsAttachment($shell, $initialEntry)\n\u003d\u003e org.eclipse.jdt.internal.ui.wizards.buildpaths.ExternalAnnotationsAttachmentDialog.configureExternalAnnotationsAttachment($shell, $initialEntry, null)\n;;\n\n@id: eclipse.jdt.ui.externalannotationsattributeconfiguration.externalannotations.addjavaprojectarg.fromattribute\n@severity: info\norg.eclipse.jdt.ui.wizards.BuildPathDialogAccess.configureExternalAnnotationsAttachment($shell, $locationPath)\n:: inClass(\"org.eclipse.jdt.internal.ui.wizards.buildpaths.ExternalAnnotationsAttributeConfiguration\")\n\u003d\u003e org.eclipse.jdt.internal.ui.wizards.buildpaths.ExternalAnnotationsAttachmentDialog.configureExternalAnnotationsAttachment($shell, $locationPath, $attribute.getJavaProject())\n;;",
+      "summary": "This commit introduces UI for configuring external annotation paths, including container-relative options. The primary transformation patterns are the migration of API calls from the public `BuildPathDialogAccess.configureExternalAnnotationsAttachment` method to the internal `ExternalAnnotationsAttachmentDialog.configureExternalAnnotationsAttachment` static method. This involves changing the method called and adding an `IJavaProject` argument (either `null` or derived from an existing `ClasspathAttributeAccess` object). These are direct API modernizations for internal JDT UI components, improving context passing for external annotations, and are fully expressible as two distinct DSL rules.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "166df10a6836056050543531efaa94d0651d32d6",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "bug-fix-this-commit-fixes-a-bug-in-jdt-s-problem",
+      "category": "Bug Fix",
+      "dslRule": "@id: jdt.internal.problemslabeldecorator.dont-log-closed-project-errors.handlecoreexception\n@severity: info\n$errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND\n:: inClass(\"org.eclipse.jdt.ui.ProblemsLabelDecorator\") \u0026\u0026 inMethod(\"handleCoreException\")\n\u003d\u003e $errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND || $errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.PROJECT_NOT_OPEN\n;;\n\n@id: jdt.internal.problemslabeldecorator.dont-log-closed-project-errors.computecontaineradornmentflags\n@severity: info\n$errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND\n:: inClass(\"org.eclipse.jdt.ui.ProblemsLabelDecorator\") \u0026\u0026 inMethod(\"computeContainerAdornmentFlags\")\n\u003d\u003e $errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND || $errorCode \u003d\u003d org.eclipse.core.runtime.IResourceStatus.PROJECT_NOT_OPEN\n;;",
+      "summary": "This commit fixes a bug in JDT\u0027s `ProblemsLabelDecorator` by extending existing conditional logic to include `IResourceStatus.PROJECT_NOT_OPEN`. This prevents logging of decorator errors for closed projects, improving stability and reducing noise. The change is a direct 1:1 boolean expression replacement, occurring in two identical contexts within the same class, making it fully implementable as two GREEN TriggerPattern DSL rules with `inClass` and `inMethod` guards.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "f194fce25f9800795ce63b29a6d8cef89a3b5377",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-this-commit-adds-formatter-support-for-j",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "org.eclipse.jdt.internal.ui.preferences.formatter.FormatterModifyDialog.$builder.pref(org.eclipse.jdt.internal.ui.preferences.formatter.FormatterMessages.FormatterModifyDialog_lineWrap_pref_implements_clause, org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_SUPERINTERFACES_IN_TYPE_DECLARATION) :: sourceVersionGE(15)\n\u003d\u003e org.eclipse.jdt.internal.ui.preferences.formatter.FormatterModifyDialog.$builder.pref(org.eclipse.jdt.internal.ui.preferences.formatter.FormatterMessages.FormatterModifyDialog_lineWrap_pref_implements_clause, org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_SUPERINTERFACES_IN_TYPE_DECLARATION).pref(org.eclipse.jdt.internal.ui.preferences.formatter.FormatterMessages.FormatterModifyDialog_lineWrap_pref_permits_clause, org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_PERMITTED_TYPES_IN_TYPE_DECLARATION)\n;;",
+      "summary": "This commit adds formatter support for Java 15 Sealed Types (JEP 360) by introducing a new \u0027permits\u0027 clause preference option in JDT\u0027s `FormatterModifyDialog`. The primary code transformation involves inserting a new method call (`.pref(...)`) into an existing builder chain. This can be precisely modeled as an expression replacement where the existing method call in the chain is replaced by itself followed by the new method call. This is a direct 1:1 expression transformation, fully supported by the TriggerPattern DSL, and is guarded by `sourceVersionGE(15)` to align with the introduction of Sealed Types. The NLS file modifications are not covered by the DSL.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "3adb1da52d57c2aa2e1a1edcfcf29640c3dd4ce3",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-formatter-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-updates-internal-eclipse-jdt",
+      "category": "Eclipse API Modernization",
+      "dslRule": "org.eclipse.jdt.ui.JavaElementLabels.ALL_CATEGORY\n\u003d\u003e org.eclipse.jdt.ui.JavaElementLabels.ALL_CATEGORY2\n;;",
+      "summary": "This commit updates internal Eclipse JDT UI label providers to use `JavaElementLabels.ALL_CATEGORY2` instead of the deprecated `JavaElementLabels.ALL_CATEGORY`. This change is a direct 1:1 replacement of a static field reference, improving UI display consistency and adhering to modernized Eclipse JDT UI API usage. It is fully implementable as a GREEN TriggerPattern DSL rule without any specific source version guards, as the relevant APIs are part of the Java 8 baseline and internal Eclipse API evolution.",
+      "discoveredAt": "2026-05-02",
+      "discoveredInRun": 24061,
+      "sourceCommit": "9ebd77f67361be201959936fde9d056a32b01fac",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
     }
   ]
 }
