@@ -1500,3 +1500,85 @@ return "JavaSE-1.7";
 :: inClass("org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne") && inMethod("getDefaultExecutionEnvironmentId")
 => return "JavaSE-11";
 ;;
+
+/*!id: jdt.internal.javadoc.textelement-to-abstracttextelement.type-replace*/
+/*!description: Replaces references to TextElement with AbstractTextElement in JDT internal Javadoc snippet evaluation. This is a type widening/modernization for internal AST types.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+org.eclipse.jdt.core.dom.TextElement
+=> org.eclipse.jdt.core.dom.AbstractTextElement
+;;
+
+/*!id: jdt.internal.javadoc.textelement-to-abstracttextelement.instanceof-replace*/
+/*!description: Replaces instanceof checks for TextElement with AbstractTextElement in JDT internal Javadoc snippet evaluation.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+$fragment instanceof org.eclipse.jdt.core.dom.TextElement
+=> $fragment instanceof org.eclipse.jdt.core.dom.AbstractTextElement
+;;
+
+/*!id: jdt.internal.javadoc.textelement-to-abstracttextelement.cast-replace*/
+/*!description: Replaces casts to TextElement with AbstractTextElement in JDT internal Javadoc snippet evaluation.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+(org.eclipse.jdt.core.dom.TextElement) $fragment
+=> (org.eclipse.jdt.core.dom.AbstractTextElement) $fragment
+;;
+
+/*!id: jdt.internal.cleanup.remove-redundant-ancestor-cast.statement*/
+/*!description: Removes redundant (Statement) cast from ASTNodes.getFirstAncestorOrNull when the variable is already declared as Statement.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.dom.Statement) org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Statement.class)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Statement.class)
+;;
+
+/*!id: jdt.internal.cleanup.remove-redundant-ancestor-cast.variabledeclarationstatement*/
+/*!description: Removes redundant (VariableDeclarationStatement) cast from ASTNodes.getFirstAncestorOrNull when the variable is already declared as VariableDeclarationStatement.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.dom.VariableDeclarationStatement) org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.VariableDeclarationStatement.class)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.VariableDeclarationStatement.class)
+;;
+
+/*!id: jdt.internal.cleanup.remove-redundant-ancestor-cast.fielddeclaration*/
+/*!description: Removes redundant (FieldDeclaration) cast from ASTNodes.getFirstAncestorOrNull when the variable is already declared as FieldDeclaration.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.dom.FieldDeclaration) org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.FieldDeclaration.class)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.FieldDeclaration.class)
+;;
+
+/*!id: jdt.internal.cleanup.refine-local-variable-type.assignment*/
+/*!description: Refines local variable declaration type from ASTNode to Assignment when the initializer is ASTNodes.getFirstAncestorOrNull(..., Assignment.class).*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.ASTNode $assignNode = org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Assignment.class);
+=> org.eclipse.jdt.core.dom.Assignment $assignNode = org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Assignment.class);
+;;
+
+@id: eclipse.jdt.ui.buildpathdialogaccess.externalannotations.addjavaprojectarg.null
+@severity: info
+org.eclipse.jdt.ui.wizards.BuildPathDialogAccess.configureExternalAnnotationsAttachment($shell, $initialEntry)
+=> org.eclipse.jdt.internal.ui.wizards.buildpaths.ExternalAnnotationsAttachmentDialog.configureExternalAnnotationsAttachment($shell, $initialEntry, null)
+;;
+
+@id: eclipse.jdt.ui.externalannotationsattributeconfiguration.externalannotations.addjavaprojectarg.fromattribute
+@severity: info
+org.eclipse.jdt.ui.wizards.BuildPathDialogAccess.configureExternalAnnotationsAttachment($shell, $locationPath)
+:: inClass("org.eclipse.jdt.internal.ui.wizards.buildpaths.ExternalAnnotationsAttributeConfiguration")
+=> org.eclipse.jdt.internal.ui.wizards.buildpaths.ExternalAnnotationsAttachmentDialog.configureExternalAnnotationsAttachment($shell, $locationPath, $attribute.getJavaProject())
+;;
+
+@id: jdt.internal.problemslabeldecorator.dont-log-closed-project-errors.handlecoreexception
+@severity: info
+$errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND
+:: inClass("org.eclipse.jdt.ui.ProblemsLabelDecorator") && inMethod("handleCoreException")
+=> $errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.PROJECT_NOT_OPEN
+;;
+
+@id: jdt.internal.problemslabeldecorator.dont-log-closed-project-errors.computecontaineradornmentflags
+@severity: info
+$errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND
+:: inClass("org.eclipse.jdt.ui.ProblemsLabelDecorator") && inMethod("computeContainerAdornmentFlags")
+=> $errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.PROJECT_NOT_OPEN
+;;

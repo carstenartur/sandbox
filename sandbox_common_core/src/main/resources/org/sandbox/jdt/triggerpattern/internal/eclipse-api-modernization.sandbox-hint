@@ -57,3 +57,7 @@ new org.eclipse.swt.widgets.TabFolder($composite, $style)
 new org.eclipse.swt.widgets.TabItem($folder, $style)
 => new org.eclipse.swt.custom.CTabItem($folder, $style)
 ;;
+
+org.eclipse.jdt.ui.JavaElementLabels.ALL_CATEGORY
+=> org.eclipse.jdt.ui.JavaElementLabels.ALL_CATEGORY2
+;;

@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "3e85fa9ceb8ba01b381b35cf00132f5f50717c47",
-      "lastProcessedDate": "2026-05-01T03:32:20.608682753Z",
-      "totalProcessed": 1346,
+      "lastProcessedCommit": "b0cbe57f12a55c0e2cdf2f55082ddd06a470b2f6",
+      "lastProcessedDate": "2026-05-02T03:30:12.736504417Z",
+      "totalProcessed": 1426,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1727,11 +1727,11 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 97,
+        "JDT Internal Refactoring": 104,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 36,
-        "Clean-up Bug Fix": 67,
+        "JDT Internal Bug Fix": 39,
+        "Clean-up Bug Fix": 71,
         "Try-with-Resources": 6,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 2,
@@ -1741,7 +1741,7 @@
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
-        "Null-Safety": 11,
+        "Null-Safety": 13,
         "Lambda-Simplification": 4,
         "Architectural Refactoring": 1,
         "Collections": 9,
@@ -1751,14 +1751,14 @@
         "Loop Modernization": 4,
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
-        "Architecture Migration": 2,
+        "Architecture Migration": 3,
         "Code Style": 23,
         "Eclipse API Configuration": 8,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
-        "JDT Internal UI Feature": 2,
+        "JDT Internal UI Feature": 13,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 8,
+        "Eclipse API Migration": 9,
         "JDT Internal Feature": 1,
         "Type Safety": 3,
         "Eclipse UI Refactoring": 2,
@@ -1791,11 +1791,11 @@
         "Code Correctness": 5,
         "Code Structure Simplification": 5,
         "Concurrency": 3,
-        "Bug Fix": 2,
+        "Bug Fix": 3,
         "New Cleanup": 1,
         "Logical Simplification": 7,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 3,
+        "Eclipse API Modernization": 4,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -1823,7 +1823,11 @@
         "Eclipse Internal API Evolution": 1,
         "JDT Internal Feature Implementation": 2,
         "Loop Conversion": 1,
-        "Eclipse UI Enhancement": 1
+        "Eclipse UI Enhancement": 1,
+        "Internal Logic Refactoring": 1,
+        "Internal API Modernization": 1,
+        "API-Migration": 1,
+        "Error Handling": 1
       },
       "exhaustedCategories": []
     },
@@ -1864,5 +1868,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 23981
+  "globalTotalProcessed": 24061
 }
