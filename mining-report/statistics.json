@@ -1,35 +1,37 @@
 {
-  "totalProcessed": 42,
-  "relevant": 40,
-  "irrelevant": 2,
+  "totalProcessed": 39,
+  "relevant": 35,
+  "irrelevant": 4,
   "duplicates": 1,
-  "green": 6,
-  "yellow": 0,
-  "red": 34,
+  "green": 11,
+  "yellow": 1,
+  "red": 23,
   "irrelevantReasons": {
-    "This commit fixes a typo in a Javadoc comment, which is not a code transformation pattern suitable for TriggerPattern DSL rules. The DSL targets Java code logic and structure, not documentation text.": 1,
-    "This commit introduces new UI components, internal logic, and refactors an existing feature\u0027s implementation (from action-based to direct utility calls). It involves adding new methods, new classes, complex conditional logic, UI setup, and replacing entire functional blocks. There are no simple pattern-to-replacement code transformations that can be generalized into a reusable TriggerPattern DSL rule.": 1
+    "Documentation/Javadoc cleanup, not a Java code transformation pattern.": 1,
+    "This commit adds a new constant (IProblem.IsClassPathCorrectWithReferencingType) to existing switch statements in an internal quick-fix processor. The TriggerPattern DSL is designed for code transformations (replacements, refactorings) of existing code, not for structural additions of new case labels to control flow statements or integrating new constants into application logic.": 1,
+    "The changes involve removing multi-line comments (disclaimers in file headers), commenting out code blocks, and modifying a .properties file. None of these are directly expressible as reusable Java code transformation rules in the TriggerPattern DSL.": 1,
+    "This commit is purely an internal architectural refactoring of the JDT UI\u0027s quick-fix infrastructure. It moves logic, introduces new helper methods, and changes how quick-fix proposals are created and managed for Java 17+ Sealed Classes. No code transformation patterns are applied to user code. The changes involve refactoring complex multi-statement blocks, method extractions, and API delegation, none of which are directly expressible as pattern-based DSL rules.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 42,
-      "relevant": 40,
-      "green": 6,
-      "yellow": 0,
-      "red": 34
+      "totalProcessed": 39,
+      "relevant": 35,
+      "green": 11,
+      "yellow": 1,
+      "red": 23
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-05-01",
-      "processed": 42,
-      "relevant": 40
+      "date": "2026-05-02",
+      "processed": 39,
+      "relevant": 35
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-05-01T03:11:54.536Z",
-    "completedAt": "2026-05-01T03:32:21.861333848Z",
-    "durationSeconds": 1227,
+    "startedAt": "2026-05-02T03:10:29.144Z",
+    "completedAt": "2026-05-02T03:30:14.021123185Z",
+    "durationSeconds": 1184,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -39,9 +41,9 @@
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-05-01T03:13:36.435624052Z",
-    "latestEvaluation": "2026-05-01T03:32:20.607571490Z",
-    "earliestCommitDate": "2018-08-31T18:02:10Z",
-    "latestCommitDate": "2022-07-29T08:47:12Z"
+    "earliestEvaluation": "2026-05-02T03:12:20.476834346Z",
+    "latestEvaluation": "2026-05-02T03:30:12.735630956Z",
+    "earliestCommitDate": "2022-07-30T16:02:59Z",
+    "latestCommitDate": "2023-01-10T21:22:30Z"
   }
 }
