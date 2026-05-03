@@ -2981,6 +2981,116 @@
       "sourceCommit": "9ebd77f67361be201959936fde9d056a32b01fac",
       "status": "DISCOVERED",
       "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-ui-co",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "\u003c!id: jdt.internal.refactoring.static-member-move\u003e\n\u003c!description: Consolidates static methods and constants from various JDT UI classes into common utility classes (e.g., MembersOrderPreferenceCache to MembersOrderPreferenceCacheCommon, ToStringGenerationSettings to ToStringGenerationSettingsCore). Improves internal API consistency and organization.\u003e\n\u003c!severity: info\u003e\n\u003c!minJavaVersion: 8\u003e\n\u003c!tags: jdt, internal, refactoring\u003e\n\n@id: jdt.internal.membersview.is-member-order-property.to-common\norg.eclipse.jdt.internal.ui.preferences.MembersOrderPreferenceCache.isMemberOrderProperty($eventProperty)\n\u003d\u003e org.eclipse.jdt.internal.core.manipulation.MembersOrderPreferenceCacheCommon.isMemberOrderProperty($eventProperty)\n;;\n\n@id: jdt.internal.tostringdialog.settings.template-names.to-core\norg.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.SETTINGS_TEMPLATE_NAMES\n\u003d\u003e org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.SETTINGS_TEMPLATE_NAMES\n;;\n\n@id: jdt.internal.tostringdialog.settings.templates.to-core\norg.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.SETTINGS_TEMPLATES\n\u003d\u003e org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.SETTINGS_TEMPLATES\n;;\n\n@id: jdt.internal.tostringdialog.settings.selected-template.to-core\norg.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.SETTINGS_SELECTED_TEMPLATE\n\u003d\u003e org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.SETTINGS_SELECTED_TEMPLATE\n;;",
+      "summary": "This commit refactors internal JDT UI code by replacing references to static methods and constants from older classes with their counterparts in newer, dedicated common utility classes. Specifically, `MembersOrderPreferenceCache.isMemberOrderProperty()` is moved to `MembersOrderPreferenceCacheCommon.isMemberOrderProperty()`, and several static preference keys from `ToStringGenerationSettings` (e.g., `SETTINGS_TEMPLATE_NAMES`) are moved to `ToStringGenerationSettingsCore`. These are direct 1:1 replacements of fully qualified static member accesses, improving code organization and internal API consistency. The transformations are fully implementable as multiple GREEN TriggerPattern DSL rules.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "0015fc54abf470e62e777e75d2e8c7b4dd0e683b",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-replaces-an-internal-eclipse",
+      "category": "Eclipse API Migration",
+      "dslRule": "@id: eclipse.jdt.ui.codemining.ignoreinexactmatches\n@severity: info\norg.eclipse.search.ui.NewSearchUI.arePotentialMatchesIgnored()\n\u003d\u003e org.eclipse.jdt.internal.ui.preferences.JavaPreferencesPropertyTester.isEnabled(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_JAVA_CODEMINING_IGNORE_INEXACT_MATCHES)\n;;",
+      "summary": "This commit replaces an internal Eclipse Search UI preference lookup with a dedicated JDT UI preference check for Code Minings. This is a direct 1:1 method call replacement, improving internal API consistency and decoupling. It is fully expressible as a GREEN TriggerPattern DSL rule, applicable from Java 8 baseline.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "3eb3eebb1f032812c1a624323651d2bc0717d9a6",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-moves-a-static-utility-metho",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.refactoring.move-chaincompletion-static-method*/\n/*!description: Move static utility method createChainCode from ChainCompletionTemplateBuilder to ChainElement, updating call sites.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring*/\norg.eclipse.jdt.internal.ui.text.java.ChainCompletionTemplateBuilder.createChainCode($chain, $createAsTitle, $expectedDimension)\n\u003d\u003e org.eclipse.jdt.internal.core.manipulation.ChainElement.createChainCode($chain, $createAsTitle, $expectedDimension)\n;;",
+      "summary": "This commit moves a static utility method `createChainCode` from `ChainCompletionTemplateBuilder` to `ChainElement`, updating its call sites. This is a direct 1:1 method call replacement, fully expressible as a GREEN TriggerPattern DSL rule. It improves modularity by placing utility logic in a more appropriate internal JDT Core manipulation class. The rule explicitly replaces the fully qualified call to the old method with the new fully qualified one.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "9dd151f5f1804b72930d41772e1c91745928b410",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-567663-by-modifyin",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.ui.type.effectivermodifiers.fix\n@severity: info\n$typeRef.getModifiers() :: inClass(\"org.eclipse.jdt.internal.ui.util.TypeNameMatchLabelProvider\")\n\u003d\u003e org.eclipse.jdt.internal.ui.util.TypeNameMatchLabelProvider.getEffectiveModifiers($typeRef.getType(), $typeRef.getModifiers())\n;;",
+      "summary": "This commit fixes Bug 567663 by modifying how type modifiers are obtained in `TypeNameMatchLabelProvider.java`. It replaces a direct call to `typeRef.getModifiers()` with a call to a newly introduced private static helper method, `getEffectiveModifiers(typeRef.getType(), typeRef.getModifiers())`. This ensures correct calculation of modifiers for nested classes/interfaces, affecting their icons in the Open Type dialog. The transformation is a direct 1:1 expression replacement (a method call for another method call), which is fully implementable as a GREEN TriggerPattern DSL rule. The rule uses an `inClass` guard for precision, targeting an internal JDT UI code fix. The helper method itself is assumed to exist in the target codebase, as this is an internal refactoring.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "d40c49c2632933924e45c1e9aff708ec21cd8cd1",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-a-merge-of-beta-java20-prima",
+      "category": "Eclipse API Configuration",
+      "dslRule": "@id: jdt.internal.compliance.version19.to.version20\n@severity: info\norg.eclipse.jdt.core.JavaCore.VERSION_19.equals($selectedCompliance)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_20.equals($selectedCompliance)\n;;",
+      "summary": "This commit, a merge of \u0027BETA_JAVA20\u0027, primarily updates internal Eclipse JDT UI preferences to support Java 20. The most direct and generalizable pattern is the update of a conditional expression from checking for `JavaCore.VERSION_19` to `JavaCore.VERSION_20`. This is a direct 1:1 constant replacement within a boolean expression, suitable for a GREEN TriggerPattern DSL rule. Other changes involving array literal modifications and NLS message updates are not directly expressible with simple DSL rules. The rule will be added to `jdt-internal-refactoring.sandbox-hint` for internal JDT API modernization. No specific `sourceVersionGE` guard is needed in the rule as it\u0027s an internal JDT refactoring for JLS version support, not a migration of user code to a new Java language feature, thus baseline Java 8 is sufficient.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "5c282e1746dd5dc7a3028be90da6e1f0ec568f8b",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-is-a-merge-request-that-is-i",
+      "category": "Eclipse API Configuration",
+      "dslRule": "@id: jdt.internal.compliance.version19.to.version20\n@severity: info\norg.eclipse.jdt.core.JavaCore.VERSION_19.equals($selectedCompliance)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_20.equals($selectedCompliance)\n;;",
+      "summary": "This commit is a merge request that is identical in its diff to Commit 0, updating internal Eclipse JDT UI preferences to support Java 20. The same core pattern of replacing a conditional check from `JavaCore.VERSION_19` to `JavaCore.VERSION_20` is present. Therefore, this commit is a duplicate of Commit 0 and is classified as GREEN with the same DSL rule. It will be added to `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "32eaaaafdf1e2c9ef8b86a868a1f00af767726d2",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-the-internal-javat",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.refactoring.javatypecompletionprocessor.dummy-class-name\n@severity: info\n\"$$__$$\"\n\u003d\u003e org.eclipse.jdt.internal.ui.refactoring.contentassist.JavaTypeCompletionProcessorCore.DUMMY_CLASS_NAME\n;;\n\n@id: jdt.internal.refactoring.javatypecompletionprocessor.dummy-cu-name\n@severity: info\norg.eclipse.jdt.internal.ui.refactoring.contentassist.JavaTypeCompletionProcessor.DUMMY_CLASS_NAME + org.eclipse.jdt.internal.corext.util.JavaModelUtil.DEFAULT_CU_SUFFIX\n\u003d\u003e org.eclipse.jdt.internal.ui.refactoring.contentassist.JavaTypeCompletionProcessorCore.DUMMY_CU_NAME\n;;",
+      "summary": "This commit refactors the internal `JavaTypeCompletionProcessor` class by moving hardcoded string constants and their derived expressions to static fields in a new `JavaTypeCompletionProcessorCore` class. This improves maintainability and centralizes constant definitions within JDT\u0027s internal architecture. Two distinct, direct 1:1 expression replacements are identified: one replacing a string literal with a static field, and another replacing an infix string concatenation with a static field. Both are fully implementable as GREEN TriggerPattern DSL rules, enhancing internal JDT API usage. The rules explicitly use fully qualified names for precision in patterns and replacements.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "510209199b020a272ee579012514282037569f86",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-extends-a-boolean-conditiona",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "!$qualifiedTypeBinding.getName().equals($simpleBinding.getName()) \u0026\u0026 !isInherited($qualifiedTypeBinding, $simpleBinding) :: sourceVersionGE(16) \u0026\u0026 instanceof($qualifiedTypeBinding, \"org.eclipse.jdt.core.dom.ITypeBinding\")\n\u003d\u003e !$qualifiedTypeBinding.getName().equals($simpleBinding.getName()) \u0026\u0026 !$qualifiedTypeBinding.isGenericType() \u0026\u0026 !$qualifiedTypeBinding.isParameterizedType() \u0026\u0026 !$qualifiedTypeBinding.isWildcardType() \u0026\u0026 !$qualifiedTypeBinding.isRawType() \u0026\u0026 !$qualifiedTypeBinding.isRecord() \u0026\u0026 !$qualifiedTypeBinding.isRecovered() \u0026\u0026 !isInherited($qualifiedTypeBinding, $simpleBinding)\n;;",
+      "summary": "This commit extends a boolean conditional expression in `UnresolvedElementsSubProcessor.java` to prevent inheritance checks for specific `ITypeBinding` kinds, such as generic, parameterized, wildcard, raw, record, and recovered types. This is a direct 1:1 replacement of a boolean expression, enhancing the correctness of internal JDT quick-fix logic for modern Java features. The transformation is fully expressible as a GREEN TriggerPattern DSL rule, guarded by `sourceVersionGE(16)` due to the `isRecord()` check.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "9eb04778168dc7045d694d7dd923deae269f996f",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "probable-bugs-this-commit-fixes-an-indexoutofboundsexc",
+      "category": "Probable Bugs",
+      "dslRule": "@id: jdt.internal.buildpath.movecpelement.ioobe.fix\n@severity: error\n$indexOfSelElement !\u003d -1\n:: inClass(\"org.eclipse.jdt.internal.ui.wizards.buildpaths.BuildPathBasePage\") \u0026\u0026 inMethod(\"moveCPElementAcrossNode\")\n\u003d\u003e $indexOfSelElement !\u003d -1 \u0026\u0026 $indexOfSelElement \u003c $rootCPListElement.getChildren().size()\n;;",
+      "summary": "This commit fixes an `IndexOutOfBoundsException` by extending an `if` condition to include a bounds check (`indexOfSelElement \u003c rootCPListElement.getChildren().size()`). This is a direct 1:1 boolean expression replacement, fully implementable as a GREEN TriggerPattern DSL rule, improving code correctness. The rule is guarded to target the specific internal JDT method.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "1738a51690a2bcb968d2a4768377cff426c8c7b4",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-replaces-an-internal-method",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.completionproposalcollector.filter-to-ignore\n@severity: info\nisFiltered($proposal)\n:: inClass(\"org.eclipse.jdt.ui.text.java.CompletionProposalCollector\")\n\u003d\u003e isIgnored($proposal.getKind())\n;;",
+      "summary": "This commit replaces an internal method call `isFiltered(proposal)` with `isIgnored(proposal.getKind())` within JDT\u0027s `CompletionProposalCollector`. This is a direct 1:1 method call replacement that updates the logic for filtering completion proposals. The transformation is fully supported by the TriggerPattern DSL, using an `inClass` guard to ensure its application to the specific internal component.",
+      "discoveredAt": "2026-05-03",
+      "discoveredInRun": 24149,
+      "sourceCommit": "96ad55c9cf34bf03e6964ef36282c3430236c1af",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
