@@ -1582,3 +1582,80 @@ $errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $erro
 :: inClass("org.eclipse.jdt.ui.ProblemsLabelDecorator") && inMethod("computeContainerAdornmentFlags")
 => $errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.PROJECT_NOT_OPEN
 ;;
+
+<!id: jdt.internal.refactoring.static-member-move>
+<!description: Consolidates static methods and constants from various JDT UI classes into common utility classes (e.g., MembersOrderPreferenceCache to MembersOrderPreferenceCacheCommon, ToStringGenerationSettings to ToStringGenerationSettingsCore). Improves internal API consistency and organization.>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: jdt, internal, refactoring>
+
+@id: jdt.internal.membersview.is-member-order-property.to-common
+org.eclipse.jdt.internal.ui.preferences.MembersOrderPreferenceCache.isMemberOrderProperty($eventProperty)
+=> org.eclipse.jdt.internal.core.manipulation.MembersOrderPreferenceCacheCommon.isMemberOrderProperty($eventProperty)
+;;
+
+@id: jdt.internal.tostringdialog.settings.template-names.to-core
+org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.SETTINGS_TEMPLATE_NAMES
+=> org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.SETTINGS_TEMPLATE_NAMES
+;;
+
+@id: jdt.internal.tostringdialog.settings.templates.to-core
+org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.SETTINGS_TEMPLATES
+=> org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.SETTINGS_TEMPLATES
+;;
+
+@id: jdt.internal.tostringdialog.settings.selected-template.to-core
+org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.SETTINGS_SELECTED_TEMPLATE
+=> org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.SETTINGS_SELECTED_TEMPLATE
+;;
+
+/*!id: jdt.internal.refactoring.move-chaincompletion-static-method*/
+/*!description: Move static utility method createChainCode from ChainCompletionTemplateBuilder to ChainElement, updating call sites.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+org.eclipse.jdt.internal.ui.text.java.ChainCompletionTemplateBuilder.createChainCode($chain, $createAsTitle, $expectedDimension)
+=> org.eclipse.jdt.internal.core.manipulation.ChainElement.createChainCode($chain, $createAsTitle, $expectedDimension)
+;;
+
+@id: jdt.internal.ui.type.effectivermodifiers.fix
+@severity: info
+$typeRef.getModifiers() :: inClass("org.eclipse.jdt.internal.ui.util.TypeNameMatchLabelProvider")
+=> org.eclipse.jdt.internal.ui.util.TypeNameMatchLabelProvider.getEffectiveModifiers($typeRef.getType(), $typeRef.getModifiers())
+;;
+
+@id: jdt.internal.compliance.version19.to.version20
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_19.equals($selectedCompliance)
+=> org.eclipse.jdt.core.JavaCore.VERSION_20.equals($selectedCompliance)
+;;
+
+@id: jdt.internal.refactoring.javatypecompletionprocessor.dummy-class-name
+@severity: info
+"$$__$$"
+=> org.eclipse.jdt.internal.ui.refactoring.contentassist.JavaTypeCompletionProcessorCore.DUMMY_CLASS_NAME
+;;
+
+@id: jdt.internal.refactoring.javatypecompletionprocessor.dummy-cu-name
+@severity: info
+org.eclipse.jdt.internal.ui.refactoring.contentassist.JavaTypeCompletionProcessor.DUMMY_CLASS_NAME + org.eclipse.jdt.internal.corext.util.JavaModelUtil.DEFAULT_CU_SUFFIX
+=> org.eclipse.jdt.internal.ui.refactoring.contentassist.JavaTypeCompletionProcessorCore.DUMMY_CU_NAME
+;;
+
+!$qualifiedTypeBinding.getName().equals($simpleBinding.getName()) && !isInherited($qualifiedTypeBinding, $simpleBinding) :: sourceVersionGE(16) && instanceof($qualifiedTypeBinding, "org.eclipse.jdt.core.dom.ITypeBinding")
+=> !$qualifiedTypeBinding.getName().equals($simpleBinding.getName()) && !$qualifiedTypeBinding.isGenericType() && !$qualifiedTypeBinding.isParameterizedType() && !$qualifiedTypeBinding.isWildcardType() && !$qualifiedTypeBinding.isRawType() && !$qualifiedTypeBinding.isRecord() && !$qualifiedTypeBinding.isRecovered() && !isInherited($qualifiedTypeBinding, $simpleBinding)
+;;
+
+@id: jdt.internal.buildpath.movecpelement.ioobe.fix
+@severity: error
+$indexOfSelElement != -1
+:: inClass("org.eclipse.jdt.internal.ui.wizards.buildpaths.BuildPathBasePage") && inMethod("moveCPElementAcrossNode")
+=> $indexOfSelElement != -1 && $indexOfSelElement < $rootCPListElement.getChildren().size()
+;;
+
+@id: jdt.internal.completionproposalcollector.filter-to-ignore
+@severity: info
+isFiltered($proposal)
+:: inClass("org.eclipse.jdt.ui.text.java.CompletionProposalCollector")
+=> isIgnored($proposal.getKind())
+;;

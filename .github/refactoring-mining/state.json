@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "b0cbe57f12a55c0e2cdf2f55082ddd06a470b2f6",
-      "lastProcessedDate": "2026-05-02T03:30:12.736504417Z",
-      "totalProcessed": 1426,
+      "lastProcessedCommit": "b8b35d46ac4cd5905e2c06840dc5f9d60be85261",
+      "lastProcessedDate": "2026-05-03T03:31:10.743140688Z",
+      "totalProcessed": 1514,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1727,11 +1727,11 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 104,
+        "JDT Internal Refactoring": 114,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 39,
-        "Clean-up Bug Fix": 71,
+        "JDT Internal Bug Fix": 42,
+        "Clean-up Bug Fix": 72,
         "Try-with-Resources": 6,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 2,
@@ -1753,12 +1753,12 @@
         "Type Inference": 2,
         "Architecture Migration": 3,
         "Code Style": 23,
-        "Eclipse API Configuration": 8,
+        "Eclipse API Configuration": 10,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 13,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 9,
+        "Eclipse API Migration": 10,
         "JDT Internal Feature": 1,
         "Type Safety": 3,
         "Eclipse UI Refactoring": 2,
@@ -1772,7 +1772,7 @@
         "Clean-up Enhancement (Internal JDT)": 1,
         "Eclipse Platform UI": 1,
         "Arrays": 1,
-        "Probable Bugs": 4,
+        "Probable Bugs": 5,
         "JDT Internal Quick Fix Refactoring": 1,
         "String API": 1,
         "Algorithm/Sorting Logic": 1,
@@ -1827,7 +1827,11 @@
         "Internal Logic Refactoring": 1,
         "Internal API Modernization": 1,
         "API-Migration": 1,
-        "Error Handling": 1
+        "Error Handling": 1,
+        "Eclipse API Removal": 1,
+        "Java API Deprecation": 1,
+        "Editor Functionality": 1,
+        "Eclipse UI Configuration": 1
       },
       "exhaustedCategories": []
     },
@@ -1868,5 +1872,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24061
+  "globalTotalProcessed": 24149
 }
