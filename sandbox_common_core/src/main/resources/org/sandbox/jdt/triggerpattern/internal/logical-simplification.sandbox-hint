@@ -25,3 +25,7 @@ org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x ^ $y
 $x ^ org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y
 => $x == $y
 ;;
+
+$a & $b :: instanceof($a, "boolean") && instanceof($b, "boolean")
+=> $a && $b
+;;

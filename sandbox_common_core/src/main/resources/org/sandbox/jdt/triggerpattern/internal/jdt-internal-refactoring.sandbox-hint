@@ -1659,3 +1659,32 @@ isFiltered($proposal)
 :: inClass("org.eclipse.jdt.ui.text.java.CompletionProposalCollector")
 => isIgnored($proposal.getKind())
 ;;
+
+@id: jdt.internal.compliance.version20.to.version21
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_20.equals($selectedCompliance)
+=> org.eclipse.jdt.core.JavaCore.VERSION_21.equals($selectedCompliance)
+;;
+
+$binding != null && !$binding.isRecovered()
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal") && inMethod("getPossibleSuperTypeBinding")
+=> $binding != null && !$binding.isRecovered() && !org.eclipse.jdt.core.dom.Modifier.isFinal($binding.getModifiers())
+;;
+
+skipParameterNamesCodeMinings($method)
+=> skipParameterNamesCodeMinings($method, $parameterNames)
+;;
+
+org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor.$call.getAddStaticMemberFavoritesProposals($context, $node, $collection) :: inClass("org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor")
+=> $call.getAddStaticMemberFavoritesProposals($node, $collection)
+;;
+
+getExtractTempRefactoring().guessTempNames()
+=> getExtractTempRefactoring().guessTempNamesWithContext()
+;;
+
+@id: jdt.internal.codemanipulation.stubutility2.to.core
+@severity: info
+org.eclipse.jdt.internal.corext.codemanipulation.StubUtility2.createImplementationStub($arg1, $arg2, $arg3, $arg4, $arg5, $arg6, $arg7, $arg8, $arg9)
+=> org.eclipse.jdt.internal.corext.codemanipulation.StubUtility2Core.createImplementationStub($arg1, $arg2, $arg3, $arg4, $arg5, $arg6, $arg7, $arg8, $arg9)
+;;

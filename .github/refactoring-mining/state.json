@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "b8b35d46ac4cd5905e2c06840dc5f9d60be85261",
-      "lastProcessedDate": "2026-05-03T03:31:10.743140688Z",
-      "totalProcessed": 1514,
+      "lastProcessedCommit": "a6ea4675ca44d634d93755709d296d7f992cfe13",
+      "lastProcessedDate": "2026-05-04T03:31:56.776072908Z",
+      "totalProcessed": 1594,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1718,6 +1718,33 @@
           "deferredAt": "2026-05-01T03:29:11.135104795Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "eaef2dbf940fc4208d4d96873181a87bc5a75966",
+          "message": "Merge master to BETA_JAVA21",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-04T03:16:18.292648163Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9018c76e702cce50467e0bb1d3c2abbbb206e693",
+          "message": "Merge remote-tracking branch \u0027upstream/master\u0027 into BETA_JAVA21",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-04T03:19:26.106547114Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "13675b1f8a74f47de4da89ed0ded6af7c21dfbec",
+          "message": "Merge pull request from GHSA-q6xr-9x9x-g7w2",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-04T03:27:58.564678513Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1727,12 +1754,12 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 114,
+        "JDT Internal Refactoring": 122,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 42,
-        "Clean-up Bug Fix": 72,
-        "Try-with-Resources": 6,
+        "JDT Internal Bug Fix": 45,
+        "Clean-up Bug Fix": 74,
+        "Try-with-Resources": 8,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 2,
         "JFace API Modernization": 1,
@@ -1741,8 +1768,8 @@
         "Performance Optimization": 1,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
-        "Null-Safety": 13,
-        "Lambda-Simplification": 4,
+        "Null-Safety": 14,
+        "Lambda-Simplification": 5,
         "Architectural Refactoring": 1,
         "Collections": 9,
         "JDT Internal Feature Enhancement": 5,
@@ -1751,12 +1778,12 @@
         "Loop Modernization": 4,
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
-        "Architecture Migration": 3,
-        "Code Style": 23,
+        "Architecture Migration": 7,
+        "Code Style": 26,
         "Eclipse API Configuration": 10,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
-        "JDT Internal UI Feature": 13,
+        "JDT Internal UI Feature": 14,
         "JDT Internal Architecture": 1,
         "Eclipse API Migration": 10,
         "JDT Internal Feature": 1,
@@ -1784,11 +1811,11 @@
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 2,
         "Architecture Refactoring": 1,
-        "Dead Code Removal": 7,
+        "Dead Code Removal": 9,
         "Quick Fix Enhancement": 3,
         "Unnecessary Code": 1,
         "Correctness": 4,
-        "Code Correctness": 5,
+        "Code Correctness": 7,
         "Code Structure Simplification": 5,
         "Concurrency": 3,
         "Bug Fix": 3,
@@ -1831,7 +1858,11 @@
         "Eclipse API Removal": 1,
         "Java API Deprecation": 1,
         "Editor Functionality": 1,
-        "Eclipse UI Configuration": 1
+        "Eclipse UI Configuration": 1,
+        "Eclipse UI Fix": 4,
+        "New Feature Introduction": 2,
+        "Eclipse UI": 1,
+        "Eclipse UI Feature": 2
       },
       "exhaustedCategories": []
     },
@@ -1872,5 +1903,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24149
+  "globalTotalProcessed": 24229
 }
