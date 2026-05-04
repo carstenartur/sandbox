@@ -3091,6 +3091,105 @@
       "sourceCommit": "96ad55c9cf34bf03e6964ef36282c3430236c1af",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-internal-jdt-ui-comp",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.compliance.version20.to.version21\n@severity: info\norg.eclipse.jdt.core.JavaCore.VERSION_20.equals($selectedCompliance)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_21.equals($selectedCompliance)\n;;",
+      "summary": "This commit updates internal JDT UI compiler preferences to allow targeting Java 21. The core pattern is updating a conditional check from `JavaCore.VERSION_20.equals(...)` to `JavaCore.VERSION_21.equals(...)`. This is a direct 1:1 constant replacement within a boolean expression, which is fully implementable as a GREEN TriggerPattern DSL rule. Other changes involving array literal modifications and NLS message updates are not directly expressible with simple DSL rules.",
+      "discoveredAt": "2026-05-04",
+      "discoveredInRun": 24229,
+      "sourceCommit": "538b7fac61a3e884359b072f008269016baa76d8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-ui-fix-this-commit-fixes-the-new-class-wizard-t",
+      "category": "Eclipse UI Fix",
+      "dslRule": "$binding !\u003d null \u0026\u0026 !$binding.isRecovered()\n:: inClass(\"org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal\") \u0026\u0026 inMethod(\"getPossibleSuperTypeBinding\")\n\u003d\u003e $binding !\u003d null \u0026\u0026 !$binding.isRecovered() \u0026\u0026 !org.eclipse.jdt.core.dom.Modifier.isFinal($binding.getModifiers())\n;;",
+      "summary": "This commit fixes the \u0027New Class Wizard\u0027 to prevent proposing or using final superclasses. The primary pattern is the modification of a boolean condition in `NewCUUsingWizardProposal.getPossibleSuperTypeBinding()` to include a check for `!Modifier.isFinal(binding.getModifiers())`. This directly updates an existing expression to filter out final types. Other changes related to adding new methods or modifying method signatures are structural and not directly expressible in the DSL. The identified boolean expression modification is directly implementable as a GREEN TriggerPattern DSL rule.",
+      "discoveredAt": "2026-05-04",
+      "discoveredInRun": 24229,
+      "sourceCommit": "74623e73e141e70c5323df3949979a6136231e77",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-an-internal-jdt-ui",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "skipParameterNamesCodeMinings($method)\n\u003d\u003e skipParameterNamesCodeMinings($method, $parameterNames)\n;;",
+      "summary": "This commit refactors an internal JDT UI method call `skipParameterNamesCodeMinings(method)` by adding a `parameterNames` argument. This is a direct 1:1 method call replacement with an added argument, improving the internal filtering logic for code mining. This pattern is fully expressible in the TriggerPattern DSL and is a GREEN transformation, suitable for internal JDT modernization.",
+      "discoveredAt": "2026-05-04",
+      "discoveredInRun": 24229,
+      "sourceCommit": "bcf25255bded5fd4994858296d1a5bc81f734acd",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "code-correctness-this-commit-replaces-the-bitwise-and-ope",
+      "category": "Code Correctness",
+      "dslRule": "$a \u0026 $b :: instanceof($a, \"boolean\") \u0026\u0026 instanceof($b, \"boolean\")\n\u003d\u003e $a \u0026\u0026 $b\n;;",
+      "summary": "This commit replaces the bitwise AND operator `\u0026` with the logical AND operator `\u0026\u0026` in a boolean expression to enforce short-circuit evaluation. This is a common and safe modernization for boolean logic, improving correctness, readability, and performance. The transformation is a direct 1:1 operator replacement and is fully expressible as a GREEN TriggerPattern DSL rule with type guards to ensure boolean operands.",
+      "discoveredAt": "2026-05-04",
+      "discoveredInRun": 24229,
+      "sourceCommit": "611b9fb8bd54448d59c5bd111de781be33d92fcc",
+      "status": "DISCOVERED",
+      "hintFile": "logical-simplification.sandbox-hint"
+    },
+    {
+      "id": "code-correctness-this-commit-addresses-a-common-correctne",
+      "category": "Code Correctness",
+      "dslRule": "@id: arrays.correctness.array-object-equals-positive\n@severity: error\n$array1.equals($array2) :: instanceof($array1, \"java.lang.Object[]\") \u0026\u0026 instanceof($array2, \"java.lang.Object[]\")\n\u003d\u003e java.util.Arrays.equals($array1, $array2)\n;;\n\n@id: arrays.correctness.array-object-equals\n@severity: error\n!$array1.equals($array2) :: instanceof($array1, \"java.lang.Object[]\") \u0026\u0026 instanceof($array2, \"java.lang.Object[]\")\n\u003d\u003e !java.util.Arrays.equals($array1, $array2)\n;;",
+      "summary": "This commit addresses a common correctness bug where the default `Object.equals()` method was used to compare the content of object arrays, which performs reference equality instead of element-wise comparison. It systematically replaces `$array1.equals($array2)` with `java.util.Arrays.equals($array1, $array2)` (and its negated form `!equals()` with `!Arrays.equals()`) across multiple files. This is a crucial correctness fix. This transformation is already fully covered by two existing DSL rules: `arrays.correctness.array-object-equals-positive` for the positive case and `arrays.correctness.array-object-equals` for the negative case, both found in `probable-bugs.sandbox-hint`. These rules use `instanceof(\"java.lang.Object[]\")` guards to ensure they apply correctly to array types. `Arrays.equals()` has been available since Java 1.5, so no specific `sourceVersionGE` guard is needed beyond the Java 8 baseline.",
+      "discoveredAt": "2026-05-04",
+      "discoveredInRun": 24229,
+      "sourceCommit": "53c5c2b2c0719c4a1d9390d85fdaf737421cdbd3",
+      "status": "DISCOVERED",
+      "hintFile": "probable-bugs.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-primarily-refactors-jdt-s-qu",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor.$call.getAddStaticMemberFavoritesProposals($context, $node, $collection) :: inClass(\"org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor\")\n\u003d\u003e $call.getAddStaticMemberFavoritesProposals($node, $collection)\n;;",
+      "summary": "This commit primarily refactors JDT\u0027s `QuickAssistProcessor`. One part involves removing the `context` argument from calls to the internal `getAddStaticMemberFavoritesProposals` method. This is a direct 1:1 method call argument removal, which is fully supported by the TriggerPattern DSL and is a reusable pattern for internal API modernization. The rule is guarded by `inClass(\"org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor\")` to ensure precise application. A larger part of the commit replaces a complex method body with a delegation to a new Java-based cleanup (`SplitVariableFixCore`). While this major architectural change is not directly expressible as a DSL rule (RED), the identified argument removal is a clean, automatable, GREEN transformation.",
+      "discoveredAt": "2026-05-04",
+      "discoveredInRun": 24229,
+      "sourceCommit": "83ea6289f5e51e07a88525108cfee8663e21d381",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "lambda-simplification-this-commit-introduces-a-new-quick-fix-i",
+      "category": "Lambda-Simplification",
+      "dslRule": "$param -\u003e $param instanceof $Type :: sourceVersionGE(8)\n\u003d\u003e $Type.class::isInstance\n;;",
+      "summary": "This commit introduces a new quick-fix in JDT UI to convert lambda expressions of the form `x -\u003e x instanceof Y` into method references `Y.class::isInstance`. This is a direct, semantically equivalent modernization pattern that improves code readability and conciseness, applicable for Java 8 and higher. The transformation is fully expressible as a GREEN TriggerPattern DSL rule using lambda expression matching and type placeholders. An additional change in this commit involves using `ASTNodes.replaceButKeepComment()` which is an internal JDT refactoring already covered by an existing DSL rule (`jdt.internal.astnodes.replace.keepcomment`) and does not represent a new user-facing transformation pattern.",
+      "discoveredAt": "2026-05-04",
+      "discoveredInRun": 24229,
+      "sourceCommit": "71cbf6eba99acaa28e3a2aa5d492838402df6488",
+      "status": "DISCOVERED",
+      "hintFile": "lambda-simplification.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-an-internal-jdt-refa",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "getExtractTempRefactoring().guessTempNames()\n\u003d\u003e getExtractTempRefactoring().guessTempNamesWithContext()\n;;",
+      "summary": "This commit updates an internal JDT refactoring wizard (`ExtractTempWizard`) by replacing the `guessTempNames()` method call with `guessTempNamesWithContext()`. This is a direct, 1:1 method invocation replacement, which is fully supported by the TriggerPattern DSL. This transformation improves the context-based name recommendation logic for the \u0027Extract Local Variable\u0027 refactoring. It is an internal JDT API modernization and can be automated with a GREEN DSL rule.",
+      "discoveredAt": "2026-05-04",
+      "discoveredInRun": 24229,
+      "sourceCommit": "723f955a628fc28e4bccd0a7d366b367c98555ad",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-refactors-internal-jdt-code",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.codemanipulation.stubutility2.to.core\n@severity: info\norg.eclipse.jdt.internal.corext.codemanipulation.StubUtility2.createImplementationStub($arg1, $arg2, $arg3, $arg4, $arg5, $arg6, $arg7, $arg8, $arg9)\n\u003d\u003e org.eclipse.jdt.internal.corext.codemanipulation.StubUtility2Core.createImplementationStub($arg1, $arg2, $arg3, $arg4, $arg5, $arg6, $arg7, $arg8, $arg9)\n;;",
+      "summary": "This commit refactors internal JDT code by moving the `createImplementationStub` method from `StubUtility2` to `StubUtility2Core` and updating all call sites. This is a direct 1:1 static method invocation replacement, which is fully supported and directly implementable as a GREEN TriggerPattern DSL rule. The rule captures the class name change and the fixed number of arguments, ensuring that internal JDT API usage is consistent with the new architectural organization. The DSL automatically handles the corresponding import statement update. No specific Java version guard is needed as this is an internal refactoring not tied to new external language features beyond the Java 8 baseline.",
+      "discoveredAt": "2026-05-04",
+      "discoveredInRun": 24229,
+      "sourceCommit": "7787b3f83f15a94d50f0b7374ff841ed059e3318",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

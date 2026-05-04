@@ -1,51 +1,50 @@
 {
-  "totalProcessed": 28,
-  "relevant": 22,
-  "irrelevant": 6,
-  "duplicates": 1,
-  "green": 10,
-  "yellow": 0,
-  "red": 12,
+  "totalProcessed": 43,
+  "relevant": 38,
+  "irrelevant": 5,
+  "duplicates": 2,
+  "green": 9,
+  "yellow": 2,
+  "red": 27,
   "irrelevantReasons": {
-    "This commit represents an architectural refactoring: moving the implementation of an existing cleanup from \u0027org.eclipse.jdt.ui\u0027 to \u0027org.eclipse.jdt.core.manipulation\u0027. It also abstracts the detailed AST manipulation logic, replacing it with a delegation to a core fix. The DSL is designed for defining transformation patterns, not for describing internal code movement or refactoring of a cleanup\u0027s internal implementation details.": 1,
-    "This commit introduces new NLS message keys, adds a new private helper method (findTags), and modifies existing control flow (replacing a loop with new logic, adding new if statements, and extending boolean conditions). These are structural changes (adding/removing methods, adding if blocks, replacing loop bodies with new statements) or additions of new string constants, which are beyond the capabilities of the current TriggerPattern DSL that focuses on expression and annotation replacements.": 1,
-    "This commit primarily adds support for Java 20 in internal Eclipse JDT compiler preferences. It involves declaring new constants, adding them to internal arrays of supported versions, and updating conditional logic for displaying preview feature warnings in a UI configuration block. These are specific internal configuration and feature enablement changes within the JDT UI codebase, not generalizable code transformation patterns applicable to user code or even widely reusable across other Eclipse plugins. The DSL is designed for structural code transformations, not for updating internal configuration arrays or conditional display logic based on Java versions.": 1,
-    "This commit introduces UI and preference settings (NLS messages, preference checkbox, and its registration in UI) for a new cleanup feature in the Eclipse JDT UI. It does not contain any code transformation patterns applicable to user code. The actual transformation logic would reside in a Java cleanup plugin (`StringConcatToTextBlockFixCore`), but this commit itself only handles the preference/UI aspect.": 1,
-    "The commit primarily involves removing deprecated UI view IDs (`JavaPlugin.ID_RES_NAV`) and the entire `ShowInNavigatorViewAction.java` file, which are deletions of obsolete APIs. The remaining changes (in `IndentAction.java` and `UnresolvedElementsSubProcessor.java`) are complex structural additions of new logic (text block indentation, type inheritance checks with new helper methods and imports). These types of changes (deletion of files/constants, complex structural code additions, and functional logic implementations) are beyond the current capabilities of the TriggerPattern DSL for pattern-based transformations.": 1,
-    "The commit primarily involves commenting out obsolete Java code that displayed a \u0027BETA\u0027 disclaimer, removing multi-line documentation disclaimers from Java source and properties files, and changing a UI label in a .properties file (from \u002720 (BETA)\u0027 to \u002720\u0027). None of these changes represent a reusable Java code transformation pattern suitable for the TriggerPattern DSL, which focuses on transforming active Java source code elements.": 1
+    "This commit introduces new classes, new preference constants, new UI elements, and new NLS entries. It does not modify existing code in a way that can be generalized into a reusable pattern-based DSL transformation rule. All changes are additions or declarations rather than transformations.": 1,
+    "This commit adds new resource files (.usedproperties) which are not Java code and cannot be processed or transformed by the TriggerPattern DSL. It\u0027s an infrastructure/resource management change.": 1,
+    "This commit introduces a new Java class to provide a new feature (a constant hover). It does not transform any existing code, which is the primary purpose of the TriggerPattern DSL.": 1,
+    "This commit introduces new UI strings (NLS entries) and adds new preference UI elements to configure an existing Java-based cleanup (LambdaCleanUpFixCore). It does not contain any code transformation patterns that can be generalized into DSL rules. The DSL cannot generate NLS properties or UI code.": 1,
+    "This commit refactors the internal implementation of a quick-fix. It moves complex logic for identifying the \u0027join variable\u0027 pattern and performing the rewrite from `QuickAssistProcessor` to a new dedicated core fix class `JoinVariableFixCore`. The TriggerPattern DSL is designed to transform user code, not to refactor the internal Java code of Eclipse JDT UI plugins. The change from a large block of imperative code to a call to a new core class is an architectural change that cannot be expressed as a pattern-based DSL rule.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 28,
-      "relevant": 22,
-      "green": 10,
-      "yellow": 0,
-      "red": 12
+      "totalProcessed": 43,
+      "relevant": 38,
+      "green": 9,
+      "yellow": 2,
+      "red": 27
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-05-03",
-      "processed": 28,
-      "relevant": 22
+      "date": "2026-05-04",
+      "processed": 43,
+      "relevant": 38
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-05-03T03:11:56.649Z",
-    "completedAt": "2026-05-03T03:31:11.950868880Z",
-    "durationSeconds": 1155,
+    "startedAt": "2026-05-04T03:12:48.673Z",
+    "completedAt": "2026-05-04T03:31:58.123768418Z",
+    "durationSeconds": 1149,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 181,
+    "deferredCommits": 184,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-05-03T03:13:46.136681820Z",
-    "latestEvaluation": "2026-05-03T03:31:10.742223704Z",
-    "earliestCommitDate": "2022-12-01T20:54:54Z",
-    "latestCommitDate": "2023-04-18T21:04:31Z"
+    "earliestEvaluation": "2026-05-04T03:14:51.675187571Z",
+    "latestEvaluation": "2026-05-04T03:31:56.775319424Z",
+    "earliestCommitDate": "2023-04-20T04:09:21Z",
+    "latestCommitDate": "2023-08-15T16:01:06Z"
   }
 }
