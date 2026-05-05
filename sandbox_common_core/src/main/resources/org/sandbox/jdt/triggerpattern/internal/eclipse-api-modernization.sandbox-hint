@@ -67,3 +67,11 @@ org.eclipse.jdt.ui.JavaElementLabels.ALL_CATEGORY
 org.eclipse.search.ui.NewSearchUI.arePotentialMatchesIgnored()
 => org.eclipse.jdt.internal.ui.preferences.JavaPreferencesPropertyTester.isEnabled(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_JAVA_CODEMINING_IGNORE_INEXACT_MATCHES)
 ;;
+
+$monitor.beginTask($msg, 10)
+=> $monitor.setTaskName($msg)
+;;
+
+new org.eclipse.jface.viewers.ViewerComparator()
+=> new org.eclipse.jdt.ui.JavaElementComparator()
+;;

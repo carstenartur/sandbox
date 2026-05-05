@@ -1688,3 +1688,21 @@ getExtractTempRefactoring().guessTempNames()
 org.eclipse.jdt.internal.corext.codemanipulation.StubUtility2.createImplementationStub($arg1, $arg2, $arg3, $arg4, $arg5, $arg6, $arg7, $arg8, $arg9)
 => org.eclipse.jdt.internal.corext.codemanipulation.StubUtility2Core.createImplementationStub($arg1, $arg2, $arg3, $arg4, $arg5, $arg6, $arg7, $arg8, $arg9)
 ;;
+
+org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection) :: instanceof($selection, "org.eclipse.jface.text.ITextSelection")
+=> org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection.getOffset(), $selection.getLength())
+;;
+
+org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection, $extraArg) :: instanceof($selection, "org.eclipse.jface.text.ITextSelection")
+=> org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection.getOffset(), $selection.getLength(), $extraArg)
+;;
+
+isIgnoringJavaStrings && org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_STRING.equals($type)
+=> isIgnoringJavaStrings && (org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_STRING.equals($type) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MULTI_LINE_STRING.equals($type))
+;;
+
+@id: jdt.internal.move.saveparticipant.prefix.constant
+@severity: info
+"editor_save_participant_"
+=> org.eclipse.jdt.core.manipulation.SaveParticipantPreferenceConfigurationConstants.EDITOR_SAVE_PARTICIPANT_PREFIX
+;;
