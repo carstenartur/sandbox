@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "a6ea4675ca44d634d93755709d296d7f992cfe13",
-      "lastProcessedDate": "2026-05-04T03:31:56.776072908Z",
-      "totalProcessed": 1594,
+      "lastProcessedCommit": "a4af0b0e87373afd457cd9e34aa2717c521b892b",
+      "lastProcessedDate": "2026-05-05T03:31:18.981275187Z",
+      "totalProcessed": 1670,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1745,6 +1745,24 @@
           "deferredAt": "2026-05-04T03:27:58.564678513Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "860103396d89e7a1e769a233d55fdbb2d537977f",
+          "message": "Push down logic to ReorgUtilsCore, unify a central location for resource and project utility functions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-05T03:17:17.337160633Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7c51007d443a2381a528644c0f6105f214bc8dd3",
+          "message": "Apply semantic syntax coloring in Java source hover viewer. Fixes #437 (#438)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-05T03:26:41.783333462Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1754,32 +1772,32 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 122,
+        "JDT Internal Refactoring": 129,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 45,
+        "JDT Internal Bug Fix": 48,
         "Clean-up Bug Fix": 74,
         "Try-with-Resources": 8,
         "JDT UI Feature Implementation": 1,
-        "Resource Management": 2,
+        "Resource Management": 3,
         "JFace API Modernization": 1,
         "String-API": 7,
         "Java-Modernization": 20,
-        "Performance Optimization": 1,
+        "Performance Optimization": 2,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
-        "Null-Safety": 14,
+        "Null-Safety": 15,
         "Lambda-Simplification": 5,
         "Architectural Refactoring": 1,
         "Collections": 9,
-        "JDT Internal Feature Enhancement": 5,
+        "JDT Internal Feature Enhancement": 6,
         "Clean-up Enhancement": 4,
         "Internal Refactoring": 2,
         "Loop Modernization": 4,
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
-        "Architecture Migration": 7,
-        "Code Style": 26,
+        "Architecture Migration": 8,
+        "Code Style": 27,
         "Eclipse API Configuration": 10,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
@@ -1811,8 +1829,8 @@
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 2,
         "Architecture Refactoring": 1,
-        "Dead Code Removal": 9,
-        "Quick Fix Enhancement": 3,
+        "Dead Code Removal": 10,
+        "Quick Fix Enhancement": 4,
         "Unnecessary Code": 1,
         "Correctness": 4,
         "Code Correctness": 7,
@@ -1822,7 +1840,7 @@
         "New Cleanup": 1,
         "Logical Simplification": 7,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 4,
+        "Eclipse API Modernization": 7,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -1862,7 +1880,10 @@
         "Eclipse UI Fix": 4,
         "New Feature Introduction": 2,
         "Eclipse UI": 1,
-        "Eclipse UI Feature": 2
+        "Eclipse UI Feature": 2,
+        "Java Modernization": 1,
+        "Internal Bug Fix / UI Refactoring": 1,
+        "UI Logic Enhancement": 1
       },
       "exhaustedCategories": []
     },
@@ -1903,5 +1924,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24229
+  "globalTotalProcessed": 24305
 }
