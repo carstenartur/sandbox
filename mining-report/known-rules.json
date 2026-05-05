@@ -3190,6 +3190,61 @@
       "sourceCommit": "7787b3f83f15a94d50f0b7374ff841ed059e3318",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-refactors-internal-jdt-ui-ac",
+      "category": "Eclipse API Modernization",
+      "dslRule": "org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection) :: instanceof($selection, \"org.eclipse.jface.text.ITextSelection\")\n\u003d\u003e org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection.getOffset(), $selection.getLength())\n;;\n\norg.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection, $extraArg) :: instanceof($selection, \"org.eclipse.jface.text.ITextSelection\")\n\u003d\u003e org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection.getOffset(), $selection.getLength(), $extraArg)\n;;",
+      "summary": "This commit refactors internal JDT UI actions, specifically \u0027Surround With Try/Catch\u0027 and \u0027Surround With Try With Resources\u0027, by replacing direct usage of `ITextSelection` objects in `createRefactoring` calls with `selection.getOffset()` and `selection.getLength()`. This is a direct 1:1 method argument replacement, applicable to multiple overloads. It is a common pattern for decoupling core logic from UI-specific selection types and is fully expressible as two GREEN TriggerPattern DSL rules, using `instanceof` guards for type safety and targeting an existing internal JDT refactoring hint file. This transformation could partially replace aspects of `sandbox_jface_cleanup` by moving JFace-related API modernizations to DSL rules.",
+      "discoveredAt": "2026-05-05",
+      "discoveredInRun": 24305,
+      "sourceCommit": "17abd27f3c85e66095a97ae84585678a934b5803",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-extends-the-internal-java-sp",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "isIgnoringJavaStrings \u0026\u0026 org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_STRING.equals($type)\n\u003d\u003e isIgnoringJavaStrings \u0026\u0026 (org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_STRING.equals($type) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MULTI_LINE_STRING.equals($type))\n;;",
+      "summary": "This commit extends the internal Java spelling engine to ignore spelling in text blocks by modifying a boolean condition. It replaces a simple `equals()` check with an `OR` condition to include `JAVA_MULTI_LINE_STRING` partition type. This is a direct, 1:1 expression replacement that is fully supported by the TriggerPattern DSL. The change is an internal JDT fix, improving its handling of modern Java features.",
+      "discoveredAt": "2026-05-05",
+      "discoveredInRun": 24305,
+      "sourceCommit": "93705a48cd98c05e08c66014dcf3d16df3078f93",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-fixes-incorrect-usage-of-ipr",
+      "category": "Eclipse API Modernization",
+      "dslRule": "$monitor.beginTask($msg, 10)\n\u003d\u003e $monitor.setTaskName($msg)\n;;",
+      "summary": "This commit fixes incorrect usage of `IProgressMonitor.beginTask()` when `SubMonitor.convert` is in effect, by replacing it with `IProgressMonitor.setTaskName()`. The `beginTask()` call is redundant and incorrect when using `SubMonitor.convert`, which handles task initiation. This is a direct 1:1 method call replacement, semantically safe, and directly implementable as a GREEN TriggerPattern DSL rule. The removal of `monitor.done()` is a contextual deletion tied to `SubMonitor.convert` managing resource cleanup automatically; while technically possible to express as a deletion, safely guarding it would require complex AST context analysis not readily available in the current DSL for generic statement removal without broader side effects. Therefore, the most robust and generalizable pattern is the method call replacement.",
+      "discoveredAt": "2026-05-05",
+      "discoveredInRun": 24305,
+      "sourceCommit": "58c83579fdc06a5b6946c0ccdf6258fbe5337ca9",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-replaces-the-instantiation-o",
+      "category": "Eclipse API Modernization",
+      "dslRule": "new org.eclipse.jface.viewers.ViewerComparator()\n\u003d\u003e new org.eclipse.jdt.ui.JavaElementComparator()\n;;",
+      "summary": "This commit replaces the instantiation of `org.eclipse.jface.viewers.ViewerComparator` with `org.eclipse.jdt.ui.JavaElementComparator` in `CleanUpRefactoringWizard`. This is a direct 1:1 constructor call replacement that improves sorting performance by using a more specialized comparator. This pattern is fully supported and directly expressible as a GREEN TriggerPattern DSL rule; the DSL automatically handles associated import changes.",
+      "discoveredAt": "2026-05-05",
+      "discoveredInRun": 24305,
+      "sourceCommit": "3f6796695adf6fdd9d607cd200f9af05f5c1d20d",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-replaces-a-hardcoded-string",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.move.saveparticipant.prefix.constant\n@severity: info\n\"editor_save_participant_\"\n\u003d\u003e org.eclipse.jdt.core.manipulation.SaveParticipantPreferenceConfigurationConstants.EDITOR_SAVE_PARTICIPANT_PREFIX\n;;",
+      "summary": "This commit replaces a hardcoded string literal used as the initializer for an internal constant, `EDITOR_SAVE_PARTICIPANT_PREFIX`, with a reference to a new static constant, `SaveParticipantPreferenceConfigurationConstants.EDITOR_SAVE_PARTICIPANT_PREFIX`. This is a direct 1:1 expression replacement that improves code consistency and maintainability by centralizing constant definitions. The commit also introduces new wrapper classes and adapter logic for JDT cleanups (in `CleanUpCoreWrapper.java` and `CleanUpRequirements.java`), which represents an architectural refactoring not suitable for DSL rules. However, the constant replacement itself is fully expressible as a GREEN TriggerPattern DSL rule.",
+      "discoveredAt": "2026-05-05",
+      "discoveredInRun": 24305,
+      "sourceCommit": "159912df1830e5185138f3a431a009bd9f383cae",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }
